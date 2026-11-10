@@ -1,7 +1,6 @@
 // The customize control and the sheet. Web renders it. The groups and the
 // save rules live in @plot/core so mobile shows the same choices.
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { loadArtworkCatalog } from '@plot/core/artwork.js';
 import { ARTWORK } from '@plot/core/copy/artwork.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -9,10 +8,10 @@ import { tmdb } from '@plot/core/tmdb.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useApp } from '../hooks/useApp.js';
 import { backdropUrl, logoUrl, posterUrl, profileUrl } from '../utils/images.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import './ArtworkSheet.css';
+import UpgradeSheet from './UpgradeSheet.jsx';
 
 function tileUrl(kind, path) {
   if (!path) return null;
@@ -36,9 +35,10 @@ function fallbackPath(section, defaults) {
 export default function CustomizeArtwork({ mediaType, tmdbId, seasonNumber, defaults = {} }) {
   const { user, profile } = useApp();
   const art = useUserArtwork();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [open, setOpen] = useState(false);
+  // A Free viewer gets the upgrade sheet here. It used to jump to the plans
+  // page with no explanation.
+  const [gate, setGate] = useState(false);
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -80,15 +80,13 @@ export default function CustomizeArtwork({ mediaType, tmdbId, seasonNumber, defa
         type="button"
         className="panel-artwork-btn"
         onClick={() => {
-          if (!isPremiumProfile(profile)) {
-            navigate(premiumPlansPath(`${location.pathname}${location.search}`));
-            return;
-          }
+          if (!isPremiumProfile(profile)) { setGate(true); return; }
           setOpen(true);
         }}
       >
         {ARTWORK.customize}
       </button>
+      {gate && <UpgradeSheet reason="artwork" onClose={() => setGate(false)} />}
       {open && (
         <ResponsiveDialog title={ARTWORK.customize} onClose={() => setOpen(false)} zIndex={1100} tall>
           <div className="artwork-sheet">

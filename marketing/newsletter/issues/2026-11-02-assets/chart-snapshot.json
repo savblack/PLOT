@@ -1,0 +1,332 @@
+[
+  {
+    "snapshot_date": "2026-11-01",
+    "items": [
+      {
+        "rank": 1,
+        "title": "Verity",
+        "tmdb_id": 1283515,
+        "media_type": "movie",
+        "poster_path": "/rmaNMA1seHqpjtnYKzyynFAr1g8.jpg",
+        "backdrop_path": "/cKetrF2dAnQ0AMV5i4BMOs41I5P.jpg"
+      },
+      {
+        "rank": 2,
+        "title": "The Dog Stars",
+        "tmdb_id": 1384216,
+        "media_type": "movie",
+        "poster_path": "/5O616X9vmRzQdB68PHzBewPittd.jpg",
+        "backdrop_path": "/3k7GzxOdLZkN3eZsuhLi2eRzkXO.jpg"
+      },
+      {
+        "rank": 3,
+        "title": "Obsession",
+        "tmdb_id": 1339713,
+        "media_type": "movie",
+        "poster_path": "/bRwnj8WEKBCvmfeUNOukJPwB43K.jpg",
+        "backdrop_path": "/5lTZyuBTNOfawsfPT8Q0cIg6qAF.jpg"
+      },
+      {
+        "rank": 4,
+        "title": "Clayface",
+        "tmdb_id": 1400940,
+        "media_type": "movie",
+        "poster_path": "/9l1NuFjel2j89hiuiJbsxfblqjy.jpg",
+        "backdrop_path": "/xSDoxv4pHvs4xZjvTb0Iqg1A6ro.jpg"
+      },
+      {
+        "rank": 5,
+        "title": "Lupin",
+        "tmdb_id": 96677,
+        "media_type": "tv",
+        "poster_path": "/h6Z2oogE4mJk2uffdtIlLhb0EHx.jpg",
+        "backdrop_path": "/aY7zv2pfk9H0QxaaL3PBjvalbKQ.jpg"
+      },
+      {
+        "rank": 6,
+        "title": "Ali G: Who Iz I?",
+        "tmdb_id": 1727734,
+        "media_type": "movie",
+        "poster_path": "/uTyVxPeWX8Ai30IQoyDDQONNcq.jpg",
+        "backdrop_path": "/hJcGJLi34zE4RhzsiDR6f7pw50K.jpg"
+      },
+      {
+        "rank": 7,
+        "title": "Dead-End Job",
+        "tmdb_id": 289517,
+        "media_type": "tv",
+        "poster_path": "/3fm3WYMftVrcFPdGXds9DCFVCCs.jpg",
+        "backdrop_path": "/cyH2fZUjIJjLmgpF3tgA5CSGz4L.jpg"
+      },
+      {
+        "rank": 8,
+        "title": "Drive - The Pretenders",
+        "tmdb_id": 1596275,
+        "media_type": "movie",
+        "poster_path": "/s9syckECnUYhKePQ1A0DC0mFVZ9.jpg",
+        "backdrop_path": "/hbz4aeVsjnKb2HRoFbbr46Egh8y.jpg"
+      },
+      {
+        "rank": 9,
+        "title": "Bleach",
+        "tmdb_id": 30984,
+        "media_type": "tv",
+        "poster_path": "/2EewmxXe72ogD0EaWM8gqa0ccIw.jpg",
+        "backdrop_path": "/o0NsbcIvsllg6CJX0FBFY8wWbsn.jpg"
+      },
+      {
+        "rank": 10,
+        "title": "Spider-Man: Brand New Day",
+        "tmdb_id": 969681,
+        "media_type": "movie",
+        "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+        "backdrop_path": "/4tjxYg2AbOzzG9G1YuiT2NzYhlH.jpg"
+      },
+      {
+        "rank": 11,
+        "title": "Apocalypse Z: New World",
+        "tmdb_id": 1507696,
+        "media_type": "movie",
+        "poster_path": "/wgPGAKuojOd3ncsNbxMDuU4uRn0.jpg",
+        "backdrop_path": "/o3XwuDUj0n8qnK91p6q8LKfr6rj.jpg"
+      },
+      {
+        "rank": 12,
+        "title": "Forgotten Island",
+        "tmdb_id": 1465063,
+        "media_type": "movie",
+        "poster_path": "/myd1K3gefdNAWFsGNRDdMeiK9Qg.jpg",
+        "backdrop_path": "/cNICUho5uiAGkfCAQq1ihyaMla4.jpg"
+      },
+      {
+        "rank": 13,
+        "title": "Wildwood",
+        "tmdb_id": 791523,
+        "media_type": "movie",
+        "poster_path": "/snFM00mpNAfUzUtkdEW0uDEvXA0.jpg",
+        "backdrop_path": "/sl5NJ1vtyhP9Vr88bB4blULsJYp.jpg"
+      },
+      {
+        "rank": 14,
+        "title": "Black Clover",
+        "tmdb_id": 73223,
+        "media_type": "tv",
+        "poster_path": "/uZUtoVChBGhNj9OfrM2LYpwBm8E.jpg",
+        "backdrop_path": "/qu9epTZh29fGUkY7ZYc9PVsv0Ig.jpg"
+      },
+      {
+        "rank": 15,
+        "title": "The Hunger Games: Sunrise on the Reaping",
+        "tmdb_id": 1300968,
+        "media_type": "movie",
+        "poster_path": "/jNcZH8yplxttRlf0wwqfGGMKHxX.jpg",
+        "backdrop_path": "/aqFZcr2dxSZ2UwWSo1WC6C0rwDf.jpg"
+      },
+      {
+        "rank": 16,
+        "title": "The Cycle",
+        "tmdb_id": 1290418,
+        "media_type": "movie",
+        "poster_path": "/n5gSNf55KWfDc9hqP4H1KCCSutE.jpg",
+        "backdrop_path": "/bgHW6AJl2SdKzxglvf9tshXbI84.jpg"
+      },
+      {
+        "rank": 17,
+        "title": "VisionQuest",
+        "tmdb_id": 213375,
+        "media_type": "tv",
+        "poster_path": "/WGyAyBPncfuu8MZhLY9RtfZPM0.jpg",
+        "backdrop_path": "/58v1KFe3rxvHrYM1hLH5ScpwqNR.jpg"
+      },
+      {
+        "rank": 18,
+        "title": "Dark Matter",
+        "tmdb_id": 196322,
+        "media_type": "tv",
+        "poster_path": "/2DPmTlv8F0V1TQBPmlsGOVOhtWk.jpg",
+        "backdrop_path": "/wFEAy4xRes1eeclsu7Z73Vzz7ET.jpg"
+      },
+      {
+        "rank": 19,
+        "title": "Dune: Part Three",
+        "tmdb_id": 1170608,
+        "media_type": "movie",
+        "poster_path": "/glt0v4I89rMWstDNCaFXc5SNyO1.jpg",
+        "backdrop_path": "/i5E9H7Ik0u61ylDDTbmUpTL3Yw.jpg"
+      },
+      {
+        "rank": 20,
+        "title": "Nocturne",
+        "tmdb_id": 292741,
+        "media_type": "tv",
+        "poster_path": "/nyvXVcPnHEwVmqCdzjjCsu1jqhm.jpg",
+        "backdrop_path": "/614k6C9doThoMe6GyH0nTnGgLXt.jpg"
+      }
+    ]
+  },
+  {
+    "snapshot_date": "2026-10-25",
+    "items": [
+      {
+        "rank": 1,
+        "title": "The Apothecary Diaries",
+        "tmdb_id": 220542,
+        "media_type": "tv",
+        "poster_path": "/sJZcy8QsOPuRPiCfoCWVB3r9Ohg.jpg",
+        "backdrop_path": "/gffVOVZ2Y9cmVIZ26Gt9ByMGCYH.jpg"
+      },
+      {
+        "rank": 2,
+        "title": "Clayface",
+        "tmdb_id": 1400940,
+        "media_type": "movie",
+        "poster_path": "/9l1NuFjel2j89hiuiJbsxfblqjy.jpg",
+        "backdrop_path": "/uL4cIrNi2uaUnWIOQQ28EVnkETG.jpg"
+      },
+      {
+        "rank": 3,
+        "title": "Lupin",
+        "tmdb_id": 96677,
+        "media_type": "tv",
+        "poster_path": "/h6Z2oogE4mJk2uffdtIlLhb0EHx.jpg",
+        "backdrop_path": "/aY7zv2pfk9H0QxaaL3PBjvalbKQ.jpg"
+      },
+      {
+        "rank": 4,
+        "title": "LINK CLICK",
+        "tmdb_id": 123542,
+        "media_type": "tv",
+        "poster_path": "/hCt2bLRGTCjHGqtV5FP3Img6w1h.jpg",
+        "backdrop_path": "/w3agwUSMpJ4X9t1jGrDtqqRPjDQ.jpg"
+      },
+      {
+        "rank": 5,
+        "title": "Cyberpunk: Edgerunners",
+        "tmdb_id": 105248,
+        "media_type": "tv",
+        "poster_path": "/v3JuB15WybKmxDeT1hWdK3j6eSJ.jpg",
+        "backdrop_path": "/4NmCfWHzytiKM3riCMcbVYBJhlB.jpg"
+      },
+      {
+        "rank": 6,
+        "title": "The Terminal List",
+        "tmdb_id": 120911,
+        "media_type": "tv",
+        "poster_path": "/xyFAzP7RKK8cARCSalIZ9A9T0jV.jpg",
+        "backdrop_path": "/2qS2LGqsAyT1NEDeIj24Hp2IR10.jpg"
+      },
+      {
+        "rank": 7,
+        "title": "VisionQuest",
+        "tmdb_id": 213375,
+        "media_type": "tv",
+        "poster_path": "/xK27l5uwaVyZSlENWnmLlWwDQNS.jpg",
+        "backdrop_path": "/uoXXbN2PrOxH6UKyP7kYwmGpAAP.jpg"
+      },
+      {
+        "rank": 8,
+        "title": "Spider-Man: Brand New Day",
+        "tmdb_id": 969681,
+        "media_type": "movie",
+        "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+        "backdrop_path": "/r08LxMJCbf1SiJIWeyH9aJmdqwC.jpg"
+      },
+      {
+        "rank": 9,
+        "title": "Crystal Lake",
+        "tmdb_id": 213562,
+        "media_type": "tv",
+        "poster_path": "/3ENhExiD2fcjk5FX0AcAXcvLu9N.jpg",
+        "backdrop_path": "/wxiBsKFEOOFK8eQStWOykNORlXY.jpg"
+      },
+      {
+        "rank": 10,
+        "title": "Carrie",
+        "tmdb_id": 288673,
+        "media_type": "tv",
+        "poster_path": "/6mUMquPQBFJGqTACS3Azkwwrx8d.jpg",
+        "backdrop_path": "/9yCJtipMeDe8uAdSJKvw8BnYfRz.jpg"
+      },
+      {
+        "rank": 11,
+        "title": "Hope",
+        "tmdb_id": 1058424,
+        "media_type": "movie",
+        "poster_path": "/6VY1ZKgpsc8CfGsQcCGiYEgHdH0.jpg",
+        "backdrop_path": "/qqHFLg90IUSoTmSMpKOOW5RyqN3.jpg"
+      },
+      {
+        "rank": 12,
+        "title": "Wildwood",
+        "tmdb_id": 791523,
+        "media_type": "movie",
+        "poster_path": "/snFM00mpNAfUzUtkdEW0uDEvXA0.jpg",
+        "backdrop_path": "/sl5NJ1vtyhP9Vr88bB4blULsJYp.jpg"
+      },
+      {
+        "rank": 13,
+        "title": "Resident Evil",
+        "tmdb_id": 1423191,
+        "media_type": "movie",
+        "poster_path": "/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg",
+        "backdrop_path": "/3icyRAqgakNcQn6aDVz9libFmBA.jpg"
+      },
+      {
+        "rank": 14,
+        "title": "Obsession",
+        "tmdb_id": 1339713,
+        "media_type": "movie",
+        "poster_path": "/bRwnj8WEKBCvmfeUNOukJPwB43K.jpg",
+        "backdrop_path": "/5lTZyuBTNOfawsfPT8Q0cIg6qAF.jpg"
+      },
+      {
+        "rank": 15,
+        "title": "Bad Apples",
+        "tmdb_id": 1198654,
+        "media_type": "movie",
+        "poster_path": "/pcPLnxCThCIo9JFQIMFX4kAE5Yz.jpg",
+        "backdrop_path": "/dNCK3daKbOi6IHSsM9O2Nwyd91Y.jpg"
+      },
+      {
+        "rank": 16,
+        "title": "Moana",
+        "tmdb_id": 1108427,
+        "media_type": "movie",
+        "poster_path": "/gaet1xQ2nxrG0V1Ep9T20ZMNEIC.jpg",
+        "backdrop_path": "/c6BPbkO5Npt1OdwttAxCFo06wtH.jpg"
+      },
+      {
+        "rank": 17,
+        "title": "Avengers: Doomsday",
+        "tmdb_id": 1003596,
+        "media_type": "movie",
+        "poster_path": "/jzPwsojjFStf5lR5Nm07w2hH56G.jpg",
+        "backdrop_path": "/g3gpP5YDbA85DsA0bt5mgGQIe5q.jpg"
+      },
+      {
+        "rank": 18,
+        "title": "Tenzing",
+        "tmdb_id": 1288069,
+        "media_type": "movie",
+        "poster_path": "/eI0QW02PYqhnmIvLRdn9vrfVVP7.jpg",
+        "backdrop_path": "/6GXqVvL20Y0MpyVP30WoI2NPK69.jpg"
+      },
+      {
+        "rank": 19,
+        "title": "Masterplan",
+        "tmdb_id": 1561726,
+        "media_type": "movie",
+        "poster_path": "/5xmXVd7nCK3tAo34XkO58SxUCip.jpg",
+        "backdrop_path": "/fAlQZsCOCvxOj0PmFmt4i8IWR2u.jpg"
+      },
+      {
+        "rank": 20,
+        "title": "The Black Ball",
+        "tmdb_id": 1422041,
+        "media_type": "movie",
+        "poster_path": "/jT5SR5qc9KvVg7HUEmjMWEUYMce.jpg",
+        "backdrop_path": "/bDsmYvrzto7xrEwqDpLC3SPhn9A.jpg"
+      }
+    ]
+  }
+]

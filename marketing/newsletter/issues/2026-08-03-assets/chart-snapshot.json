@@ -1,0 +1,335 @@
+{
+  "issue_date": "2026-08-03",
+  "chart_status": "available",
+  "snapshot": {
+    "snapshot_date": "2026-07-30",
+    "items": [
+      {
+        "rank": 1,
+        "title": "The Odyssey",
+        "tmdb_id": 1368337,
+        "media_type": "movie",
+        "poster_path": "/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg",
+        "backdrop_path": "/tYuC9kUwqhpDQ3pv1kLMqyMF1Jw.jpg"
+      },
+      {
+        "rank": 2,
+        "title": "Disclosure Day",
+        "tmdb_id": 1275779,
+        "media_type": "movie",
+        "poster_path": "/AnJ8IQJI23hNpYXVNaythu061Ru.jpg",
+        "backdrop_path": "/flxau5Iu7bChQHsESqvGZ3FQRaI.jpg"
+      },
+      {
+        "rank": 3,
+        "title": "Scary Movie",
+        "tmdb_id": 1273221,
+        "media_type": "movie",
+        "poster_path": "/znHT8peERZRWG1ME3r0Db0EV8k8.jpg",
+        "backdrop_path": "/xWBiXclrRmTggQHMRsIn84YHavs.jpg"
+      },
+      {
+        "rank": 4,
+        "title": "Masters of the Universe",
+        "tmdb_id": 454639,
+        "media_type": "movie",
+        "poster_path": "/oRuyGUHdoaQxWP3SDfafGkStxTC.jpg",
+        "backdrop_path": "/piV2OnzTZCyGBP9JCjlHIgKGlfo.jpg"
+      },
+      {
+        "rank": 5,
+        "title": "Obsession",
+        "tmdb_id": 1339713,
+        "media_type": "movie",
+        "poster_path": "/bRwnj8WEKBCvmfeUNOukJPwB43K.jpg",
+        "backdrop_path": "/r013C8Me2bZ0pUi0OWJRh0h7MzT.jpg"
+      },
+      {
+        "rank": 6,
+        "title": "Backrooms",
+        "tmdb_id": 1083381,
+        "media_type": "movie",
+        "poster_path": "/rhGx6E3qRNMgj3i5su2oukNHwIQ.jpg",
+        "backdrop_path": "/2aA8iPlMCks3k131ymFBAY6FL0b.jpg"
+      },
+      {
+        "rank": 7,
+        "title": "Spider-Man: Brand New Day",
+        "tmdb_id": 969681,
+        "media_type": "movie",
+        "poster_path": "/6Q21yptoOCUq4ErwVncesLPVplb.jpg",
+        "backdrop_path": "/vjMvFSmGUxEtqVdaZgvFee9XkZl.jpg"
+      },
+      {
+        "rank": 8,
+        "title": "The Mandalorian and Grogu",
+        "tmdb_id": 1228710,
+        "media_type": "movie",
+        "poster_path": "/7GV5rrUJf0BRUhoh2cyFoeNthlQ.jpg",
+        "backdrop_path": "/ysLlsAxwgNSxBWHCgTKJrmjxpRQ.jpg"
+      },
+      {
+        "rank": 9,
+        "title": "Avengers: Doomsday",
+        "tmdb_id": 1003596,
+        "media_type": "movie",
+        "poster_path": "/cWXtJhrlruF8CeYuaBGE8vdj3Q9.jpg",
+        "backdrop_path": "/6KDDoTq8Vq3HuQHULzuvPiCJbMI.jpg"
+      },
+      {
+        "rank": 10,
+        "title": "Agent Kim Reactivated",
+        "tmdb_id": 296206,
+        "media_type": "tv",
+        "poster_path": "/jruaZAm1KjkFRhgRcdF8tqakhpH.jpg",
+        "backdrop_path": "/g1LJLlmWP74zv9yXKEXm7g9p10O.jpg"
+      },
+      {
+        "rank": 11,
+        "title": "Silo",
+        "tmdb_id": 125988,
+        "media_type": "tv",
+        "poster_path": "/gMYZZvnkVNTqSVnVCphWbPXwWwb.jpg",
+        "backdrop_path": "/uTWhbLc7Bj4qNSdW3ZvZKL8cOHv.jpg"
+      },
+      {
+        "rank": 12,
+        "title": "Bleach",
+        "tmdb_id": 30984,
+        "media_type": "tv",
+        "poster_path": "/5iVUUnE2tgBPypACYNobCKHagfV.jpg",
+        "backdrop_path": "/o0NsbcIvsllg6CJX0FBFY8wWbsn.jpg"
+      },
+      {
+        "rank": 13,
+        "title": "House of the Dragon",
+        "tmdb_id": 94997,
+        "media_type": "tv",
+        "poster_path": "/7V0Ebks0GgpKvQ7QbLAIdX5dos4.jpg",
+        "backdrop_path": "/577eXC8wFQT0eUrJcgznSiFPRmk.jpg"
+      },
+      {
+        "rank": 14,
+        "title": "Avatar Aang: The Last Airbender",
+        "tmdb_id": 980431,
+        "media_type": "movie",
+        "poster_path": "/3sgnSfNT27Bx5O5ukr7B26mhEQq.jpg",
+        "backdrop_path": "/yQe50s6d8DYiFZ6P0cyRSNhTVCz.jpg"
+      },
+      {
+        "rank": 15,
+        "title": "Elite Force",
+        "tmdb_id": 281281,
+        "media_type": "tv",
+        "poster_path": "/ymjYmuHG4Af93fcoF0NKwx9Rovb.jpg",
+        "backdrop_path": "/tMpfa73LmKpeZ3Fix1QmFGIUrKI.jpg"
+      },
+      {
+        "rank": 16,
+        "title": "Star Trek: Strange New Worlds",
+        "tmdb_id": 103516,
+        "media_type": "tv",
+        "poster_path": "/w6KapI2JvrCkOPmQhkwYPJNjqeo.jpg",
+        "backdrop_path": "/fZJs6xgU9dqIg9phIXjZAZOInzy.jpg"
+      },
+      {
+        "rank": 17,
+        "title": "A Shop for Killers",
+        "tmdb_id": 215072,
+        "media_type": "tv",
+        "poster_path": "/7yUY1HUyQuybbvkAAhLzQ7x1l9g.jpg",
+        "backdrop_path": "/mWVeYmtCfA3zvSeZtW5bN2Khe01.jpg"
+      },
+      {
+        "rank": 18,
+        "title": "The East Palace",
+        "tmdb_id": 279323,
+        "media_type": "tv",
+        "poster_path": "/yfYohBszGqoAW8oM0qydOtJ4kPh.jpg",
+        "backdrop_path": "/8PHBAdPyfIwS5W6cfKLhItEb875.jpg"
+      },
+      {
+        "rank": 19,
+        "title": "The Dink",
+        "tmdb_id": 1361774,
+        "media_type": "movie",
+        "poster_path": "/8dq7vaUkXPqwqKxBFW4qJNBWeop.jpg",
+        "backdrop_path": "/tJQhL95q63ITeBy5OTGPx51sFks.jpg"
+      },
+      {
+        "rank": 20,
+        "title": "The Death of Robin Hood",
+        "tmdb_id": 1284465,
+        "media_type": "movie",
+        "poster_path": "/13MmRwmG5NmaMfU8qNrtgGXisiD.jpg",
+        "backdrop_path": "/aM3pduSU53VjcALWOfLWNw8v2TI.jpg"
+      }
+    ]
+  },
+  "comparison": {
+    "snapshot_date": "2026-07-23",
+    "items": [
+      {
+        "rank": 1,
+        "title": "The Odyssey",
+        "tmdb_id": 1368337,
+        "media_type": "movie",
+        "poster_path": "/pe5cCoX5iIb5IWKPsbPkCwjLFHt.jpg",
+        "backdrop_path": "/tYuC9kUwqhpDQ3pv1kLMqyMF1Jw.jpg"
+      },
+      {
+        "rank": 2,
+        "title": "Backrooms",
+        "tmdb_id": 1083381,
+        "media_type": "movie",
+        "poster_path": "/rhGx6E3qRNMgj3i5su2oukNHwIQ.jpg",
+        "backdrop_path": "/dqmMWNWfLnExDRpMtIMqI97GQFR.jpg"
+      },
+      {
+        "rank": 3,
+        "title": "Obsession",
+        "tmdb_id": 1339713,
+        "media_type": "movie",
+        "poster_path": "/bRwnj8WEKBCvmfeUNOukJPwB43K.jpg",
+        "backdrop_path": "/r013C8Me2bZ0pUi0OWJRh0h7MzT.jpg"
+      },
+      {
+        "rank": 4,
+        "title": "Lucky",
+        "tmdb_id": 278624,
+        "media_type": "tv",
+        "poster_path": "/qdobPy3No4Fi3dCzcIDP9n8AjcO.jpg",
+        "backdrop_path": "/hKXMOOvQwXiL01hfYG5nrkH0tEP.jpg"
+      },
+      {
+        "rank": 5,
+        "title": "Silo",
+        "tmdb_id": 125988,
+        "media_type": "tv",
+        "poster_path": "/gMYZZvnkVNTqSVnVCphWbPXwWwb.jpg",
+        "backdrop_path": "/uTWhbLc7Bj4qNSdW3ZvZKL8cOHv.jpg"
+      },
+      {
+        "rank": 6,
+        "title": "Moana",
+        "tmdb_id": 1108427,
+        "media_type": "movie",
+        "poster_path": "/zKVgiv5qHCvCLT4A2ymJi5QeXDH.jpg",
+        "backdrop_path": "/mMkJq4dkQwfDieB9wRC9yPxDWv9.jpg"
+      },
+      {
+        "rank": 7,
+        "title": "The Furious",
+        "tmdb_id": 1280738,
+        "media_type": "movie",
+        "poster_path": "/zP19YO60jwEsfKd5Qf1UvA5uJu8.jpg",
+        "backdrop_path": "/1AVF2fAevpfi2HP6AEpptG1kg8R.jpg"
+      },
+      {
+        "rank": 8,
+        "title": "Spider-Man: Brand New Day",
+        "tmdb_id": 969681,
+        "media_type": "movie",
+        "poster_path": "/yyB2VJEW3an2xCdcYCPQhn9QERR.jpg",
+        "backdrop_path": "/vjMvFSmGUxEtqVdaZgvFee9XkZl.jpg"
+      },
+      {
+        "rank": 9,
+        "title": "The East Palace",
+        "tmdb_id": 279323,
+        "media_type": "tv",
+        "poster_path": "/yfYohBszGqoAW8oM0qydOtJ4kPh.jpg",
+        "backdrop_path": "/9LJiiVPSS2DsV9drnA3k3zqMgPW.jpg"
+      },
+      {
+        "rank": 10,
+        "title": "Descendants: Wicked Wonderland",
+        "tmdb_id": 1318621,
+        "media_type": "movie",
+        "poster_path": "/xdhLAADGSse8KCrsDLBuM5b68Cg.jpg",
+        "backdrop_path": "/idRLKyu43mRhMWNjzd6FiEromNI.jpg"
+      },
+      {
+        "rank": 11,
+        "title": "Agent Kim Reactivated",
+        "tmdb_id": 296206,
+        "media_type": "tv",
+        "poster_path": "/jruaZAm1KjkFRhgRcdF8tqakhpH.jpg",
+        "backdrop_path": "/g1LJLlmWP74zv9yXKEXm7g9p10O.jpg"
+      },
+      {
+        "rank": 12,
+        "title": "Evil Dead Burn",
+        "tmdb_id": 1212763,
+        "media_type": "movie",
+        "poster_path": "/ztadKzIIR0ERYqpHteaPFtk7inP.jpg",
+        "backdrop_path": "/A5Tz6ogGt4VV8NESG9oWVct5bo1.jpg"
+      },
+      {
+        "rank": 13,
+        "title": "House of the Dragon",
+        "tmdb_id": 94997,
+        "media_type": "tv",
+        "poster_path": "/7V0Ebks0GgpKvQ7QbLAIdX5dos4.jpg",
+        "backdrop_path": "/577eXC8wFQT0eUrJcgznSiFPRmk.jpg"
+      },
+      {
+        "rank": 14,
+        "title": "Toy Story 5",
+        "tmdb_id": 1084244,
+        "media_type": "movie",
+        "poster_path": "/sfQtVlIHljToOwYjhe21KPGzZWK.jpg",
+        "backdrop_path": "/qjTqY5coNiz6sVtPng40IzltsoN.jpg"
+      },
+      {
+        "rank": 15,
+        "title": "Rick and Morty",
+        "tmdb_id": 60625,
+        "media_type": "tv",
+        "poster_path": "/owhkU6KRqdXoUQpjV8uyZGPtX58.jpg",
+        "backdrop_path": "/5BDNWWHweQL0q1fmTv7gmRXfnl4.jpg"
+      },
+      {
+        "rank": 16,
+        "title": "Hope",
+        "tmdb_id": 1058424,
+        "media_type": "movie",
+        "poster_path": "/1n37BJchWHLiSYQkuFxe5KjB951.jpg",
+        "backdrop_path": "/qv2gffpbllYE1Pxz5nhYQmYuht5.jpg"
+      },
+      {
+        "rank": 17,
+        "title": "The Breadwinner",
+        "tmdb_id": 1440050,
+        "media_type": "movie",
+        "poster_path": "/4apG9Xk6HQvV48JKEjSUeiebju7.jpg",
+        "backdrop_path": "/dgqBcgTzaUiSLvKJPDF9AbdFEMO.jpg"
+      },
+      {
+        "rank": 18,
+        "title": "Heartstopper Forever",
+        "tmdb_id": 1468683,
+        "media_type": "movie",
+        "poster_path": "/r4lVJVO1BeBb11cBcXBdbHc9e9k.jpg",
+        "backdrop_path": "/eAURmcYabHQnq2FcWf9rCIGAA23.jpg"
+      },
+      {
+        "rank": 19,
+        "title": "One Piece",
+        "tmdb_id": 37854,
+        "media_type": "tv",
+        "poster_path": "/dB4EDhre2dsC2kxYDavyKWqLQwi.jpg",
+        "backdrop_path": "/2rmK7mnchw9Xr3XdiTFSxTTLXqv.jpg"
+      },
+      {
+        "rank": 20,
+        "title": "The Hawk",
+        "tmdb_id": 254528,
+        "media_type": "tv",
+        "poster_path": "/6XCbqv7t0rYE2U1jzjh52fBxczj.jpg",
+        "backdrop_path": "/fBVNJL85Q60njpKPD6YaLi6tEsX.jpg"
+      }
+    ]
+  },
+  "last_prior_saved_snapshot": null
+}

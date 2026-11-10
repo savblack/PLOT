@@ -12,6 +12,9 @@
 // do) — they're identical in every English dialect Plot supports.
 
 export const COMMON = {
+  // The in-page button on a locked Premium feature. It opens the upgrade
+  // sheet. One label for every gate.
+  seePremium: 'See Premium',
   cancel: 'Cancel',
   save: 'Save',
   close: 'Close',
@@ -36,6 +39,8 @@ export const COMMON = {
   deselect: 'Deselect',
   sending: 'Sending…',
   saving: 'Saving…',
+  // The quiet way out of a Home card (Finishing touches).
+  dismiss: 'Dismiss',
   send: 'Send',
   turnOn: 'Turn on',
   turnOff: 'Turn off',

@@ -197,7 +197,11 @@ const commandList = () => {
   }
 };
 
-const args = process.argv.slice(2);
+// The docs say `pnpm run worktrees -- new <task>`, and pnpm 10 passes that
+// `--` through. Left in, `new` read args[1] as the task name and created
+// agent/<date>-new (seen 2026-11-10).
+const rawArgs = process.argv.slice(2);
+const args = rawArgs[0] === '--' ? rawArgs.slice(1) : rawArgs;
 const flag = (name) => {
   const index = args.indexOf(name);
   return index === -1 ? '' : (args[index + 1] || '');

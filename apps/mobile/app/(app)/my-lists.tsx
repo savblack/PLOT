@@ -69,6 +69,8 @@ import { AddPeopleSheet } from '../../components/watch/ShareListSheet';
 import { ListInviteSheet } from '../../components/watch/ListInviteSheet';
 import { openPremium } from '../../components/watch/WatchChrome';
 import { createUndoBatch, UNDO_ACTIONS, type UndoOption } from '@plot/core/undo.js';
+import { WATCHING_SORTS, parseWatchingSort, watchingSortKey, type WatchingSort } from '@plot/core/watchingOrder.js';
+import { useWatchingSort } from '@plot/core/useWatchingSort.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -181,13 +183,15 @@ function TrashIcon({ color }: { color: string }) {
 // picked, Done to leave edit mode, otherwise a kebab offering "Select".
 // Mirrors the headerRight web builds in each section of MyListsView.jsx.
 function SectionSelectActions({
-  sel, count, deleteLabel, menuLabel, onDelete,
+  sel, count, deleteLabel, menuLabel, onDelete, extraItems = [],
 }: {
   sel: Selection;
   count: number;
   deleteLabel: string;
   menuLabel: string;
   onDelete: () => void;
+  /** More menu rows after Select (the Watching sort). */
+  extraItems?: KebabMenuItem[];
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -214,8 +218,11 @@ function SectionSelectActions({
   }
   // Nothing to select yet — web hides the kebab on an empty section too.
   if (count === 0) return null;
-  return <KebabMenu accessibilityLabel={menuLabel} items={[{ label: COMMON.select, onPress: sel.enter }]} />;
+  return <KebabMenu accessibilityLabel={menuLabel} items={[{ label: COMMON.select, onPress: sel.enter }, ...extraItems]} />;
 }
+
+/** Sort menu label for each Watching order (same wording as web). */
+const watchingSortLabel = (sort: WatchingSort) => (sort === 'title' ? CUSTOM_LISTS.titleAscending : CUSTOM_LISTS.watchingSort[sort]);
 
 // ── List row ──────────────────────────────────────────────────────────
 function ListRow({ item, trailing, onPress, sel, status }: {
@@ -608,6 +615,20 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     return created;
   };
 
+  // The Watching order, kept on this device (there is no server prefs row for it).
+  const [watchingSort, setWatchingSort] = useState<WatchingSort>('last_watched');
+  useEffect(() => {
+    let active = true;
+    readStorage(watchingSortKey(userId)).then(stored => { if (active) setWatchingSort(parseWatchingSort(stored)); });
+    return () => { active = false; };
+  }, [userId]);
+  const chooseWatchingSort = (next: WatchingSort) => {
+    setWatchingSort(next);
+    writeStorage(watchingSortKey(userId), next);
+  };
+  // The hook's rows are already last watched first and re-sorted after a tick.
+  const sortedWatching = useWatchingSort(watching.items ?? [], watchingSort);
+
   const isLoading = watchlist.loading || watching.loading || favorites.loading || customLists.loading || topLists.loading;
   if (isLoading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
 
@@ -635,7 +656,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     : [];
 
   // Watching items are always TV (episode progress); type them so the Movies filter excludes them.
-  const watchingList = byType(watching.items.map((i: any) => ({ ...i, media_type: 'tv' })));
+  const watchingList = byType(sortedWatching.map((i: any) => ({ ...i, media_type: 'tv' })));
   const favList      = byType(favorites.favorites);
 
   const handleShareList = (list: { id: string; name: string; is_public: boolean; visibility?: string }) => shareLink({
@@ -744,6 +765,11 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 count={watchingList.length}
                 deleteLabel={MEDIA.stopWatching}
                 menuLabel="Watching options"
+                extraItems={watchingList.length > 1 ? WATCHING_SORTS.map(option => ({
+                  label: watchingSortLabel(option),
+                  checked: watchingSort === option,
+                  onPress: () => chooseWatchingSort(option),
+                })) : []}
                 onDelete={async () => {
                   // One undo for the whole selection, offered once every stop lands.
                   const ids = [...watchingSel.selected];
@@ -767,7 +793,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         {viewTab === 'watching' && watching.items.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>Not watching anything</Text>
-            <Text style={styles.emptyBody}>Start a series from Want to Watch or Search.</Text>
+            <Text style={styles.emptyBody}>Start a series from your watchlist or Search.</Text>
           </View>
         )}
 
@@ -784,7 +810,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 sel={wantSel}
                 count={sortedSaved.length}
                 deleteLabel={MEDIA.removeFromWatchlist}
-                menuLabel="Want to Watch options"
+                menuLabel="Watchlist options"
                 onDelete={async () => {
                   const ids = [...wantSel.selected];
                   const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHLIST_REMOVE });
@@ -888,8 +914,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             expandSignal={historyExpand}
             sharePreset={sharePreset}
             drilldown={drilldown}
-            onDrilldown={premium ? setDrilldown : () => router.push(PREMIUM_SETTINGS_PATH as Href)}
-            drilldownLocked={!premium}
+            onDrilldown={premium ? setDrilldown : undefined}
+            onUpgrade={premium ? undefined : () => router.push(PREMIUM_SETTINGS_PATH as Href)}
             onClearDrilldown={clearDrilldown}
             onSharePresetUsed={() => {
               setTab('history');

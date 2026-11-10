@@ -4,6 +4,16 @@ export function checkoutPlan(body: unknown): 'monthly' | 'yearly' | null {
   return plan === 'monthly' || plan === 'yearly' ? plan : null;
 }
 
+/**
+ * The client's button said "Start free trial". The web app decides that from
+ * Plot's own billing record, which can lag or disagree with Stripe, so the
+ * server (which asks Stripe) refuses rather than charge someone who was just
+ * promised a trial they cannot have. Absent or false means no promise was made.
+ */
+export function checkoutExpectsTrial(body: unknown): boolean {
+  return (body as { expectTrial?: unknown } | null)?.expectTrial === true;
+}
+
 /** A Premium entitlement without a Stripe subscription has no customer portal. */
 export function hasStripeSubscription(billing: { stripe_customer_id: string; stripe_subscription_id: string | null } | null): billing is { stripe_customer_id: string; stripe_subscription_id: string } {
   return Boolean(billing?.stripe_customer_id?.startsWith('cus_') && billing.stripe_subscription_id);

@@ -107,6 +107,10 @@ export const AUTH_PAGE = {
   verificationFailedSignup: 'Verification failed to load. You can still create your account.',
   verificationBlockedSignup: 'Still blocked. An ad blocker or privacy setting is the usual cause. You can still create your account.',
   verificationRetry: 'Retry',
+  // Under the submit button while the check runs, before anyone clicks.
+  verificationChecking: 'Running a quick security check…',
+  // Cloudflare escalated to its checkbox, which sits above the button.
+  verificationTapBox: 'Tick the box above to continue.',
   // Login, reset, and magic link have no bypass. Said when the widget
   // never returns a token and the submit itself has to stop.
   verificationUnavailable: 'The security check did not finish. Wait a moment and try again.',

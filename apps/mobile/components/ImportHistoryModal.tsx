@@ -20,7 +20,6 @@ import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
   createImportReporter, IMPORT_ENTRY_POINTS, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
-import { suppressFirstWinForImport } from '../lib/firstWinCard';
 import { readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
@@ -438,7 +437,6 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     }
     if (inserted > 0 && platform) {
       onImported?.(platform, inserted);
-      if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
     }
     // A background job's leftovers are done with: drop the review file.
     if (reviewJob) await finishImportJobReview(reviewJob);
@@ -462,9 +460,8 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     setAlreadyCount(result.alreadyCount || 0);
     setPushedCount(result.pushedCount || 0);
     onImported?.(platform, result.importedCount || 0);
-    if (platform === 'trakt' || platform === 'trakt-export') void suppressFirstWinForImport(userId, platform);
     setStep('done');
-  }, [connection, platform, importReport, onImported, userId]);
+  }, [connection, platform, importReport, onImported]);
 
   const reset = () => {
     setStep('pick-platform');

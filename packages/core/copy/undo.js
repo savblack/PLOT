@@ -19,7 +19,7 @@ export const UNDO = {
     const titles = `${count} titles`;
     switch (action) {
       case 'watchlist_remove':
-        return one ? `Removed ${title} from Want to Watch.` : `Removed ${titles} from Want to Watch.`;
+        return one ? `Removed ${title} from your watchlist.` : `Removed ${titles} from your watchlist.`;
       case 'list_item_remove': {
         const list = meta.listName || 'your list';
         return one ? `Removed ${title} from ${list}.` : `Removed ${titles} from ${list}.`;

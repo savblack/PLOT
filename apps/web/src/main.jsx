@@ -107,6 +107,7 @@ configure({
   onActionFailed: (payload) => track(EVENTS.ACTION_FAILED, payload),
   onLoadFailed: (payload) => track(EVENTS.LOAD_FAILED, payload),
   onEpisodeSearch: (payload) => track(EVENTS.EPISODE_SEARCH_RESULT_OPENED, payload),
+  onAwardsShown: (payload) => track(EVENTS.TITLE_AWARDS_SHOWN, payload),
   // The Tonight picker: one seam, four names, same shape as onWatchProgress.
   onTonightPicker: ({ action, ...props }) => {
     const name = {

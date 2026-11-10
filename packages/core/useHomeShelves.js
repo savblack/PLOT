@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { continueWatchingItems } from './continueWatching.js';
+import { sortWatching } from './watchingOrder.js';
 import { suggestPeople } from './peopleSuggestions.js';
 
 /**
@@ -13,12 +14,25 @@ const MAX_SHOWS = 24;
 const MAX_SUGGESTION_TITLES = 12;
 
 /**
- * @param {Array<{ tmdb_id: number, updated_at?: string }>} watching watching_progress rows
+ * The ids whose details the shelf fetches: the MAX_SHOWS last watched. Sorted
+ * before the cap, so a show logged a minute ago is never cut for one that was
+ * merely first in the source order.
+ * @param {Array<{ tmdb_id: number, updated_at?: string, last_activity_at?: string | null }>} watching
+ * @returns {number[]}
+ */
+export function continueWatchingIds(watching) {
+  return sortWatching(watching ?? []).map(w => Number(w.tmdb_id)).filter(Boolean).slice(0, MAX_SHOWS);
+}
+
+/**
+ * @param {Array<{ tmdb_id: number, updated_at?: string, last_activity_at?: string | null }>} watching watching_progress rows
  * @param {(id: number) => Promise<any>} fetchTvDetails
  */
 export function useContinueWatching(watching, fetchTvDetails) {
-  const ids = useMemo(() => (watching ?? []).map(w => Number(w.tmdb_id)).filter(Boolean).slice(0, MAX_SHOWS), [watching]);
-  const key = ids.join(',');
+  const ids = useMemo(() => continueWatchingIds(watching), [watching]);
+  // Keyed on which shows, not their order: a tick reorders the shelf and
+  // should not refetch (or flash a loading state for) the same 24 details.
+  const key = [...ids].sort((a, b) => a - b).join(',');
   const [details, setDetails] = useState(/** @type {{ key: string, byId: Map<number, any> }} */ ({ key: '', byId: new Map() }));
   useEffect(() => {
     if (!ids.length) return;

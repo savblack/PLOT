@@ -47,6 +47,8 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
 
    `VITE_TMDB_PROXY_URL` must point at the staging tmdb-proxy Cloudflare Worker (`https://tmdb-proxy-staging.<subdomain>.workers.dev`), not the Supabase edge function directly: the Worker adds a shared-secret header the browser cannot set. See `apps/web/workers/tmdb-proxy/wrangler.toml`.
 
+   `VITE_TURNSTILE_SITE_KEY` is ignored on `localhost` and `*.plot-5wr.pages.dev` previews: the sign-in pages skip Turnstile there, because Staging does not enforce captcha and the production key is not valid on those hosts. To test Turnstile itself locally, set `VITE_TURNSTILE_ON_PREVIEW=1` with one of Cloudflare's test site keys (`1x00000000000000000000AA` always passes, `3x00000000000000000000FF` always shows the checkbox).
+
    `VITE_AUTH_REDIRECT_BASE_URL` is optional for local web development. Set it when auth and provider callbacks must use a stable production URL or a native deep-link base.
 
 4. Optional, for visual regression only: add `CHROMATIC_PROJECT_TOKEN=<Chromatic project token>` to the same `.env`. It is not browser-safe and nothing needs it to build or run Plot. Without it, `pnpm run chromatic` and the CI step skip themselves. Never inline it into a `package.json` script.

@@ -1,0 +1,252 @@
+{
+  "issue_date": "2026-08-17",
+  "status": "Draft",
+  "notion": {
+    "date": "2026-08-17",
+    "url": "https://app.notion.com/p/3fc4f244aec7818d9b2bf1d1457b27ad?pvs=204",
+    "id": "3fc4f244-aec7-818d-9b2b-f1d1457b27ad",
+    "verification": {
+      "date": "2026-08-17",
+      "draft": true,
+      "seo": true,
+      "preview": true,
+      "images": 7,
+      "trailers": 3,
+      "footer": 1,
+      "localPath": false,
+      "chartWarning": false
+    }
+  },
+  "publication_blockers": [
+    "Savannah to select the GIF and approve the draft."
+  ],
+  "newsletter_lint": [],
+  "chart_snapshot": "2026-08-13",
+  "media": [
+    {
+      "requested_title": "The End of Oak Street",
+      "id": 1101383,
+      "type": "movie",
+      "title": "The End of Oak Street",
+      "date": "2026-08-14",
+      "overview": "After a mysterious cosmic event rips Oak Street from suburbia and transports their neighborhood to someplace unknown, the Platt family soon discovers that their very survival depends on them sticking together as they navigate their now unrecognizable surroundings.",
+      "backdrop": "/b9q9VmbXDvJmTziRqkwdEmFdwhr.jpg",
+      "homepage": "https://www.endofoakstreet.com",
+      "runtime": 100
+    },
+    {
+      "requested_title": "PAW Patrol: The Dino Movie",
+      "id": 1185806,
+      "type": "movie",
+      "title": "PAW Patrol: The Dino Movie",
+      "date": "2026-08-14",
+      "overview": "The Paw Patrol lands on a mysterious dinosaur island after a storm, where they meet Rex, a stranded pup. When Humdinger's reckless mining triggers a volcano, the team faces their biggest rescue mission yet to save the island.",
+      "backdrop": "/6TSxLmwT7j1ugtKi8NyMmdzWAGj.jpg",
+      "homepage": "https://www.paramountpictures.com/movies/paw-patrol-3-the-dino-movie",
+      "runtime": 88
+    },
+    {
+      "requested_title": "The Rivals of Amziah King",
+      "id": 1124142,
+      "type": "movie",
+      "title": "The Rivals of Amziah King",
+      "date": "2026-08-14",
+      "overview": "Deep within the backwoods of rural Oklahoma, charismatic and musically gifted Amziah King herds a bluegrass-playing band of misfits while overseeing the premier honey-making operation in town. When Amziah\u2019s estranged foster daughter unexpectedly returns, Amziah leaps at the possibility to renew connection and create a family business. But the honey game is ruthless, and Amziah\u2019s rivals threaten to destroy everything he has built.",
+      "backdrop": "/nBSlvQrDX60rmngwcxMeMq33I9m.jpg",
+      "homepage": "https://amziahking.film/",
+      "runtime": 131
+    },
+    {
+      "requested_title": "The Last House",
+      "id": 1284041,
+      "type": "movie",
+      "title": "The Last House",
+      "date": "2026-08-07",
+      "overview": "A family suddenly sealed inside their home must work together to survive against dwindling resources and the ominous threat keeping them trapped.",
+      "backdrop": "/1RhfevWmWCVHtEqxWBEjPOC5KG1.jpg",
+      "homepage": "https://www.netflix.com/title/81914143",
+      "runtime": 110
+    },
+    {
+      "requested_title": "Don't Say Good Luck",
+      "id": 1504358,
+      "type": "movie",
+      "title": "Don't Say Good Luck",
+      "date": "2026-08-14",
+      "overview": "Sophie Birenbaum is ready for the spotlight as the lead in her high school musical\u2014until she's suddenly facing more drama at home than on the stage.",
+      "backdrop": "/yzdMGn8IRHSGuV8AIzw19wkRU2W.jpg",
+      "homepage": "https://www.netflix.com/title/81975622",
+      "runtime": 96
+    },
+    {
+      "requested_title": "MOURINHO",
+      "id": 329274,
+      "type": "tv",
+      "title": "MOURINHO",
+      "date": "2026-08-11",
+      "overview": "This trophy-packed, insider-fuelled documentary charts Jos\u00e9 Mourinho's iconic rise as one of the world's top footballing managers of the most elite clubs.",
+      "backdrop": "/ucEswoBdNxw3UchQ6WHxnGU4g1a.jpg",
+      "homepage": "https://www.netflix.com/title/81762073",
+      "episodes": 3
+    },
+    {
+      "requested_title": "Insidious: Out of the Further",
+      "id": 1291595,
+      "type": "movie",
+      "title": "Insidious: Out of the Further",
+      "date": "2026-08-21",
+      "overview": "Gemma, a young mother raising her daughter in the house she grew up in, discovers she can travel into The Further, where she possesses an ability to bring what lives there back to the real world.",
+      "backdrop": "/p40lmrdI4blcAPZQMTPaiy5v5Ym.jpg",
+      "homepage": "https://insidious.movie/",
+      "runtime": 106
+    },
+    {
+      "requested_title": "Mutiny",
+      "id": 1288445,
+      "type": "movie",
+      "title": "Mutiny",
+      "date": "2026-08-21",
+      "overview": "After witnessing his billionaire boss' murder and being framed for the crime, Cole Reed boards a cargo ship on a one-man crusade to avenge his boss' death only to discover an international conspiracy.",
+      "backdrop": "/e2QAGrEmbpmZpMymDRkDisJkvg9.jpg",
+      "homepage": "https://www.mutiny.movie",
+      "runtime": 96
+    },
+    {
+      "requested_title": "The Magic Faraway Tree",
+      "id": 1140521,
+      "type": "movie",
+      "title": "The Magic Faraway Tree",
+      "date": "2026-08-21",
+      "overview": "A modern family relocates to the countryside where the children discover a magical tree with eccentric residents. They're transported to fantastical lands, rekindling their family bond through adventures.",
+      "backdrop": "/3o7t1gF0wbXAtELCkIcYyPXoIxA.jpg",
+      "homepage": "http://themagicfarawaytreefilm.co.uk",
+      "runtime": 110
+    },
+    {
+      "requested_title": "Outer Banks",
+      "id": 100757,
+      "type": "tv",
+      "title": "Outer Banks",
+      "date": "2020-04-15",
+      "overview": "On a North Carolina island of haves and have-nots, John B and his tight-knit crew of friends find mystery and adventure while hunting for lost treasure.",
+      "backdrop": "/fGk5GVPP7qfEHr8b9pzS6AWsOmV.jpg",
+      "homepage": "https://www.netflix.com/title/80236318",
+      "episodes": 50
+    },
+    {
+      "requested_title": "Lucky",
+      "id": 278624,
+      "type": "tv",
+      "title": "Lucky",
+      "date": "2026-07-14",
+      "overview": "When a multi-million-dollar heist goes sideways, con artist Lucky is forced to go on the run. Pursued by both the FBI and a ruthless crime boss, Lucky must fight for her life\u2014and a way out.",
+      "backdrop": "/mKrhRPB7rMvy0bIU1l1NYhgh1eI.jpg",
+      "homepage": "https://tv.apple.com/show/umc.cmc.5qo7t3nngb2vj0m9dxkwebw1o",
+      "episodes": 7
+    }
+  ],
+  "trailers": [
+    {
+      "issue_date": "2026-08-17",
+      "title": "Insidious: Out of the Further",
+      "key": "jxU8FU3o75A",
+      "name": "Official Trailer",
+      "date": "2026-04-14T02:39:28.000Z",
+      "status": 200,
+      "video_title": "INSIDIOUS: OUT OF THE FURTHER - Official Trailer (4K)",
+      "channel": "Sony Pictures Entertainment"
+    },
+    {
+      "issue_date": "2026-08-17",
+      "title": "Mutiny",
+      "key": "FKSdXH89jbo",
+      "name": "Official Trailer",
+      "date": "2026-04-09T15:05:06.000Z",
+      "status": 200,
+      "video_title": "Mutiny (2026) Official Trailer - Jason Statham",
+      "channel": "Lionsgate Movies"
+    },
+    {
+      "issue_date": "2026-08-17",
+      "title": "The Magic Faraway Tree",
+      "key": "EjFia8RfeuQ",
+      "date": "2026-05-13",
+      "name": "US Official Trailer",
+      "status": 200,
+      "video_title": "The Magic Faraway Tree | Official Trailer (HD) | Vertical",
+      "channel": "Vertical"
+    }
+  ],
+  "source_urls": [
+    "https://www.themoviedb.org/movie/1101383",
+    "https://image.tmdb.org/t/p/w780/b9q9VmbXDvJmTziRqkwdEmFdwhr.jpg",
+    "https://image.tmdb.org/t/p/original/b9q9VmbXDvJmTziRqkwdEmFdwhr.jpg",
+    "https://apnews.com/article/580777f9f45d34c2775cffb1316fad6b",
+    "https://www.youtube.com/watch?v=xgI5iYmOf5Q",
+    "https://www.youtube.com/watch?v=GwSvAyaMGMo",
+    "https://www.reddit.com/r/movies/comments/1vnu9i3/official_discussion_the_end_of_oak_street_spoilers/",
+    "https://www.rogerebert.com/reviews/the-end-of-oak-street-anne-hathaway-ewan-mcgregor-film-review-2026",
+    "https://image.tmdb.org/t/p/w780/1RhfevWmWCVHtEqxWBEjPOC5KG1.jpg",
+    "https://www.themoviedb.org/movie/1284041",
+    "https://www.houstonchronicle.com/entertainment/movies_tv/article/the-last-house-netflix-review-22373077.php",
+    "https://www.thewrap.com/creative-content/movies/the-last-house-review-netflix-wagner-moura-greta-lee/",
+    "https://image.tmdb.org/t/p/w780/yzdMGn8IRHSGuV8AIzw19wkRU2W.jpg",
+    "https://www.themoviedb.org/movie/1504358",
+    "https://media.netflix.com/en/only-on-netflix/81975622",
+    "https://image.tmdb.org/t/p/w780/ucEswoBdNxw3UchQ6WHxnGU4g1a.jpg",
+    "https://www.themoviedb.org/tv/329274",
+    "https://media.netflix.com/en/only-on-netflix/81762073",
+    "https://theplot.tv/movie/spider-man-brand-new-day-969681",
+    "https://theplot.tv/movie/the-odyssey-1368337",
+    "https://theplot.tv/movie/the-last-house-1284041",
+    "https://theplot.tv/movie/evil-dead-burn-1212763",
+    "https://theplot.tv/movie/obsession-1339713",
+    "https://theplot.tv/movie/supergirl-1081003",
+    "https://theplot.tv/tv/ted-lasso-97546",
+    "https://theplot.tv/tv/silo-125988",
+    "https://theplot.tv/tv/sterling-point-283297",
+    "https://theplot.tv/tv/house-of-the-dragon-94997",
+    "https://theplot.tv/whats-on/chart",
+    "https://image.tmdb.org/t/p/w780/fGk5GVPP7qfEHr8b9pzS6AWsOmV.jpg",
+    "https://www.themoviedb.org/tv/100757",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-august-14-2026",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=100757&src=newsletter",
+    "https://image.tmdb.org/t/p/w780/mKrhRPB7rMvy0bIU1l1NYhgh1eI.jpg",
+    "https://www.themoviedb.org/tv/278624",
+    "https://www.apple.com/tv-pr/originals/lucky/",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=278624&src=newsletter"
+  ],
+  "primary_page_checks": [
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81762073",
+      "title": "MOURINHO | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81975622",
+      "title": "Don&#x27;t Say Good Luck | Netflix Media Center",
+      "status": 200
+    }
+  ],
+  "editorial_review": "Written for the issue date using contemporary reviews, audience threads, release announcements, and official trailers. Review opinions are attributed; individual posts are not treated as audience-wide consensus. HTTP status alone is not evidence of a claim.",
+  "layout": [
+    {
+      "date": "2026-08-17",
+      "width": 390,
+      "scroll": 390,
+      "images": 11,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    },
+    {
+      "date": "2026-08-17",
+      "width": 1280,
+      "scroll": 1280,
+      "images": 11,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    }
+  ]
+}

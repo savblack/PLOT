@@ -7,7 +7,6 @@ export const FINISHING_TOUCHES = {
   title: 'Finishing touches',
   count: (done, total) => `${done} of ${total}`,
   progressLabel: (done, total) => `${done} of ${total} done`,
-  hide: 'Hide for now',
   expand: 'Expand finishing touches',
   collapse: 'Collapse finishing touches',
   done: 'Done',

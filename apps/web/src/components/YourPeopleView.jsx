@@ -26,6 +26,7 @@ import { TYPE_ROWS } from './sideFilterRows.js';
 import { IconSearch } from './navIcons.jsx';
 import { FollowPill } from './PeopleFollow.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
+import Icon from './Icon.jsx';
 import './PeopleFollow.css';
 import './YourPeopleView.css';
 
@@ -66,7 +67,7 @@ export function FeedRow({ item, today, saved, onSave, onOpen }) {
       </button>
       <span className="people-row-when">{whenLine(item, today)}</span>
       <button type="button" className={`btn btn-secondary btn-xs people-row-save${saved ? ' people-row-save--on' : ''}`} onClick={onSave} aria-pressed={saved}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+        <Icon name="bookmark" filled={saved} />
         {saved ? P.page.saved : P.page.save}
       </button>
     </div>

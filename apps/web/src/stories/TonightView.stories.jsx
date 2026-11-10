@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import { AppContext } from '../hooks/useApp.js';
 import {
   defaultPickerOptions, drawFromPool, pickerSentence, pickerFiltersSummary, pickerAnswers, savedSearchLabel,
   PICKER_MIN_SPIN_MS, PICKER_MODES, PICKER_STEPS,
@@ -93,6 +95,17 @@ export default {
   title: 'Pages/Tonight',
   component: TonightPage,
   parameters: { layout: 'fullscreen' },
+  // The locked state opens the shared upgrade sheet, which reads the viewer
+  // and the router. A Free viewer, since only they ever see it.
+  decorators: [
+    (StoryFn) => (
+      <MemoryRouter initialEntries={['/tonight']}>
+        <AppContext.Provider value={{ profile: { id: 'story-user', is_premium: false } }}>
+          <StoryFn />
+        </AppContext.Provider>
+      </MemoryRouter>
+    ),
+  ],
 };
 
 export const Question1 = { render: () => <Story /> };

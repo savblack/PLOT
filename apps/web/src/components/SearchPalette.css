@@ -167,8 +167,7 @@
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  fill: var(--accent);
-  stroke: var(--accent);
+  color: var(--text-secondary);
   stroke-width: 1.5;
 }
 .search-palette-kind {

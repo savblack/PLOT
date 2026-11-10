@@ -371,6 +371,32 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Premium gates and the upgrade sheet
+
+Every in-app Premium gate on web opens the same upgrade sheet (`UpgradeSheet.jsx`,
+content from `packages/core/upgradeSheet.js`). A Free viewer who hits a gate
+fires `premium_gate_hit` once, with the feature they were trying to use. The
+sheet fires it for the reasons below; `custom_lists`, `smart_lists`,
+`collaborative_lists` and `watch_together` fire at their own action site, so
+the sheet stays silent for those and nothing is counted twice.
+
+| `feature` | Gate |
+|---|---|
+| `themes` | A Premium theme, or the themes gallery |
+| `pins` | Pinning a Home shelf |
+| `people_alerts` | Following an actor or director |
+| `alert_email` | Email alerts |
+| `custom_artwork` | Customize artwork on a title |
+| `history_drilldown` | A stat tile or the genre link on History |
+| `taste_overlap` | The taste overlap page |
+| `calendar_feed` | Subscribe to calendar (title panel or Settings) |
+| `auto_import` | Automatic imports for a connected source |
+| `tonight_picker` | Just Decide after the day's free pick |
+
+Read it next to `premium_checkout_started` to see which gate drives upgrades.
+On web the sheet starts checkout on the yearly plan unless the viewer switches
+to monthly. Mobile's sheet still starts monthly with no choice.
+
 ## Episode search
 
 The title panel's episode search (issue 1445) finds an episode by its title across
@@ -386,6 +412,48 @@ searches that found what the person wanted. The query text is never sent, only
 its length. Seasons that would not load are one `load_failed` per search with
 `resource: episode_search`. Logging the episode afterwards is the usual
 `episode_watched`, so the path from search to log is these two in order.
+
+## Homepage search hand-off
+
+The theplot.tv hero is a search bar with Start tracking inside it. Submitting
+sends the visitor to `/signup?q=<title>&src=hero_search`. Web only: the
+marketing site never hands off to mobile.
+
+| Event | Where | When | Props |
+|---|---|---|---|
+| `signup_cta_clicked` | marketing site | The search bar was submitted, typed or not | `placement: hero_search`, `source: marketing`, `has_query` |
+| `save_cta_clicked` | marketing site | A live result under the search bar was picked (it goes to `/save?…&src=hero_search`) | `placement: hero_search_result`, `source: marketing` |
+| `signup_search_resumed` | web app | A signed-in visit acted on that typed title, at most once | `query_length`, `opened` (`title` when the search had one clear match and that title opened, else `search`) |
+
+A picked result is a save intent with `src=hero_search`: the app skips the
+`/save` preview and opens the title after signup, saving nothing on its own.
+
+The query text is never sent from either side, only whether one was typed and
+its length. The title waits in the browser for 24 hours, so a signup confirmed
+on another device or a day later does not resume it.
+
+## Title awards
+
+The title panel's Awards row (issue 1273) shows OMDb's awards line when a title
+has one. Fired from `reportAwardsShown` in `packages/core/reviews.js` through
+the `onAwardsShown` seam, so both apps report identically:
+
+| Event | When | Props |
+|---|---|---|
+| `title_awards_shown` | A title panel showed the Awards row | `tmdb_id`, `media_type`, `won` (at least one win, not only nominations), `has_critic_score` |
+
+It fires once per panel open, and only when the title has awards. A title with
+no awards fires nothing, so the share of title views with awards is
+`title_awards_shown` over `title_viewed`. That ratio starts low and climbs over
+the 30 days after 2026-11-09, as cached critic scores expire and are refetched
+with their awards text. The awards text itself is never sent.
+
+A failed critic-score lookup is `load_failed` with `resource: critic_score`;
+the panel hides the score and the Awards row rather than showing an error.
+
+It is a display event, not an action, so it is deliberately left out of Tier 1.
+`title_viewed` is unchanged: it still fires when the panel opens, before the
+awards lookup returns.
 
 ## Imports and onboarding
 
@@ -406,7 +474,7 @@ the import page's `?from=` param.
 | `onboarding_completed` | Setup saved | `region`, `seed_titles_added`, `services_added`, `import_source` (null unless they took the switching-apps step), `skipped` |
 | `finishing_touches_viewed` | The Finishing touches card was on screen | `done_count`, `total`. Once per app session, after the watchlist has loaded |
 | `finishing_touch_opened` | A Finishing touches step's action was opened | `step` (`progress` / `friends` / `import` / `people`) |
-| `finishing_touches_hidden` | "Hide for now" | `done_count` |
+| `finishing_touches_hidden` | "Dismiss" (was "Hide for now") | `done_count` |
 | `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
 
 `finishing_touches_hidden` had never fired because Hide for now was rendered
@@ -549,11 +617,11 @@ covered once. Properties:
 
 | Prop | Meaning |
 |---|---|
-| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, and `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers). Canonical list: `FAILED_ACTIONS`. |
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers), and for auth emails that are neither a sign-in nor a signup `password_reset_request` and `confirmation_resend` (`source: signup_bypass` when the backup sender failed; web only until mobile parity lands). Canonical list: `FAILED_ACTIONS`. |
 | `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
 | `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
 | `http_status` | When present. |
-| `tmdb_id`, `media_type`, `list_id`, `fields`, `progress_action`, `surface` | Same context the matching success event carries. `fields` is column *names* only. |
+| `tmdb_id`, `media_type`, `list_id`, `fields`, `progress_action`, `surface`, `source` | Same context the matching success event carries. `fields` is column *names* only. |
 
 The error's message, details and hint are **never** sent: Postgres puts row
 values in them. A unit test fails if a core module gains a success seam without
@@ -571,7 +639,7 @@ follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
 ### `load_failed`
 
 A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
-`watching`, `favourites`, `smart_list`, `episode_search`) fires `load_failed` via `reportLoadFailure()`, with
+`watching`, `favourites`, `smart_list`, `episode_search`, `critic_score`) fires `load_failed` via `reportLoadFailure()`, with
 the same `error_kind` / `error_code` / `http_status` props. It is a separate
 event on purpose: a page that fails to load is not a failed user action, and
 counting it as `action_failed` would skew every failed-write rate.

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file require-await
 // Async doubles preserve the Stripe client interface without network access.
-import { CheckoutPendingError, subscriptionCheckout } from './checkout.ts';
+import { CheckoutPendingError, TrialUnavailableError, subscriptionCheckout } from './checkout.ts';
 
 function fixture(managed = true) {
   let attempt: Record<string, unknown> | null = null;
@@ -58,7 +58,7 @@ function fixture(managed = true) {
         assert([...sessions.values()].find(s => s.id === id)!.metadata?.plot_expiry_reason === 'superseded', 'replacement reason must be persisted before expiry'); [...sessions.values()].find(s => s.id === id)!.status = 'expired'; },
     } },
   };
-  const call = (price = 'monthly') => subscriptionCheckout(admin as unknown as Parameters<typeof subscriptionCheckout>[0], stripe as unknown as Parameters<typeof subscriptionCheckout>[1], 'qa', price, 'https://example.invalid/settings', async () => 'portal');
+  const call = (price = 'monthly', expectTrial = false) => subscriptionCheckout(admin as unknown as Parameters<typeof subscriptionCheckout>[0], stripe as unknown as Parameters<typeof subscriptionCheckout>[1], 'qa', price, 'https://example.invalid/settings', async () => 'portal', expectTrial);
   return { call, subs, sessions, creates: () => creates, loseResponse: () => { failPersist = true; }, loseMetadata: () => { failMetadata = true; }, loseExpiry: () => { failExpire = true; }, age: () => { attempt!.started_at = new Date(Date.now() - 25 * 3600000).toISOString(); } };
 }
 function assert(value: unknown, message: string) { if (!value) throw Error(message); }
@@ -119,6 +119,19 @@ Deno.test('first checkout carries the 7-day trial', async () => {
 Deno.test('returning subscribers get no second trial', async () => {
   const f = fixture(); f.subs.push({ status: 'canceled' }); await f.call();
   assert([...f.sessions.values()][0].trial_period_days === undefined, 'no repeat trial');
+});
+Deno.test('a promised trial that a returning subscriber cannot have is refused before any session exists', async () => {
+  const f = fixture(); f.subs.push({ status: 'canceled' });
+  const result = await f.call('monthly', true).then(() => 'opened', err => err);
+  assert(result instanceof TrialUnavailableError, 'refused, not opened without the trial');
+  assert(f.creates() === 0 && f.sessions.size === 0, 'nothing was created to charge');
+  // The same person asking without the promise still gets a normal, no-trial checkout.
+  await f.call('monthly', false);
+  assert([...f.sessions.values()][0].trial_period_days === undefined, 'no repeat trial on the plain request');
+});
+Deno.test('a promised trial is kept for a first-time subscriber', async () => {
+  const f = fixture(); await f.call('monthly', true);
+  assert([...f.sessions.values()][0].trial_period_days === 7, 'trial on the session');
 });
 Deno.test('a subscription that never started still gets the trial', async () => {
   const f = fixture(); f.subs.push({ status: 'incomplete_expired' }); await f.call();

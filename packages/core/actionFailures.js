@@ -21,6 +21,7 @@
  * out, plus `error_kind`, a coarse bucket derived from them here.
  */
 import { getConfig } from './config.js';
+import { AUTH_TIMEOUT_MESSAGE } from './authTimeout.js';
 
 /** The actions a failure can be reported for. Add here, never inline. */
 export const FAILED_ACTIONS = Object.freeze({
@@ -65,6 +66,13 @@ export const FAILED_ACTIONS = Object.freeze({
   LIST_INVITE_ACCEPT:           'list_invite_accept',
   // The delete-account request never reached the edge function (deleteAccount.js).
   ACCOUNT_DELETE:               'account_delete',
+  // Auth emails that are not a sign-in or a signup, so they stay out of
+  // login_submit_failed / signup_submit_failed and those funnels' rates.
+  // The "Send reset link" request (success: password_reset_requested).
+  PASSWORD_RESET_REQUEST:       'password_reset_request',
+  // "resend" on the check-your-inbox screen after signup, through GoTrue or
+  // signup-bypass (`source: 'signup_bypass'`).
+  CONFIRMATION_RESEND:          'confirmation_resend',
 });
 
 /**
@@ -84,6 +92,9 @@ export const FAILED_LOADS = Object.freeze({
   ONBOARDING_SERVICES: 'onboarding_services',
   // Seasons the episode title search could not load (episodeSearch.js).
   EPISODE_SEARCH: 'episode_search',
+  // The critic-score lookup (Rotten Tomatoes % and OMDb awards) failed
+  // (reviews.js). The panel hides both rows rather than erroring.
+  CRITIC_SCORE: 'critic_score',
 });
 
 /**
@@ -117,6 +128,8 @@ export function classifyFailure(error) {
   if (code.startsWith('23')) return 'constraint';
   if (code === 'PGRST116' || status === 404) return 'not_found';
   if (code === '57014') return 'timeout';
+  // withAuthTimeout gave up waiting (authTimeout.js).
+  if (message === AUTH_TIMEOUT_MESSAGE) return 'timeout';
   // Undefined column/table/constraint and friends: the database and the client
   // disagree about the schema. The 42P10 outage was this class.
   if (code.startsWith('42') || code === 'PGRST204' || code === 'PGRST205') return 'schema';

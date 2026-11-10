@@ -1,0 +1,249 @@
+{
+  "issue_date": "2026-08-31",
+  "status": "Draft",
+  "notion": {
+    "date": "2026-08-31",
+    "url": "https://app.notion.com/p/3fc4f244aec781c9a04ff6bbff51de7b?pvs=204",
+    "id": "3fc4f244-aec7-81c9-a04f-f6bbff51de7b",
+    "verification": {
+      "date": "2026-08-31",
+      "draft": true,
+      "seo": true,
+      "preview": true,
+      "images": 6,
+      "trailers": 3,
+      "footer": 1,
+      "localPath": false,
+      "chartWarning": false
+    }
+  },
+  "publication_blockers": [
+    "Savannah to select the GIF and approve the draft."
+  ],
+  "newsletter_lint": [],
+  "chart_snapshot": "2026-08-27",
+  "media": [
+    {
+      "requested_title": "Coyote vs. Acme",
+      "id": 1204680,
+      "type": "movie",
+      "title": "Coyote vs. Acme",
+      "date": "2026-08-28",
+      "overview": "After Acme products fail him one too many times in his dogged pursuit of the Roadrunner, Wile E. Coyote decides to hire a billboard lawyer to sue the Acme Corporation.",
+      "backdrop": "/viZqGq9TNvQ5uXSD4ahg2RpRONT.jpg",
+      "homepage": "https://coyotevsacme.com",
+      "runtime": 103
+    },
+    {
+      "requested_title": "The Dog Stars",
+      "id": 1384216,
+      "type": "movie",
+      "title": "The Dog Stars",
+      "date": "2026-08-28",
+      "overview": "After the world's population has been ravaged by a pandemic, a man lives a lonesome existence in a Colorado airplane hangar with his dog and a dour gunman he has befriended. When a mysterious transmission comes through on the radio while he\u2019s flying his old Cessna, it sparks a hunt for the provenance of the sound.",
+      "backdrop": "/quAHqi4zBrB5fIfHvgrqiG4xzAC.jpg",
+      "homepage": "https://www.20thcenturystudios.com/movies/the-dog-stars",
+      "runtime": 119
+    },
+    {
+      "requested_title": "Mutiny",
+      "id": 1288445,
+      "type": "movie",
+      "title": "Mutiny",
+      "date": "2026-08-21",
+      "overview": "After witnessing his billionaire boss' murder and being framed for the crime, Cole Reed boards a cargo ship on a one-man crusade to avenge his boss' death only to discover an international conspiracy.",
+      "backdrop": "/e2QAGrEmbpmZpMymDRkDisJkvg9.jpg",
+      "homepage": "https://www.mutiny.movie",
+      "runtime": 96
+    },
+    {
+      "requested_title": "The Whisper Man",
+      "id": 860508,
+      "type": "movie",
+      "title": "The Whisper Man",
+      "date": "2026-08-28",
+      "overview": "When his young son vanishes, a widower enlists help from his estranged father, a retired detective who put away the serial killer now linked to the case.",
+      "backdrop": "/uauoVKKCkNA9iWjgJCL8TdSfLf5.jpg",
+      "homepage": "https://www.netflix.com/title/81278442",
+      "runtime": 111
+    },
+    {
+      "requested_title": "Leanne",
+      "id": 252751,
+      "type": "tv",
+      "title": "Leanne",
+      "date": "2025-07-31",
+      "overview": "When her husband leaves her for another woman, a resilient Southern mom starts over with the support of her loving, but unfiltered family.",
+      "backdrop": "/2HuHGBzavbM7YTizGabBGpP0Spv.jpg",
+      "homepage": "https://www.netflix.com/title/81752004",
+      "episodes": 26
+    },
+    {
+      "requested_title": "Mayday",
+      "id": 1137844,
+      "type": "movie",
+      "title": "Mayday",
+      "date": "2026-09-03",
+      "overview": "When a U.S. Navy pilot on a top-secret mission during the Cold War gets trapped behind enemy lines, his only chance at survival is to form an alliance with an eccentric ex-KGB agent.",
+      "backdrop": "/g7Ccid5kuD7A8hXWlsQiNfwOxaD.jpg",
+      "homepage": "https://tv.apple.com/movie/umc.cmc.shin43vzfoz3h4ggx41z8rf",
+      "runtime": 111
+    },
+    {
+      "requested_title": "Onslaught",
+      "id": 1284046,
+      "type": "movie",
+      "title": "Onslaught",
+      "date": "2026-09-04",
+      "overview": "When a rogue squad of genetically engineered super soldiers break loose in the desert, a badass Army sniper must unleash hell to protect her young daughter.",
+      "backdrop": "/clePZhqOSzNyjfuFBpOrziLEFzb.jpg",
+      "homepage": "https://a24films.com/films/onslaught",
+      "runtime": 92
+    },
+    {
+      "requested_title": "The Runner",
+      "id": 1386315,
+      "type": "movie",
+      "title": "The Runner",
+      "date": "2026-09-02",
+      "overview": "Maia Marten, a brilliant London lawyer, has her life shattered by a single call on her morning run: her son has been taken. To get him back, she must keep running, obey every ruthless command, and trust no one-each second a test of how far a mother will go to save her child.",
+      "backdrop": "/jzBWExXacS33rMQ2zLBrqIVweyG.jpg",
+      "homepage": "https://www.amazon.com/dp/B0H8NPW2KZ",
+      "runtime": 86
+    },
+    {
+      "requested_title": "Turning Point: Generation 9/11",
+      "id": 1752159,
+      "type": "movie",
+      "title": "Turning Point: Generation 9/11",
+      "date": "2026-09-02",
+      "overview": "A quarter-century after September 11th, the attacks' ripple effects persist across generations. Orphaned children, War on Terror journalists, young Afghans, and U.S. Marines shaped by the 2021 withdrawal share their stories.",
+      "backdrop": "/z2Uf0yntMjY0XG87YfoqeHjIUGD.jpg",
+      "homepage": "https://www.netflix.com/title/82091553",
+      "runtime": 99
+    },
+    {
+      "requested_title": "Untold: Raygun - Breaking Badly",
+      "id": 1739202,
+      "type": "movie",
+      "title": "Untold Raygun: Breaking Badly",
+      "date": "2026-09-01",
+      "overview": "Nobody, least of all Rachael Gunn, expected to be an Olympian. But as Raygun\u2019s performance at the 2024 Paris Olympics went viral overnight, so did an avalanche of memes, misinformation, and conspiracy theories questioning how she ever got there.",
+      "backdrop": "/iBik58vWTbO3s9GgUW86v7fYqfZ.jpg",
+      "homepage": "https://www.netflix.com/title/82048542",
+      "runtime": 72
+    }
+  ],
+  "trailers": [
+    {
+      "issue_date": "2026-08-31",
+      "title": "Onslaught",
+      "key": "L24CYVpQ-LI",
+      "name": "Official Trailer",
+      "date": "2026-06-02T13:00:08.000Z",
+      "status": 200,
+      "video_title": "Onslaught | Official Trailer HD | A24",
+      "channel": "A24"
+    },
+    {
+      "issue_date": "2026-08-31",
+      "title": "The Runner",
+      "key": "zz4rsZLcauY",
+      "name": "Official Trailer",
+      "date": "2026-07-16T15:00:28.000Z",
+      "status": 200,
+      "video_title": "The Runner - Official Trailer | Prime Video",
+      "channel": "Prime Video"
+    },
+    {
+      "issue_date": "2026-08-31",
+      "title": "Mayday",
+      "key": "om5Un9X720M",
+      "name": "Official Trailer",
+      "date": "2026-07-14T12:59:55.000Z",
+      "status": 200,
+      "video_title": "Mayday \u2014 Official Trailer | Apple TV",
+      "channel": "Apple TV"
+    }
+  ],
+  "source_urls": [
+    "https://www.themoviedb.org/movie/1204680",
+    "https://image.tmdb.org/t/p/w780/viZqGq9TNvQ5uXSD4ahg2RpRONT.jpg",
+    "https://image.tmdb.org/t/p/original/viZqGq9TNvQ5uXSD4ahg2RpRONT.jpg",
+    "https://www.timeout.com/movies/coyote-vs-acme-review-2026",
+    "https://www.20thcenturystudios.com/movies/the-dog-stars",
+    "https://www.youtube.com/watch?v=FKSdXH89jbo",
+    "https://www.bfi.org.uk/sight-and-sound/reviews/coyote-vs-acme-toon-courtroom-drama-one-smartest-critiques-us-politics-years",
+    "https://www.reddit.com/r/boxoffice/comments/1vxylw6/coyote_vs_acme_review_thread/",
+    "https://image.tmdb.org/t/p/w780/uauoVKKCkNA9iWjgJCL8TdSfLf5.jpg",
+    "https://www.themoviedb.org/movie/860508",
+    "https://www.rogerebert.com/reviews/the-whisper-man-robert-de-niro-adam-scott-netflix-movie-review-2026",
+    "https://www.avclub.com/the-whisper-man-review",
+    "https://media.netflix.com/en/only-on-netflix/81278442",
+    "https://image.tmdb.org/t/p/w780/2HuHGBzavbM7YTizGabBGpP0Spv.jpg",
+    "https://www.themoviedb.org/tv/252751",
+    "https://media.netflix.com/en/only-on-netflix/81752004",
+    "https://theplot.tv/tv/lanterns-95350",
+    "https://theplot.tv/movie/toy-story-5-1084244",
+    "https://theplot.tv/movie/spider-man-brand-new-day-969681",
+    "https://theplot.tv/movie/mutiny-1288445",
+    "https://theplot.tv/movie/the-odyssey-1368337",
+    "https://theplot.tv/tv/reacher-108978",
+    "https://theplot.tv/tv/silo-125988",
+    "https://theplot.tv/movie/obsession-1339713",
+    "https://theplot.tv/movie/insidious-out-of-the-further-1291595",
+    "https://theplot.tv/movie/minions-monsters-1315772",
+    "https://theplot.tv/whats-on/chart",
+    "https://image.tmdb.org/t/p/w780/z2Uf0yntMjY0XG87YfoqeHjIUGD.jpg",
+    "https://www.themoviedb.org/movie/1752159",
+    "https://media.netflix.com/en/only-on-netflix/82091553",
+    "https://app.theplot.tv/save?media_type=movie&tmdb_id=1752159&src=newsletter",
+    "https://image.tmdb.org/t/p/w780/iBik58vWTbO3s9GgUW86v7fYqfZ.jpg",
+    "https://www.themoviedb.org/movie/1739202",
+    "https://www.youtube.com/watch?v=OCZg5l9BfRg",
+    "https://app.theplot.tv/save?media_type=movie&tmdb_id=1739202&src=newsletter"
+  ],
+  "primary_page_checks": [
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81752004",
+      "title": "Leanne | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://www.20thcenturystudios.com/movies/the-dog-stars",
+      "title": "The Dog Stars | 20th Century Studios",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81278442",
+      "title": "The Whisper Man | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/82091553",
+      "title": "Turning Point: Generation 9/11 | Netflix Media Center",
+      "status": 200
+    }
+  ],
+  "editorial_review": "Written for the issue date using contemporary reviews, audience threads, release announcements, and official trailers. Review opinions are attributed; individual posts are not treated as audience-wide consensus. HTTP status alone is not evidence of a claim.",
+  "layout": [
+    {
+      "date": "2026-08-31",
+      "width": 390,
+      "scroll": 390,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    },
+    {
+      "date": "2026-08-31",
+      "width": 1280,
+      "scroll": 1280,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    }
+  ]
+}

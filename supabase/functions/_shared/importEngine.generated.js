@@ -37,6 +37,7 @@ var defaults = {
   onTonightPicker: void 0,
   onWatchTogether: void 0,
   onEpisodeSearch: void 0,
+  onAwardsShown: void 0,
   onImport: void 0,
   onUndo: void 0
 };
@@ -2361,7 +2362,14 @@ var FAILED_ACTIONS = Object.freeze({
   // Joining a collaborative list from its invite link (useListInvites.js).
   LIST_INVITE_ACCEPT: "list_invite_accept",
   // The delete-account request never reached the edge function (deleteAccount.js).
-  ACCOUNT_DELETE: "account_delete"
+  ACCOUNT_DELETE: "account_delete",
+  // Auth emails that are not a sign-in or a signup, so they stay out of
+  // login_submit_failed / signup_submit_failed and those funnels' rates.
+  // The "Send reset link" request (success: password_reset_requested).
+  PASSWORD_RESET_REQUEST: "password_reset_request",
+  // "resend" on the check-your-inbox screen after signup, through GoTrue or
+  // signup-bypass (`source: 'signup_bypass'`).
+  CONFIRMATION_RESEND: "confirmation_resend"
 });
 var FAILED_LOADS = Object.freeze({
   WATCHLIST: "watchlist",
@@ -2373,7 +2381,10 @@ var FAILED_LOADS = Object.freeze({
   SMART_LIST: "smart_list",
   ONBOARDING_SERVICES: "onboarding_services",
   // Seasons the episode title search could not load (episodeSearch.js).
-  EPISODE_SEARCH: "episode_search"
+  EPISODE_SEARCH: "episode_search",
+  // The critic-score lookup (Rotten Tomatoes % and OMDb awards) failed
+  // (reviews.js). The panel hides both rows rather than erroring.
+  CRITIC_SCORE: "critic_score"
 });
 
 // packages/core/userMedia.js

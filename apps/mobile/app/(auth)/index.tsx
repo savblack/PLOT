@@ -22,7 +22,7 @@ import Turnstile from '../../components/Turnstile';
 import { track, EVENTS } from '../../lib/analytics';
 import { authErrorReason } from '@plot/core/authErrors.js';
 import { AUTH_TIMEOUT_MESSAGE, withAuthTimeout } from '@plot/core/authTimeout.js';
-import { CAPTCHA_SUBMIT_ATTEMPTS, captchaRetryAfterWait, captchaSubmitPlan, captchaWaitOver, shouldResetCaptcha } from '@plot/core/captchaGate.js';
+import { CAPTCHA_SUBMIT_ATTEMPTS, captchaRetryAfterWait, captchaSubmitEnabled, captchaSubmitPlan, captchaWaitOver, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { shouldMagicLinkViaBypass, shouldResendViaBypass } from '@plot/core/authBypass.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -248,6 +248,14 @@ export default function AuthScreen() {
   // Cloudflare is showing its checkbox and waits for a tap.
   const captchaInteractiveRef = useRef(false);
   const captchaErrorCountRef = useRef(0);
+  // The same facts as state, for the submit button. The widget starts as soon
+  // as the screen shows, and the button waits for its token (see
+  // captchaSubmitEnabled) instead of starting the check on tap.
+  const [captchaHasToken, setCaptchaHasToken] = useState(false);
+  const [captchaErrored, setCaptchaErrored] = useState(false);
+  const [captchaInteractive, setCaptchaInteractive] = useState(false);
+  const [captchaWaitStart, setCaptchaWaitStart] = useState(() => Date.now());
+  const [captchaNow, setCaptchaNow] = useState(() => Date.now());
   // Form token, minimum form age, and the POSTs to signup-bypass, shared with
   // web AuthPage. client: 'app' makes the emailed link open this app.
   const [bypassClient] = useState(() => createSignupBypassClient({ getSupabase: () => supabase, client: 'app' }));
@@ -260,21 +268,41 @@ export default function AuthScreen() {
     return () => attempt === attemptRef.current;
   };
 
-  // The widget stays mounted and does not run until submit. When it never
-  // returns a token, signup, resend, and magic link go through signup-bypass
-  // like web. Sign-in and password reset have no bypass and stop.
+  // Starts a new wait for the button: the token is gone (used, expired, or
+  // being fetched again) and the next one is on its way.
+  const markCaptchaWaiting = () => {
+    const now = Date.now();
+    setCaptchaHasToken(false);
+    setCaptchaInteractive(false);
+    setCaptchaWaitStart(now);
+    setCaptchaNow(now);
+  };
+
+  // The widget stays mounted and starts its check when the screen opens.
+  // When it never returns a token, signup, resend, and magic link go through
+  // signup-bypass like web. Sign-in and password reset have no bypass and stop.
   const refreshCaptcha = () => {
     captchaTokenRef.current = null;
     captchaInteractiveRef.current = false;
+    markCaptchaWaiting();
     setCaptchaNonce((n) => n + 1);
   };
 
   const handleCaptchaToken = (token: string | null) => {
     captchaTokenRef.current = token;
+    if (token) {
+      captchaErroredRef.current = false;
+      setCaptchaHasToken(true);
+      setCaptchaErrored(false);
+      setCaptchaInteractive(false);
+    } else {
+      markCaptchaWaiting();
+    }
   };
 
   const handleCaptchaInteractive = () => {
     captchaInteractiveRef.current = true;
+    setCaptchaInteractive(true);
   };
 
   const handleCaptchaError = () => {
@@ -282,6 +310,8 @@ export default function AuthScreen() {
     captchaInteractiveRef.current = false;
     captchaBlockedRef.current = true;
     captchaErroredRef.current = true;
+    setCaptchaErrored(true);
+    setCaptchaInteractive(false);
     // Same event web's widget fires on each failure during signup.
     captchaErrorCountRef.current += 1;
     if (mode === 'signup') track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt: captchaErrorCountRef.current });
@@ -316,6 +346,7 @@ export default function AuthScreen() {
   const requestCaptcha = () => {
     captchaTokenRef.current = null;
     captchaInteractiveRef.current = false;
+    markCaptchaWaiting();
     setCaptchaExecute((n) => n + 1);
   };
 
@@ -325,11 +356,13 @@ export default function AuthScreen() {
     if (!TURNSTILE_SITE_KEY) return null;
     // Keep a token that arrived after the previous submit stopped waiting.
     if (captchaTokenRef.current) return captchaTokenRef.current;
-    let widgetErrored = false;
+    // The widget runs on load, so a challenge is usually already in flight.
+    // Only an error from that run earns a fresh one on the first attempt.
+    let widgetErrored = captchaErroredRef.current;
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
       // A timeout must not reset() an interactive challenge that is still
       // on screen. Only a widget error starts a fresh attempt.
-      if (shouldResetCaptcha({ attempt, widgetErrored })) requestCaptcha();
+      if (shouldResetCaptcha({ attempt, widgetErrored, runsOnLoad: true })) requestCaptcha();
       captchaErroredRef.current = false;
       const token = await waitForCaptchaAttempt(authMode);
       widgetErrored = captchaErroredRef.current;
@@ -800,6 +833,29 @@ export default function AuthScreen() {
     }
   };
 
+  // Off until the security check has a token. Turns on anyway once core says
+  // the wait is over, so a check that never finishes cannot leave it grey.
+  // Entering the emailed code needs no check, so the inbox step is never held.
+  const captchaMode: CaptchaMode | null = mode === 'signin' ? 'login'
+    : mode === 'inbox' ? null
+    : mode;
+  const captchaReady = !captchaMode || captchaSubmitEnabled({
+    siteKey: TURNSTILE_SITE_KEY,
+    token: captchaHasToken ? 'ready' : null,
+    errored: captchaErrored,
+    interactive: captchaInteractive,
+    mode: captchaMode,
+    elapsedMs: captchaNow - captchaWaitStart,
+  });
+  const ctaDisabled = loading || !captchaReady;
+
+  // Re-check the wait limit while the button is off. Stops as soon as it is on.
+  useEffect(() => {
+    if (captchaReady) return undefined;
+    const id = setInterval(() => setCaptchaNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [captchaReady]);
+
   const handleSubmit = () => {
     if (mode === 'forgot') handleForgot();
     else if (mode === 'inbox') handleVerifyCode();
@@ -1003,15 +1059,22 @@ export default function AuthScreen() {
                   </View>
                 ) : null}
                 <TouchableOpacity
-                  style={[styles.cta, loading && { opacity: 0.6 }]}
+                  style={[styles.cta, ctaDisabled && { opacity: 0.6 }]}
                   onPress={handleSubmit}
-                  disabled={loading}
+                  disabled={ctaDisabled}
                   activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: ctaDisabled, busy: loading }}
                 >
                   {loading
                     ? <ActivityIndicator color="#fff" />
                     : <Text style={styles.ctaText}>{submitLabel}</Text>}
                 </TouchableOpacity>
+                {!captchaReady && !loading ? (
+                  <Text style={styles.captchaStatus} accessibilityLiveRegion="polite">
+                    {captchaInteractive ? AUTH_PAGE.verificationTapBox : AUTH_PAGE.verificationChecking}
+                  </Text>
+                ) : null}
               </View>
 
               {/* Mode switcher — show only the opposite mode, like web .auth-toggle */}
@@ -1050,7 +1113,13 @@ export default function AuthScreen() {
                   </View>
 
                   {/* Magic link */}
-                  <TouchableOpacity onPress={handleMagicLink} style={styles.magicLinkBtn} accessibilityRole="button">
+                  <TouchableOpacity
+                    onPress={handleMagicLink}
+                    style={[styles.magicLinkBtn, ctaDisabled && { opacity: 0.5 }]}
+                    disabled={ctaDisabled}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: ctaDisabled }}
+                  >
                     <Text style={styles.magicLinkText}>{AUTH_PAGE.magicLinkInstead}</Text>
                   </TouchableOpacity>
                 </>
@@ -1245,6 +1314,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: '#fff',
     letterSpacing: 0.2,
+  },
+  captchaStatus: {
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    color: MUTED,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   modeRow: {
     flexDirection: 'row',

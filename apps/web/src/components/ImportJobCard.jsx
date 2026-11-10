@@ -9,7 +9,6 @@ import { IMPORT_ENTRY_POINTS, createImportReporter, IMPORT_FAILURE_REASONS } fro
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { useApp } from '../hooks/useApp.js';
 import { markImportDone } from '../utils/finishingTouchesState.js';
-import { suppressFirstWinForImport } from '../utils/firstWinCardState.js';
 import ImportSourceIcon from './ImportSourceIcon.jsx';
 import './ImportJobCard.css';
 
@@ -32,7 +31,7 @@ function JobCard({ user, job, queued, cancel, dismiss }) {
   const active = importJobActive(job);
 
   // The first time a finished job is seen on this device: tick Finishing
-  // touches and stand the first-win card down, as the page import does.
+  // touches, as the page import does.
   const noted = useRef(null);
   useEffect(() => {
     if (!user?.id || !job || !importJobFinished(job) || noted.current === job.id) return;
@@ -41,10 +40,7 @@ function JobCard({ user, job, queued, cancel, dismiss }) {
     const reporter = createImportReporter({ entry: job.entry });
     if (job.status === 'failed') reporter.report('failed', { source: job.source, reason: IMPORT_FAILURE_REASONS.WRITE_FAILED });
     else if (job.status !== 'cancelled') reporter.report('completed', { source: job.source, count: job.imported, failed_count: job.failed });
-    if (job.imported > 0) {
-      markImportDone(user.id, job.source, job.imported);
-      suppressFirstWinForImport(user.id, job.source);
-    }
+    if (job.imported > 0) markImportDone(user.id, job.source, job.imported);
   }, [user?.id, job]);
 
   const pct = job.progress_total ? Math.min(100, Math.round((job.progress_done / job.progress_total) * 100)) : null;

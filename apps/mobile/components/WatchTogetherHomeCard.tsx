@@ -14,8 +14,10 @@ import {
   watchTogetherHomeKey,
   watchTogetherHomeVisible,
 } from '@plot/core/watchTogetherHome.js';
+import { finishingTouchesVisible } from '@plot/core/finishingTouches.js';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 import { readStorage, writeStorage } from '../lib/storage';
+import { readFinishingTouches } from '../lib/finishingTouches';
 import { useAppData } from '../contexts/AppDataContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
@@ -25,24 +27,29 @@ export default function WatchTogetherHomeCard() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
-  const [dismissed, setDismissed] = useState<{ userId: string; value: boolean } | null>(null);
+  const [dismissed, setDismissed] = useState<{ userId: string; value: boolean; settlingIn: boolean } | null>(null);
 
   useEffect(() => {
     if (!userId) return undefined;
     let alive = true;
-    readStorage(watchTogetherHomeKey(userId)).then(raw => {
-      if (alive) setDismissed({ userId, value: watchTogetherHomeDismissed(raw) });
+    Promise.all([readStorage(watchTogetherHomeKey(userId)), readFinishingTouches(userId)]).then(([raw, touches]) => {
+      if (!alive) return;
+      setDismissed({
+        userId,
+        value: watchTogetherHomeDismissed(raw),
+        settlingIn: finishingTouchesVisible(touches),
+      });
     });
     return () => { alive = false; };
   }, [userId]);
 
-  const known = dismissed?.userId === userId ? dismissed.value : null;
+  const known = dismissed?.userId === userId ? dismissed : null;
   if (!SHOW_WATCH_TOGETHER || !userId || known === null) return null;
-  if (!watchTogetherHomeVisible({ signedIn: true, dismissed: known })) return null;
+  if (!watchTogetherHomeVisible({ signedIn: true, dismissed: known.value, settlingIn: known.settlingIn })) return null;
 
   const premium = isPremiumProfile(profile);
   const dismiss = () => {
-    setDismissed({ userId, value: true });
+    setDismissed({ userId, value: true, settlingIn: false });
     void writeStorage(watchTogetherHomeKey(userId), WATCH_TOGETHER_HOME_DISMISSED);
   };
 

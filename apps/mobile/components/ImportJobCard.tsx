@@ -15,7 +15,6 @@ import { createImportReporter, IMPORT_FAILURE_REASONS } from '@plot/core/importP
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { markImportDone } from '../lib/finishingTouches';
-import { suppressFirstWinForImport } from '../lib/firstWinCard';
 import ImportSourceIcon from './ImportSourceIcon';
 
 const C = IMPORT_JOBS.card;
@@ -58,7 +57,7 @@ function JobCard({ userId, job, queued, onReview, onFinished, cancel, dismiss }:
   const active = importJobActive(job);
 
   // The first time a finished job is seen on this device: tick Finishing
-  // touches and stand the first-win card down, as the modal import does.
+  // touches, as the modal import does.
   const noted = useRef<string | null>(null);
   useEffect(() => {
     if (!importJobFinished(job) || noted.current === job.id) return;
@@ -67,10 +66,7 @@ function JobCard({ userId, job, queued, onReview, onFinished, cancel, dismiss }:
     const reporter = createImportReporter({ entry: job.entry });
     if (job.status === 'failed') reporter.report('failed', { source: job.source, reason: IMPORT_FAILURE_REASONS.WRITE_FAILED });
     else if (job.status !== 'cancelled') reporter.report('completed', { source: job.source, count: job.imported, failed_count: job.failed });
-    if (job.imported > 0) {
-      void markImportDone(userId, job.source, job.imported);
-      void suppressFirstWinForImport(userId, job.source);
-    }
+    if (job.imported > 0) void markImportDone(userId, job.source, job.imported);
     onFinished?.(job);
   }, [userId, job, onFinished]);
 

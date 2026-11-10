@@ -70,7 +70,8 @@ export function clearPendingSave() {
 // the signup form (47 clicked Save on a title page in 45 days; 5 reached signup).
 // Newsletter, chart and shared-link visitors have not seen the title, so they
 // keep the preview.
-const SKIP_PREVIEW_SOURCES = new Set(['title_page']);
+// A title picked from the theplot.tv homepage search results is the same case.
+const SKIP_PREVIEW_SOURCES = new Set(['title_page', 'hero_search']);
 
 /** True when /save should hand a logged-out visitor straight to signup or sign-in. */
 export function skipsSavePreview(source) {

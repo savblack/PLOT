@@ -34,6 +34,7 @@ export const HISTORY_VIEW = {
   drilldownTitles: (year) => `All of ${year}`,
   drilldownGenre: (name) => name,
   drilldownWeekday: (name) => `${name}s`,
+  upgradeInsights: 'Get more insights on your watching habits',
   drilldownRemove: (label) => `Remove filter: ${label}`,
   drilldownOpen: (label) => `See the titles behind ${label}`,
   previousMonth: 'Previous month',

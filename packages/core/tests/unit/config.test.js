@@ -39,6 +39,7 @@ test('getConfig starts with the documented defaults', () => {
     onTonightPicker: undefined,
     onWatchTogether: undefined,
     onEpisodeSearch: undefined,
+    onAwardsShown: undefined,
     onImport: undefined,
     onUndo: undefined,
   });

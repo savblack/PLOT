@@ -89,8 +89,6 @@ Use a verified TMDB backdrop for the opening image, with a short Plot headline o
 
 ## After it exists
 
-The rendering commands and Brevo backup files below belong to the reviewed newsletter workflow, which is being integrated separately. These editorial rules do not enable that tooling or authorize sending.
-
 Render with `node marketing/newsletter/render-issue.mjs <issue>`. That writes the Substack body and an email preview. The preview's unsubscribe link is a token, not a send. The chart script `send-digest.mjs` is an internal preview. It does not mail this letter.
 
 Substack subscribers and theplot.tv subscribers stay on separate lists. Post the Substack body as the post. Do not import one list into the other.

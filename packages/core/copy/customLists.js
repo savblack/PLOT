@@ -2,7 +2,7 @@ import { FREE_CUSTOM_LIST_CAP } from '../premium.js';
 
 export const CUSTOM_LISTS = Object.freeze({
   // The built-in watchlist's name: its My Lists section and Home's pinned shelf.
-  wantToWatch: 'Want to Watch',
+  wantToWatch: 'Watchlist',
   // One calm prompt per empty My Lists section: what belongs here and the next step.
   emptyPrompts: Object.freeze({
     want: Object.freeze({ title: 'Nothing saved yet', body: 'Tap the bookmark on any title and it lands here.', action: 'Find something to watch' }),
@@ -20,6 +20,13 @@ export const CUSTOM_LISTS = Object.freeze({
   sortList: 'Sort list',
   titleAscending: 'Title A to Z',
   titleDescending: 'Title Z to A',
+  // The Watching list's sort menu (watchingOrder.js WATCHING_SORTS).
+  sortWatching: 'Sort watching',
+  watchingSort: Object.freeze({
+    last_watched: 'Last watched',
+    next_air_date: 'Next episode air date',
+    recently_added: 'Recently added',
+  }),
   backToMyLists: 'My Lists',
   yourLists: 'Your lists',
   gridView: 'Grid view',

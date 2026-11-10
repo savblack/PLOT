@@ -623,21 +623,20 @@ svg { stroke-width: 1.5; }
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-/* Premium marker on a nav destination, shown to Free viewers only. A quiet
-   pink tint with pink text, so it labels the item without competing with it. */
-.app-nav-premium {
-  margin-left: auto;
-  padding: 2px 7px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  color: var(--accent-text);
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  line-height: 1.4;
+/* The Premium marker (PremiumMark.jsx): a solid spark in the accent's text
+   shade. One size, no chip behind it. In a nav row it sits at the far end. */
+.premium-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--accent-text);
+  vertical-align: middle;
 }
+.premium-mark svg { width: 100%; height: 100%; stroke: none; }
+.app-sidebar-item .premium-mark, .nav-drawer-item .premium-mark { margin-left: auto; }
 .app-sidebar-scroll { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
 .app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: stretch; }
 .app-sidebar-nav > .app-sidebar-item:first-child { margin-bottom: 10px; }
@@ -3219,7 +3218,10 @@ svg { stroke-width: 1.5; }
 .mylists-card-action--bookmark { right: 7px; }
 .mylists-card-action svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 3px rgba(0,0,0,.75)); }
 .mylists-card:hover .mylists-card-action, .mylists-card:focus-within .mylists-card-action, .mylists-card-action.active { opacity: 1; }
-.mylists-card-action.active { color: var(--accent); }
+/* Saved is the solid glyph, in the same white as the outline (design audit
+   pick 2.1: quiet, outline then solid). Only the favourite heart takes the
+   accent, which is one of its approved roles. */
+.mylists-card-action--favorite.active { color: var(--accent); }
 .mylists-card-action:hover { transform: scale(1.1); }
 .mylists-card-indicators { width: 100%; aspect-ratio: 2/3; }
 .mylists-card-indicator {
@@ -4260,7 +4262,9 @@ svg { stroke-width: 1.5; }
 .panel-pill:disabled { opacity: 0.7; cursor: default; }
 .panel-pill--primary { background: var(--accent-fill); color: var(--on-accent-fill); }
 .panel-pill--primary:hover { background: var(--accent-fill-hover); }
-.panel-pill--saved { background: var(--status-watched-dim); color: var(--status-watched); }
+/* In the watchlist: the neutral pill with the solid bookmark. Saved is shown
+   by the filled glyph, not by a colour (design audit pick 2.1). */
+.panel-pill--saved { background: var(--surface-sunken); color: var(--text-primary); }
 .panel-pill--watching { background: var(--status-watching-dim); color: var(--status-watching); }
 .panel-pill--watched { background: var(--status-watched-dim); color: var(--status-watched); }
 .panel-pill-label { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -4851,8 +4855,10 @@ a.provider-chip--link:hover {
   color: var(--text-primary);
   background: transparent;
 }
+/* The watchlist bookmark beside a row: solid when saved, in the text colour.
+   The heart below keeps the accent. */
 .search-action-btn.active {
-  color: var(--accent);
+  color: var(--text-primary);
   background: transparent;
 }
 .search-action-btn--heart.active {
@@ -5455,6 +5461,11 @@ a.provider-chip--link:hover {
   top: 100%;
   z-index: 100;
   min-width: 120px;
+  /* Sized to the longest label, not to the trigger it hangs from: an
+     absolutely placed panel otherwise shrinks to the button's width and
+     wraps every item onto two lines. */
+  width: max-content;
+  max-width: calc(100vw - 32px);
   overflow: hidden;
   background: var(--surface-raised);
   border: 1px solid var(--border);
@@ -5470,6 +5481,7 @@ a.provider-chip--link:hover {
   font-size: 0.8rem;
   color: var(--text-primary);
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
 .kebab-menu-item:hover { background: color-mix(in srgb, var(--surface-raised) 85%, var(--text-primary) 15%); }
@@ -6277,6 +6289,9 @@ a.provider-chip--link:hover {
   gap: 0.6rem;
 }
 .discover-hero-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.4rem 1rem;
   border: none;
   border-radius: 999px;
@@ -6570,16 +6585,14 @@ a.provider-chip--link:hover {
 .home-search-trigger:hover { border-color: var(--text-muted); color: var(--text-secondary); }
 .home-toolbar-actions > .desktop-page-filter { display: none; }
 @media (min-width: 1024px) {
-  .app-main:has(.home-page) { overflow-y: hidden; }
-  .app-main:has(.home-page) .app-main-inner { width: 100%; height: 100%; display: flex; flex-direction: column; min-height: 0; }
-  .home-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  .home-layout { flex: 1; min-height: 0; align-items: stretch; padding-bottom: 0; overflow: hidden; }
-  .home-side,
-  .home-stream { height: 100%; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: none; }
-  .home-side { position: static; padding-bottom: 3rem; }
-  .home-stream { padding-bottom: 3rem; }
-  .home-side::-webkit-scrollbar,
-  .home-stream::-webkit-scrollbar { display: none; }
+  /* The page is the one scroller, so the wheel works wherever the pointer is
+     and the cards above the columns scroll away with everything else. The two
+     columns used to scroll on their own inside a locked page, which left them
+     a strip at the bottom of the screen whenever a first-run card was showing.
+     The side column still sticks (.cal-side) and scrolls itself only when it
+     is taller than the window. */
+  .home-side { max-height: calc(100dvh - var(--header-h) - env(safe-area-inset-top, 0px) - 2rem); overflow-y: auto; scrollbar-width: none; }
+  .home-side::-webkit-scrollbar { display: none; }
   .home-stream { --discover-rail-gut: 0px; }
   .home-stream .discover-section-header,
   .home-stream .discover-hero-row { padding-inline: 0; }
@@ -7726,8 +7739,6 @@ a.provider-chip--link:hover {
 }
 /* A Premium viewer's stat tile: the whole row opens the titles behind it. */
 .hist-stat--link { color: inherit; text-decoration: none; }
-.hist-stat-meta { display: inline-flex; align-items: baseline; gap: 8px; }
-.hist-stat-meta .app-nav-premium { margin-left: 0; }
 .hist-stat--link:hover .hist-stat-label,
 .hist-stat--link:focus-visible .hist-stat-label { color: var(--accent); }
 .hist-drill-link {
@@ -7739,7 +7750,7 @@ a.provider-chip--link:hover {
   text-underline-offset: 3px;
 }
 .hist-drill-link:hover, .hist-drill-link:focus-visible { color: var(--accent); }
-.hist-drill-premium { margin-left: 8px; }
+.hist-drill-premium { margin-left: 8px; white-space: nowrap; }
 .hist-drill-chip {
   display: inline-flex;
   align-items: center;

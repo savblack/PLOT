@@ -124,6 +124,12 @@ export const EVENTS = Object.freeze({
   // (web only) backstops the long tail of raw clicks; these are the ones we
   // build funnels and retention analyses on. Props stay minimal + PII-free.
   SEARCH_PERFORMED: 'search_performed',
+  // Search opened by itself on a new account's first visit to the app, with
+  // the title they typed into the theplot.tv homepage search bar before
+  // signing up. Web only. Props: query_length, opened ('title' when the
+  // search had one clear match and that title opened, else 'search'). Never
+  // the query.
+  SIGNUP_SEARCH_RESUMED: 'signup_search_resumed',
   TITLE_VIEWED: 'title_viewed',
   DISCOVER_TAB_CHANGED: 'discover_tab_changed',
   // RETIRED 2026-09-27, never emitted since the feed engagement layer was
@@ -147,6 +153,12 @@ export const EVENTS = Object.freeze({
   // via the onEpisodeSearch seam. Props: tmdb_id, season, episode, position,
   // result_count, query_length, total_seasons. Never the query text.
   EPISODE_SEARCH_RESULT_OPENED: 'episode_search_result_opened',
+  // The title panel showed OMDb's awards line (issue 1273). Once per panel
+  // open, only when the title has awards, so its count over title_viewed is
+  // the share of title views that had awards. Fired from reportAwardsShown
+  // via the onAwardsShown seam. Props: tmdb_id, media_type, won,
+  // has_critic_score. Never the awards text.
+  TITLE_AWARDS_SHOWN: 'title_awards_shown',
   WATCHING_STARTED: 'watching_started',
   WATCHING_STOPPED: 'watching_stopped',
   // Undo signals. A user unlogging a watch or clearing history is a real
@@ -210,7 +222,7 @@ export const EVENTS = Object.freeze({
   // finishing_touches_viewed: the card was on screen (`done_count`, `total`).
   // Once per app session, after the watchlist has loaded.
   // finishing_touch_opened: a step's action was opened (`step`: progress | friends | import | people).
-  // finishing_touches_hidden: Hide for now (`done_count`). The control is in the
+  // finishing_touches_hidden: Dismiss, which hides the card for now (`done_count`). The control is in the
   // header whether the card is expanded or not.
   FINISHING_TOUCHES_VIEWED: 'finishing_touches_viewed',
   FINISHING_TOUCH_OPENED: 'finishing_touch_opened',

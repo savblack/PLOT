@@ -44,7 +44,7 @@ function ReadsList({ id }) {
 }
 
 /** Server then profile, as radio lists. Shared with the Settings source detail. */
-export function PlexPicker({ plex }) {
+export function PlexPicker({ plex, quiet = false }) {
   return (
     <div className="isp-plex">
       {plex.servers.length > 0 && (
@@ -79,7 +79,7 @@ export function PlexPicker({ plex }) {
       )}
       {plex.selected && plex.selection && <p className="isp-import-body">{I.plexSelected(plex.selection.name, plex.selection.profileName)}</p>}
       {!plex.selected && !plex.busy && plex.servers.length === 0 && <p className="isp-import-body">{I.plexServerLater}</p>}
-      {plex.busy && <div className="isp-import-wait"><PlotLoader size="sm" /><span>{COMMON.loading}</span></div>}
+      {plex.busy && <div className="isp-import-wait">{!quiet && <PlotLoader size="sm" />}<span>{COMMON.loading}</span></div>}
       {plex.error && <p className="isp-error">{plex.error}</p>}
     </div>
   );
@@ -89,9 +89,12 @@ export function PlexPicker({ plex }) {
  * @param {{
  *   start: ReturnType<typeof import('../hooks/useImportStart.js').useImportStart>,
  *   onContinue: () => void, continueLabel?: string, onAddAnother?: () => void,
+ *   quiet?: boolean,
  * }} props
+ * `quiet` drops the spinners and keeps their words (onboarding shows no loader
+ * before its last step). Settings keeps them.
  */
-export default function ImportSourceDialog({ start, onContinue, continueLabel = I.continue, onAddAnother }) {
+export default function ImportSourceDialog({ start, onContinue, continueLabel = I.continue, onAddAnother, quiet = false }) {
   const src = findImportSource(start.source);
   if (!src || start.phase === 'pick') return null;
   const name = src.name;
@@ -129,7 +132,7 @@ export default function ImportSourceDialog({ start, onContinue, continueLabel = 
             onDrop={e => { e.preventDefault(); if (phase === 'file' && e.dataTransfer?.files?.length) start.attachFiles(e.dataTransfer.files); }}>
             <input type="file" accept={src.accept} multiple disabled={phase === 'uploading'}
               onChange={e => { if (e.target.files?.length) start.attachFiles(e.target.files); e.target.value = ''; }} />
-            {phase === 'uploading' ? <PlotLoader size="sm" /> : <UploadIcon />}
+            {phase === 'uploading' && !quiet ? <PlotLoader size="sm" /> : <UploadIcon />}
             <span className="isp-drop-title">{phase === 'uploading' ? I.uploading : S.dropTitle}</span>
             <span className="isp-drop-hint">{S.dropFormats(src.formats)}</span>
           </label>
@@ -156,7 +159,7 @@ export default function ImportSourceDialog({ start, onContinue, continueLabel = 
   } else if (phase === 'connecting') {
     body = (
       <div className="isp-import">
-        <div className="isp-import-wait"><PlotLoader size="sm" /><span>{I.connecting}</span></div>
+        <div className="isp-import-wait">{!quiet && <PlotLoader size="sm" />}<span>{I.connecting}</span></div>
         <button type="button" className="isp-link" onClick={start.connect}>{S.openAgain}</button>
       </div>
     );
@@ -166,7 +169,7 @@ export default function ImportSourceDialog({ start, onContinue, continueLabel = 
       <div className="isp-import">
         {start.error && <p className="isp-error">{start.error}</p>}
         <p className="isp-import-status"><span className="isp-st isp-st--ok"><i>✓</i>{S.tileConnected}</span>{start.connectedAs ? I.connectedAs(start.connectedAs) : null}</p>
-        {plex && <PlexPicker plex={plex} />}
+        {plex && <PlexPicker plex={plex} quiet={quiet} />}
         <button type="button" className="onboarding-cta" disabled={phase === 'starting' || (plex && !plex.selected)} onClick={start.startJob}>
           {phase === 'starting' ? I.starting : plex ? I.startPlexImport : I.startImport}
         </button>
