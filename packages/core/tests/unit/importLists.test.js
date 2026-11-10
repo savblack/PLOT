@@ -48,7 +48,7 @@ test('verified IMDb watchlists preserve external identity without treating list 
   assert.equal(entries[0].externalIds.imdb,'tt0054389');
   assert.equal(entries[0].date,null);
   assert.equal(entries[0].destination.kind,'watchlist');
-  assert.throws(()=>parsePlatform('imdb',text,{fileName:'renamed.csv'}),/original watchlist.csv filename/);
+  assert.throws(()=>parsePlatform('imdb',text,{fileName:'renamed.csv'}),/not other lists yet/);
   assert.throws(()=>parsePlatform('imdb',text.replace(',Movie,',',TV Episode,'),{fileName:'watchlist.csv'}),/unsupported title type/);
 });
 

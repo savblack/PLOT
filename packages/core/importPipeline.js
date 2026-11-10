@@ -447,7 +447,12 @@ export async function writeImportSelection({ userId, resolved, summaryRows }, { 
   if (resolved.some(row => row.annotation)) return { inserted: 0, failed: resolved.filter(row => row.status === 'matched').length, duplicates: 0 };
   // A preview can outlive a flag change. Never route event-only formats through
   // the legacy title-summary writer, which would discard episode identity.
-  if (!getConfig().importEventsEnabled && resolved.some(row => ['trakt', 'imdb', 'tvtime'].includes(row.source))) {
+  // IMDb is not one: its parser never emits an episode, and a rated movie is a
+  // whole-title summary (watched, date unknown, with its rating), the same
+  // shape Letterboxd and Netflix already write here. Its list and annotation
+  // rows cannot reach this point with the event importer off.
+  if (!getConfig().importEventsEnabled && resolved.some(row => ['trakt', 'tvtime'].includes(row.source) ||
+    (row.source === 'imdb' && (row.annotation || row.destination || row.episodeNumber != null || row.seasonNumber != null)))) {
     return { inserted: 0, failed: resolved.filter(row => row.status === 'matched').length, duplicates: 0 };
   }
   if (resolved.some(row => row.source === 'tvtime') && !getConfig().tvTimeImportEnabled) return { inserted: 0, failed: resolved.filter(row => row.status === 'matched').length, duplicates: 0 };

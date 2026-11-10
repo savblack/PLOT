@@ -6,6 +6,9 @@
 export const IMPORT_VIEW = {
   letterboxdUnsupported: 'Unsupported Letterboxd export layout or invalid record. Keep the original CSV filename and contents. Nothing was imported.',
   annotationsUnavailable: 'Rating and review imports are not available in this build.',
+  letterboxdWatchedOrWatchlist: 'Plot can’t tell whether this Letterboxd file is your watched films or your watchlist, because the two look the same inside. Nothing was imported. Choose the .zip file Letterboxd gave you instead, and Plot will read both.',
+  imdbListsUnavailable: 'This is an IMDb watchlist or list. Plot can’t import lists from IMDb yet, so nothing was imported. Your IMDb ratings export imports normally.',
+  imdbCustomListUnsupported: 'This is an IMDb list export. Plot can import your IMDb ratings and your watchlist, but not other lists yet. Nothing was imported.',
   annotationPreview: 'Ratings and reviews are saved privately as imported source records and included in your data export. They do not mark titles watched or replace your Plot ratings and notes.',
   annotationCounts: (saved, unmatched) => `${saved} already imported · ${unmatched} unmatched`,
   annotationAlreadySaved: 'Already imported',
@@ -66,6 +69,8 @@ export const IMPORT_VIEW = {
     followed_show_without_watches: 'Followed show has no watched episodes. It will not be marked watched or added to your watchlist.',
     archive_file_unsupported: 'This archive file is not imported. Supported files are reviewed separately.',
     lists_unavailable: 'List import is not available in this build. These films were left out.',
+    show_ratings_unavailable: `${count} TV show ratings were left out. Plot can’t save show ratings from IMDb yet. Your movie ratings are imported.`,
+    title_type_unsupported: `${count} ratings for episodes, TV specials, games or other title types were left out. Plot imports movies and whole TV series.`,
     duplicate_file: 'Duplicate file selection was left out.',
     empty_list: 'Empty list will not be imported.',
   }[reason] || 'This record needs review and will not be imported.'),

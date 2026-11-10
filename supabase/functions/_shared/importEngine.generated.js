@@ -54,6 +54,9 @@ function getConfig() {
 var IMPORT_VIEW = {
   letterboxdUnsupported: "Unsupported Letterboxd export layout or invalid record. Keep the original CSV filename and contents. Nothing was imported.",
   annotationsUnavailable: "Rating and review imports are not available in this build.",
+  letterboxdWatchedOrWatchlist: "Plot can\u2019t tell whether this Letterboxd file is your watched films or your watchlist, because the two look the same inside. Nothing was imported. Choose the .zip file Letterboxd gave you instead, and Plot will read both.",
+  imdbListsUnavailable: "This is an IMDb watchlist or list. Plot can\u2019t import lists from IMDb yet, so nothing was imported. Your IMDb ratings export imports normally.",
+  imdbCustomListUnsupported: "This is an IMDb list export. Plot can import your IMDb ratings and your watchlist, but not other lists yet. Nothing was imported.",
   annotationPreview: "Ratings and reviews are saved privately as imported source records and included in your data export. They do not mark titles watched or replace your Plot ratings and notes.",
   annotationCounts: (saved, unmatched) => `${saved} already imported \xB7 ${unmatched} unmatched`,
   annotationAlreadySaved: "Already imported",
@@ -114,6 +117,8 @@ var IMPORT_VIEW = {
     followed_show_without_watches: "Followed show has no watched episodes. It will not be marked watched or added to your watchlist.",
     archive_file_unsupported: "This archive file is not imported. Supported files are reviewed separately.",
     lists_unavailable: "List import is not available in this build. These films were left out.",
+    show_ratings_unavailable: `${count} TV show ratings were left out. Plot can\u2019t save show ratings from IMDb yet. Your movie ratings are imported.`,
+    title_type_unsupported: `${count} ratings for episodes, TV specials, games or other title types were left out. Plot imports movies and whole TV series.`,
     duplicate_file: "Duplicate file selection was left out.",
     empty_list: "Empty list will not be imported."
   })[reason] || "This record needs review and will not be imported.",
@@ -1125,9 +1130,13 @@ function parseApple(text, { onOmitted = (_index) => {
   }).filter(Boolean);
 }
 function parsePlatform(platformId, text, { fileName = "", onOmitted = (_index) => {
+}, onLeftOut = (_reason) => {
 } } = {}) {
   if (platformId === "trakt" && fileName === "lists-watchlist.json") return parseTraktWatchlist(text);
-  if (platformId === "imdb" && /^(imdb[_-])?watchlist\.csv$/i.test(fileName)) return parseImdbWatchlist(text);
+  if (platformId === "imdb" && isImdbListExport(text)) {
+    if (namesWatchlist(fileName)) return parseImdbWatchlist(text);
+    throw new Error(IMPORT_VIEW.imdbCustomListUnsupported);
+  }
   if (platformId === "letterboxd") {
     const list = parseLetterboxdList(text, fileName);
     if (list) return list;
@@ -1148,7 +1157,7 @@ function parsePlatform(platformId, text, { fileName = "", onOmitted = (_index) =
     case "letterboxd":
       return parseLetterboxd(text);
     case "imdb":
-      return parseImdbRatings(text);
+      return parseImdbRatings(text, { onLeftOut });
     default:
       return [];
   }
@@ -1156,29 +1165,53 @@ function parsePlatform(platformId, text, { fileName = "", onOmitted = (_index) =
 function watchedAtFor(entry) {
   return entry.date || null;
 }
-function parseImdbRatings(text) {
+function originalExportName(fileName) {
+  const base = String(fileName || "").split(/[\\/]/).pop().toLowerCase().trim();
+  const dot = base.lastIndexOf(".");
+  const ext = dot > 0 ? base.slice(dot) : "";
+  let stem = dot > 0 ? base.slice(0, dot) : base;
+  for (let previous = ""; previous !== stem; ) {
+    previous = stem;
+    stem = stem.replace(/\s*\(\d{1,3}\)$/, "").replace(/\s+\d{1,3}$/, "").replace(/[\s_-]*(?:-\s*)?copy(?:\s*\d{1,3})?$/, "").trim();
+  }
+  return `${stem}${ext}`;
+}
+function namesWatchlist(fileName) {
+  return /watch[\s_-]?list/.test(originalExportName(fileName));
+}
+function isImdbListExport(text) {
+  const [headers = []] = parseCSV(text.replace(/^\uFEFF/, "").split("\n", 1)[0]);
+  return headers.includes("Position") && headers.includes("Const");
+}
+var IMDB_MOVIE_TYPES = /* @__PURE__ */ new Set(["movie", "tvmovie", "short", "tvshort", "video"]);
+var IMDB_SERIES_TYPES = /* @__PURE__ */ new Set(["tvseries", "tvminiseries"]);
+function parseImdbRatings(text, { onLeftOut = (_reason) => {
+} } = {}) {
   const [rawHeaders, ...rows] = parseCSV(text.replace(/^\uFEFF/, ""));
   const headers = rawHeaders || [];
-  if (headers.includes("Position")) throw new Error("Unsupported IMDb list export. For a movie watchlist, keep the original watchlist.csv filename. Custom-list formats are not supported yet.");
+  if (headers.includes("Position")) throw new Error(IMPORT_VIEW.imdbCustomListUnsupported);
   const required = ["Const", "Your Rating", "Date Rated", "Title", "Title Type", "Year"];
   if (required.some((header) => !headers.includes(header)) || new Set(headers).size !== headers.length) {
     throw new Error("Unsupported IMDb export. Choose an IMDb movie ratings CSV. Watchlists and other export formats are not supported yet.");
   }
   const column = (name) => headers.indexOf(name);
-  return rows.filter((row) => row.some((value) => value.trim())).map((row) => {
+  return rows.filter((row) => row.some((value) => value.trim())).flatMap((row) => {
     const title = row[column("Title")]?.trim();
     const imdb = row[column("Const")]?.trim();
     const type = row[column("Title Type")]?.trim().toLowerCase().replace(/\s+/g, "");
     const rating2 = Number(row[column("Your Rating")]);
     const year = row[column("Year")]?.trim();
-    if (!["movie", "tvseries", "tvminiseries"].includes(type)) throw new Error("This IMDb file contains unsupported ratings. Supported types are movies, TV series and TV miniseries. Episode ratings require verified episode identities.");
+    if (!IMDB_MOVIE_TYPES.has(type) && !IMDB_SERIES_TYPES.has(type)) {
+      onLeftOut("title_type_unsupported");
+      return [];
+    }
     if (!title || !/^tt\d+$/.test(imdb || "") || !Number.isInteger(rating2) || rating2 < 1 || rating2 > 10 || !/^\d{4}$/.test(year || "")) {
       throw new Error("An IMDb rating record is incomplete or invalid. No records have been imported.");
     }
-    if (type !== "movie") {
+    if (IMDB_SERIES_TYPES.has(type)) {
       const ratedAt = row[column("Date Rated")]?.trim() || null;
       if (ratedAt && (!/^\d{4}-\d{2}-\d{2}$/.test(ratedAt) || normaliseDate(ratedAt) !== ratedAt)) throw new Error("An IMDb rating date is invalid. No records have been imported.");
-      return {
+      return [{
         title,
         hint: "tv",
         year,
@@ -1187,9 +1220,9 @@ function parseImdbRatings(text) {
         annotationScope: "show",
         eventId: `rating:${imdb}`,
         annotation: { kind: "rating", rating: rating2, ratedAt }
-      };
+      }];
     }
-    return { title, hint: "movie", year, rating: rating2, date: null, externalIds: { imdb } };
+    return [{ title, hint: "movie", year, rating: rating2, date: null, externalIds: { imdb } }];
   });
 }
 function parseLetterboxdList(text, fileName = "") {
@@ -1204,12 +1237,12 @@ function parseLetterboxdList(text, fileName = "") {
     if (!metadata?.[1]?.trim() || !/^https:\/\/(boxd\.it|letterboxd\.com)\//.test(metadata[3] || "") || start < first + 2) throw new Error("Unsupported Letterboxd custom-list export.");
     destination = { kind: "custom", key: `letterboxd:list:${metadata[3]}`, name: metadata[1].trim(), description: metadata[4] || null };
     items = rows.slice(start + 1);
-  } else if (/^(letterboxd[_-])?watchlist\.csv$/i.test(fileName)) {
+  } else if (namesWatchlist(fileName)) {
     if (header.join(",") !== "Date,Name,Year,Letterboxd URI") throw new Error("Unsupported Letterboxd watchlist export.");
     destination = { kind: "watchlist", key: "letterboxd:watchlist", name: "Watchlist" };
     items = rows.slice(first + 1);
   } else {
-    if (fileName && header.join(",") === "Date,Name,Year,Letterboxd URI" && !/^(letterboxd[_-])?watched\.csv$/i.test(fileName)) throw new Error("This file could be a watchlist or watched export. Keep the original watched.csv or watchlist.csv filename so Plot can distinguish them.");
+    if (fileName && header.join(",") === "Date,Name,Year,Letterboxd URI" && !/watched/.test(originalExportName(fileName))) throw new Error(IMPORT_VIEW.letterboxdWatchedOrWatchlist);
     return null;
   }
   return items.filter((row) => row.some((value) => value.trim())).map((row) => {
@@ -1990,6 +2023,7 @@ function parseTvTimeDocument(text, fileName) {
 
 // packages/core/importDocument.js
 function parseImportDocument(platform, text, { fileName = "" } = {}) {
+  if (platform === "letterboxd") fileName = letterboxdFileName(fileName, text);
   if (platform === "trakt" && Object.hasOwn(TRAKT_ANNOTATION_FILES, fileName)) {
     if (!getConfig().importAnnotationsEnabled || !getConfig().importEventsEnabled) throw new Error(IMPORT_VIEW.annotationsUnavailable);
     const format = TRAKT_ANNOTATION_FILES[fileName];
@@ -2003,13 +2037,34 @@ function parseImportDocument(platform, text, { fileName = "" } = {}) {
     return document;
   }
   if (platform === "tvtime") return parseTvTimeDocument(text, fileName);
+  if (platform === "imdb" && isImdbListExport(text) && !getConfig().importEventsEnabled) throw new Error(IMPORT_VIEW.imdbListsUnavailable);
   const notImported = [];
-  const entries = parsePlatform(platform, text, { fileName, onOmitted: (index) => {
+  const leftOut = /* @__PURE__ */ new Map();
+  let entries = parsePlatform(platform, text, { fileName, onOmitted: (index) => {
     notImported.push({ title: IMPORT_VIEW.sourceRecord(index + 1), reason: "missing_title" });
-  } });
-  if (entries.some((row) => row.annotation) && (!getConfig().importAnnotationsEnabled || !getConfig().importEventsEnabled)) throw new Error(IMPORT_VIEW.annotationsUnavailable);
+  }, onLeftOut: (reason) => leftOut.set(reason, (leftOut.get(reason) || 0) + 1) });
+  const annotationsAvailable = getConfig().importAnnotationsEnabled && getConfig().importEventsEnabled;
+  if (platform === "imdb" && !annotationsAvailable) {
+    const shows = entries.filter((row) => row.annotation).length;
+    if (shows) {
+      entries = entries.filter((row) => !row.annotation);
+      leftOut.set("show_ratings_unavailable", shows);
+    }
+  }
+  if (entries.some((row) => row.annotation) && !annotationsAvailable) throw new Error(IMPORT_VIEW.annotationsUnavailable);
+  for (const [reason, count] of leftOut) notImported.push({ title: "IMDb", reason, count });
   const warnings = entries.some((row) => row.requiresWatchReview) ? [{ title: "Amazon Prime", reason: "playback_review" }] : [];
   return { entries, warnings, notImported };
+}
+function letterboxdFileName(fileName, text) {
+  if (!fileName || fileName.includes("/")) return fileName;
+  const original = originalExportName(fileName);
+  if (isLetterboxdDocument(original)) return original;
+  const [header = []] = parseCSV(text.replace(/^\uFEFF/, "").split("\n", 1)[0]);
+  if (header.join(",") !== "Date,Name,Year,Letterboxd URI") return fileName;
+  if (namesWatchlist(original)) return "watchlist.csv";
+  if (/watched/.test(original)) return "watched.csv";
+  return fileName;
 }
 function importReportMessages(document) {
   return [...document.notImported || [], ...document.warnings || []].map((item) => `${item.title}: ${IMPORT_VIEW.documentReport(item.reason, item.count)}`);
@@ -2618,7 +2673,7 @@ async function writeImportDocument({ userId, resolved, summaryRows }, { onProgre
 async function writeImportSelection({ userId, resolved, summaryRows }, { onProgress } = {}) {
   resolved = reviewPendingWatchSummaries(resolved);
   if (resolved.some((row) => row.annotation)) return { inserted: 0, failed: resolved.filter((row) => row.status === "matched").length, duplicates: 0 };
-  if (!getConfig().importEventsEnabled && resolved.some((row) => ["trakt", "imdb", "tvtime"].includes(row.source))) {
+  if (!getConfig().importEventsEnabled && resolved.some((row) => ["trakt", "tvtime"].includes(row.source) || row.source === "imdb" && (row.annotation || row.destination || row.episodeNumber != null || row.seasonNumber != null))) {
     return { inserted: 0, failed: resolved.filter((row) => row.status === "matched").length, duplicates: 0 };
   }
   if (resolved.some((row) => row.source === "tvtime") && !getConfig().tvTimeImportEnabled) return { inserted: 0, failed: resolved.filter((row) => row.status === "matched").length, duplicates: 0 };
