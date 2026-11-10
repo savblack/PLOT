@@ -130,14 +130,10 @@ export const ONBOARDING_FLOW = {
     // "Building your" then the wordmark, set in Gabarito.
     heading: 'Building your',
     status: 'Building your Plot',
-    // One line saying what the save is actually writing. The screen holds only
-    // as long as that takes (with a short floor so the shelf can fill).
-    saving: (titles, services) => {
-      const t = titles === 0 ? '' : `${titles} ${titles === 1 ? 'title' : 'titles'}`;
-      const s = services === 0 ? '' : `${services} ${services === 1 ? 'service' : 'services'}`;
-      const what = [t, s].filter(Boolean).join(' and ');
-      return what ? `Saving ${what}…` : 'Saving your setup…';
-    },
+    // Under the heading, one at a time, while the save runs.
+    lines: ['Checking your platforms…', 'Reading the reviews…', 'Popping the popcorn…', 'Raising the curtain…'],
+    // Line one when they skipped services.
+    noServicesFirstLine: 'Checking every platform…',
   },
   // A dismissible card at the top of Home. Skipped onboarding and a finished
   // Trakt import never arm it. Skip on the card hides it. Home is already open.

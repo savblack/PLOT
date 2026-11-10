@@ -54,7 +54,7 @@ function Progress({ step }) {
  *               selectedIds: number[], onToggle: (id: number) => void, region: string, editingRegion: boolean,
  *               onEditRegion: () => void, onRegion: (code: string) => void, onRegionDone: () => void,
  *               onContinue: () => void },
- *   building: { leaving: boolean, shelf: any[], line: string },
+ *   building: { leaving: boolean, shelf: any[], lines: string[], lineIndex: number },
  * }} props
  */
 export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, importStep, services, building }) {
@@ -232,10 +232,12 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
               })}
             </div>
             <h1 className="ob-building-title">{F.building.heading} <PlotLogo style={{ fontSize: 30 }} /></h1>
-            <p className="ob-building-line" role="status">
+            <div className="ob-lines" role="status">
               <span className="ob-sr">{F.building.status}</span>
-              <span aria-hidden="true">{building.line}</span>
-            </p>
+              {building.lines.map((text, i) => (
+                <p key={text} className={`ob-line${i === building.lineIndex ? ' is-on' : ''}`} aria-hidden="true">{text}</p>
+              ))}
+            </div>
           </div>
         )}
       </div>

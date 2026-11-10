@@ -1,6 +1,6 @@
 /**
  * Onboarding step 3: the building moment. Their picks land on a shelf of six,
- * then the wordmark and one line saying what the save is writing. Held only as
+ * then the wordmark and the building lines, one at a time. Held only as
  * long as the save takes, with a short floor so the shelf can fill, then Home
  * fades in. Timing and shelf order come from @plot/core, shared with web.
  */
@@ -10,7 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
-import { BUILDING_FADE_MS, BUILDING_MIN_MS, BUILDING_SHELF_SIZE, buildingShelf } from '@plot/core/onboardingSetup.js';
+import { BUILDING_FADE_MS, BUILDING_LINE_MS, BUILDING_MIN_MS, BUILDING_SHELF_SIZE, buildingLines, buildingShelf } from '@plot/core/onboardingSetup.js';
 import { useImportJobs, importSourceName } from '@plot/core/importJobs.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -44,11 +44,17 @@ export default function Building() {
   const [breathe] = useState(() => new Animated.Value(1));
 
   const servicesCount = skipped ? 0 : flow.selectedServiceIds.length;
-  // While a background import runs, the line says so first (web's first
-  // line); otherwise what the one save is writing.
+  // While a background import runs, the first line says so, as on web.
   const { user } = useAppData();
   const { current: importing } = useImportJobs(user?.id ?? null);
-  const line = importing ? IMPORT_JOBS.building.matching(importSourceName(importing.source)) : F.building.saving(flow.seeds.length, servicesCount);
+  const lines = buildingLines(servicesCount > 0, importing ? IMPORT_JOBS.building.matching(importSourceName(importing.source)) : null);
+  // Step through the lines as web does; the last one stays.
+  const [lineIndex, setLineIndex] = useState(0);
+  const lastLine = lines.length - 1;
+  useEffect(() => {
+    const id = setInterval(() => setLineIndex(i => Math.min(i + 1, lastLine)), BUILDING_LINE_MS);
+    return () => clearInterval(id);
+  }, [lastLine]);
   const shelf = useMemo(() => buildingShelf(flow.seeds, flow.trending), [flow.seeds, flow.trending]);
 
   // Land the posters one after another and raise the heading, then keep the
@@ -134,7 +140,7 @@ export default function Building() {
       <Animated.View style={[styles.caption, { opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }]}>
         <Text style={styles.heading}>{F.building.heading} <PlotWordmark size={30} color={colors.textPrimary} style={styles.wordmark} /></Text>
         <View style={styles.lines} accessibilityRole="progressbar" accessibilityLabel={F.building.status} accessibilityLiveRegion="polite">
-          <Animated.Text style={[styles.line, { opacity: breathe }]}>{line}</Animated.Text>
+          <Animated.Text style={[styles.line, { opacity: breathe }]}>{lines[lineIndex]}</Animated.Text>
         </View>
       </Animated.View>
     </Animated.View>
