@@ -321,7 +321,7 @@ export const PLANS_PAGE = {
   faqTitle: 'Before you ask',
   faqs: [
     // `closed` swaps the answer for checkoutClosedAnswer while checkout is shut.
-    { q: 'Can I upgrade now?', closed: true, a: 'Yes. Choose Monthly or Annual, then Upgrade to Premium. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
+    { q: 'Can I upgrade now?', closed: true, a: 'Yes. Choose Monthly or Annual, then Start free trial, or Upgrade to Premium if you have subscribed before. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Free does not include personally tailored recommendations.' },
     { q: 'What does Just Decide actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. To find something you both want to watch, only one of you needs Premium, so the other person joins for free. Anyone can send an invite. Collaborative lists work the same way: only the person who makes the list needs Premium.' },

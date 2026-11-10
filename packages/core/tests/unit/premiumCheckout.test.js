@@ -92,3 +92,21 @@ test('analytics failure cannot stop the checkout handoff', async () => {
   });
   assert.equal(navigated, true);
 });
+
+test('a promised trial travels with the checkout request, and only when promised', async () => {
+  const { redirectToCheckout } = await import('../../premiumCheckout.js');
+  const bodies = [];
+  const request = async (action, body) => { bodies.push([action, body]); return 'https://checkout.stripe.com/c/pay/cs_test_abc123'; };
+  await redirectToCheckout('yearly', { request, navigate: () => {}, track: () => {}, expectTrial: true });
+  await redirectToCheckout('monthly', { request, navigate: () => {}, track: () => {} });
+  assert.deepEqual(bodies, [
+    ['checkout', { plan: 'yearly', expectTrial: true }],
+    ['checkout', { plan: 'monthly' }],
+  ]);
+});
+
+test('a refused trial is the server\'s own sentence, not a generic failure', async () => {
+  const { checkoutErrorMessage } = await import('../../premiumCheckout.js');
+  const message = checkoutErrorMessage(409, 'The free trial is for new subscribers. You can still upgrade to Premium.', 'fallback', { code: 'trial_unavailable' });
+  assert.equal(message, 'The free trial is for new subscribers. You can still upgrade to Premium.');
+});

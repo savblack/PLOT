@@ -26,6 +26,10 @@ export function usePremium(profile) {
   // null until billing-availability answers. false is the closed state: the
   // purchase control becomes a waitlist and startCheckout does not call Stripe.
   const [checkoutAvailable, setCheckoutAvailable] = useState(null);
+  // The server refused a promised trial (Stripe knows of an earlier
+  // subscription Plot's record does not). Stop promising it in this session.
+  const [trialRefused, setTrialRefused] = useState(false);
+  const promisesTrial = !trialRefused && trialEligible(billing);
 
   useEffect(() => {
     let active = true;
@@ -58,6 +62,7 @@ export function usePremium(profile) {
           request: callBilling,
           navigate: url => window.location.assign(url),
           track: (event, props) => track(event, props, { transport: 'sendBeacon', send_instantly: true }),
+          expectTrial: promisesTrial,
         });
       } else {
         window.location.assign(signupPathForPlan(chosen));
@@ -69,6 +74,9 @@ export function usePremium(profile) {
         setBusy(false);
         return false;
       }
+      // Nothing was charged or created. The button becomes Upgrade to Premium
+      // and the server's sentence says why; pressing it again is a plain checkout.
+      if (e?.code === 'trial_unavailable') setTrialRefused(true);
       setError(checkoutErrorMessage(e?.status, e?.message, PLANS_PAGE.checkoutMessage, {
         code: e?.code,
         closed: PLANS_PAGE.checkoutClosed,
@@ -77,7 +85,7 @@ export function usePremium(profile) {
       setBusy(false);
       return false;
     }
-  }, [busy, checkoutAvailable]);
+  }, [busy, checkoutAvailable, promisesTrial]);
 
   const openPortal = useCallback(async () => {
     if (busy) return;
@@ -107,8 +115,9 @@ export function usePremium(profile) {
   return {
     ...billingAccess(billing),
     billing,
-    // True only for a signed-in viewer whose billing read shows no subscription, ever.
-    trialEligible: trialEligible(billing),
+    // The button may say Start free trial: a signed-in viewer with no
+    // subscription on Plot's record, and the server has not said otherwise.
+    trialEligible: promisesTrial,
     startCheckout,
     startTipCheckout,
     openPortal,

@@ -45,7 +45,7 @@ export function checkoutErrorMessage(status, serverMessage, fallback, extra = {}
 
 /**
  * Ask stripe-billing for a Stripe URL on behalf of the signed-in user.
- * `checkout` takes `{ plan }`, `portal` takes nothing, `tip` takes `{ amount }`.
+ * `checkout` takes `{ plan, expectTrial? }`, `portal` takes nothing, `tip` takes `{ amount }`.
  * Rejects with an Error carrying `status` and the server's `code`
  * (`premium_coming_soon` is the closed state, not a glitch to retry).
  *
@@ -79,16 +79,18 @@ export async function requestBillingUrl(action, body = {}, options = {}) {
  * Open a prepared checkout through the platform's navigation API.
  * Reports only a session ID from Stripe's URL path, never its URL or fragment.
  * @param {string} plan
- * @param {{ request: typeof requestBillingUrl, navigate: (url: string) => void | Promise<void>, track: (event: string, props: Record<string, unknown>) => void }} options
+ * @param {{ request: typeof requestBillingUrl, navigate: (url: string) => void | Promise<void>, track: (event: string, props: Record<string, unknown>) => void, expectTrial?: boolean }} options
+ *   expectTrial: the button said "Start free trial". The server then refuses
+ *   (409, code `trial_unavailable`) instead of opening a checkout with no trial.
  */
-export async function redirectToCheckout(plan, { request, navigate, track }) {
+export async function redirectToCheckout(plan, { request, navigate, track, expectTrial = false }) {
   const props = { plan: checkoutPlan(plan) };
   let stage = 'request';
   const capture = (event, properties) => {
     try { track(event, properties); } catch { /* Analytics must not block checkout. */ }
   };
   try {
-    const url = await request('checkout', { plan: props.plan });
+    const url = await request('checkout', expectTrial ? { plan: props.plan, expectTrial: true } : { plan: props.plan });
     const parsed = new URL(url);
     const sessionId = parsed.hostname === 'checkout.stripe.com'
       ? parsed.pathname.match(/\/(cs_(?:live|test)_[A-Za-z0-9]+)(?:\/|$)/)?.[1]
