@@ -54,9 +54,7 @@ import { feedItems } from '@plot/core/peopleFeed.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { greetingFor } from '@plot/core/greeting.js';
-import FinishingTouches from './FinishingTouches.jsx';
-import WatchTogetherHomeCard from './WatchTogetherHomeCard.jsx';
-import ImportJobCard from './ImportJobCard.jsx';
+import HomeTopCards from './HomeTopCards.jsx';
 import { useFirstRun } from '../hooks/useFirstRun.js';
 import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -971,9 +969,7 @@ export default function DiscoverView() {
       />
       {/* The greeting leads. Every card sits under it. */}
       <h1 className="home-greeting">{greetingFor({ name: profile?.first_name })}</h1>
-      <ImportJobCard />
-      <FinishingTouches />
-      <WatchTogetherHomeCard />
+      <HomeTopCards />
       <DiscoverContent
         openPanel={openPanel}
         openSearch={openSearch}

@@ -271,6 +271,19 @@ export async function readImportJobReview(job) {
 }
 
 /**
+ * The jobs Home shows a card for: the running one (with what waits behind
+ * it), then each finished job the user hasn't seen off. Queued jobs don't get
+ * a card of their own. Home also uses this to decide whether an import holds
+ * the slot above the feed.
+ *
+ * @param {{ jobs: any[], current: any }} imports  from useImportJobs
+ * @returns {any[]}
+ */
+export function importCardsShown({ jobs, current }) {
+  return [current, ...(jobs || []).filter(job => importJobFinished(job) && !job.seen_at)].filter(Boolean);
+}
+
+/**
  * Follow every import that still matters for this account (see
  * readImportJobs): poll while any runs and nudge the worker along.
  *
