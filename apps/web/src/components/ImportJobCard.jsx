@@ -4,7 +4,7 @@
 // Mobile: apps/mobile/components/ImportJobCard.tsx, on the same core hook.
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useImportJobs, importJobTitle, importJobStatusLine, importJobActive, importJobFinished, importSourceName } from '@plot/core/importJobs.js';
+import { importCardsShown, importJobTitle, importJobStatusLine, importJobActive, importJobFinished, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_ENTRY_POINTS, createImportReporter, IMPORT_FAILURE_REASONS } from '@plot/core/importPipeline.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { useApp } from '../hooks/useApp.js';
@@ -14,12 +14,14 @@ import './ImportJobCard.css';
 
 const C = IMPORT_JOBS.card;
 
-export default function ImportJobCard() {
+/**
+ * @param {{ imports: ReturnType<typeof import('@plot/core/importJobs.js').useImportJobs> }} props  the import
+ *   jobs, read once by HomeTopCards so the slot and this card agree.
+ */
+export default function ImportJobCard({ imports }) {
   const { user } = useApp();
-  const { jobs, current, queued, cancel, dismiss } = useImportJobs(user?.id);
-  // The running job (with what waits behind it), then each finished job the
-  // user hasn't seen off. Queued jobs don't get a card of their own.
-  const shown = [current, ...jobs.filter(job => importJobFinished(job) && !job.seen_at)].filter(Boolean);
+  const { current, queued, cancel, dismiss } = imports;
+  const shown = importCardsShown(imports);
   if (!shown.length) return null;
   return shown.map(job => (
     <JobCard key={job.id} user={user} job={job} queued={job.id === current?.id ? queued : []} cancel={() => cancel(job.id)} dismiss={() => dismiss(job.id)} />
