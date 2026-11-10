@@ -31,6 +31,8 @@ export const IMPORT_JOBS = {
     plexPicked: (server, profile) => [server, profile].filter(Boolean).join(' · '),
     uploadFailed: 'We couldn’t upload that file. Check your connection and try again.',
     alreadyRunning: 'An import is already running. You can follow it on Home.',
+    // The same file for the same source is already queued or running.
+    alreadyImporting: 'That file is already importing. You can follow it on Home.',
     // A second pick while one runs: the worker takes them one at a time.
     queuedBehind: (source, running) => `Got it. Your ${source} history is queued and starts when ${running} finishes.`,
     addAnother: 'Add another source',

@@ -6,6 +6,8 @@
  * only watch the row. Shared by web and mobile; rendering stays per app.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import { supabase } from './supabase.js';
 import { callAuthenticatedFunction } from './functions.js';
 import { emit, HISTORY_CHANGED_EVENT } from './events.js';
@@ -113,9 +115,49 @@ async function kickWorker(jobId) {
   } catch { /* the scheduler picks it up within five minutes */ }
 }
 
-function enqueueError(error) {
+/** @param {any} body @returns {Promise<Uint8Array | null>} */
+async function fileBytes(body) {
+  if (body instanceof ArrayBuffer) return new Uint8Array(body);
+  if (ArrayBuffer.isView(body)) return new Uint8Array(body.buffer, body.byteOffset, body.byteLength);
+  if (body && typeof body.arrayBuffer === 'function') return new Uint8Array(await body.arrayBuffer());
+  return null;
+}
+
+/**
+ * One fingerprint for a selection of export files, so the same upload is not
+ * queued twice (enqueue_file_import_job refuses it while the first is open).
+ * Each file is its stored name plus a SHA-256 of its bytes: the parsers read
+ * the name (Letterboxd's watched.csv vs watchlist.csv), so the same bytes
+ * renamed are a different import. Sorted, so pick order does not matter.
+ *
+ * @param {{ name: string, body: Blob | ArrayBuffer | ArrayBufferView }[]} files
+ * @returns {Promise<string | null>} 64 hex characters, or null when a body
+ *   cannot be read here (the server then skips the check).
+ */
+export async function importFileFingerprint(files) {
+  const parts = [];
+  for (const file of files || []) {
+    const bytes = await fileBytes(file?.body);
+    if (!bytes) return null;
+    parts.push(`${safeFileName(file.name)}\0${bytesToHex(sha256(bytes))}`);
+  }
+  if (!parts.length) return null;
+  return bytesToHex(sha256(utf8ToBytes(parts.sort().join('\n'))));
+}
+
+/** The same file for the same source is already queued or running. */
+async function importAlreadyOpen({ userId, source, contentHash }) {
+  const { data, error } = await supabase.from('import_jobs').select('id')
+    .eq('user_id', userId).eq('source', source).eq('content_hash', contentHash)
+    .in('status', IMPORT_JOB_ACTIVE).limit(1);
+  return !error && !!data?.length;
+}
+
+/** @param {any} error */
+export function enqueueError(error) {
   if (!error) return null;
   const message = String(error.message || '');
+  if (message.includes('import_duplicate')) return new Error(IMPORT_JOBS.onboarding.alreadyImporting);
   if (message.includes('import_in_progress')) return new Error(IMPORT_JOBS.onboarding.alreadyRunning);
   if (message.includes('import_queue_full')) return new Error(IMPORT_JOBS.onboarding.queueFull);
   return error instanceof Error ? error : new Error(String(error.message || error));
@@ -131,6 +173,12 @@ function enqueueError(error) {
  */
 export async function startFileImport({ userId, source, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, files }) {
   if (!userId || !source || !files?.length) return { job: null, error: new Error(IMPORT_JOBS.onboarding.uploadFailed) };
+  // Checked before the upload so a repeat pick costs nothing; the enqueue
+  // checks again, and a unique index settles two clicks racing.
+  const contentHash = await importFileFingerprint(files).catch(() => null);
+  if (contentHash && await importAlreadyOpen({ userId, source, contentHash })) {
+    return { job: null, error: new Error(IMPORT_JOBS.onboarding.alreadyImporting) };
+  }
   const jobId = randomId();
   const paths = [];
   const seen = new Set();
@@ -149,7 +197,10 @@ export async function startFileImport({ userId, source, entry = IMPORT_ENTRY_POI
     }
     paths.push(path);
   }
-  const { data, error } = await supabase.rpc('enqueue_file_import_job', { p_job: jobId, p_source: source, p_files: paths, p_entry: entry });
+  const args = { p_job: jobId, p_source: source, p_files: paths, p_entry: entry };
+  let { data, error } = await supabase.rpc('enqueue_file_import_job', contentHash ? { ...args, p_content_hash: contentHash } : args);
+  // A database without 20261111090000 has no p_content_hash: queue as before.
+  if (error?.code === 'PGRST202' && contentHash) ({ data, error } = await supabase.rpc('enqueue_file_import_job', args));
   if (error) {
     await supabase.storage.from(IMPORT_UPLOADS_BUCKET).remove(paths).catch(() => {});
     return { job: null, error: enqueueError(error) };
