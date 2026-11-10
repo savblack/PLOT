@@ -2362,7 +2362,14 @@ var FAILED_ACTIONS = Object.freeze({
   // Joining a collaborative list from its invite link (useListInvites.js).
   LIST_INVITE_ACCEPT: "list_invite_accept",
   // The delete-account request never reached the edge function (deleteAccount.js).
-  ACCOUNT_DELETE: "account_delete"
+  ACCOUNT_DELETE: "account_delete",
+  // Auth emails that are not a sign-in or a signup, so they stay out of
+  // login_submit_failed / signup_submit_failed and those funnels' rates.
+  // The "Send reset link" request (success: password_reset_requested).
+  PASSWORD_RESET_REQUEST: "password_reset_request",
+  // "resend" on the check-your-inbox screen after signup, through GoTrue or
+  // signup-bypass (`source: 'signup_bypass'`).
+  CONFIRMATION_RESEND: "confirmation_resend"
 });
 var FAILED_LOADS = Object.freeze({
   WATCHLIST: "watchlist",
