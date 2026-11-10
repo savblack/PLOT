@@ -1,7 +1,8 @@
 /**
  * Content for the in-app Premium upgrade sheet, shared by web and mobile.
- * Each reason is a Free limit someone just hit; the sheet leads with the
- * Premium feature that lifts it, then a few other Premium rows.
+ * Each reason is a Free limit someone just hit; the sheet names the Premium
+ * feature that lifts it. `also` is a few other Premium rows, which the mobile
+ * sheet lists and the web sheet no longer does.
  */
 import { PLANS_PAGE } from './copy/plansPage.js';
 import { SETTINGS_VIEW } from './copy/settingsView.js';
