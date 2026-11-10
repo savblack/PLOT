@@ -12,9 +12,11 @@ export function watchTogetherHomeDismissed(raw) {
 }
 
 /**
- * The card is a way in, shown until this device dismisses it.
- * @param {{ signedIn: boolean, dismissed: boolean }} state
+ * The card is a way in, shown until this device dismisses it. It waits while
+ * Home is still showing a first-run card (the first-win card or Finishing
+ * touches): someone settling in gets those first, not a third banner.
+ * @param {{ signedIn: boolean, dismissed: boolean, settlingIn?: boolean }} state
  */
-export function watchTogetherHomeVisible({ signedIn, dismissed }) {
-  return signedIn && !dismissed;
+export function watchTogetherHomeVisible({ signedIn, dismissed, settlingIn = false }) {
+  return signedIn && !dismissed && !settlingIn;
 }

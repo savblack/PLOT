@@ -6570,16 +6570,14 @@ a.provider-chip--link:hover {
 .home-search-trigger:hover { border-color: var(--text-muted); color: var(--text-secondary); }
 .home-toolbar-actions > .desktop-page-filter { display: none; }
 @media (min-width: 1024px) {
-  .app-main:has(.home-page) { overflow-y: hidden; }
-  .app-main:has(.home-page) .app-main-inner { width: 100%; height: 100%; display: flex; flex-direction: column; min-height: 0; }
-  .home-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  .home-layout { flex: 1; min-height: 0; align-items: stretch; padding-bottom: 0; overflow: hidden; }
-  .home-side,
-  .home-stream { height: 100%; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: none; }
-  .home-side { position: static; padding-bottom: 3rem; }
-  .home-stream { padding-bottom: 3rem; }
-  .home-side::-webkit-scrollbar,
-  .home-stream::-webkit-scrollbar { display: none; }
+  /* The page is the one scroller, so the wheel works wherever the pointer is
+     and the cards above the columns scroll away with everything else. The two
+     columns used to scroll on their own inside a locked page, which left them
+     a strip at the bottom of the screen whenever a first-run card was showing.
+     The side column still sticks (.cal-side) and scrolls itself only when it
+     is taller than the window. */
+  .home-side { max-height: calc(100dvh - var(--header-h) - env(safe-area-inset-top, 0px) - 2rem); overflow-y: auto; scrollbar-width: none; }
+  .home-side::-webkit-scrollbar { display: none; }
   .home-stream { --discover-rail-gut: 0px; }
   .home-stream .discover-section-header,
   .home-stream .discover-hero-row { padding-inline: 0; }

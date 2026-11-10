@@ -11,6 +11,7 @@ import { tmdb } from '@plot/core/tmdb.js';
 import { useFollows, followUser } from '@plot/core/useFollows.js';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
+import { firstWinCardVisible } from '@plot/core/firstWinCard.js';
 import { deriveFinishingTouches, finishingTouchesVisible, firstWatchlistShow } from '@plot/core/finishingTouches.js';
 import { pointerAfterEpisode } from '@plot/core/watchingProgress.js';
 import { useHistory } from '@plot/core/useHistory.js';
@@ -29,6 +30,7 @@ import { track, EVENTS } from '../lib/analytics.js';
 import { useApp } from '../hooks/useApp.js';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { closeFinishingTouches, hideFinishingTouchesFor, readFinishingTouches } from '../utils/finishingTouchesState.js';
+import { readFirstWinCard } from '../utils/firstWinCardState.js';
 import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../utils/letterboxdImportPrompt.js';
 import { profileUrl } from '../utils/images.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
@@ -44,7 +46,9 @@ export default function FinishingTouches() {
   const history = useHistory(user?.id);
   const navigate = useNavigate();
   const [state, setState] = useState(() => readFinishingTouches(user?.id));
-  const [expanded, setExpanded] = useState(wideScreen);
+  // Opens on a wide screen, unless the first-win card is already above it: two
+  // open cards push Home's own rails off the screen.
+  const [expanded, setExpanded] = useState(() => wideScreen() && !firstWinCardVisible(readFirstWinCard(user?.id)));
   const [sheet, setSheet] = useState(null);
   const [letterboxdPrompt, setLetterboxdPrompt] = useState(() => readLetterboxdImportPrompt(user?.id));
   const follows = useFollows(user?.id, user?.id);

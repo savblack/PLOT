@@ -11,9 +11,13 @@ import {
   watchTogetherHomeKey,
   watchTogetherHomeVisible,
 } from '@plot/core/watchTogetherHome.js';
+import { firstWinCardVisible } from '@plot/core/firstWinCard.js';
+import { finishingTouchesVisible } from '@plot/core/finishingTouches.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { useApp } from '../hooks/useApp.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
+import { readFirstWinCard } from '../utils/firstWinCardState.js';
+import { readFinishingTouches } from '../utils/finishingTouchesState.js';
 import './WatchTogetherHomeCard.css';
 
 export function WatchTogetherHomeCardView({ premium, onOpen, onDismiss }) {
@@ -41,7 +45,10 @@ export default function WatchTogetherHomeCard() {
   const [dismissedFor, setDismissedFor] = useState(null);
   const dismissed = dismissedFor === userId || (userId ? watchTogetherHomeDismissed(readStorage(watchTogetherHomeKey(userId))) : false);
 
-  if (!SHOW_WATCH_TOGETHER || !watchTogetherHomeVisible({ signedIn: !!userId, dismissed })) return null;
+  // Read once per visit: closing a first-run card does not pop this one in underneath it.
+  const [settlingIn] = useState(() => firstWinCardVisible(readFirstWinCard(userId)) || finishingTouchesVisible(readFinishingTouches(userId)));
+
+  if (!SHOW_WATCH_TOGETHER || !watchTogetherHomeVisible({ signedIn: !!userId, dismissed, settlingIn })) return null;
 
   const dismiss = () => {
     if (!userId) return;
