@@ -13,16 +13,25 @@ import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE, MIN_PASSWORD_LENGTH, captchaFailureCopy } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
 import { AUTH_REQUEST_TIMEOUT_MS, AUTH_TIMEOUT_MESSAGE, withAuthTimeout } from '@plot/core/authTimeout.js';
-import { captchaSubmitPlan, CAPTCHA_SUBMIT_ATTEMPTS, CAPTCHA_TOKEN_WAIT_MS, shouldResetCaptcha } from '@plot/core/captchaGate.js';
+import { captchaRetryAfterWait, captchaSiteKeyForHost, captchaSubmitEnabled, captchaSubmitPlan, captchaWaitOver, CAPTCHA_SUBMIT_ATTEMPTS, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
+import { writePendingSearch } from '../utils/pendingSearch.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 import { loginNeedsConfirmation, shouldMagicLinkViaBypass, shouldResendViaBypass } from '../utils/authBypass.js';
 import { rememberPendingBypassSignup, rememberSignupTracked } from '../utils/authCallbackReport.js';
 
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+// Off on localhost and *.plot-5wr.pages.dev previews, which sign in against
+// PLOT Staging (no captcha enforced there) and where the production site key
+// is not valid anyway. VITE_TURNSTILE_ON_PREVIEW=1 keeps it on for testing
+// Turnstile itself with a Cloudflare test key. See captchaSiteKeyForHost.
+const TURNSTILE_SITE_KEY = captchaSiteKeyForHost({
+  siteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
+  hostname: typeof window === 'undefined' ? undefined : window.location.hostname,
+  forceOnPreview: import.meta.env.VITE_TURNSTILE_ON_PREVIEW === '1',
+});
 
 function friendlyError(msg) {
   if (!msg) return COMMON.genericError;
@@ -136,6 +145,16 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Set when the widget itself errors during the current attempt. A timeout
   // leaves this false so the next wait does not call turnstile.reset().
   const captchaErroredRef = useRef(false);
+  // Cloudflare is showing its "Verify you are human" checkbox and waits for a tap.
+  const captchaInteractiveRef = useRef(false);
+  // The same facts as state, for the submit button. The widget starts as soon
+  // as the form shows, and the button waits for its token (see
+  // captchaSubmitEnabled) instead of starting the check on click.
+  const [captchaHasToken, setCaptchaHasToken] = useState(false);
+  const [captchaErrored, setCaptchaErrored] = useState(false);
+  const [captchaInteractive, setCaptchaInteractive] = useState(false);
+  const [captchaWaitStart, setCaptchaWaitStart] = useState(() => Date.now());
+  const [captchaNow, setCaptchaNow] = useState(() => Date.now());
   const [formStarted, setFormStarted] = useState(false);
   const [website, setWebsite] = useState(''); // honeypot — real users never see or fill this
   // Form token, minimum form age, and the POSTs to signup-bypass. Shared
@@ -155,6 +174,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // A title typed into the theplot.tv homepage search bar arrives as ?q=.
+  // Keep it so the app opens search for it once the account exists.
+  useEffect(() => {
+    writePendingSearch(new URLSearchParams(location.search).get('q'));
+  }, [location.search]);
+
   // Fires once per visit, the first time someone actually starts signup.
   // Keystrokes cover the email form. Google, Apple, magic link, and a
   // submit that autofill never reported as a change used to skip it.
@@ -168,17 +193,42 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // Only offered when Turnstile has genuinely, repeatedly failed in this
   // browser (see Turnstile.jsx's onPersistentlyBlocked) — the normal signup
   // path is untouched for everyone else.
+  // Starts a new wait for the button: the token is gone (used, expired, or
+  // being fetched again) and the next one is on its way.
+  const markCaptchaWaiting = () => {
+    const now = Date.now();
+    setCaptchaHasToken(false);
+    setCaptchaInteractive(false);
+    setCaptchaWaitStart(now);
+    setCaptchaNow(now);
+  };
+
   const handleCaptchaToken = (token) => {
     captchaTokenRef.current = token;
+    if (token) {
+      captchaErroredRef.current = false;
+      setCaptchaHasToken(true);
+      setCaptchaErrored(false);
+      setCaptchaInteractive(false);
+    } else {
+      markCaptchaWaiting();
+    }
   };
 
   const handleCaptchaPersistentlyBlocked = (blocked) => {
     captchaBlockedRef.current = blocked;
   };
 
+  const handleCaptchaInteractive = () => {
+    captchaInteractiveRef.current = true;
+    setCaptchaInteractive(true);
+  };
+
   // One attempt. A widget error ends the wait early so the retry can run.
-  // A timeout does not: the challenge may still be in flight.
-  const waitForCaptchaAttempt = (ms) => {
+  // A timeout does not: the challenge may still be in flight. How long the
+  // wait lasts comes from core: sign-in and password reset have no fallback
+  // and wait longer, and an on-screen checkbox gets time to be tapped.
+  const waitForCaptchaAttempt = (authMode) => {
     const blockedAtStart = captchaBlockedRef.current;
     if (captchaTokenRef.current) return Promise.resolve(captchaTokenRef.current);
     return new Promise((resolve) => {
@@ -186,7 +236,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
       const id = setInterval(() => {
         const token = captchaTokenRef.current;
         const failedNow = captchaErroredRef.current || (captchaBlockedRef.current && !blockedAtStart);
-        if (token || failedNow || Date.now() - started >= ms) {
+        const over = captchaWaitOver({
+          token,
+          errored: failedNow,
+          interactive: captchaInteractiveRef.current,
+          mode: authMode,
+          elapsedMs: Date.now() - started,
+        });
+        if (over) {
           clearInterval(id);
           resolve(token);
         }
@@ -196,6 +253,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
   const requestCaptcha = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
+    markCaptchaWaiting();
     setCaptchaExecute((n) => n + 1);
   };
 
@@ -213,13 +272,15 @@ export default function AuthPage({ initialMode = 'signup' }) {
     // A challenge may finish after the previous submit stopped waiting.
     if (captchaTokenRef.current) return 'ready';
     let plan = 'wait';
-    let widgetErrored = false;
+    // The widget runs on load, so a challenge is usually already in flight.
+    // Only an error from that run earns a fresh one on the first attempt.
+    let widgetErrored = captchaErroredRef.current;
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
       // Reset only after a widget error. A timeout means someone may still
       // be solving the challenge, and reset() throws that away.
-      if (shouldResetCaptcha({ attempt, widgetErrored })) requestCaptcha();
+      if (shouldResetCaptcha({ attempt, widgetErrored, runsOnLoad: true })) requestCaptcha();
       captchaErroredRef.current = false;
-      const token = await waitForCaptchaAttempt(CAPTCHA_TOKEN_WAIT_MS);
+      const token = await waitForCaptchaAttempt(authMode);
       widgetErrored = captchaErroredRef.current;
       plan = captchaSubmitPlan({
         siteKey: TURNSTILE_SITE_KEY,
@@ -229,6 +290,9 @@ export default function AuthPage({ initialMode = 'signup' }) {
         waited: !token,
       });
       if (plan === 'ready') return plan;
+      // An untapped checkbox, or a sign-in wait that ran out, would only
+      // wait on the same challenge again. A widget error gets a fresh one.
+      if (!captchaRetryAfterWait({ mode: authMode, errored: widgetErrored, interactive: captchaInteractiveRef.current })) break;
     }
     return plan;
   };
@@ -239,9 +303,29 @@ export default function AuthPage({ initialMode = 'signup' }) {
     rememberPremiumCheckoutIntent(location.search);
   }, [location.search]);
 
+  // Off until the security check has a token. Turns on anyway once core says
+  // the wait is over, so a check that never finishes cannot leave it grey.
+  const captchaReady = captchaSubmitEnabled({
+    siteKey: TURNSTILE_SITE_KEY,
+    token: captchaHasToken ? 'ready' : null,
+    errored: captchaErrored,
+    interactive: captchaInteractive,
+    mode,
+    elapsedMs: captchaNow - captchaWaitStart,
+  });
+
+  // Re-check the wait limit while the button is off. Stops as soon as it is on.
+  useEffect(() => {
+    if (captchaReady) return undefined;
+    const id = setInterval(() => setCaptchaNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [captchaReady]);
+
   // Turnstile tokens are single-use; clear and re-issue after every auth attempt.
   const resetCaptcha = () => {
     captchaTokenRef.current = null;
+    captchaInteractiveRef.current = false;
+    markCaptchaWaiting();
     setCaptchaNonce((n) => n + 1);
   };
 
@@ -870,12 +954,16 @@ export default function AuthPage({ initialMode = 'signup' }) {
                 <Turnstile
                   siteKey={TURNSTILE_SITE_KEY}
                   onToken={handleCaptchaToken}
+                  onInteractive={handleCaptchaInteractive}
                   resetSignal={captchaNonce}
                   executeSignal={captchaExecute}
                   failureMessage={captchaCopy.failed}
                   blockedMessage={captchaCopy.blocked}
                   onBlocked={(attempt) => {
                     captchaErroredRef.current = true;
+                    captchaInteractiveRef.current = false;
+                    setCaptchaErrored(true);
+                    setCaptchaInteractive(false);
                     captchaBlockedRef.current = true;
                     if (mode === 'signup') track(EVENTS.SIGNUP_CAPTCHA_BLOCKED, { attempt });
                   }}
@@ -885,12 +973,18 @@ export default function AuthPage({ initialMode = 'signup' }) {
                 <button
                   type="submit"
                   className="auth-cta"
-                  disabled={loading}
+                  disabled={loading || !captchaReady}
                   aria-busy={loading}
                   aria-label={loading ? `${ctaLabels[mode]} in progress` : ctaLabels[mode]}
+                  aria-describedby={!captchaReady && !loading ? 'auth-captcha-status' : undefined}
                 >
                   {loading ? <PlotLoader size="button" tone="dark" ariaHidden /> : ctaLabels[mode]}
                 </button>
+                <p id="auth-captcha-status" className="auth-captcha-status" role="status" aria-live="polite">
+                  {!captchaReady && !loading
+                    ? (captchaInteractive ? AUTH_PAGE.verificationTapBox : AUTH_PAGE.verificationChecking)
+                    : null}
+                </p>
               </form>
 
               {mode !== 'forgot' && (
@@ -898,7 +992,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   type="button"
                   className="auth-magiclink"
                   onClick={sendMagicLink}
-                  disabled={loading}
+                  disabled={loading || !captchaReady}
                 >
                   {AUTH_PAGE.magicLinkInstead}
                 </button>

@@ -8,7 +8,7 @@
 export const PLANS_PAGE = {
   meta: {
     title: 'Plans & Pricing — plot',
-    description: 'plot is free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
+    description: 'Plot is free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
     ogDescription: 'Free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
   },
 
