@@ -60,6 +60,7 @@ import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
 import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../utils/letterboxdImportPrompt.js';
+import PremiumMark from './PremiumMark.jsx';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -121,14 +122,6 @@ function RegionPicker({ current, onSave, onClose }) {
       </div>
     </>,
     document.body
-  );
-}
-
-function PremiumBadge() {
-  return (
-    <span style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--accent)', background: 'var(--accent-dim)', borderRadius: 999, padding: '0.15rem 0.5rem', marginLeft: '0.35rem', verticalAlign: 'middle' }}>
-      Premium
-    </span>
   );
 }
 
@@ -1832,7 +1825,7 @@ export default function SettingsView() {
           onLocked={(id) => setThemeUpgrade(id)}
           onPreview={() => navigate('/settings/themes')}
           region={profile?.region}
-          premiumBadge={<PremiumBadge />}
+          premiumBadge={<PremiumMark className="settings-premium-mark" />}
         />
         {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
         <SettingsPreferenceRow
@@ -1966,7 +1959,7 @@ export default function SettingsView() {
             </div>
             <div>
               <div className="settings-row-label">
-                {SETTINGS_VIEW.calendarFeed.subscribeLabel}{!premium.isPremium && <PremiumBadge />}
+                {SETTINGS_VIEW.calendarFeed.subscribeLabel}{!premium.isPremium && <PremiumMark className="settings-premium-mark" />}
               </div>
               <div className={!premium.isPremium ? 'settings-row-hint settings-row-hint--hide-mobile' : undefined} style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {!premium.isPremium

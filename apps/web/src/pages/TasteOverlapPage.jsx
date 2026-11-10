@@ -15,6 +15,7 @@ import { PLANS_PAGE } from '../copy/plansPage.js';
 import TasteShareDialog from '../components/TasteShareDialog.jsx';
 import TasteShareMenu from '../components/TasteShareMenu.jsx';
 import LoginRedirect from '../components/LoginRedirect.jsx';
+import PremiumMark from '../components/PremiumMark.jsx';
 
 const initialOf = (s) => (s || '?').charAt(0).toUpperCase();
 const stars = (n) => (n == null ? '' : `${Number.isInteger(n) ? n.toFixed(0) : n.toFixed(1)}`);
@@ -259,7 +260,7 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
     <div className="to-view">
       <div className="to-top">
         <BackButton to={profilePath} />
-        {!premium && <span className="to-chip">{T.premiumChip}</span>}
+        {!premium && <span className="to-chip">{T.premiumChipLabel}<PremiumMark /></span>}
         {premium && overlap && target
           ? <TasteShareMenu overlap={overlap} target={target} genreName={genreName} onCustomise={() => setSharing(true)} />
           : <span className="to-top-spacer" aria-hidden="true" />}

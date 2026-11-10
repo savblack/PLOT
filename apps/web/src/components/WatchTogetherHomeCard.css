@@ -36,18 +36,6 @@
   line-height: 1.25;
   color: var(--text-primary);
 }
-.wt-home-pill {
-  flex-shrink: 0;
-  padding: 2px 7px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-fill);
-  color: var(--on-accent-fill);
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  line-height: 1.4;
-}
 .wt-home-body,
 .wt-home-note {
   font-size: 13px;

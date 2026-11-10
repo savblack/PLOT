@@ -67,19 +67,17 @@
   background: transparent;
   cursor: pointer;
 }
+/* The Premium spark on a theme a Free viewer cannot pick yet. It was a
+   padlock, which now only means private. */
 .account-menu-lock {
   position: absolute;
-  right: -2px;
-  bottom: -2px;
-  width: 12px;
-  height: 12px;
+  right: -3px;
+  bottom: -3px;
+  width: 13px;
+  height: 13px;
   padding: 1px;
   border-radius: 50%;
   background: var(--surface-raised);
-  fill: none;
-  stroke: var(--text-secondary);
-  stroke-width: 2.2;
-  stroke-linecap: round;
 }
 
 .account-menu-section {

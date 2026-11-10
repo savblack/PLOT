@@ -623,21 +623,20 @@ svg { stroke-width: 1.5; }
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-/* Premium marker on a nav destination, shown to Free viewers only. A quiet
-   pink tint with pink text, so it labels the item without competing with it. */
-.app-nav-premium {
-  margin-left: auto;
-  padding: 2px 7px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  color: var(--accent-text);
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  line-height: 1.4;
+/* The Premium marker (PremiumMark.jsx): a solid spark in the accent's text
+   shade. One size, no chip behind it. In a nav row it sits at the far end. */
+.premium-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--accent-text);
+  vertical-align: middle;
 }
+.premium-mark svg { width: 100%; height: 100%; stroke: none; }
+.app-sidebar-item .premium-mark, .nav-drawer-item .premium-mark { margin-left: auto; }
 .app-sidebar-scroll { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
 .app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: stretch; }
 .app-sidebar-nav > .app-sidebar-item:first-child { margin-bottom: 10px; }

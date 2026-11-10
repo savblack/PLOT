@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
-import { APP_SHELL } from '@plot/core/copy/appShell.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import {
   WATCH_TOGETHER_HOME_DISMISSED,
@@ -15,6 +14,7 @@ import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { useApp } from '../hooks/useApp.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
 import './WatchTogetherHomeCard.css';
+import PremiumMark from './PremiumMark.jsx';
 
 export function WatchTogetherHomeCardView({ premium, onOpen, onDismiss }) {
   return (
@@ -22,7 +22,7 @@ export function WatchTogetherHomeCardView({ premium, onOpen, onDismiss }) {
       <button type="button" className="wt-home-open" onClick={onOpen}>
         <span className="wt-home-row">
           <span className="wt-home-title">{WATCH_TOGETHER.navLabel}</span>
-          {!premium && <span className="wt-home-pill">{APP_SHELL.premium}</span>}
+          {!premium && <PremiumMark />}
         </span>
         <span className="wt-home-body">{WATCH_TOGETHER.start.pitchTitle}</span>
         {!premium && <span className="wt-home-note">{WATCH_TOGETHER.hub.lockedNote}</span>}

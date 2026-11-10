@@ -32,9 +32,9 @@ import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import { useTopLists } from '../hooks/useTopLists.js';
 import { useSharePreset } from '../hooks/useSharePreset.js';
 import { MEDIA } from '../copy/media.js';
-import { APP_SHELL } from '../copy/appShell.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
+import PremiumMark from './PremiumMark.jsx';
 
 /* History is its own page: the poster shelf, one month at a time, with a
    sticky column of small cards beside it that say something about the year
@@ -157,7 +157,7 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
       })()}
       {upgradeTo && entries.length > 0 && (
         <Link className="hist-drill-link" to={upgradeTo}>
-          {T.upgradeInsights}<span className="app-nav-premium hist-drill-premium">{APP_SHELL.premium}</span>
+          {T.upgradeInsights}<PremiumMark className="hist-drill-premium" />
         </Link>
       )}
     </div>

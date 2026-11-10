@@ -5,6 +5,7 @@ import AccountMenu from './AccountMenu.jsx';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { IconBell, NAV_ICONS } from './navIcons.jsx';
+import PremiumMark from './PremiumMark.jsx';
 
 /* The desktop nav rail. Replaces the bottom tab bar and the nav drawer above
    1024px — the two of them listed the same destinations bar Settings.
@@ -107,7 +108,7 @@ export default function AppSidebar({
               >
                 {Icon && <Icon />}
                 <span className="app-sidebar-label">{label}</span>
-                {premium && showPremiumPill && !collapsed && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
+                {premium && showPremiumPill && !collapsed && <PremiumMark />}
               </button>
             );
           })}

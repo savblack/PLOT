@@ -25,6 +25,7 @@ import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
 import PlotLogo from './PlotLogo.jsx';
 import { SaveButton, FavoriteButton } from './TitleActions.jsx';
+import PremiumMark from './PremiumMark.jsx';
 
 /* Just Decide. Phone: one column, a Filters panel that folds away, and a
    sticky bar with the sentence and Pick. Desktop (>=1024px): the same 264px
@@ -50,7 +51,6 @@ const IconKeepFinding = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9" /><path d="M20 4v5h-5" /><path d="M20 12a8 8 0 0 1-14 5.3L4 15" /><path d="M4 20v-5h5" /></svg>
 );
 
-const IconLock = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>;
 const IconClose = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>;
 // A pin, not the bookmark: the bookmark means the watchlist everywhere else.
 const IconPin = ({ filled }) => (
@@ -304,7 +304,7 @@ function PickButton({ picker, premium, className = '' }) {
     <button type="button" className={`btn btn-primary tonight-go ${className}`} onClick={() => picker.go('five')}
       aria-label={locked ? `${T.go}, ${T.gate.locked}` : picker.freePickLeft ? `${T.go}. ${T.freePickNote}` : undefined}
       title={picker.freePickLeft ? T.freePickNote : undefined}>
-      {locked && <IconLock />}{T.go}
+      {locked && <PremiumMark className="tonight-go-mark" />}{T.go}
     </button>
   );
 }
