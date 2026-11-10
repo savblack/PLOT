@@ -1,0 +1,25 @@
+/* DialogActions.jsx: Cancel then the main button, bottom right. */
+.dialog-actions {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.dialog-actions .btn { white-space: nowrap; }
+.dialog-actions-note {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin-right: auto;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+.dialog-actions-error {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--danger);
+}

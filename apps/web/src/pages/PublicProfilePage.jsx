@@ -6,6 +6,7 @@ import './PublicProfilePage.css';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import DialogActions from '../components/DialogActions.jsx';
 import { useApp } from '../hooks/useApp.js';
 import { supabase } from '@plot/core/supabase.js';
 import { usePublicProfile } from '../hooks/usePublicProfile.js';
@@ -151,6 +152,7 @@ export const profileStyles = `
   .pp-edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
   .pp-edit-modal { background: var(--surface); width: 100%; max-width: 440px; max-height: 90vh; border-radius: var(--radius-lg); overflow-y: auto; }
   .pp-edit-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.4rem; }
+  .pp-edit-foot { position: sticky; bottom: 0; z-index: 2; display: flex; padding: 0.8rem 1.1rem 1rem; border-top: 1px solid var(--border); background: var(--surface); }
   .pp-photo { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
   .pp-photo-btn { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 0.9rem; cursor: pointer; }
   .pp-field-label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
@@ -369,7 +371,6 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
           <SheetHeader
             title={PUBLIC_PROFILE_PAGE.editProfile}
             onClose={onClose}
-            action={{ label: saving ? PUBLIC_PROFILE_PAGE.saving : COMMON.save, onClick: save, disabled: !canSave }}
           />
         </div>
         <div className="pp-edit-body">
@@ -515,7 +516,12 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
             })}
           </div>
 
-          {!!error && <div className="pp-error">{error}</div>}
+        </div>
+        {/* Save sits bottom right with Cancel, as in every dialog you type
+            into. It used to be in the header's top right corner. */}
+        <div className="pp-edit-foot">
+          <DialogActions onCancel={onClose} busy={saving} error={error || ''}
+            primary={{ label: saving ? PUBLIC_PROFILE_PAGE.saving : COMMON.save, onClick: save, disabled: !canSave }} />
         </div>
       </div>
     </div>

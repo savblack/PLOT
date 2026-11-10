@@ -1,5 +1,6 @@
 // "New list" asks which kind (B1 on the smart lists canvas): a list you fill
-// yourself, or a smart list that finds its own titles. A small menu under the
+// yourself, a smart list that finds its own titles, or a list shared with
+// people you watch with (design audit, 10 Nov 2026, pick 4.2 B). A small menu under the
 // button that opened it. Mobile parity: issue 1094.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -9,6 +10,8 @@ import './SmartListDialog.css';
 const IconList = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" /></svg>;
 const IconSparkle = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" /><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z" /></svg>;
 
+const IconPeople = () => <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5" /><circle cx="17.5" cy="9" r="2.5" /><path d="M17 14.6c2.4.2 4 1.8 4.5 4.4" /></svg>;
+
 const MENU_WIDTH = 300;
 const GUTTER = 16;
 
@@ -17,10 +20,11 @@ const GUTTER = 16;
  *   anchorRef: { current: HTMLElement | null },
  *   onList: () => void,
  *   onSmart: () => void,
+ *   onShared?: () => void,  left out where shared lists are switched off.
  *   onClose: () => void,
  * }} props
  */
-export default function NewListChoice({ anchorRef, onList, onSmart, onClose }) {
+export default function NewListChoice({ anchorRef, onList, onSmart, onShared, onClose }) {
   const menuRef = useRef(null);
   const [pos, setPos] = useState(null);
 
@@ -67,6 +71,7 @@ export default function NewListChoice({ anchorRef, onList, onSmart, onClose }) {
       style={{ position: 'fixed', top: pos?.top ?? -9999, left: pos?.left ?? -9999 }}>
       {item('list', IconList, onList)}
       {item('smart', IconSparkle, onSmart)}
+      {onShared && item('shared', IconPeople, onShared)}
     </div>,
     document.body,
   );

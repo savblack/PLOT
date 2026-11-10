@@ -7,6 +7,7 @@
 // in issue 1089.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DialogActions from './DialogActions.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
@@ -191,10 +192,8 @@ export function RenameListDialog({ list, onClose }) {
   };
   return (
     <ResponsiveDialog title={C.myLists.renameTitle} onClose={onClose}
-      footer={<div className="wt-dialog-actions">
-        <button type="button" className="btn btn-secondary" onClick={onClose}>{COMMON.cancel}</button>
-        <button type="button" className="btn btn-primary" onClick={save} disabled={busy || !name.trim()}>{COMMON.save}</button>
-      </div>}>
+      footer={<DialogActions onCancel={onClose} busy={busy}
+        primary={{ label: COMMON.save, onClick: save, disabled: !name.trim() }} />}>
       <form className="wt-accept" onSubmit={e => { e.preventDefault(); save(); }}>
         <label className="wt-field">
           <span className="wt-accept-label">{C.create.name}</span>
@@ -309,10 +308,9 @@ export function NewSharedListDialog({ onClose, partners: givenPartners }) {
 
   return (
     <ResponsiveDialog title={C.create.title} onClose={onClose}
-      footer={<div className="wt-dialog-actions cl-create-foot">
-        <span className="wt-note">{pickedNames.length ? C.create.notify(pickedNames) : C.create.linkNote}</span>
-        <button type="button" className="btn btn-primary" onClick={create} disabled={busy || !name.trim()}>{C.create.create}</button>
-      </div>}>
+      footer={<DialogActions onCancel={onClose} busy={busy}
+        note={pickedNames.length ? C.create.notify(pickedNames) : C.create.linkNote}
+        primary={{ label: C.create.create, onClick: create, disabled: !name.trim() }} />}>
       <form className="wt-accept" onSubmit={e => { e.preventDefault(); create(); }}>
         <label className="wt-field">
           <span className="wt-accept-label">{C.create.name}</span>
