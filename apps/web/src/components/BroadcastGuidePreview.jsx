@@ -3,6 +3,7 @@
 // left (week, my channels), the stream on the right. Option C from the 17 Sep
 // 2026 Guide canvas: what's on now first, then the evening grouped by hour.
 import { useEffect, useRef, useState } from 'react';
+import { IconClose } from './navIcons.jsx';
 import { Link } from 'react-router-dom';
 import { readBroadcastRegion } from '../utils/broadcastPreviewStorage.js';
 import { GUIDE_REGIONS, guideDay, isOnNow, broadcastTime, broadcastDayLabel, groupByHour, programmeProgress } from '@plot/core/broadcastGuide.js';
@@ -255,7 +256,7 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
     </div>
 
     <dialog ref={dialog} className="broadcast-dialog" onClose={() => setSelected(null)}>
-      {selected && <><button type="button" className="btn btn-secondary btn-xs" onClick={() => dialog.current.close()} aria-label={COPY.close}>×</button><p className="hist-card-note"><ChannelMark channel={channelById.get(selected.channelId)} small /> {channelById.get(selected.channelId)?.name} · {time(selected.start)}–{time(selected.end)}</p><h2>{selected.title}</h2><p>{selected.description || COPY.noDescription}</p></>}
+      {selected && <><button type="button" className="icon-btn broadcast-dialog-close" onClick={() => dialog.current.close()} aria-label={COPY.close}><IconClose /></button><p className="hist-card-note"><ChannelMark channel={channelById.get(selected.channelId)} small /> {channelById.get(selected.channelId)?.name} · {time(selected.start)}–{time(selected.end)}</p><h2>{selected.title}</h2><p>{selected.description || COPY.noDescription}</p></>}
     </dialog>
   </div>;
 }

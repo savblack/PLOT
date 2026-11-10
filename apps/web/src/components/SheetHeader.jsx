@@ -45,16 +45,10 @@ export default function SheetHeader({ title, onClose, onBack, action, bordered =
         flexShrink: 0,
       }}
     >
-      {/* Left slot: back-chevron takes priority. Otherwise ✕ close lives here
-          only when a primary action is displacing it to the right — with no
-          action, close stays in its usual right-hand spot. */}
+      {/* Left slot: the back chevron, when there is somewhere to go back to. */}
       {onBack ? (
         <button type="button" onClick={onBack} aria-label="Back" style={ICON_BTN}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-        </button>
-      ) : (action && onClose) ? (
-        <button type="button" onClick={onClose} aria-label="Close" style={ICON_BTN}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
         </button>
       ) : <span style={{ minWidth: 44 }} />}
 
@@ -71,12 +65,13 @@ export default function SheetHeader({ title, onClose, onBack, action, bordered =
         {title}
       </h2>
 
-      {/* Right slot: the primary action (e.g. Save), if any. ✕ close rides here
-          too, unless it's already been placed on the left (action present and
-          no back-chevron — see left slot above). */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto', zIndex: 1 }}>
+      {/* Right slot: the primary action (e.g. Save), if any, then ✕. Close is
+          always top right, whatever else the header carries (design audit,
+          10 Nov 2026, pick 1.2 A). It used to move to the left when an action
+          took the right. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginLeft: 'auto', zIndex: 1 }}>
         {actionBtn}
-        {onClose && !(action && !onBack) && (
+        {onClose && (
           <button type="button" onClick={onClose} aria-label="Close" style={ICON_BTN}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
