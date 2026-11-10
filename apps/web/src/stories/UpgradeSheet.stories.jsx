@@ -2,7 +2,7 @@ import { expect, fireEvent, waitFor, within } from 'storybook/test';
 import { MemoryRouter } from 'react-router-dom';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { AppContext } from '../hooks/useApp.js';
-import UpgradeSheet from '../components/UpgradeSheet.jsx';
+import UpgradeSheet, { UpgradeSheetView } from '../components/UpgradeSheet.jsx';
 import PremiumPurchaseAction from '../components/PremiumPurchaseAction.jsx';
 
 /* The in-app upgrade sheet for a Free viewer who has hit the list limit. It
@@ -49,7 +49,9 @@ export const UpgradeOffersPremium = {
   tags: ['interaction-test'],
   play: async () => {
     const body = within(document.body);
-    await expect(body.getByRole('button', { name: PLANS_PAGE.upgradeAction })).toBeEnabled();
+    // Storybook has no billing server, so the read never answers: the offer
+    // shows once its short wait is over.
+    await expect(await body.findByRole('button', { name: PLANS_PAGE.upgradeAction }, { timeout: 4000 })).toBeEnabled();
     await expect(body.queryByText('Coming soon')).toBeNull();
   },
 };
@@ -74,21 +76,46 @@ export const StartFreeTrialLabel = {
   },
 };
 
+// The sheet with a made-up billing state. Storybook has no billing server, so
+// these render UpgradeSheetView, which takes the state it is given. Each story
+// records what a press would send to checkout.
+const sent = [];
+const billingState = (over = {}) => ({
+  checkoutAvailable: true, busy: false, error: null, billingReady: true, trialEligible: false,
+  startCheckout: (plan) => { sent.push(plan); },
+  ...over,
+});
+const view = (premium, reason = 'stats') => ({
+  render: (args) => <UpgradeSheetView {...args} reason={reason} premium={premium} />,
+});
+
 // Someone who has never subscribed: the free trial is the headline and the
 // button, and the feature they tapped is the sentence under it.
 export const TrialFirst = {
-  args: { reason: 'stats', premiumState: { trialEligible: true } },
+  ...view(billingState({ trialEligible: true })),
   tags: ['interaction-test'],
   play: async () => {
+    sent.length = 0;
     const body = within(document.body);
     await expect(body.getByRole('heading', { name: S.trialTitle })).toBeVisible();
     await expect(body.getByText(S.reasons.stats.title)).toBeVisible();
-    await expect(body.getByRole('button', { name: PLANS_PAGE.startTrialAction })).toBeEnabled();
-    // Yearly is chosen first, and the line under the button says what it costs after the trial.
+    const start = body.getByRole('button', { name: PLANS_PAGE.startTrialAction });
+    const annual = body.getByRole('button', { name: new RegExp(`^${PLANS_PAGE.billing.annual}`) });
+    const monthly = body.getByRole('button', { name: new RegExp(`^${PLANS_PAGE.billing.monthly}`) });
+    // Annual is chosen first; the line says what it costs after the trial,
+    // and that is the plan a press sends.
+    await expect(annual).toHaveAttribute('aria-pressed', 'true');
+    await expect(monthly).toHaveAttribute('aria-pressed', 'false');
     await expect(body.getByText(S.afterTrial.yearly)).toBeVisible();
-    fireEvent.click(body.getByRole('button', { name: new RegExp(`^${PLANS_PAGE.billing.monthly}`) }));
+    fireEvent.click(start);
+    // Choosing Monthly changes the row, the line and the plan together.
+    fireEvent.click(monthly);
+    await expect(monthly).toHaveAttribute('aria-pressed', 'true');
+    await expect(annual).toHaveAttribute('aria-pressed', 'false');
     await expect(body.getByText(S.afterTrial.monthly)).toBeVisible();
     await expect(body.queryByText(S.afterTrial.yearly)).toBeNull();
+    fireEvent.click(start);
+    await expect(sent).toEqual(['yearly', 'monthly']);
     // The older sheet's extra selling is gone.
     await expect(body.queryByText(S.alsoIn)).toBeNull();
   },
@@ -97,7 +124,7 @@ export const TrialFirst = {
 // A returning subscriber gets no trial: the feature leads, the button says
 // Upgrade, and the price line makes no mention of a trial.
 export const ReturningSubscriber = {
-  args: { reason: 'stats', premiumState: { trialEligible: false } },
+  ...view(billingState({ trialEligible: false })),
   tags: ['interaction-test'],
   play: async () => {
     const body = within(document.body);
@@ -105,5 +132,49 @@ export const ReturningSubscriber = {
     await expect(body.queryByText(S.trialTitle)).toBeNull();
     await expect(body.getByRole('button', { name: PLANS_PAGE.upgradeAction })).toBeEnabled();
     await expect(body.getByText(S.price.yearly)).toBeVisible();
+    await expect(body.queryByText(S.afterTrial.yearly)).toBeNull();
+  },
+};
+
+// Checkout closed: nothing is for sale, so there is no trial headline and no
+// plans to pick, even for someone who would otherwise be offered the trial.
+export const WaitlistWhenCheckoutIsClosed = {
+  ...view(billingState({ checkoutAvailable: false, trialEligible: true })),
+  tags: ['interaction-test'],
+  play: async () => {
+    const body = within(document.body);
+    await expect(body.getByRole('heading', { name: S.reasons.stats.title })).toBeVisible();
+    await expect(body.queryByText(S.trialTitle)).toBeNull();
+    await expect(body.getByRole('link', { name: PLANS_PAGE.waitlistAction })).toBeVisible();
+    await expect(body.queryByRole('group', { name: S.planLabel })).toBeNull();
+    await expect(body.queryByText(S.afterTrial.yearly)).toBeNull();
+    await expect(body.queryByText(S.price.yearly)).toBeNull();
+  },
+};
+
+// Before the first billing read answers, the offer is held back rather than
+// drawn as the no-trial version and then swapped.
+export const HeldUntilBillingIsKnown = {
+  ...view(billingState({ billingReady: false })),
+  tags: ['interaction-test'],
+  play: async () => {
+    const dialog = within(document.body).getByRole('dialog');
+    await expect(dialog.querySelector('.upgrade-sheet-offer')).toHaveAttribute('aria-busy', 'true');
+    await expect(dialog.querySelector('.upgrade-sheet-title')).not.toBeVisible();
+    // Not now still works while it waits.
+    await expect(within(dialog).getByRole('button', { name: S.notNow })).toBeVisible();
+  },
+};
+
+// The themes sheet keeps its light and dark preview and its line under a trial headline.
+export const TrialFirstThemes = {
+  ...view(billingState({ trialEligible: true }), 'themes'),
+  args: { family: 'sage' },
+  tags: ['interaction-test'],
+  play: async () => {
+    const body = within(document.body);
+    await expect(body.getByRole('heading', { name: S.trialTitle })).toBeVisible();
+    await expect(body.getByText(S.reasons.themes.title)).toBeVisible();
+    await expect(body.getByText(/That’s Sage, in light and dark\./)).toBeVisible();
   },
 };

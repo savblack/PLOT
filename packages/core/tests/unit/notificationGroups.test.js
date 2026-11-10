@@ -89,6 +89,6 @@ test('the roll-up reads as one sentence and names its lists', async () => {
 test('the smart lists upgrade sheet says the rules are kept only when they were', async () => {
   const { upgradeSheetContent } = await import('../../upgradeSheet.js');
   assert.equal(upgradeSheetContent('smartLists').kept, null);
-  assert.equal(upgradeSheetContent('smartLists', { kept: true }).kept, 'Your rules are kept. Upgrade and the list is ready.');
+  assert.equal(upgradeSheetContent('smartLists', { kept: true }).kept, 'Your rules are kept. The list is ready as soon as you have Premium.');
   assert.equal(upgradeSheetContent('lists', { kept: true }).kept, null);
 });

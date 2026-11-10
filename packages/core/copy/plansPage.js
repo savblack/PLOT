@@ -91,8 +91,9 @@ export const PLANS_PAGE = {
     'Everything free today stays free',
     'Friends join shared lists for free',
   ],
-  // In-app upgrade sheet, opened where a Free limit is hit. Each reason leads with
-  // the Premium feature that lifts that limit; `also` picks premiumCard rows by icon.
+  // In-app upgrade sheet, opened where a Free limit is hit. Each reason names the
+  // Premium feature that lifts that limit. `also` picks premiumCard rows by icon;
+  // the mobile sheet lists them, the web sheet no longer does.
   upgradeSheet: {
     close: 'Close',
     compare: 'Compare every feature',
@@ -129,7 +130,7 @@ export const PLANS_PAGE = {
         title: 'Lists that fill themselves.',
         body: 'Save a few rules, like comedies from the 2010s on your services, and the list keeps finding matches, including new discoveries.',
         // B5: shown when a Free viewer built rules and pressed Create.
-        kept: 'Your rules are kept. Upgrade and the list is ready.',
+        kept: 'Your rules are kept. The list is ready as soon as you have Premium.',
         also: ['pick', 'together'],
       },
       // A Free list owner choosing Invite people. Only the host needs Premium.
@@ -181,7 +182,7 @@ export const PLANS_PAGE = {
       calendarFeed: {
         context: () => 'A live calendar feed is part of Premium',
         title: 'Your releases, in your own calendar.',
-        body: 'Subscribe once and a private link keeps upcoming releases up to date in your calendar app. The one-time snapshot stays free.',
+        body: 'Add it once and a private link keeps upcoming releases up to date in your calendar app. The one-time snapshot stays free.',
         also: ['pick', 'together'],
       },
       // Turning on automatic imports for a connected source in Settings.
