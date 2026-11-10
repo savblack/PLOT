@@ -95,6 +95,7 @@
     "mkt:preview": "node marketing/preview/build-preview.mjs",
     "mkt:backfill": "node scripts/seed-marketing-backfill.mjs",
     "staging:broadcast-test": "bash scripts/staging-sql.sh scripts/staging-broadcast-test.sql",
+    "staging:watching-progress-trigger-test": "bash scripts/staging-sql.sh scripts/staging-watching-progress-trigger-test.sql",
     "test:guide": "python3 -m unittest discover -s scripts/guide -p \"test_*.py\""
   },
   "dependencies": {

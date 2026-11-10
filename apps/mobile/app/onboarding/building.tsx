@@ -22,12 +22,16 @@ const F = ONBOARDING_FLOW;
 // Each poster lands this long after the one before; the shelf is full by ~0.75s.
 const LAND_STAGGER_MS = 60;
 const LAND_MS = 450;
-// After landing, a wave rolls across the shelf until Home opens, so a slow
-// save still looks alive (as web's ob-wave): each poster lifts in reading
-// order, WAVE_STEP_MS apart, once every WAVE_PERIOD_MS.
-const WAVE_PERIOD_MS = 1400;
-const WAVE_STEP_MS = 120;
-const WAVE_LIFT_MS = 280;
+// After landing, a wave sweeps across the shelf until Home opens, so a slow
+// save still looks alive (as web's ob-wave). Each column lifts together and
+// grows slightly, WAVE_COLUMN_MS after the one to its left (the bottom row
+// WAVE_ROW_MS behind the top), so neighbours overlap into one wave. The lift
+// takes WAVE_RISE_MS, the settle WAVE_FALL_MS, once every WAVE_PERIOD_MS.
+const WAVE_PERIOD_MS = 2000;
+const WAVE_COLUMN_MS = 180;
+const WAVE_ROW_MS = 60;
+const WAVE_RISE_MS = 440;
+const WAVE_FALL_MS = 660;
 const SLOT_KEYS = Array.from({ length: BUILDING_SHELF_SIZE }, (_, i) => i);
 
 export default function Building() {
@@ -72,13 +76,16 @@ export default function Building() {
         Animated.timing(rise, { toValue: 1, duration: 400, delay: 300, easing: ease, useNativeDriver: true }),
       ]).start(({ finished }) => {
         if (!alive || !finished) return;
-        const sway = Easing.inOut(Easing.quad);
-        wave.forEach((v, i) => loops.push(Animated.loop(Animated.sequence([
-          Animated.delay(i * WAVE_STEP_MS),
-          Animated.timing(v, { toValue: 1, duration: WAVE_LIFT_MS, easing: sway, useNativeDriver: true }),
-          Animated.timing(v, { toValue: 0, duration: WAVE_LIFT_MS, easing: sway, useNativeDriver: true }),
-          Animated.delay(WAVE_PERIOD_MS - 2 * WAVE_LIFT_MS - i * WAVE_STEP_MS),
-        ]))));
+        const sway = Easing.bezier(0.45, 0, 0.55, 1);
+        wave.forEach((v, i) => {
+          const offset = (i % 3) * WAVE_COLUMN_MS + Math.floor(i / 3) * WAVE_ROW_MS;
+          loops.push(Animated.loop(Animated.sequence([
+            Animated.delay(offset),
+            Animated.timing(v, { toValue: 1, duration: WAVE_RISE_MS, easing: sway, useNativeDriver: true }),
+            Animated.timing(v, { toValue: 0, duration: WAVE_FALL_MS, easing: sway, useNativeDriver: true }),
+            Animated.delay(WAVE_PERIOD_MS - WAVE_RISE_MS - WAVE_FALL_MS - offset),
+          ])));
+        });
         loops.push(Animated.loop(Animated.sequence([
           Animated.timing(breathe, { toValue: 0.55, duration: WAVE_PERIOD_MS / 2, easing: sway, useNativeDriver: true }),
           Animated.timing(breathe, { toValue: 1, duration: WAVE_PERIOD_MS / 2, easing: sway, useNativeDriver: true }),
@@ -125,9 +132,12 @@ export default function Building() {
                 transform: [
                   { translateY: Animated.add(
                     v.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }),
-                    wave[i].interpolate({ inputRange: [0, 1], outputRange: [0, -8] }),
+                    wave[i].interpolate({ inputRange: [0, 1], outputRange: [0, -5] }),
                   ) },
-                  { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }) },
+                  { scale: Animated.multiply(
+                    v.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }),
+                    wave[i].interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] }),
+                  ) },
                 ],
               }]}
             >
