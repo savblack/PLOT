@@ -14,7 +14,6 @@ import { TRACKING } from '@plot/core/copy/tracking.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { useImportStart } from '../hooks/useImportStart.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import ImportSourceIcon from './ImportSourceIcon.jsx';
 import ImportSourceLanes from './ImportSourceLanes.jsx';
@@ -183,9 +182,10 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
 }
 
 /**
- * @param {{ userId: string | null | undefined, premium: { isPremium: boolean }, showConfirm: (opts: any) => void }} props
+ * @param {{ userId: string | null | undefined, premium: { isPremium: boolean }, showConfirm: (opts: any) => void, onPremiumGate: () => void }} props
+ *   onPremiumGate: a Free viewer turned on automatic imports; the parent opens the upgrade sheet.
  */
-export default function SettingsSources({ userId, premium, showConfirm }) {
+export default function SettingsSources({ userId, premium, showConfirm, onPremiumGate }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const start = useImportStart({
@@ -234,12 +234,6 @@ export default function SettingsSources({ userId, premium, showConfirm }) {
   const finishJob = (job) => navigate(`/import?job=${job.id}&from=${IMPORT_ENTRY_POINTS.SETTINGS}`);
   const cancelJob = (job) => start.cancelJob(job.id);
   const importFrom = (id) => { setOpen(null); setAdding(false); start.pick(id); };
-  const navigateToPlans = () => showConfirm({
-    title: T.automaticNeedsPremium,
-    message: T.automaticNeedsPremiumMessage,
-    confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
-    onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
-  });
   const removeSource = (src, importedTotal) => showConfirm({
     title: T.removeTitle(src.name),
     message: T.removeMessage(src.name, importedTotal ? T.titles(importedTotal) : ''),
@@ -341,7 +335,7 @@ export default function SettingsSources({ userId, premium, showConfirm }) {
           onRemove={(importedTotal) => removeSource(openSrc, importedTotal)}
           onFinish={finishJob}
           onCancel={cancelJob}
-          navigateToPlans={navigateToPlans}
+          navigateToPlans={onPremiumGate}
         />
       )}
 

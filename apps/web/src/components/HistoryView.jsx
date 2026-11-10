@@ -35,6 +35,7 @@ import { MEDIA } from '../copy/media.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 import PremiumMark from './PremiumMark.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
 
 /* History is its own page: the poster shelf, one month at a time, with a
    sticky column of small cards beside it that say something about the year
@@ -382,6 +383,8 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   const [reviewed, setReviewed] = useState(false);
   const [dnf, setDnf] = useState(false);
   const [query, setQuery] = useState('');
+  // A Free viewer tapping a stat tile gets the upgrade sheet for deeper stats.
+  const [statsGate, setStatsGate] = useState(false);
   const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
 
   // A tile's filter is Premium's: a free viewer who opens a shared link sees
@@ -393,11 +396,12 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
     [yearEntries, types, genres, reviewed, dnf, query, drill],
   );
   // Where a tile goes: the same page with the filter in the URL.
-  // A Free viewer's tile goes to the plans page instead, and fires no
-  // drill-down event: nothing was drilled into.
+  // A Free viewer's tile opens the upgrade sheet instead, and fires no
+  // drill-down event: nothing was drilled into. The href stays the plans page
+  // so opening the tile in a new tab still leads somewhere useful.
   const drillFor = (d, label) => (premium
     ? { to: `/history?${new URLSearchParams(drilldownParams(d))}`, label, onFollow: () => onDrilldown?.(d) }
-    : { to: premiumPlansPath('/history'), label, locked: true });
+    : { to: premiumPlansPath('/history'), label, locked: true, onFollow: (e) => { e.preventDefault(); setStatsGate(true); } });
   const drillLabel = drill && (
     drill.stat === DRILLDOWN_STATS.GENRE ? T.drilldownGenre(genreName(drill.genre) ?? '')
       : drill.stat === DRILLDOWN_STATS.WEEKDAY ? T.drilldownWeekday(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][drill.weekday])
@@ -446,6 +450,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
 
   return (
     <div className="hist-page">
+      {statsGate && <UpgradeSheet reason="stats" onClose={() => setStatsGate(false)} />}
       <div className="hist-toolbar hist-toolbar--heading">
         <div className="hist-toolbar-controls">
           {years.length > 1 && (

@@ -94,6 +94,10 @@ export const PLANS_PAGE = {
     close: 'Close',
     compare: 'Compare every feature',
     notNow: 'Not now',
+    // The in-page button that opens this sheet from a locked feature. One
+    // label for every gate (it was Explore Premium, Get Premium, See Premium
+    // and Upgrade to Premium depending on the screen).
+    open: 'See Premium',
     alsoIn: 'Also in Premium',
     reasons: {
       lists: {
@@ -136,6 +140,59 @@ export const PLANS_PAGE = {
         title: 'Follow the people you love watching.',
         body: 'Hear when they have something new.',
         also: ['pick', 'together'],
+      },
+      // The reasons below were added with the design audit (pick 3.2 A): every
+      // Premium gate opens this one sheet. Each used to go somewhere different:
+      // straight to the plans page with no explanation, through a confirm box,
+      // or to a one-off card.
+      // "Customize artwork" on a title, for a Free viewer.
+      artwork: {
+        context: () => 'Custom artwork is part of Premium',
+        title: 'Choose the artwork you like best.',
+        body: 'Pick the poster and backdrop for any title. Your choice shows wherever that title appears for you.',
+        also: ['pick', 'together'],
+      },
+      // A stat tile or the genre link on History, for a Free viewer.
+      stats: {
+        context: () => 'Deeper stats are part of Premium',
+        title: 'See the titles behind your numbers.',
+        body: 'Open any stat on your History page to see what is behind it, like everything you watched on a Monday or every mystery this year.',
+        also: ['pick', 'together'],
+      },
+      // The taste overlap page, for a Free viewer.
+      tasteOverlap: {
+        context: () => 'Taste overlap is part of Premium',
+        title: 'Compare your taste with someone you follow.',
+        body: 'See your match, the genres you share and where you disagree.',
+        also: ['pick', 'together'],
+      },
+      // Subscribe to calendar, from a title's Add to calendar menu or Settings.
+      calendarFeed: {
+        context: () => 'A live calendar feed is part of Premium',
+        title: 'Your releases, in your own calendar.',
+        body: 'Subscribe once and a private link keeps upcoming releases up to date in your calendar app. The one-time snapshot stays free.',
+        also: ['pick', 'together'],
+      },
+      // Turning on automatic imports for a connected source in Settings.
+      autoImport: {
+        context: () => 'Automatic imports are part of Premium',
+        title: 'Keep your history up to date by itself.',
+        body: 'Plot checks your account every day and brings new watches in. One-off imports stay free.',
+        also: ['pick', 'together'],
+      },
+      // Just Decide, once a Free viewer has used the day's free pick.
+      justDecide: {
+        context: () => 'That was today’s free pick',
+        title: 'A shortlist every time you ask.',
+        body: 'Answer a few quick questions and get a shortlist that fits your mood, your time and your services. Can’t decide? Surprise me picks one for you.',
+        also: ['together', 'lists'],
+      },
+      // Watch together, when nobody in the pairing has Premium.
+      watchTogether: {
+        context: () => 'One of you needs Premium to decide together',
+        title: 'Find something you both want to watch.',
+        body: 'Plot lines up what is on both your watchlists and you swipe until you match. Inviting and accepting are free, and only one of you needs Premium.',
+        also: ['pick', 'lists'],
       },
       // Opened from the Also email me row in Settings > Viewing (ALERT_EMAIL_ENABLED).
       alertEmail: {

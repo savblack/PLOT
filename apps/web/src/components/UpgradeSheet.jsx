@@ -2,7 +2,7 @@
 // feature that lifts it, and links to /plans for the full comparison. A bottom
 // sheet on phones, a centred card wider up. Mobile has its own RN counterpart
 // (apps/mobile/components/UpgradeSheet.tsx); content comes from @plot/core.
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { upgradeSheetContent, upgradeSheetGateFeature } from '@plot/core/upgradeSheet.js';
@@ -30,13 +30,18 @@ const S = PLANS_PAGE.upgradeSheet;
  *   reason 'themes', the Premium family tapped, drawn light and dark (never applied).
  */
 export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, kept = false }) {
-  const { profile } = useApp();
+  // Tolerates a missing app context: the sheet now opens from many surfaces,
+  // some of which render on their own in Storybook.
+  const { profile } = useApp() ?? {};
   const premium = usePremium(profile);
   const navigate = useNavigate();
   const location = useLocation();
   const sheetRef = useRef(null);
   const titleId = useId();
   const content = upgradeSheetContent(reason, { family, kept });
+  // Yearly first, as on the plans page. The sheet used to start a monthly
+  // checkout with no way to choose, while the plans page led with yearly.
+  const [annual, setAnnual] = useState(true);
   // Callers pass inline handlers; reading them through refs keeps the setup
   // below to one run per open, so focus and scroll lock aren't reset on render.
   const onCloseRef = useRef(onClose);
@@ -112,14 +117,21 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
             <span>{PLANS_PAGE.premium.name}</span>
           </div>
           <div className="upgrade-sheet-price">
-            <span className="upgrade-sheet-amount">{PLANS_PAGE.premium.price}</span>
+            {annual && <s className="upgrade-sheet-was" aria-hidden="true">{PLANS_PAGE.premium.price}</s>}
+            <span className="upgrade-sheet-amount">{annual ? PLANS_PAGE.premium.annualMonthlyPrice : PLANS_PAGE.premium.price}</span>
             <span>{PLANS_PAGE.premium.period}</span>
           </div>
-          <p className="upgrade-sheet-alt">{PLANS_PAGE.premium.priceTerms}</p>
+          <div className="upgrade-sheet-billing" role="group" aria-label={PLANS_PAGE.billing.label}>
+            <button type="button" aria-pressed={!annual} onClick={() => setAnnual(false)}>{PLANS_PAGE.billing.monthly}</button>
+            <button type="button" aria-pressed={annual} onClick={() => setAnnual(true)}>
+              {PLANS_PAGE.billing.annual} <span className="upgrade-sheet-billing-badge">{PLANS_PAGE.billing.annualBadge}</span>
+            </button>
+          </div>
+          <p className="upgrade-sheet-alt">{annual ? PLANS_PAGE.premium.annualBilled : PLANS_PAGE.premium.monthlyBilled}</p>
           <p className="upgrade-sheet-trial">{PLANS_PAGE.premium.trialNote}</p>
         </div>
 
-        <PremiumPurchaseAction premium={premium} plan="monthly" />
+        <PremiumPurchaseAction premium={premium} plan={annual ? 'yearly' : 'monthly'} />
         {premium.checkoutAvailable === false && <p className="upgrade-sheet-note" role="status">{PLANS_PAGE.checkoutClosedDetail}</p>}
         {premium.error && <p className="upgrade-sheet-note" role="alert">{premium.error}</p>}
 

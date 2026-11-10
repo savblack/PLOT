@@ -3,7 +3,8 @@
 // is on, the next episode and Add to calendar sit under it. The store and the
 // line's wording live in @plot/core (useEpisodeAlerts.js, episodeAlerts.js).
 // Mobile renders the same card in apps/mobile/components/EpisodeAlertsCard.tsx.
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useEpisodeAlerts } from '@plot/core/useEpisodeAlerts.js';
 import { nextEpisodeLine } from '@plot/core/episodeAlerts.js';
 import { buildCalendarEvents } from '@plot/core/calendar.js';
@@ -16,8 +17,8 @@ import { usePremium } from '../hooks/usePremium.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { localDateStr } from '../utils/date.js';
 import { downloadICS } from '../utils/ics.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import EpisodeAlertsView from './EpisodeAlertsView.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
 
 /**
  * @param {{ show: { id: number, name?: string, poster_path?: string | null, next_episode_to_air?: any } }} props
@@ -27,7 +28,7 @@ export default function EpisodeAlertsCard({ show }) {
   const { user, profile } = useApp();
   const premium = usePremium(profile);
   const navigate = useNavigate();
-  const location = useLocation();
+  const [gate, setGate] = useState(false);
   const alerts = useEpisodeAlerts(user?.id, show?.id);
   const title = show?.name || '';
   const next = nextEpisodeLine(show, localDateStr());
@@ -44,7 +45,7 @@ export default function EpisodeAlertsCard({ show }) {
   const subscribe = async () => {
     if (!premium.isPremium) {
       track(EVENTS.TITLE_CALENDAR_ACTION, { action: 'upgrade' });
-      navigate(premiumPlansPath(`${location.pathname}${location.search}`));
+      setGate(true);
       return;
     }
     if (!profile?.calendar_token) {
@@ -71,6 +72,7 @@ export default function EpisodeAlertsCard({ show }) {
   };
 
   return (
+    <>
     <EpisodeAlertsView
       title={title}
       on={alerts.on}
@@ -83,5 +85,7 @@ export default function EpisodeAlertsCard({ show }) {
       onSubscribe={subscribe}
       onDownload={download}
     />
+    {gate && <UpgradeSheet reason="calendarFeed" onClose={() => setGate(false)} />}
+    </>
   );
 }

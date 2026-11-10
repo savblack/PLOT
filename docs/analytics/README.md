@@ -371,6 +371,32 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Premium gates and the upgrade sheet
+
+Every Premium gate on web opens the same upgrade sheet (`UpgradeSheet.jsx`,
+content from `packages/core/upgradeSheet.js`). A Free viewer who hits a gate
+fires `premium_gate_hit` once, with the feature they were trying to use. The
+sheet fires it for the reasons below; `custom_lists`, `smart_lists`,
+`collaborative_lists` and `watch_together` fire at their own action site, so
+the sheet stays silent for those and nothing is counted twice.
+
+| `feature` | Gate |
+|---|---|
+| `themes` | A Premium theme, or the themes gallery |
+| `pins` | Pinning a Home shelf |
+| `people_alerts` | Following an actor or director |
+| `alert_email` | Email alerts |
+| `custom_artwork` | Customize artwork on a title |
+| `history_drilldown` | A stat tile or the genre link on History |
+| `taste_overlap` | The taste overlap page |
+| `calendar_feed` | Subscribe to calendar (title panel or Settings) |
+| `auto_import` | Automatic imports for a connected source |
+| `tonight_picker` | Just Decide after the day's free pick |
+
+Read it next to `premium_checkout_started` to see which gate drives upgrades.
+The sheet starts checkout on the yearly plan unless the viewer switches to
+monthly.
+
 ## Episode search
 
 The title panel's episode search (issue 1445) finds an episode by its title across

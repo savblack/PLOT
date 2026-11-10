@@ -1,6 +1,6 @@
 import './TasteOverlapPage.css';
 import { useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
 import { MIN_SHARED_RATINGS } from '@plot/core/tasteOverlap.js';
@@ -8,14 +8,13 @@ import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { posterUrl } from '../utils/images.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { TASTE_OVERLAP as T } from '../copy/tasteOverlap.js';
-import { PLANS_PAGE } from '../copy/plansPage.js';
 import TasteShareDialog from '../components/TasteShareDialog.jsx';
 import TasteShareMenu from '../components/TasteShareMenu.jsx';
 import LoginRedirect from '../components/LoginRedirect.jsx';
 import PremiumMark from '../components/PremiumMark.jsx';
+import PremiumGateButton from '../components/PremiumGateButton.jsx';
 
 const initialOf = (s) => (s || '?').charAt(0).toUpperCase();
 const stars = (n) => (n == null ? '' : `${Number.isInteger(n) ? n.toFixed(0) : n.toFixed(1)}`);
@@ -100,12 +99,12 @@ function WatchlistRowText({ count, cta = false }) {
   );
 }
 
-function Upsell({ from }) {
+function Upsell() {
   return (
     <section className="to-card to-state">
       <h2 className="to-state-title">{T.upsellTitle}</h2>
       <p className="to-state-body">{T.upsellBody}</p>
-      <Link className="btn btn-sm btn-primary" to={premiumPlansPath(from)}>{PLANS_PAGE.previewAction}</Link>
+      <PremiumGateButton reason="tasteOverlap" />
     </section>
   );
 }
@@ -114,14 +113,14 @@ function Upsell({ from }) {
  * The comparison itself, from already-loaded data. Split from the page so
  * Storybook can render every state without a session.
  */
-export function TasteOverlapView({ username, premium, loading, error, target, overlap, sharedWatchlist, genreName, onRetry, openPanel, upsellFrom }) {
+export function TasteOverlapView({ username, premium, loading, error, target, overlap, sharedWatchlist, genreName, onRetry, openPanel }) {
   const [sharing, setSharing] = useState(false);
   const profilePath = `/u/${username}`;
   const name = target ? (target.display_name || target.username) : `@${username}`;
 
   let body;
   if (!premium) {
-    body = <Upsell from={upsellFrom} />;
+    body = <Upsell />;
   } else if (loading) {
     body = <LoadingSkeleton />;
   } else if (error) {
@@ -286,7 +285,6 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
 
 export default function TasteOverlapPage() {
   const { username } = useParams();
-  const location = useLocation();
   const { user, profile, openPanel } = useApp();
   const premium = isPremiumProfile(profile);
   const { loading, error, target, overlap, sharedWatchlist, retry } = useTasteOverlap(username, { enabled: !!user && premium, viewerId: user?.id });
@@ -307,7 +305,6 @@ export default function TasteOverlapPage() {
       genreName={genreName}
       onRetry={retry}
       openPanel={openPanel}
-      upsellFrom={location.pathname}
     />
   );
 }
