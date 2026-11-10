@@ -21,6 +21,9 @@ export const PLANS_PAGE = {
   previewAction: 'Explore Premium',
   tryTasteOverlap: 'Try taste overlap',
   upgradeAction: 'Upgrade to Premium',
+  // The same button for someone who has never subscribed, so the 7-day trial
+  // applies to them (trialEligible in core/billing.js).
+  startTrialAction: 'Start free trial',
   // Shown on web when checkout could not start for a reason other than "not open" or a 503.
   checkoutMessage: 'We couldn’t start checkout. Please try again in a moment.',
   // Closed checkout. The plans page and upgrade sheet show this instead of calling Stripe.

@@ -4,7 +4,7 @@ import { supabase } from '@plot/core/supabase.js';
 import { loadCheckoutAvailability } from '@plot/core/checkoutAvailability.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useBillingStatus } from '@plot/core/useBillingStatus.js';
-import { billingAccess } from '@plot/core/billing.js';
+import { billingAccess, trialEligible } from '@plot/core/billing.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 import { checkoutErrorMessage, checkoutPlan, redirectToCheckout, requestBillingUrl, signupPathForPlan } from '../utils/premiumCheckout.js';
 
@@ -107,6 +107,8 @@ export function usePremium(profile) {
   return {
     ...billingAccess(billing),
     billing,
+    // True only for a signed-in viewer whose billing read shows no subscription, ever.
+    trialEligible: trialEligible(billing),
     startCheckout,
     startTipCheckout,
     openPortal,
