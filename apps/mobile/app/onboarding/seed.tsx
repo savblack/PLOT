@@ -13,7 +13,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList, Image, ScrollView,
-  StyleSheet, ActivityIndicator, Dimensions,
+  StyleSheet, Dimensions,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import { useRouter } from 'expo-router';
@@ -247,9 +247,8 @@ export default function Seed() {
               autoCapitalize="none"
               autoCorrect={false}
             />
-            {searching
-              ? <ActivityIndicator color={colors.accent} style={styles.searchTrailing} />
-              : query.length > 0 && (
+            {/* No loader in onboarding: the clear button stays while a search runs. */}
+            {query.length > 0 && (
                 <TouchableOpacity
                   onPress={() => setQuery('')}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

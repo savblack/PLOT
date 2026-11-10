@@ -74,6 +74,8 @@ function HomeRoute() {
 }
 
 const wrap = (el) => <Suspense fallback={<LoadingSpinner />}>{el}</Suspense>;
+// Onboarding shows no loader before its last step, so its chunk loads behind a plain background.
+const quietWrap = (el) => <Suspense fallback={<div className="app-boot-loader" aria-busy="true" />}>{el}</Suspense>;
 
 function AppErrorBoundary({ children }) {
   const location = useLocation();
@@ -125,8 +127,8 @@ const router = createBrowserRouter([
   // tested before it merges. Previews also skip the gate (ProtectedRoute).
   {
     path: '/onboarding',
-    element: wrap(
-      <ProtectedRoute skipOnboardingCheck>
+    element: quietWrap(
+      <ProtectedRoute skipOnboardingCheck quiet>
         <ErrorBoundary><OnboardingFlow /></ErrorBoundary>
       </ProtectedRoute>
     ),
