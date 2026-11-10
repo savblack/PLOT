@@ -21,6 +21,9 @@ import { OFFICIAL_PLATFORMS } from '@plot/core/usePlatformCharts.js';
 import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
+import { MEDIA_PANEL } from '../copy/mediaPanel.js';
+import { SaveButton, FavoriteButton } from './TitleActions.jsx';
+import Icon from './Icon.jsx';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { clampToSentences } from '@plot/core/sentences.js';
@@ -315,42 +318,6 @@ function OnThisDayCard({ item, openPanel }) {
   );
 }
 
-/* ── Save button ── */
-function SaveBtn({ item, watchlist }) {
-  const id    = item.id || item.tmdb_id;
-  const saved = watchlist.isInList(id);
-  return (
-    <button
-      className={`card-save-btn${saved ? ' saved' : ''}`}
-      onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id }); }}
-      aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}
-      disabled={watchlist.loading}
-    >
-      <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-    </button>
-  );
-}
-
-/* ── Favourite (heart) button — occupies the former type-chip slot ── */
-function FavBtn({ item }) {
-  const { favorites, profile } = useApp();
-  const fw   = favoriteWords(profile?.region);
-  const type = item.media_type || 'movie';
-  const fav  = favorites.isFavorite(item.id);
-  if (!FAVOURITES_ENABLED) return null;
-  return (
-    <button
-      className={`card-fav-btn${fav ? ' faved' : ''}`}
-      onClick={e => { e.stopPropagation(); favorites.toggleFavorite({ ...item, media_type: type }); }}
-      aria-label={fav ? fw.un : fw.noun}
-    >
-      <svg viewBox="0 0 24 24">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-      </svg>
-    </button>
-  );
-}
-
 /* ── Compact "year · type" meta line for poster cards ── */
 function cardMeta(item) {
   const year = (item.release_date || item.first_air_date || '').slice(0, 4);
@@ -401,8 +368,8 @@ export function RankedCard({ item, rank, showRank = true, showMeta = true, openP
         <div className="media-card-title">{title}</div>
         {showMeta && <div className="media-card-meta">{cardMeta(item)}</div>}
       </button>
-      <FavBtn item={item} />
-      <SaveBtn item={item} watchlist={watchlist} />
+      <FavoriteButton item={item} />
+      <SaveButton item={item} watchlist={watchlist} />
     </div>
   );
 }
@@ -418,8 +385,6 @@ function BingeCard({ item, openPanel, watchlist }) {
   const poster   = posterUrl(displayPosterPath(shown), 'w342');
   const type     = item.media_type || 'tv';
   const year     = (item.first_air_date || item.release_date || '').slice(0, 4);
-  const saved    = watchlist.isInList(item.id);
-  const fav      = favorites.isFavorite(item.id);
   const openDetails = () => openPanel(item.id, type);
 
   return (
@@ -443,29 +408,8 @@ function BingeCard({ item, openPanel, watchlist }) {
           active; the inactive one waits for hover, so an active favourite
           doesn't display an empty bookmark next to it. */}
       <div className={`discover-hero-corner-btns${hovered ? ' visible' : ''}`}>
-        {FAVOURITES_ENABLED && (
-          <button
-            className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
-            style={{ position: 'absolute', top: 10, left: 10 }}
-            onClick={() => favorites.toggleFavorite({ ...item, media_type: type })}
-            aria-label={fav ? fw.un : fw.noun}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </button>
-        )}
-        <button
-          className={`discover-hero-corner-btn${saved ? ' active' : ''}`}
-          style={{ position: 'absolute', top: 10, right: 10 }}
-          onClick={() => watchlist.toggle({ ...item })}
-          disabled={watchlist.loading}
-          aria-label={saved ? MEDIA.removeFromWatchlist : 'Save to watchlist'}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-          </svg>
-        </button>
+        <FavoriteButton variant="hero" item={{ ...item, media_type: type }} favorites={favorites} favWords={fw} style={{ position: 'absolute', top: 10, left: 10 }} />
+        <SaveButton variant="hero" item={item} watchlist={watchlist} style={{ position: 'absolute', top: 10, right: 10 }} />
       </div>
     </div>
   );
@@ -492,7 +436,6 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
     : (item.release_date || item.first_air_date || '').slice(0, 4);
   const synopsis = clampToSentences(item.overview, HERO_SYNOPSIS_MAX_CHARS);
   const saved    = watchlist.isInList(item.id);
-  const fav      = favorites.isFavorite(item.id);
   const openDetails = () => openPanel(item.id, type);
 
   return (
@@ -532,7 +475,8 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
           disabled={watchlist.loading}
           aria-pressed={saved}
         >
-          {saved ? '✓ In watchlist' : '+ Watchlist'}
+          <Icon name="bookmark" filled={saved} size={14} />
+          {saved ? MEDIA_PANEL.inWatchlist : MEDIA.saveToWatchlist}
         </button>
       </div>
 
@@ -540,56 +484,10 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
           active; the inactive one waits for hover, so an active favourite
           doesn't display an empty bookmark next to it. */}
       <div className={`discover-hero-corner-btns${hovered ? ' visible' : ''}`}>
-        {/* Top-left: Favourite */}
-        {FAVOURITES_ENABLED && (
-          <button
-            className={`discover-hero-corner-btn${fav ? ' active' : ''}`}
-            style={{ position: 'absolute', top: 10, left: 10 }}
-            onClick={() => favorites.toggleFavorite({ ...item, media_type: type })}
-            aria-label={fav ? fw.un : fw.noun}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill={fav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </button>
-        )}
-
-        {/* Top-right: Bookmark */}
-        <button
-          className={`discover-hero-corner-btn${saved ? ' active' : ''}`}
-          style={{ position: 'absolute', top: 10, right: 10 }}
-          onClick={() => watchlist.toggle({ ...item })}
-          disabled={watchlist.loading}
-          aria-label={saved ? MEDIA.removeFromWatchlist : 'Save to watchlist'}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-          </svg>
-        </button>
+        <FavoriteButton variant="hero" item={{ ...item, media_type: type }} favorites={favorites} favWords={fw} style={{ position: 'absolute', top: 10, left: 10 }} />
+        <SaveButton variant="hero" item={item} watchlist={watchlist} style={{ position: 'absolute', top: 10, right: 10 }} />
       </div>
     </div>
-  );
-}
-
-/* ── Chart card action icons — same set/behavior as SearchView's result row ── */
-function BookmarkIcon({ filled }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z"
-        fill={filled ? 'currentColor' : 'none'}
-      />
-    </svg>
-  );
-}
-function HeartIcon({ filled }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"
-        fill={filled ? 'currentColor' : 'none'}
-      />
-    </svg>
   );
 }
 
@@ -605,8 +503,6 @@ function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
   const type  = item.media_type || 'movie';
   const id    = item.id;
   const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
-  const inList  = watchlist.isInList(id);
-  const isFav   = favorites.isFavorite(id);
   const openDetails = () => openPanel(id, type);
 
   return (
@@ -625,26 +521,8 @@ function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
         </div>
       </button>
       <div className="discover-chart-actions search-row-actions">
-        {FAVOURITES_ENABLED && (
-          <button
-            type="button"
-            className={`search-action-btn search-action-btn--heart${isFav ? ' active' : ''}`}
-            onClick={async e => { e.stopPropagation(); await favorites.toggleFavorite({ ...item, id, tmdb_id: id, media_type: type }); }}
-            data-tip={isFav ? `Remove ${fw.nounLower}` : fw.noun}
-            aria-label={isFav ? `Remove ${title} from ${fw.pluralLower}` : `Add ${title} to ${fw.pluralLower}`}
-          >
-            <HeartIcon filled={isFav} />
-          </button>
-        )}
-        <button
-          type="button"
-          className={`search-action-btn${inList ? ' active' : ''}`}
-          onClick={e => { e.stopPropagation(); watchlist.toggle({ ...item, id, media_type: type }); }}
-          data-tip={inList ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
-          aria-label={inList ? `Remove ${title} from list` : `Add ${title} to list`}
-        >
-          <BookmarkIcon filled={inList} />
-        </button>
+        <FavoriteButton variant="row" item={{ ...item, id, media_type: type }} favorites={favorites} favWords={fw} />
+        <SaveButton variant="row" item={{ ...item, id, media_type: type }} watchlist={watchlist} />
       </div>
     </div>
   );

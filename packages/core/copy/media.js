@@ -38,6 +38,10 @@ export const MEDIA = {
   allStatuses: 'All statuses',
   listProgress: (watched, total) => `${watched} of ${total} watched`,
   removeFromWatchlist: 'Remove from watchlist',
+  // The same two actions with the title in them, for rows where several
+  // bookmark buttons sit under each other and a bare label would repeat.
+  addTitleToWatchlist: title => `Add ${title} to watchlist`,
+  removeTitleFromWatchlist: title => `Remove ${title} from watchlist`,
   today: 'Today',
   tomorrow: 'Tomorrow',
   yesterday: 'Yesterday',

@@ -16,7 +16,6 @@ import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COMMON } from '../copy/common.js';
 import { posterUrl } from '../utils/images.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { AcceptDialog, PersonAvatar, ShareListDialog, WatchTogetherTile } from './WatchTogetherParts.jsx';
 import WatchTogetherStart, { InviteLinkCard, FriendSearch, PersonRow } from './WatchTogetherStart.jsx';
@@ -24,6 +23,11 @@ import { useInviteShare } from '../hooks/useInviteShare.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import './WatchTogetherView.css';
+import PremiumGateButton from './PremiumGateButton.jsx';
+
+// The hub and start page open the upgrade sheet from a button; the overlap
+// page reports this itself when it loads locked.
+const reportWatchTogetherGate = () => track(EVENTS.PREMIUM_GATE_HIT, { feature: 'watch_together' });
 
 function Chevron() {
   return <svg className="wt-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>;
@@ -158,7 +162,7 @@ function Hub({ wt, premium, profile }) {
               <h2 className="wt-hero-title">{T.hub.lockedHeading}</h2>
               <p className="wt-hero-body">{T.hub.lockedBody(partners.map(personName))}</p>
               <div className="wt-decide-actions">
-                <Link to={premiumPlansPath('/together')} className="btn btn-primary">{T.start.getPremium}</Link>
+                <PremiumGateButton reason="watchTogether" className="btn btn-primary" onOpen={reportWatchTogetherGate} />
                 <span className="wt-ink-note">{PLANS_PAGE.premium.priceSummary}</span>
               </div>
             </section>
@@ -433,7 +437,7 @@ function Together({ wt, usernames }) {
           <h2 className="wt-card-title">{T.locked.title}</h2>
           <p className="wt-card-body">{T.locked.body(group ? T.overlap.everyone : personName(people[0] || {}))}</p>
           <div className="wt-premium-prompt">
-            <Link to={premiumPlansPath(`/together/with/${usernames.map(encodeURIComponent).join(',')}`)} className="btn btn-primary btn-sm">{T.start.getPremium}</Link>
+            <PremiumGateButton reason="watchTogether" />
             <span className="wt-note">{PLANS_PAGE.premium.priceSummary}</span>
           </div>
         </section>

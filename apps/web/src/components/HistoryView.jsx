@@ -32,9 +32,10 @@ import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import { useTopLists } from '../hooks/useTopLists.js';
 import { useSharePreset } from '../hooks/useSharePreset.js';
 import { MEDIA } from '../copy/media.js';
-import { APP_SHELL } from '../copy/appShell.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
+import PremiumMark from './PremiumMark.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
 
 /* History is its own page: the poster shelf, one month at a time, with a
    sticky column of small cards beside it that say something about the year
@@ -78,16 +79,12 @@ function NoteIcon() {
 /* ── Side cards ── */
 
 /* `drill` is { to, label, onFollow } for a Premium viewer when the number has
-   titles behind it: the whole tile becomes the link. A Free viewer gets the
-   same tile with a Premium marker, and the link goes to the plans page. */
+   titles behind it: the whole tile becomes the link. A Free viewer's tile is text. */
 function Stat({ value, label, drill = null }) {
   const body = (
     <>
       <span className="hist-stat-value">{value}</span>
-      <span className="hist-stat-meta">
-        <span className="hist-stat-label">{label}</span>
-        {drill?.locked && <span className="app-nav-premium">{APP_SHELL.premium}</span>}
-      </span>
+      <span className="hist-stat-label">{label}</span>
     </>
   );
   if (!drill) return <div className="hist-stat">{body}</div>;
@@ -126,7 +123,7 @@ function ShareIcon({ what, ready, onClick }) {
   );
 }
 
-function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName, onShare, shareReady, drillFor }) {
+function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName, onShare, shareReady, drillFor, upgradeTo, onUpgrade }) {
   const wd = favouriteWeekday(entries);
   const topGenre = topGenreId(entries);
   const mins = movieMinutes(entries, details);
@@ -155,10 +152,15 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
         const drill = drillFor?.({ stat: DRILLDOWN_STATS.GENRE, year, genre: topGenre }, T.drilldownGenre(genreName(topGenre)));
         return drill && (
           <Link className="hist-drill-link" to={drill.to} onClick={drill.onFollow}>
-            {T.drilldownOpen(drill.label)}{drill.locked && <span className="app-nav-premium hist-drill-premium">{APP_SHELL.premium}</span>}
+            {T.drilldownOpen(drill.label)}
           </Link>
         );
       })()}
+      {upgradeTo && entries.length > 0 && (
+        <Link className="hist-drill-link" to={upgradeTo} onClick={onUpgrade}>
+          {T.upgradeInsights}<PremiumMark className="hist-drill-premium" />
+        </Link>
+      )}
     </div>
   );
 }
@@ -382,6 +384,9 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   const [reviewed, setReviewed] = useState(false);
   const [dnf, setDnf] = useState(false);
   const [query, setQuery] = useState('');
+  // A Free viewer tapping the upgrade line under the year card gets the
+  // upgrade sheet for deeper stats.
+  const [statsGate, setStatsGate] = useState(false);
   const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
 
   // A tile's filter is Premium's: a free viewer who opens a shared link sees
@@ -393,11 +398,11 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
     [yearEntries, types, genres, reviewed, dnf, query, drill],
   );
   // Where a tile goes: the same page with the filter in the URL.
-  // A Free viewer's tile goes to the plans page instead, and fires no
-  // drill-down event: nothing was drilled into.
-  const drillFor = (d, label) => (premium
-    ? { to: `/history?${new URLSearchParams(drilldownParams(d))}`, label, onFollow: () => onDrilldown?.(d) }
-    : { to: premiumPlansPath('/history'), label, locked: true });
+  // A Free viewer's tiles stay text. One line under the card goes to the plans
+  // page instead, and fires no drill-down event: nothing was drilled into.
+  const drillFor = premium
+    ? (d, label) => ({ to: `/history?${new URLSearchParams(drilldownParams(d))}`, label, onFollow: () => onDrilldown?.(d) })
+    : null;
   const drillLabel = drill && (
     drill.stat === DRILLDOWN_STATS.GENRE ? T.drilldownGenre(genreName(drill.genre) ?? '')
       : drill.stat === DRILLDOWN_STATS.WEEKDAY ? T.drilldownWeekday(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][drill.weekday])
@@ -446,6 +451,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
 
   return (
     <div className="hist-page">
+      {statsGate && <UpgradeSheet reason="stats" onClose={() => setStatsGate(false)} />}
       <div className="hist-toolbar hist-toolbar--heading">
         <div className="hist-toolbar-controls">
           {years.length > 1 && (
@@ -522,6 +528,10 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
             onShare={canShare ? () => setShareCard(CARD_IDS.HIGHLIGHTS) : null}
             shareReady={cardReady(CARD_IDS.HIGHLIGHTS)}
             drillFor={drillFor}
+            upgradeTo={premium ? null : premiumPlansPath('/history')}
+            // The line opens the upgrade sheet for deeper stats. The href stays
+            // the plans page, so opening it in a new tab still leads somewhere.
+            onUpgrade={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); setStatsGate(true); }}
           />
           {monthGroups.length > 0 && (
             <MiniMonthCard

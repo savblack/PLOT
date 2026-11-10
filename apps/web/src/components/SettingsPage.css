@@ -146,6 +146,9 @@
   .settings-premium-card { padding: 1.25rem; }
 }
 
+/* Premium spark after a row label. */
+.settings-premium-mark { margin-left: 0.35rem; }
+
 /* The membership card (Settings > Billing, Premium members). Rows are
    hairline-separated links to each Premium feature. */
 .settings-status--attention { color: var(--danger); background: var(--danger-dim); }

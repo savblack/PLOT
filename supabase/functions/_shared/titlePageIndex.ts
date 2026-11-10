@@ -2,7 +2,7 @@
 //
 // The database write lives in record_title_page_index: a missing row is
 // inserted, and an existing row is updated only when last_seen_at is older
-// than 24 hours or the stored title changed. This module only dedupes the
+// than 7 days or the stored title changed. This module only dedupes the
 // payload and keeps that write off the page response.
 
 export type IndexedTitle = {

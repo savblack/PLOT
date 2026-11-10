@@ -371,6 +371,32 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Premium gates and the upgrade sheet
+
+Every in-app Premium gate on web opens the same upgrade sheet (`UpgradeSheet.jsx`,
+content from `packages/core/upgradeSheet.js`). A Free viewer who hits a gate
+fires `premium_gate_hit` once, with the feature they were trying to use. The
+sheet fires it for the reasons below; `custom_lists`, `smart_lists`,
+`collaborative_lists` and `watch_together` fire at their own action site, so
+the sheet stays silent for those and nothing is counted twice.
+
+| `feature` | Gate |
+|---|---|
+| `themes` | A Premium theme, or the themes gallery |
+| `pins` | Pinning a Home shelf |
+| `people_alerts` | Following an actor or director |
+| `alert_email` | Email alerts |
+| `custom_artwork` | Customize artwork on a title |
+| `history_drilldown` | A stat tile or the genre link on History |
+| `taste_overlap` | The taste overlap page |
+| `calendar_feed` | Subscribe to calendar (title panel or Settings) |
+| `auto_import` | Automatic imports for a connected source |
+| `tonight_picker` | Just Decide after the day's free pick |
+
+Read it next to `premium_checkout_started` to see which gate drives upgrades.
+On web the sheet starts checkout on the yearly plan unless the viewer switches
+to monthly. Mobile's sheet still starts monthly with no choice.
+
 ## Episode search
 
 The title panel's episode search (issue 1445) finds an episode by its title across
@@ -396,7 +422,11 @@ marketing site never hands off to mobile.
 | Event | Where | When | Props |
 |---|---|---|---|
 | `signup_cta_clicked` | marketing site | The search bar was submitted, typed or not | `placement: hero_search`, `source: marketing`, `has_query` |
-| `signup_search_resumed` | web app | A signed-in visit opened search by itself with that title, at most once | `query_length` |
+| `save_cta_clicked` | marketing site | A live result under the search bar was picked (it goes to `/save?…&src=hero_search`) | `placement: hero_search_result`, `source: marketing` |
+| `signup_search_resumed` | web app | A signed-in visit acted on that typed title, at most once | `query_length`, `opened` (`title` when the search had one clear match and that title opened, else `search`) |
+
+A picked result is a save intent with `src=hero_search`: the app skips the
+`/save` preview and opens the title after signup, saving nothing on its own.
 
 The query text is never sent from either side, only whether one was typed and
 its length. The title waits in the browser for 24 hours, so a signup confirmed

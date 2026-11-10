@@ -12,7 +12,9 @@ import { extractConflictTargets } from '../lib/dbWritePathChecks.mjs';
 const exec = promisify(execFile);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const readFromRoot = (path) => readFile(join(root, path), 'utf8');
-const migrationPath = 'supabase/migrations/20261102120000_title_page_index_seen_throttle.sql';
+const firstMigrationPath = 'supabase/migrations/20261102120000_title_page_index_seen_throttle.sql';
+// The live body: 20261110120000 widened the refresh window from 24 hours to 7 days.
+const migrationPath = 'supabase/migrations/20261110120000_db_load_trim.sql';
 
 test('title index write is a conditional upsert and stays off the page response', async () => {
   const [migration, page] = await Promise.all([
@@ -23,7 +25,7 @@ test('title index write is a conditional upsert and stays off the page response'
   assert.deepEqual(extractConflictTargets(migration), [
     { table: 'title_page_index', key: 'media_type,tmdb_id' },
   ]);
-  assert.match(migration, /last_seen_at < now\(\) - interval '24 hours'/);
+  assert.match(migration, /last_seen_at < now\(\) - interval '7 days'/);
   assert.match(migration, /title is distinct from excluded\.title/);
   assert.match(migration, /revoke all on function public\.record_title_page_index\(jsonb\) from public, anon, authenticated/);
   assert.match(migration, /grant execute on function public\.record_title_page_index\(jsonb\) to service_role/);
@@ -70,6 +72,7 @@ test('record_title_page_index inserts, then writes only when stale or renamed', 
     await sql(`create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;`);
     await run('psql', ['-X', '-v', 'ON_ERROR_STOP=1', '-f', join(root, 'supabase/migrations/20261013180000_title_page_index.sql')]);
     await sql('grant select, insert, update on public.title_page_index to service_role;');
+    await run('psql', ['-X', '-v', 'ON_ERROR_STOP=1', '-f', join(root, firstMigrationPath)]);
     await run('psql', ['-X', '-v', 'ON_ERROR_STOP=1', '-f', join(root, migrationPath)]);
 
     assert.equal(await out(`select has_function_privilege('anon', 'public.record_title_page_index(jsonb)', 'execute')`), 'f');
@@ -110,7 +113,7 @@ test('record_title_page_index inserts, then writes only when stale or renamed', 
     assert.notEqual(seen.get('movie:8').seen, fresh.seen);
 
     const boundary = await out(`set role service_role;
-      update public.title_page_index set title = 'Edge', last_seen_at = now() - interval '24 hours' where tmdb_id = 8;
+      update public.title_page_index set title = 'Edge', last_seen_at = now() - interval '7 days' where tmdb_id = 8;
       select ctid::text from public.title_page_index where tmdb_id = 8;
       select public.record_title_page_index($json$[{"media_type":"movie","tmdb_id":8,"title":"Edge"}]$json$::jsonb);
       select ctid::text from public.title_page_index where tmdb_id = 8;`);
@@ -119,7 +122,7 @@ test('record_title_page_index inserts, then writes only when stale or renamed', 
     assert.equal(beforeCtid, afterCtid);
 
     const stale = await out(`set role service_role;
-      update public.title_page_index set last_seen_at = now() - interval '25 hours' where tmdb_id = 7;
+      update public.title_page_index set last_seen_at = now() - interval '8 days' where tmdb_id = 7;
       select ctid::text || '|' || last_seen_at::text from public.title_page_index where tmdb_id = 7;
       select public.record_title_page_index($json$[{"media_type":"tv","tmdb_id":7,"title":"First"}]$json$::jsonb);
       select ctid::text || '|' || last_seen_at::text from public.title_page_index where tmdb_id = 7;`);
@@ -133,8 +136,8 @@ test('record_title_page_index inserts, then writes only when stale or renamed', 
       { media_type: 'tv', tmdb_id: 102, title: 'Stale' },
       { media_type: 'movie', tmdb_id: 103, title: 'Old name' },
     ]);
-    await sql(`update public.title_page_index set last_seen_at = now() - interval '25 hours' where tmdb_id = 102;
-      update public.title_page_index set last_seen_at = now() - interval '1 hour' where tmdb_id in (101, 103);`);
+    await sql(`update public.title_page_index set last_seen_at = now() - interval '8 days' where tmdb_id = 102;
+      update public.title_page_index set last_seen_at = now() - interval '2 days' where tmdb_id in (101, 103);`);
     const batchBefore = await snap();
     const updatesBefore = Number((await stats()).split('|')[1]);
     assert.equal(await call([

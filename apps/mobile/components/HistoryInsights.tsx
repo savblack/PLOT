@@ -58,14 +58,14 @@ function ShareIcon({ what, ready, onPress, colors }: {
 }
 
 export default function HistoryInsights({
-  sharePreset, onSharePresetUsed, onDrilldown, drilldownLocked = false,
+  sharePreset, onSharePresetUsed, onDrilldown, onUpgrade,
 }: {
   sharePreset?: string | null;
   onSharePresetUsed?: () => void;
   /** Premium only: set, a stat row opens the titles behind it. Unset, the rows are text. */
   onDrilldown?: (d: Drilldown) => void;
-  /** Free viewer: the rows look the same but carry a Premium marker, and onDrilldown opens the upgrade screen. */
-  drilldownLocked?: boolean;
+  /** Free viewer: the rows stay text and one line under the card opens the upgrade screen. */
+  onUpgrade?: () => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -140,15 +140,20 @@ export default function HistoryInsights({
         </View>
         <Stat label={T.titles} value={String(yearEntries.length)} styles={styles}
           onPress={onDrilldown && yearEntries.length ? () => onDrilldown({ stat: DRILLDOWN_STATS.TITLES, year }) : undefined}
-          a11y={T.drilldownOpen(T.drilldownTitles(year))} locked={drilldownLocked} />
+          a11y={T.drilldownOpen(T.drilldownTitles(year))} />
         <Stat label={T.watchingMovies} value={mins.counted ? formatDuration(mins.minutes) : '–'} styles={styles} />
         <Stat label={T.yourNight} value={wd && wd.total >= 3 ? wd.name : '–'} styles={styles} last
           onPress={onDrilldown && wd && wd.total >= 3 ? () => onDrilldown({ stat: DRILLDOWN_STATS.WEEKDAY, year, weekday: wd.weekday }) : undefined}
-          a11y={wd ? T.drilldownOpen(T.drilldownWeekday(wd.name)) : undefined} locked={drilldownLocked} />
+          a11y={wd ? T.drilldownOpen(T.drilldownWeekday(wd.name)) : undefined} />
         {!!sentence && <Text style={styles.sentence}>{sentence}</Text>}
         {onDrilldown && topGenre != null && !!genreName(topGenre) && (
           <Pressable accessibilityRole="link" onPress={() => onDrilldown({ stat: DRILLDOWN_STATS.GENRE, year, genre: topGenre })}>
-            <Text style={styles.drillLink}>{T.drilldownOpen(T.drilldownGenre(genreName(topGenre) as string))}{drilldownLocked ? `  ${APP_SHELL.premium}` : ''}</Text>
+            <Text style={styles.drillLink}>{T.drilldownOpen(T.drilldownGenre(genreName(topGenre) as string))}</Text>
+          </Pressable>
+        )}
+        {onUpgrade && yearEntries.length > 0 && (
+          <Pressable accessibilityRole="link" onPress={onUpgrade}>
+            <Text style={styles.drillLink}>{T.upgradeInsights}  {APP_SHELL.premium}</Text>
           </Pressable>
         )}
       </View>
@@ -265,14 +270,14 @@ export default function HistoryInsights({
   );
 }
 
-function Stat({ label, value, last, styles, onPress, a11y, locked }: {
+function Stat({ label, value, last, styles, onPress, a11y }: {
   label: string; value: string; last?: boolean; styles: ReturnType<typeof makeStyles>;
-  onPress?: () => void; a11y?: string; locked?: boolean;
+  onPress?: () => void; a11y?: string;
 }) {
   const body = (
     <>
       <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}{locked ? `  ${APP_SHELL.premium}` : ''}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </>
   );
   if (!onPress) return <View style={[styles.stat, last && styles.statLast]}>{body}</View>;
