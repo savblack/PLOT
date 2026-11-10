@@ -1001,7 +1001,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           }}
       >
 
-        {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
         <Text style={styles.dateLine}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
         {!history.loading && (
@@ -1030,6 +1029,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         </TouchableOpacity>
         {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
         <FinishingTouches state={ft.state} onState={ft.setState} />
+        {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
         {userId && <RateCard userId={userId} />}
         <WatchTogetherHomeCard />
 

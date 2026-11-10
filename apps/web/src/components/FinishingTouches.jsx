@@ -46,7 +46,7 @@ export default function FinishingTouches() {
   const history = useHistory(user?.id);
   const navigate = useNavigate();
   const [state, setState] = useState(() => readFinishingTouches(user?.id));
-  // Opens on a wide screen, unless the first-win card is already above it: two
+  // Opens on a wide screen, unless the first-win card is showing under it: two
   // open cards push Home's own rails off the screen.
   const [expanded, setExpanded] = useState(() => wideScreen() && !firstWinCardVisible(readFirstWinCard(user?.id)));
   const [sheet, setSheet] = useState(null);

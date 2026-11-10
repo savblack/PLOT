@@ -1,8 +1,10 @@
-/* First-win card: the top of Home, after onboarding. A hairline card, compact
-   actions, never a full-width bar. */
+/* First-win card: on Home after onboarding, under the greeting and Finishing
+   touches. A hairline card on one line: poster, what to do and the title it is
+   about, then the actions on the right. Compact actions, never a full-width
+   bar; on a narrow screen the actions wrap under the text. */
 
 .fw-card {
-  margin: 0 var(--gut) 16px;
+  margin: 0 var(--gut) 28px;
   padding: 12px 14px;
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -12,31 +14,9 @@
   align-items: flex-start;
   gap: 10px;
 }
-.fw-head { display: flex; align-items: flex-start; gap: 12px; width: 100%; }
-.fw-title {
-  margin: 0;
-  flex: 1;
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: var(--text-primary);
-}
-.fw-skip {
-  flex-shrink: 0;
-  padding: 2px 0;
-  border: none;
-  background: none;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.fw-skip:hover { color: var(--text-primary); }
-.fw-empty { margin: 0; font-size: 13px; line-height: 1.4; color: var(--text-secondary); }
-.fw-row { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; }
+/* Straight after Finishing touches the two read as one group. */
+.ft-card + .fw-card { margin-top: -16px; }
+.fw-main { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; width: 100%; min-width: 0; }
 .fw-poster {
   width: 36px;
   height: 54px;
@@ -45,8 +25,38 @@
   object-fit: cover;
   background: var(--surface-sunken);
 }
-.fw-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--text-primary); }
-.fw-logged { flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.fw-text { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fw-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+.fw-name { margin: 0; font-size: 13px; line-height: 1.4; color: var(--text-secondary); }
+.fw-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin-left: auto; max-width: 100%; }
+/* Wrapped under the text on a phone, the actions line up with it on the left. */
+@media (max-width: 600px) { .fw-actions { margin-left: 0; } }
+.fw-actions > * { white-space: nowrap; flex-shrink: 0; }
+.fw-link {
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fw-link:hover { color: var(--accent-text); }
+.fw-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.fw-skip { color: var(--text-secondary); }
+.fw-skip:hover { color: var(--text-primary); }
+.fw-empty { margin: 0; font-size: 13px; line-height: 1.4; color: var(--text-secondary); }
+.fw-logged { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
 .fw-error { margin: 0; font-size: 13px; color: var(--accent-text); }
 .fw-season { display: block; font-size: 13px; color: var(--text-secondary); }
 .fw-season select {

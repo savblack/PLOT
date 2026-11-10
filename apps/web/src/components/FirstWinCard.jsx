@@ -1,4 +1,4 @@
-// Dismissible card at the top of Home, after onboarding. The rules live in
+// Dismissible card on Home after onboarding, under the greeting and Finishing touches. The rules live in
 // @plot/core/firstWinCard.js. This file is the web render. It does not block
 // the rest of Home.
 // Mobile: apps/mobile/components/FirstWinCard.tsx
@@ -114,28 +114,30 @@ export function FirstWinCardView({
   onSkip, onAction, onSeason, onEpisode, onTonight,
 }) {
   const show = title?.media_type === 'tv';
+  const heading = title && !show ? F.firstWin.movieTitle : F.firstWin.title;
   return (
-    <section className="fw-card" aria-label={F.firstWin.title}>
-      <div className="fw-head">
-        <h2 className="fw-title">{F.firstWin.title}</h2>
-        <button type="button" className="fw-skip" onClick={onSkip}>{F.skip}</button>
-      </div>
-      {!title && <p className="fw-empty">{F.firstWin.empty}</p>}
-      {title && (
-        <div className="fw-row">
-          {title.poster_path
-            ? <img className="fw-poster" src={posterUrl(title.poster_path, 'w185')} alt="" />
-            : <span className="fw-poster" />}
-          <span className="fw-name">{title.title}</span>
-          {logged
+    <section className="fw-card" aria-label={heading}>
+      <div className="fw-main">
+        {title && (title.poster_path
+          ? <img className="fw-poster" src={posterUrl(title.poster_path, 'w185')} alt="" />
+          : <span className="fw-poster" />)}
+        <div className="fw-text">
+          <h2 className="fw-title">{heading}</h2>
+          <p className="fw-name">{title ? title.title : F.firstWin.empty}</p>
+        </div>
+        <div className="fw-actions">
+          {title && (logged
             ? <span className="fw-logged">{F.firstWin.logged}</span>
             : (
-              <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={onAction}>
+              <button type="button" className="btn btn-secondary btn-sm" disabled={busy} aria-expanded={show ? open : undefined} onClick={onAction}>
                 {busy ? COMMON.saving : show ? F.firstWin.tickEpisode : MEDIA.markWatched}
               </button>
-            )}
+            ))}
+          {/* Tonight is the way out when there is nothing to tick, so it is the button then and a quiet link otherwise. */}
+          <button type="button" className={title && !logged ? 'fw-link' : 'btn btn-secondary btn-sm'} onClick={onTonight}>{F.firstWin.tonight}</button>
+          <button type="button" className="fw-link fw-skip" onClick={onSkip}>{F.skip}</button>
         </div>
-      )}
+      </div>
       {open && show && (
         <>
           <p className="fw-empty">{F.firstWin.sheetSub(title.title)}</p>
@@ -172,7 +174,6 @@ export function FirstWinCardView({
         </>
       )}
       {error && <p className="fw-error" role="alert">{error}</p>}
-      <button type="button" className="btn btn-secondary btn-sm" onClick={onTonight}>{F.firstWin.tonight}</button>
     </section>
   );
 }

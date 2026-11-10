@@ -139,10 +139,12 @@ export const ONBOARDING_FLOW = {
       return what ? `Saving ${what}…` : 'Saving your setup…';
     },
   },
-  // A dismissible card at the top of Home. Skipped onboarding and a finished
+  // A dismissible card on Home, under the greeting and Finishing touches. Skipped onboarding and a finished
   // Trakt import never arm it. Skip on the card hides it. Home is already open.
   firstWin: {
     title: 'Watching this? Tick your last episode',
+    // The saved title is a movie: there is no episode to tick.
+    movieTitle: 'Seen this? Mark it watched',
     tonight: 'Pick something for tonight',
     empty: 'Nothing saved yet. Pick something for tonight, or skip this.',
     tickEpisode: 'Tick episode',

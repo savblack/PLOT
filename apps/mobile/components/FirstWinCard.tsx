@@ -88,9 +88,9 @@ export default function FirstWinCard({ userId }: { userId: string }) {
   const uri = title?.poster_path ? posterUrl(title.poster_path, 'w185') : null;
 
   return (
-    <View style={styles.card} accessibilityLabel={F.firstWin.title}>
+    <View style={styles.card} accessibilityLabel={title && !show ? F.firstWin.movieTitle : F.firstWin.title}>
       <View style={styles.head}>
-        <Text style={styles.title} accessibilityRole="header">{F.firstWin.title}</Text>
+        <Text style={styles.title} accessibilityRole="header">{title && !show ? F.firstWin.movieTitle : F.firstWin.title}</Text>
         <Pressable onPress={dismiss} accessibilityRole="button" hitSlop={8}>
           <Text style={styles.skip}>{F.skip}</Text>
         </Pressable>

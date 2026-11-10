@@ -40,6 +40,8 @@ export default {
 
 /** A show still on the watchlist. Tick episode opens the list. */
 export const Show = { render: () => <Card /> };
+/** A saved movie: the heading and the action change, there is no episode list. */
+export const Movie = { render: () => <Card title={{ id: -2, media_type: 'movie', title: 'The Long Night', poster_path: null }} /> };
 /** Nothing left on the watchlist. Tonight is still there. */
 export const Empty = { render: () => <Card title={null} /> };
 /** The episode was logged. */

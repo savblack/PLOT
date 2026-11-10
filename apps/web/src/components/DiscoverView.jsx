@@ -1092,10 +1092,11 @@ export default function DiscoverView() {
         genres={genres}
         onOpenSearch={openSearch}
       />
-      <FirstWinCard />
+      {/* The greeting leads. Every card sits under it, Finishing touches first. */}
       <h1 className="home-greeting">{greetingFor({ name: profile?.first_name })}</h1>
       <ImportJobCard />
       <FinishingTouches />
+      <FirstWinCard />
       <WatchTogetherHomeCard />
       <DiscoverContent
         openPanel={openPanel}
