@@ -3,12 +3,16 @@
 // control. The sentence lives in the shared catalog; clearing it there hides
 // this. Mobile does not render it: that app has not shipped, and the notice
 // is expected to be gone before it does.
+//
+// role="note", not "status": the text never changes, so there is nothing for
+// a live region to announce, and pages and tests that look up their own
+// status message must keep finding exactly one.
 import { APP_SHELL } from '../copy/appShell.js';
 import './ServiceNotice.css';
 
 export default function ServiceNotice() {
   if (!APP_SHELL.serviceNotice) return null;
   return (
-    <p className="service-notice" role="status">{APP_SHELL.serviceNotice}</p>
+    <p className="service-notice" role="note">{APP_SHELL.serviceNotice}</p>
   );
 }

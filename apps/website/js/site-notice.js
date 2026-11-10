@@ -26,7 +26,7 @@
 
   var notice = document.createElement('p');
   notice.id = 'site-notice';
-  notice.setAttribute('role', 'status');
+  notice.setAttribute('role', 'note');
   notice.textContent = MESSAGE;
   document.body.insertBefore(notice, document.body.firstChild);
 

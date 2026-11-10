@@ -6,7 +6,7 @@ Status: paused (pull request open, waiting for Savannah's review and merge)
 Owner: Jacob (website and web app)
 Branch: agent/2026-11-10-traffic-banner
 Worktree: ~/Developer/PLOT-worktrees/2026-11-10-traffic-banner
-Updated: 2026-11-10
+Updated: 2026-11-10 (CI fix: notice is role="note"; role="status" collided with two smoke tests)
 
 ## Goal
 
