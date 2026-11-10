@@ -95,7 +95,17 @@ from hit;
 -- not a TMDB id and the row is rolled back with everything else.
 reset role;
 set local request.jwt.claims = '{"role":"service_role"}';
+-- The migration creates rather than replaces, so apply it only before it is
+-- live; afterwards this section checks the trigger Staging already has.
+select not exists (
+  select 1 from pg_trigger where tgname = 'episode_watch_overrides_updated_at'
+    and tgrelid = 'public.episode_watch_overrides'::regclass
+) as need_apply \gset
+\if :need_apply
 \i supabase/migrations/20261110130000_episode_watch_overrides_server_updated_at.sql
+\else
+\echo 'already applied on Staging: checking the live trigger'
+\endif
 set local role authenticated;
 set local request.jwt.claims = :A_CLAIMS;
 
