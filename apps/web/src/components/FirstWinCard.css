@@ -21,7 +21,9 @@
   width: 36px;
   height: 54px;
   flex-shrink: 0;
-  border-radius: var(--radius-sm);
+  /* 6px, as Home's other small posters. (--radius-sm is not a token, so this
+     used to fall back to square corners.) */
+  border-radius: 6px;
   object-fit: cover;
   background: var(--surface-sunken);
 }

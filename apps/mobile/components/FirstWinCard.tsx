@@ -153,9 +153,12 @@ export default function FirstWinCard({ userId }: { userId: string }) {
         </>
       )}
       {!!error && <Text style={styles.error}>{error}</Text>}
-      <TouchableOpacity style={styles.pill} onPress={() => router.push('/(app)/tonight' as Href)} accessibilityRole="button">
-        <Text style={styles.pillText}>{F.firstWin.tonight}</Text>
-      </TouchableOpacity>
+      {/* One action at a time. Tonight takes over once there is nothing left to tick. */}
+      {(!title || logged) && (
+        <TouchableOpacity style={styles.pill} onPress={() => router.push('/(app)/tonight' as Href)} accessibilityRole="button">
+          <Text style={styles.pillText}>{F.firstWin.tonight}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

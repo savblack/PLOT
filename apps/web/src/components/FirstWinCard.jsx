@@ -133,8 +133,8 @@ export function FirstWinCardView({
                 {busy ? COMMON.saving : show ? F.firstWin.tickEpisode : MEDIA.markWatched}
               </button>
             ))}
-          {/* Tonight is the way out when there is nothing to tick, so it is the button then and a quiet link otherwise. */}
-          <button type="button" className={title && !logged ? 'fw-link' : 'btn btn-secondary btn-sm'} onClick={onTonight}>{F.firstWin.tonight}</button>
+          {/* One action at a time. Tonight takes over once there is nothing left to tick. */}
+          {(!title || logged) && <button type="button" className="btn btn-secondary btn-sm" onClick={onTonight}>{F.firstWin.tonight}</button>}
           <button type="button" className="fw-link fw-skip" onClick={onSkip}>{F.skip}</button>
         </div>
       </div>
