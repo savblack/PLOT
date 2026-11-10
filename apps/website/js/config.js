@@ -82,6 +82,18 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
         a.href = u.toString();
       } catch { /* leave link untouched on parse error */ }
     });
+    // The homepage search bar is a GET form to signup: carry the same params
+    // as hidden fields, never overriding one the form already sets.
+    document.querySelectorAll('form[action^="https://app.theplot.tv/"]').forEach(function (form) {
+      carry.forEach(function (v, k) {
+        if (form.querySelector('input[name="' + k + '"]')) return;
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = k;
+        input.value = v;
+        form.appendChild(input);
+      });
+    });
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', forwardAttribution);
@@ -108,6 +120,22 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
     posthog.capture(action, {
       placement: a.getAttribute('data-cta') || 'unknown',
       source: 'marketing',
+    });
+  }, true);
+})();
+
+/* The homepage search bar is a form, not a link, so its submit is counted
+   here as the same signup_cta_clicked event. has_query says whether a title
+   was typed; the title itself is never sent. */
+(function () {
+  document.addEventListener('submit', function (ev) {
+    var form = ev.target;
+    if (!form || !form.getAttribute || !/app\.theplot\.tv\/signup/.test(form.getAttribute('action') || '')) return;
+    var q = form.querySelector('input[name="q"]');
+    posthog.capture('signup_cta_clicked', {
+      placement: form.getAttribute('data-cta') || 'unknown',
+      source: 'marketing',
+      has_query: !!(q && q.value.trim()),
     });
   }, true);
 })();
