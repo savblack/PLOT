@@ -5470,6 +5470,11 @@ a.provider-chip--link:hover {
   top: 100%;
   z-index: 100;
   min-width: 120px;
+  /* Sized to the longest label, not to the trigger it hangs from: an
+     absolutely placed panel otherwise shrinks to the button's width and
+     wraps every item onto two lines. */
+  width: max-content;
+  max-width: calc(100vw - 32px);
   overflow: hidden;
   background: var(--surface-raised);
   border: 1px solid var(--border);
@@ -5485,6 +5490,7 @@ a.provider-chip--link:hover {
   font-size: 0.8rem;
   color: var(--text-primary);
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
 .kebab-menu-item:hover { background: color-mix(in srgb, var(--surface-raised) 85%, var(--text-primary) 15%); }
