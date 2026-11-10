@@ -13,17 +13,17 @@
   background: var(--bg);
 }
 
-/* The wordmark loader. Letters rise into place one after another, then a thin
-   pink bar sweeps left to right beneath the word; the whole thing loops every
-   1.8s. Colour comes from the theme; the bar is the fill token. */
+/* The wordmark loader. A faint wordmark fills from left to right, holds, then
+   empties the same way, every 2s. Each pass fills in the next colour:
+   charcoal, grey, pink, grey (8s for the full round). The colour steps while
+   the fill is fully hidden, so it never changes mid-sweep. Charcoal comes from
+   the theme, grey is that same ink thinned, pink is the fill token. */
 .plot-loader {
   --plot-loader-font-size: 30px;
   --plot-loader-color: #292924;
   --plot-loader-fill: var(--accent-fill, #ff88c8);
+  --plot-loader-grey: color-mix(in srgb, var(--plot-loader-color) 45%, transparent);
   display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.28em;
   width: fit-content;
   font-family: var(--font-display, 'Gabarito', 'DM Sans', system-ui, sans-serif);
   font-size: var(--plot-loader-font-size);
@@ -36,28 +36,20 @@
   margin-inline: auto;
 }
 
-.plot-loader__word { display: inline-flex; }
+.plot-loader__word { position: relative; display: inline-flex; }
+.plot-loader__ghost,
+.plot-loader__fill { display: inline-flex; }
+.plot-loader__letter { display: inline-block; }
 
-.plot-loader__letter {
-  display: inline-block;
-  opacity: 0;
-  transform: translateY(0.35em);
-  animation: plot-letter-rise 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite;
-}
-.plot-loader__letter:nth-child(2) { animation-delay: 0.09s; }
-.plot-loader__letter:nth-child(3) { animation-delay: 0.18s; }
-.plot-loader__letter:nth-child(4) { animation-delay: 0.27s; }
+.plot-loader__ghost { opacity: 0.14; }
 
-.plot-loader__bar {
-  display: block;
-  width: 100%;
-  height: 0.14em;
-  border-radius: 999px;
-  background: var(--plot-loader-fill);
-  transform-origin: left center;
-  transform: scaleX(0);
-  animation: plot-bar-sweep 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite;
-  animation-delay: 0.45s;
+.plot-loader__fill {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 100% 0 0);
+  animation:
+    plot-fill-sweep 2s cubic-bezier(0.65, 0, 0.35, 1) infinite,
+    plot-fill-color 8s step-end infinite;
 }
 
 @media (max-width: 720px) {
@@ -65,20 +57,18 @@
   .app-boot-loader .plot-loader { --plot-loader-font-size: 26px; }
 }
 
-@keyframes plot-letter-rise {
-  0%        { opacity: 0; transform: translateY(0.35em); }
-  22%, 72%  { opacity: 1; transform: translateY(0); }
-  90%, 100% { opacity: 0; transform: translateY(-0.2em); }
+@keyframes plot-fill-sweep {
+  0%       { clip-path: inset(0 100% 0 0); }
+  50%, 68% { clip-path: inset(0 0 0 0); }
+  100%     { clip-path: inset(0 0 0 100%); }
 }
-@keyframes plot-bar-sweep {
-  0%        { transform: scaleX(0); transform-origin: left center; opacity: 1; }
-  55%       { transform: scaleX(1); transform-origin: left center; opacity: 1; }
-  56%       { transform-origin: right center; }
-  80%, 100% { transform: scaleX(0); transform-origin: right center; opacity: 1; }
+@keyframes plot-fill-color {
+  0%       { color: var(--plot-loader-color); }
+  25%, 75% { color: var(--plot-loader-grey); }
+  50%      { color: var(--plot-loader-fill); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .plot-loader__letter { animation: none; opacity: 1; transform: none; }
-  .plot-loader__bar { animation: plot-bar-fade 1.6s ease-in-out infinite; transform: none; }
-  @keyframes plot-bar-fade { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+  .plot-loader__fill { clip-path: none; animation: plot-fill-fade 1.6s ease-in-out infinite; }
+  @keyframes plot-fill-fade { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
 }
