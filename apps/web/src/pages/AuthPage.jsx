@@ -12,6 +12,7 @@ import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../util
 import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE, MIN_PASSWORD_LENGTH, captchaFailureCopy } from '../copy/authPage.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
+import { FAILED_ACTIONS, reportActionFailure } from '@plot/core/actionFailures.js';
 import { AUTH_REQUEST_TIMEOUT_MS, AUTH_TIMEOUT_MESSAGE, withAuthTimeout } from '@plot/core/authTimeout.js';
 import { captchaRetryAfterWait, captchaSiteKeyForHost, captchaSubmitEnabled, captchaSubmitPlan, captchaWaitOver, CAPTCHA_SUBMIT_ATTEMPTS, shouldResetCaptcha } from '@plot/core/captchaGate.js';
 import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
@@ -409,8 +410,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
         captchaToken: tokenForRequest,
       }));
       if (!attemptIsCurrent(epoch)) return;
-      if (error) { setError(friendlyError(error.message)); setLoading(false); resetCaptcha(); }
-      else {
+      if (error) {
+        setError(friendlyError(error.message));
+        setLoading(false);
+        resetCaptcha();
+        reportActionFailure(FAILED_ACTIONS.PASSWORD_RESET_REQUEST, error);
+      } else {
         track(EVENTS.PASSWORD_RESET_REQUESTED);
         setSuccess(true);
       }
@@ -779,12 +784,29 @@ export default function AuthPage({ initialMode = 'signup' }) {
       if (!error) { setResendStatus('sent'); return; }
       if (!shouldResendViaBypass({ captchaRequired, captchaToken: token, error })) {
         setResendStatus('error');
+        reportActionFailure(FAILED_ACTIONS.CONFIRMATION_RESEND, error);
         return;
       }
     }
     const bypass = await sendBypassAuthLink('resend', email, epoch);
     if (!attemptIsCurrent(epoch)) return;
     setResendStatus(bypass.ok ? 'sent' : 'error');
+    if (!bypass.ok) {
+      // No HTTP status means the call never got an answer: the time limit
+      // (analyticsReason bypass_timeout) or a failed fetch, which the client
+      // words as connectionFailed.
+      let kind;
+      if (!bypass.status) {
+        if (bypass.analyticsReason === 'bypass_timeout') kind = 'timeout';
+        else if (bypass.message === AUTH_PAGE.connectionFailed) kind = 'network';
+        else kind = 'unknown';
+      }
+      reportActionFailure(
+        FAILED_ACTIONS.CONFIRMATION_RESEND,
+        bypass.status ? { status: bypass.status } : null,
+        { source: 'signup_bypass', ...(kind ? { kind } : {}) },
+      );
+    }
   };
 
   const scrollPosters = [...HERO_POSTERS, ...HERO_POSTERS];
