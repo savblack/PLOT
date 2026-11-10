@@ -26,8 +26,7 @@ export const APP_SHELL = {
   giveFeedback: 'Give feedback',
   opensNewTab: 'opens in a new tab',
   // Temporary service notice shown at the top of every app page (web:
-  // components/ServiceNotice.jsx). The marketing site cannot import this, so
-  // apps/website/js/site-notice.js carries the same sentence: change both.
-  // Set to '' to hide the app notice.
+  // components/ServiceNotice.jsx), including the login and signup page. The
+  // marketing site deliberately does not show it. Set to '' to hide it.
   serviceNotice: "We're seeing more traffic than usual and are upgrading our systems to keep up. You may run into issues importing your watch history or saving titles in the app while we do. Thanks for your patience.",
 };
