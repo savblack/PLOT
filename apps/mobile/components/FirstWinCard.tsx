@@ -92,7 +92,7 @@ export default function FirstWinCard({ userId }: { userId: string }) {
       <View style={styles.head}>
         <Text style={styles.title} accessibilityRole="header">{title && !show ? F.firstWin.movieTitle : F.firstWin.title}</Text>
         <Pressable onPress={dismiss} accessibilityRole="button" hitSlop={8}>
-          <Text style={styles.skip}>{F.skip}</Text>
+          <Text style={styles.skip}>{COMMON.dismiss}</Text>
         </Pressable>
       </View>
       {!title && <Text style={styles.empty}>{F.firstWin.empty}</Text>}
@@ -109,7 +109,7 @@ export default function FirstWinCard({ userId }: { userId: string }) {
                 onPress={() => { if (show) { setError(''); setOpen(on => !on); } else markMovie(); }}
                 accessibilityRole="button"
               >
-                <Text style={styles.pillText}>{busy ? COMMON.saving : show ? F.firstWin.tickEpisode : MEDIA.markWatched}</Text>
+                <Text style={styles.pillText}>{busy ? COMMON.saving : MEDIA.markWatched}</Text>
               </TouchableOpacity>
             )}
         </View>

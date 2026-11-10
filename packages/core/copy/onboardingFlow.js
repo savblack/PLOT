@@ -147,7 +147,6 @@ export const ONBOARDING_FLOW = {
     movieTitle: 'Seen this? Mark it watched',
     tonight: 'Pick something for tonight',
     empty: 'Nothing saved yet. Pick something for tonight, or skip this.',
-    tickEpisode: 'Tick episode',
     logged: 'Logged',
     sheetSub: (title) => `Tick the last episode of ${title} you’ve seen.`,
     tickLabel: (episode, name) => (name ? `Tick episode ${episode}, ${name}` : `Tick episode ${episode}`),

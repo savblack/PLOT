@@ -130,12 +130,12 @@ export function FirstWinCardView({
             ? <span className="fw-logged">{F.firstWin.logged}</span>
             : (
               <button type="button" className="btn btn-secondary btn-sm" disabled={busy} aria-expanded={show ? open : undefined} onClick={onAction}>
-                {busy ? COMMON.saving : show ? F.firstWin.tickEpisode : MEDIA.markWatched}
+                {busy ? COMMON.saving : MEDIA.markWatched}
               </button>
             ))}
           {/* One action at a time. Tonight takes over once there is nothing left to tick. */}
           {(!title || logged) && <button type="button" className="btn btn-secondary btn-sm" onClick={onTonight}>{F.firstWin.tonight}</button>}
-          <button type="button" className="fw-link fw-skip" onClick={onSkip}>{F.skip}</button>
+          <button type="button" className="fw-link fw-skip" onClick={onSkip}>{COMMON.dismiss}</button>
         </div>
       </div>
       {open && show && (
