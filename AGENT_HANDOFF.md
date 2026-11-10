@@ -4,6 +4,7 @@ Status: paused (PR open, waiting for Savannah's review)
 Owner: Jacob (CTO lane), run from a Claude Code side session
 Branch: agent/2026-11-10-2026-11-11-import-rejections
 Worktree: ~/Developer/PLOT-worktrees/2026-11-10-2026-11-11-import-rejections
+PR: https://github.com/savblack/PLOT/pull/1540 (open, not merged)
 Updated: 2026-11-11
 
 ## Plain English
