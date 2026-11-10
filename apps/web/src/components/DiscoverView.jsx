@@ -57,7 +57,6 @@ import { greetingFor } from '@plot/core/greeting.js';
 import FinishingTouches from './FinishingTouches.jsx';
 import WatchTogetherHomeCard from './WatchTogetherHomeCard.jsx';
 import ImportJobCard from './ImportJobCard.jsx';
-import FirstWinCard from './FirstWinCard.jsx';
 import { useFirstRun } from '../hooks/useFirstRun.js';
 import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -970,7 +969,7 @@ export default function DiscoverView() {
         genres={genres}
         onOpenSearch={openSearch}
       />
-      <FirstWinCard />
+      {/* The greeting leads. Every card sits under it. */}
       <h1 className="home-greeting">{greetingFor({ name: profile?.first_name })}</h1>
       <ImportJobCard />
       <FinishingTouches />

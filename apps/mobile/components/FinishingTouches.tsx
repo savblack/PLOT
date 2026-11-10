@@ -36,7 +36,6 @@ import {
   closeFinishingTouches, hideFinishingTouchesFor, markImportDone, readFinishingTouches,
 } from '../lib/finishingTouches';
 import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../lib/letterboxdImportPrompt';
-import { suppressFirstWinForImport } from '../lib/firstWinCard';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
@@ -202,7 +201,7 @@ export default function FinishingTouches({ state, onState }: {
           accessibilityRole="button"
           hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
         >
-          <Text style={styles.hide}>{T.hide}</Text>
+          <Text style={styles.hide}>{COMMON.dismiss}</Text>
         </TouchableOpacity>
         <Text style={styles.count}>{T.count(doneCount, total)}</Text>
         <TouchableOpacity
@@ -276,7 +275,6 @@ export default function FinishingTouches({ state, onState }: {
           userId={userId}
           onImported={async (source, count) => {
             onState(await markImportDone(userId, source, count));
-            await suppressFirstWinForImport(userId, source);
           }}
           onClose={closeSheet}
         />

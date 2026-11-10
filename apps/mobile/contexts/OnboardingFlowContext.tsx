@@ -17,7 +17,6 @@ import { supabase } from '../lib/supabase';
 import { setTmdbRegion } from '../lib/tmdb';
 import { track, EVENTS } from '../lib/analytics';
 import { startFinishingTouchesFor } from '../lib/finishingTouches';
-import { armFirstWinCard } from '../lib/firstWinCard';
 import { setPendingImportSource } from '../lib/pendingImport';
 import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { useAppData } from './AppDataContext';
@@ -175,8 +174,6 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
     }
     // Home's Finishing touches card starts now (once per account on this device).
     await startFinishingTouchesFor(user.id);
-    // The first-win card sits on Home. A skip (nothing saved) does not arm it.
-    await armFirstWinCard(user.id, { skipped: chosen.length === 0 });
     // Switching apps: a queued import runs in the background and Home shows
     // it. A source picked but never started still opens the import on Home.
     setPendingImportSource(importJob ? null : importSource);

@@ -39,6 +39,8 @@ export const COMMON = {
   deselect: 'Deselect',
   sending: 'Sending…',
   saving: 'Saving…',
+  // The quiet way out of a Home card (Finishing touches).
+  dismiss: 'Dismiss',
   send: 'Send',
   turnOn: 'Turn on',
   turnOff: 'Turn off',

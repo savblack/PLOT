@@ -474,7 +474,7 @@ the import page's `?from=` param.
 | `onboarding_completed` | Setup saved | `region`, `seed_titles_added`, `services_added`, `import_source` (null unless they took the switching-apps step), `skipped` |
 | `finishing_touches_viewed` | The Finishing touches card was on screen | `done_count`, `total`. Once per app session, after the watchlist has loaded |
 | `finishing_touch_opened` | A Finishing touches step's action was opened | `step` (`progress` / `friends` / `import` / `people`) |
-| `finishing_touches_hidden` | "Hide for now" | `done_count` |
+| `finishing_touches_hidden` | "Dismiss" (was "Hide for now") | `done_count` |
 | `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
 
 `finishing_touches_hidden` had never fired because Hide for now was rendered
