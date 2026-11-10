@@ -1,0 +1,11 @@
+{
+  "id": 5,
+  "name": "Plot weekly newsletter - master",
+  "isActive": false,
+  "sender": {
+    "name": "Plot",
+    "email": "news@theplot.tv",
+    "id": 2
+  },
+  "createdAt": "2026-10-17T10:39:17.328Z"
+}

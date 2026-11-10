@@ -1,0 +1,228 @@
+{
+  "issue_date": "2026-07-13",
+  "status": "Draft",
+  "notion": {
+    "date": "2026-07-13",
+    "url": "https://app.notion.com/p/3fc4f244aec7813dbf34ea946a9f92ea?pvs=204",
+    "id": "3fc4f244-aec7-813d-bf34-ea946a9f92ea",
+    "verification": {
+      "date": "2026-07-13",
+      "draft": true,
+      "seo": true,
+      "preview": true,
+      "images": 6,
+      "trailers": 3,
+      "footer": 1,
+      "localPath": false,
+      "chartWarning": true
+    }
+  },
+  "publication_blockers": [
+    "Historical weekly trending chart is absent from saved production marketing snapshots. Do not replace with current data.",
+    "Savannah to select the GIF and approve the draft."
+  ],
+  "newsletter_lint": [
+    "List at least five TMDB trending titles."
+  ],
+  "chart_snapshot": null,
+  "media": [
+    {
+      "requested_title": "Little House on the Prairie",
+      "id": 283304,
+      "type": "tv",
+      "title": "Little House on the Prairie",
+      "date": "2026-07-09",
+      "overview": "The close-knit Ingalls family builds a new life on the Western frontier, where the joys of nature and the struggle for survival are deeply intertwined.",
+      "backdrop": "/fBieUo3SdItUrXZE16YxbpjwXIe.jpg",
+      "homepage": "https://www.netflix.com/title/81748089",
+      "episodes": 8
+    },
+    {
+      "requested_title": "Moana",
+      "id": 1108427,
+      "type": "movie",
+      "title": "Moana",
+      "date": "2026-07-10",
+      "overview": "Teenage Moana answers the Ocean's call and, for the first time, voyages beyond the reef of her island of Motunui with infamous demigod Maui on an unforgettable journey to restore prosperity to her people.",
+      "backdrop": "/c6BPbkO5Npt1OdwttAxCFo06wtH.jpg",
+      "homepage": "https://movies.disney.com/moana-2026",
+      "runtime": 115
+    },
+    {
+      "requested_title": "Evil Dead Burn",
+      "id": 1212763,
+      "type": "movie",
+      "title": "Evil Dead Burn",
+      "date": "2026-07-10",
+      "overview": "After her husband's abrupt death, Alice seeks solace with his remaining family \u2014 descendants of a leading researcher on demonic possession. As her in-laws transform one by one into creatures that feed on fear, she comes to discover that the vows she took in life survive even in death.",
+      "backdrop": "/o0jkkpcN81QqSl8DMLScBCXyUH9.jpg",
+      "homepage": "https://www.warnerbros.com/movies/evil-dead-burn",
+      "runtime": 110
+    },
+    {
+      "requested_title": "Minions & Monsters",
+      "id": 1315772,
+      "type": "movie",
+      "title": "Minions & Monsters",
+      "date": "2026-07-01",
+      "overview": "This is the rambunctious, ridiculous and totally true story of how the Minions conquered Hollywood, became movie stars, lost everything, unleashed monsters onto the world and then banded together to try and save the planet from the mayhem they had just created.",
+      "backdrop": "/kkcwhgSFd81QDlXo8ytrpHPQjhy.jpg",
+      "homepage": "https://www.minionsmovie.com",
+      "runtime": 90
+    },
+    {
+      "requested_title": "Shipwrecked: Nightmare at Sea",
+      "id": 1715492,
+      "type": "movie",
+      "title": "Shipwrecked: Nightmare at Sea",
+      "date": "2026-07-10",
+      "overview": "Never-before-seen footage and survivor accounts trace the 2012 shipwreck of a luxury cruise and the disaster that ensued, in this immersive documentary.",
+      "backdrop": "/n6TYhOl8NYSoIl8q6dI16IZiodB.jpg",
+      "homepage": "https://www.netflix.com/title/81757898",
+      "runtime": 90
+    },
+    {
+      "requested_title": "The Odyssey",
+      "id": 1368337,
+      "type": "movie",
+      "title": "The Odyssey",
+      "date": "2026-07-17",
+      "overview": "Odysseus, the legendary King of Ithaca, embarks on a long and perilous journey home following the Trojan War. Throughout his voyage, he is forced to confront the whims of gods, mythological monsters, and trials that stretch both his cunning and his humanity to the breaking point.",
+      "backdrop": "/nVBzWBqHTB3XD0iqWiJLfKLo5fq.jpg",
+      "homepage": "https://www.universalpictures.com/movies/the-odyssey",
+      "runtime": 173
+    },
+    {
+      "requested_title": "Heartstopper Forever",
+      "id": 1468683,
+      "type": "movie",
+      "title": "Heartstopper Forever",
+      "date": "2026-07-17",
+      "overview": "It's a new school year for the Truham-Higgs gang. As Nick and Charlie's relationship deepens, their thoughts turn to life after the last bell rings.",
+      "backdrop": "/wG6yUcgv4xaj64KX7SSPEwBGXW0.jpg",
+      "homepage": "https://www.netflix.com/title/82040750",
+      "runtime": 110
+    },
+    {
+      "requested_title": "The Hawk",
+      "id": 254528,
+      "type": "tv",
+      "title": "The Hawk",
+      "date": "2026-07-16",
+      "overview": "On the back nine of his career, golf legend Lonnie \"The Hawk\" Hawkins chases one final major \u2014 and drags everyone he loves into the chaos.",
+      "backdrop": "/fBVNJL85Q60njpKPD6YaLi6tEsX.jpg",
+      "homepage": "https://www.netflix.com/title/81695311",
+      "episodes": 10
+    },
+    {
+      "requested_title": "Lucky",
+      "id": 278624,
+      "type": "tv",
+      "title": "Lucky",
+      "date": "2026-07-14",
+      "overview": "When a multi-million-dollar heist goes sideways, con artist Lucky is forced to go on the run. Pursued by both the FBI and a ruthless crime boss, Lucky must fight for her life\u2014and a way out.",
+      "backdrop": "/mKrhRPB7rMvy0bIU1l1NYhgh1eI.jpg",
+      "homepage": "https://tv.apple.com/show/umc.cmc.5qo7t3nngb2vj0m9dxkwebw1o",
+      "episodes": 7
+    },
+    {
+      "requested_title": "The East Palace",
+      "id": 279323,
+      "type": "tv",
+      "title": "The East Palace",
+      "date": "2026-07-17",
+      "overview": "A man who walks the spirit world and a court lady who hears the dead enter the East Palace by the king's orders \u2014 can they unravel its dark secrets?",
+      "backdrop": "/8PHBAdPyfIwS5W6cfKLhItEb875.jpg",
+      "homepage": "https://www.netflix.com/title/81778702",
+      "episodes": 8
+    }
+  ],
+  "trailers": [
+    {
+      "issue_date": "2026-07-13",
+      "title": "The Odyssey",
+      "key": "Mzw2ttJD2qQ",
+      "name": "Official Trailer",
+      "date": "2025-12-22T14:00:04.000Z",
+      "status": 200,
+      "video_title": "The Odyssey | Official Trailer",
+      "channel": "Universal Pictures"
+    },
+    {
+      "issue_date": "2026-07-13",
+      "title": "Heartstopper Forever",
+      "key": "locuQ-skySE",
+      "name": "Official Trailer",
+      "date": "2026-06-16T16:00:02.000Z",
+      "status": 200,
+      "video_title": "Heartstopper Forever | Official Trailer | Netflix",
+      "channel": "Netflix"
+    },
+    {
+      "issue_date": "2026-07-13",
+      "title": "The Hawk",
+      "key": "sSRJ6PXHx88",
+      "name": "Official Trailer",
+      "date": "2026-06-25T13:00:04.000Z",
+      "status": 200,
+      "video_title": "The Hawk | Official Trailer | Netflix",
+      "channel": "Netflix"
+    }
+  ],
+  "source_urls": [
+    "https://www.themoviedb.org/tv/283304",
+    "https://theplot.tv/movie/moana-1108427",
+    "https://image.tmdb.org/t/p/w780/c6BPbkO5Npt1OdwttAxCFo06wtH.jpg",
+    "https://www.themoviedb.org/movie/1108427",
+    "https://www.thewrap.com/creative-content/movies/why-moana-remake-flopped-analysis-box-office/",
+    "https://www.reddit.com/r/movies/comments/1uqwvv4/evil_dead_burn_review_thread/",
+    "https://apnews.com/article/20f06af5081712ead0ff6658c4206ab4",
+    "https://www.reddit.com/r/littlehouseonprairie/comments/1uu97v4/did_anyone_else_find_the_netflix_reboot_kinda/",
+    "https://www.latimes.com/entertainment-arts/tv/story/2026-07-09/little-house-on-prairie-review-netflix-laura-ingalls-wilder",
+    "https://theplot.tv/tv/little-house-on-the-prairie-283304",
+    "https://www.thewrap.com/creative-content/movies/moana-review-disney-live-action-remake/",
+    "https://image.tmdb.org/t/p/w780/fBieUo3SdItUrXZE16YxbpjwXIe.jpg",
+    "https://image.tmdb.org/t/p/original/fBieUo3SdItUrXZE16YxbpjwXIe.jpg",
+    "https://media.netflix.com/en/only-on-netflix/81748089",
+    "https://image.tmdb.org/t/p/w780/n6TYhOl8NYSoIl8q6dI16IZiodB.jpg",
+    "https://www.themoviedb.org/movie/1715492",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-july-10-2026",
+    "https://theplot.tv/whats-on/chart",
+    "https://image.tmdb.org/t/p/w780/mKrhRPB7rMvy0bIU1l1NYhgh1eI.jpg",
+    "https://www.themoviedb.org/tv/278624",
+    "https://www.apple.com/tv-pr/news/2026/02/apple-tv-unveils-the-premiere-date-first-look-and-teaser-for-lucky-new-limited-series-starring-and-executive-produced-by-sag-and-golden-globe-award-winner-anya-taylor-joy-premiering-globally-wednesday-july-15-2026/",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=278624&src=newsletter",
+    "https://image.tmdb.org/t/p/w780/8PHBAdPyfIwS5W6cfKLhItEb875.jpg",
+    "https://www.themoviedb.org/tv/279323",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-july-17-2026",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=279323&src=newsletter"
+  ],
+  "primary_page_checks": [
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81748089",
+      "title": "Little House on the Prairie | Netflix Media Center",
+      "status": 200
+    }
+  ],
+  "editorial_review": "Written for the issue date using contemporary reviews, audience threads, release announcements, and official trailers. Review opinions are attributed; individual posts are not treated as audience-wide consensus. HTTP status alone is not evidence of a claim.",
+  "layout": [
+    {
+      "date": "2026-07-13",
+      "width": 390,
+      "scroll": 390,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    },
+    {
+      "date": "2026-07-13",
+      "width": 1280,
+      "scroll": 1280,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    }
+  ]
+}

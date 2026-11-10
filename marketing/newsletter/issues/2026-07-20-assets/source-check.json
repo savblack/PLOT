@@ -1,0 +1,261 @@
+{
+  "issue_date": "2026-07-20",
+  "status": "Draft",
+  "notion": {
+    "date": "2026-07-20",
+    "url": "https://app.notion.com/p/3fc4f244aec78153be32d2d133e1a9a0?pvs=204",
+    "id": "3fc4f244-aec7-8153-be32-d2d133e1a9a0",
+    "verification": {
+      "date": "2026-07-20",
+      "draft": true,
+      "seo": true,
+      "preview": true,
+      "images": 7,
+      "trailers": 3,
+      "footer": 1,
+      "localPath": false,
+      "chartWarning": true
+    }
+  },
+  "publication_blockers": [
+    "Historical weekly trending chart is absent from saved production marketing snapshots. Do not replace with current data.",
+    "Savannah to select the GIF and approve the draft."
+  ],
+  "newsletter_lint": [
+    "List at least five TMDB trending titles."
+  ],
+  "chart_snapshot": null,
+  "media": [
+    {
+      "requested_title": "The Odyssey",
+      "id": 1368337,
+      "type": "movie",
+      "title": "The Odyssey",
+      "date": "2026-07-17",
+      "overview": "Odysseus, the legendary King of Ithaca, embarks on a long and perilous journey home following the Trojan War. Throughout his voyage, he is forced to confront the whims of gods, mythological monsters, and trials that stretch both his cunning and his humanity to the breaking point.",
+      "backdrop": "/nVBzWBqHTB3XD0iqWiJLfKLo5fq.jpg",
+      "homepage": "https://www.universalpictures.com/movies/the-odyssey",
+      "runtime": 173
+    },
+    {
+      "requested_title": "Moana",
+      "id": 1108427,
+      "type": "movie",
+      "title": "Moana",
+      "date": "2026-07-10",
+      "overview": "Teenage Moana answers the Ocean's call and, for the first time, voyages beyond the reef of her island of Motunui with infamous demigod Maui on an unforgettable journey to restore prosperity to her people.",
+      "backdrop": "/c6BPbkO5Npt1OdwttAxCFo06wtH.jpg",
+      "homepage": "https://movies.disney.com/moana-2026",
+      "runtime": 115
+    },
+    {
+      "requested_title": "Evil Dead Burn",
+      "id": 1212763,
+      "type": "movie",
+      "title": "Evil Dead Burn",
+      "date": "2026-07-10",
+      "overview": "After her husband's abrupt death, Alice seeks solace with his remaining family \u2014 descendants of a leading researcher on demonic possession. As her in-laws transform one by one into creatures that feed on fear, she comes to discover that the vows she took in life survive even in death.",
+      "backdrop": "/o0jkkpcN81QqSl8DMLScBCXyUH9.jpg",
+      "homepage": "https://www.warnerbros.com/movies/evil-dead-burn",
+      "runtime": 110
+    },
+    {
+      "requested_title": "Lucky",
+      "id": 278624,
+      "type": "tv",
+      "title": "Lucky",
+      "date": "2026-07-14",
+      "overview": "When a multi-million-dollar heist goes sideways, con artist Lucky is forced to go on the run. Pursued by both the FBI and a ruthless crime boss, Lucky must fight for her life\u2014and a way out.",
+      "backdrop": "/mKrhRPB7rMvy0bIU1l1NYhgh1eI.jpg",
+      "homepage": "https://tv.apple.com/show/umc.cmc.5qo7t3nngb2vj0m9dxkwebw1o",
+      "episodes": 7
+    },
+    {
+      "requested_title": "Heartstopper Forever",
+      "id": 1468683,
+      "type": "movie",
+      "title": "Heartstopper Forever",
+      "date": "2026-07-17",
+      "overview": "It's a new school year for the Truham-Higgs gang. As Nick and Charlie's relationship deepens, their thoughts turn to life after the last bell rings.",
+      "backdrop": "/wG6yUcgv4xaj64KX7SSPEwBGXW0.jpg",
+      "homepage": "https://www.netflix.com/title/82040750",
+      "runtime": 110
+    },
+    {
+      "requested_title": "The Hawk",
+      "id": 254528,
+      "type": "tv",
+      "title": "The Hawk",
+      "date": "2026-07-16",
+      "overview": "On the back nine of his career, golf legend Lonnie \"The Hawk\" Hawkins chases one final major \u2014 and drags everyone he loves into the chaos.",
+      "backdrop": "/fBVNJL85Q60njpKPD6YaLi6tEsX.jpg",
+      "homepage": "https://www.netflix.com/title/81695311",
+      "episodes": 10
+    },
+    {
+      "requested_title": "Motor City",
+      "id": 87513,
+      "type": "movie",
+      "title": "Motor City",
+      "date": "2026-07-24",
+      "overview": "In 1970s Detroit, John Miller falls for a local gangster's girl and lands in prison for a crime he didn't commit. With his life ruined, Miller plots revenge against the man who took his girl away.",
+      "backdrop": "/l7asYmqOad01F2u0oCMM8nQjoEP.jpg",
+      "homepage": "https://www.independentfilmco.com/films/motor-city",
+      "runtime": 104
+    },
+    {
+      "requested_title": "Avatar Aang: The Last Airbender",
+      "id": 980431,
+      "type": "movie",
+      "title": "Avatar Aang: The Last Airbender",
+      "date": "2026-07-24",
+      "overview": "Avatar Aang, the world's last Airbender, learns of an ancient power that could save his culture from extinction. With the help of his friends, he embarks on a global quest to find it before it falls into the wrong hands and threatens to upend the peace they sacrificed everything to achieve.",
+      "backdrop": "/ezbrL1dMymKQZw7mDEWa2ZTzN7d.jpg",
+      "homepage": "https://www.paramountplus.com/movies/video/ALVE01KRF3YJMCEJB92T78193MJ4HP",
+      "runtime": 99
+    },
+    {
+      "requested_title": "The Dink",
+      "id": 1361774,
+      "type": "movie",
+      "title": "The Dink",
+      "date": "2026-07-23",
+      "overview": "Desperate to save a struggling country club and earn his father's respect, a washed-up tennis pro is compelled to break a sacred vow and do the unthinkable: play pickleball.",
+      "backdrop": "/z1Z1vW3bu27UUXD70vyqAcCeXU1.jpg",
+      "homepage": "https://tv.apple.com/movie/umc.cmc.5tugaz9vt498ajn7q64ypaqxn",
+      "runtime": 103
+    },
+    {
+      "requested_title": "72 Hours",
+      "id": 949838,
+      "type": "movie",
+      "title": "72 HOURS",
+      "date": "2026-07-20",
+      "overview": "To save his career, a 40-year-old ad exec joins a crew of twentysomethings for a wild Miami bachelor party after they mistakenly add him to a group chat.",
+      "backdrop": "/hL5EIk48251OXlbIbRJq3yaBHk8.jpg",
+      "homepage": "https://www.netflix.com/title/81715790",
+      "runtime": 105
+    },
+    {
+      "requested_title": "Ransom Canyon",
+      "id": 240993,
+      "type": "tv",
+      "title": "Ransom Canyon",
+      "date": "2025-04-17",
+      "overview": "Passions run deep in a small Texas town, as three ranching dynasties fight for their land, their legacies and the people they love.",
+      "backdrop": "/29P64FqDp0UVa9oJsIl49PHn5tH.jpg",
+      "homepage": "https://www.netflix.com/title/81459107",
+      "episodes": 18
+    }
+  ],
+  "trailers": [
+    {
+      "issue_date": "2026-07-20",
+      "title": "Avatar Aang: The Last Airbender",
+      "key": "7b20GRFZBFE",
+      "name": "Official Trailer",
+      "date": "2026-07-07T15:00:30.000Z",
+      "status": 200,
+      "video_title": "Avatar Aang: The Last Airbender | Official Movie Trailer | Paramount+ | Avatar",
+      "channel": "Avatar Legends"
+    },
+    {
+      "issue_date": "2026-07-20",
+      "title": "Motor City",
+      "key": "t6RklhKu9os",
+      "name": "Official Trailer",
+      "date": "2026-06-25T15:56:30.000Z",
+      "status": 200,
+      "video_title": "MOTOR CITY | Official Trailer ft. Alan Ritchson, Shailene Woodley | Independent Film Company",
+      "channel": "Independent Film Company"
+    },
+    {
+      "issue_date": "2026-07-20",
+      "title": "The Dink",
+      "key": "YyVNFzx5Pl8",
+      "name": "Official Trailer",
+      "date": "2026-06-23T13:00:15.000Z",
+      "status": 200,
+      "video_title": "The Dink \u2014\u00a0Official Trailer | Apple TV",
+      "channel": "Apple TV"
+    }
+  ],
+  "source_urls": [
+    "https://www.themoviedb.org/movie/1368337",
+    "https://theplot.tv/movie/moana-1108427",
+    "https://image.tmdb.org/t/p/w780/nVBzWBqHTB3XD0iqWiJLfKLo5fq.jpg",
+    "https://image.tmdb.org/t/p/original/nVBzWBqHTB3XD0iqWiJLfKLo5fq.jpg",
+    "https://www.thewrap.com/creative-content/reviews/the-odyssey-review-christopher-nolan/",
+    "https://movies.disney.com/moana-2026",
+    "https://www.warnerbros.com/movies/evil-dead-burn",
+    "https://www.reddit.com/r/ChristopherNolan/comments/1uxanln/the_odyssey_discussion_thread_spoilers/",
+    "https://theplot.tv/movie/the-odyssey-1368337",
+    "https://image.tmdb.org/t/p/w780/mKrhRPB7rMvy0bIU1l1NYhgh1eI.jpg",
+    "https://www.themoviedb.org/tv/278624",
+    "https://www.tvline.com/2215166/lucky-review-apple-tv-anya-taylor-joy/",
+    "https://www.marieclaire.com/culture/tv-shows/lucky-showrunner-cassie-pappas-interview/",
+    "https://image.tmdb.org/t/p/w780/wG6yUcgv4xaj64KX7SSPEwBGXW0.jpg",
+    "https://www.themoviedb.org/movie/1468683",
+    "https://media.netflix.com/en/only-on-netflix/82040750",
+    "https://image.tmdb.org/t/p/w780/fBVNJL85Q60njpKPD6YaLi6tEsX.jpg",
+    "https://www.themoviedb.org/tv/254528",
+    "https://media.netflix.com/en/only-on-netflix/81695311",
+    "https://theplot.tv/whats-on/chart",
+    "https://image.tmdb.org/t/p/w780/hL5EIk48251OXlbIbRJq3yaBHk8.jpg",
+    "https://www.themoviedb.org/movie/949838",
+    "https://media.netflix.com/en/only-on-netflix/81715790",
+    "https://app.theplot.tv/save?media_type=movie&tmdb_id=949838&src=newsletter",
+    "https://image.tmdb.org/t/p/w780/29P64FqDp0UVa9oJsIl49PHn5tH.jpg",
+    "https://www.themoviedb.org/tv/240993",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-july-17-2026",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=240993&src=newsletter"
+  ],
+  "primary_page_checks": [
+    {
+      "url": "https://movies.disney.com/moana-2026",
+      "title": "Moana | Disney Movies",
+      "status": 200
+    },
+    {
+      "url": "https://www.warnerbros.com/movies/evil-dead-burn",
+      "title": "WarnerBros.com | Evil Dead Burn | Movies",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/82040750",
+      "title": "Heartstopper Forever | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81715790",
+      "title": "72 HOURS | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81695311",
+      "title": "The Hawk | Netflix Media Center",
+      "status": 200
+    }
+  ],
+  "editorial_review": "Written for the issue date using contemporary reviews, audience threads, release announcements, and official trailers. Review opinions are attributed; individual posts are not treated as audience-wide consensus. HTTP status alone is not evidence of a claim.",
+  "layout": [
+    {
+      "date": "2026-07-20",
+      "width": 390,
+      "scroll": 390,
+      "images": 11,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    },
+    {
+      "date": "2026-07-20",
+      "width": 1280,
+      "scroll": 1280,
+      "images": 11,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    }
+  ]
+}

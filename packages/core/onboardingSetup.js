@@ -103,6 +103,21 @@ export const BUILDING_MIN_MS = 1100;
 export const BUILDING_FADE_MS = 250;
 /** Posters on the building shelf: two rows of three. */
 export const BUILDING_SHELF_SIZE = 6;
+/** Each building line shows this long before the next; the last one stays. */
+export const BUILDING_LINE_MS = 1000;
+
+/**
+ * The building moment's lines, shown one at a time. While a background import
+ * runs, `importLine` replaces the first.
+ *
+ * @param {boolean} hasServices
+ * @param {string | null} [importLine]
+ * @returns {string[]}
+ */
+export function buildingLines(hasServices, importLine = null) {
+  const [first, ...rest] = ONBOARDING_FLOW.building.lines;
+  return [importLine || (hasServices ? first : ONBOARDING_FLOW.building.noServicesFirstLine), ...rest];
+}
 
 /**
  * The building moment's shelf, in the order the posters land. Their picks go

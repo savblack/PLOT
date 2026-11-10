@@ -1,0 +1,93 @@
+{
+  "prepared_on": "2026-10-18",
+  "issue_date": "2026-09-28",
+  "chart": {
+    "issue": "2026-09-28",
+    "snapshot": "2026-09-24",
+    "comparison": "2026-09-17",
+    "count": 10
+  },
+  "trailers": [
+    {
+      "key": "job8V254NAE",
+      "title": "DIGGER | Official Final Trailer",
+      "channel": "Warner Bros.",
+      "status": 200
+    },
+    {
+      "key": "xdPMKhjMSFs",
+      "title": "Verity | Official Trailer",
+      "channel": "Amazon MGM Studios",
+      "status": 200
+    },
+    {
+      "key": "M9NWvGZViCg",
+      "title": "East of Eden | Official Trailer | Netflix",
+      "channel": "Netflix",
+      "status": 200
+    }
+  ],
+  "editorial_source_urls": [
+    "https://www.themoviedb.org/tv/305357",
+    "https://apnews.com/article/9bec293d914478bb4ef21fd8dd35116f",
+    "https://www.boxofficemojo.com/weekend/2026W39/",
+    "https://www.youtube.com/watch?v=5fHXyqQOKL8",
+    "https://www.tvline.com/2266331/a-different-world-review-netflix-reboot/",
+    "https://www.reddit.com/r/Philippines/comments/1wq7zz6/this_movie_deserves_better_than_becoming_a_box/",
+    "https://freshfiction.tv/forgotten-island-review-a-fantastic-fantastical-animated-adventure-heartfelt-ode-to-female-friendship/",
+    "https://www.themoviedb.org/movie/1492640",
+    "https://www.netflix.com/tudum/articles/unabomber-release-date-cast-news",
+    "https://www.themoviedb.org/tv/290720",
+    "https://about.netflix.com/en/news/the-final-problem-arrives-on-netflix-on-september-25",
+    "https://www.netflix.com/tudum/articles/new-young-adult-shows-movies",
+    "https://www.youtube.com/watch?v=job8V254NAE",
+    "https://www.the-numbers.com/movie/Digger-%282026%29",
+    "https://www.youtube.com/watch?v=xdPMKhjMSFs",
+    "https://www.boxofficemojo.com/calendar/2026-10-02/",
+    "https://www.youtube.com/watch?v=M9NWvGZViCg",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-september-25-2026",
+    "https://www.themoviedb.org/tv/318918",
+    "https://www.netflix.com/tudum/articles/new-on-netflix?pubDate=20250502",
+    "https://www.themoviedb.org/movie/1032863",
+    "https://www.aboutamazon.com/news/entertainment/prime-video-september-films-shows-sports-2026",
+    "https://www.themoviedb.org/movie/1458857",
+    "https://media.netflix.com/en/only-on-netflix/82023496"
+  ],
+  "checks": {
+    "newsletter_lint": [],
+    "preview_characters": 109,
+    "layouts": [
+      {
+        "date": "2026-09-28",
+        "width": 390,
+        "scroll": 390,
+        "images": 11,
+        "broken": [],
+        "trailers": 3,
+        "errors": []
+      },
+      {
+        "date": "2026-09-28",
+        "width": 1280,
+        "scroll": 1280,
+        "images": 11,
+        "broken": [],
+        "trailers": 3,
+        "errors": []
+      }
+    ],
+    "newsletter_tests": "node --test marketing/tests/the-week.test.mjs: 30 passed",
+    "repository_check": "Node 22.23.3, pnpm run check: passed; 178 existing lint warnings, zero errors"
+  },
+  "source_variety_revision": {
+    "date": "2026-10-18",
+    "conversation_urls": [
+      "https://www.tvline.com/2266331/a-different-world-review-netflix-reboot/",
+      "https://www.reddit.com/r/Philippines/comments/1wq7zz6/this_movie_deserves_better_than_becoming_a_box/",
+      "https://freshfiction.tv/forgotten-island-review-a-fantastic-fantastical-animated-adventure-heartfelt-ode-to-female-friendship/",
+      "https://theplot.tv/movie/forgotten-island-1465063"
+    ],
+    "changes": "Rewritten angles and source mix; opening-weekend reporting added selectively. October 12 adds Carrie and updates the opener and preview. Notion changes read back and verified.",
+    "checks": "Newsletter linter passed. 30 newsletter tests passed. pnpm run check passed on Node 22.23.3; existing warnings remain."
+  }
+}
