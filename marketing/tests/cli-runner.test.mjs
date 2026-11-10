@@ -5,12 +5,12 @@ import { buildInvocation, copyWorkerEnv, copyWorkerSandboxProfile } from '../lib
 test('codex invocation keeps the prompt as the last, positional argument', () => {
   const { command, args } = buildInvocation('codex', 'PROMPT');
   assert.equal(command, 'codex');
-  assert.deepEqual(args, ['exec', '--sandbox', 'workspace-write', '--ephemeral', 'PROMPT']);
+  assert.deepEqual(args, ['exec', '--sandbox', 'workspace-write', '--skip-git-repo-check', '--ephemeral', 'PROMPT']);
 });
 
 test('codex never bypasses its sandbox for copy generation', () => {
   const { args } = buildInvocation('codex', 'PROMPT', { dangerous: true });
-  assert.deepEqual(args, ['exec', '--sandbox', 'workspace-write', '--ephemeral', 'PROMPT']);
+  assert.deepEqual(args, ['exec', '--sandbox', 'workspace-write', '--skip-git-repo-check', '--ephemeral', 'PROMPT']);
   assert.equal(args[args.length - 1], 'PROMPT', 'prompt must stay last');
 });
 

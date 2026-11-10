@@ -1,0 +1,254 @@
+{
+  "issue_date": "2026-08-24",
+  "status": "Draft",
+  "notion": {
+    "date": "2026-08-24",
+    "url": "https://app.notion.com/p/3fc4f244aec781e88a08d61e046a1406?pvs=204",
+    "id": "3fc4f244-aec7-81e8-8a08-d61e046a1406",
+    "verification": {
+      "date": "2026-08-24",
+      "draft": true,
+      "seo": true,
+      "preview": true,
+      "images": 6,
+      "trailers": 3,
+      "footer": 1,
+      "localPath": false,
+      "chartWarning": false
+    }
+  },
+  "publication_blockers": [
+    "Savannah to select the GIF and approve the draft."
+  ],
+  "newsletter_lint": [],
+  "chart_snapshot": "2026-08-20",
+  "media": [
+    {
+      "requested_title": "Lanterns",
+      "id": 95350,
+      "type": "tv",
+      "title": "Lanterns",
+      "date": "2026-08-16",
+      "overview": "Two intergalactic cops, new recruit John Stewart and Lantern legend Hal Jordan, are drawn into a dark, Earth-based mystery as they investigate a murder in the American heartland.",
+      "backdrop": "/6gqezQJ2mkm4jreWwLyOZy2Vf6i.jpg",
+      "homepage": "https://www.hbo.com/content/lanterns"
+    },
+    {
+      "requested_title": "Mutiny",
+      "id": 1288445,
+      "type": "movie",
+      "title": "Mutiny",
+      "date": "2026-08-21",
+      "overview": "After witnessing his billionaire boss' murder and being framed for the crime, Cole Reed boards a cargo ship on a one-man crusade to avenge his boss' death only to discover an international conspiracy.",
+      "backdrop": "/e2QAGrEmbpmZpMymDRkDisJkvg9.jpg",
+      "homepage": "https://www.mutiny.movie",
+      "runtime": 96
+    },
+    {
+      "requested_title": "Insidious: Out of the Further",
+      "id": 1291595,
+      "type": "movie",
+      "title": "Insidious: Out of the Further",
+      "date": "2026-08-21",
+      "overview": "Gemma, a young mother raising her daughter in the house she grew up in, discovers she can travel into The Further, where she possesses an ability to bring what lives there back to the real world.",
+      "backdrop": "/p40lmrdI4blcAPZQMTPaiy5v5Ym.jpg",
+      "homepage": "https://insidious.movie/",
+      "runtime": 106
+    },
+    {
+      "requested_title": "The End of Oak Street",
+      "id": 1101383,
+      "type": "movie",
+      "title": "The End of Oak Street",
+      "date": "2026-08-14",
+      "overview": "After a mysterious cosmic event rips Oak Street from suburbia and transports their neighborhood to someplace unknown, the Platt family soon discovers that their very survival depends on them sticking together as they navigate their now unrecognizable surroundings.",
+      "backdrop": "/b9q9VmbXDvJmTziRqkwdEmFdwhr.jpg",
+      "homepage": "https://www.endofoakstreet.com",
+      "runtime": 100
+    },
+    {
+      "requested_title": "Outer Banks",
+      "id": 100757,
+      "type": "tv",
+      "title": "Outer Banks",
+      "date": "2020-04-15",
+      "overview": "On a North Carolina island of haves and have-nots, John B and his tight-knit crew of friends find mystery and adventure while hunting for lost treasure.",
+      "backdrop": "/fGk5GVPP7qfEHr8b9pzS6AWsOmV.jpg",
+      "homepage": "https://www.netflix.com/title/80236318",
+      "episodes": 50
+    },
+    {
+      "requested_title": "Facing El Chapo",
+      "id": 1621552,
+      "type": "movie",
+      "title": "Facing El Chapo",
+      "date": "2026-08-21",
+      "overview": "Two Mexican officers must survive the final hours of their shift after crossing a ruthless cartel boss.",
+      "backdrop": "/c4U96GrPRfnNrS01mBtqnocvlLJ.jpg",
+      "homepage": "https://www.netflix.com/title/82048151",
+      "runtime": 91
+    },
+    {
+      "requested_title": "Coyote vs. Acme",
+      "id": 1204680,
+      "type": "movie",
+      "title": "Coyote vs. Acme",
+      "date": "2026-08-28",
+      "overview": "After Acme products fail him one too many times in his dogged pursuit of the Roadrunner, Wile E. Coyote decides to hire a billboard lawyer to sue the Acme Corporation.",
+      "backdrop": "/viZqGq9TNvQ5uXSD4ahg2RpRONT.jpg",
+      "homepage": "https://coyotevsacme.com",
+      "runtime": 103
+    },
+    {
+      "requested_title": "The Dog Stars",
+      "id": 1384216,
+      "type": "movie",
+      "title": "The Dog Stars",
+      "date": "2026-08-28",
+      "overview": "After the world's population has been ravaged by a pandemic, a man lives a lonesome existence in a Colorado airplane hangar with his dog and a dour gunman he has befriended. When a mysterious transmission comes through on the radio while he\u2019s flying his old Cessna, it sparks a hunt for the provenance of the sound.",
+      "backdrop": "/quAHqi4zBrB5fIfHvgrqiG4xzAC.jpg",
+      "homepage": "https://www.20thcenturystudios.com/movies/the-dog-stars",
+      "runtime": 119
+    },
+    {
+      "requested_title": "The Whisper Man",
+      "id": 860508,
+      "type": "movie",
+      "title": "The Whisper Man",
+      "date": "2026-08-28",
+      "overview": "When his young son vanishes, a widower enlists help from his estranged father, a retired detective who put away the serial killer now linked to the case.",
+      "backdrop": "/uauoVKKCkNA9iWjgJCL8TdSfLf5.jpg",
+      "homepage": "https://www.netflix.com/title/81278442",
+      "runtime": 111
+    },
+    {
+      "requested_title": "All the Truth in My Lies",
+      "id": 292558,
+      "type": "tv",
+      "title": "All the Truth in My Lies",
+      "date": "2026-08-28",
+      "overview": "Two roommates join a bachelorette road trip, where unspoken feelings ignite and shake up their entire friend group.",
+      "backdrop": "/h3QvZs2bqRmN2hfVd1FZ9XrCZDm.jpg",
+      "homepage": "https://www.netflix.com/title/81735486",
+      "episodes": 5
+    },
+    {
+      "requested_title": "Leanne",
+      "id": 252751,
+      "type": "tv",
+      "title": "Leanne",
+      "date": "2025-07-31",
+      "overview": "When her husband leaves her for another woman, a resilient Southern mom starts over with the support of her loving, but unfiltered family.",
+      "backdrop": "/2HuHGBzavbM7YTizGabBGpP0Spv.jpg",
+      "homepage": "https://www.netflix.com/title/81752004",
+      "episodes": 26
+    }
+  ],
+  "trailers": [
+    {
+      "issue_date": "2026-08-24",
+      "title": "Coyote vs. Acme",
+      "key": "H-43VeYGiPM",
+      "name": "Official Trailer",
+      "date": "2026-04-22T12:55:32.000Z",
+      "status": 200,
+      "video_title": "Coyote vs. ACME | Official Trailer",
+      "channel": "Coyote vs. Acme"
+    },
+    {
+      "issue_date": "2026-08-24",
+      "title": "The Dog Stars",
+      "key": "cmzVY1goqwQ",
+      "name": "Official Trailer",
+      "date": "2026-04-16T23:01:30.000Z",
+      "status": 200,
+      "video_title": "The Dog Stars | Official Trailer",
+      "channel": "20th Century Studios"
+    },
+    {
+      "issue_date": "2026-08-24",
+      "title": "The Whisper Man",
+      "key": "ZHRR-1CKYIQ",
+      "name": "Official Trailer",
+      "date": "2026-07-14T13:00:00.000Z",
+      "status": 200,
+      "video_title": "The Whisper Man | Official Trailer | Netflix",
+      "channel": "Netflix"
+    }
+  ],
+  "source_urls": [
+    "https://www.themoviedb.org/tv/95350",
+    "https://image.tmdb.org/t/p/w780/e2QAGrEmbpmZpMymDRkDisJkvg9.jpg",
+    "https://www.themoviedb.org/movie/1288445",
+    "https://www.youtube.com/watch?v=FKSdXH89jbo",
+    "https://www.youtube.com/watch?v=jxU8FU3o75A",
+    "https://www.youtube.com/watch?v=3oB9AxspVow",
+    "https://www.lemonde.fr/en/culture/article/2026/08/21/lanterns-on-hbo-max-not-your-shiny-saviors_6756717_30.html",
+    "https://www.tvline.com/2236789/lanterns-review-hbo-dc-comics-kyle-chandler/",
+    "https://image.tmdb.org/t/p/w780/fGk5GVPP7qfEHr8b9pzS6AWsOmV.jpg",
+    "https://www.themoviedb.org/tv/100757",
+    "https://www.thewrap.com/creative-content/reviews/outer-banks-season-5-review-netflix/",
+    "https://www.reddit.com/r/OuterBanksNetflix/comments/1vv002k/just_finished_season_5_and_wow/",
+    "https://image.tmdb.org/t/p/w780/c4U96GrPRfnNrS01mBtqnocvlLJ.jpg",
+    "https://www.themoviedb.org/movie/1621552",
+    "https://media.netflix.com/en/only-on-netflix/82048151",
+    "https://media.netflix.com/en/only-on-netflix/80236318",
+    "https://theplot.tv/movie/spider-man-brand-new-day-969681",
+    "https://theplot.tv/movie/the-odyssey-1368337",
+    "https://theplot.tv/movie/minions-monsters-1315772",
+    "https://theplot.tv/movie/the-last-house-1284041",
+    "https://theplot.tv/tv/reacher-108978",
+    "https://theplot.tv/movie/the-invite-950028",
+    "https://theplot.tv/tv/house-of-the-dragon-94997",
+    "https://theplot.tv/movie/the-end-of-oak-street-1101383",
+    "https://theplot.tv/movie/obsession-1339713",
+    "https://theplot.tv/tv/silo-125988",
+    "https://theplot.tv/whats-on/chart",
+    "https://image.tmdb.org/t/p/w780/h3QvZs2bqRmN2hfVd1FZ9XrCZDm.jpg",
+    "https://www.themoviedb.org/tv/292558",
+    "https://media.netflix.com/en/only-on-netflix/81735486",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=292558&src=newsletter",
+    "https://image.tmdb.org/t/p/w780/2HuHGBzavbM7YTizGabBGpP0Spv.jpg",
+    "https://www.themoviedb.org/tv/252751",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-august-21-2026",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=252751&src=newsletter"
+  ],
+  "primary_page_checks": [
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/80236318",
+      "title": "Outer Banks | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/82048151",
+      "title": "Facing El Chapo | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81735486",
+      "title": "All the Truth in My Lies | Netflix Media Center",
+      "status": 200
+    }
+  ],
+  "editorial_review": "Written for the issue date using contemporary reviews, audience threads, release announcements, and official trailers. Review opinions are attributed; individual posts are not treated as audience-wide consensus. HTTP status alone is not evidence of a claim.",
+  "layout": [
+    {
+      "date": "2026-08-24",
+      "width": 390,
+      "scroll": 390,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    },
+    {
+      "date": "2026-08-24",
+      "width": 1280,
+      "scroll": 1280,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    }
+  ]
+}
