@@ -11,6 +11,7 @@
  */
 
 import { showTimeLeft } from './timeLeft.js';
+import { sortWatching } from './watchingOrder.js';
 
 /** Season/episode order. @param {number} s1 @param {number} e1 @param {number} s2 @param {number} e2 */
 function compareEpisode(s1, e1, s2, e2) {
@@ -76,16 +77,15 @@ export function continueItem(progress, details) {
 }
 
 /**
- * Continue watching for everything someone is watching, most recently touched
- * first.
- * @param {Array<{ tmdb_id: number, updated_at?: string }>} watching watching_progress rows
+ * Continue watching for everything someone is watching, last watched first
+ * (watchingOrder.js: the pointer, episode ticks, imports and History).
+ * @param {Array<{ tmdb_id: number, updated_at?: string, last_activity_at?: string | null }>} watching watching_progress rows
  * @param {Map<number, any> | Record<number, any>} detailsById TMDB TV details by id
  * @returns {ContinueItem[]}
  */
 export function continueWatchingItems(watching, detailsById) {
   const get = (id) => detailsById instanceof Map ? detailsById.get(id) : detailsById?.[id];
-  return [...(watching ?? [])]
-    .sort((a, b) => String(b.updated_at ?? '').localeCompare(String(a.updated_at ?? '')))
+  return sortWatching(watching ?? [])
     .map(w => continueItem(w, get(Number(w.tmdb_id))))
     .filter(/** @returns {item is ContinueItem} */ item => item !== null);
 }

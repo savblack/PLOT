@@ -36,6 +36,8 @@ import { createUndoBatch, UNDO_ACTIONS } from '@plot/core/undo.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { cardActions, cardState } from './listCardActions.js';
+import { DEFAULT_WATCHING_SORT, WATCHING_SORTS, parseWatchingSort, watchingSortKey } from '@plot/core/watchingOrder.js';
+import { useWatchingSort } from '@plot/core/useWatchingSort.js';
 
 function shownPoster(art, item, size = 'w185') {
   const path = displayPosterPath(art.apply(item));
@@ -434,11 +436,33 @@ export function SelectControls({ selection, hasItems, menuLabel, deleteLabel, on
   return <KebabMenu ariaLabel={menuLabel} items={items} />;
 }
 
+/** Sort menu label for each Watching order. */
+const watchingSortLabel = (sort) => (sort === 'title' ? CUSTOM_LISTS.titleAscending : CUSTOM_LISTS.watchingSort[sort]);
+
+/** The viewer's Watching order, kept in this browser (there is no server prefs row for it). */
+function useStoredWatchingSort(userId) {
+  const key = watchingSortKey(userId);
+  const [stored, setStored] = useState(() => ({ key, sort: readWatchingSort(key) }));
+  const sort = stored.key === key ? stored.sort : readWatchingSort(key);
+  const choose = (next) => {
+    setStored({ key, sort: next });
+    try { localStorage.setItem(key, next); } catch { /* storage unavailable */ }
+  };
+  return [sort, choose];
+}
+
+function readWatchingSort(key) {
+  try { return parseWatchingSort(localStorage.getItem(key)); }
+  catch { return DEFAULT_WATCHING_SORT; }
+}
+
 /* ── Watching ── */
 export function WatchingSection({ watching, hidden, Frame = ListSection }) {
-  const { openPanel } = useApp();
+  const { openPanel, user } = useApp();
   const art = useUserArtwork();
-  const items = watching.items || [];
+  const [sort, setSort] = useStoredWatchingSort(user?.id);
+  // The hook's rows are already last watched first and re-sorted after a tick.
+  const items = useWatchingSort(watching.items || [], sort);
   const selection = useSelection();
 
   // Episode count for each show's current season, keyed by tmdb_id: the
@@ -482,6 +506,11 @@ export function WatchingSection({ watching, hidden, Frame = ListSection }) {
           menuLabel="Watching options"
           deleteLabel={MEDIA.stopWatching}
           onDelete={stopSelected}
+          extraItems={items.length > 1 ? WATCHING_SORTS.map(option => ({
+            label: watchingSortLabel(option),
+            checked: sort === option,
+            onClick: () => setSort(option),
+          })) : []}
         />
       }
     >

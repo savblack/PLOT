@@ -62,8 +62,10 @@ export async function saveEpisodeWatches(userId, tmdbId, season, episodes, watch
       !episodes.length || episodes.some(ep => !Number.isInteger(ep) || ep < 1) || typeof watched !== 'boolean') {
     throw new Error('Invalid episode selection');
   }
+  // No updated_at: the database stamps its own now() (20261110150000), so a
+  // device's clock never decides where the show sorts in Watching.
   const rows = [...new Set(episodes)].map(episode => ({ user_id: userId, tmdb_id: tmdbId,
-    season_number: season, episode_number: episode, watched, updated_at: new Date().toISOString() }));
+    season_number: season, episode_number: episode, watched }));
   const { data, error } = await supabase.from('episode_watch_overrides')
     .upsert(rows, { onConflict: 'user_id,tmdb_id,season_number,episode_number' }).select('*');
   if (error) throw error;

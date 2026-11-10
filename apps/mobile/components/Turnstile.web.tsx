@@ -36,10 +36,15 @@ export interface TurnstileProps {
   onToken: (token: string | null) => void;
   /** Widget error (script or challenge). Distinct from an expired token. */
   onError?: () => void;
+  /**
+   * Cloudflare is showing its "Verify you are human" checkbox and will not
+   * return a token until the person taps it.
+   */
+  onInteractive?: () => void;
   resetSignal?: number;
   /**
-   * Bump to run the challenge. The widget does not run when the screen opens.
-   * reset() alone does not re-run it.
+   * Bump to run a fresh challenge now. The widget already runs when the
+   * screen opens, so this is only for retries after an error.
    */
   executeSignal?: number;
 }
@@ -48,6 +53,7 @@ export default function Turnstile({
   siteKey,
   onToken,
   onError,
+  onInteractive,
   resetSignal = 0,
   executeSignal = 0,
 }: TurnstileProps) {
@@ -55,23 +61,26 @@ export default function Turnstile({
   const widgetIdRef = useRef<string | null>(null);
   const onTokenRef = useRef(onToken);
   const onErrorRef = useRef(onError);
+  const onInteractiveRef = useRef(onInteractive);
   const executeSignalRef = useRef(0);
   const lastExecutedRef = useRef(0);
   const runExecuteRef = useRef(() => {});
 
   useEffect(() => { onTokenRef.current = onToken; }, [onToken]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
+  useEffect(() => { onInteractiveRef.current = onInteractive; }, [onInteractive]);
 
   useEffect(() => {
     runExecuteRef.current = () => {
       const signal = executeSignalRef.current;
       if (!signal || lastExecutedRef.current === signal) return;
       const id = widgetIdRef.current;
-      if (!id || !window.turnstile?.execute) return;
+      if (!id || !window.turnstile?.reset) return;
       lastExecutedRef.current = signal;
-      try { window.turnstile.reset(id); } catch { /* widget already gone */ }
+      // The widget renders with execution "render", so reset() alone starts
+      // a fresh challenge. Calling execute() on top would ask twice.
       onTokenRef.current?.(null);
-      try { window.turnstile.execute(id); } catch { /* widget already gone */ }
+      try { window.turnstile.reset(id); } catch { /* widget already gone */ }
     };
   }, []);
 
@@ -84,10 +93,13 @@ export default function Turnstile({
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
           // Hidden unless a challenge genuinely needs interaction. The
-          // challenge itself waits for execute(), so opening the form does
-          // not start a token that can expire before the person submits.
+          // challenge starts as soon as the form is on screen, so a token is
+          // usually ready before anyone presses the button. Tokens last five
+          // minutes; when one expires Cloudflare fetches the next one itself.
           appearance: 'interaction-only',
-          execution: 'execute',
+          execution: 'render',
+          'refresh-expired': 'auto',
+          'refresh-timeout': 'auto',
           retry: 'never',
           callback: (token: string) => onTokenRef.current?.(token),
           'expired-callback': () => onTokenRef.current?.(null),
@@ -95,8 +107,13 @@ export default function Turnstile({
             onTokenRef.current?.(null);
             onErrorRef.current?.();
           },
+          // The invisible check escalated to the checkbox. The token now
+          // waits on a tap, so the screen must keep waiting for it.
+          'before-interactive-callback': () => onInteractiveRef.current?.(),
         });
-        runExecuteRef.current();
+        // A retry asked for before the widget existed is already covered:
+        // the render above just started a fresh challenge.
+        lastExecutedRef.current = executeSignalRef.current;
       })
       .catch(() => {
         onTokenRef.current?.(null);
@@ -111,7 +128,8 @@ export default function Turnstile({
     };
   }, [siteKey]);
 
-  // With execution "execute", reset does not start the next challenge.
+  // Reset to a fresh token when asked (tokens are single-use). With
+  // execution "render", reset also starts the next challenge.
   useEffect(() => {
     if (!resetSignal || !widgetIdRef.current || !window.turnstile) return;
     try { window.turnstile.reset(widgetIdRef.current); } catch { /* already gone */ }
