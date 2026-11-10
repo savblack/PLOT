@@ -325,11 +325,14 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--surface-sunken);
-  /* Each lands in turn (delays set inline); the shelf is full by ~0.75s. */
-  animation: ob-land 0.45s cubic-bezier(.2,.8,.2,1) both;
+  /* Lands (the shelf is full by ~0.75s), then a wave keeps rolling across the shelf until Home opens, so a
+     slow save still looks alive. Delays are set inline: land i*60ms, wave
+     0.75s + i*120ms, so each poster lifts in reading order. */
+  animation: ob-land 0.45s cubic-bezier(.2,.8,.2,1) both, ob-wave 1.4s ease-in-out infinite;
 }
 .ob-shelf-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 @keyframes ob-land { from { opacity: 0; translate: 0 14px; scale: 0.86; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes ob-wave { 0%, 40%, 100% { translate: 0 0; } 20% { translate: 0 -8px; } }
 .ob-building-title {
   margin: 28px 0 0;
   font-family: var(--font-display);
@@ -337,23 +340,40 @@
   font-weight: 400;
   letter-spacing: -0.02em;
   color: var(--text-primary);
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+  /* Plain text flow, not flex: in a flex row the wordmark lines up by its
+     bottom edge (the p's descender) and sits high. Inline, PlotLogo's own
+     vertical-align puts its baseline on the text's. */
+  text-align: center;
   animation: ob-rise 0.4s cubic-bezier(.2,.8,.2,1) 0.3s both;
 }
-.ob-building-line {
-  margin: 12px 0 0;
-  min-height: 24px;
+.ob-lines {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  margin-top: 12px;
+  /* Rises in, then breathes in time with the wave. */
+  animation: ob-rise 0.4s cubic-bezier(.2,.8,.2,1) 0.4s both, ob-breathe 1.4s ease-in-out 0.8s infinite;
+}
+/* One line at a time, BUILDING_LINE_MS apart; each slides up as it swaps. */
+.ob-line {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  text-align: center;
   font-size: 15px;
+  line-height: 24px;
   color: var(--text-secondary);
   white-space: nowrap;
-  animation: ob-rise 0.4s cubic-bezier(.2,.8,.2,1) 0.4s both;
+  opacity: 0;
+  translate: 0 6px;
+  transition: opacity 0.3s ease, translate 0.3s ease;
 }
+.ob-line.is-on { opacity: 1; translate: 0 0; }
+@keyframes ob-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 @keyframes ob-rise { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .ob-building, .ob-shelf-card, .ob-building-title, .ob-building-line { transition: none; animation: none; }
+  .ob-building, .ob-shelf-card, .ob-building-title, .ob-lines, .ob-line { transition: none; animation: none; }
 }
 
 @media (min-width: 760px) {

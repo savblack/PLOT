@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import OnboardingScreen from '../pages/OnboardingScreen.jsx';
-import { buildingShelf } from '@plot/core/onboardingSetup.js';
-import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
+import { BUILDING_LINE_MS, buildingLines, buildingShelf } from '@plot/core/onboardingSetup.js';
 import { importPillFor } from '@plot/core/importJobs.js';
 
 // A running Letterboxd job and a queued Netflix one, as import_jobs rows.
@@ -16,9 +15,16 @@ const services = ['Service One', 'Service Two', 'Service Three', 'Service Four',
   .map((name, i) => ({ id: -(i + 100), name, logo_path: null }));
 const noop = () => {};
 
-function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', importSource = null, importPhase = 'pick', importError = null, jobs = [], pendingFiles = null, pendingRows = null, connectedIds = [] }) {
+function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', ticking = false, importSource = null, importPhase = 'pick', importError = null, jobs = [], pendingFiles = null, pendingRows = null, connectedIds = [] }) {
   const [sel, setSel] = useState(selected);
   const [svc, setSvc] = useState(picked);
+  // The building lines step on, as in the app; the last one stays.
+  const [line, setLine] = useState(0);
+  useEffect(() => {
+    if (!ticking) return undefined;
+    const id = setInterval(() => setLine(i => Math.min(i + 1, buildingLines(true).length - 1)), BUILDING_LINE_MS);
+    return () => clearInterval(id);
+  }, [ticking]);
   return (
     <OnboardingScreen
       step={step}
@@ -52,7 +58,7 @@ function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 
         region: 'US', editingRegion: false, onEditRegion: noop, onRegion: noop, onRegionDone: noop,
         onContinue: noop,
       }}
-      building={{ leaving: false, shelf: buildingShelf(titles.filter(t => sel.includes(t.id)), titles), line: ONBOARDING_FLOW.building.saving(sel.length, svc.length) }}
+      building={{ leaving: false, shelf: buildingShelf(titles.filter(t => sel.includes(t.id)), titles), lines: buildingLines(svc.length > 0), lineIndex: line }}
     />
   );
 }
@@ -88,6 +94,6 @@ export const WhereDoYouWatchImporting = { render: () => <Screen step="services" 
 /** 2 · Nothing picked yet. */
 export const WhereDoYouWatchNonePicked = { render: () => <Screen step="services" picked={[]} /> };
 /** 3 · Building your Plot: their picks land on a shelf, one after another. */
-export const Building = { render: () => <Screen step="building" /> };
+export const Building = { render: () => <Screen step="building" ticking /> };
 /** 3 · Only one title picked: trending titles fill the shelf. */
 export const BuildingOnePick = { render: () => <Screen step="building" selected={[-5]} /> };

@@ -422,7 +422,11 @@ marketing site never hands off to mobile.
 | Event | Where | When | Props |
 |---|---|---|---|
 | `signup_cta_clicked` | marketing site | The search bar was submitted, typed or not | `placement: hero_search`, `source: marketing`, `has_query` |
-| `signup_search_resumed` | web app | A signed-in visit opened search by itself with that title, at most once | `query_length` |
+| `save_cta_clicked` | marketing site | A live result under the search bar was picked (it goes to `/save?…&src=hero_search`) | `placement: hero_search_result`, `source: marketing` |
+| `signup_search_resumed` | web app | A signed-in visit acted on that typed title, at most once | `query_length`, `opened` (`title` when the search had one clear match and that title opened, else `search`) |
+
+A picked result is a save intent with `src=hero_search`: the app skips the
+`/save` preview and opens the title after signup, saving nothing on its own.
 
 The query text is never sent from either side, only whether one was typed and
 its length. The title waits in the browser for 24 hours, so a signup confirmed

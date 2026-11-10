@@ -11,7 +11,8 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 // in this chunk.
 import './styles/app.css';
 import { supabase } from '@plot/core/supabase.js';
-import { setTmdbRegion } from '@plot/core/tmdb.js';
+import { setTmdbRegion, tmdb } from '@plot/core/tmdb.js';
+import { clearTitleMatch } from '@plot/core/searchMatch.js';
 import { setUserTimezone } from './utils/date.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
@@ -362,16 +363,29 @@ export default function App() {
     if (!user?.id) return;
     // Read on the next tick, like the pending save: the storage read is the
     // external input, and a cancelled run (Strict Mode's double effect) never
-    // takes the title, so it opens exactly once.
+    // takes the title, so it opens exactly once. One clear match opens that
+    // title; anything else (several, none, a failed lookup) opens search with
+    // the title typed so they can choose.
+    let cancelled = false;
     const timer = setTimeout(() => {
       const query = takePendingSearch();
       if (!query) return;
-      setSearchSeed(query);
-      setSearchOpen(true);
-      track(EVENTS.SIGNUP_SEARCH_RESUMED, { query_length: query.length });
+      tmdb.search(query)
+        .then((res) => clearTitleMatch(res?.results, query))
+        .catch(() => null)
+        .then((match) => {
+          if (cancelled) return;
+          if (match) {
+            openPanel(match.id, match.media_type, 'hero_search');
+          } else {
+            setSearchSeed(query);
+            setSearchOpen(true);
+          }
+          track(EVENTS.SIGNUP_SEARCH_RESUMED, { query_length: query.length, opened: match ? 'title' : 'search' });
+        });
     }, 0);
-    return () => clearTimeout(timer);
-  }, [user?.id]);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [user?.id, openPanel]);
   usePendingReferral({ user });
 
   // Auto-dismiss the save confirmation toast

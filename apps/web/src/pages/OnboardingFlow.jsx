@@ -15,7 +15,7 @@ import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/cor
 import { upsertProfile } from '@plot/core/profile.js';
 import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
 import {
-  ONBOARDING_PROGRESS, BUILDING_FADE_MS, BUILDING_MIN_MS, buildingShelf, firstNameFromAuthUser, topRegionServices,
+  ONBOARDING_PROGRESS, BUILDING_FADE_MS, BUILDING_LINE_MS, BUILDING_MIN_MS, buildingLines, buildingShelf, firstNameFromAuthUser, topRegionServices,
 } from '@plot/core/onboardingSetup.js';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { importSourceName } from '@plot/core/importJobs.js';
@@ -100,6 +100,7 @@ export default function OnboardingFlow() {
 
   // Building
   const [buildingServiceCount, setBuildingServiceCount] = useState(0);
+  const [lineIndex, setLineIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const nextPathRef = useRef(null);
 
@@ -314,6 +315,7 @@ export default function OnboardingFlow() {
     completeStep('services', { skipped });
     const providers = skipped ? [] : services.filter(s => selectedServiceIds.includes(s.id));
     setBuildingServiceCount(providers.length);
+    setLineIndex(0);
     setLeaving(false);
     setStep('building');
     // Leave as soon as the save lands, but not before the shelf has filled.
@@ -339,6 +341,14 @@ export default function OnboardingFlow() {
     if (step === 'import') { importStart.close(); setStep('seed'); }
     else if (step === 'services') setStep(importSource ? 'import' : 'seed');
   };
+
+  /* ── Step through the building lines; the last one stays ── */
+  useEffect(() => {
+    if (step !== 'building') return undefined;
+    const last = buildingLines(true).length - 1;
+    const id = setInterval(() => setLineIndex(i => Math.min(i + 1, last)), BUILDING_LINE_MS);
+    return () => clearInterval(id);
+  }, [step]);
 
   // Onboarding shows no loader anywhere except its last step: while the
   // account is checked, the page is just its background.
@@ -389,9 +399,11 @@ export default function OnboardingFlow() {
         leaving,
         shelf: buildingShelf(seedSelected, trending),
         // While a background import runs, the line says so; otherwise what the one save is writing.
-        line: importStart.current
-          ? IMPORT_JOBS.building.matching(importSourceName(importStart.current.source))
-          : F.building.saving(seedSelected.length, buildingServiceCount),
+        lines: buildingLines(
+          buildingServiceCount > 0,
+          importStart.current ? IMPORT_JOBS.building.matching(importSourceName(importStart.current.source)) : null,
+        ),
+        lineIndex,
       }}
     />
   );

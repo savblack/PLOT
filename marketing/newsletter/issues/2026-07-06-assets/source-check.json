@@ -1,0 +1,242 @@
+{
+  "issue_date": "2026-07-06",
+  "status": "Draft",
+  "notion": {
+    "date": "2026-07-06",
+    "url": "https://app.notion.com/p/3fc4f244aec78159a8bcc452c931f53c?pvs=204",
+    "id": "3fc4f244-aec7-8159-a8bc-c452c931f53c",
+    "verification": {
+      "date": "2026-07-06",
+      "draft": true,
+      "seo": true,
+      "preview": true,
+      "images": 7,
+      "trailers": 3,
+      "footer": 1,
+      "localPath": false,
+      "chartWarning": true
+    }
+  },
+  "publication_blockers": [
+    "Historical weekly trending chart is absent from saved production marketing snapshots. Do not replace with current data.",
+    "Savannah to select the GIF and approve the draft."
+  ],
+  "newsletter_lint": [
+    "List at least five TMDB trending titles."
+  ],
+  "chart_snapshot": null,
+  "media": [
+    {
+      "requested_title": "Enola Holmes 3",
+      "id": 1202033,
+      "type": "movie",
+      "title": "Enola Holmes 3",
+      "date": "2026-07-01",
+      "overview": "Adventure follows detective Enola Holmes to Malta, where her plans to tie the knot unravel when Sherlock's disappearance plunges her into a perilous case.",
+      "backdrop": "/jLuGZc84MvPYCQomQg9DI72mstt.jpg",
+      "homepage": "https://www.netflix.com/title/81605886",
+      "runtime": 109
+    },
+    {
+      "requested_title": "Minions & Monsters",
+      "id": 1315772,
+      "type": "movie",
+      "title": "Minions & Monsters",
+      "date": "2026-07-01",
+      "overview": "This is the rambunctious, ridiculous and totally true story of how the Minions conquered Hollywood, became movie stars, lost everything, unleashed monsters onto the world and then banded together to try and save the planet from the mayhem they had just created.",
+      "backdrop": "/kkcwhgSFd81QDlXo8ytrpHPQjhy.jpg",
+      "homepage": "https://www.minionsmovie.com",
+      "runtime": 90
+    },
+    {
+      "requested_title": "Supergirl",
+      "id": 1081003,
+      "type": "movie",
+      "title": "Supergirl",
+      "date": "2026-06-26",
+      "overview": "When an unexpected and ruthless adversary strikes too close to home, Kara Zor-El, aka Supergirl, reluctantly joins forces with an unlikely companion on an epic, interstellar journey of vengeance and justice.",
+      "backdrop": "/heZQmyNvkH236ha2M3JckdUQQqb.jpg",
+      "homepage": "https://www.supergirlmovie.com",
+      "runtime": 108
+    },
+    {
+      "requested_title": "Toy Story 5",
+      "id": 1084244,
+      "type": "movie",
+      "title": "Toy Story 5",
+      "date": "2026-06-19",
+      "overview": "When Bonnie receives a Lilypad tablet as a gift and becomes obsessed, Buzz, Woody, Jessie and the rest of the gang's jobs become exponentially harder when they have to go head to head with the all-new threat to playtime.",
+      "backdrop": "/qjTqY5coNiz6sVtPng40IzltsoN.jpg",
+      "homepage": "https://movies.disney.com/toy-story-5",
+      "runtime": 102
+    },
+    {
+      "requested_title": "The Bear",
+      "id": 136315,
+      "type": "tv",
+      "title": "The Bear",
+      "date": "2022-06-23",
+      "overview": "Carmy, a young fine-dining chef, comes home to Chicago to run his family sandwich shop. As he fights to transform the shop and himself, he works alongside a rough-around-the-edges crew that ultimately reveal themselves as his chosen family.",
+      "backdrop": "/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "homepage": "https://www.fxnetworks.com/shows/the-bear",
+      "episodes": 46
+    },
+    {
+      "requested_title": "Little Brother",
+      "id": 1397385,
+      "type": "movie",
+      "title": "Little Brother",
+      "date": "2026-06-18",
+      "overview": "A tightly wound realtor's picture-perfect life gets an extreme makeover when his lovably chaotic \"little brother\" suddenly reappears.",
+      "backdrop": "/bdwv8Hsu4Bnz8aRbH5MQ9clQ0DG.jpg",
+      "homepage": "https://www.netflix.com/title/81521988",
+      "runtime": 102
+    },
+    {
+      "requested_title": "Moana",
+      "id": 1108427,
+      "type": "movie",
+      "title": "Moana",
+      "date": "2026-07-10",
+      "overview": "Teenage Moana answers the Ocean's call and, for the first time, voyages beyond the reef of her island of Motunui with infamous demigod Maui on an unforgettable journey to restore prosperity to her people.",
+      "backdrop": "/c6BPbkO5Npt1OdwttAxCFo06wtH.jpg",
+      "homepage": "https://movies.disney.com/moana-2026",
+      "runtime": 115
+    },
+    {
+      "requested_title": "Evil Dead Burn",
+      "id": 1212763,
+      "type": "movie",
+      "title": "Evil Dead Burn",
+      "date": "2026-07-10",
+      "overview": "After her husband's abrupt death, Alice seeks solace with his remaining family \u2014 descendants of a leading researcher on demonic possession. As her in-laws transform one by one into creatures that feed on fear, she comes to discover that the vows she took in life survive even in death.",
+      "backdrop": "/o0jkkpcN81QqSl8DMLScBCXyUH9.jpg",
+      "homepage": "https://www.warnerbros.com/movies/evil-dead-burn",
+      "runtime": 110
+    },
+    {
+      "requested_title": "Little House on the Prairie",
+      "id": 283304,
+      "type": "tv",
+      "title": "Little House on the Prairie",
+      "date": "2026-07-09",
+      "overview": "The close-knit Ingalls family builds a new life on the Western frontier, where the joys of nature and the struggle for survival are deeply intertwined.",
+      "backdrop": "/fBieUo3SdItUrXZE16YxbpjwXIe.jpg",
+      "homepage": "https://www.netflix.com/title/81748089",
+      "episodes": 8
+    },
+    {
+      "requested_title": "I'm Not Afraid",
+      "id": 290232,
+      "type": "tv",
+      "title": "I'm Not Afraid",
+      "date": "2026-07-08",
+      "overview": "10-year-old Miguel stumbles upon a terrifying secret involving a boy trapped in a hole near his home.",
+      "backdrop": "/9eHQh4Ji4wWksUSln264LZt3NfL.jpg",
+      "homepage": "https://www.netflix.com/title/81745567",
+      "episodes": 6
+    },
+    {
+      "requested_title": "Nothing to Lose",
+      "id": 1710008,
+      "type": "movie",
+      "title": "Nothing to Lose",
+      "date": "2026-07-08",
+      "overview": "She gave everything to become a mother, so when her young son falls ill, Jada will stop at  nothing to find a donor and save him \u2014 no matter the cost.",
+      "backdrop": "/5cEmmIMunNk3JRij4nTitFtikIg.jpg",
+      "homepage": "https://www.netflix.com/title/81988477",
+      "runtime": 102
+    }
+  ],
+  "trailers": [
+    {
+      "issue_date": "2026-07-06",
+      "title": "Evil Dead Burn",
+      "key": "nMzhf6qYJ4I",
+      "name": "Official Trailer",
+      "date": "2026-05-05T16:00:14.000Z",
+      "status": 200,
+      "video_title": "Evil Dead Burn | Official Trailer",
+      "channel": "Warner Bros."
+    },
+    {
+      "issue_date": "2026-07-06",
+      "title": "Moana",
+      "key": "n7f6hlKsxxo",
+      "name": "Official Trailer",
+      "date": "2026-03-23T16:00:07.000Z",
+      "status": 200,
+      "video_title": "Moana | \"Official Trailer\" | In Theaters July 10",
+      "channel": "Disney"
+    },
+    {
+      "issue_date": "2026-07-06",
+      "title": "Little House on the Prairie",
+      "key": "jSds4Oi83Eg",
+      "name": "Official Trailer",
+      "date": "2026-06-11T15:00:03.000Z",
+      "status": 200,
+      "video_title": "Little House on the Prairie | Official Trailer | Netflix",
+      "channel": "Netflix"
+    }
+  ],
+  "source_urls": [
+    "https://www.themoviedb.org/movie/1202033",
+    "https://theplot.tv/movie/minions-monsters-1315772",
+    "https://image.tmdb.org/t/p/w780/kkcwhgSFd81QDlXo8ytrpHPQjhy.jpg",
+    "https://www.themoviedb.org/movie/1315772",
+    "https://www.thewrap.com/creative-content/movies/minions-and-monsters-weekend-box-office/",
+    "https://rollingstonephilippines.com/culture/reviews/supergirl-2026-movie-review-milly-alcock/",
+    "https://www.slantmagazine.com/film/toy-story-5-review-pixar-tom-hanks-tim-allen/",
+    "https://www.tomsguide.com/entertainment/netflix/enola-holmes-3-review-millie-bobby-brown-shines-in-the-mystery-franchises-best-most-intense-chapter-yet",
+    "https://www.reddit.com/r/PeriodDramas/comments/1ul1ze5/enola_holmes_3_thoughts_no_spoilers/",
+    "https://theplot.tv/movie/enola-holmes-3-1202033",
+    "https://image.tmdb.org/t/p/w780/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+    "https://www.themoviedb.org/tv/136315",
+    "https://www.thewrap.com/creative-content/tv-shows/the-bear-season-5-review-fx/",
+    "https://editorial.rottentomatoes.com/article/the-bear-season-5-first-reviews/",
+    "https://image.tmdb.org/t/p/w780/jLuGZc84MvPYCQomQg9DI72mstt.jpg",
+    "https://image.tmdb.org/t/p/original/jLuGZc84MvPYCQomQg9DI72mstt.jpg",
+    "https://media.netflix.com/en/only-on-netflix/81605886",
+    "https://image.tmdb.org/t/p/w780/bdwv8Hsu4Bnz8aRbH5MQ9clQ0DG.jpg",
+    "https://www.themoviedb.org/movie/1397385",
+    "https://www.netflix.com/tudum/articles/little-brother-john-cena-eric-andre",
+    "https://theplot.tv/whats-on/chart",
+    "https://image.tmdb.org/t/p/w780/9eHQh4Ji4wWksUSln264LZt3NfL.jpg",
+    "https://www.themoviedb.org/tv/290232",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-july-3-2026",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=290232&src=newsletter",
+    "https://image.tmdb.org/t/p/w780/5cEmmIMunNk3JRij4nTitFtikIg.jpg",
+    "https://www.themoviedb.org/movie/1710008",
+    "https://www.netflix.com/title/81988477",
+    "https://app.theplot.tv/save?media_type=movie&tmdb_id=1710008&src=newsletter"
+  ],
+  "primary_page_checks": [
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81605886",
+      "title": "Enola Holmes 3 | Netflix Media Center",
+      "status": 200
+    }
+  ],
+  "editorial_review": "Written for the issue date using contemporary reviews, audience threads, release announcements, and official trailers. Review opinions are attributed; individual posts are not treated as audience-wide consensus. HTTP status alone is not evidence of a claim.",
+  "layout": [
+    {
+      "date": "2026-07-06",
+      "width": 390,
+      "scroll": 390,
+      "images": 11,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    },
+    {
+      "date": "2026-07-06",
+      "width": 1280,
+      "scroll": 1280,
+      "images": 11,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    }
+  ]
+}
