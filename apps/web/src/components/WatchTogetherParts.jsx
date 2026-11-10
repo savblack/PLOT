@@ -13,7 +13,6 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { tileMode, tileShowsCount, personName, REQUESTS_FROM_OPTIONS } from '@plot/core/watchTogether.js';
 import { useWatchTogether, useWatchTogetherStatus, useWatchTogetherLink, useMutualFollow } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
-import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { useApp } from '../hooks/useApp.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
@@ -21,6 +20,7 @@ import './WatchTogetherView.css';
 import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import { EVENTS, track } from '../lib/analytics.js';
+import PremiumMark from './PremiumMark.jsx';
 
 export function PersonAvatar({ person, size = 'md' }) {
   const name = personName(person);
@@ -131,7 +131,7 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
     <section className="wt-tile" aria-label={T.tile.kicker}>
       <div className="wt-tile-head">
         <span className="wt-kicker">{T.tile.kicker}</span>
-        {mode === 'free' && <span className="wt-premium">{PLANS_PAGE.premium.name}</span>}
+        {mode === 'free' && <PremiumMark />}
         {mode === 'pending' && <span className="wt-chip">{T.tile.requestSent}</span>}
         {mode === 'paired' && <span className="wt-chip wt-chip--ok">{T.tile.watchingTogether}</span>}
       </div>

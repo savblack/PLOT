@@ -9,6 +9,9 @@ export const TASTE_OVERLAP = {
   title: 'Taste overlap',
   loading: 'Comparing your taste',
   premiumChip: 'Deeper stats · Premium',
+  // Web shows the Premium spark beside this instead of the word (mobile still
+  // reads premiumChip until it has the shared marker, savblack/PLOT#1503).
+  premiumChipLabel: 'Deeper stats',
   /** @param {string} name */
   youAnd: (name) => `You and ${name}`,
   changePerson: 'Change who you are comparing with',

@@ -75,6 +75,17 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
       } catch { /* ignore malformed referrer */ }
     }
     if (!carry.toString()) return; // nothing to attribute
+    // Links added after load (the search bar's results) get the same params
+    // at click time.
+    document.addEventListener('click', function (ev) {
+      var a = ev.target && ev.target.closest && ev.target.closest('a[href^="https://app.theplot.tv/"]');
+      if (!a) return;
+      try {
+        var u = new URL(a.href);
+        carry.forEach(function (v, k) { if (!u.searchParams.has(k)) u.searchParams.set(k, v); });
+        a.href = u.toString();
+      } catch { /* leave link untouched on parse error */ }
+    }, true);
     document.querySelectorAll('a[href^="https://app.theplot.tv/"]').forEach(function (a) {
       try {
         var u = new URL(a.href);
@@ -115,6 +126,7 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
     try { path = new URL(a.href).pathname; } catch { return; }
     var action = path.indexOf('/signup') === 0 ? 'signup_cta_clicked'
                : path.indexOf('/login') === 0 ? 'login_click'
+               : path.indexOf('/save') === 0 ? 'save_cta_clicked'
                : null;
     if (!action) return;
     posthog.capture(action, {

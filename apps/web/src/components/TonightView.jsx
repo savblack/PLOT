@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
@@ -10,11 +10,8 @@ import {
   pickerGenreTiles,
 } from '../hooks/useTonightPicker.js';
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
-import { PLANS_PAGE } from '../copy/plansPage.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
-import { EVENTS, track } from '../lib/analytics.js';
 import { SettingsSwitch } from './SettingsPage.jsx';
 import SmartListDialog from './SmartListDialog.jsx';
 import { smartListRulesFromPicker } from '@plot/core/smartLists.js';
@@ -23,7 +20,9 @@ import { MEDIA } from '../copy/media.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
-import PlotLogo from './PlotLogo.jsx';
+import { SaveButton, FavoriteButton } from './TitleActions.jsx';
+import PremiumMark from './PremiumMark.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
 
 /* Just Decide. Phone: one column, a Filters panel that folds away, and a
    sticky bar with the sentence and Pick. Desktop (>=1024px): the same 264px
@@ -38,7 +37,6 @@ const IconSparkle = () => (
 const IconBack = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>;
 const IconNext = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>;
 const IconChevron = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>;
-const IconTick = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>;
 const IconMovie = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2" /><path d="m3 6 3-3M9 6l3-3M15 6l3-3M3 10h18" /></svg>
 );
@@ -49,7 +47,6 @@ const IconKeepFinding = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9" /><path d="M20 4v5h-5" /><path d="M20 12a8 8 0 0 1-14 5.3L4 15" /><path d="M4 20v-5h5" /></svg>
 );
 
-const IconLock = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>;
 const IconClose = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>;
 // A pin, not the bookmark: the bookmark means the watchlist everywhere else.
 const IconPin = ({ filled }) => (
@@ -107,44 +104,10 @@ function LockedPreview() {
   );
 }
 
-/* Free viewers answer every question; Go and Surprise me open this. Their
-   answers are kept (see useTonightPicker), so upgrading lands them back on
-   their request with the picks drawn. */
-function UnlockDialog({ picker, navigate }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    track(EVENTS.PREMIUM_GATE_HIT, { feature: 'tonight_picker' });
-    ref.current?.focus();
-  }, []);
-  return (
-    <section ref={ref} className="tonight-unlock" role="dialog" aria-modal="false" aria-labelledby="tonight-unlock-title" tabIndex={-1}
-      onKeyDown={(e) => { if (e.key === 'Escape') picker.closeLock(); }}>
-      <button type="button" className="tonight-unlock-close" aria-label={T.gate.close} onClick={picker.closeLock}><IconClose /></button>
-      <span className="tonight-unlock-badge" aria-label={T.gate.label}>
-        <span className="tonight-unlock-brand" aria-hidden="true"><PlotLogo inherit /></span>
-        <span aria-hidden="true">{T.gate.premium}</span>
-      </span>
-      <h2 id="tonight-unlock-title" className="tonight-unlock-title">{T.gate.title}</h2>
-      <p className="tonight-unlock-body">{T.gate.body}</p>
-      <ul className="tonight-unlock-benefits">
-        {T.gate.benefits.map(b => (
-          <li key={b.title}>
-            <IconTick />
-            <span>
-              <span className="tonight-unlock-benefit-title">{b.title}{b.isNew && <span className="tonight-unlock-new">{T.gate.newTag}</span>}</span>
-              <span className="tonight-unlock-benefit-body">{b.body}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-      <button type="button" className="btn btn-primary tonight-unlock-cta" onClick={() => navigate(premiumPlansPath('/tonight'))}>
-        {PLANS_PAGE.upgradeAction}
-      </button>
-      <p className="tonight-unlock-price">{PLANS_PAGE.premium.priceTerms}</p>
-      <p className="tonight-unlock-price">{PLANS_PAGE.premium.trialNote}</p>
-    </section>
-  );
-}
+/* Free viewers answer every question; Go and Surprise me open the upgrade
+   sheet over the blurred preview. Their answers are kept (see
+   useTonightPicker), so upgrading lands them back on their request with the
+   picks drawn. The sheet reports `premium_gate_hit` (tonight_picker). */
 
 // The desktop breakpoint TonightView.css switches layouts at.
 const WIDE_QUERY = '(min-width: 1024px)';
@@ -303,7 +266,7 @@ function PickButton({ picker, premium, className = '' }) {
     <button type="button" className={`btn btn-primary tonight-go ${className}`} onClick={() => picker.go('five')}
       aria-label={locked ? `${T.go}, ${T.gate.locked}` : picker.freePickLeft ? `${T.go}. ${T.freePickNote}` : undefined}
       title={picker.freePickLeft ? T.freePickNote : undefined}>
-      {locked && <IconLock />}{T.go}
+      {locked && <PremiumMark className="tonight-go-mark" />}{T.go}
     </button>
   );
 }
@@ -480,35 +443,20 @@ function Chips({ item }) {
 function FavSave({ item, actions, variant }) {
   if (!actions) return null;
   const { watchlist, favorites, favWords } = actions;
-  const type = item.media_type || 'movie';
-  const fav = favorites.isFavorite(item.id);
-  const saved = watchlist.isInList(item.id);
-  const toggleFav = (e) => { e.stopPropagation(); favorites.toggleFavorite({ ...item, media_type: type }); };
-  const toggleSave = (e) => { e.stopPropagation(); watchlist.toggle({ ...item, media_type: type }, { source: 'tonight' }); };
-  const icon = (d, on) => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
-  );
+  const typed = { ...item, media_type: item.media_type || 'movie' };
   if (variant === 'hero') {
     return (
       <div className="discover-hero-corner-btns">
-        {FAVOURITES_ENABLED && <button type="button" className={`discover-hero-corner-btn${fav ? ' active' : ''}`} style={{ top: 10, left: 10 }} onClick={toggleFav} aria-label={fav ? favWords.un : favWords.noun}>{icon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', fav)}</button>}
-        <button type="button" className={`discover-hero-corner-btn${saved ? ' active' : ''}`} style={{ top: 10, right: 10 }} onClick={toggleSave} disabled={watchlist.loading} aria-label={saved ? MEDIA.removeFromList : MEDIA.addToList}>{icon('M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z', saved)}</button>
+        <FavoriteButton variant="hero" item={typed} favorites={favorites} favWords={favWords} style={{ top: 10, left: 10 }} />
+        <SaveButton variant="hero" item={typed} watchlist={watchlist} source="tonight" style={{ top: 10, right: 10 }} />
       </div>
     );
   }
   // Cards: Home's chart-row buttons on the right, revealed on hover.
   return (
     <span className="tonight-card-actions search-row-actions">
-      {FAVOURITES_ENABLED && (
-        <button type="button" className={`search-action-btn search-action-btn--heart${fav ? ' active' : ''}`} onClick={toggleFav}
-          data-tip={fav ? `Remove ${favWords.nounLower}` : favWords.noun} aria-label={fav ? `Remove ${item.title} from ${favWords.pluralLower}` : `Add ${item.title} to ${favWords.pluralLower}`}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" fill={fav ? 'currentColor' : 'none'} /></svg>
-        </button>
-      )}
-      <button type="button" className={`search-action-btn${saved ? ' active' : ''}`} onClick={toggleSave} disabled={watchlist.loading}
-        data-tip={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist} aria-label={saved ? `Remove ${item.title} from list` : `Add ${item.title} to list`}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" fill={saved ? 'currentColor' : 'none'} /></svg>
-      </button>
+      <FavoriteButton variant="row" item={typed} favorites={favorites} favWords={favWords} />
+      <SaveButton variant="row" item={typed} watchlist={watchlist} source="tonight" />
     </span>
   );
 }
@@ -626,7 +574,7 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions, smartL
           {locked ? (
             <div className="tonight-locked">
               <LockedPreview />
-              <UnlockDialog picker={picker} navigate={navigate} />
+              <UpgradeSheet reason="justDecide" onClose={picker.closeLock} />
             </div>
           ) : spinning ? <Finding picker={picker} />
             : inResults ? <Results picker={picker} onOpen={onOpen} reveal={reveal} actions={actions}

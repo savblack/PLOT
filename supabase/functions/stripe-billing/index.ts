@@ -17,8 +17,8 @@
 import Stripe from 'npm:stripe@22.6.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { serviceKey } from '../_shared/serviceKey.ts';
-import { CheckoutPendingError, subscriptionCheckout } from '../_shared/checkout.ts';
-import { checkoutClosedToAll, checkoutConfigLog, checkoutConfigStatus, checkoutPlan, matchesPremiumPrice, billingSettingsUrl, hasStripeSubscription, mayStartCheckout } from '../_shared/billingPolicy.ts';
+import { CheckoutPendingError, TrialUnavailableError, subscriptionCheckout } from '../_shared/checkout.ts';
+import { checkoutClosedToAll, checkoutConfigLog, checkoutConfigStatus, checkoutPlan, checkoutExpectsTrial, matchesPremiumPrice, billingSettingsUrl, hasStripeSubscription, mayStartCheckout } from '../_shared/billingPolicy.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { capturePostHogEvent, normaliseCurrency } from '../_shared/posthog.ts';
 import { checkoutEventUuid, checkoutSessionProperties } from '../_shared/checkoutAnalytics.ts';
@@ -149,7 +149,9 @@ Deno.serve(async (req) => {
   }
 
   if (action === 'checkout') {
-    const plan = checkoutPlan(await req.json().catch(() => null));
+    const body = await req.json().catch(() => null);
+    const plan = checkoutPlan(body);
+    const expectTrial = checkoutExpectsTrial(body);
     if (!plan) {
       await captureCheckoutFailure(user.id, 'invalid_plan');
       return json({ error: 'Choose a monthly or yearly plan' }, 400);
@@ -170,7 +172,7 @@ Deno.serve(async (req) => {
         return json({ error: 'Billing price configuration needs attention' }, 503);
       }
 
-      const result = await subscriptionCheckout(admin, stripe, user.id, price, SETTINGS_URL, createPortalUrl);
+      const result = await subscriptionCheckout(admin, stripe, user.id, price, SETTINGS_URL, createPortalUrl, expectTrial);
       // Capture only after Stripe has returned a real Checkout URL. The gate
       // above stays closed until launch, so preview clicks cannot masquerade as
       // checkout starts.
@@ -192,6 +194,12 @@ Deno.serve(async (req) => {
       if (err instanceof CheckoutPendingError) {
         await captureCheckoutFailure(user.id, 'checkout_pending', plan);
         return json({ error: err.message }, 409);
+      }
+      // The button promised a trial this customer has already had. No session
+      // was created. The client relabels the button and the person can ask again.
+      if (err instanceof TrialUnavailableError) {
+        await captureCheckoutFailure(user.id, 'trial_unavailable', plan);
+        return json({ error: 'The free trial is for new subscribers. You can still upgrade to Premium.', code: 'trial_unavailable' }, 409);
       }
       await captureCheckoutFailure(user.id, 'stripe_error', plan);
       reportLog('stripe-billing', 'error', `Checkout session failed: ${errorText(err)}`, { distinctId: user.id });

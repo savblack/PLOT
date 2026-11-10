@@ -45,7 +45,6 @@
 .people-row-when { flex-shrink: 0; width: 140px; font-size: 0.78rem; color: var(--text-secondary); text-align: right; }
 .people-row-save { display: inline-flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
 .people-row-save svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linejoin: round; }
-.people-row-save--on { color: var(--accent-text); }
 .people-row-save--on svg { fill: currentColor; }
 
 @media (max-width: 767px) {

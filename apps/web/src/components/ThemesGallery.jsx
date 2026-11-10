@@ -10,10 +10,11 @@ import { THEME_FAMILIES, THEME_MODES, isPremiumFamily } from '@plot/core/themes.
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { useApp } from '../hooks/useApp.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { ThemeMiniaturePair } from './ThemeMiniature.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import './ThemesGallery.css';
+import PremiumMark from './PremiumMark.jsx';
+import PremiumGateButton from './PremiumGateButton.jsx';
 
 const A = SETTINGS_VIEW.appearance;
 const G = A.gallery;
@@ -44,7 +45,7 @@ export default function ThemesGallery() {
       {!isPremium && (
         <div className="themes-locked">
           <p>{G.lockedNote}</p>
-          <Link to={premiumPlansPath('/settings/themes')} className="btn btn-primary btn-sm">{SETTINGS_VIEW.premium.upgradeButton}</Link>
+          <PremiumGateButton reason="themes" />
         </div>
       )}
       <ul className="themes-grid" aria-label={A.themesOptionsLabel}>
@@ -66,7 +67,7 @@ export default function ThemesGallery() {
                   <span className="themes-card-name">{name}</span>
                   {(inUse || !isPremium) && (
                     <span className={`themes-card-tag${inUse ? ' is-active' : ''}`}>
-                      {inUse ? G.inUse : premium ? G.premium : G.free}
+                      {inUse ? G.inUse : premium ? <PremiumMark /> : G.free}
                     </span>
                   )}
                 </span>

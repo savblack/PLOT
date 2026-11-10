@@ -271,7 +271,6 @@
       align-items: center;
       gap: 12px;
       width: 100%;
-      max-width: 640px;
       height: 68px;
       box-sizing: border-box;
       padding: 0 8px 0 24px;
@@ -295,6 +294,42 @@
     .hero-search input::placeholder { color: var(--text-secondary); opacity: 1; }
     .hero-search input::-webkit-search-cancel-button { display: none; }
     .hero-search .btn { height: 52px; padding: 0 1.6rem; font-size: 0.95rem; font-weight: 700; }
+    /* Live results under the search bar (js/hero-search.js). Picking one goes
+       to signup with that exact title. */
+    .hero-search-wrap { position: relative; width: 100%; max-width: 640px; z-index: 6; }
+    .hero-results {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      margin: 0;
+      padding: 6px;
+      list-style: none;
+      max-height: 384px;
+      overflow-y: auto;
+      background: #fffaf3;
+      border: 1px solid var(--rule);
+      border-radius: 20px;
+      box-shadow: var(--shadow-overlay, 0 18px 40px -18px rgba(41, 41, 36, 0.45));
+      text-align: left;
+    }
+    .hero-results[hidden] { display: none; }
+    .hero-result {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .hero-results .hero-result::after { display: none; }
+    .hero-result:hover, .hero-result[aria-selected="true"] { background: var(--surface); }
+    .hero-result:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .hero-result img { flex-shrink: 0; width: 40px; height: 60px; object-fit: cover; border-radius: 6px; background: var(--surface); }
+    .hero-result-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .hero-result-title { font-family: var(--display); font-weight: 700; font-size: 1.05rem; line-height: 1.05; letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hero-result-meta { font-size: 0.82rem; color: var(--text-secondary); }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
     /* Poster shelf: five titles, tilted out from a raised middle one. The
@@ -1075,7 +1110,9 @@
         background: rgba(255, 250, 243, 0.97);
       }
       #navbar .nav-links.open {
-        top: 76px;
+        /* --site-notice-offset: height of the temporary banner still on
+           screen (js/site-notice.js); 0 when there is none. */
+        top: calc(76px + var(--site-notice-offset, 0px));
         left: 16px;
         right: 16px;
         border-radius: 24px;
@@ -1174,13 +1211,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="hero-copy">
       <h1 class="hero-headline">Always know what to watch</h1>
       <p class="hero-sub">All the movies and shows you’ve seen, saved and are counting down to. Finally in one place. That’s Plot.</p>
+      <div class="hero-search-wrap">
       <form class="hero-search" action="https://app.theplot.tv/signup" method="get" role="search" data-cta="hero_search">
         <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>
         <label class="sr-only" for="heroSearch">Search any movie or show</label>
-        <input id="heroSearch" name="q" type="search" placeholder="Search any title" autocomplete="off" maxlength="100" enterkeyhint="go">
+        <input id="heroSearch" name="q" type="search" placeholder="Search any title" autocomplete="off" maxlength="100" enterkeyhint="go" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="heroResults">
         <input type="hidden" name="src" value="hero_search">
         <button type="submit" class="btn btn-primary">Start tracking</button>
       </form>
+      <ul class="hero-results" id="heroResults" role="listbox" aria-label="Matching movies and shows" hidden></ul>
+      </div>
       <p class="hero-note">Free forever. No credit card required.</p>
     </div>
 
@@ -1490,10 +1530,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <svg viewBox="52 -681 1403 871" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-foil" x1="-0.6" x2="1.6" gradientTransform="rotate(100 0.5 0.5)"><stop offset="0" stop-color="#f1e9dc"/><stop offset="0.18" stop-color="#ffd1e8"/><stop offset="0.34" stop-color="#fff2b8"/><stop offset="0.5" stop-color="#c9f2d9"/><stop offset="0.66" stop-color="#c6e4ff"/><stop offset="0.82" stop-color="#e0cfff"/><stop offset="1" stop-color="#f1e9dc"/></linearGradient></defs><g id="footer-wordmark-glyphs"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-55,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5Z"/><path transform="translate(-110,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-165,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></g><use class="footer-foil" href="#footer-wordmark-glyphs"/></svg>
     </a>
     <script defer src="/js/footer.js?v=e1e00473"></script>
+    <!-- Temporary service notice (top-of-page banner). Delete this line and
+         js/site-notice.js, then run `pnpm run footer`, to take it down. -->
+    <script defer src="/js/site-notice.js"></script>
   </footer>
   <!-- footer:end -->
 
   <script src="js/config.js"></script>
+  <script src="js/hero-search.js" defer></script>
   <script>
 
     // The marketing site presents its own Plot-owned endpoints. Their

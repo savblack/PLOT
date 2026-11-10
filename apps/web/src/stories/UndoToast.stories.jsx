@@ -13,7 +13,7 @@ const ok = () => wait(300);
 const fail = async () => { await wait(300); throw Object.assign(new Error('offline'), { code: '' }); };
 
 const OFFERS = {
-  'Remove from Want to Watch': () => offerUndo({ action: UNDO_ACTIONS.WATCHLIST_REMOVE, title: 'Past Lives', revert: ok }),
+  'Remove from watchlist': () => offerUndo({ action: UNDO_ACTIONS.WATCHLIST_REMOVE, title: 'Past Lives', revert: ok }),
   'Remove from a list': () => offerUndo({ action: UNDO_ACTIONS.LIST_ITEM_REMOVE, title: 'Aftersun', meta: { listName: 'Quiet ones' }, revert: ok }),
   Unfavourite: () => offerUndo({ action: UNDO_ACTIONS.FAVOURITE_REMOVE, title: 'Heat', revert: ok }),
   'Remove from history': () => offerUndo({ action: UNDO_ACTIONS.HISTORY_REMOVE, title: 'The Zone of Interest', revert: ok }),
@@ -54,7 +54,7 @@ export default {
   decorators: [(Story) => <div style={{ minHeight: '100vh', padding: '1.5rem' }}><Story /></div>],
 };
 
-export const Playground = { render: () => <Harness region="GB" autoOffer="Remove from Want to Watch" /> };
+export const Playground = { render: () => <Harness region="GB" autoOffer="Remove from watchlist" /> };
 export const USSpelling = { render: () => <Harness region="US" autoOffer="Unfavourite" /> };
 export const Batch = { render: () => <Harness region="GB" autoOffer="Remove 5 selected" /> };
 export const Episode = { render: () => <Harness region="GB" autoOffer="Un-tick an episode" /> };

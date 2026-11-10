@@ -34,7 +34,3 @@
 .ep-alerts-option > span { display: flex; flex-direction: column; gap: 2px; }
 .ep-alerts-option b { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; font-weight: 700; }
 .ep-alerts-option > span > span { font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); }
-.ep-alerts-premium {
-  font-style: normal; padding: 1px 7px; border-radius: var(--radius-pill); background: var(--accent-fill);
-  color: var(--on-accent-fill); font-size: 0.68rem; font-weight: 700;
-}

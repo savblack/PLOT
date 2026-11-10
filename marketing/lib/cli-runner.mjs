@@ -29,9 +29,9 @@ const RUNNERS = {
   codex: {
     command: 'codex',
     helpArgs: ['exec', '--help'],
-    flags: () => ['--sandbox'],
+    flags: () => ['--sandbox', '--skip-git-repo-check'],
     buildArgs: (prompt) => {
-      const args = ['exec', '--sandbox', 'workspace-write', '--ephemeral'];
+      const args = ['exec', '--sandbox', 'workspace-write', '--skip-git-repo-check', '--ephemeral'];
       args.push(prompt); // positional prompt; keep last
       return args;
     },

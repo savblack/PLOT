@@ -10,15 +10,28 @@
 #
 # Deploy:
 #   cd apps/web/workers/backup-heartbeat
-#   npx wrangler secret put RESEND_API_KEY     # same key the marketing workflows use
-#   npx wrangler deploy
+#   npx wrangler secret put RESEND_API_KEY --config wrangler.toml
+#   npx wrangler deploy --config wrangler.toml
+#
+# RESEND_API_KEY is this Worker's own Resend key, named "backup-heartbeat"
+# (Sending access, theplot.tv), created 2026-11-10. It used to share a key that
+# was later deleted, which left the alarm unable to email without anyone
+# knowing. Don't share it with another sender; after rotating, send the test
+# email below. --config is needed because the web build leaves
+# apps/web/.wrangler/deploy/config.json, which wrangler otherwise picks up.
 #
 # Needs a Cloudflare API token with "Workers Scripts: Edit" plus R2 read. The
 # R2 binding below grants bucket access directly, so no R2 access keys are
 # involved — unlike the workflow, which needs R2_ACCESS_KEY_ID/SECRET.
 #
-# Check it by hand (HEARTBEAT_TOKEN secret required):
+# Check it by hand (HEARTBEAT_TOKEN secret required; the value is
+# BACKUP_HEARTBEAT_TOKEN in the main checkout's .env):
 #   curl -H "x-heartbeat-token: <token>" https://backup-heartbeat.<subdomain>.workers.dev
+#
+# Prove the alarm can still email, without waiting for a missing backup. Sends
+# one clearly labelled test email to ALERT_EMAIL and answers {"sent":true}; a
+# dead Resend key answers 502 with {"sent":false,"error":"resend 401"}:
+#   curl -H "x-heartbeat-token: <token>" "https://backup-heartbeat.<subdomain>.workers.dev/?test-email=1"
 
 name = "backup-heartbeat"
 main = "src/index.js"

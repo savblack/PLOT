@@ -39,7 +39,7 @@ export const SOCIAL_LINKS = [
 const SECTIONS = [
   { key: 'recent',     label: PUBLIC_PROFILE_PAGE.watchHistory },
   { key: 'watching',   label: 'Watching' },
-  { key: 'want',       label: 'Want to Watch' },
+  { key: 'want',       label: 'Watchlist' },
   { key: 'topMovies',  label: PUBLIC_PROFILE_PAGE.topFilms },
   { key: 'topTv',      label: PUBLIC_PROFILE_PAGE.topTv },
   { key: 'favourites', label: 'Favorites' },

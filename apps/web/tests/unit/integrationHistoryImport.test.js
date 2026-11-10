@@ -57,9 +57,11 @@ test('both import surfaces offer Plex and Trakt, and sync UI is Premium-gated', 
   assert.match(webFlag, /SHOW_MEDIA_SYNC_INTEGRATIONS = true/);
   assert.match(mobileFlag, /SHOW_MEDIA_SYNC_INTEGRATIONS = true/);
   // Web: one-off imports are free for everyone; the automatic toggle is the
-  // one Premium thing and sends Free to the plans page.
+  // one Premium thing and opens the upgrade sheet for a Free viewer (the
+  // parent, SettingsView, owns the sheet).
   assert.match(webSettings, /premium\.isPremium/);
-  assert.match(webSettings, /automaticNeedsPremium/);
+  assert.match(webSettings, /onPremiumGate/);
+  assert.match(read('../../src/components/SettingsView.jsx'), /setPremiumGate\('autoImport'\)/);
   assert.match(webSettings, /startPlexAuth\(\)/);
   assert.match(webSettings, /buildTraktAuthorizeUrl/);
   // Mobile: the same shape. No Premium gate on connecting; the automatic

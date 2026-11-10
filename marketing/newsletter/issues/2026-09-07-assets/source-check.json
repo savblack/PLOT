@@ -1,0 +1,250 @@
+{
+  "issue_date": "2026-09-07",
+  "status": "Draft",
+  "notion": {
+    "date": "2026-09-07",
+    "url": "https://app.notion.com/p/3fc4f244aec7813c9128d222cfe8525f?pvs=204",
+    "id": "3fc4f244-aec7-813c-9128-d222cfe8525f",
+    "verification": {
+      "date": "2026-09-07",
+      "draft": true,
+      "seo": true,
+      "preview": true,
+      "images": 6,
+      "trailers": 3,
+      "footer": 1,
+      "localPath": false,
+      "chartWarning": true
+    }
+  },
+  "publication_blockers": [
+    "Historical weekly trending chart is absent from saved production marketing snapshots. Do not replace with current data.",
+    "Savannah to select the GIF and approve the draft."
+  ],
+  "newsletter_lint": [
+    "List at least five TMDB trending titles."
+  ],
+  "chart_snapshot": null,
+  "media": [
+    {
+      "requested_title": "The Gentlemen",
+      "id": 236235,
+      "type": "tv",
+      "title": "The Gentlemen",
+      "date": "2024-03-07",
+      "overview": "When aristocratic Eddie inherits the family estate, he discovers that it's home to an enormous weed empire \u2014 and its proprietors aren't going anywhere.",
+      "backdrop": "/yG1wltFmkX5c5ocACKfpX0tp3SY.jpg",
+      "homepage": "https://www.netflix.com/title/81437051",
+      "episodes": 16
+    },
+    {
+      "requested_title": "Onslaught",
+      "id": 1284046,
+      "type": "movie",
+      "title": "Onslaught",
+      "date": "2026-09-04",
+      "overview": "When a rogue squad of genetically engineered super soldiers break loose in the desert, a badass Army sniper must unleash hell to protect her young daughter.",
+      "backdrop": "/clePZhqOSzNyjfuFBpOrziLEFzb.jpg",
+      "homepage": "https://a24films.com/films/onslaught",
+      "runtime": 92
+    },
+    {
+      "requested_title": "Coyote vs. Acme",
+      "id": 1204680,
+      "type": "movie",
+      "title": "Coyote vs. Acme",
+      "date": "2026-08-28",
+      "overview": "After Acme products fail him one too many times in his dogged pursuit of the Roadrunner, Wile E. Coyote decides to hire a billboard lawyer to sue the Acme Corporation.",
+      "backdrop": "/viZqGq9TNvQ5uXSD4ahg2RpRONT.jpg",
+      "homepage": "https://coyotevsacme.com",
+      "runtime": 103
+    },
+    {
+      "requested_title": "The Dog Stars",
+      "id": 1384216,
+      "type": "movie",
+      "title": "The Dog Stars",
+      "date": "2026-08-28",
+      "overview": "After the world's population has been ravaged by a pandemic, a man lives a lonesome existence in a Colorado airplane hangar with his dog and a dour gunman he has befriended. When a mysterious transmission comes through on the radio while he\u2019s flying his old Cessna, it sparks a hunt for the provenance of the sound.",
+      "backdrop": "/quAHqi4zBrB5fIfHvgrqiG4xzAC.jpg",
+      "homepage": "https://www.20thcenturystudios.com/movies/the-dog-stars",
+      "runtime": 119
+    },
+    {
+      "requested_title": "Mayday",
+      "id": 1137844,
+      "type": "movie",
+      "title": "Mayday",
+      "date": "2026-09-03",
+      "overview": "When a U.S. Navy pilot on a top-secret mission during the Cold War gets trapped behind enemy lines, his only chance at survival is to form an alliance with an eccentric ex-KGB agent.",
+      "backdrop": "/g7Ccid5kuD7A8hXWlsQiNfwOxaD.jpg",
+      "homepage": "https://tv.apple.com/movie/umc.cmc.shin43vzfoz3h4ggx41z8rf",
+      "runtime": 111
+    },
+    {
+      "requested_title": "Practical Magic 2",
+      "id": 1302904,
+      "type": "movie",
+      "title": "Practical Magic 2",
+      "date": "2026-09-11",
+      "overview": "The Owens sisters must confront the dark curse that threatens to unravel their family once and for all.",
+      "backdrop": "/oIglj0Jy9duG4LnrRUpH8n001Pk.jpg",
+      "homepage": "https://www.practicalmagicmovie.com",
+      "runtime": 130
+    },
+    {
+      "requested_title": "Runner",
+      "id": 1377237,
+      "type": "movie",
+      "title": "Runner",
+      "date": "2026-09-07",
+      "overview": "A former soldier is thrown into a brutal race against time when a critical medical delivery makes him and his unlikely partner the targets of a ruthless cartel. As the mission spirals into a deadly manhunt, every detour, delay, and bullet pushes them closer to failure. With betrayal closing in from every side, they must survive the chase and deliver their cargo to save the life of a little girl.",
+      "backdrop": "/npXZNWjOEYrqdMDPQ11SGBrXqAG.jpg",
+      "homepage": "https://www.angel.com/movies/runner",
+      "runtime": 97
+    },
+    {
+      "requested_title": "Hope",
+      "id": 1058424,
+      "type": "movie",
+      "title": "Hope",
+      "date": "2026-09-09",
+      "overview": "In the remote South Korean village of Hope Harbor, police chief Bum-seok and officer Sung-ae are called to investigate a mysterious creature wreaking havoc on the community. But all is not as it seems, and perceptions can be misleading. What begins as ignorance plants the seed of disaster, escalating through human conflict into a tragedy of cosmic proportions.",
+      "backdrop": "/ujUwzNV8ZkOzZonvhhHsc9KOKDf.jpg",
+      "homepage": "https://www.neonrated.com/film/hope",
+      "runtime": 157
+    },
+    {
+      "requested_title": "Call My Agent! The Movie",
+      "id": 1365884,
+      "type": "movie",
+      "title": "Call My Agent! The Movie",
+      "date": "2026-09-10",
+      "overview": "Five years after ASK Agency closed, debut director Andr\u00e9a loses her lead actor just days before filming and reunited with her old team \u2014 for better or worse.",
+      "backdrop": "/4v8XgcmtUFVXUzGb7noltdjg2Ou.jpg",
+      "homepage": "https://www.netflix.com/title/82026389",
+      "runtime": 117
+    },
+    {
+      "requested_title": "Physical 100: Italy",
+      "id": 324111,
+      "type": "tv",
+      "title": "Physical 100: Italy",
+      "date": "2026-09-11",
+      "overview": "One hundred Italian athletes face brutal physical challenges, each battling to outlast the rest and claim the glory of becoming the one true champion.",
+      "backdrop": "/li2io9zeJYJNWAf41J7fQIPtBR5.jpg",
+      "homepage": "https://www.netflix.com/title/81771552",
+      "episodes": 8
+    }
+  ],
+  "trailers": [
+    {
+      "issue_date": "2026-09-07",
+      "title": "Practical Magic 2",
+      "key": "Ho10_4IX1jE",
+      "name": "Official Trailer",
+      "date": "2026-06-24T16:00:38.000Z",
+      "status": 200,
+      "video_title": "Practical Magic 2 | Official Trailer",
+      "channel": "Warner Bros."
+    },
+    {
+      "issue_date": "2026-09-07",
+      "title": "Hope",
+      "key": "R5jcEBVBEbQ",
+      "name": "Official Trailer [Subtitled]",
+      "date": "2026-07-09T14:00:20.000Z",
+      "status": 200,
+      "video_title": "HOPE - Official Trailer - In Theaters September 9",
+      "channel": "NEON"
+    },
+    {
+      "issue_date": "2026-09-07",
+      "title": "Runner",
+      "key": "m8JUmBgHejI",
+      "name": "Final Trailer",
+      "date": "2026-07-15T21:00:06.000Z",
+      "status": 200,
+      "video_title": "Runner | Final Trailer | 16+ | Now Streaming | Alan Ritchson, Owen Wilson | Angel",
+      "channel": "Angel"
+    }
+  ],
+  "source_urls": [
+    "https://www.themoviedb.org/tv/236235",
+    "https://theplot.tv/movie/onslaught-1284046",
+    "https://image.tmdb.org/t/p/w780/clePZhqOSzNyjfuFBpOrziLEFzb.jpg",
+    "https://www.themoviedb.org/movie/1284046",
+    "https://a24films.com/films/onslaught",
+    "https://www.youtube.com/watch?v=H-43VeYGiPM",
+    "https://www.20thcenturystudios.com/movies/the-dog-stars",
+    "https://www.avclub.com/the-gentlemen-review-season-2-netflix-guy-ritchie",
+    "https://www.whats-on-netflix.com/what-to-watch/the-gentlemen-season-2-review/",
+    "https://www.reddit.com/r/TheGentlemenTVShow/comments/1w6hz1t/season_2/",
+    "https://theplot.tv/tv/the-gentlemen-236235",
+    "https://image.tmdb.org/t/p/w780/g7Ccid5kuD7A8hXWlsQiNfwOxaD.jpg",
+    "https://www.themoviedb.org/movie/1137844",
+    "https://apnews.com/article/6d48775ae6187a2d501e1817dda1a74c",
+    "https://www.thedailybeast.com/obsessed/mayday-kenneth-branagh-humiliates-himself-with-ryan-reynolds/",
+    "https://www.apple.com/tv-pr/originals/mayday/",
+    "https://image.tmdb.org/t/p/w780/yG1wltFmkX5c5ocACKfpX0tp3SY.jpg",
+    "https://image.tmdb.org/t/p/original/yG1wltFmkX5c5ocACKfpX0tp3SY.jpg",
+    "https://media.netflix.com/en/only-on-netflix/81437051",
+    "https://theplot.tv/whats-on/chart",
+    "https://image.tmdb.org/t/p/w780/4v8XgcmtUFVXUzGb7noltdjg2Ou.jpg",
+    "https://www.themoviedb.org/movie/1365884",
+    "https://media.netflix.com/en/only-on-netflix/82026389",
+    "https://app.theplot.tv/save?media_type=movie&tmdb_id=1365884&src=newsletter",
+    "https://image.tmdb.org/t/p/w780/li2io9zeJYJNWAf41J7fQIPtBR5.jpg",
+    "https://www.themoviedb.org/tv/324111",
+    "https://media.netflix.com/en/only-on-netflix/81771552",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=324111&src=newsletter"
+  ],
+  "primary_page_checks": [
+    {
+      "url": "https://www.20thcenturystudios.com/movies/the-dog-stars",
+      "title": "The Dog Stars | 20th Century Studios",
+      "status": 200
+    },
+    {
+      "url": "https://a24films.com/films/onslaught",
+      "title": "Onslaught | A24",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81437051",
+      "title": "The Gentlemen | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/82026389",
+      "title": "Call My Agent! The Movie | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81771552",
+      "title": "Physical 100: Italy | Netflix Media Center",
+      "status": 200
+    }
+  ],
+  "editorial_review": "Written for the issue date using contemporary reviews, audience threads, release announcements, and official trailers. Review opinions are attributed; individual posts are not treated as audience-wide consensus. HTTP status alone is not evidence of a claim.",
+  "layout": [
+    {
+      "date": "2026-09-07",
+      "width": 390,
+      "scroll": 390,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    },
+    {
+      "date": "2026-09-07",
+      "width": 1280,
+      "scroll": 1280,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    }
+  ]
+}

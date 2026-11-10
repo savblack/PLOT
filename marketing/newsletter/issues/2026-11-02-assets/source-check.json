@@ -1,0 +1,22 @@
+{
+  "issue_date": "2026-11-02",
+  "notion_url": "https://app.notion.com/p/40d4f244aec78193a0f8f21c68af04ba",
+  "status": "Draft",
+  "chart_snapshot": "2026-11-01",
+  "chart_comparison": "2026-10-25",
+  "trailers": {
+    "vbdnFFMhuY0": "Prime Video Canada",
+    "MOU2thjq6Z0": "Netflix",
+    "JOMS_m5Iqos": "Netflix"
+  },
+  "verification": [
+    "Newsletter lint passed",
+    "30 newsletter tests passed",
+    "390 and 1280 px previews: no overflow, broken images; 3 trailers",
+    "Notion metadata and seven images read back"
+  ],
+  "pending": [
+    "Savannah GIF choice",
+    "Editorial approval before publishing"
+  ]
+}

@@ -21,6 +21,7 @@ import { markSignupReferralPending } from '../utils/attribution.js';
 import { writePendingSearch } from '../utils/pendingSearch.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 import PlotLogo from '../components/PlotLogo.jsx';
+import ServiceNotice from '../components/ServiceNotice.jsx';
 import { loginNeedsConfirmation, shouldMagicLinkViaBypass, shouldResendViaBypass } from '../utils/authBypass.js';
 import { rememberPendingBypassSignup, rememberSignupTracked } from '../utils/authCallbackReport.js';
 
@@ -835,6 +836,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
 
       {/* ── Right: form panel ── */}
       <div className="auth-panel">
+        <ServiceNotice />
         <Link to="/" className="auth-panel-logo" aria-label="plot">
           plot
         </Link>
