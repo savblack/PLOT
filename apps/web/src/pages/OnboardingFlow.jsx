@@ -22,7 +22,6 @@ import { importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { useImportStart } from '../hooks/useImportStart.js';
 import { finishingTouchesKey, serialiseFinishingTouches, startFinishingTouches } from '@plot/core/finishingTouches.js';
-import { armFirstWinCard } from '../utils/firstWinCardState.js';
 import { useWatchlist } from '../hooks/useWatchlist.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { takePremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
@@ -268,8 +267,6 @@ export default function OnboardingFlow() {
     // "Mark where you're up to" reads the watchlist later, not these picks.
     const key = finishingTouchesKey(user.id);
     if (!readStorage(key)) writeStorage(key, serialiseFinishingTouches(startFinishingTouches(Date.now())));
-    // The first-win card sits on Home. A skip (nothing saved) does not arm it.
-    armFirstWinCard(user.id, { skipped: seeds.length === 0 });
     if (trackCompletion) {
       // After the picks are on My List, so the email sees the current watchlist.
       await notifyOnboardingCompleted();

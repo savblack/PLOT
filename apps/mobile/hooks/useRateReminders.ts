@@ -3,7 +3,7 @@
  * appeared in the last couple of minutes, watched today, with no rating,
  * gets a 9am local notification (lib/ratePrompt.ts, one per day); a rating
  * landing on a row cancels its reminder. Mounted once at the root so every
- * mark path (title panel, first-win card, episode ticks) is covered without
+ * mark path (title panel, episode ticks) is covered without
  * each caller knowing.
  */
 import { useEffect, useRef } from 'react';

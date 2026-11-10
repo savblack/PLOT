@@ -14,11 +14,9 @@ import {
   watchTogetherHomeKey,
   watchTogetherHomeVisible,
 } from '@plot/core/watchTogetherHome.js';
-import { firstWinCardVisible } from '@plot/core/firstWinCard.js';
 import { finishingTouchesVisible } from '@plot/core/finishingTouches.js';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 import { readStorage, writeStorage } from '../lib/storage';
-import { readFirstWinCard } from '../lib/firstWinCard';
 import { readFinishingTouches } from '../lib/finishingTouches';
 import { useAppData } from '../contexts/AppDataContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -34,12 +32,12 @@ export default function WatchTogetherHomeCard() {
   useEffect(() => {
     if (!userId) return undefined;
     let alive = true;
-    Promise.all([readStorage(watchTogetherHomeKey(userId)), readFirstWinCard(userId), readFinishingTouches(userId)]).then(([raw, firstWin, touches]) => {
+    Promise.all([readStorage(watchTogetherHomeKey(userId)), readFinishingTouches(userId)]).then(([raw, touches]) => {
       if (!alive) return;
       setDismissed({
         userId,
         value: watchTogetherHomeDismissed(raw),
-        settlingIn: firstWinCardVisible(firstWin) || finishingTouchesVisible(touches),
+        settlingIn: finishingTouchesVisible(touches),
       });
     });
     return () => { alive = false; };

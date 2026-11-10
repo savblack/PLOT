@@ -13,7 +13,7 @@ test('the Home card shows for a signed-in person until this device dismisses it'
   assert.equal(watchTogetherHomeVisible({ signedIn: false, dismissed: false }), false);
 });
 
-test('the Home card waits while a first-run card is still on Home', () => {
+test('the Home card waits while Finishing touches is still on Home', () => {
   assert.equal(watchTogetherHomeVisible({ signedIn: true, dismissed: false, settlingIn: true }), false);
   assert.equal(watchTogetherHomeVisible({ signedIn: true, dismissed: false, settlingIn: false }), true);
 });
