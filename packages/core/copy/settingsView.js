@@ -61,6 +61,16 @@ export const SETTINGS_VIEW = {
     syncComingSoon: 'Connections are not available',
     syncComingSoonMessage: 'Manual imports stay free.',
     confirming: 'Confirming your subscription. This may take a moment.',
+    // The membership card: what a Premium member sees here in place of the
+    // sales pitch (core/membership.js decides which state applies).
+    membership: {
+      status: { active: 'Active', trial: 'Free trial', ending: 'Ending', attention: 'Payment needed', granted: 'Active' },
+      renews: (date) => `Renews on ${date}.`,
+      trialEnds: (date) => `Your free trial ends on ${date}. Your first payment is taken then.`,
+      ends: (date) => `Your membership ends on ${date}. You keep Premium until then.`,
+      includedTitle: 'In your membership',
+      open: (label) => `Open ${label}`,
+    },
   },
   region: {
     savingRegion: 'Saving region',
