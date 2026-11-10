@@ -31,6 +31,7 @@ export default function MobilePageControls({ groups = [], options, value, onChan
   const visible = normalizedGroups.filter(group => group.options?.length > 0);
   const activeCount = activeFilterGroupCount(visible);
   const close = () => setOpen(false);
+  const triggerLabel = label || MOBILE_CONTROLS.filterLabel(activeCount);
 
   useEffect(() => {
     if (!open) return;
@@ -85,10 +86,15 @@ export default function MobilePageControls({ groups = [], options, value, onChan
   return (
     <>
       <span className="mobile-controls-anchor" hidden />
+      {/* An icon button in the top bar's left corner, the slot the menu button
+          left when the tab bar arrived. It used to be a 60px bar pinned to the
+          bottom, which would now sit on top of the tab bar. The wording is its
+          accessible name; a dot shows when a filter is on. */}
       {createPortal(<div className="mobile-page-controls">
-        <button ref={trigger} type="button" className="mobile-controls-trigger" aria-haspopup="dialog" aria-expanded={open} onClick={() => { setSnap('collapsed'); setOpen(true); }}>
-          {label || MOBILE_CONTROLS.filterLabel(activeCount)}
-          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m2 8 4-4 4 4" /></svg>
+        <button ref={trigger} type="button" className="mobile-controls-trigger" aria-haspopup="dialog" aria-expanded={open}
+          aria-label={triggerLabel} title={triggerLabel} onClick={() => { setSnap('collapsed'); setOpen(true); }}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" /></svg>
+          {activeCount > 0 && <span className="mobile-controls-active" aria-hidden="true" />}
         </button>
       </div>, document.body)}
       {open && createPortal(
@@ -132,12 +138,6 @@ export default function MobilePageControls({ groups = [], options, value, onChan
               <button type="button" className="btn btn-primary btn-sm" onClick={close}>{COMMON.done}</button>
             </div>
           </section>
-          <div className="mobile-page-controls">
-            <button type="button" className="mobile-controls-trigger" onClick={close} aria-expanded="true">
-              {label || MOBILE_CONTROLS.filterLabel(activeCount)}
-              <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m2 4 4 4 4-4" /></svg>
-            </button>
-          </div>
         </dialog>, document.body
       )}
     </>

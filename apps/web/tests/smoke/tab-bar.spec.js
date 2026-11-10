@@ -57,3 +57,36 @@ test('at sidebar width there is no tab bar', async ({ page }) => {
   await page.goto(url);
   await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeHidden();
 });
+
+test('on a phone, Filters is a button in the top bar and nothing else sits above the tab bar', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto(url);
+  const filters = page.getByRole('button', { name: 'Filters', exact: true });
+  await expect(filters).toBeVisible();
+  // Top left, inside the header's height, where the menu button used to be.
+  const box = await filters.boundingBox();
+  expect(box.x).toBeLessThan(80);
+  expect(box.y + box.height).toBeLessThanOrEqual(56);
+
+  // The tab bar is the only thing pinned to the bottom: the page ends right above it.
+  const bar = await page.getByRole('navigation', { name: 'Main navigation' }).boundingBox();
+  await page.getByTestId('last-line').scrollIntoViewIfNeeded();
+  const last = await page.getByTestId('last-line').boundingBox();
+  expect(bar.y - (last.y + last.height)).toBeLessThan(40);
+
+  // It opens the same sheet, and a filter that is on shows in the button's name.
+  await filters.click();
+  const sheet = page.locator('dialog.mobile-controls-dialog');
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('button', { name: 'TV', exact: true }).click();
+  await expect(page.getByTestId('types')).toHaveText('movie');
+  await sheet.getByRole('button', { name: 'Done' }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Filters · 1', exact: true })).toBeVisible();
+});
+
+test('at sidebar width the phone Filters button is not shown', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(url);
+  await expect(page.locator('.mobile-page-controls')).toBeHidden();
+});

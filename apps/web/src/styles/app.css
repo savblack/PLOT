@@ -8053,21 +8053,23 @@ a.provider-chip--link:hover {
 .mobile-controls-dialog::backdrop { background: rgba(0, 0, 0, 0.22); }
 .mobile-controls-sheet {
   position: absolute;
-  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  /* From the bottom edge. It used to stop 60px up, above the filter bar that
+     opened it; that bar is now a button in the top bar. */
+  bottom: 0;
   width: 100%;
-  height: min(50dvh, calc(100dvh - 60px - env(safe-area-inset-bottom, 0px)));
+  height: min(50dvh, calc(100dvh - var(--header-h) - env(safe-area-inset-top, 0px)));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: contain;
   background: var(--surface);
   border-radius: 18px 18px 0 0;
-  padding: 0 20px 20px;
+  padding: 0 20px calc(20px + env(safe-area-inset-bottom, 0px));
   transform: translateY(var(--sheet-drag-y, 0));
   transition: height 0.28s var(--ease), transform 0.28s var(--ease);
   box-shadow: var(--shadow-overlay);
 }
-.mobile-controls-sheet--expanded { height: min(67dvh, calc(100dvh - 60px - env(safe-area-inset-bottom, 0px))); }
+.mobile-controls-sheet--expanded { height: min(67dvh, calc(100dvh - var(--header-h) - env(safe-area-inset-top, 0px))); }
 .mobile-controls-sheet.is-dragging { transition: none; }
 .mobile-controls-scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .mobile-controls-handle, .mobile-controls-heading, .mobile-controls-footer { flex-shrink: 0; }
@@ -8099,11 +8101,9 @@ a.provider-chip--link:hover {
   .app-header .icon-btn { position: relative; width: 44px; height: 44px; }
   .app-header .app-page-title { position: static; transform: none; max-width: none; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .app-main-inner { padding-top: 16px; }
-  /* What is fixed to the bottom edge: the tab bar, and on pages with filters
-     the 60px filter bar above it. Set on :root, not .app-shell, because the
-     toasts and the timezone banner are portalled outside the shell. */
-  :root { --bottom-inset: var(--tabbar-h); }
-  :root:has(.mobile-controls-anchor) { --bottom-inset: calc(var(--tabbar-h) + 60px); }
+  /* The page ends above whatever is fixed to the bottom edge: the tab bar
+     (--bottom-inset, tokens.css). The phone filter control used to be a second
+     bar here; it is in the top bar now. */
   .app-main { bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px)); }
   .desktop-page-filter, .cal-toolbar .cal-scope { display: none; }
   .page-toolbar-date { display: none; }
@@ -8120,9 +8120,11 @@ a.provider-chip--link:hover {
      search field, and .list-page-search already lays it out full width. */
   .hist-search:not(.list-page-search),
   .home-search-trigger { display: none; }
-  .mobile-page-controls { position: fixed; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; z-index: 210; display: flex; justify-content: center; align-items: center; height: 60px; border-top: 1px solid var(--border); background: var(--surface); }
-  .mobile-controls-trigger { min-width: 124px; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 9px; background: none; border: 0; color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
-  .mobile-controls-trigger svg { width: 12px; height: 12px; stroke: var(--text-muted); stroke-width: 1.7; fill: none; }
+  /* The phone filter button: the top bar's left corner, over the header. */
+  .mobile-page-controls { position: fixed; top: env(safe-area-inset-top, 0px); left: 12px; z-index: 205; display: flex; align-items: center; height: var(--header-h); }
+  .mobile-controls-trigger { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; background: none; border: 0; color: var(--text-primary); cursor: pointer; }
+  .mobile-controls-trigger svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; fill: none; }
+  .mobile-controls-active { position: absolute; top: 9px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 }
 
 @media (max-width: 600px) {

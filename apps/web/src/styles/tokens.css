@@ -103,12 +103,14 @@
   /* Layout constants */
   --header-h:       56px;
   /* Height of whatever is fixed to the bottom edge, not counting the safe area.
-     Nothing is by default; the phone filter bar raises it (app.css). Anything
+     That is the phone tab bar, and nothing at sidebar widths. It is set here,
+     not in app.css: app.css is injected first, so a :root rule there would
+     lose to this file. Anything
      pinned near the bottom adds it rather than assuming a bar is or isn't there. */
-  --bottom-inset:   0px;
   /* The phone tab bar's height, not counting the safe area. 0 at sidebar
      widths, where the sidebar replaces it (see the breakpoint below). */
   --tabbar-h:       56px;
+  --bottom-inset:   var(--tabbar-h);
   --panel-w:        560px;
   --content-max:    680px;
   /* Content gutter. The desktop page title, the collapsible section headers and
