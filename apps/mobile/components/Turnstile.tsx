@@ -21,8 +21,8 @@ export interface TurnstileProps {
   onInteractive?: () => void;
   resetSignal?: number;
   /**
-   * Bump to run the challenge. The widget does not run when the screen opens.
-   * reset() alone does not re-run it.
+   * Bump to run a fresh challenge now. The widget already runs when the
+   * screen opens, so this is only for retries after an error.
    */
   executeSignal?: number;
   /** Origin the challenge runs under — must be in the widget's allowed hostnames. */
@@ -50,10 +50,15 @@ const html = (siteKey: string) => `<!DOCTYPE html><html><head>
     if(!window.turnstile){ setTimeout(render, 120); return; }
     window.__wid = window.turnstile.render('#cf', {
       sitekey: ${JSON.stringify(siteKey)},
-      // Hidden unless a challenge genuinely needs interaction. execution
-      // "execute" means opening this screen does not start a token.
+      // Hidden unless a challenge genuinely needs interaction. The
+      // challenge starts as soon as the screen opens, so a token is usually
+      // ready before anyone taps the button (until 2026-11 it waited for
+      // execute() on submit, matching web before #1496). Tokens last five
+      // minutes; when one expires Cloudflare fetches the next one itself.
       appearance: 'interaction-only',
-      execution: 'execute',
+      execution: 'render',
+      'refresh-expired': 'auto',
+      'refresh-timeout': 'auto',
       retry: 'never',
       callback: function(t){
         // Hide the confirmation UI the instant we have a token — it's just a
@@ -62,26 +67,33 @@ const html = (siteKey: string) => `<!DOCTYPE html><html><head>
         cf.style.display = 'none';
         post({ type:'token', token:t });
       },
-      'expired-callback': function(){ post({ type:'token', token:null }); },
+      'expired-callback': function(){
+        // Cloudflare is fetching the next token. Show the box again in case
+        // that one needs a tap.
+        cf.style.display = 'flex';
+        post({ type:'token', token:null });
+      },
       'error-callback': function(){ post({ type:'error' }); },
       // Fires when the invisible check escalates to the checkbox. The token
       // now waits on a tap, so the screen must keep waiting for it.
       'before-interactive-callback': function(){ post({ type:'interactive' }); }
     });
-    if (window.__pending) window.__execute(window.__pending);
+    // A retry asked for before the widget existed is already covered: the
+    // render above just started a fresh challenge.
+    window.__last = window.__pending;
   }
-  // reset() does not re-run a widget created with execution "execute".
+  // With execution "render", reset() alone starts a fresh challenge.
+  // Calling execute() on top would ask twice.
   window.__pending = 0;
   window.__last = 0;
   window.__execute = function(signal) {
     window.__pending = signal;
-    if (!window.__wid || !window.turnstile || !window.turnstile.execute) return;
+    if (!window.__wid || !window.turnstile || !window.turnstile.reset) return;
     if (window.__last === signal) return;
     window.__last = signal;
     post({ type:'token', token:null });
-    try { window.turnstile.reset(window.__wid); } catch (e) {}
     if (cf) cf.style.display = 'flex';
-    try { window.turnstile.execute(window.__wid); } catch (e) {}
+    try { window.turnstile.reset(window.__wid); } catch (e) {}
   };
   render();
 </script></body></html>`;
@@ -107,9 +119,9 @@ export default function Turnstile({
     ref.current?.injectJavaScript(`window.__execute && window.__execute(${signal}); true;`);
   };
 
-  // Drop a used token. With execution "execute", reset does not start the
-  // next challenge. Skip 0 so the first paint does not reset a widget that
-  // has not been created yet.
+  // Drop a used token. With execution "render", reset also starts the next
+  // challenge, so the next attempt has a token waiting. Skip 0 so the first
+  // paint does not reset a widget that has not been created yet.
   useEffect(() => {
     if (!resetSignal) return;
     ref.current?.injectJavaScript(
