@@ -387,6 +387,21 @@ its length. Seasons that would not load are one `load_failed` per search with
 `resource: episode_search`. Logging the episode afterwards is the usual
 `episode_watched`, so the path from search to log is these two in order.
 
+## Homepage search hand-off
+
+The theplot.tv hero is a search bar with Start tracking inside it. Submitting
+sends the visitor to `/signup?q=<title>&src=hero_search`. Web only: the
+marketing site never hands off to mobile.
+
+| Event | Where | When | Props |
+|---|---|---|---|
+| `signup_cta_clicked` | marketing site | The search bar was submitted, typed or not | `placement: hero_search`, `source: marketing`, `has_query` |
+| `signup_search_resumed` | web app | A signed-in visit opened search by itself with that title, at most once | `query_length` |
+
+The query text is never sent from either side, only whether one was typed and
+its length. The title waits in the browser for 24 hours, so a signup confirmed
+on another device or a day later does not resume it.
+
 ## Title awards
 
 The title panel's Awards row (issue 1273) shows OMDb's awards line when a title
@@ -572,11 +587,11 @@ covered once. Properties:
 
 | Prop | Meaning |
 |---|---|
-| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, and `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers). Canonical list: `FAILED_ACTIONS`. |
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers), and for auth emails that are neither a sign-in nor a signup `password_reset_request` and `confirmation_resend` (`source: signup_bypass` when the backup sender failed; web only until mobile parity lands). Canonical list: `FAILED_ACTIONS`. |
 | `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
 | `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
 | `http_status` | When present. |
-| `tmdb_id`, `media_type`, `list_id`, `fields`, `progress_action`, `surface` | Same context the matching success event carries. `fields` is column *names* only. |
+| `tmdb_id`, `media_type`, `list_id`, `fields`, `progress_action`, `surface`, `source` | Same context the matching success event carries. `fields` is column *names* only. |
 
 The error's message, details and hint are **never** sent: Postgres puts row
 values in them. A unit test fails if a core module gains a success seam without

@@ -888,8 +888,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             expandSignal={historyExpand}
             sharePreset={sharePreset}
             drilldown={drilldown}
-            onDrilldown={premium ? setDrilldown : () => router.push(PREMIUM_SETTINGS_PATH as Href)}
-            drilldownLocked={!premium}
+            onDrilldown={premium ? setDrilldown : undefined}
+            onUpgrade={premium ? undefined : () => router.push(PREMIUM_SETTINGS_PATH as Href)}
             onClearDrilldown={clearDrilldown}
             onSharePresetUsed={() => {
               setTab('history');

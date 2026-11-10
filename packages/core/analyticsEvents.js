@@ -124,6 +124,10 @@ export const EVENTS = Object.freeze({
   // (web only) backstops the long tail of raw clicks; these are the ones we
   // build funnels and retention analyses on. Props stay minimal + PII-free.
   SEARCH_PERFORMED: 'search_performed',
+  // Search opened by itself on a new account's first visit to the app, with
+  // the title they typed into the theplot.tv homepage search bar before
+  // signing up. Web only. Props: query_length. Never the query.
+  SIGNUP_SEARCH_RESUMED: 'signup_search_resumed',
   TITLE_VIEWED: 'title_viewed',
   DISCOVER_TAB_CHANGED: 'discover_tab_changed',
   // RETIRED 2026-09-27, never emitted since the feed engagement layer was

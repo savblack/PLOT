@@ -8,7 +8,6 @@ import { tmdb } from '@plot/core/tmdb.js';
 // import from App.jsx doesn't pull in App's CSS on its own, so import app.css
 // explicitly; Vite dedupes it against App's stylesheet.
 import '../styles/app.css';
-import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import OnboardingScreen from './OnboardingScreen.jsx';
 import { track, EVENTS } from '../lib/analytics.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
@@ -341,8 +340,10 @@ export default function OnboardingFlow() {
     else if (step === 'services') setStep(importSource ? 'import' : 'seed');
   };
 
+  // Onboarding shows no loader anywhere except its last step: while the
+  // account is checked, the page is just its background.
   if (authLoading || !user || setupGate !== 'show') {
-    return <div className="app-boot-loader"><PlotLoader /></div>;
+    return <div className="app-boot-loader" aria-busy="true" />;
   }
 
   const n = seedSelected.length;

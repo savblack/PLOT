@@ -21,6 +21,7 @@ import SaveRecommendationPrompt from './components/SaveRecommendationPrompt.jsx'
 import { useTheme } from './hooks/useTheme.js';
 import { useWatchlist }    from './hooks/useWatchlist.js';
 import { usePendingSave }  from './hooks/usePendingSave.js';
+import { takePendingSearch } from './utils/pendingSearch.js';
 import { usePendingReferral } from './hooks/usePendingReferral.js';
 import { useWatching }     from './hooks/useWatching.js';
 import { useReminders }    from './hooks/useReminders.js';
@@ -157,12 +158,18 @@ export default function App() {
   // Search palette. One box for titles, people and friends, opened from the
   // Search nav item, the header icon, or Cmd/Ctrl+K anywhere in the app.
   const [searchOpen, setSearchOpen] = useState(false);
-  const openSearch  = useCallback(() => setSearchOpen(true), []);
-  const closeSearch = useCallback(() => setSearchOpen(false), []);
+  // A title typed into the theplot.tv homepage before signup; it fills the
+  // palette the first time it opens, then later opens start empty.
+  const [searchSeed, setSearchSeed] = useState('');
+  // Every open other than the seeded one starts empty, however the palette
+  // was closed (Escape, a click outside, a pick, or Cmd/Ctrl+K).
+  const openSearch  = useCallback(() => { setSearchSeed(''); setSearchOpen(true); }, []);
+  const closeSearch = useCallback(() => { setSearchOpen(false); setSearchSeed(''); }, []);
   useEffect(() => {
     const onKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
         e.preventDefault();
+        setSearchSeed('');
         setSearchOpen(open => !open);
       }
     };
@@ -349,6 +356,22 @@ export default function App() {
     setSavePrompt({ itemId, itemType, source });
   }, []);
   usePendingSave({ user, watchlist, openPanel, openSavePrompt, onResult: handleSaveResult });
+
+  /* ── Pending homepage search (theplot.tv search bar → signup → here) ── */
+  useEffect(() => {
+    if (!user?.id) return;
+    // Read on the next tick, like the pending save: the storage read is the
+    // external input, and a cancelled run (Strict Mode's double effect) never
+    // takes the title, so it opens exactly once.
+    const timer = setTimeout(() => {
+      const query = takePendingSearch();
+      if (!query) return;
+      setSearchSeed(query);
+      setSearchOpen(true);
+      track(EVENTS.SIGNUP_SEARCH_RESUMED, { query_length: query.length });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [user?.id]);
   usePendingReferral({ user });
 
   // Auto-dismiss the save confirmation toast
@@ -413,7 +436,7 @@ export default function App() {
         <Outlet />
       </AppShell>
 
-      {searchOpen && <SearchPalette onClose={closeSearch} />}
+      {searchOpen && <SearchPalette onClose={closeSearch} initialQuery={searchSeed} />}
 
       {savePrompt && (
         <SaveRecommendationPrompt

@@ -2,7 +2,6 @@
 // the writes and passes everything in, so Storybook can show every step
 // without an account.
 import { posterUrl, logoUrl } from '../utils/images.js';
-import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import PlotLogo from '../components/PlotLogo.jsx';
 import ImportSourceIcon from '../components/ImportSourceIcon.jsx';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
@@ -108,7 +107,6 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
                 </button>
               )}
             </div>
-            {seed.searching && <div className="loading-state" style={{ minHeight: 60 }}><PlotLoader size="sm" /></div>}
             <div className="ob-grid-scroll">
             <div className="ob-grid">
               {seed.items.map(item => {
@@ -160,7 +158,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
                   ? <button type="button" className="onboarding-cta" onClick={importStep.onContinue} disabled={saving}>{F.continueArrow}</button>
                   : <button type="button" className="isp-link isp-link--later" onClick={importStep.onLater} disabled={saving}>{S.later}</button>}
               </div>
-              <ImportSourceDialog start={start} onContinue={importStep.onContinue} onAddAnother={start.addAnother} />
+              <ImportSourceDialog start={start} onContinue={importStep.onContinue} onAddAnother={start.addAnother} quiet />
             </>
           );
         })()}
@@ -176,7 +174,8 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
             {services.error ? (
               <p className="ob-region">{F.services.loadError}</p>
             ) : !services.list ? (
-              <div className="loading-state" style={{ minHeight: 200 }}><PlotLoader size="sm" /></div>
+              // No loader in onboarding: hold the space until the services arrive.
+              <div style={{ minHeight: 200 }} aria-busy="true" />
             ) : (
               <div className="ob-services">
                 {services.list.map(s => {

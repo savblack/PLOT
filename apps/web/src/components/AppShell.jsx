@@ -18,6 +18,7 @@ import {
 } from './navIcons.jsx';
 import PlotLogo from './PlotLogo.jsx';
 import PremiumMark from './PremiumMark.jsx';
+import ServiceNotice from './ServiceNotice.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 /* Shared with AppSidebar — see ./navIcons.jsx. */
@@ -195,6 +196,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             and the scrollbar keep the viewport edges; the content itself rides
             in a centred column. */}
         <div className="app-main-inner">
+          <ServiceNotice />
           {/* Sidebar widths only — below them the header above carries the
               title and this is display: none. */}
           {isListDetail && <Link className="app-page-breadcrumb" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>}
