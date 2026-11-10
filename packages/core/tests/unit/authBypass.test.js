@@ -6,6 +6,7 @@ import {
   shouldMagicLinkViaBypass,
   shouldResendViaBypass,
 } from '../../authBypass.js';
+import { AUTH_TIMEOUT_MESSAGE } from '../../authTimeout.js';
 
 test('resend uses signup-bypass when Turnstile never returned a token', () => {
   assert.equal(shouldResendViaBypass({ captchaRequired: true, captchaToken: null }), true);
@@ -47,6 +48,19 @@ test('magic link uses signup-bypass on timeout, captcha failure, and SMTP 500', 
     captchaToken: null,
     plan: 'ready',
   }), false);
+});
+
+test('a timed-out or unreachable GoTrue call does not fall back to signup-bypass', () => {
+  // authRequest on web turns a hang into { message: AUTH_TIMEOUT_MESSAGE } and a
+  // thrown fetch into its message, neither with a status. Bypass sits behind the
+  // same host and a late GoTrue answer may still send the email, so these take
+  // the normal error path instead of a second send through Resend.
+  for (const error of [{ message: AUTH_TIMEOUT_MESSAGE }, { message: 'Failed to fetch' }]) {
+    assert.equal(shouldMagicLinkViaBypass({ captchaRequired: true, captchaToken: 'tok', plan: 'ready', error }), false);
+    assert.equal(shouldMagicLinkViaBypass({ captchaRequired: false, captchaToken: null, plan: 'ready', error }), false);
+    assert.equal(shouldResendViaBypass({ captchaRequired: true, captchaToken: 'tok', error }), false);
+    assert.equal(shouldResendViaBypass({ captchaRequired: false, captchaToken: null, error }), false);
+  }
 });
 
 test('a captcha or SMTP failure is recognised from the message or the status', () => {

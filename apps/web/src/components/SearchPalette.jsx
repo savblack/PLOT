@@ -117,13 +117,13 @@ function Row({ item, active, index, onHover, onSelect, watchlist, history, genre
   );
 }
 
-export default function SearchPalette({ onClose }) {
+export default function SearchPalette({ onClose, initialQuery = '' }) {
   const { openPanel, watchlist, watching, user } = useApp();
   const navigate = useNavigate();
   const history = useHistory(user?.id);
   const { genres } = useGenres();
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [active, setActive] = useState(0);
   const [recent, setRecent] = useState(readRecent);
 

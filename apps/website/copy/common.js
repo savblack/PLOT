@@ -15,6 +15,10 @@ export const NAV = {
   signup: 'Sign up',
 };
 
+// Temporary banner injected at the top of every page by js/site-notice.js.
+// Same sentence as APP_SHELL.serviceNotice in packages/core/copy/appShell.js.
+export const SITE_NOTICE = "We're seeing more traffic than usual and are upgrading our systems to keep up. You may run into issues importing your watch history or saving titles in the app while we do. Thanks for your patience.";
+
 export const FOOTER = {
   tagline: ["Everything you've watched.", 'Everything you want to watch.'],
   cta: 'Start your plot',
