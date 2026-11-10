@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.2.0](https://github.com/savblack/PLOT/compare/mobile-v1.1.0...mobile-v1.2.0) (2026-11-10)
+
+
+### Features
+
+* **analytics:** count title panels that show the awards row ([#1492](https://github.com/savblack/PLOT/issues/1492)) ([d6cea0c](https://github.com/savblack/PLOT/commit/d6cea0c5aa54ec91ce4a10e73d0db120bdf96833))
+* **auth:** fall back to signup-bypass on mobile captcha timeout ([#1461](https://github.com/savblack/PLOT/issues/1461)) ([5fea4bf](https://github.com/savblack/PLOT/commit/5fea4bfb2e46e15791de7d62bb5f7527350a4ab7))
+* **auth:** put the sign-in code in app backup emails ([#1465](https://github.com/savblack/PLOT/issues/1465)) ([8c9bc12](https://github.com/savblack/PLOT/commit/8c9bc12e632e27d3a299116d29ccf068e59fb3f3))
+* **browse:** tap genres and keywords on a title to browse ([#1454](https://github.com/savblack/PLOT/issues/1454)) ([10aa412](https://github.com/savblack/PLOT/commit/10aa41269486626757e006453e9b2adb91f8473c))
+* **episodes:** search a show's episodes by title across all seasons ([#1457](https://github.com/savblack/PLOT/issues/1457)) ([42eee9d](https://github.com/savblack/PLOT/commit/42eee9db078eb54b73622c35e673b218f5e75c51))
+* **history:** one upgrade line for free viewers ([#1516](https://github.com/savblack/PLOT/issues/1516)) ([ac08093](https://github.com/savblack/PLOT/commit/ac080932a90e14cbd43b86f453ed7a8615ce23a9))
+* **history:** tap a stat to see the titles behind it ([#1455](https://github.com/savblack/PLOT/issues/1455)) ([17f2c8d](https://github.com/savblack/PLOT/commit/17f2c8dc250b0b2379e06c5e571dfe131c06302b))
+* **onboarding:** faster building step with a shelf of your picks ([#1486](https://github.com/savblack/PLOT/issues/1486)) ([e9374bd](https://github.com/savblack/PLOT/commit/e9374bd778df810014f9d903e29e54de2ed368b8))
+* **onboarding:** keep the building screen moving, bring back its lines ([#1519](https://github.com/savblack/PLOT/issues/1519)) ([31cd2dc](https://github.com/savblack/PLOT/commit/31cd2dccb18aebb036c0adf88c08b5be2827469b))
+* **onboarding:** soften the building shelf into a column sweep ([#1526](https://github.com/savblack/PLOT/issues/1526)) ([2a4e026](https://github.com/savblack/PLOT/commit/2a4e0260b11565eef990fc5627da0246879a079d))
+* **title-panel:** show OMDb awards on the title panel ([#1458](https://github.com/savblack/PLOT/issues/1458)) ([4fd72ea](https://github.com/savblack/PLOT/commit/4fd72eafbce07869375f415b4b832cd4d15e0ef1))
+* **watch-together:** green fill for the Home card ([#1462](https://github.com/savblack/PLOT/issues/1462)) ([8a793bd](https://github.com/savblack/PLOT/commit/8a793bd9917a56c28a8d75e98139d026464b306d))
+* **web:** one bookmark, one heart, and one name for the watchlist ([#1504](https://github.com/savblack/PLOT/issues/1504)) ([9ca908b](https://github.com/savblack/PLOT/commit/9ca908b7e1c3c41a397639c551f888bb51a8699e))
+
+
+### Bug Fixes
+
+* **auth:** count bypass signups and sign private feedback files ([#1435](https://github.com/savblack/PLOT/issues/1435)) ([72c09c7](https://github.com/savblack/PLOT/commit/72c09c7caccd0436260a589a529b6cf8076e28c8))
+* **auth:** say 8 characters, the password minimum production now enforces ([#1485](https://github.com/savblack/PLOT/issues/1485)) ([9d39c60](https://github.com/savblack/PLOT/commit/9d39c606b94cc9a2d7fa3c48baafad1fc23374e1))
+* **auth:** wait for the security check on mobile sign-in ([#1474](https://github.com/savblack/PLOT/issues/1474)) ([999cbc0](https://github.com/savblack/PLOT/commit/999cbc08395854459698f0bfc3ff97f50d4f3c2b))
+* **mobile:** reset letter spacing on every text field, not just onboarding search ([#1489](https://github.com/savblack/PLOT/issues/1489)) ([29a8c8e](https://github.com/savblack/PLOT/commit/29a8c8ed52def6149b03d7003228ad38c8d54b0b))
+* **mobile:** run the security check when sign-in opens, and wait for it ([#1521](https://github.com/savblack/PLOT/issues/1521)) ([d42fa05](https://github.com/savblack/PLOT/commit/d42fa0512114c39533f0fa6512e848a5bb122517))
+* **mobile:** stop onboarding search placeholder inheriting code-input letter spacing ([#1483](https://github.com/savblack/PLOT/issues/1483)) ([7d4591d](https://github.com/savblack/PLOT/commit/7d4591d8c7d306548cf1985dad75310f79c1578c))
+* **onboarding:** no loaders before the building step ([#1500](https://github.com/savblack/PLOT/issues/1500)) ([a0618f3](https://github.com/savblack/PLOT/commit/a0618f38c43e45da1415432c42079550e084f03f))
+* **premium:** clarify source disconnect copy and complete gate telemetry ([#1434](https://github.com/savblack/PLOT/issues/1434)) ([136da69](https://github.com/savblack/PLOT/commit/136da69722c68146a619e005171ede866f357113))
+
 ## [1.1.0](https://github.com/savblack/PLOT/compare/mobile-v1.0.0...mobile-v1.1.0) (2026-10-22)
 
 
