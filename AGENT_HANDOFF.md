@@ -6,7 +6,7 @@ Status: paused (pull request open, waiting for Savannah's review and merge)
 Owner: Jacob (website and web app)
 Branch: agent/2026-11-10-traffic-banner
 Worktree: ~/Developer/PLOT-worktrees/2026-11-10-traffic-banner
-Updated: 2026-11-10 (CI fix: notice is role="note"; role="status" collided with two smoke tests)
+Updated: 2026-11-10 (notice added to login and signup)
 
 ## Goal
 
@@ -27,7 +27,7 @@ Savannah asked for a banner at the top of the website and the app about higher t
 ## Not done / decisions
 
 - Mobile app does not render the notice (not shipped yet). The sentence is in core if it is wanted there.
-- Login, signup and onboarding screens do not show it (they sit outside the app shell).
+- Login and signup show it too (added 2026-11-10 at Savannah's request: `AuthPage.jsx`, spacing in `AuthPage.css`). Onboarding does not.
 - `apps/website/404.html` has no shared footer, so no banner there.
 - /whats-on and title pages pick it up when the Supabase functions redeploy after merge.
 

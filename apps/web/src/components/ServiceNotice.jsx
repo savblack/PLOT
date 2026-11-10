@@ -1,5 +1,6 @@
-// Temporary service notice at the top of every app page. It rides in the
-// content column and scrolls away with the page, so it needs no dismiss
+// Temporary service notice at the top of every signed-in app page (AppShell)
+// and of the login and signup screens (AuthPage). In the shell it rides in
+// the content column and scrolls away with the page, so it needs no dismiss
 // control. The sentence lives in the shared catalog; clearing it there hides
 // this. Mobile does not render it: that app has not shipped, and the notice
 // is expected to be gone before it does.
