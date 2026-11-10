@@ -5,6 +5,10 @@
 
 export const APP_SHELL = {
   openMenu: 'Open menu',
+  // The phone tab bar: four everyday places and More, which opens the menu
+  // holding everything else.
+  tabBar: 'Main navigation',
+  more: 'More',
   closeMenu: 'Close menu',
   collapseNavigation: 'Collapse navigation',
   expandNavigation: 'Expand navigation',

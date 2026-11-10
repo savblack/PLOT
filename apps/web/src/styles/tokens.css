@@ -106,6 +106,9 @@
      Nothing is by default; the phone filter bar raises it (app.css). Anything
      pinned near the bottom adds it rather than assuming a bar is or isn't there. */
   --bottom-inset:   0px;
+  /* The phone tab bar's height, not counting the safe area. 0 at sidebar
+     widths, where the sidebar replaces it (see the breakpoint below). */
+  --tabbar-h:       56px;
   --panel-w:        560px;
   --content-max:    680px;
   /* Content gutter. The desktop page title, the collapsible section headers and
@@ -159,6 +162,7 @@
 @media (min-width: 1024px) {
   :root {
     --sidebar-w:      260px;
+    --tabbar-h:       0px;
   }
 }
 

@@ -8099,10 +8099,12 @@ a.provider-chip--link:hover {
   .app-header .icon-btn { position: relative; width: 44px; height: 44px; }
   .app-header .app-page-title { position: static; transform: none; max-width: none; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .app-main-inner { padding-top: 16px; }
-  /* The filter bar below is 60px plus the safe area. Set on :root, not .app-shell,
-     because the toasts and the timezone banner are portalled outside the shell. */
-  :root:has(.mobile-controls-anchor) { --bottom-inset: 60px; }
-  .app-shell:has(.mobile-controls-anchor) .app-main { bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px)); }
+  /* What is fixed to the bottom edge: the tab bar, and on pages with filters
+     the 60px filter bar above it. Set on :root, not .app-shell, because the
+     toasts and the timezone banner are portalled outside the shell. */
+  :root { --bottom-inset: var(--tabbar-h); }
+  :root:has(.mobile-controls-anchor) { --bottom-inset: calc(var(--tabbar-h) + 60px); }
+  .app-main { bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px)); }
   .desktop-page-filter, .cal-toolbar .cal-scope { display: none; }
   .page-toolbar-date { display: none; }
   .page-toolbar, .page-toolbar.cal-toolbar { padding: 0; height: 0; margin: 0; }
@@ -8118,7 +8120,7 @@ a.provider-chip--link:hover {
      search field, and .list-page-search already lays it out full width. */
   .hist-search:not(.list-page-search),
   .home-search-trigger { display: none; }
-  .mobile-page-controls { position: fixed; bottom: 0; left: 0; right: 0; z-index: 210; display: flex; justify-content: center; align-items: center; height: calc(60px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--border); background: var(--surface); }
+  .mobile-page-controls { position: fixed; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; z-index: 210; display: flex; justify-content: center; align-items: center; height: 60px; border-top: 1px solid var(--border); background: var(--surface); }
   .mobile-controls-trigger { min-width: 124px; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 9px; background: none; border: 0; color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
   .mobile-controls-trigger svg { width: 12px; height: 12px; stroke: var(--text-muted); stroke-width: 1.7; fill: none; }
 }
@@ -8129,4 +8131,52 @@ a.provider-chip--link:hover {
   .mylists-card-title, .top5-title { display: block; overflow: visible; overflow-wrap: anywhere; }
   .panel-title { overflow-wrap: anywhere; }
   .cal-stream-info { min-width: 100px; }
+}
+
+/* ═══════════════════════════════════════
+   PHONE TAB BAR (< 1024px)
+   Home, Calendar, My Lists, History and More. The same primary items the
+   mobile app's tab bar uses, so the two feel like one product. More opens
+   the menu. Hidden at sidebar widths, where the sidebar takes over.
+═══════════════════════════════════════ */
+.app-tabbar { display: none; }
+@media (max-width: 1023px) {
+  .app-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 210;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .app-tab {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    color: var(--text-muted);
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app-tab svg { width: 21px; height: 21px; flex-shrink: 0; }
+  .app-tab-label { font-size: 0.66rem; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+  /* The active tab takes the accent's text shade, one of its approved roles. */
+  .app-tab.active { color: var(--accent-text); }
+  .app-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 10px; }
+  .app-tab .mobile-menu-unread { top: 8px; right: calc(50% - 16px); }
+  /* The menu's last rows: plain text actions under Settings. */
+  .nav-drawer-item--text { color: var(--text-secondary); }
+  .nav-drawer-item--signout { color: var(--accent-text); }
 }
