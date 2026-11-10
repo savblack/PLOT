@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
@@ -10,11 +10,8 @@ import {
   pickerGenreTiles,
 } from '../hooks/useTonightPicker.js';
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
-import { PLANS_PAGE } from '../copy/plansPage.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
-import { EVENTS, track } from '../lib/analytics.js';
 import { SettingsSwitch } from './SettingsPage.jsx';
 import SmartListDialog from './SmartListDialog.jsx';
 import { smartListRulesFromPicker } from '@plot/core/smartLists.js';
@@ -23,9 +20,9 @@ import { MEDIA } from '../copy/media.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
-import PlotLogo from './PlotLogo.jsx';
 import { SaveButton, FavoriteButton } from './TitleActions.jsx';
 import PremiumMark from './PremiumMark.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
 
 /* Just Decide. Phone: one column, a Filters panel that folds away, and a
    sticky bar with the sentence and Pick. Desktop (>=1024px): the same 264px
@@ -40,7 +37,6 @@ const IconSparkle = () => (
 const IconBack = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>;
 const IconNext = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>;
 const IconChevron = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>;
-const IconTick = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>;
 const IconMovie = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2" /><path d="m3 6 3-3M9 6l3-3M15 6l3-3M3 10h18" /></svg>
 );
@@ -108,44 +104,10 @@ function LockedPreview() {
   );
 }
 
-/* Free viewers answer every question; Go and Surprise me open this. Their
-   answers are kept (see useTonightPicker), so upgrading lands them back on
-   their request with the picks drawn. */
-function UnlockDialog({ picker, navigate }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    track(EVENTS.PREMIUM_GATE_HIT, { feature: 'tonight_picker' });
-    ref.current?.focus();
-  }, []);
-  return (
-    <section ref={ref} className="tonight-unlock" role="dialog" aria-modal="false" aria-labelledby="tonight-unlock-title" tabIndex={-1}
-      onKeyDown={(e) => { if (e.key === 'Escape') picker.closeLock(); }}>
-      <button type="button" className="tonight-unlock-close" aria-label={T.gate.close} onClick={picker.closeLock}><IconClose /></button>
-      <span className="tonight-unlock-badge" aria-label={T.gate.label}>
-        <span className="tonight-unlock-brand" aria-hidden="true"><PlotLogo inherit /></span>
-        <span aria-hidden="true">{T.gate.premium}</span>
-      </span>
-      <h2 id="tonight-unlock-title" className="tonight-unlock-title">{T.gate.title}</h2>
-      <p className="tonight-unlock-body">{T.gate.body}</p>
-      <ul className="tonight-unlock-benefits">
-        {T.gate.benefits.map(b => (
-          <li key={b.title}>
-            <IconTick />
-            <span>
-              <span className="tonight-unlock-benefit-title">{b.title}{b.isNew && <span className="tonight-unlock-new">{T.gate.newTag}</span>}</span>
-              <span className="tonight-unlock-benefit-body">{b.body}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-      <button type="button" className="btn btn-primary tonight-unlock-cta" onClick={() => navigate(premiumPlansPath('/tonight'))}>
-        {PLANS_PAGE.upgradeAction}
-      </button>
-      <p className="tonight-unlock-price">{PLANS_PAGE.premium.priceTerms}</p>
-      <p className="tonight-unlock-price">{PLANS_PAGE.premium.trialNote}</p>
-    </section>
-  );
-}
+/* Free viewers answer every question; Go and Surprise me open the upgrade
+   sheet over the blurred preview. Their answers are kept (see
+   useTonightPicker), so upgrading lands them back on their request with the
+   picks drawn. The sheet reports `premium_gate_hit` (tonight_picker). */
 
 // The desktop breakpoint TonightView.css switches layouts at.
 const WIDE_QUERY = '(min-width: 1024px)';
@@ -612,7 +574,7 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions, smartL
           {locked ? (
             <div className="tonight-locked">
               <LockedPreview />
-              <UnlockDialog picker={picker} navigate={navigate} />
+              <UpgradeSheet reason="justDecide" onClose={picker.closeLock} />
             </div>
           ) : spinning ? <Finding picker={picker} />
             : inResults ? <Results picker={picker} onOpen={onOpen} reveal={reveal} actions={actions}

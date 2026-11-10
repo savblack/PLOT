@@ -68,3 +68,10 @@
   .upgrade-sheet, .upgrade-sheet-scrim { animation: none; }
 }
 .upgrade-sheet .upgrade-sheet-preview { max-width: 340px; }
+
+/* Monthly or yearly, inside the offer. Same control as the plans page. */
+.upgrade-sheet-was { color: var(--text-muted); font-size: 0.95rem; }
+.upgrade-sheet-billing { flex-basis: 100%; display: inline-flex; align-self: flex-start; width: max-content; max-width: 100%; margin-top: 0.35rem; padding: 3px; border-radius: var(--radius-pill); background: var(--surface); }
+.upgrade-sheet-billing button { border: 1px solid transparent; background: none; padding: 0.4rem 0.9rem; border-radius: var(--radius-pill); font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+.upgrade-sheet-billing button[aria-pressed="true"] { background: var(--surface-raised); color: var(--text-primary); border-color: var(--border-strong); }
+.upgrade-sheet-billing-badge { margin-left: 0.3rem; color: var(--accent-secondary); }

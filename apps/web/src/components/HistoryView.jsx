@@ -35,6 +35,7 @@ import { MEDIA } from '../copy/media.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 import PremiumMark from './PremiumMark.jsx';
+import UpgradeSheet from './UpgradeSheet.jsx';
 
 /* History is its own page: the poster shelf, one month at a time, with a
    sticky column of small cards beside it that say something about the year
@@ -122,7 +123,7 @@ function ShareIcon({ what, ready, onClick }) {
   );
 }
 
-function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName, onShare, shareReady, drillFor, upgradeTo }) {
+function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName, onShare, shareReady, drillFor, upgradeTo, onUpgrade }) {
   const wd = favouriteWeekday(entries);
   const topGenre = topGenreId(entries);
   const mins = movieMinutes(entries, details);
@@ -156,7 +157,7 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
         );
       })()}
       {upgradeTo && entries.length > 0 && (
-        <Link className="hist-drill-link" to={upgradeTo}>
+        <Link className="hist-drill-link" to={upgradeTo} onClick={onUpgrade}>
           {T.upgradeInsights}<PremiumMark className="hist-drill-premium" />
         </Link>
       )}
@@ -383,6 +384,9 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   const [reviewed, setReviewed] = useState(false);
   const [dnf, setDnf] = useState(false);
   const [query, setQuery] = useState('');
+  // A Free viewer tapping the upgrade line under the year card gets the
+  // upgrade sheet for deeper stats.
+  const [statsGate, setStatsGate] = useState(false);
   const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
 
   // A tile's filter is Premium's: a free viewer who opens a shared link sees
@@ -447,6 +451,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
 
   return (
     <div className="hist-page">
+      {statsGate && <UpgradeSheet reason="stats" onClose={() => setStatsGate(false)} />}
       <div className="hist-toolbar hist-toolbar--heading">
         <div className="hist-toolbar-controls">
           {years.length > 1 && (
@@ -524,6 +529,9 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
             shareReady={cardReady(CARD_IDS.HIGHLIGHTS)}
             drillFor={drillFor}
             upgradeTo={premium ? null : premiumPlansPath('/history')}
+            // The line opens the upgrade sheet for deeper stats. The href stays
+            // the plans page, so opening it in a new tab still leads somewhere.
+            onUpgrade={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); setStatsGate(true); }}
           />
           {monthGroups.length > 0 && (
             <MiniMonthCard

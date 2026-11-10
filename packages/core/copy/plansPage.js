@@ -21,6 +21,9 @@ export const PLANS_PAGE = {
   previewAction: 'Explore Premium',
   tryTasteOverlap: 'Try taste overlap',
   upgradeAction: 'Upgrade to Premium',
+  // The same button for someone who has never subscribed, so the 7-day trial
+  // applies to them (trialEligible in core/billing.js).
+  startTrialAction: 'Start free trial',
   // Shown on web when checkout could not start for a reason other than "not open" or a 503.
   checkoutMessage: 'We couldn’t start checkout. Please try again in a moment.',
   // Closed checkout. The plans page and upgrade sheet show this instead of calling Stripe.
@@ -136,6 +139,59 @@ export const PLANS_PAGE = {
         title: 'Follow the people you love watching.',
         body: 'Hear when they have something new.',
         also: ['pick', 'together'],
+      },
+      // The reasons below were added with the design audit (pick 3.2 A): every
+      // Premium gate opens this one sheet. Each used to go somewhere different:
+      // straight to the plans page with no explanation, through a confirm box,
+      // or to a one-off card.
+      // "Customize artwork" on a title, for a Free viewer.
+      artwork: {
+        context: () => 'Custom artwork is part of Premium',
+        title: 'Choose the artwork you like best.',
+        body: 'Pick the poster and backdrop for any title. Your choice shows wherever that title appears for you.',
+        also: ['pick', 'together'],
+      },
+      // A stat tile or the genre link on History, for a Free viewer.
+      stats: {
+        context: () => 'Deeper stats are part of Premium',
+        title: 'See the titles behind your numbers.',
+        body: 'Open any stat on your History page to see what is behind it, like everything you watched on a Monday or every mystery this year.',
+        also: ['pick', 'together'],
+      },
+      // The taste overlap page, for a Free viewer.
+      tasteOverlap: {
+        context: () => 'Taste overlap is part of Premium',
+        title: 'Compare your taste with someone you follow.',
+        body: 'See your match, the genres you share and where you disagree.',
+        also: ['pick', 'together'],
+      },
+      // Subscribe to calendar, from a title's Add to calendar menu or Settings.
+      calendarFeed: {
+        context: () => 'A live calendar feed is part of Premium',
+        title: 'Your releases, in your own calendar.',
+        body: 'Subscribe once and a private link keeps upcoming releases up to date in your calendar app. The one-time snapshot stays free.',
+        also: ['pick', 'together'],
+      },
+      // Turning on automatic imports for a connected source in Settings.
+      autoImport: {
+        context: () => 'Automatic imports are part of Premium',
+        title: 'Keep your history up to date by itself.',
+        body: 'Plot checks your account every day and brings new watches in. One-off imports stay free.',
+        also: ['pick', 'together'],
+      },
+      // Just Decide, once a Free viewer has used the day's free pick.
+      justDecide: {
+        context: () => 'That was today’s free pick',
+        title: 'A shortlist every time you ask.',
+        body: 'Answer a few quick questions and get a shortlist that fits your mood, your time and your services. Can’t decide? Surprise me picks one for you.',
+        also: ['together', 'lists'],
+      },
+      // Watch together, when nobody in the pairing has Premium.
+      watchTogether: {
+        context: () => 'Deciding together is part of Premium',
+        title: 'Find something you both want to watch.',
+        body: 'Plot lines up what is on both your watchlists and you swipe until you match. Inviting and accepting are free, and only one of you needs Premium.',
+        also: ['pick', 'lists'],
       },
       // Opened from the Also email me row in Settings > Viewing (ALERT_EMAIL_ENABLED).
       alertEmail: {
@@ -265,7 +321,7 @@ export const PLANS_PAGE = {
   faqTitle: 'Before you ask',
   faqs: [
     // `closed` swaps the answer for checkoutClosedAnswer while checkout is shut.
-    { q: 'Can I upgrade now?', closed: true, a: 'Yes. Choose Monthly or Annual, then Upgrade to Premium. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
+    { q: 'Can I upgrade now?', closed: true, a: 'Yes. Choose Monthly or Annual, then Start free trial, or Upgrade to Premium if you have subscribed before. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Free does not include personally tailored recommendations.' },
     { q: 'What does Just Decide actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. To find something you both want to watch, only one of you needs Premium, so the other person joins for free. Anyone can send an invite. Collaborative lists work the same way: only the person who makes the list needs Premium.' },

@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { AppContext } from '../hooks/useApp.js';
 import UpgradeSheet from '../components/UpgradeSheet.jsx';
+import PremiumPurchaseAction from '../components/PremiumPurchaseAction.jsx';
 
 /* The in-app upgrade sheet for a Free viewer who has hit the list limit. It
    portals to document.body, so the story canvas is the whole viewport. */
@@ -53,3 +54,21 @@ export const UpgradeOffersPremium = {
 };
 
 export const SmartLists = { args: { reason: 'smartLists' } };
+
+// The purchase button on its own, for someone who has never subscribed
+// (premium.trialEligible, from core/billing.js). Everyone else keeps Upgrade.
+const offer = { checkoutAvailable: true, busy: false, startCheckout: () => {} };
+export const StartFreeTrialLabel = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 12, padding: 24 }}>
+      <PremiumPurchaseAction premium={{ ...offer, trialEligible: true }} plan="yearly" />
+      <PremiumPurchaseAction premium={{ ...offer, trialEligible: false }} plan="yearly" />
+    </div>
+  ),
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: PLANS_PAGE.startTrialAction })).toBeEnabled();
+    await expect(canvas.getByRole('button', { name: PLANS_PAGE.upgradeAction })).toBeEnabled();
+  },
+};

@@ -40,7 +40,6 @@ import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
-import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
@@ -1124,6 +1123,10 @@ export default function SettingsView() {
   };
   const premium = usePremium(profile);
   const [themeUpgrade, setThemeUpgrade] = useState(null); // Premium family a Free viewer tapped
+  // The upgrade sheet reason for another Premium row a Free viewer tapped
+  // (calendar feed, automatic imports). These used to open a confirm box
+  // that led to the plans page.
+  const [premiumGate, setPremiumGate] = useState(null);
   const { events: calEvents, loading: calLoading } = useCalendar(
     watchlist?.items ?? [],
     watching?.items ?? [],
@@ -1942,7 +1945,7 @@ export default function SettingsView() {
           </div>
         )}
 
-      <SettingsSources userId={user?.id} premium={premium} showConfirm={showConfirm} />
+      <SettingsSources userId={user?.id} premium={premium} showConfirm={showConfirm} onPremiumGate={() => setPremiumGate('autoImport')} />
 
       {/* Calendar */}
       <div className="settings-group">
@@ -1971,13 +1974,8 @@ export default function SettingsView() {
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             {!premium.isPremium ? (
               <>
-                <SettingsTextAction onClick={() => showConfirm({
-                  title: SETTINGS_VIEW.calendarFeed.needsPremium,
-                  message: SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
-                  confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
-                  onConfirm: () => navigate(premiumPlansPath('/settings?section=connections')),
-                })}>
-                  {SETTINGS_VIEW.premium.upgradeButton}
+                <SettingsTextAction onClick={() => setPremiumGate('calendarFeed')}>
+                  {COMMON.seePremium}
                 </SettingsTextAction>
                 {calendarToken && (
                   <SettingsTextAction onClick={handleRevokeCalToken} tone="danger">
@@ -2339,6 +2337,9 @@ export default function SettingsView() {
         <FeedbackPanel user={user} initialType={feedbackType} onClose={() => setFeedbackType(null)} />
       )}
 
+      {/* Outside the section blocks on purpose: the buttons that open it live in
+          Connections, and only one section is mounted at a time. */}
+      {premiumGate && <UpgradeSheet reason={premiumGate} onClose={() => setPremiumGate(null)} />}
       {confirmModal && (
         <ConfirmModal
           {...confirmModal}

@@ -7,6 +7,8 @@ type Attempt = { operation_id: string; price_id: string; settings_url: string; s
 
 // Only explicitly safe checkout messages may be returned to the client.
 export class CheckoutPendingError extends Error {}
+/** The client promised a free trial that this customer has already had. Nothing was created or charged. */
+export class TrialUnavailableError extends Error {}
 
 /**
  * One Checkout per user. claim_billing_checkout holds a row lock and a lease, so
@@ -15,7 +17,7 @@ export class CheckoutPendingError extends Error {}
  * is the Stripe idempotency key. An open session is reused. A subscription that
  * is not canceled or incomplete_expired goes to the portal instead of a second Checkout.
  */
-export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId: string, price: string, settingsUrl: string, portal: (customer: string) => Promise<string>) {
+export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId: string, price: string, settingsUrl: string, portal: (customer: string) => Promise<string>, expectTrial = false) {
   const { data, error } = await admin.rpc('claim_billing_checkout', { p_user_id: userId, p_price_id: price, p_settings_url: settingsUrl });
   if (error) throw error;
   if (!data) throw new CheckoutPendingError('Checkout is already being prepared. Please try again shortly.');
@@ -43,6 +45,10 @@ export async function subscriptionCheckout(admin: Admin, stripe: Stripe, userId:
       if (!['canceled', 'incomplete_expired'].includes(sub.status)) return { url: await portal(customer), destination: 'portal' as const };
       if (sub.status === 'canceled') hadSubscription = true;
     }
+    // Before any session is reused or created: a trial was promised on screen
+    // and Stripe says this customer has had one. Fail closed, as the missing
+    // trial below does, instead of opening a checkout that charges at once.
+    if (expectTrial && hadSubscription) throw new TrialUnavailableError('The free trial is for new subscribers');
     if (attempt.session_id) {
       const session = await stripe.checkout.sessions.retrieve(attempt.session_id);
       if (session.status === 'complete') {
