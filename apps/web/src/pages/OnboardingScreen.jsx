@@ -225,7 +225,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
               {Array.from({ length: BUILDING_SHELF_SIZE }, (_, i) => {
                 const item = building.shelf[i];
                 return (
-                  <div key={item?.id ?? `empty-${i}`} className="ob-shelf-card" style={{ animationDelay: `${i * 60}ms, ${750 + i * 120}ms` }}>
+                  <div key={item?.id ?? `empty-${i}`} className="ob-shelf-card" style={{ animationDelay: `${i * 60}ms, ${750 + (i % 3) * 180 + Math.floor(i / 3) * 60}ms` }}>
                     {item?.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" />}
                   </div>
                 );
