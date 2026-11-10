@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import BackLink from '../components/BackLink.jsx';
+import { COMMON } from '../copy/common.js';
 import { useApp } from '../hooks/useApp.js';
 import { profileUrl } from '../utils/images.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
@@ -11,14 +13,6 @@ import { PersonFollow } from '../components/PeopleFollow.jsx';
 import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
 import './TalentPage.css';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
-
-function BackIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 18 9 12 15 6"/>
-    </svg>
-  );
-}
 
 export default function TalentPage() {
   const { personId } = useParams();
@@ -60,9 +54,7 @@ function TalentPageContent({ personId }) {
   const biographyPreview = shortBiography(person.biography);
   return (
     <main className="talent-page">
-      <button type="button" className="talent-back" onClick={() => navigate(-1)} aria-label="Back">
-        <BackIcon />
-      </button>
+      <BackLink to="/home" label={COMMON.back} history className="talent-back" />
       <header className="talent-header">
         <div className="talent-portrait">
           {image ? <img src={image} alt={person.name} /> : <span aria-hidden="true">{person.name?.charAt(0)}</span>}

@@ -11,8 +11,8 @@
 // The 7-day trial is requested by the stripe-billing checkout, not set on the Stripe Price. It is for
 // new subscribers only. Do not put Stripe price IDs in this file.
 export const PLANS_PAGE = {
-  back: '← Back',
-  backToApp: '← Back to plot',
+  back: 'Back',
+  backToApp: 'Back to Plot',
   // Sans, uppercased by .plans-eyebrow: not the Gabarito wordmark, so it is prose casing.
   eyebrow: 'Plot Premium',
   title: 'Less deciding. More watching.',

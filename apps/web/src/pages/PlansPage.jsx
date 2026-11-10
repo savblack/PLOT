@@ -1,6 +1,7 @@
 // Web layout uses HTML disclosure and a sticky comparison header; plan content is shared with mobile.
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import BackLink from '../components/BackLink.jsx';
 import { supabase } from '@plot/core/supabase.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useTheme } from '../hooks/useTheme.js';
@@ -115,7 +116,7 @@ export default function PlansPage() {
     <div className="plans-page">
       <div className="plans-shell">
         <header className="plans-head">
-          <Link to={backTo} className="plans-back">{backLabel}</Link>
+          <BackLink to={backTo} label={backLabel} />
           <span className="plans-wordmark"><PlotLogo inherit /></span>
         </header>
 
