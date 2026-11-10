@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useEscapeToClose } from '../hooks/useEscapeToClose.js';
 
 /**
  * Generic "···" trigger + dropdown, for a small set of row/header actions.
@@ -8,10 +9,14 @@ import { useState } from 'react';
  */
 export default function KebabMenu({ ariaLabel = 'Open menu', items, trigger = '···', buttonClassName = 'list-options-btn' }) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  useEscapeToClose(open, () => setOpen(false), { rootRef, getTrigger: () => triggerRef.current });
 
   return (
-    <div className="kebab-menu">
+    <div className="kebab-menu" ref={rootRef}>
       <button
+        ref={triggerRef}
         type="button"
         className={buttonClassName}
         onClick={() => setOpen(o => !o)}

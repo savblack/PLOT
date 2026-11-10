@@ -385,6 +385,7 @@ the sheet stays silent for those and nothing is counted twice.
 | `themes` | A Premium theme, or the themes gallery |
 | `pins` | Pinning a Home shelf |
 | `people_alerts` | Following an actor or director |
+| `season_alerts` | The whole-season-ready alert on a show |
 | `alert_email` | Email alerts |
 | `custom_artwork` | Customize artwork on a title |
 | `history_drilldown` | A stat tile or the genre link on History |

@@ -667,15 +667,17 @@ export function FavoritesSection({ favorites: favsHook, visibleItems, count, typ
   const visible = visibleItems ?? filterByTypeAndGenre(favorites, typeFilters, genreFilters);
   if (narrowed && visible.length === 0) return null;
 
-  const deleteSelected = () => {
-    selection.selected.forEach(tmdbId => {
-      const item = favorites.find(f => f.tmdb_id === tmdbId);
-      // toggleFavorite resolves the id via tmdbIdFromItem, which reads `id`
-      // before `tmdb_id`: right for a TMDB result, wrong for a row out of
-      // user_favourites whose `id` is the row's uuid. Hand it the tmdb id.
-      if (item) toggleFavorite({ ...item, id: item.tmdb_id });
-    });
+  const deleteSelected = async () => {
+    const items = [...selection.selected].map(tmdbId => favorites.find(f => f.tmdb_id === tmdbId)).filter(Boolean);
+    // One undo for the whole selection, as Want to Watch and custom lists do.
+    // Without the batch each removal offered its own undo and replaced the last.
+    const batch = createUndoBatch({ action: UNDO_ACTIONS.FAVOURITE_REMOVE });
     selection.exit();
+    // toggleFavorite resolves the id via tmdbIdFromItem, which reads `id`
+    // before `tmdb_id`: right for a TMDB result, wrong for a row out of
+    // user_favourites whose `id` is the row's uuid. Hand it the tmdb id.
+    await Promise.all(items.map(item => toggleFavorite({ ...item, id: item.tmdb_id }, { undo: batch })));
+    batch.offer();
   };
 
   return (

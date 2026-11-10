@@ -1,11 +1,11 @@
-import { Link } from 'react-router-dom';
+import LegalBackLink from '../components/LegalBackLink.jsx';
 import './LegalPage.css';
 
 export default function PrivacyPage() {
   return (
     <div className="legal-page">
       <div className="legal-panel">
-        <Link to="/login" className="legal-back">← Back</Link>
+        <LegalBackLink />
 
         <p className="legal-label">Legal</p>
         <h1>Privacy Policy</h1>

@@ -93,6 +93,18 @@ test('an empty batch offers nothing, and a batch of one keeps its title', () => 
   assert.equal(getUndo().meta.listName, 'Sci-fi');
 });
 
+test('removing several favourites at once is one offer that restores them all', async () => {
+  // The Favourites section's bulk Remove: each toggleFavorite gets the batch.
+  // Offered one by one instead (undo: true), only the last title could be undone.
+  const restored = [];
+  const batch = createUndoBatch({ action: UNDO_ACTIONS.FAVOURITE_REMOVE });
+  for (const t of ['Heat', 'Alien']) registerUndo(batch, { action: UNDO_ACTIONS.FAVOURITE_REMOVE, title: t, revert: async () => { restored.push(t); } });
+  const id = batch.offer();
+  assert.equal(UNDO.message(getUndo(), 'US'), 'Removed 2 titles from favorites.');
+  await runUndo(id);
+  assert.deepEqual(restored, ['Heat', 'Alien']);
+});
+
 /* ── Analytics ── */
 
 test('a successful undo reports action_undone and nothing else', async () => {

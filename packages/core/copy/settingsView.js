@@ -72,6 +72,7 @@ export const SETTINGS_VIEW = {
   timezone: {
     savingTimezone: 'Saving timezone',
     saveTimezone: 'Save timezone',
+    failedToSaveTimezone: 'Failed to save your timezone.',
     openTimezoneSettings: 'Open timezone settings',
     searchPlaceholder: 'Search timezones…',
     useDevice: (name) => `Use device timezone · ${name}`,
@@ -255,7 +256,7 @@ export const SETTINGS_VIEW = {
       ink: 'Ink',
     },
     lockedTheme: (name) => `${name} (Premium)`,
-    // Opens the Themes gallery (/settings/themes) from the Settings row. Premium only.
+    // Opens the Themes gallery (/settings/themes) from the Settings row, for everyone.
     preview: 'Preview',
     previewLabel: 'Preview every theme',
     // The Themes gallery page.
@@ -281,7 +282,7 @@ export const SETTINGS_VIEW = {
 
   premium: {
     groupTitle: 'plot Premium',
-    youHavePremium: 'You have plot Premium',
+    youHavePremium: 'You have Plot Premium',
     thankYou: 'Thank you for keeping plot running',
     opening: 'Opening…',
     manageSubscription: 'Manage subscription',
@@ -361,7 +362,7 @@ export const SETTINGS_VIEW = {
     groupTitle: 'Calendar',
     subscribeLabel: 'Subscribe to Calendar',
     needsPremium: 'A live calendar feed needs plot Premium',
-    needsPremiumMessage: 'Live calendar subscription is included with plot Premium. The one-time snapshot on this page stays free.',
+    needsPremiumMessage: 'Live calendar subscription is included with Plot Premium. The one-time snapshot on this page stays free.',
     liveFeedPrivate: 'Live feed of your watchlist',
     getUrlHint: 'Get a URL for Google or Apple Calendar',
     requestedCalendarSubscribeMessage: 'Requested access: Calendar subscribe',

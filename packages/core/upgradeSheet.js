@@ -9,7 +9,7 @@ import { FREE_CUSTOM_LIST_CAP } from './premium.js';
 import { isPremiumFamily } from './themes.js';
 
 /**
- * @typedef {'lists' | 'themes' | 'pins' | 'smartLists' | 'collaborativeLists' | 'alerts' | 'alertEmail'
+ * @typedef {'lists' | 'themes' | 'pins' | 'smartLists' | 'collaborativeLists' | 'alerts' | 'seasonAlerts' | 'alertEmail'
  *   | 'artwork' | 'stats' | 'tasteOverlap' | 'calendarFeed' | 'autoImport' | 'justDecide' | 'watchTogether'} UpgradeReason
  */
 
@@ -56,6 +56,7 @@ const UNTRACKED_GATE_FEATURES = {
   themes: 'themes',
   pins: 'pins',
   alerts: 'people_alerts',
+  seasonAlerts: 'season_alerts',
   alertEmail: 'alert_email',
   artwork: 'custom_artwork',
   stats: 'history_drilldown',
