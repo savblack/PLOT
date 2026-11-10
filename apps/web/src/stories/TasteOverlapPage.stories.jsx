@@ -38,7 +38,7 @@ export default {
   parameters: { layout: 'fullscreen' },
   args: {
     username: 'sam', premium: true, loading: false, error: null, target: publicTarget, overlap,
-    sharedWatchlist: 14, genreName: GENRES, onRetry: () => {}, openPanel: () => {}, upsellFrom: '/u/sam/compare',
+    sharedWatchlist: 14, genreName: GENRES, onRetry: () => {}, openPanel: () => {},
   },
   decorators: [(Story) => (
     <MemoryRouter>

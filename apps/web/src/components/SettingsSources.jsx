@@ -110,7 +110,7 @@ function HistoryRow({ job, current, onFinish, onRetry, onCancel }) {
   );
 }
 
-function SourceDetail({ src, integration, jobs, current, connection, tracking, start, premium, onClose, onImport, onRemove, onFinish, onCancel, navigateToPlans }) {
+function SourceDetail({ src, integration, jobs, current, connection, tracking, start, premium, onClose, onImport, onRemove, onFinish, onCancel, onPremiumGate }) {
   const status = statusFor({ src, integration, jobs, current, connection, trackingEnabled: tracking.enabled });
   const reviews = (tracking.reviews || []).filter(review => review.payload?.event?.source === src.id);
   const sourceJobs = jobs.filter(job => job.status !== 'cancelled' || job.id === current?.id);
@@ -126,7 +126,7 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
   }, [!!plex, plexListed]);
   const title = <span className="isp-dialog-title"><ImportSourceIcon id={src.id} name={src.name} size={28} /><span>{src.name}</span></span>;
   const toggleAutomatic = () => {
-    if (!premium.isPremium) { navigateToPlans(); return; }
+    if (!premium.isPremium) { onPremiumGate(); return; }
     tracking.control(integration.id, connection?.automatic_enabled ? 'disable_automatic' : 'enable_automatic');
   };
   return (
@@ -335,7 +335,7 @@ export default function SettingsSources({ userId, premium, showConfirm, onPremiu
           onRemove={(importedTotal) => removeSource(openSrc, importedTotal)}
           onFinish={finishJob}
           onCancel={cancelJob}
-          navigateToPlans={onPremiumGate}
+          onPremiumGate={onPremiumGate}
         />
       )}
 

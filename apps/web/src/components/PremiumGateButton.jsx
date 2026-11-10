@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PLANS_PAGE } from '../copy/plansPage.js';
+import { COMMON } from '../copy/common.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 
 /* The in-page button on a locked Premium feature. It opens the upgrade sheet
@@ -13,7 +13,7 @@ export default function PremiumGateButton({ reason, className = 'btn btn-primary
   return (
     <>
       <button type="button" className={className} onClick={() => { onOpen?.(); setOpen(true); }}>
-        {children ?? PLANS_PAGE.upgradeSheet.open}
+        {children ?? COMMON.seePremium}
       </button>
       {open && <UpgradeSheet reason={reason} onClose={() => setOpen(false)} />}
     </>

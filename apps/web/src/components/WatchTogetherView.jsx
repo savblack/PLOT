@@ -25,6 +25,10 @@ import { EVENTS, track } from '../lib/analytics.js';
 import './WatchTogetherView.css';
 import PremiumGateButton from './PremiumGateButton.jsx';
 
+// The hub and start page open the upgrade sheet from a button; the overlap
+// page reports this itself when it loads locked.
+const reportWatchTogetherGate = () => track(EVENTS.PREMIUM_GATE_HIT, { feature: 'watch_together' });
+
 function Chevron() {
   return <svg className="wt-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>;
 }
@@ -158,7 +162,7 @@ function Hub({ wt, premium, profile }) {
               <h2 className="wt-hero-title">{T.hub.lockedHeading}</h2>
               <p className="wt-hero-body">{T.hub.lockedBody(partners.map(personName))}</p>
               <div className="wt-decide-actions">
-                <PremiumGateButton reason="watchTogether" className="btn btn-primary" />
+                <PremiumGateButton reason="watchTogether" className="btn btn-primary" onOpen={reportWatchTogetherGate} />
                 <span className="wt-ink-note">{PLANS_PAGE.premium.priceSummary}</span>
               </div>
             </section>

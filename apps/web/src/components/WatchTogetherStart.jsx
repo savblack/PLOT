@@ -18,6 +18,11 @@ import { PersonAvatar } from './WatchTogetherParts.jsx';
 import { useInviteShare } from '../hooks/useInviteShare.js';
 import PlotLogo from './PlotLogo.jsx';
 import PremiumGateButton from './PremiumGateButton.jsx';
+import { EVENTS, track } from '../lib/analytics.js';
+
+// The hub and start page open the upgrade sheet from a button; the overlap
+// page reports this itself when it loads locked.
+const reportWatchTogetherGate = () => track(EVENTS.PREMIUM_GATE_HIT, { feature: 'watch_together' });
 
 const S = T.start;
 
@@ -183,7 +188,7 @@ function PremiumCard() {
       <h2 className="wt-card-title">{S.premiumCardTitle}</h2>
       <p className="wt-card-body">{S.premiumCardBody}</p>
       <div className="wt-premium-prompt wt-premium-prompt--row">
-        <PremiumGateButton reason="watchTogether" className="btn btn-primary" />
+        <PremiumGateButton reason="watchTogether" className="btn btn-primary" onOpen={reportWatchTogetherGate} />
         <span className="wt-note">{PLANS_PAGE.premium.priceSummary}</span>
       </div>
     </section>
@@ -260,7 +265,7 @@ function Demo({ premium, pool }) {
         <span className="wt-person-name">{match.title}</span>
         <p className="wt-card-body">{S.demoDoneBody}</p>
         <div className="wt-top-actions">
-          {!premium && <PremiumGateButton reason="watchTogether" />}
+          {!premium && <PremiumGateButton reason="watchTogether" onOpen={reportWatchTogetherGate} />}
           <button type="button" className="btn btn-secondary btn-sm" onClick={again}>{S.demoAgain}</button>
         </div>
       </div>

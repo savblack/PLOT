@@ -40,7 +40,6 @@ import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
-import { PLANS_PAGE } from '../copy/plansPage.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
@@ -1832,7 +1831,6 @@ export default function SettingsView() {
           premiumBadge={<PremiumMark className="settings-premium-mark" />}
         />
         {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
-        {premiumGate && <UpgradeSheet reason={premiumGate} onClose={() => setPremiumGate(null)} />}
         <SettingsPreferenceRow
           label={SETTINGS_VIEW.sidebar.rowLabel}
           value={(uiPrefs?.prefs.sidebar.length ?? 0) === 0 ? SETTINGS_VIEW.sidebar.valueDefault : SETTINGS_VIEW.sidebar.valueCustom}
@@ -1977,7 +1975,7 @@ export default function SettingsView() {
             {!premium.isPremium ? (
               <>
                 <SettingsTextAction onClick={() => setPremiumGate('calendarFeed')}>
-                  {PLANS_PAGE.upgradeSheet.open}
+                  {COMMON.seePremium}
                 </SettingsTextAction>
                 {calendarToken && (
                   <SettingsTextAction onClick={handleRevokeCalToken} tone="danger">
@@ -2339,6 +2337,9 @@ export default function SettingsView() {
         <FeedbackPanel user={user} initialType={feedbackType} onClose={() => setFeedbackType(null)} />
       )}
 
+      {/* Outside the section blocks on purpose: the buttons that open it live in
+          Connections, and only one section is mounted at a time. */}
+      {premiumGate && <UpgradeSheet reason={premiumGate} onClose={() => setPremiumGate(null)} />}
       {confirmModal && (
         <ConfirmModal
           {...confirmModal}

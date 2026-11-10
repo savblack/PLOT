@@ -373,7 +373,7 @@ ids. The picker is Premium, so free viewers only ever produce
 
 ## Premium gates and the upgrade sheet
 
-Every Premium gate on web opens the same upgrade sheet (`UpgradeSheet.jsx`,
+Every in-app Premium gate on web opens the same upgrade sheet (`UpgradeSheet.jsx`,
 content from `packages/core/upgradeSheet.js`). A Free viewer who hits a gate
 fires `premium_gate_hit` once, with the feature they were trying to use. The
 sheet fires it for the reasons below; `custom_lists`, `smart_lists`,
@@ -394,8 +394,8 @@ the sheet stays silent for those and nothing is counted twice.
 | `tonight_picker` | Just Decide after the day's free pick |
 
 Read it next to `premium_checkout_started` to see which gate drives upgrades.
-The sheet starts checkout on the yearly plan unless the viewer switches to
-monthly.
+On web the sheet starts checkout on the yearly plan unless the viewer switches
+to monthly. Mobile's sheet still starts monthly with no choice.
 
 ## Episode search
 

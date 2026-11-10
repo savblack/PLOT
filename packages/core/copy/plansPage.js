@@ -94,10 +94,6 @@ export const PLANS_PAGE = {
     close: 'Close',
     compare: 'Compare every feature',
     notNow: 'Not now',
-    // The in-page button that opens this sheet from a locked feature. One
-    // label for every gate (it was Explore Premium, Get Premium, See Premium
-    // and Upgrade to Premium depending on the screen).
-    open: 'See Premium',
     alsoIn: 'Also in Premium',
     reasons: {
       lists: {
@@ -189,7 +185,7 @@ export const PLANS_PAGE = {
       },
       // Watch together, when nobody in the pairing has Premium.
       watchTogether: {
-        context: () => 'One of you needs Premium to decide together',
+        context: () => 'Deciding together is part of Premium',
         title: 'Find something you both want to watch.',
         body: 'Plot lines up what is on both your watchlists and you swipe until you match. Inviting and accepting are free, and only one of you needs Premium.',
         also: ['pick', 'lists'],

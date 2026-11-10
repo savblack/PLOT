@@ -401,7 +401,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   // so opening the tile in a new tab still leads somewhere useful.
   const drillFor = (d, label) => (premium
     ? { to: `/history?${new URLSearchParams(drilldownParams(d))}`, label, onFollow: () => onDrilldown?.(d) }
-    : { to: premiumPlansPath('/history'), label, locked: true, onFollow: (e) => { e.preventDefault(); setStatsGate(true); } });
+    : { to: premiumPlansPath('/history'), label, locked: true, onFollow: (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); setStatsGate(true); } });
   const drillLabel = drill && (
     drill.stat === DRILLDOWN_STATS.GENRE ? T.drilldownGenre(genreName(drill.genre) ?? '')
       : drill.stat === DRILLDOWN_STATS.WEEKDAY ? T.drilldownWeekday(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][drill.weekday])

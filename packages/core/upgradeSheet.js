@@ -98,7 +98,8 @@ export function onUpgradeSheetGateHit(fn) {
 
 /**
  * Emit `premium_gate_hit` for sheet reasons whose callers do not already emit
- * at their action site (`lists`, `smartLists`, `collaborativeLists`).
+ * at their action site (`lists`, `smartLists`, `collaborativeLists`,
+ * `watchTogether`).
  *
  * @param {UpgradeReason} reason
  */

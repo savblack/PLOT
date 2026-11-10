@@ -1,4 +1,5 @@
 import { CUSTOM_LISTS } from './customLists.js';
+import { COMMON } from './common.js';
 
 export const DISCOVER_VIEW = {
   mostAnticipatedTitle: 'Most Anticipated',
@@ -58,7 +59,7 @@ export const DISCOVER_VIEW = {
     pinNothingToPin: 'Nothing left to pin.',
     pinLimit: (n) => `You can pin up to ${n} shelves.`,
     pinsLocked: 'Pinned shelves are part of Premium.',
-    pinsUpgrade: 'See Premium',
+    pinsUpgrade: COMMON.seePremium,
     unpin: (name) => `Unpin ${name}`,
     pinMoveUp: (name) => `Move ${name} up in pinned`,
     pinMoveDown: (name) => `Move ${name} down in pinned`,

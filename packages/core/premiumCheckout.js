@@ -10,7 +10,7 @@ import { edgeFunctionUrl } from './functions.js';
 
 export const CHECKOUT_PLANS = ['monthly', 'yearly'];
 
-/** Anything other than a known plan falls back to monthly, the price the upgrade sheet shows. */
+/** Anything other than a known plan falls back to monthly, the smaller charge. */
 export function checkoutPlan(plan) {
   return CHECKOUT_PLANS.includes(plan) ? plan : 'monthly';
 }

@@ -90,7 +90,7 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
 
   const compare = () => {
     onClose();
-    navigate(premiumPlansPath(location.pathname));
+    navigate(premiumPlansPath(`${location.pathname}${location.search}`));
   };
 
   return createPortal(
@@ -122,8 +122,8 @@ export default function UpgradeSheet({ reason, onClose, returnFocusRef, family, 
             <span>{PLANS_PAGE.premium.period}</span>
           </div>
           <div className="upgrade-sheet-billing" role="group" aria-label={PLANS_PAGE.billing.label}>
-            <button type="button" aria-pressed={!annual} onClick={() => setAnnual(false)}>{PLANS_PAGE.billing.monthly}</button>
-            <button type="button" aria-pressed={annual} onClick={() => setAnnual(true)}>
+            <button type="button" aria-pressed={!annual} disabled={premium.busy} onClick={() => setAnnual(false)}>{PLANS_PAGE.billing.monthly}</button>
+            <button type="button" aria-pressed={annual} disabled={premium.busy} onClick={() => setAnnual(true)}>
               {PLANS_PAGE.billing.annual} <span className="upgrade-sheet-billing-badge">{PLANS_PAGE.billing.annualBadge}</span>
             </button>
           </div>
