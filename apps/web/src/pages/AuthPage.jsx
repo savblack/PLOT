@@ -17,6 +17,7 @@ import { captchaRetryAfterWait, captchaSiteKeyForHost, captchaSubmitEnabled, cap
 import { advanceAuthEpoch, authAttemptIsCurrent } from '../utils/authAttempt.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
+import { writePendingSearch } from '../utils/pendingSearch.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 import { loginNeedsConfirmation, shouldMagicLinkViaBypass, shouldResendViaBypass } from '../utils/authBypass.js';
@@ -172,6 +173,12 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const oauthStallTimerRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // A title typed into the theplot.tv homepage search bar arrives as ?q=.
+  // Keep it so the app opens search for it once the account exists.
+  useEffect(() => {
+    writePendingSearch(new URLSearchParams(location.search).get('q'));
+  }, [location.search]);
 
   // Fires once per visit, the first time someone actually starts signup.
   // Keystrokes cover the email form. Google, Apple, magic link, and a
