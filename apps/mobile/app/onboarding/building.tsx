@@ -22,6 +22,12 @@ const F = ONBOARDING_FLOW;
 // Each poster lands this long after the one before; the shelf is full by ~0.75s.
 const LAND_STAGGER_MS = 60;
 const LAND_MS = 450;
+// After landing, a wave rolls across the shelf until Home opens, so a slow
+// save still looks alive (as web's ob-wave): each poster lifts in reading
+// order, WAVE_STEP_MS apart, once every WAVE_PERIOD_MS.
+const WAVE_PERIOD_MS = 1400;
+const WAVE_STEP_MS = 120;
+const WAVE_LIFT_MS = 280;
 const SLOT_KEYS = Array.from({ length: BUILDING_SHELF_SIZE }, (_, i) => i);
 
 export default function Building() {
@@ -34,6 +40,8 @@ export default function Building() {
   const [fade] = useState(() => new Animated.Value(1));
   const [land] = useState(() => SLOT_KEYS.map(() => new Animated.Value(0)));
   const [rise] = useState(() => new Animated.Value(0));
+  const [wave] = useState(() => SLOT_KEYS.map(() => new Animated.Value(0)));
+  const [breathe] = useState(() => new Animated.Value(1));
 
   const servicesCount = skipped ? 0 : flow.selectedServiceIds.length;
   // While a background import runs, the line says so first (web's first
@@ -43,10 +51,12 @@ export default function Building() {
   const line = importing ? IMPORT_JOBS.building.matching(importSourceName(importing.source)) : F.building.saving(flow.seeds.length, servicesCount);
   const shelf = useMemo(() => buildingShelf(flow.seeds, flow.trending), [flow.seeds, flow.trending]);
 
-  // Land the posters one after another, then raise the heading. With Reduce
-  // Motion on, everything is simply there.
+  // Land the posters one after another and raise the heading, then keep the
+  // wave and the line's breathing going. With Reduce Motion on, everything is
+  // simply there and still.
   useEffect(() => {
     let alive = true;
+    const loops: Animated.CompositeAnimation[] = [];
     AccessibilityInfo.isReduceMotionEnabled().catch(() => false).then((reduce) => {
       if (!alive) return;
       if (reduce) { land.forEach(v => v.setValue(1)); rise.setValue(1); return; }
@@ -54,10 +64,24 @@ export default function Building() {
       Animated.parallel([
         Animated.stagger(LAND_STAGGER_MS, land.map(v => Animated.timing(v, { toValue: 1, duration: LAND_MS, easing: ease, useNativeDriver: true }))),
         Animated.timing(rise, { toValue: 1, duration: 400, delay: 300, easing: ease, useNativeDriver: true }),
-      ]).start();
+      ]).start(({ finished }) => {
+        if (!alive || !finished) return;
+        const sway = Easing.inOut(Easing.quad);
+        wave.forEach((v, i) => loops.push(Animated.loop(Animated.sequence([
+          Animated.delay(i * WAVE_STEP_MS),
+          Animated.timing(v, { toValue: 1, duration: WAVE_LIFT_MS, easing: sway, useNativeDriver: true }),
+          Animated.timing(v, { toValue: 0, duration: WAVE_LIFT_MS, easing: sway, useNativeDriver: true }),
+          Animated.delay(WAVE_PERIOD_MS - 2 * WAVE_LIFT_MS - i * WAVE_STEP_MS),
+        ]))));
+        loops.push(Animated.loop(Animated.sequence([
+          Animated.timing(breathe, { toValue: 0.55, duration: WAVE_PERIOD_MS / 2, easing: sway, useNativeDriver: true }),
+          Animated.timing(breathe, { toValue: 1, duration: WAVE_PERIOD_MS / 2, easing: sway, useNativeDriver: true }),
+        ])));
+        loops.forEach(l => l.start());
+      });
     });
-    return () => { alive = false; };
-  }, [land, rise]);
+    return () => { alive = false; loops.forEach(l => l.stop()); };
+  }, [land, rise, wave, breathe]);
 
     // Save, hold at least BUILDING_MIN_MS, then leave for Home. Runs once.
     const ran = useRef(false);
@@ -93,7 +117,10 @@ export default function Building() {
               style={[styles.card, {
                 opacity: v,
                 transform: [
-                  { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+                  { translateY: Animated.add(
+                    v.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }),
+                    wave[i].interpolate({ inputRange: [0, 1], outputRange: [0, -8] }),
+                  ) },
                   { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }) },
                 ],
               }]}
@@ -107,7 +134,7 @@ export default function Building() {
       <Animated.View style={[styles.caption, { opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }]}>
         <Text style={styles.heading}>{F.building.heading} <PlotWordmark size={30} color={colors.textPrimary} style={styles.wordmark} /></Text>
         <View style={styles.lines} accessibilityRole="progressbar" accessibilityLabel={F.building.status} accessibilityLiveRegion="polite">
-          <Text style={styles.line}>{line}</Text>
+          <Animated.Text style={[styles.line, { opacity: breathe }]}>{line}</Animated.Text>
         </View>
       </Animated.View>
     </Animated.View>
