@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getConfig } from './config.js';
-import { on, emit, HISTORY_CHANGED_EVENT } from './events.js';
+import { on, emit, HISTORY_CHANGED_EVENT, EPISODES_CHANGED_EVENT } from './events.js';
 import { readEpisodeWatches, readSpecialWatches, saveEpisodeWatches } from './episodeWatches.js';
 
-const EPISODES_CHANGED = 'plot:episodes-changed';
 const EMPTY = {};
 
 /** Sparse episode state is loaded only behind the import gate. It supplements
@@ -36,7 +35,7 @@ export function useEpisodeWatches(userId, tmdbId) {
 
   useEffect(() => {
     const offHistory = on(HISTORY_CHANGED_EVENT, reload);
-    const offEpisodes = on(EPISODES_CHANGED, reload);
+    const offEpisodes = on(EPISODES_CHANGED_EVENT, reload);
     return () => { offHistory(); offEpisodes(); };
   }, [reload]);
 
@@ -53,7 +52,7 @@ export function useEpisodeWatches(userId, tmdbId) {
       const updates = await saveEpisodeWatches(userId, tmdbId, season, episodes, watched);
       setState(previous => previous.scope === scope
         ? { ...previous, states: { ...previous.states, ...updates } } : previous);
-      emit(EPISODES_CHANGED);
+      emit(EPISODES_CHANGED_EVENT);
       return true;
     } catch { return false; }
     finally { saving.current = false; }
@@ -94,7 +93,7 @@ export function useSpecialEpisodeWatches(userId, tmdbId) {
 
   useEffect(() => {
     const offHistory = on(HISTORY_CHANGED_EVENT, reload);
-    const offEpisodes = on(EPISODES_CHANGED, reload);
+    const offEpisodes = on(EPISODES_CHANGED_EVENT, reload);
     return () => { offHistory(); offEpisodes(); };
   }, [reload]);
 
@@ -110,7 +109,7 @@ export function useSpecialEpisodeWatches(userId, tmdbId) {
       const updates = await saveEpisodeWatches(userId, tmdbId, 0, episodes, watched);
       setState(previous => previous.scope === scope
         ? { ...previous, states: { ...previous.states, ...updates } } : previous);
-      emit(EPISODES_CHANGED);
+      emit(EPISODES_CHANGED_EVENT);
       return true;
     } catch { return false; }
     finally { saving.current = false; }

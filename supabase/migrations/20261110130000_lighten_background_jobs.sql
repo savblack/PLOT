@@ -21,9 +21,11 @@
 --    tick is what advances each slice of a large import (finish_import_slice
 --    requeues with available_at = now()), so a slower tick slows imports.
 --
--- 3. cron-history-cleanup: delete cron.job_run_details rows older than 7 days,
---    daily. pg_cron writes a row per run (about 600 a day here) and never
---    prunes them; the table was 10 MB for a 56 MB database.
+-- Renumbered from 20261110120000: #1522 merged first with the same version
+-- (20261110120000_db_load_trim), production recorded that version for it, and
+-- the integration then refused this file as a duplicate, so none of it ran.
+-- This file's third change, a daily cron.job_run_details cleanup, was dropped
+-- because #1522's cron-history-purge (03:53 UTC) already does exactly that.
 --
 -- redefines: run_push_job (adds an early return; body otherwise identical to live 2026-11-10)
 -- redefines: run_import_worker_tick (moves the existing work check above the Vault reads)
@@ -97,19 +99,3 @@ begin
     timeout_milliseconds := 90000
   );
 end $function$;
-
-do $do$
-begin
-  if to_regnamespace('cron') is null then
-    raise notice '[sandbox] no cron schema: skipped cron-history-cleanup';
-    return;
-  end if;
-
-  -- :33 past 03:00 UTC avoids the minutes other jobs use.
-  perform cron.schedule(
-    'cron-history-cleanup',
-    '33 3 * * *',
-    $$delete from cron.job_run_details where end_time < now() - interval '7 days'$$
-  );
-end
-$do$;
