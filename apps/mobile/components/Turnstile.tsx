@@ -53,7 +53,7 @@ const html = (siteKey: string) => `<!DOCTYPE html><html><head>
       // Hidden unless a challenge genuinely needs interaction. The
       // challenge starts as soon as the screen opens, so a token is usually
       // ready before anyone taps the button (until 2026-11 it waited for
-      // execute() on submit, matching web before #1496). Tokens last five
+      // execute() on submit, matching web before PR 1496). Tokens last five
       // minutes; when one expires Cloudflare fetches the next one itself.
       appearance: 'interaction-only',
       execution: 'render',
