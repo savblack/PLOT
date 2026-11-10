@@ -27,8 +27,12 @@ export function useWatchingSort(rows, sort) {
       .then(pairs => { if (active) setAirDates({ key, byId: new Map(/** @type {[number, string | null][]} */ (pairs)) }); });
     return () => { active = false; };
   }, [key]);
+  // Only dates fetched for this exact set of shows. A stale map would send a
+  // show just added to the end (no entry = no announced episode) until its
+  // fetch lands; no map at all falls back to last watched.
+  const byId = airDates.key === key ? airDates.byId : undefined;
   return useMemo(
-    () => sortWatching(rows ?? [], sort, { nextAirDateById: airDates.byId }),
-    [rows, sort, airDates],
+    () => sortWatching(rows ?? [], sort, { nextAirDateById: byId }),
+    [rows, sort, byId],
   );
 }

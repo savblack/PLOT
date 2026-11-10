@@ -89,5 +89,38 @@ with hit as (
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  another user cannot set someone else''s updated_at'
 from hit;
 
+\echo ''
+\echo '=== episode ticks (episode_watch_overrides) ==='
+-- 2147483647 (the int maximum) because this table requires tmdb_id > 0; it is
+-- not a TMDB id and the row is rolled back with everything else.
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+\i supabase/migrations/20261110130000_episode_watch_overrides_server_updated_at.sql
+set local role authenticated;
+set local request.jwt.claims = :A_CLAIMS;
+
+-- A device clock a day fast, as an old app version would send it.
+insert into public.episode_watch_overrides (user_id, tmdb_id, season_number, episode_number, watched, updated_at)
+values (:A, 2147483647, 1, 1, true, now() + interval '1 day');
+select case when updated_at = now() then 'PASS' else 'FAIL' end || '  a new tick is stamped with the server''s now(), not the device clock'
+from public.episode_watch_overrides where tmdb_id = 2147483647;
+
+-- Re-ticking an existing row (the upsert's update path), slow clock this time.
+insert into public.episode_watch_overrides (user_id, tmdb_id, season_number, episode_number, watched, updated_at)
+values (:A, 2147483647, 1, 1, false, '2020-01-01T00:00:00Z')
+on conflict (user_id, tmdb_id, season_number, episode_number) do update
+  set watched = excluded.watched, updated_at = excluded.updated_at;
+select case when updated_at = now() and not watched then 'PASS' else 'FAIL' end || '  an updated tick is stamped with the server''s now()'
+from public.episode_watch_overrides where tmdb_id = 2147483647;
+
+-- A client cannot call the trigger function directly.
+do $$
+begin
+  perform public.set_episode_watch_override_updated_at();
+  raise notice 'FAIL  a client could call the trigger function';
+exception when others then
+  raise notice 'PASS  a client cannot call the trigger function (%)', sqlerrm;
+end $$;
+
 rollback;
 \echo 'rolled back: Staging is unchanged'
