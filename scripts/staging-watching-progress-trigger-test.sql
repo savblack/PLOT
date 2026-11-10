@@ -6,7 +6,7 @@
 -- WHY: the client's undo (packages/core/useWatching.js restorePointer) writes
 -- the previous updated_at back, and the old trigger overwrote it with now(),
 -- so the show jumped to the front of Continue watching. The fix is
--- supabase/migrations/20261110120000_watching_progress_keep_supplied_updated_at.sql.
+-- supabase/migrations/20261110140000_watching_progress_keep_supplied_updated_at.sql.
 -- Unit tests can only check what the client sends; this runs the trigger.
 --
 -- The `REPRO` line runs against whatever body is LIVE on Staging first. A run
@@ -44,7 +44,7 @@ from public.watching_progress where tmdb_id = -1;
 \echo '=== applying the new body ==='
 reset role;
 set local request.jwt.claims = '{"role":"service_role"}';
-\i supabase/migrations/20261110120000_watching_progress_keep_supplied_updated_at.sql
+\i supabase/migrations/20261110140000_watching_progress_keep_supplied_updated_at.sql
 update public.watching_progress set current_episode = 2, updated_at = '2026-01-01T00:00:00Z' where user_id = :A and tmdb_id = -1;
 
 \echo ''
@@ -102,7 +102,7 @@ select not exists (
     and tgrelid = 'public.episode_watch_overrides'::regclass
 ) as need_apply \gset
 \if :need_apply
-\i supabase/migrations/20261110130000_episode_watch_overrides_server_updated_at.sql
+\i supabase/migrations/20261110150000_episode_watch_overrides_server_updated_at.sql
 \else
 \echo 'already applied on Staging: checking the live trigger'
 \endif

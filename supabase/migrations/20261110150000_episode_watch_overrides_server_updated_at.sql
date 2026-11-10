@@ -8,7 +8,7 @@
 -- that hit an existing row kept whatever the client sent.
 --
 -- New function and trigger; nothing is redefined. Unlike watching_progress
--- (20261110120000) there is no undo that restores an old time here, so the
+-- (20261110140000) there is no undo that restores an old time here, so the
 -- stamp is unconditional.
 create function public.set_episode_watch_override_updated_at()
 returns trigger

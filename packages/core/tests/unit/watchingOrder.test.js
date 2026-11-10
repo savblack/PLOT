@@ -123,7 +123,7 @@ test('undoing a tick writes the old updated_at back, so the show returns to its 
   await restorePointer('u1', before);
   const restored = client.__db.tables.watching_progress.find(r => r.tmdb_id === -2);
   assert.equal(restored.current_episode, 2);
-  // The trigger keeps this value (20261110120000); before that it stamped now().
+  // The trigger keeps this value (20261110140000); before that it stamped now().
   assert.equal(restored.updated_at, '2026-10-01T10:00:00Z');
   assert.deepEqual(ids(sortWatching(client.__db.tables.watching_progress)), [-1, -2]);
 });
