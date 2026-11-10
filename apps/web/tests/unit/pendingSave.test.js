@@ -118,6 +118,14 @@ test('drainPendingSave: editorial CTA opens the title without silently choosing 
   assert.equal(calls.results.length, 0, 'opening a choice is not a save confirmation');
 });
 
+test('drainPendingSave: a title picked from the homepage search opens it and saves nothing', async () => {
+  const { deps, calls } = makeDeps({ getDetails: okDetails({}) });
+  const out = await drainPendingSave({ intent: { tmdb_id: 4242, media_type: 'movie', source: 'hero_search' } }, deps);
+  assert.deepEqual(out, { terminal: true, status: 'opened' });
+  assert.equal(calls.added.length, 0, 'picking a result is not a request to save it');
+  assert.deepEqual(calls.prompted[0], [4242, 'movie', 'hero_search']);
+});
+
 test('drainPendingSave: a lifecycle email opens the title without adding it again', async () => {
   let fetched = false;
   const { deps, calls } = makeDeps({
@@ -392,6 +400,7 @@ test('different TMDB reads share an eight-request concurrency ceiling', async ()
 test('skipsSavePreview is true only for sources that just showed the title', () => {
   assert.equal(skipsSavePreview('title_page'), true);
   assert.equal(skipsSavePreview('Title_Page'), true);
+  assert.equal(skipsSavePreview('hero_search'), true);
   assert.equal(skipsSavePreview('newsletter'), false);
   assert.equal(skipsSavePreview('chart'), false);
   assert.equal(skipsSavePreview('whats_on_article'), false);
