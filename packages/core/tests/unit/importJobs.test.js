@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { splitImportForBackground } from '../../importBackground.js';
-import { importJobStatusLine, importJobTitle, importJobActive, importJobFinished } from '../../importJobs.js';
+import { importJobStatusLine, importJobTitle, importJobActive, importJobFinished, importFileFingerprint, enqueueError } from '../../importJobs.js';
+import { IMPORT_JOBS } from '../../copy/importJobs.js';
 
 /* A background import may only write what the preview would not have asked
  * about. Everything else waits for the user on the import page. */
@@ -53,4 +54,41 @@ test('active and finished are disjoint and cover every status', () => {
     assert.equal(importJobFinished({ status }), true);
   }
   assert.equal(importJobActive(null), false);
+});
+
+/* The same upload must not be queued twice while the first is still open
+ * (enqueue_file_import_job, 20261111090000). The fingerprint is what both the
+ * pre-upload check and the server compare. */
+test('importFileFingerprint is stable across body types and pick order', async () => {
+  const text = 'Date,Name,Year\n2024-01-01,Heat,1995\n';
+  const bytes = new TextEncoder().encode(text);
+  const fromBlob = await importFileFingerprint([{ name: 'watched.csv', body: new Blob([text]) }]);
+  assert.match(fromBlob, /^[0-9a-f]{64}$/);
+  assert.equal(await importFileFingerprint([{ name: 'watched.csv', body: bytes }]), fromBlob);
+  assert.equal(await importFileFingerprint([{ name: 'watched.csv', body: bytes.buffer }]), fromBlob);
+
+  const other = { name: 'ratings.csv', body: new TextEncoder().encode('Date,Name,Year,Rating\n') };
+  const pair = await importFileFingerprint([{ name: 'watched.csv', body: bytes }, other]);
+  assert.equal(await importFileFingerprint([other, { name: 'watched.csv', body: bytes }]), pair);
+  assert.notEqual(pair, fromBlob);
+});
+
+test('importFileFingerprint tells apart a renamed or edited file', async () => {
+  const bytes = new TextEncoder().encode('Date,Name,Year\n2024-01-01,Heat,1995\n');
+  const watched = await importFileFingerprint([{ name: 'watched.csv', body: bytes }]);
+  // The parsers read the name: watched.csv and watchlist.csv import differently.
+  assert.notEqual(await importFileFingerprint([{ name: 'watchlist.csv', body: bytes }]), watched);
+  const edited = new TextEncoder().encode('Date,Name,Year\n2024-01-01,Heat,1996\n');
+  assert.notEqual(await importFileFingerprint([{ name: 'watched.csv', body: edited }]), watched);
+});
+
+test('importFileFingerprint gives up rather than guess', async () => {
+  assert.equal(await importFileFingerprint([]), null);
+  assert.equal(await importFileFingerprint([{ name: 'x.csv', body: 'not bytes' }]), null);
+});
+
+test('enqueue errors map to the shared copy', () => {
+  assert.equal(enqueueError({ message: 'import_duplicate' }).message, IMPORT_JOBS.onboarding.alreadyImporting);
+  assert.equal(enqueueError({ message: 'import_queue_full' }).message, IMPORT_JOBS.onboarding.queueFull);
+  assert.equal(enqueueError(null), null);
 });
