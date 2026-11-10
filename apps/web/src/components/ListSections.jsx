@@ -486,7 +486,7 @@ export function WatchingSection({ watching, hidden, Frame = ListSection }) {
       }
     >
       {items.length === 0 ? (
-        <Empty>Not watching anything yet. Start a series from Want to Watch or from Search.</Empty>
+        <Empty>Not watching anything yet. Start a series from your watchlist or from Search.</Empty>
       ) : (
         <CardGrid>
           {items.map(item => {
@@ -571,14 +571,14 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
       headerRight={
         <>
           {pageLayout && (
-            <HeaderIconButton label="Add to Want to Watch" onClick={() => setShowAdd(true)}>
+            <HeaderIconButton label={MEDIA.saveToWatchlist} onClick={() => setShowAdd(true)}>
               <PlusIcon />
             </HeaderIconButton>
           )}
           <SelectControls
             selection={selection}
             hasItems={items.length > 0}
-            menuLabel="Want to Watch options"
+            menuLabel="Watchlist options"
             deleteLabel="Remove"
             onDelete={removeSelected}
           />
@@ -620,7 +620,7 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
         </div>
       )}
       {showAdd && (
-        <AddToFavoritesModal title="Add to Want to Watch" onAdd={(item) => watchlist.addToList(item)} onClose={() => setShowAdd(false)} />
+        <AddToFavoritesModal title={MEDIA.saveToWatchlist} onAdd={(item) => watchlist.addToList(item)} onClose={() => setShowAdd(false)} />
       )}
     </Frame>
   );

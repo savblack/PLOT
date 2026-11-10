@@ -6,7 +6,8 @@ import { PLANS_PAGE } from '../copy/plansPage.js';
 import { waitlistMailto } from '../utils/premiumCheckout.js';
 
 /**
- * @param {{ premium: { checkoutAvailable: boolean | null, busy: boolean, startCheckout: (plan: string) => void }, plan: string, className?: string }} props
+ * @param {{ premium: { checkoutAvailable: boolean | null, busy: boolean, trialEligible?: boolean, startCheckout: (plan: string) => void }, plan: string, className?: string }} props
+ *   The label is "Start free trial" when premium.trialEligible, otherwise "Upgrade to Premium".
  */
 export default function PremiumPurchaseAction({ premium, plan, className = 'btn btn-primary', disabled = false }) {
   if (premium.checkoutAvailable === false) {
@@ -18,7 +19,7 @@ export default function PremiumPurchaseAction({ premium, plan, className = 'btn 
   }
   return (
     <button type="button" className={className} onClick={() => premium.startCheckout(plan)} disabled={disabled || premium.busy}>
-      {premium.busy ? PLANS_PAGE.premium.opening : PLANS_PAGE.upgradeAction}
+      {premium.busy ? PLANS_PAGE.premium.opening : premium.trialEligible ? PLANS_PAGE.startTrialAction : PLANS_PAGE.upgradeAction}
     </button>
   );
 }

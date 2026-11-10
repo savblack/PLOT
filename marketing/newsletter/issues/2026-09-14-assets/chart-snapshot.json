@@ -1,0 +1,171 @@
+{
+  "issue_date": "2026-09-14",
+  "chart_status": "available",
+  "snapshot": {
+    "snapshot_date": "2026-09-10",
+    "items": [
+      {
+        "rank": 1,
+        "title": "The Runner",
+        "tmdb_id": 1386315,
+        "media_type": "movie",
+        "poster_path": "/uxCaBoYXsDC4A0SqTm3SISj0OwK.jpg",
+        "backdrop_path": "/ziXF8wIBguHNCeplNthUlDTCZP8.jpg"
+      },
+      {
+        "rank": 2,
+        "title": "Silo",
+        "tmdb_id": 125988,
+        "media_type": "tv",
+        "poster_path": "/gMYZZvnkVNTqSVnVCphWbPXwWwb.jpg",
+        "backdrop_path": "/uTWhbLc7Bj4qNSdW3ZvZKL8cOHv.jpg"
+      },
+      {
+        "rank": 3,
+        "title": "The Whisper Man",
+        "tmdb_id": 860508,
+        "media_type": "movie",
+        "poster_path": "/6UqflU8Qqkz7Dq4swJPqs0ZJjY4.jpg",
+        "backdrop_path": "/xSJJQeAp9GBFmiKusysTRG6jQjt.jpg"
+      },
+      {
+        "rank": 4,
+        "title": "The Odyssey",
+        "tmdb_id": 1368337,
+        "media_type": "movie",
+        "poster_path": "/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg",
+        "backdrop_path": "/twiVn9oFXOVR0uoYgawyEBlnFu8.jpg"
+      },
+      {
+        "rank": 5,
+        "title": "Coyote vs. Acme",
+        "tmdb_id": 1204680,
+        "media_type": "movie",
+        "poster_path": "/orkLtdgMGiO9rTVMqJ1kKwrnup1.jpg",
+        "backdrop_path": "/l9mFW9HQnAZ4r1ChZJHoOT3jaal.jpg"
+      },
+      {
+        "rank": 6,
+        "title": "Spider-Man: Brand New Day",
+        "tmdb_id": 969681,
+        "media_type": "movie",
+        "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+        "backdrop_path": "/qeQJx07rK2xm8SD2sJxFKhE7gs0.jpg"
+      },
+      {
+        "rank": 7,
+        "title": "The Gentlemen",
+        "tmdb_id": 236235,
+        "media_type": "tv",
+        "poster_path": "/8sQ0oDunlRpesa5vIO6UPhbJNxC.jpg",
+        "backdrop_path": "/yG1wltFmkX5c5ocACKfpX0tp3SY.jpg"
+      },
+      {
+        "rank": 8,
+        "title": "Lanterns",
+        "tmdb_id": 95350,
+        "media_type": "tv",
+        "poster_path": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
+        "backdrop_path": "/mdbWfpbWhvxgG3k5MHpo90UgAUe.jpg"
+      },
+      {
+        "rank": 9,
+        "title": "Obsession",
+        "tmdb_id": 1339713,
+        "media_type": "movie",
+        "poster_path": "/bRwnj8WEKBCvmfeUNOukJPwB43K.jpg",
+        "backdrop_path": "/rZfmzpixLKLR3Hg2u0WgC7XLFl8.jpg"
+      },
+      {
+        "rank": 10,
+        "title": "Reacher",
+        "tmdb_id": 108978,
+        "media_type": "tv",
+        "poster_path": "/f1VCQIG2iCyOookdgOzwtUpwWC0.jpg",
+        "backdrop_path": "/pF0qkRsrHkdYadPWY9AMeFZfcwk.jpg"
+      },
+      {
+        "rank": 11,
+        "title": "Dark Matter",
+        "tmdb_id": 196322,
+        "media_type": "tv",
+        "poster_path": "/2DPmTlv8F0V1TQBPmlsGOVOhtWk.jpg",
+        "backdrop_path": "/mKOINOeqqXPpuGnf6DHDK4o02uR.jpg"
+      },
+      {
+        "rank": 12,
+        "title": "Backrooms",
+        "tmdb_id": 1083381,
+        "media_type": "movie",
+        "poster_path": "/rhGx6E3qRNMgj3i5su2oukNHwIQ.jpg",
+        "backdrop_path": "/dqmMWNWfLnExDRpMtIMqI97GQFR.jpg"
+      },
+      {
+        "rank": 13,
+        "title": "Mutiny",
+        "tmdb_id": 1288445,
+        "media_type": "movie",
+        "poster_path": "/pu2VxGlpGwffOx292w18b1tv96j.jpg",
+        "backdrop_path": "/qDa0fqDqIBCovRp975RvtGPcuN3.jpg"
+      },
+      {
+        "rank": 14,
+        "title": "Minions & Monsters",
+        "tmdb_id": 1315772,
+        "media_type": "movie",
+        "poster_path": "/4LwvU9SZc8QQzW1X1FAPhNbXnEU.jpg",
+        "backdrop_path": "/kkcwhgSFd81QDlXo8ytrpHPQjhy.jpg"
+      },
+      {
+        "rank": 15,
+        "title": "Mousetrap",
+        "tmdb_id": 290193,
+        "media_type": "tv",
+        "poster_path": "/2mwgHfOyrFrmvozjFoEXHRdfGhv.jpg",
+        "backdrop_path": "/3bHz9dYSZ5XDxY0zDaBpYgUOhE2.jpg"
+      },
+      {
+        "rank": 16,
+        "title": "Furious",
+        "tmdb_id": 287238,
+        "media_type": "tv",
+        "poster_path": "/xnxxrEKtBaIcI1ewq50pLkOMU6u.jpg",
+        "backdrop_path": "/iAOPgUlh7inOebFrUFHAjnFRCGS.jpg"
+      },
+      {
+        "rank": 17,
+        "title": "Chad Powers",
+        "tmdb_id": 247168,
+        "media_type": "tv",
+        "poster_path": "/buPiLEtOQ7kJrRh9FsXucjkZeJn.jpg",
+        "backdrop_path": "/yEi9cfJrl1CfTRMTVhJ92LK0bKA.jpg"
+      },
+      {
+        "rank": 18,
+        "title": "The Dog Stars",
+        "tmdb_id": 1384216,
+        "media_type": "movie",
+        "poster_path": "/5O616X9vmRzQdB68PHzBewPittd.jpg",
+        "backdrop_path": "/yhCHnkidQdR3lksbdyFxduRXFPK.jpg"
+      },
+      {
+        "rank": 19,
+        "title": "Ted Lasso",
+        "tmdb_id": 97546,
+        "media_type": "tv",
+        "poster_path": "/uRHsiw1wLxPHFXkkv4Ix1s0O6f4.jpg",
+        "backdrop_path": "/nE94ejEbzNCU48bW1oju0dqBONz.jpg"
+      },
+      {
+        "rank": 20,
+        "title": "Bleach",
+        "tmdb_id": 30984,
+        "media_type": "tv",
+        "poster_path": "/2EewmxXe72ogD0EaWM8gqa0ccIw.jpg",
+        "backdrop_path": "/o0NsbcIvsllg6CJX0FBFY8wWbsn.jpg"
+      }
+    ]
+  },
+  "comparison": null,
+  "last_prior_saved_snapshot": null
+}

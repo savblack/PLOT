@@ -1,4 +1,4 @@
-import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutClosedToAll, checkoutConfigLog, checkoutConfigStatus, checkoutPilotCount, checkoutPlan, checkoutSubscriptionData, hasStripeSubscription, matchesPremiumPrice, mayStartCheckout, publicCheckoutOpen, PREMIUM_TRIAL_DAYS } from './billingPolicy.ts';
+import { isCheckoutPilot, billingSettingsUrl, cancelsAtPeriodEnd, checkoutClosedToAll, checkoutConfigLog, checkoutConfigStatus, checkoutPilotCount, checkoutPlan, checkoutExpectsTrial, checkoutSubscriptionData, hasStripeSubscription, matchesPremiumPrice, mayStartCheckout, publicCheckoutOpen, PREMIUM_TRIAL_DAYS } from './billingPolicy.ts';
 
 function equal(actual: unknown, expected: unknown) {
   if (actual !== expected) throw new Error(`Expected ${expected}, got ${actual}`);
@@ -112,4 +112,12 @@ Deno.test('with the switch on everyone can check out, with or without a pilot li
     equal(checkoutClosedToAll('true', ids), false);
   }
   equal(mayStartCheckout(undefined, 'true', undefined), true);
+});
+
+Deno.test('only an explicit true counts as a promised trial', () => {
+  equal(checkoutExpectsTrial({ plan: 'monthly', expectTrial: true }), true);
+  equal(checkoutExpectsTrial({ plan: 'monthly' }), false);
+  equal(checkoutExpectsTrial({ plan: 'monthly', expectTrial: 'true' }), false);
+  equal(checkoutExpectsTrial({ plan: 'monthly', expectTrial: 1 }), false);
+  equal(checkoutExpectsTrial(null), false);
 });

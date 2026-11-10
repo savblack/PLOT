@@ -72,6 +72,7 @@ import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { isSharedList } from '@plot/core/sharedLists.js';
 import { MemberStack } from './CollaborativeListParts.jsx';
 import { clearUndo } from '@plot/core/undo.js';
+import Icon from './Icon.jsx';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -139,13 +140,6 @@ function ShareIcon({ size = 18 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-    </svg>
-  );
-}
-function BookmarkIcon({ size = 15 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
     </svg>
   );
 }
@@ -1866,7 +1860,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 className={`panel-pill${inList ? ' panel-pill--saved' : ' panel-pill--primary'}`}
                 onClick={handleSaveFromPanel}
               >
-                {inList ? <CheckIcon /> : <BookmarkIcon />}
+                <Icon name="bookmark" filled={inList} size={15} />
                 <span className="panel-pill-label">{inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}</span>
               </button>
 

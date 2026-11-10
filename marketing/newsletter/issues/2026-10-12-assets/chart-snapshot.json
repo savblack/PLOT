@@ -1,0 +1,333 @@
+{
+  "issue_date": "2026-10-12",
+  "snapshot": {
+    "snapshot_date": "2026-10-11",
+    "items": [
+      {
+        "rank": 1,
+        "title": "LINK CLICK",
+        "tmdb_id": 123542,
+        "media_type": "tv",
+        "poster_path": "/wo9jwu5qMvXzhW2cyy5E6hOVs92.jpg",
+        "backdrop_path": "/w3agwUSMpJ4X9t1jGrDtqqRPjDQ.jpg"
+      },
+      {
+        "rank": 2,
+        "title": "VisionQuest",
+        "tmdb_id": 213375,
+        "media_type": "tv",
+        "poster_path": "/WGyAyBPncfuu8MZhLY9RtfZPM0.jpg",
+        "backdrop_path": "/uoXXbN2PrOxH6UKyP7kYwmGpAAP.jpg"
+      },
+      {
+        "rank": 3,
+        "title": "Animals",
+        "tmdb_id": 1236045,
+        "media_type": "movie",
+        "poster_path": "/iISM36voS1E8gX9BM0DVK0kgi3E.jpg",
+        "backdrop_path": "/tzoarEu7TsG959upiELyYPm5kO9.jpg"
+      },
+      {
+        "rank": 4,
+        "title": "Carrie",
+        "tmdb_id": 288673,
+        "media_type": "tv",
+        "poster_path": "/6mUMquPQBFJGqTACS3Azkwwrx8d.jpg",
+        "backdrop_path": "/9yCJtipMeDe8uAdSJKvw8BnYfRz.jpg"
+      },
+      {
+        "rank": 5,
+        "title": "Matchbox the Movie",
+        "tmdb_id": 1148365,
+        "media_type": "movie",
+        "poster_path": "/lFKA4GMz36dImEy3DQPdPF7G4V9.jpg",
+        "backdrop_path": "/y6RIuwuxLG3Nsb37KUj5yatnTIp.jpg"
+      },
+      {
+        "rank": 6,
+        "title": "Spider-Man: Brand New Day",
+        "tmdb_id": 969681,
+        "media_type": "movie",
+        "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+        "backdrop_path": "/4tjxYg2AbOzzG9G1YuiT2NzYhlH.jpg"
+      },
+      {
+        "rank": 7,
+        "title": "Street Fighter",
+        "tmdb_id": 1153576,
+        "media_type": "movie",
+        "poster_path": "/dJPT2Uf12X6aFg8i5N67NTpIZ9t.jpg",
+        "backdrop_path": "/zDE9hd1SG9695YncbZGjSf7Z9Jk.jpg"
+      },
+      {
+        "rank": 8,
+        "title": "Hope",
+        "tmdb_id": 1058424,
+        "media_type": "movie",
+        "poster_path": "/bcK5naYzzfY0JBCgrPrsrbV6NO1.jpg",
+        "backdrop_path": "/ujUwzNV8ZkOzZonvhhHsc9KOKDf.jpg"
+      },
+      {
+        "rank": 9,
+        "title": "Crystal Lake",
+        "tmdb_id": 213562,
+        "media_type": "tv",
+        "poster_path": "/sIj9WcA1LkcjGbYjrbfV3pGegbF.jpg",
+        "backdrop_path": "/5z5yynwihKGkupR2bXIWxO1IZVZ.jpg"
+      },
+      {
+        "rank": 10,
+        "title": "Practical Magic 2",
+        "tmdb_id": 1302904,
+        "media_type": "movie",
+        "poster_path": "/ogwQOLbCfncjvBhFb5l0OmQH8KC.jpg",
+        "backdrop_path": "/oIglj0Jy9duG4LnrRUpH8n001Pk.jpg"
+      },
+      {
+        "rank": 11,
+        "title": "Below",
+        "tmdb_id": 285322,
+        "media_type": "tv",
+        "poster_path": "/vgLqqhMUbljp585qPp1EFCyJtcz.jpg",
+        "backdrop_path": "/cn0feYcDvVzVjUDoXa1O8sRgzz.jpg"
+      },
+      {
+        "rank": 12,
+        "title": "Resident Evil",
+        "tmdb_id": 1423191,
+        "media_type": "movie",
+        "poster_path": "/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg",
+        "backdrop_path": "/3icyRAqgakNcQn6aDVz9libFmBA.jpg"
+      },
+      {
+        "rank": 13,
+        "title": "Dragon Ball Super: Beerus",
+        "tmdb_id": 312359,
+        "media_type": "tv",
+        "poster_path": "/AojgldgsOlzZV8ahyOzaiAjJWvV.jpg",
+        "backdrop_path": "/8phLVFEXOe02JgFmH9ldn3j4tXW.jpg"
+      },
+      {
+        "rank": 14,
+        "title": "Lanterns",
+        "tmdb_id": 95350,
+        "media_type": "tv",
+        "poster_path": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
+        "backdrop_path": "/6gqezQJ2mkm4jreWwLyOZy2Vf6i.jpg"
+      },
+      {
+        "rank": 15,
+        "title": "Whalefall",
+        "tmdb_id": 1255833,
+        "media_type": "movie",
+        "poster_path": "/vjTYUTgh9nO88i6HZ4YPRhiFL05.jpg",
+        "backdrop_path": "/shW2jHkQLZVv4Fko2rJDqTGU0gx.jpg"
+      },
+      {
+        "rank": 16,
+        "title": "Treasure Island",
+        "tmdb_id": 333101,
+        "media_type": "tv",
+        "poster_path": "/xZQ5ABJF1iLjGq9xR4MthpgQEFF.jpg",
+        "backdrop_path": "/cv102XnL9r7M9jFr0hsMeqzpAWW.jpg"
+      },
+      {
+        "rank": 17,
+        "title": "Other Mommy",
+        "tmdb_id": 1400837,
+        "media_type": "movie",
+        "poster_path": "/fGRNCssTRrhYZxNzykGGCoMsAVq.jpg",
+        "backdrop_path": "/ncm7djsVTHQQMX2HEbEVxMUFchG.jpg"
+      },
+      {
+        "rank": 18,
+        "title": "Avengers: Doomsday",
+        "tmdb_id": 1003596,
+        "media_type": "movie",
+        "poster_path": "/sLYCyO58UvBuBtbHTQjPCCgJ4dG.jpg",
+        "backdrop_path": "/g3gpP5YDbA85DsA0bt5mgGQIe5q.jpg"
+      },
+      {
+        "rank": 19,
+        "title": "Digger",
+        "tmdb_id": 1248832,
+        "media_type": "movie",
+        "poster_path": "/1ATXKrIPJyKNwnJ6lcG088Sa6zi.jpg",
+        "backdrop_path": "/b7t3r39Oll5qPxBKzLZ8eHMBD7l.jpg"
+      },
+      {
+        "rank": 20,
+        "title": "Love of Your Life",
+        "tmdb_id": 1381078,
+        "media_type": "movie",
+        "poster_path": "/dL3Tcv4FU2K85bgnGRBgLjFSrLr.jpg",
+        "backdrop_path": "/mqYqKvrKTgMvK50VtEDZlYFsnHz.jpg"
+      }
+    ]
+  },
+  "comparison": {
+    "snapshot_date": "2026-10-08",
+    "items": [
+      {
+        "rank": 1,
+        "title": "Digger",
+        "tmdb_id": 1248832,
+        "media_type": "movie",
+        "poster_path": "/1ATXKrIPJyKNwnJ6lcG088Sa6zi.jpg",
+        "backdrop_path": "/b7t3r39Oll5qPxBKzLZ8eHMBD7l.jpg"
+      },
+      {
+        "rank": 2,
+        "title": "The Uprising",
+        "tmdb_id": 977942,
+        "media_type": "movie",
+        "poster_path": "/7TUl15TOsIvndKlgMWTtLgtEzZP.jpg",
+        "backdrop_path": "/y0reRTsewsPh0ePtgvDeLIsb5Wk.jpg"
+      },
+      {
+        "rank": 3,
+        "title": "Runner",
+        "tmdb_id": 1377237,
+        "media_type": "movie",
+        "poster_path": "/yBKMAIj7clP42UkFejhGDBBoTpb.jpg",
+        "backdrop_path": "/2c9zNZJL0ZdagD6JbmU3hH4hovs.jpg"
+      },
+      {
+        "rank": 4,
+        "title": "Resident Evil",
+        "tmdb_id": 1423191,
+        "media_type": "movie",
+        "poster_path": "/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg",
+        "backdrop_path": "/3icyRAqgakNcQn6aDVz9libFmBA.jpg"
+      },
+      {
+        "rank": 5,
+        "title": "Ranma1/2",
+        "tmdb_id": 259140,
+        "media_type": "tv",
+        "poster_path": "/cDThx8yRYbdPOSgHbjihS4q7GYc.jpg",
+        "backdrop_path": "/xvD9urN8lUtWw5fm4a87Rl3dCZn.jpg"
+      },
+      {
+        "rank": 6,
+        "title": "Verity",
+        "tmdb_id": 1283515,
+        "media_type": "movie",
+        "poster_path": "/dGSsPovyUW5XVekXcy7F2GyhTEh.jpg",
+        "backdrop_path": "/9qxyrJfjk577ym5WD6HCDmunoyO.jpg"
+      },
+      {
+        "rank": 7,
+        "title": "Black Clover",
+        "tmdb_id": 73223,
+        "media_type": "tv",
+        "poster_path": "/kaMisKeOoTBPxPkbC3OW7Wgt6ON.jpg",
+        "backdrop_path": "/qu9epTZh29fGUkY7ZYc9PVsv0Ig.jpg"
+      },
+      {
+        "rank": 8,
+        "title": "Lanterns",
+        "tmdb_id": 95350,
+        "media_type": "tv",
+        "poster_path": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
+        "backdrop_path": "/6gqezQJ2mkm4jreWwLyOZy2Vf6i.jpg"
+      },
+      {
+        "rank": 9,
+        "title": "UNABOMBER",
+        "tmdb_id": 1492640,
+        "media_type": "movie",
+        "poster_path": "/39aMkR8Y5vhCG9dTkjiqRl8AVqp.jpg",
+        "backdrop_path": "/58D9nalUYW5L5K0guw7hcpsEJBH.jpg"
+      },
+      {
+        "rank": 10,
+        "title": "Avengers: Doomsday",
+        "tmdb_id": 1003596,
+        "media_type": "movie",
+        "poster_path": "/jzPwsojjFStf5lR5Nm07w2hH56G.jpg",
+        "backdrop_path": "/s4v0UX1anfXm0UvloLsTTJ4v222.jpg"
+      },
+      {
+        "rank": 11,
+        "title": "East of Eden",
+        "tmdb_id": 258165,
+        "media_type": "tv",
+        "poster_path": "/axdUor6gLMTrrB1UF4Qfy0TTSyX.jpg",
+        "backdrop_path": "/70RZX7kNjA0Qjn6HigB1oMvFJ8R.jpg"
+      },
+      {
+        "rank": 12,
+        "title": "MobLand",
+        "tmdb_id": 247718,
+        "media_type": "tv",
+        "poster_path": "/5Xc7WpWsgflfgEMoBlf9TmWhfbH.jpg",
+        "backdrop_path": "/h0OC7ouop8YLwbAVfS3UUE2Lw4T.jpg"
+      },
+      {
+        "rank": 13,
+        "title": "Obsession",
+        "tmdb_id": 1339713,
+        "media_type": "movie",
+        "poster_path": "/bRwnj8WEKBCvmfeUNOukJPwB43K.jpg",
+        "backdrop_path": "/5lTZyuBTNOfawsfPT8Q0cIg6qAF.jpg"
+      },
+      {
+        "rank": 14,
+        "title": "Spider-Man: Brand New Day",
+        "tmdb_id": 969681,
+        "media_type": "movie",
+        "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+        "backdrop_path": "/qeQJx07rK2xm8SD2sJxFKhE7gs0.jpg"
+      },
+      {
+        "rank": 15,
+        "title": "The Apothecary Diaries",
+        "tmdb_id": 220542,
+        "media_type": "tv",
+        "poster_path": "/sJZcy8QsOPuRPiCfoCWVB3r9Ohg.jpg",
+        "backdrop_path": "/gffVOVZ2Y9cmVIZ26Gt9ByMGCYH.jpg"
+      },
+      {
+        "rank": 16,
+        "title": "Coyote vs. Acme",
+        "tmdb_id": 1204680,
+        "media_type": "movie",
+        "poster_path": "/kYDCl2y0VPvhT5eYWbMRInPoB03.jpg",
+        "backdrop_path": "/viZqGq9TNvQ5uXSD4ahg2RpRONT.jpg"
+      },
+      {
+        "rank": 17,
+        "title": "The Odyssey",
+        "tmdb_id": 1368337,
+        "media_type": "movie",
+        "poster_path": "/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg",
+        "backdrop_path": "/bulFtfy3oBQtCnAMSi7g6DSSds3.jpg"
+      },
+      {
+        "rank": 18,
+        "title": "Toy Story 5",
+        "tmdb_id": 1084244,
+        "media_type": "movie",
+        "poster_path": "/sfQtVlIHljToOwYjhe21KPGzZWK.jpg",
+        "backdrop_path": "/qjTqY5coNiz6sVtPng40IzltsoN.jpg"
+      },
+      {
+        "rank": 19,
+        "title": "Coven Academy",
+        "tmdb_id": 298505,
+        "media_type": "tv",
+        "poster_path": "/f4R4YGeMQrXEu6jm3oAbSPeGC3M.jpg",
+        "backdrop_path": "/mGFtH5pUXDd4hSXUfl8HnHlRWJV.jpg"
+      },
+      {
+        "rank": 20,
+        "title": "Primetime",
+        "tmdb_id": 1375441,
+        "media_type": "movie",
+        "poster_path": "/lmrulvLbmaejTix1YaMxo1oGhH1.jpg",
+        "backdrop_path": "/4E5RVsSUG1A4Adwbqupu5w6kofZ.jpg"
+      }
+    ]
+  }
+}

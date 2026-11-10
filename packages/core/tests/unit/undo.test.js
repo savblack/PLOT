@@ -181,8 +181,8 @@ test('restoreRow puts a removed row back, and treats "already back" as success',
 /* ── Copy ── */
 
 test('the toast message names the title, the list, and spells favourites by region', () => {
-  assert.equal(UNDO.message({ action: 'watchlist_remove', count: 1, title: 'Dune' }), 'Removed Dune from Want to Watch.');
-  assert.equal(UNDO.message({ action: 'watchlist_remove', count: 4 }), 'Removed 4 titles from Want to Watch.');
+  assert.equal(UNDO.message({ action: 'watchlist_remove', count: 1, title: 'Dune' }), 'Removed Dune from your watchlist.');
+  assert.equal(UNDO.message({ action: 'watchlist_remove', count: 4 }), 'Removed 4 titles from your watchlist.');
   assert.equal(UNDO.message({ action: 'list_item_remove', count: 1, title: 'Alien', meta: { listName: 'Sci-fi' } }), 'Removed Alien from Sci-fi.');
   assert.equal(UNDO.message({ action: 'favourite_remove', count: 1, title: 'Heat' }, 'US'), 'Removed Heat from favorites.');
   assert.equal(UNDO.message({ action: 'favourite_remove', count: 1, title: 'Heat' }, 'GB'), 'Removed Heat from favourites.');

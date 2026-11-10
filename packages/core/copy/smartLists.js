@@ -3,6 +3,7 @@
 // for Me's (copy/tonightPicker.js), since the rules are the same filters; read
 // those from there rather than repeating them here.
 import { TONIGHT_PICKER } from './tonightPicker.js';
+import { COMMON } from './common.js';
 
 export const SMART_LISTS = Object.freeze({
   newSmartList: 'New smart list',
@@ -39,7 +40,7 @@ export const SMART_LISTS = Object.freeze({
   unchecked: (n) => `${n} older ${n === 1 ? 'title was' : 'titles were'} not checked for score, length or services.`,
   lockedTitle: 'This smart list needs Premium',
   lockedBody: 'Your rules are saved. Upgrade to see what they find.',
-  lockedAction: 'See Premium',
+  lockedAction: COMMON.seePremium,
 
   // The rules as one sentence of chips (B3, and the builder in A2 and the
   // phone save sheet): "Find [shows] from [new discoveries] that are

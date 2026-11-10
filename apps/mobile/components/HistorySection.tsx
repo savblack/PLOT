@@ -71,7 +71,7 @@ function HistoryMonthGroup({
 
 export default function HistorySection({
   groups, hasAnyEntries, expandSignal, sharePreset = null, onSharePresetUsed,
-  drilldown = null, onDrilldown, onClearDrilldown, drilldownLocked = false,
+  drilldown = null, onDrilldown, onClearDrilldown, onUpgrade,
 }: {
   groups: MonthGroup[];
   hasAnyEntries: boolean;
@@ -83,7 +83,7 @@ export default function HistorySection({
   drilldown?: Drilldown | null;
   onDrilldown?: (d: Drilldown) => void;
   onClearDrilldown?: () => void;
-  drilldownLocked?: boolean;
+  onUpgrade?: () => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -110,7 +110,7 @@ export default function HistorySection({
 
   return (
     <View>
-      <HistoryInsights sharePreset={sharePreset} onSharePresetUsed={onSharePresetUsed} onDrilldown={onDrilldown} drilldownLocked={drilldownLocked} />
+      <HistoryInsights sharePreset={sharePreset} onSharePresetUsed={onSharePresetUsed} onDrilldown={onDrilldown} onUpgrade={onUpgrade} />
       <HistoryComparePrompt />
       {drilldown && drillLabel && (
         <Pressable accessibilityRole="button" accessibilityLabel={T.drilldownRemove(drillLabel)} onPress={onClearDrilldown} style={styles.chip}>

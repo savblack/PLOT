@@ -96,7 +96,7 @@ export function viewFromPath(pathname) {
 export const MY_LISTS_TABS = [
   { id: 'all',       label: 'All'           },
   { id: 'watching',  label: 'Watching'      },
-  { id: 'want',      label: 'Want to Watch' },
+  { id: 'want',      label: 'Watchlist'     },
   { id: 'top10',     label: 'Top 5'         },
   { id: 'favorites', label: null            }, // region-spelled at the call site
   { id: 'lists',     label: 'Lists'         },

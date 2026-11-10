@@ -8,7 +8,10 @@ import { SETTINGS_VIEW } from './copy/settingsView.js';
 import { FREE_CUSTOM_LIST_CAP } from './premium.js';
 import { isPremiumFamily } from './themes.js';
 
-/** @typedef {'lists' | 'themes' | 'pins' | 'smartLists' | 'collaborativeLists' | 'alerts' | 'seasonAlerts' | 'alertEmail'} UpgradeReason */
+/**
+ * @typedef {'lists' | 'themes' | 'pins' | 'smartLists' | 'collaborativeLists' | 'alerts' | 'seasonAlerts' | 'alertEmail'
+ *   | 'artwork' | 'stats' | 'tasteOverlap' | 'calendarFeed' | 'autoImport' | 'justDecide' | 'watchTogether'} UpgradeReason
+ */
 
 /**
  * @typedef {object} UpgradeSheetContent
@@ -55,12 +58,21 @@ const UNTRACKED_GATE_FEATURES = {
   alerts: 'people_alerts',
   seasonAlerts: 'season_alerts',
   alertEmail: 'alert_email',
+  artwork: 'custom_artwork',
+  stats: 'history_drilldown',
+  tasteOverlap: 'taste_overlap',
+  calendarFeed: 'calendar_feed',
+  autoImport: 'auto_import',
+  // The sheet replaced Just Decide's own unlock card, which fired this slug.
+  justDecide: 'tonight_picker',
+  // watchTogether is absent on purpose: the overlap page fires
+  // `watch_together` itself when it loads locked.
 };
 
 /**
  * The `premium_gate_hit` feature slug for sheet reasons whose callers do not
- * already emit `premium_gate_hit` (`lists`, `smartLists`, and
- * `collaborativeLists` emit at their action site).
+ * already emit `premium_gate_hit` (`lists`, `smartLists`, `collaborativeLists`
+ * and `watchTogether` emit at their action site).
  *
  * @param {UpgradeReason} reason
  * @returns {string | null}
@@ -87,7 +99,8 @@ export function onUpgradeSheetGateHit(fn) {
 
 /**
  * Emit `premium_gate_hit` for sheet reasons whose callers do not already emit
- * at their action site (`lists`, `smartLists`, `collaborativeLists`).
+ * at their action site (`lists`, `smartLists`, `collaborativeLists`,
+ * `watchTogether`).
  *
  * @param {UpgradeReason} reason
  */

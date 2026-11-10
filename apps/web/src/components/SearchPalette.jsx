@@ -16,6 +16,7 @@ import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { COMMON } from '../copy/common.js';
 import Spinner from './Spinner.jsx';
+import Icon from './Icon.jsx';
 import './SearchPalette.css';
 
 /* Web-only rendering: a command palette over whatever is on screen, opened by
@@ -108,9 +109,7 @@ function Row({ item, active, index, onHover, onSelect, watchlist, history, genre
       </span>
       {watched && <span className="chip chip-episode">{MEDIA.watched}</span>}
       {inList && (
-        <svg className="search-palette-saved" viewBox="0 0 24 24" aria-label={MEDIA.saveToWatchlist}>
-          <path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" />
-        </svg>
+        <Icon name="bookmark" filled className="search-palette-saved" label={MEDIA_PANEL.inWatchlist} />
       )}
       <span className={`search-palette-kind${kind === 'library' ? ' own' : ''}`}>{kindLabel}</span>
       {active && <Kbd>↵</Kbd>}
@@ -118,13 +117,13 @@ function Row({ item, active, index, onHover, onSelect, watchlist, history, genre
   );
 }
 
-export default function SearchPalette({ onClose }) {
+export default function SearchPalette({ onClose, initialQuery = '' }) {
   const { openPanel, watchlist, watching, user } = useApp();
   const navigate = useNavigate();
   const history = useHistory(user?.id);
   const { genres } = useGenres();
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [active, setActive] = useState(0);
   const [recent, setRecent] = useState(readRecent);
 

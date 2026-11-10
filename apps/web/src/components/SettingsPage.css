@@ -145,3 +145,6 @@
   .settings-billing-actions { align-items: flex-start; flex-direction: column; gap: .75rem; }
   .settings-premium-card { padding: 1.25rem; }
 }
+
+/* Premium spark after a row label. */
+.settings-premium-mark { margin-left: 0.35rem; }

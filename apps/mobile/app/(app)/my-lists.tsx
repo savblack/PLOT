@@ -767,7 +767,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         {viewTab === 'watching' && watching.items.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>Not watching anything</Text>
-            <Text style={styles.emptyBody}>Start a series from Want to Watch or Search.</Text>
+            <Text style={styles.emptyBody}>Start a series from your watchlist or Search.</Text>
           </View>
         )}
 
@@ -784,7 +784,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 sel={wantSel}
                 count={sortedSaved.length}
                 deleteLabel={MEDIA.removeFromWatchlist}
-                menuLabel="Want to Watch options"
+                menuLabel="Watchlist options"
                 onDelete={async () => {
                   const ids = [...wantSel.selected];
                   const batch = createUndoBatch({ action: UNDO_ACTIONS.WATCHLIST_REMOVE });
@@ -888,8 +888,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             expandSignal={historyExpand}
             sharePreset={sharePreset}
             drilldown={drilldown}
-            onDrilldown={premium ? setDrilldown : () => router.push(PREMIUM_SETTINGS_PATH as Href)}
-            drilldownLocked={!premium}
+            onDrilldown={premium ? setDrilldown : undefined}
+            onUpgrade={premium ? undefined : () => router.push(PREMIUM_SETTINGS_PATH as Href)}
             onClearDrilldown={clearDrilldown}
             onSharePresetUsed={() => {
               setTab('history');

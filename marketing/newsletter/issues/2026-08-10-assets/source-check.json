@@ -1,0 +1,259 @@
+{
+  "issue_date": "2026-08-10",
+  "status": "Draft",
+  "notion": {
+    "date": "2026-08-10",
+    "url": "https://app.notion.com/p/3fc4f244aec781ee93d7c61ce754c586?pvs=204",
+    "id": "3fc4f244-aec7-81ee-93d7-c61ce754c586",
+    "verification": {
+      "date": "2026-08-10",
+      "draft": true,
+      "seo": true,
+      "preview": true,
+      "images": 6,
+      "trailers": 3,
+      "footer": 1,
+      "localPath": false,
+      "chartWarning": false
+    }
+  },
+  "publication_blockers": [
+    "Savannah to select the GIF and approve the draft."
+  ],
+  "newsletter_lint": [],
+  "chart_snapshot": "2026-08-06",
+  "media": [
+    {
+      "requested_title": "One Hundred Years of Solitude",
+      "id": 207333,
+      "type": "tv",
+      "title": "One Hundred Years of Solitude",
+      "date": "2024-12-11",
+      "overview": "In the mythical town Macondo, seven generations of the Buend\u00eda family navigate love, oblivion and the inescapability of their past \u2014 and their fate.",
+      "backdrop": "/5mcc7J07f680Q88xeLClf5SIZtt.jpg",
+      "homepage": "https://www.netflix.com/title/81087583",
+      "episodes": 16
+    },
+    {
+      "requested_title": "One Night Only",
+      "id": 1433367,
+      "type": "movie",
+      "title": "One Night Only",
+      "date": "2026-08-07",
+      "overview": "Two love-starved strangers crash into each other on the one night of the year when single people are allowed to have sex.",
+      "backdrop": "/3afHil7EVm655wO2NS6RHxuyicE.jpg",
+      "homepage": "https://www.universalpictures.com/movies/one-night-only",
+      "runtime": 103
+    },
+    {
+      "requested_title": "Teenage Sex and Death at Camp Miasma",
+      "id": 1240889,
+      "type": "movie",
+      "title": "Teenage Sex and Death at Camp Miasma",
+      "date": "2026-08-07",
+      "overview": "An ambitious director sets out to revive a faded slasher franchise, but her meeting with the film\u2019s reclusive original star spirals into a terrifying maze of obsession, fear, and blood-soaked delusion.",
+      "backdrop": "/d1n2ySWSanU34eEsluRjfrjRq52.jpg",
+      "homepage": "https://mubi.com/en/campmiasma",
+      "runtime": 112
+    },
+    {
+      "requested_title": "Spider-Man: Brand New Day",
+      "id": 969681,
+      "type": "movie",
+      "title": "Spider-Man: Brand New Day",
+      "date": "2026-07-31",
+      "overview": "Fighting crime full-time as Spider-Man in a world that doesn't remember him\u2014and the pressure of seeing his old friends move on without him\u2014sparks a change in Peter Parker he may not have the power to control. But that transformation might also be the only thing that can stop a shocking new threat to the city and those he loves - a powerful villain no one can even see.",
+      "backdrop": "/4tjxYg2AbOzzG9G1YuiT2NzYhlH.jpg",
+      "homepage": "https://spidermanbrandnewday.movie",
+      "runtime": 145
+    },
+    {
+      "requested_title": "The Last House",
+      "id": 1284041,
+      "type": "movie",
+      "title": "The Last House",
+      "date": "2026-08-07",
+      "overview": "A family suddenly sealed inside their home must work together to survive against dwindling resources and the ominous threat keeping them trapped.",
+      "backdrop": "/1RhfevWmWCVHtEqxWBEjPOC5KG1.jpg",
+      "homepage": "https://www.netflix.com/title/81914143",
+      "runtime": 110
+    },
+    {
+      "requested_title": "Ricky Gervais Alley Cats",
+      "id": 300480,
+      "type": "tv",
+      "title": "Ricky Gervais Alley Cats",
+      "date": "2026-08-07",
+      "overview": "Outrageous misadventures run wild as feral cats cause chaos on the streets in this no-holds-barred animated comedy from Ricky Gervais.",
+      "backdrop": "/auLT0EPtqtt5MwryoC2MoAG595F.jpg",
+      "homepage": "https://www.netflix.com/title/81658840",
+      "episodes": 6
+    },
+    {
+      "requested_title": "The End of Oak Street",
+      "id": 1101383,
+      "type": "movie",
+      "title": "The End of Oak Street",
+      "date": "2026-08-14",
+      "overview": "After a mysterious cosmic event rips Oak Street from suburbia and transports their neighborhood to someplace unknown, the Platt family soon discovers that their very survival depends on them sticking together as they navigate their now unrecognizable surroundings.",
+      "backdrop": "/b9q9VmbXDvJmTziRqkwdEmFdwhr.jpg",
+      "homepage": "https://www.endofoakstreet.com",
+      "runtime": 100
+    },
+    {
+      "requested_title": "PAW Patrol: The Dino Movie",
+      "id": 1185806,
+      "type": "movie",
+      "title": "PAW Patrol: The Dino Movie",
+      "date": "2026-08-14",
+      "overview": "The Paw Patrol lands on a mysterious dinosaur island after a storm, where they meet Rex, a stranded pup. When Humdinger's reckless mining triggers a volcano, the team faces their biggest rescue mission yet to save the island.",
+      "backdrop": "/6TSxLmwT7j1ugtKi8NyMmdzWAGj.jpg",
+      "homepage": "https://www.paramountpictures.com/movies/paw-patrol-3-the-dino-movie",
+      "runtime": 88
+    },
+    {
+      "requested_title": "The Rivals of Amziah King",
+      "id": 1124142,
+      "type": "movie",
+      "title": "The Rivals of Amziah King",
+      "date": "2026-08-14",
+      "overview": "Deep within the backwoods of rural Oklahoma, charismatic and musically gifted Amziah King herds a bluegrass-playing band of misfits while overseeing the premier honey-making operation in town. When Amziah\u2019s estranged foster daughter unexpectedly returns, Amziah leaps at the possibility to renew connection and create a family business. But the honey game is ruthless, and Amziah\u2019s rivals threaten to destroy everything he has built.",
+      "backdrop": "/nBSlvQrDX60rmngwcxMeMq33I9m.jpg",
+      "homepage": "https://amziahking.film/",
+      "runtime": 131
+    },
+    {
+      "requested_title": "MOURINHO",
+      "id": 329274,
+      "type": "tv",
+      "title": "MOURINHO",
+      "date": "2026-08-11",
+      "overview": "This trophy-packed, insider-fuelled documentary charts Jos\u00e9 Mourinho's iconic rise as one of the world's top footballing managers of the most elite clubs.",
+      "backdrop": "/ucEswoBdNxw3UchQ6WHxnGU4g1a.jpg",
+      "homepage": "https://www.netflix.com/title/81762073",
+      "episodes": 3
+    },
+    {
+      "requested_title": "Don't Say Good Luck",
+      "id": 1504358,
+      "type": "movie",
+      "title": "Don't Say Good Luck",
+      "date": "2026-08-14",
+      "overview": "Sophie Birenbaum is ready for the spotlight as the lead in her high school musical\u2014until she's suddenly facing more drama at home than on the stage.",
+      "backdrop": "/yzdMGn8IRHSGuV8AIzw19wkRU2W.jpg",
+      "homepage": "https://www.netflix.com/title/81975622",
+      "runtime": 96
+    }
+  ],
+  "trailers": [
+    {
+      "issue_date": "2026-08-10",
+      "title": "The End of Oak Street",
+      "key": "3oB9AxspVow",
+      "name": "Official Trailer",
+      "date": "2026-06-01T13:00:20.000Z",
+      "status": 200,
+      "video_title": "The End of Oak Street | Official Trailer",
+      "channel": "Warner Bros."
+    },
+    {
+      "issue_date": "2026-08-10",
+      "title": "PAW Patrol: The Dino Movie",
+      "key": "xgI5iYmOf5Q",
+      "name": "Official Trailer",
+      "date": "2026-06-10T13:00:02.000Z",
+      "status": 200,
+      "video_title": "PAW Patrol: The Dino Movie | Official Trailer (2026 Movie)",
+      "channel": "Paramount Pictures"
+    },
+    {
+      "issue_date": "2026-08-10",
+      "title": "The Rivals of Amziah King",
+      "key": "GwSvAyaMGMo",
+      "name": "Official Trailer",
+      "date": "2026-05-11T16:02:12.000Z",
+      "status": 200,
+      "video_title": "THE RIVALS OF AMZIAH KING | Official Trailer | In Theaters This August",
+      "channel": "Black Bear "
+    }
+  ],
+  "source_urls": [
+    "https://www.themoviedb.org/tv/207333",
+    "https://image.tmdb.org/t/p/w780/3afHil7EVm655wO2NS6RHxuyicE.jpg",
+    "https://www.themoviedb.org/movie/1433367",
+    "https://au.variety.com/2026/film/news/one-night-only-film-review-39171/",
+    "https://mubi.com/en/campmiasma",
+    "https://www.youtube.com/watch?v=8TZMtslA3UY",
+    "https://www.the-independent.com/arts-entertainment/tv/reviews/one-hundred-years-solitude-netflix-review-b3027334.html",
+    "https://www.moneycontrol.com/entertainment/one-hundred-years-of-solitude-part-2-review-gabriel-garc-a-m-rquez-s-macondo-s-beautiful-decline-is-captured-with-heart-and-care-article-13998422.html",
+    "https://www.reddit.com/r/TheBigPicture/comments/1vj02ep/one_night_only_spreadsheet_vs_spreadsheet/",
+    "https://image.tmdb.org/t/p/w780/1RhfevWmWCVHtEqxWBEjPOC5KG1.jpg",
+    "https://www.themoviedb.org/movie/1284041",
+    "https://media.netflix.com/en/only-on-netflix/81914143",
+    "https://image.tmdb.org/t/p/w780/auLT0EPtqtt5MwryoC2MoAG595F.jpg",
+    "https://www.themoviedb.org/tv/300480",
+    "https://media.netflix.com/en/only-on-netflix/81658840",
+    "https://theplot.tv/movie/spider-man-brand-new-day-969681",
+    "https://theplot.tv/movie/supergirl-1081003",
+    "https://theplot.tv/movie/the-odyssey-1368337",
+    "https://theplot.tv/movie/obsession-1339713",
+    "https://theplot.tv/movie/the-devil-s-mouth-1481343",
+    "https://theplot.tv/movie/avatar-aang-the-last-airbender-980431",
+    "https://theplot.tv/movie/disclosure-day-1275779",
+    "https://theplot.tv/movie/backrooms-1083381",
+    "https://theplot.tv/tv/bleach-30984",
+    "https://theplot.tv/movie/masters-of-the-universe-454639",
+    "https://theplot.tv/whats-on/chart",
+    "https://image.tmdb.org/t/p/w780/ucEswoBdNxw3UchQ6WHxnGU4g1a.jpg",
+    "https://www.themoviedb.org/tv/329274",
+    "https://www.netflix.com/tudum/articles/what-to-watch-on-netflix-august-7-2026",
+    "https://app.theplot.tv/save?media_type=tv&tmdb_id=329274&src=newsletter",
+    "https://image.tmdb.org/t/p/w780/yzdMGn8IRHSGuV8AIzw19wkRU2W.jpg",
+    "https://www.themoviedb.org/movie/1504358",
+    "https://media.netflix.com/en/only-on-netflix/81975622",
+    "https://app.theplot.tv/save?media_type=movie&tmdb_id=1504358&src=newsletter"
+  ],
+  "primary_page_checks": [
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81914143",
+      "title": "The Last House | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://mubi.com/en/campmiasma",
+      "title": "Watch Teenage Sex and Death at Camp Miasma (2026) on MUBI",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81658840",
+      "title": "Ricky Gervais Alley Cats | Netflix Media Center",
+      "status": 200
+    },
+    {
+      "url": "https://media.netflix.com/en/only-on-netflix/81975622",
+      "title": "Don&#x27;t Say Good Luck | Netflix Media Center",
+      "status": 200
+    }
+  ],
+  "editorial_review": "Written for the issue date using contemporary reviews, audience threads, release announcements, and official trailers. Review opinions are attributed; individual posts are not treated as audience-wide consensus. HTTP status alone is not evidence of a claim.",
+  "layout": [
+    {
+      "date": "2026-08-10",
+      "width": 390,
+      "scroll": 390,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    },
+    {
+      "date": "2026-08-10",
+      "width": 1280,
+      "scroll": 1280,
+      "images": 10,
+      "broken": [],
+      "trailers": 3,
+      "errors": []
+    }
+  ]
+}

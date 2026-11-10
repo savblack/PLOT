@@ -66,3 +66,24 @@ test('upgradeSheetGateFeature maps sheet-only reasons and skips caller-tracked l
   reportUpgradeSheetGateHit('alerts');
   assert.deepEqual(hits, ['themes', 'pins']);
 });
+
+test('every gate reason has sheet copy with no em dash, and the new ones report a feature', () => {
+  const reasons = ['artwork', 'stats', 'tasteOverlap', 'calendarFeed', 'autoImport', 'justDecide', 'watchTogether'];
+  for (const reason of reasons) {
+    const content = upgradeSheetContent(reason);
+    assert.ok(content, reason);
+    assert.equal(content.meter, 0);
+    assert.ok(content.title.length > 0 && content.body.length > 0 && content.context.length > 0, reason);
+    assert.equal(content.also.length, 2, reason);
+    assert.doesNotMatch(`${content.context} ${content.title} ${content.body}`, /—/);
+  }
+  assert.equal(upgradeSheetGateFeature('artwork'), 'custom_artwork');
+  assert.equal(upgradeSheetGateFeature('stats'), 'history_drilldown');
+  assert.equal(upgradeSheetGateFeature('tasteOverlap'), 'taste_overlap');
+  assert.equal(upgradeSheetGateFeature('calendarFeed'), 'calendar_feed');
+  assert.equal(upgradeSheetGateFeature('autoImport'), 'auto_import');
+  // The sheet replaced Just Decide's own card, so it carries that card's slug.
+  assert.equal(upgradeSheetGateFeature('justDecide'), 'tonight_picker');
+  // The overlap page reports watch_together itself when it loads locked.
+  assert.equal(upgradeSheetGateFeature('watchTogether'), null);
+});

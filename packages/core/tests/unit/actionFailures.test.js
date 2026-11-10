@@ -37,6 +37,11 @@ test('classifyFailure recognises a failed fetch as network', () => {
   assert.equal(classifyFailure({ message: 'Network request failed' }), 'network');
 });
 
+test('classifyFailure reads the auth time limit as a timeout', () => {
+  // withAuthTimeout's sentinel: no code, no status, so without this it was 'unknown'.
+  assert.equal(classifyFailure({ message: 'auth-timeout' }), 'timeout');
+});
+
 test('classifyFailure treats no error and no row as its own kind', () => {
   // An update RLS narrows to zero rows returns exactly this.
   assert.equal(classifyFailure(null), 'no_data');

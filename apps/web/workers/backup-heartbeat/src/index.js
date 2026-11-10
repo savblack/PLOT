@@ -50,41 +50,60 @@ export function assess(newest, { maxAgeHours, minBytes, now }) {
   return { ok: true, newest, ageHours };
 }
 
-async function sendAlert(env, verdict) {
+/**
+ * One email through Resend, to ALERT_EMAIL from ALERT_FROM. Shared by the real
+ * alarm and the test email, so a passing test proves the alarm's exact path:
+ * same key, same sender, same recipient.
+ */
+async function sendEmail(env, { subject, html }) {
   if (!env.RESEND_API_KEY) {
     // Nothing to escalate to. Log loudly so `wrangler tail` shows it.
-    console.error('BACKUP HEARTBEAT FAILED and RESEND_API_KEY is unset:', verdict.reason);
+    console.error('BACKUP HEARTBEAT wanted to email and RESEND_API_KEY is unset:', subject);
     return { sent: false, error: 'RESEND_API_KEY unset' };
   }
-  const detail = verdict.newest
-    ? `<p>Newest artifact: <code>${verdict.newest.key}</code>, ${verdict.newest.size} bytes, uploaded ${verdict.newest.uploaded.toISOString()}.</p>`
-    : '<p>No dump artifact was found at all.</p>';
-
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${env.RESEND_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      from: env.ALERT_FROM,
-      to: [env.ALERT_EMAIL],
-      subject: 'Plot: no fresh database backup in R2',
-      html:
-        `<p><strong>${verdict.reason}</strong></p>${detail}` +
-        '<p>The Supabase project is on the free plan, so there are no managed backups behind this. ' +
-        'Check <code>.github/workflows/db-backup.yml</code> — if its runs are absent rather than failing, ' +
-        'the cause is upstream of the workflow (GitHub Actions billing or a disabled schedule).</p>' +
-        '<p>Runbook: <code>docs/ops/db-restore.md</code></p>',
-    }),
+    body: JSON.stringify({ from: env.ALERT_FROM, to: [env.ALERT_EMAIL], subject, html }),
   });
   if (!res.ok) {
     const body = await res.text();
-    console.error('Resend rejected the alert:', res.status, body);
+    console.error('Resend rejected the email:', res.status, body);
     return { sent: false, error: `resend ${res.status}` };
   }
   return { sent: true };
 }
+
+async function sendAlert(env, verdict) {
+  const detail = verdict.newest
+    ? `<p>Newest artifact: <code>${verdict.newest.key}</code>, ${verdict.newest.size} bytes, uploaded ${verdict.newest.uploaded.toISOString()}.</p>`
+    : '<p>No dump artifact was found at all.</p>';
+
+  return sendEmail(env, {
+    subject: 'Plot: no fresh database backup in R2',
+    html:
+      `<p><strong>${verdict.reason}</strong></p>${detail}` +
+      '<p>The Supabase project is on the free plan, so there are no managed backups behind this. ' +
+      'Check <code>.github/workflows/db-backup.yml</code> — if its runs are absent rather than failing, ' +
+      'the cause is upstream of the workflow (GitHub Actions billing or a disabled schedule).</p>' +
+      '<p>Runbook: <code>docs/ops/db-restore.md</code></p>',
+  });
+}
+
+/**
+ * The test email sent by `?test-email=1`. The alarm only fires on the day a
+ * backup is missing, so a dead Resend key would otherwise stay hidden until
+ * the one morning it matters. Exported for tests (copy rules: no em dashes).
+ */
+export const TEST_EMAIL = {
+  subject: 'Plot: backup alarm test email',
+  html:
+    '<p>This is a test from the backup heartbeat. Nothing is wrong with the backups.</p>' +
+    '<p>If a nightly database backup ever goes missing, the real alarm will arrive from this address, the same way.</p>',
+};
 
 /**
  * The Storage backup needs a different test. It writes one encrypted archive a
@@ -194,13 +213,18 @@ export default {
   /**
    * Manual status endpoint, gated by a shared token. Without HEARTBEAT_TOKEN set
    * this returns 404 rather than leaking backup timing to anyone who finds the
-   * workers.dev URL.
+   * workers.dev URL. ?test-email=1 skips the check and only sends TEST_EMAIL,
+   * to prove the alarm still reaches the inbox.
    */
   async fetch(request, env) {
     const expected = env.HEARTBEAT_TOKEN;
     const provided = request.headers.get('x-heartbeat-token');
     if (!expected || provided !== expected) {
       return new Response('Not found', { status: 404 });
+    }
+    if (new URL(request.url).searchParams.get('test-email') === '1') {
+      const result = await sendEmail(env, TEST_EMAIL);
+      return Response.json(result, { status: result.sent ? 200 : 502 });
     }
     const verdict = await check(env);
     return Response.json(summarise(verdict), {
