@@ -54,7 +54,7 @@ function Progress({ step }) {
  *               selectedIds: number[], onToggle: (id: number) => void, region: string, editingRegion: boolean,
  *               onEditRegion: () => void, onRegion: (code: string) => void, onRegionDone: () => void,
  *               onContinue: () => void },
- *   building: { leaving: boolean, shelf: any[], line: string },
+ *   building: { leaving: boolean, shelf: any[], lines: string[], lineIndex: number },
  * }} props
  */
 export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, importStep, services, building }) {
@@ -225,17 +225,19 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
               {Array.from({ length: BUILDING_SHELF_SIZE }, (_, i) => {
                 const item = building.shelf[i];
                 return (
-                  <div key={item?.id ?? `empty-${i}`} className="ob-shelf-card" style={{ animationDelay: `${i * 60}ms` }}>
+                  <div key={item?.id ?? `empty-${i}`} className="ob-shelf-card" style={{ animationDelay: `${i * 60}ms, ${750 + i * 120}ms` }}>
                     {item?.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" />}
                   </div>
                 );
               })}
             </div>
             <h1 className="ob-building-title">{F.building.heading} <PlotLogo style={{ fontSize: 30 }} /></h1>
-            <p className="ob-building-line" role="status">
+            <div className="ob-lines" role="status">
               <span className="ob-sr">{F.building.status}</span>
-              <span aria-hidden="true">{building.line}</span>
-            </p>
+              {building.lines.map((text, i) => (
+                <p key={text} className={`ob-line${i === building.lineIndex ? ' is-on' : ''}`} aria-hidden="true">{text}</p>
+              ))}
+            </div>
           </div>
         )}
       </div>

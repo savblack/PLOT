@@ -7,7 +7,7 @@ import {
 } from '../../finishingTouches.js';
 import { greetingFor, partOfDay } from '../../greeting.js';
 import {
-  buildingShelf, firstNameFromAuthUser, topRegionServices,
+  buildingLines, buildingShelf, firstNameFromAuthUser, topRegionServices,
 } from '../../onboardingSetup.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -115,6 +115,14 @@ test('services: most popular first', () => {
     { provider_id: -3, provider_name: 'C' },
   ], 2);
   assert.deepEqual(services, [{ id: -1, name: 'A', logo_path: '/a.png' }, { id: -2, name: 'B', logo_path: null }]);
+});
+
+test('building lines swap the first line for skipped services or a running import', () => {
+  assert.match(buildingLines(true)[0], /your platforms/);
+  assert.match(buildingLines(false)[0], /every platform/);
+  assert.equal(buildingLines(true, 'Matching your Letterboxd history…')[0], 'Matching your Letterboxd history…');
+  assert.equal(buildingLines(false, 'Matching…').length, 4);
+  assert.match(buildingLines(true)[2], /popcorn/);
 });
 
 test('the building shelf puts picks first, then fills with trending titles they did not pick', () => {
