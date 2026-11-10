@@ -792,10 +792,19 @@ export default function AuthPage({ initialMode = 'signup' }) {
     if (!attemptIsCurrent(epoch)) return;
     setResendStatus(bypass.ok ? 'sent' : 'error');
     if (!bypass.ok) {
+      // No HTTP status means the call never got an answer: the time limit
+      // (analyticsReason bypass_timeout) or a failed fetch, which the client
+      // words as connectionFailed.
+      let kind;
+      if (!bypass.status) {
+        if (bypass.analyticsReason === 'bypass_timeout') kind = 'timeout';
+        else if (bypass.message === AUTH_PAGE.connectionFailed) kind = 'network';
+        else kind = 'unknown';
+      }
       reportActionFailure(
         FAILED_ACTIONS.CONFIRMATION_RESEND,
         bypass.status ? { status: bypass.status } : null,
-        { source: 'signup_bypass', ...(bypass.status ? {} : { kind: 'unknown' }) },
+        { source: 'signup_bypass', ...(kind ? { kind } : {}) },
       );
     }
   };
