@@ -42,7 +42,8 @@ const DIRECTIVES = [
   "img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv https://www.google.com https://www.google.com.au https://*.google-analytics.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
-  "connect-src 'self' https://a.theplot.tv https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://cloudflareinsights.com",
+  // tmdb-proxy: the homepage search bar's live results (js/hero-search.js).
+  "connect-src 'self' https://tmdb-proxy.sav-black.workers.dev https://a.theplot.tv https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://cloudflareinsights.com",
   "frame-src https://www.googletagmanager.com",
   "worker-src 'self' blob:",
   // The homepage search bar submits to app signup (GET, ?q=).

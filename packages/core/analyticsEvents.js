@@ -126,7 +126,9 @@ export const EVENTS = Object.freeze({
   SEARCH_PERFORMED: 'search_performed',
   // Search opened by itself on a new account's first visit to the app, with
   // the title they typed into the theplot.tv homepage search bar before
-  // signing up. Web only. Props: query_length. Never the query.
+  // signing up. Web only. Props: query_length, opened ('title' when the
+  // search had one clear match and that title opened, else 'search'). Never
+  // the query.
   SIGNUP_SEARCH_RESUMED: 'signup_search_resumed',
   TITLE_VIEWED: 'title_viewed',
   DISCOVER_TAB_CHANGED: 'discover_tab_changed',
