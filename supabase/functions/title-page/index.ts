@@ -179,10 +179,10 @@ async function buildTitlesSitemap(): Promise<{ xml: string; count: number }> {
   for (const it of ((snaps?.[0]?.items as unknown[] | null) || [])) add((it as any).media_type, (it as any).tmdb_id, (it as any).title);
 
   // Every title a title page has rendered or linked to, most recently seen
-  // first. last_seen_at moves at most once a day unless the stored title
-  // changed (record_title_page_index). This sitemap is rebuilt once a day and
-  // is the only reader, so that granularity matches it. The 45,000 cap is
-  // still above the table, so a day of staleness does not drop a URL.
+  // first. last_seen_at moves at most once a week unless the stored title
+  // changed (record_title_page_index). This sitemap is the only reader and
+  // only uses the order; the 45,000 cap is still above the table, so a week
+  // of staleness does not drop a URL.
   for (let from = 0; from < INDEX_LIMIT; from += INDEX_PAGE) {
     const { data: seen, error } = await supabase
       .from('title_page_index')
