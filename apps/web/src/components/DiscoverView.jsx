@@ -676,7 +676,7 @@ function YourPeopleSection({ shelf, openPanel }) {
     return (
       <section id={HOME_SECTION.people.id} className="discover-section">
         <DiscoverSectionHeader title={HOME_SECTION.people.label} subtitle={PEOPLE.shelf.inviteSubtitle} />
-        <PeopleInvite suggestions={shelf.suggestions} isFollowing={follow.isFollowing} busyId={follow.busyId} onToggle={follow.toggle} onOpenPerson={id => navigate(`/person/${id}`)} />
+        <PeopleInvite suggestions={shelf.suggestions} isFollowing={follow.isFollowing} busyId={follow.busyId} onToggle={follow.toggle} onOpenPerson={id => openPanel(id, 'person', 'home_people')} />
         {follow.sheet}
       </section>
     );

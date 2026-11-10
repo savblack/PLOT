@@ -176,6 +176,9 @@ export const EVENTS = Object.freeze({
   COLLECTION_SAVED_AS_LIST: 'collection_saved_as_list',
   CURATED_LIST_SAVED: 'curated_list_saved',
   COLLECTION_VIEWED: 'collection_viewed',
+  // A person (cast or crew) opened in the panel from outside a title: search,
+  // Home, Your People, the year in History. Not a title, so not TITLE_VIEWED.
+  PERSON_VIEWED: 'person_viewed',
   // Putting a title *in* a list is a separate action from making the list, and
   // it's the one that actually indicates the feature is being used.
   LIST_ITEM_ADDED: 'list_item_added',

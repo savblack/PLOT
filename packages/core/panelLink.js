@@ -1,4 +1,4 @@
-// The address of an open panel (a title or a collection), as one query
+// The address of an open panel (a title, a collection or a person), as one query
 // parameter on whatever page is behind it: `/home?panel=movie-438631`.
 //
 // Before this the panel lived only in React state, so the browser's Back
@@ -12,10 +12,10 @@
 // links if it ever opens them.
 
 export const PANEL_PARAM = 'panel';
-const PANEL_TYPES = ['movie', 'tv', 'collection'];
+const PANEL_TYPES = ['movie', 'tv', 'collection', 'person'];
 
 /**
- * @typedef {{ id: number, type: 'movie' | 'tv' | 'collection' }} PanelTarget
+ * @typedef {{ id: number, type: 'movie' | 'tv' | 'collection' | 'person' }} PanelTarget
  */
 
 /** @param {PanelTarget} target */

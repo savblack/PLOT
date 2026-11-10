@@ -25,11 +25,15 @@ export default function Harness() {
       </nav>
       <button type="button" onClick={() => openPanel(11, 'movie', 'rail')}>Open film 11</button>
       <button type="button" onClick={() => openPanel(7, 'collection', 'rail')}>Open collection 7</button>
+      <button type="button" onClick={() => openPanel(5, 'person', 'search')}>Open person 5</button>
       <button type="button" onClick={() => setSearchParams({ type: 'tv' })}>Filter this page</button>
       {shown && (
         <aside role="dialog" aria-label={`${panelItem.type} ${panelItem.id}`}>
           {panelItem.type === 'collection' && (
             <button type="button" onClick={() => openPanel(12, 'movie', 'collection')}>Open film 12 from the collection</button>
+          )}
+          {panelItem.type === 'person' && (
+            <button type="button" onClick={() => openPanel(13, 'movie', 'person')}>Open film 13 from the person</button>
           )}
           <button type="button" onClick={closePanel}>Close</button>
         </aside>
