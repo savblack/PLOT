@@ -2,14 +2,15 @@
  * The order of the shows someone is watching.
  *
  * "Last watched" is the default everywhere a Watching list is drawn (Home's
- * Continue watching, My Lists, the public profile). It is the latest of:
- *   - the episode pointer moving (watching_progress.updated_at),
- *   - an episode ticked on the title page (episode_watch_overrides, watched),
- *   - an imported or synced episode landing (watch_events.created_at),
- *   - the show being logged in History (history.created_at).
- * Only the first lives on the pointer row, so the rest are folded in here as
- * `last_activity_at`. A public profile can read only the pointer (the other
- * three are owner-only), so there it falls back to updated_at.
+ * Continue watching, My Lists, the public profile). It is the later of the
+ * pointer row's two times:
+ *   - updated_at: the episode pointer moving,
+ *   - last_activity_at: an imported or synced episode, an episode ticked on
+ *     the title page, or the show logged in History. Triggers keep it current
+ *     (20261111100000), so it is readable wherever the pointer row is,
+ *     including a visitor's view of a public profile.
+ * last_activity_at deliberately leaves pointer moves out: undoing a tick puts
+ * the old updated_at back, and that has to move the show back too.
  */
 
 /** @typedef {'last_watched' | 'next_air_date' | 'recently_added' | 'title'} WatchingSort */
@@ -38,31 +39,6 @@ function later(a, b) {
 }
 
 /**
- * Latest activity per show from the owner-only sources. Rows for other media
- * types or unwatched corrections are ignored.
- * @param {{
- *   events?: Array<{ tmdb_id: number, created_at?: string | null }>,
- *   overrides?: Array<{ tmdb_id: number, watched?: boolean, updated_at?: string | null }>,
- *   history?: Array<{ tmdb_id: number, created_at?: string | null }>,
- * }} sources
- * @returns {Map<number, string>}
- */
-export function latestActivityByShow({ events = [], overrides = [], history = [] } = {}) {
-  /** @type {Map<number, string>} */
-  const byId = new Map();
-  const note = (id, at) => {
-    const key = Number(id);
-    if (!key || !at) return;
-    const next = later(byId.get(key), at);
-    if (next) byId.set(key, next);
-  };
-  for (const e of events) note(e.tmdb_id, e.created_at);
-  for (const o of overrides) if (o.watched !== false) note(o.tmdb_id, o.updated_at);
-  for (const h of history) note(h.tmdb_id, h.created_at);
-  return byId;
-}
-
-/**
  * When the viewer last did something with this show.
  * @param {{ updated_at?: string | null, last_activity_at?: string | null }} row
  * @returns {number} epoch milliseconds, 0 when unknown
@@ -72,7 +48,8 @@ export function lastActivityAt(row) {
 }
 
 /**
- * Stamp each pointer row with its latest outside activity. A row the map does
+ * Stamp each pointer row with its latest outside activity (tmdb_id →
+ * last_activity_at, as readWatchingActivity returns it). A row the map does
  * not mention keeps the value it already had, so a tick's fresh server row can
  * be passed back through with the previous row's activity.
  * @template {{ tmdb_id: number, last_activity_at?: string | null }} T
@@ -122,4 +99,22 @@ export function sortWatching(rows, sort = DEFAULT_WATCHING_SORT, { nextAirDateBy
     default:
       return list.sort(byLastWatched);
   }
+}
+
+/**
+ * The `limit` most recently watched shows, from two reads of the same
+ * watching_progress rows: the newest by updated_at and the newest by
+ * last_activity_at. PostgREST cannot order by greatest() of two columns, but
+ * a show in the top `limit` by the later of its two times is in the top
+ * `limit` of whichever column holds that time, so the union of the two pages
+ * always contains the answer.
+ * @template {{ tmdb_id: number, title?: string, updated_at?: string | null, last_activity_at?: string | null }} T
+ * @param {T[]} byPointer @param {T[]} byActivity @param {number} limit
+ * @returns {T[]}
+ */
+export function latestWatching(byPointer, byActivity, limit) {
+  /** @type {Map<number, T>} */
+  const byId = new Map();
+  for (const row of [...(byPointer ?? []), ...(byActivity ?? [])]) byId.set(Number(row.tmdb_id), row);
+  return sortWatching([...byId.values()]).slice(0, limit);
 }

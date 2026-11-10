@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
+import { readLatestWatching } from './watchingActivity.js';
 
 /**
  * Read-only profile data for /u/:username.
@@ -73,13 +74,11 @@ export function usePublicProfile(username, viewerId = null) {
       supabase.from('user_custom_lists')
         .select('id, name, visibility, items:user_custom_list_items(tmdb_id, media_type, title, poster_path)')
         .eq('user_id', uid).in('visibility', ['public', 'followers']).order('created_at', { ascending: true }),
-      // Last watched, as far as a visitor can see: episode ticks, imports and
-      // History logs are owner-only (watchingOrder.js), so only the pointer's
-      // updated_at is readable here. Ordered server-side so the cap keeps the
-      // most recent shows.
-      supabase.from('watching_progress')
-        .select('tmdb_id, title, poster_path, current_season, current_episode')
-        .eq('user_id', uid).order('updated_at', { ascending: false }).limit(18),
+      // Last watched, the same order the owner sees: the pointer time or the
+      // latest import, tick or History log, whichever is later
+      // (watchingOrder.js). Capped after ordering so the cap keeps the most
+      // recent shows.
+      readLatestWatching(uid, 18),
       supabase.from('list_items')
         .select('tmdb_id, media_type, title, poster_path')
         .eq('user_id', uid).order('created_at', { ascending: false }).limit(18),
