@@ -5,21 +5,11 @@
 // title; otherwise it opens search with the title typed so they can choose.
 // Platform-agnostic so mobile can reuse it for any future hand-off.
 
-/**
- * Lower-case, strip accents and punctuation, collapse spaces. "Amélie!" and
- * "amelie" compare equal; "The Bear" and "Bear" do not.
- * @param {string} value
- * @returns {string}
- */
-export function normalizeTitle(value) {
-  return String(value || '')
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
+// The same normalizer search uses to rank results, so "Ocean's Eleven" and
+// "oceans eleven" compare equal here too (apostrophes are dropped, not spaced).
+import { normalizeTitle } from './search.js';
+
+export { normalizeTitle };
 
 /**
  * @typedef {object} SearchResult

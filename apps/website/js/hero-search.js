@@ -122,12 +122,15 @@
     }
   });
 
-  // Close on a click or focus anywhere outside the search bar and its list.
+  // Close on a press anywhere outside the search bar and its list, or when
+  // keyboard focus moves to something else on the page. A focusout with no
+  // relatedTarget is left alone: iOS Safari sends one when a result is
+  // tapped, and closing then would hide the row before its click lands.
   document.addEventListener('pointerdown', function (e) {
     if (!form.parentNode.contains(e.target)) close();
   });
   form.parentNode.addEventListener('focusout', function (e) {
-    if (!e.relatedTarget || !form.parentNode.contains(e.relatedTarget)) close();
+    if (e.relatedTarget && !form.parentNode.contains(e.relatedTarget)) close();
   });
   input.addEventListener('focus', function () {
     if (items.length && input.value.trim().length >= MIN_CHARS) {
