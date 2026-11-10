@@ -20,9 +20,9 @@ export const PROFILE_PRIVACY = {
   privateLabel: 'Profile is private',
   /** @param {string} favourites Region-spelled plural, from favoriteWords(region).pluralLower. */
   publicDescription: (favourites) =>
-    `Anyone can see your watch history, ratings, reviews, Watching${FAVOURITES_ENABLED ? `, top picks and ${favourites}` : ' and top picks'}. Want to Watch has its own setting below.`,
+    `Anyone can see your watch history, ratings, reviews, Watching${FAVOURITES_ENABLED ? `, top picks and ${favourites}` : ' and top picks'}. Your watchlist has its own setting below.`,
   privateDescription:
-    'Only you and followers you approve can see your activity. Want to Watch has its own setting below. People signed in can still see your name, photo and bio, and ask to follow you.',
+    'Only you and followers you approve can see your activity. Your watchlist has its own setting below. People signed in can still see your name, photo and bio, and ask to follow you.',
   notesAlwaysPrivate: 'Private notes are only ever visible to you.',
 
   lockedTitle: 'Private account',
@@ -31,10 +31,10 @@ export const PROFILE_PRIVACY = {
   lockedPending: 'Your follow request is pending. You’ll see their watches, ratings and lists once they approve it.',
   lockedSubPage: 'This profile is private.',
   followRequestsIntro:
-    'People asking to follow your private profile. Approving lets them see your watch history, ratings and any lists you share with followers. Your Want to Watch has its own setting in Settings.',
+    'People asking to follow your private profile. Approving lets them see your watch history, ratings and any lists you share with followers. Your watchlist has its own setting in Settings.',
 
   watchlist: {
-    heading: 'Who can see your Want to Watch',
+    heading: 'Who can see your watchlist',
     /** @type {Record<import('../watchlistVisibility.js').WatchlistVisibility, string>} */
     option: {
       everyone: 'Everyone',

@@ -162,20 +162,22 @@
 .ob-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ob-poster.is-on { border-color: var(--accent); }
 .ob-poster-tint { position: absolute; inset: 0; background: color-mix(in srgb, var(--accent) 30%, transparent); }
+/* The same bookmark as every poster card in the app: a white glyph carried
+   on a drop shadow (the sanctioned legibility case over artwork), outline
+   until the title is picked and solid after. It used to be a pink disc that
+   existed nowhere else. */
 .ob-poster-mark {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  right: 6px;
+  top: 6px;
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-pill);
-  background: var(--accent);
-  color: var(--surface-raised);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.ob-poster-mark svg { width: 14px; height: 14px; }
+.ob-poster-mark svg { width: 15px; height: 15px; stroke-width: 2.5; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.65)); }
 
 /* Sticky foot: the CTA hugs its label (compact buttons never go full width). */
 .ob-foot {

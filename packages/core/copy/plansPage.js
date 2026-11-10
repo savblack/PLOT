@@ -128,7 +128,7 @@ export const PLANS_PAGE = {
       pins: {
         context: () => 'Pinned shelves are part of Premium',
         title: 'Put what you care about first.',
-        body: 'Pin Want to Watch, a list, or someone you follow to the top of Home. Your shelves and their order stay free.',
+        body: 'Pin your watchlist, a list, or someone you follow to the top of Home. Your shelves and their order stay free.',
         also: ['pick', 'together'],
       },
       alerts: {

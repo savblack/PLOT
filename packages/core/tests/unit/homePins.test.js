@@ -10,8 +10,8 @@ const lists = [
 const follows = [{ tmdb_person_id: 287, name: 'Brad Pitt' }, { tmdb_person_id: 6193, name: 'Leonardo DiCaprio' }];
 const ctx = { lists, follows };
 
-test('labels: Want to Watch is fixed, lists and people use their own names, anything else is gone', () => {
-  assert.equal(pinLabel({ kind: 'watchlist', id: 'watchlist' }, ctx), 'Want to Watch');
+test('labels: the watchlist is fixed, lists and people use their own names, anything else is gone', () => {
+  assert.equal(pinLabel({ kind: 'watchlist', id: 'watchlist' }, ctx), 'Watchlist');
   assert.equal(pinLabel({ kind: 'list', id: 'l1' }, ctx), 'Comfort rewatches');
   assert.equal(pinLabel({ kind: 'person', id: '287' }, ctx), 'Brad Pitt');
   assert.equal(pinLabel({ kind: 'list', id: 'deleted' }, ctx), null);

@@ -141,7 +141,7 @@ export const WATCH_TOGETHER = Object.freeze({
     hidesPrivateLists: 'Any lists you’ve set to private',
     hidesNotes: 'Your private notes',
     shareFull: 'Also share my full watchlist',
-    shareFullBody: (name) => `Lets ${name} see what else you’d like to watch. It adds them to the people who can see your Want to Watch.`,
+    shareFullBody: (name) => `Lets ${name} see what else you’d like to watch. It adds them to the people who can see your watchlist.`,
     shareFullMutual: 'On because you follow each other.',
     accept: 'Accept',
     notNow: 'Not now',

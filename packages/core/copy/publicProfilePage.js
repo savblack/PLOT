@@ -26,7 +26,7 @@ export const PUBLIC_PROFILE_PAGE = {
   retry: 'Try again',
   titleCount,
   watching: MEDIA_PANEL.watching,
-  wantToWatch: 'Want to watch',
+  wantToWatch: 'Watchlist',
   noPublicTitles: 'No public titles yet.',
   addFirstPick: 'Add a top pick',
   followersTitle: 'Followers',
