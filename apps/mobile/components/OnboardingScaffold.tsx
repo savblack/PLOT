@@ -7,7 +7,7 @@
  */
 import { ReactNode, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View, Text, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -104,10 +104,9 @@ export default function OnboardingScaffold({
           accessibilityState={{ disabled: saving || ctaDisabled, busy: saving }}
           accessibilityLabel={saving ? ONBOARDING_FLOW.settingUpAccount : ctaLabel}
         >
-          {saving
-            ? <ActivityIndicator color={colors.textPrimary} />
-            : <Text style={[styles.ctaText, ctaDisabled && styles.ctaTextDisabled]}>{ctaLabel}</Text>
-          }
+          {/* No spinner while saving (onboarding shows no loader before its last
+              step): the button keeps its label and dims, as when disabled. */}
+          <Text style={[styles.ctaText, (saving || ctaDisabled) && styles.ctaTextDisabled]}>{ctaLabel}</Text>
         </TouchableOpacity>}
         {onSkip && !saving ? (
           <TouchableOpacity style={styles.skipBtn} onPress={onSkip} accessibilityRole="button">
