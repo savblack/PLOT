@@ -9,6 +9,7 @@ import PremiumPurchaseAction from '../components/PremiumPurchaseAction.jsx';
    portals to document.body, so the story canvas is the whole viewport. */
 
 const app = { profile: { id: 'story-user', is_premium: false } };
+const S = PLANS_PAGE.upgradeSheet;
 
 export default {
   title: 'Premium/UpgradeSheet',
@@ -70,5 +71,39 @@ export const StartFreeTrialLabel = {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('button', { name: PLANS_PAGE.startTrialAction })).toBeEnabled();
     await expect(canvas.getByRole('button', { name: PLANS_PAGE.upgradeAction })).toBeEnabled();
+  },
+};
+
+// Someone who has never subscribed: the free trial is the headline and the
+// button, and the feature they tapped is the sentence under it.
+export const TrialFirst = {
+  args: { reason: 'stats', premiumState: { trialEligible: true } },
+  tags: ['interaction-test'],
+  play: async () => {
+    const body = within(document.body);
+    await expect(body.getByRole('heading', { name: S.trialTitle })).toBeVisible();
+    await expect(body.getByText(S.reasons.stats.title)).toBeVisible();
+    await expect(body.getByRole('button', { name: PLANS_PAGE.startTrialAction })).toBeEnabled();
+    // Yearly is chosen first, and the line under the button says what it costs after the trial.
+    await expect(body.getByText(S.afterTrial.yearly)).toBeVisible();
+    fireEvent.click(body.getByRole('button', { name: new RegExp(`^${PLANS_PAGE.billing.monthly}`) }));
+    await expect(body.getByText(S.afterTrial.monthly)).toBeVisible();
+    await expect(body.queryByText(S.afterTrial.yearly)).toBeNull();
+    // The older sheet's extra selling is gone.
+    await expect(body.queryByText(S.alsoIn)).toBeNull();
+  },
+};
+
+// A returning subscriber gets no trial: the feature leads, the button says
+// Upgrade, and the price line makes no mention of a trial.
+export const ReturningSubscriber = {
+  args: { reason: 'stats', premiumState: { trialEligible: false } },
+  tags: ['interaction-test'],
+  play: async () => {
+    const body = within(document.body);
+    await expect(body.getByRole('heading', { name: S.reasons.stats.title })).toBeVisible();
+    await expect(body.queryByText(S.trialTitle)).toBeNull();
+    await expect(body.getByRole('button', { name: PLANS_PAGE.upgradeAction })).toBeEnabled();
+    await expect(body.getByText(S.price.yearly)).toBeVisible();
   },
 };

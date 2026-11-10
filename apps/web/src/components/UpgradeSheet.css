@@ -29,24 +29,12 @@
 /* Smart lists, B5: the Free viewer's rules wait for them. */
 .upgrade-sheet-kept { margin: 0; padding: 0.6rem 0.85rem; border: 1px solid var(--border); border-radius: 12px; font-size: 0.85rem; font-weight: 600; line-height: 1.45; color: var(--text-primary); }
 
-.upgrade-sheet-offer { width: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 1rem; padding: 0.9rem 1rem; border-radius: var(--radius-md); background: var(--surface-sunken); }
-.upgrade-sheet-offer-name { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
-.upgrade-sheet-price { display: flex; align-items: baseline; gap: 0.25rem; font-size: 0.82rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.upgrade-sheet-amount { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; line-height: 1; letter-spacing: -0.04em; color: var(--text-primary); }
-.upgrade-sheet-alt { flex-basis: 100%; margin: 0; font-size: 0.75rem; color: var(--text-muted); }
-.upgrade-sheet-trial { flex-basis: 100%; margin: 0.15rem 0 0; font-size: 0.82rem; line-height: 1.45; color: var(--text-primary); }
 
 .upgrade-sheet .btn { min-height: 44px; }
 .upgrade-sheet a.btn { text-decoration: none; }
 .upgrade-sheet a.btn-primary:hover { color: var(--on-accent-fill); }
 .upgrade-sheet-note { width: 100%; margin: 0; padding: 0.7rem 0.8rem; border-radius: var(--radius-badge); background: var(--surface-sunken); font-size: 0.8rem; line-height: 1.55; }
 
-.upgrade-sheet-also { width: 100%; margin: 0.25rem 0 0; padding-top: 0.85rem; border-top: 1px solid var(--border); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
-.upgrade-sheet-rows { width: 100%; margin: 0; padding: 0; list-style: none; display: grid; gap: 0.75rem; }
-.upgrade-sheet-rows li { display: grid; grid-template-columns: 28px 1fr; gap: 0.65rem; align-items: start; font-size: 0.85rem; line-height: 1.4; }
-.upgrade-sheet-row-label { display: block; font-weight: 600; }
-.upgrade-sheet-row-note { display: block; margin-top: 0.1rem; font-size: 0.75rem; color: var(--text-secondary); }
-.upgrade-sheet-icon { width: 28px; height: 28px; padding: 6px; border-radius: 8px; background: var(--surface-sunken); fill: none; stroke: var(--text-secondary); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; box-sizing: border-box; }
 
 .upgrade-sheet-foot { width: 100%; display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.25rem; }
 .upgrade-sheet-link { min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--text-primary); cursor: pointer; }
@@ -69,9 +57,16 @@
 }
 .upgrade-sheet .upgrade-sheet-preview { max-width: 340px; }
 
-/* Monthly or yearly, inside the offer. Same control as the plans page. */
-.upgrade-sheet-was { color: var(--text-muted); font-size: 0.95rem; }
-.upgrade-sheet-billing { flex-basis: 100%; display: inline-flex; align-self: flex-start; width: max-content; max-width: 100%; margin-top: 0.35rem; padding: 3px; border-radius: var(--radius-pill); background: var(--surface); }
-.upgrade-sheet-billing button { border: 1px solid transparent; background: none; padding: 0.4rem 0.9rem; border-radius: var(--radius-pill); font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
-.upgrade-sheet-billing button[aria-pressed="true"] { background: var(--surface-raised); color: var(--text-primary); border-color: var(--border-strong); }
-.upgrade-sheet-billing-badge { margin-left: 0.3rem; color: var(--accent-secondary); }
+
+/* Under the button: what the trial costs afterwards, in one sentence. */
+.upgrade-sheet-terms { margin: -0.25rem 0 0; font-size: 0.75rem; line-height: 1.45; color: var(--text-muted); }
+.upgrade-sheet-body strong { font-weight: 600; color: var(--text-primary); }
+/* One row per plan, each with the price it charges. The chosen one takes an
+   ink outline; pink stays on the button. */
+.upgrade-sheet-plans { width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
+.upgrade-sheet-plan { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; min-height: 52px; padding: 0.6rem 0.85rem; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.upgrade-sheet-plan[aria-pressed="true"] { border-color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--text-primary); }
+.upgrade-sheet-plan:disabled { cursor: default; opacity: 0.6; }
+.upgrade-sheet-plan-name { display: block; font-size: 0.86rem; font-weight: 600; }
+.upgrade-sheet-plan-badge { display: block; font-size: 0.75rem; font-weight: 600; color: var(--accent-secondary); }
+.upgrade-sheet-plan-price { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; font-variant-numeric: tabular-nums; }

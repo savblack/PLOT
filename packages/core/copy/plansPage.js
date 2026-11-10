@@ -98,6 +98,18 @@ export const PLANS_PAGE = {
     compare: 'Compare every feature',
     notNow: 'Not now',
     alsoIn: 'Also in Premium',
+    // The web sheet, redesigned 11 Nov 2026 (Savannah's pick "A2"): the free
+    // trial is the headline and the button, the feature that was tapped is the
+    // supporting sentence, and each plan is one row with its real price. A
+    // returning subscriber gets no trial, so their sheet leads with the feature
+    // and the price line drops the "Then". Mobile still shows the older sheet.
+    trialTitle: 'Try Premium free for 7 days.',
+    seeAll: 'See everything in Premium',
+    planLabel: 'Plan',
+    yearlyPrice: '$24 a year',
+    monthlyPrice: '$3 a month',
+    afterTrial: { yearly: 'Then US$24 a year, taxes included. Cancel anytime.', monthly: 'Then US$3 a month, taxes included. Cancel anytime.' },
+    price: { yearly: 'US$24 a year, taxes included. Cancel anytime.', monthly: 'US$3 a month, taxes included. Cancel anytime.' },
     reasons: {
       lists: {
         context: (cap) => `You’ve used all ${cap} free lists`,
