@@ -12,7 +12,7 @@
 //
 // The rule is in @plot/core/homeTopCards.js so mobile can decide the same
 // way; its Home still mounts the three cards separately
-// (savblack/PLOT#1503 tracks parity).
+// (issue 1503 on savblack/PLOT tracks parity).
 import { useState } from 'react';
 import { importCardsShown, useImportJobs } from '@plot/core/importJobs.js';
 import { otherHomeCardsAllowed } from '@plot/core/homeTopCards.js';
