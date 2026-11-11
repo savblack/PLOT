@@ -31,6 +31,15 @@ const ALWAYS_HUMAN = [
   [/^\.github\/workflows\/auto-merge\.yml$/, 'the auto-merge workflow itself'],
   [/^\.github\/workflows\/self-fix-digest\.yml$/, 'the auto-merge report'],
   [/^\.github\/CODEOWNERS$/, 'code ownership'],
+  // Instructions and config the agents themselves read.
+  [/(^|\/)(AGENTS|CLAUDE|GROK-HANDOFF)\.md$/i, 'agent instructions'],
+  [/^\.(claude|agents|cursor)\//, 'agent configuration'],
+  [/^skills-lock\.json$/, 'agent configuration'],
+  // Shell that runs with repo secrets, and CircleCI, which runs arbitrary code.
+  [/^\.github\/scripts\//, 'a script workflows run with secrets'],
+  [/^\.circleci\//, 'the CircleCI pipeline'],
+  // Security-relevant code whose names the keyword rules above do not catch.
+  [/(security|serviceKey|serviceBearer|supabaseAdmin|actingUser|internalWebhook|webhook|export-user|csp|_middleware|_lib\/)/i, 'security, service access or member data export'],
 ];
 
 const TEST_FILE = /(^|\/)(tests?|__tests__)\/|\.(test|spec)\.[cm]?[jt]sx?$/;
@@ -43,18 +52,32 @@ const SOURCE = [
   /^functions\//,
   /^apps\/website\/(js|functions)\//,
 ];
-const DOCS = /^(docs\/.*|README\.md|[^/]+\.md|apps\/[^/]+\/README\.md|packages\/core\/copy\/.*)$/;
-const CI = /^(\.github\/(workflows|scripts)\/|\.circleci\/)/;
+// Markdown only. packages/core/copy/*.js is code, so it is a source change and needs a test.
+const DOCS = /^(docs\/.*\.md|README\.md|apps\/[^/]+\/README\.md)$/;
+const CI = /^\.github\/workflows\/[^/]+\.ya?ml$/;
 const MANIFEST = /(^|\/)package\.json$|^pnpm-lock\.yaml$/;
-// A CI fix may not touch token scope, secrets or the privileged trigger.
-const CI_FORBIDDEN_LINE = /^[+-].*\b(permissions:|secrets\.|pull_request_target|GITHUB_TOKEN|id-token)/m;
+// A workflow fix may only change these kinds of line. Anything else (a new
+// step, a new `run:`, a secret, a trigger, token scope) waits for Savannah:
+// a deny-list cannot see an exfiltrating curl spelled some new way.
+const CI_SAFE_LINE = /^\s*(-\s*)?(runs-on|timeout-minutes|node-version|deno-version|python-version|cache|fetch-depth|continue-on-error):\s*[\w.'"/@-]+\s*(#.*)?$|^\s*(-\s*)?uses:\s*[\w.-]+\/[\w./-]+@[0-9a-f]{40}\s*(#.*)?$|^\s*-\s*cron:\s*'[0-9*\/, -]+'\s*(#.*)?$|^\s*(#.*)?$/;
+
+/** Every changed line of a workflow patch is on the safe list. */
+export function isSafeWorkflowPatch(patch) {
+  if (!patch) return false;
+  const changed = patch.split('\n').filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)/.test(l));
+  return changed.length > 0 && changed.every((l) => CI_SAFE_LINE.test(l.slice(1)));
+}
 const MAX_CHANGED_LINES = 400;
 
 /** Same-major version bump for one package.json dependency line pair. */
 function versionOf(line) {
-  const m = line.match(/"[^"]+":\s*"[~^]?(\d+)\.(\d+)\.(\d+)[^"]*"/);
+  // A plain range only: no `||`, `file:`, `git+`, tags or URLs after the version.
+  const m = line.match(/"[^"]+":\s*"[~^]?(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.]+)?"\s*,?\s*$/);
   return m ? Number(m[1]) : null;
 }
+
+// Lockfile lines that point a package somewhere other than the registry.
+const LOCK_UNUSUAL = /^\+.*\b(tarball:|file:|link:|git\+|github:|https?:\/\/(?!registry\.npmjs\.org))/m;
 
 /**
  * A package.json patch that only moves versions within the same major.
@@ -80,26 +103,34 @@ export function isMinorBumpPatch(patch = '') {
 }
 
 /**
- * @param {{ filename: string, status?: string, patch?: string, additions?: number, deletions?: number }[]} files
+ * @param {{ filename: string, previous_filename?: string, status?: string, patch?: string, additions?: number, deletions?: number }[]} files
+ * @param {number} [expectedCount] the PR's changed_files; a shorter list means the API truncated it
  * @returns {{ allowed: boolean, kinds: string[], reasons: string[] }}
  */
-export function decide(files) {
+export function decide(files, expectedCount) {
   const reasons = [];
   const kinds = new Set();
   if (!files.length) return { allowed: false, kinds: [], reasons: ['the PR changes no files'] };
+  if (expectedCount !== undefined && files.length !== expectedCount) {
+    return { allowed: false, kinds: [], reasons: [`read ${files.length} of ${expectedCount} changed files`] };
+  }
 
   const changed = files.reduce((n, f) => n + (f.additions ?? 0) + (f.deletions ?? 0), 0);
   if (changed > MAX_CHANGED_LINES) reasons.push(`${changed} changed lines (over ${MAX_CHANGED_LINES}); a fix this big gets a human look`);
 
   for (const f of files) {
-    for (const [pattern, why] of ALWAYS_HUMAN) {
-      if (pattern.test(f.filename)) reasons.push(`${f.filename}: ${why}`);
+    // A rename is judged on both names, so a protected file cannot leave under an innocent one.
+    for (const path of [f.filename, f.previous_filename].filter(Boolean)) {
+      for (const [pattern, why] of ALWAYS_HUMAN) {
+        if (pattern.test(path)) reasons.push(`${path}: ${why}`);
+      }
     }
-    if (TEST_FILE.test(f.filename) && f.status === 'removed') reasons.push(`${f.filename}: deletes a test`);
+    if (f.status === 'renamed' && !DOCS.test(f.filename)) reasons.push(`${f.filename}: renames a file`);
+    if (f.status === 'removed' && !DOCS.test(f.filename)) reasons.push(`${f.filename}: deletes a file`);
   }
 
   const manifests = files.filter((f) => MANIFEST.test(f.filename));
-  const depsOnly = manifests.length === files.length;
+  const depsOnly = manifests.length === files.length && manifests.some((f) => /package\.json$/.test(f.filename));
   const hasTest = files.some((f) => TEST_FILE.test(f.filename) && f.status !== 'removed');
 
   for (const f of files) {
@@ -107,6 +138,7 @@ export function decide(files) {
     if (MANIFEST.test(name)) {
       if (!depsOnly) reasons.push(`${name}: dependency changes must come on their own, not inside a fix`);
       else if (/package\.json$/.test(name) && !isMinorBumpPatch(f.patch)) reasons.push(`${name}: not a minor or patch version bump`);
+      else if (name === 'pnpm-lock.yaml' && (!f.patch || LOCK_UNUSUAL.test(f.patch))) reasons.push(`${name}: lockfile points a package outside the npm registry, or is too large to read`);
       else kinds.add('library update');
     } else if (TEST_FILE.test(name)) {
       kinds.add('bug fix with a test');
@@ -117,7 +149,8 @@ export function decide(files) {
       if (!hasTest) reasons.push(`${name}: code change without a test`);
       kinds.add('bug fix with a test');
     } else if (CI.test(name)) {
-      if (CI_FORBIDDEN_LINE.test(f.patch ?? '')) reasons.push(`${name}: touches token permissions or secrets`);
+      if (f.status !== 'modified') reasons.push(`${name}: adds or removes a workflow`);
+      else if (!isSafeWorkflowPatch(f.patch)) reasons.push(`${name}: changes more than versions, runners, timeouts or schedules`);
       kinds.add('check or deploy fix');
     } else {
       reasons.push(`${name}: not a kind of file that may merge on its own`);
