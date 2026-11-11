@@ -518,10 +518,10 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
           </div>
 
         </div>
-        {/* Save sits bottom right with Cancel, as in every dialog you type
-            into. It used to be in the header's top right corner. */}
+        {/* Save sits bottom right, as in every dialog you type into. It used
+            to be in the header's top right corner. The X closes without saving. */}
         <div className="pp-edit-foot">
-          <DialogActions onCancel={onClose} busy={saving} error={error || ''}
+          <DialogActions busy={saving} error={error || ''}
             primary={{ label: saving ? PUBLIC_PROFILE_PAGE.saving : COMMON.save, onClick: save, disabled: !canSave }} />
         </div>
       </div>

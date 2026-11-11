@@ -10,7 +10,12 @@ test('a phone gets a bottom tab bar with the four everyday places and More', asy
 
   const bar = page.getByRole('navigation', { name: 'Main navigation' });
   await expect(bar).toBeVisible();
-  await expect(bar.getByRole('button')).toHaveText(['Home', 'Calendar', 'My Lists', 'History', 'More']);
+  // Icons only: each button's name is its accessible label, with no text under it.
+  await expect(bar.getByRole('button')).toHaveCount(5);
+  for (const name of ['Home', 'Calendar', 'My Lists', 'History', 'More']) {
+    await expect(bar.getByRole('button', { name, exact: true })).toBeVisible();
+  }
+  await expect(bar.getByRole('button')).toHaveText(['', '', '', '', '']);
   await expect(bar.getByRole('button', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
 
   // One tap moves between places.

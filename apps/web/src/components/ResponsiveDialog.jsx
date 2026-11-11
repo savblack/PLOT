@@ -14,7 +14,6 @@ export default function ResponsiveDialog({
   label,
   onClose,
   onBack,
-  action,
   children,
   footer,
   size = 'default',
@@ -82,7 +81,7 @@ export default function ResponsiveDialog({
         aria-label={label || (typeof title === 'string' ? title : undefined)}
       >
         <div className="responsive-dialog-handle" aria-hidden="true" />
-        <SheetHeader title={title} onClose={onClose} onBack={onBack} action={action} />
+        <SheetHeader title={title} onClose={onClose} onBack={onBack} />
         <div className={`responsive-dialog-content${contentClassName ? ` ${contentClassName}` : ''}`}>
           {children}
         </div>

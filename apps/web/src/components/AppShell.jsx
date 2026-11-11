@@ -302,9 +302,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           const Icon = NAV_ICONS[id];
           const active = isActiveView(currentView, id);
           return (
-            <button key={id} type="button" className={`app-tab${active ? ' active' : ''}`} onClick={() => go(id)} aria-current={active ? 'page' : undefined}>
+            <button key={id} type="button" className={`app-tab${active ? ' active' : ''}`} onClick={() => go(id)} aria-label={label} title={label} aria-current={active ? 'page' : undefined}>
               {Icon && <Icon />}
-              <span className="app-tab-label">{label}</span>
             </button>
           );
         })}
@@ -313,11 +312,11 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           className={`app-tab${drawerOpen ? ' active' : ''}`}
           onClick={openDrawer}
           aria-label={unread > 0 ? `${APP_SHELL.more} (${unread} unread notifications)` : APP_SHELL.more}
+          title={APP_SHELL.more}
           aria-expanded={drawerOpen}
           aria-controls="app-nav-drawer"
         >
           <IconMenu />
-          <span className="app-tab-label">{APP_SHELL.more}</span>
           {unread > 0 && <span className="mobile-menu-unread" aria-hidden="true" />}
         </button>
       </nav>
