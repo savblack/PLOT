@@ -69,13 +69,16 @@ backup.
 - No finished run for 3 hours sends "the hourly database checks have stopped
   running" and opens an `incident` issue. It has its own state
   (`dbchecks-state`), separate from the app and signed-in alarms.
-- It needs `GITHUB_TOKEN` on uptime-watch to have **Actions: Read and write**
-  on savblack/PLOT, as well as Issues. Without it GitHub refuses, which counts
-  as "can't run", and after `BLIND_HOURS` emails "the watcher can't start the
-  hourly database checks" with the fix. Editing the existing fine-grained
-  token's permissions is enough; the secret itself doesn't change.
-- That permission lets the token start any workflow in the repo, not just this
-  one. The Worker only ever starts `DB_CHECKS_WORKFLOW`.
+- It uses its own secret, `GITHUB_DISPATCH_TOKEN`: a fine-grained token with
+  **Actions: Read and write** on savblack/PLOT and nothing else, so the issues
+  token (`GITHUB_TOKEN`) never needs Actions. Set it with
+  `npx wrangler secret put GITHUB_DISPATCH_TOKEN` from
+  `apps/web/workers/uptime-watch`. Without it (or if it expires) GitHub
+  refuses, which counts as "can't run", and after `BLIND_HOURS` emails "the
+  watcher can't start the hourly database checks" with the fix.
+- Actions permission lets that token start any workflow in the repo, not just
+  this one. The Worker only ever starts `DB_CHECKS_WORKFLOW`, and the token is
+  never logged or put in an email or issue.
 - Run it by hand: `curl -H "x-watch-token: <token>" "https://uptime-watch.<subdomain>.workers.dev?check=dbchecks"`.
 
 ### Stripe webhook deliveries

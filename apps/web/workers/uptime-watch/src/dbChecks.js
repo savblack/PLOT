@@ -18,8 +18,9 @@
  * `incident` issues and emails for a failing job. This only answers "are the
  * database checks running at all".
  *
- * Needs GITHUB_TOKEN with Actions: Read and write on savblack/PLOT, on top of
- * the Issues permission it already has. Without it GitHub answers 403 (401 for
+ * Needs a fine-grained token with Actions: Read and write on savblack/PLOT:
+ * GITHUB_DISPATCH_TOKEN (preferred, used for nothing else), or GITHUB_TOKEN
+ * if that one has the permission too. Without it GitHub answers 403 (401 for
  * an expired token), reported as "can't run" (blocked), which emails once after
  * BLIND_HOURS with the fix, never as an outage. A run that was cancelled or
  * never started does not count as a run.
@@ -30,9 +31,13 @@ export const STALE_MINUTES = 180;
 
 const API = 'https://api.github.com';
 
+/** The token for Actions: its own GITHUB_DISPATCH_TOKEN when set, so the
+ * issues token never needs Actions permission; else GITHUB_TOKEN. */
+export const dispatchToken = (env) => env.GITHUB_DISPATCH_TOKEN || env.GITHUB_TOKEN;
+
 function headers(env) {
   return {
-    Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+    Authorization: `Bearer ${dispatchToken(env)}`,
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
     'User-Agent': 'plot-uptime-watch',
@@ -52,7 +57,7 @@ const refused = (status) => status === 401 || status === 403;
  * concurrency group cancels a queued run when the next is started) or a
  * startup_failure (a broken workflow file) checked nothing. */
 const RAN = new Set(['success', 'failure']);
-const tokenHint = 'GITHUB_TOKEN on uptime-watch needs Actions: Read and write on savblack/PLOT';
+const tokenHint = 'GITHUB_DISPATCH_TOKEN on uptime-watch needs Actions: Read and write on savblack/PLOT';
 
 /**
  * Ask GitHub to start the workflow on main. Called once per hourly firing,
@@ -145,8 +150,9 @@ export function dbChecksEmail(email, { now, reason, duration }) {
         html:
           `<p>For ${duration(now - email.since)}, uptime-watch has not been able to start or see ${where} (${reason}).</p>` +
           '<p>The checks may still run on GitHub\'s own schedule, but only a few times a day. To fix it, open GitHub, ' +
-          'Settings, Developer settings, Fine-grained tokens, the uptime-watch token, and give it Actions: Read and write ' +
-          'on savblack/PLOT. No new secret is needed.</p>',
+          'Settings, Developer settings, Fine-grained tokens, the uptime-watch dispatch token, and check it has Actions: ' +
+          'Read and write on savblack/PLOT and has not expired. A new one goes in with ' +
+          '<code>npx wrangler secret put GITHUB_DISPATCH_TOKEN</code> from apps/web/workers/uptime-watch.</p>',
       };
     case 'test':
       return {

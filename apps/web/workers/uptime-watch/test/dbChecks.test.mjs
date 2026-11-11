@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { STALE_MINUTES, readDbChecks, startDbChecks } from '../src/dbChecks.js';
+import { STALE_MINUTES, dispatchToken, readDbChecks, startDbChecks } from '../src/dbChecks.js';
 import { dbChecksChecksFor, emailContent, run } from '../src/index.js';
 
 const NOW = Date.parse('2026-11-11T13:23:00Z');
@@ -76,7 +76,7 @@ test('a token without the Actions permission is "can\'t run" with the fix, never
 
 test('dbChecksChecksFor: off without the workflow var, "not configured" without a token', async () => {
   assert.deepEqual(dbChecksChecksFor({ ...env, DB_CHECKS_WORKFLOW: '' }, null), []);
-  const [c] = dbChecksChecksFor({ ...env, GITHUB_TOKEN: '' }, null);
+  const [c] = dbChecksChecksFor({ ...env, GITHUB_TOKEN: '', GITHUB_DISPATCH_TOKEN: '' }, null);
   const r = await c.read();
   assert.equal(r.blocked, true);
   assert.match(r.reason, /not configured/);
@@ -170,4 +170,12 @@ test('a missing workflow (404) is an outage with the right fix, not a token prob
   assert.ok(!r.blocked, 'broken, so it emails at once and opens an issue');
   assert.match(r.reason, /renamed or deleted/);
   assert.doesNotMatch(r.reason, /Actions: Read and write/);
+});
+
+test('the dispatch token is used for Actions when set, so the issues token needs no Actions permission', async () => {
+  assert.equal(dispatchToken({ GITHUB_TOKEN: 'issues', GITHUB_DISPATCH_TOKEN: 'actions' }), 'actions');
+  assert.equal(dispatchToken({ GITHUB_TOKEN: 'issues' }), 'issues');
+  const gh = fakeGithub();
+  await startDbChecks({ ...env, GITHUB_TOKEN: 'issues', GITHUB_DISPATCH_TOKEN: 'actions' }, gh.http);
+  assert.equal(gh.calls[0].auth, 'Bearer actions');
 });

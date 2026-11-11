@@ -47,7 +47,7 @@
  */
 import { decide, probe } from '../../whats-on-watch/src/index.js';
 import { productionReadWrite, signedInReadWrite, trimSlashes } from './signin.js';
-import { dbChecksEmail, readDbChecks, startDbChecks } from './dbChecks.js';
+import { dbChecksEmail, dispatchToken, readDbChecks, startDbChecks } from './dbChecks.js';
 
 const STATE_KEYS = { uptime: 'state', signin: 'signin-state', signinProd: 'signin-prod-state', dbChecks: 'dbchecks-state' };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -291,8 +291,8 @@ export function signinProdChecksFor(env, deps = {}) {
 export function dbChecksChecksFor(env, started, deps = {}) {
   if (!env.DB_CHECKS_WORKFLOW) return [];
   const label = 'hourly database checks';
-  if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) {
-    return [{ name: 'dbchecks', label, read: async () => ({ ok: false, blocked: true, reason: 'not configured: GITHUB_TOKEN or GITHUB_REPO unset' }) }];
+  if (!dispatchToken(env) || !env.GITHUB_REPO) {
+    return [{ name: 'dbchecks', label, read: async () => ({ ok: false, blocked: true, reason: 'not configured: GITHUB_DISPATCH_TOKEN or GITHUB_REPO unset' }) }];
   }
   return [{
     name: 'dbchecks',
@@ -512,7 +512,7 @@ const UPTIME_GROUPS = [
 export async function run(env, watch = 'uptime', deps = {}) {
   const now = Date.now();
   if (watch === 'dbchecks') {
-    const started = env.DB_CHECKS_WORKFLOW && env.GITHUB_TOKEN && env.GITHUB_REPO
+    const started = env.DB_CHECKS_WORKFLOW && dispatchToken(env) && env.GITHUB_REPO
       ? await startDbChecks(env, deps.github || fetch)
       : null;
     const result = await runGroup(env, watch, { key: STATE_KEYS.dbChecks, names: ['dbchecks'] }, dbChecksChecksFor(env, started, deps), now, deps);
