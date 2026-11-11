@@ -64,6 +64,24 @@ updates:
           - "patch"
           - "major"
 
+      # React arrives on its own. apps/web takes React as it ships, but
+      # apps/mobile must stay on the version Expo SDK 57 supports, and React
+      # cannot be ignored for mobile alone (see the note above `ignore`). In
+      # #1484 a React bump sat inside app-minor-patch, mobile:deps failed it,
+      # and the other 24 updates waited behind it. Grouped apart, the rest can
+      # merge on green while a React PR waits for apps/mobile to be pinned back
+      # (or for an SDK that supports it). Ahead of app-minor-patch for the same
+      # first-match reason as vitest.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+        update-types:
+          - "minor"
+          - "patch"
+
       # Minor + patch bundle into ONE PR -> one CI run -> one auto-merge.
       # Majors are deliberately left ungrouped so each arrives as its own PR
       # and gets held for human review by dependabot-automerge.yml.
