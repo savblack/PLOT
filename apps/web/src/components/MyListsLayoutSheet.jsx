@@ -2,7 +2,8 @@
 // order. Rules and saving are in @plot/core/uiPrefs.js and useUiPrefs.js; this
 // file only renders, with the same rows as the Sidebar order sheet.
 //
-// Mobile parity: not built on mobile yet. Tracked on issue 1503 on savblack/PLOT.
+// Mobile parity: app/(app)/my-lists-layout.tsx lists the same sections with
+// up/down and Reset, and reads the same saved order.
 import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
