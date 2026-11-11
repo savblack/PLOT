@@ -130,8 +130,11 @@ const STRIPE_API = 'https://api.stripe.com/v1';
 /** Where Stripe should be sending events: STRIPE_WEBHOOK_URL, else production's stripe-webhook. */
 export function stripeWebhookUrl(env) {
   if (env.STRIPE_WEBHOOK_URL) return env.STRIPE_WEBHOOK_URL;
-  if (env.SUPABASE_URL) return `${env.SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/stripe-webhook`;
-  return null;
+  if (!env.SUPABASE_URL) return null;
+  // A loop rather than /\/+$/, which CodeQL flags as a slow regex.
+  let base = env.SUPABASE_URL;
+  while (base.endsWith('/')) base = base.slice(0, -1);
+  return `${base}/functions/v1/stripe-webhook`;
 }
 
 async function readJson(res) {
