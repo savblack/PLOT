@@ -1,0 +1,62 @@
+# Watches that app.theplot.tv, the TMDB proxy and the edge functions answer,
+# and emails (plus, optionally, opens a GitHub `incident` issue) when one
+# stops, then again when it recovers. See src/index.js for what each check does.
+#
+# Deploy (once; a Cloudflare login with Workers access is needed):
+#   cd apps/web/workers/uptime-watch
+#   npx wrangler kv namespace create uptime-watch-state   # paste the id below
+#   npx wrangler secret put RESEND_API_KEY     # same key backup-heartbeat uses
+#   npx wrangler secret put WATCH_TOKEN        # any long random string; gates the manual endpoint
+#   npx wrangler secret put SUPABASE_PUBLISHABLE_KEY   # optional; production publishable key
+#   npx wrangler secret put GITHUB_TOKEN       # optional; fine-grained, savblack/PLOT, Issues: read/write
+#   npx wrangler deploy
+#
+# Check it by hand:
+#   curl -H "x-watch-token: <token>" https://uptime-watch.<subdomain>.workers.dev
+#   curl -H "x-watch-token: <token>" "https://uptime-watch.<subdomain>.workers.dev?test-email=1"
+# Watch live runs:  npx wrangler tail
+
+name = "uptime-watch"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+# Every 5 minutes. Cloudflare cron fires on time, unlike GitHub's schedule.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Last known state, so an outage sends one email rather than one per run.
+# Namespace "uptime-watch-state", created 2026-11-11.
+[[kv_namespaces]]
+binding = "STATE"
+id = "a8899df7a9734917a4710f48167351c0"
+
+# The TMDB check goes through this binding, not the public URL: a Worker's
+# fetch to another workers.dev Worker on the same account returns 404.
+[[services]]
+binding = "TMDB_PROXY"
+service = "tmdb-proxy"
+
+[vars]
+APP_URL = "https://app.theplot.tv/"
+APP_ORIGIN = "https://app.theplot.tv"
+TMDB_PROXY_URL = "https://tmdb-proxy.sav-black.workers.dev"
+SUPABASE_URL = "https://mkegtssedjyqldysvzga.supabase.co"
+
+# Two reads 30 seconds apart before a check counts as broken: a single
+# dropped request is not an outage.
+ATTEMPTS = "2"
+WAIT_SECONDS = "30"
+
+# While an outage lasts, remind every 6 hours rather than every run.
+REMIND_HOURS = "6"
+
+# If Cloudflare refuses every attempt for this long, say once that the watcher
+# is blind.
+BLIND_HOURS = "12"
+
+GITHUB_REPO = "savblack/PLOT"
+
+# Same destination and sender as backup-heartbeat and whats-on-watch.
+ALERT_EMAIL = "sav.black@outlook.com"
+ALERT_FROM = "Plot <hello@theplot.tv>"
