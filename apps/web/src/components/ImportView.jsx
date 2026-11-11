@@ -9,7 +9,7 @@ import { useApp } from '../hooks/useApp.js';
 import { markImportDone } from '../utils/finishingTouchesState.js';
 import { clearLetterboxdImport, rememberLetterboxdImport } from '../utils/letterboxdImportPrompt.js';
 import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
-import { readImportJob, readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
+import { readImportJob, readImportJobReview, finishImportJobReview, importSourceName, importListChoiceNeeded, importFileNameForListChoice } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
@@ -21,6 +21,7 @@ import {
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { MEDIA } from '../copy/media.js';
 import { IMPORT_VIEW } from '../copy/importView.js';
+import './ImportSourcePicker.css';
 import { useMediaSync } from '../hooks/useMediaSync.js';
 import { useTraktSync } from '../hooks/useTraktSync.js';
 import { useSimklSync } from '../hooks/useSimklSync.js';
@@ -238,6 +239,8 @@ function AccountImportView() {
   const [platform, setPlatform] = useState(initialPlatform);
   const [previewPage, setPreviewPage] = useState(0);
   const [parseError, setParseError] = useState('');
+  // An IMDb list file waiting on "Is this your IMDb watchlist?".
+  const [pendingListFiles, setPendingListFiles] = useState(null);
   const [listResult, setListResult] = useState('');
   const [documentReport, setDocumentReport] = useState([]);
   const [resolveProgress, setResolveProgress] = useState({ done: 0, total: 0 });
@@ -365,14 +368,28 @@ function AccountImportView() {
   }, [connection, platform, user, importReport]);
 
   /* Step 2 → 3 → 4 */
-  const handleFile = useCallback(async (files) => {
+  const handleFile = useCallback(async (files, listChoice = null) => {
     setParseError('');
     setPreviewPage(0);
     setDocumentReport([]);
+    setPendingListFiles(null);
+    let picked = Array.from(files);
+    // IMDb exports the watchlist and every other list in one layout under a
+    // random name: ask, then read the file under the answer's name, exactly
+    // as the background import sheet does.
+    if (platform.id === 'imdb' && picked.length === 1) {
+      if (!listChoice) {
+        const head = await picked[0].slice(0, 4096).text().catch(() => '');
+        if (importListChoiceNeeded('imdb', head)) { setPendingListFiles(picked); return; }
+      } else {
+        const file = picked[0];
+        picked = [{ name: importFileNameForListChoice(listChoice), size: file.size, text: () => file.text(), arrayBuffer: () => file.arrayBuffer() }];
+      }
+    }
     let parsed;
     try {
       if (platform.id === 'letterboxd' && files?.length) letterboxdVisit.current.uploaded = true;
-      const document = await readImportSelection(platform.id === 'trakt-export' ? 'trakt' : platform.id, Array.from(files));
+      const document = await readImportSelection(platform.id === 'trakt-export' ? 'trakt' : platform.id, picked);
       if (platform.id === 'letterboxd') clearLetterboxdImport(user?.id);
       parsed = document.entries;
       setDocumentReport(importReportMessages(document));
@@ -627,6 +644,20 @@ function AccountImportView() {
           {parseError && (
             <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem', fontSize: '0.82rem', color: '#ef4444', marginBottom: '1rem' }}>
               {parseError}
+            </div>
+          )}
+
+          {pendingListFiles && (
+            <div className="isp-plex" style={{ marginBottom: '1.25rem' }}>
+              <div className="isp-lbl" id="import-list-choice">{IMPORT_JOBS.onboarding.imdbListQuestion}</div>
+              <div className="isp-radios" role="radiogroup" aria-labelledby="import-list-choice">
+                {[['watchlist', IMPORT_JOBS.onboarding.imdbListWatchlist, IMPORT_JOBS.onboarding.imdbListWatchlistNote],
+                  ['list', IMPORT_JOBS.onboarding.imdbListOther, IMPORT_JOBS.onboarding.imdbListOtherNote]].map(([id, label, note]) => (
+                  <button type="button" role="radio" aria-checked={false} key={id} className="isp-radio" onClick={() => handleFile(pendingListFiles, id)}>
+                    <i aria-hidden="true" /><span className="isp-radio-copy"><span>{label}</span><small>{note}</small></span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

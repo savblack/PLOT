@@ -186,7 +186,15 @@ export function importListChoiceNeeded(source, text) {
  */
 function namedForListChoice(source, listChoice, files) {
   if (source !== 'imdb' || !listChoice || files.length !== 1) return files;
-  return [{ ...files[0], name: listChoice === 'watchlist' ? 'imdb-watchlist.csv' : 'imdb-list.csv' }];
+  return [{ ...files[0], name: importFileNameForListChoice(listChoice) }];
+}
+
+/** The name an answered IMDb list file is read under, by the worker and by
+ * the in-browser /import page alike (parsePlatform reads the name).
+ * @param {ImportListChoice} listChoice
+ */
+export function importFileNameForListChoice(listChoice) {
+  return listChoice === 'watchlist' ? 'imdb-watchlist.csv' : 'imdb-list.csv';
 }
 
 /**
