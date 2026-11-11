@@ -22,6 +22,10 @@
 #     | npx wrangler secret put SIGNIN_PASSWORD      # the watcher account's password, kept in Keychain
 # Without them the check reports "not configured" and, after BLIND_HOURS, says so by email.
 #
+# The production signed-in check needs one secret and a seeded session:
+#   npx wrangler secret put SIGNIN_PROD_PUBLISHABLE_KEY   # production publishable key (it ships in the app bundle)
+#   node scripts/signin-watch-seed.mjs --yes-production [--create]   # from the repo root; stores the session in STATE
+#
 # Check it by hand:
 #   curl -H "x-watch-token: <token>" https://uptime-watch.<subdomain>.workers.dev
 #   curl -H "x-watch-token: <token>" "https://uptime-watch.<subdomain>.workers.dev?test-email=1"
@@ -84,12 +88,16 @@ STRIPE_LOOKBACK_DAYS = "15"
 # STRIPE_WEBHOOK_URL = ""
 
 # Signed-in check (src/signin.js). PLOT Staging, with a test account that
-# exists only for this watcher (created 2026-11-11). Production password
-# sign-in requires a Turnstile captcha, which a Worker cannot solve, so this
-# cannot point at production as it is. See docs/ops/monitoring.md.
+# exists only for this watcher (created 2026-11-11). See docs/ops/monitoring.md.
 SIGNIN_CRON = "23 * * * *"
 SIGNIN_SUPABASE_URL = "https://uzrhfivnhdcfieuaxzip.supabase.co"
 SIGNIN_EMAIL = "plot-signin-watch@example.invalid"
+
+# The same check against production. Production sign-in requires a captcha,
+# so this account has no password: it renews a stored session each run
+# (`signin-prod-session` in STATE), seeded by scripts/signin-watch-seed.mjs.
+SIGNIN_PROD_SUPABASE_URL = "https://mkegtssedjyqldysvzga.supabase.co"
+SIGNIN_PROD_EMAIL = "plot-signin-watch@example.invalid"
 
 # Same destination and sender as backup-heartbeat and whats-on-watch.
 ALERT_EMAIL = "sav.black@outlook.com"

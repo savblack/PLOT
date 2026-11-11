@@ -8,7 +8,7 @@ it recovers.
 | Watcher | Every | Checks | Lives in |
 |---|---|---|---|
 | uptime-watch | 5 min | app.theplot.tv serves the app shell. The TMDB proxy returns trending titles. Edge functions answer (`billing-availability`). Stripe is delivering billing events to `stripe-webhook` (see below). | `apps/web/workers/uptime-watch` |
-| uptime-watch, signed-in check | hourly | A test account on PLOT Staging signs in, reads its own profile and History, saves a watched title the way the app does, and deletes it. Catches the July 2026 shape: pages load but saving fails. | `apps/web/workers/uptime-watch/src/signin.js` |
+| uptime-watch, signed-in check | hourly | A test account on PLOT Staging, and one on production, signs in, reads its own profile and History, saves a watched title the way the app does, and deletes it. Catches the July 2026 shape: pages load but saving fails. | `apps/web/workers/uptime-watch/src/signin.js` |
 | whats-on-watch | 30 min | theplot.tv/whats-on shows articles | `apps/web/workers/whats-on-watch` |
 | backup-heartbeat | daily | Last night's database backup and the weekly storage mirror landed in R2 | `apps/web/workers/backup-heartbeat` |
 
@@ -66,15 +66,25 @@ marked `plot-signin-watch` in its note and deletes it again; a row left by an
 interrupted run is cleaned up by the next one. The title comes from the TMDB
 proxy's trending list, so no TMDB id is hardcoded.
 
-It has its own emails ("saving to History is failing on Staging") and its own
-stored state, separate from the uptime checks.
+The same check runs against production, as an account of the same name in
+production. Production sign-in requires a Turnstile captcha, which a Worker
+can't solve, so that account has no password. The Worker renews a stored
+session instead (a refresh needs no captcha) and saves the renewed one in its
+`STATE` namespace under `signin-prod-session` before doing anything else.
+`scripts/signin-watch-seed.mjs` makes the first session from a one-time magic
+link, and makes a new one if the chain ever breaks. Both checks refuse to read
+or write if the session belongs to any other account.
 
-It watches Staging, not production. Staging gets the same migrations as
-production (`migration-drift` checks that nightly), so a migration that breaks
-saving breaks it on both. Production can't be watched this way as it stands:
-production sign-in requires a Turnstile captcha, which a Worker can't solve, and
-a production test account would be a write to live sign-in data that needs
-Savannah's yes first.
+Each has its own emails ("saving to History is failing on Staging" or "in
+production") and its own stored state, separate from each other and from the
+uptime checks. A lost production session is "can't run", not "failing": it
+sends the can't-run email after 12 hours, which says to re-run the seed script.
+
+What the production account costs: creating it sent one "new signup" email
+and added it to Brevo's app-users list. Each hourly save marks it for Brevo's
+attribute sync, about 24 small Brevo updates a day. Brevo's lifecycle emails
+skip it because it never finishes onboarding. Its profile is private, so the
+brief feed post each save creates is seen by nobody.
 
 ## App errors (PostHog alert)
 
@@ -116,7 +126,6 @@ update this section.
 
 ## Not watched yet
 
-- A signed-in read and write against production itself (see above for why the check runs on Staging).
 - pg_cron job failures.
 
 ## Deploying or changing a watcher
