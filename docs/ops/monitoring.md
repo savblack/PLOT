@@ -33,6 +33,15 @@ GitHub-side watchers raise issues rather than email:
   owner. Run it by hand with `SUPABASE_DB_URL=… pnpm run db:cron-health`. A job
   added in the last day can show as stopped until its first run.
 
+- The same workflow's second job checks what pg_cron can't see: whether the
+  edge function a job calls actually worked. Most jobs (send-push,
+  alert-email-delivery, the import worker, Brevo sync, the sitemap refresh and
+  others), and the database webhooks on feedback, reports and profile changes,
+  hand their work to an edge function through pg_net. pg_cron counts the job as
+  passed once the request is queued, so a function that answers 404 (not
+  deployed), 500, times out or never answers looked healthy. See
+  [pg_net calls](#pg_net-calls-to-edge-functions) below.
+
 uptime-watch also opens a GitHub issue labelled `incident` when its
 `GITHUB_TOKEN` secret is set, and closes the issue on recovery.
 
@@ -133,11 +142,52 @@ GitHub issue.
 To change it, edit the alert from the insight's Alerts button in PostHog, then
 update this section.
 
+### pg_net calls to edge functions
+
+pg_net keeps each answer for only 6 hours and doesn't record which function it
+came from, so two triggers on pg_net's own tables copy the function name and
+the answer's status into `public.pg_net_calls` (no headers, bodies or answer
+text; kept 8 days, purged daily by the `pg-net-calls-purge` job). The hourly
+`http` job in `cron-health.yml` reads `public.pg_net_call_health()` as
+`plot_ci_readonly`: one row per function, with its latest outcome.
+
+- **Failed** means anything but a 2xx in time: another status, a timeout, a
+  connection error, or no answer at all after 15 minutes.
+- **Alerts** when a function's latest call failed and either the one before
+  failed too, or it was called fewer than 4 times in the last day. So a daily
+  or weekly job alerts on its first failed run, while a busy webhook (every
+  profile save calls `profiles-changed`) doesn't page for one timeout that the
+  next call recovers from. It also alerts when a function fails on and off: 5
+  or more failed calls in a day that are at least half its calls.
+- **Sends** the email "a scheduled job ran but its edge function failed" and
+  opens its own `incident` issue, "Scheduled job failing: pg_net calls to edge
+  functions", separate from the pg_cron one. It closes on the next run where
+  every function's latest call worked. A function nothing calls again stays
+  listed until its failed call is 8 days old.
+- **Can't run** (the same email, saying the check couldn't run) if the
+  triggers are gone, for example after a Supabase pg_net upgrade rebuilds its
+  tables. Re-run the trigger block of
+  `supabase/migrations/20261111190000_pg_net_call_health.sql`.
+- **By hand:** `SUPABASE_DB_URL=… pnpm run db:cron-http-health` lists every
+  function and its last outcome. For why a function failed, read its logs in
+  Supabase (Edge Functions, then the function, then Logs).
+- **Turning it off:** only Supabase can remove a trigger from pg_net's tables
+  (`postgres` may add one but not drop or disable it). To stop logging,
+  recreate `pg_net_calls_log_request()` and `pg_net_calls_log_response()` as
+  functions that just `return null`.
+- **Proven:** on 2026-11-11, on PLOT Staging, a call to a function that
+  doesn't exist answered 404, the check reported it, and a GitHub run opened an
+  `incident` issue (#1586, then closed by hand) and sent the email.
+
+Found on the way: on PLOT Staging, `brevo-lifecycle` and
+`marketing-notion-mirror` answer 404 on every run (they aren't deployed
+there).
+
 ## Not watched yet
 
-- Whether a pg_cron job's HTTP call worked. Most jobs hand work to an edge
-  function through pg_net, and pg_cron records the hand-off as a success even
-  when the function then fails.
+- Whether an edge function that answered 200 did all its work. A function
+  that catches its own error and still answers 200 looks healthy to the pg_net
+  check; that needs the function to report it (PostHog, or a failing status).
 
 ## Deploying or changing a watcher
 
