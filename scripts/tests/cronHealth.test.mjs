@@ -161,7 +161,7 @@ test('exactly at the stall boundary is still healthy', () => {
 });
 
 test('a schedule longer than the kept history is not judged for staleness', () => {
-  assert.ok(maxScheduleGapMinutes('0 0 1 * *') >= HISTORY_DAYS * 1440);
+  assert.ok(maxScheduleGapMinutes('0 0 1 * *') > HISTORY_DAYS * 1440);
   const result = evaluateCronJobs([
     row({ jobname: 'monthly', schedule: '0 0 1 * *', last_start: null, last_status: null, last_finished_status: null }),
   ], NOW);
@@ -179,4 +179,19 @@ test('a run stuck while sending its result reads as stuck', () => {
     row({ schedule: '* * * * *', last_status: 'sending', last_start: minutesAgo(30) }),
   ], NOW);
   assert.match(problems[0].detail, /still going/);
+});
+
+test('weekly jobs are still judged for staleness, not listed as unreadable', () => {
+  // Found on production 2026-11-11: pg-stat-statements-reset and smart-list-digest
+  // were listed as unreadable because a 7-day gap was treated as longer than the
+  // 7 days of kept history.
+  const weekly = { schedule: '0 21 * * 0' };
+  const healthy = evaluateCronJobs([row({ ...weekly, last_start: minutesAgo(3 * 1440) })], NOW);
+  assert.deepEqual(healthy.unreadable, []);
+  assert.deepEqual(healthy.problems, []);
+  const missed = evaluateCronJobs([
+    row({ ...weekly, last_start: null, last_status: null, last_finished_status: null, last_finished_at: null }),
+  ], NOW);
+  assert.deepEqual(missed.unreadable, []);
+  assert.equal(missed.problems[0].kind, 'stalled');
 });
