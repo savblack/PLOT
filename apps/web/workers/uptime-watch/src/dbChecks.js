@@ -19,9 +19,10 @@
  * database checks running at all".
  *
  * Needs GITHUB_TOKEN with Actions: Read and write on savblack/PLOT, on top of
- * the Issues permission it already has. Without it GitHub answers 403 or 404,
- * reported as "can't run" (blocked), which emails after BLIND_HOURS with the
- * fix, never as an outage.
+ * the Issues permission it already has. Without it GitHub answers 403 (401 for
+ * an expired token), reported as "can't run" (blocked), which emails once after
+ * BLIND_HOURS with the fix, never as an outage. A run that was cancelled or
+ * never started does not count as a run.
  */
 
 /** A finished run older than this means the database checks have stopped. */
@@ -41,7 +42,16 @@ function headers(env) {
 const workflowUrl = (env) =>
   `${API}/repos/${env.GITHUB_REPO}/actions/workflows/${encodeURIComponent(env.DB_CHECKS_WORKFLOW)}`;
 
-const refused = (status) => status === 401 || status === 403 || status === 404;
+// 401 (expired or wrong token) and 403 (no Actions permission) are the
+// watcher's own setup. 404 is not: the repository is public, so the runs list
+// answers without the permission, and a 404 there means the workflow file is
+// gone or renamed, which stops the checks for real.
+const refused = (status) => status === 401 || status === 403;
+
+/** Only these mean the checks actually ran. A cancelled run (the workflow's
+ * concurrency group cancels a queued run when the next is started) or a
+ * startup_failure (a broken workflow file) checked nothing. */
+const RAN = new Set(['success', 'failure']);
 const tokenHint = 'GITHUB_TOKEN on uptime-watch needs Actions: Read and write on savblack/PLOT';
 
 /**
@@ -71,20 +81,27 @@ export async function startDbChecks(env, http = fetch) {
 export async function readDbChecks(env, { started, now = Date.now(), http = fetch } = {}) {
   let res;
   try {
-    res = await http(`${workflowUrl(env)}/runs?status=completed&per_page=1`, { headers: headers(env) });
+    res = await http(`${workflowUrl(env)}/runs?status=completed&per_page=20`, { headers: headers(env) });
   } catch (err) {
     return { ok: false, blocked: true, reason: `GitHub could not be reached (${err?.message || err})` };
   }
   if (refused(res.status)) {
     return { ok: false, blocked: true, reason: `GitHub refused to list its runs (${res.status}): ${tokenHint}` };
   }
+  if (res.status === 404) {
+    return { ok: false, reason: `GitHub has no workflow ${env.DB_CHECKS_WORKFLOW} (404): was it renamed or deleted? Update DB_CHECKS_WORKFLOW in uptime-watch's wrangler.toml.` };
+  }
   if (!res.ok) return { ok: false, blocked: true, reason: `GitHub answered ${res.status}` };
 
-  const run = (await res.json())?.workflow_runs?.[0];
+  // Newest first. Skip runs that checked nothing.
+  const run = ((await res.json())?.workflow_runs || []).find((r) => RAN.has(r.conclusion));
   const startNote = started && !started.ok
     ? ` This hour ${started.reason}${refused(started.status) ? `: ${tokenHint}` : ''}.`
     : '';
-  if (!run) return { ok: false, reason: `no finished run of ${env.DB_CHECKS_WORKFLOW} at all.${startNote}` };
+  if (!run) {
+    const reason = `no run of ${env.DB_CHECKS_WORKFLOW} that actually checked anything among its last 20.${startNote}`;
+    return started && refused(started.status) ? { ok: false, blocked: true, reason } : { ok: false, reason };
+  }
 
   const ageMinutes = Math.round((now - Date.parse(run.created_at)) / 60_000);
   if (ageMinutes > STALE_MINUTES) {

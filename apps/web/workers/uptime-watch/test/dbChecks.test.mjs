@@ -53,12 +53,12 @@ test('no finished run for longer than STALE_MINUTES means the checks stopped (br
 test('no finished run at all is broken', async () => {
   const r = await readDbChecks(env, { started: { ok: true }, now: NOW, http: fakeGithub({ runs: [] }).http });
   assert.equal(r.ok, false);
-  assert.match(r.reason, /no finished run of cron-health.yml/);
+  assert.match(r.reason, /no run of cron-health.yml that actually checked anything/);
 });
 
 test('a token without the Actions permission is "can\'t run" with the fix, never an outage', async () => {
-  // GitHub answers 403 (or 404 for a fine-grained token that cannot see Actions).
-  for (const status of [403, 404]) {
+  // GitHub answers 403 without the permission, 401 for an expired token.
+  for (const status of [401, 403]) {
     const listRefused = await readDbChecks(env, { started: { ok: false, status, reason: `GitHub would not start it (${status})` }, now: NOW, http: fakeGithub({ list: status }).http });
     assert.equal(listRefused.blocked, true, String(status));
     assert.match(listRefused.reason, /Actions: Read and write/);
@@ -68,8 +68,10 @@ test('a token without the Actions permission is "can\'t run" with the fix, never
   assert.equal(recent.ok, true);
   assert.match(recent.reason, /Actions: Read and write/);
   // Start refused and stale: the watcher's setup is the problem, so blocked.
-  const stale = await readDbChecks(env, { started: { ok: false, status: 403, reason: 'GitHub would not start it (403)' }, now: NOW, http: fakeGithub({ runs: [{ created_at: minutesAgo(400) }] }).http });
+  const stale = await readDbChecks(env, { started: { ok: false, status: 403, reason: 'GitHub would not start it (403)' }, now: NOW, http: fakeGithub({ runs: [{ created_at: minutesAgo(400), conclusion: 'success' }] }).http });
   assert.equal(stale.blocked, true);
+  const none = await readDbChecks(env, { started: { ok: false, status: 403, reason: 'GitHub would not start it (403)' }, now: NOW, http: fakeGithub({ runs: [] }).http });
+  assert.equal(none.blocked, true, 'no usable run and a refused start: still the watcher\'s setup');
 });
 
 test('dbChecksChecksFor: off without the workflow var, "not configured" without a token', async () => {
@@ -146,4 +148,26 @@ test('wrangler.toml names the workflow, and that workflow exists and can be star
   assert.equal(name, 'cron-health.yml');
   const wf = readFileSync(new URL(`../../../../../.github/workflows/${name}`, import.meta.url), 'utf8');
   assert.match(wf, /workflow_dispatch:/, 'a workflow without workflow_dispatch cannot be started');
+});
+
+test('cancelled and never-started runs do not count: a queue that cancels every run is an alarm', async () => {
+  const gh = fakeGithub({ runs: [
+    { created_at: minutesAgo(5), conclusion: 'cancelled' },
+    { created_at: minutesAgo(65), conclusion: 'startup_failure' },
+    { created_at: minutesAgo(400), conclusion: 'success' },
+  ] });
+  const r = await readDbChecks(env, { started: { ok: true, status: 204 }, now: NOW, http: gh.http });
+  assert.equal(r.ok, false);
+  assert.ok(!r.blocked);
+  assert.match(r.reason, /400 minutes ago/);
+  const onlyCancelled = fakeGithub({ runs: [{ created_at: minutesAgo(5), conclusion: 'cancelled' }] });
+  assert.equal((await readDbChecks(env, { started: { ok: true }, now: NOW, http: onlyCancelled.http })).ok, false);
+});
+
+test('a missing workflow (404) is an outage with the right fix, not a token problem', async () => {
+  const r = await readDbChecks(env, { started: { ok: false, status: 404, reason: 'GitHub would not start it (404)' }, now: NOW, http: fakeGithub({ list: 404 }).http });
+  assert.equal(r.ok, false);
+  assert.ok(!r.blocked, 'broken, so it emails at once and opens an issue');
+  assert.match(r.reason, /renamed or deleted/);
+  assert.doesNotMatch(r.reason, /Actions: Read and write/);
 });

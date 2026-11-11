@@ -60,7 +60,12 @@ run of it has finished in the last 3 hours. The GitHub schedule stays on as a
 backup.
 
 - It doesn't judge the run's result: `cron-health.yml` raises its own
-  incidents for a failing job. A failed run still counts as "running".
+  incidents for a failing job. A failed run still counts as "running". A
+  cancelled run (the workflow cancels a queued run when the next one starts)
+  or one that never started (a broken workflow file) does not, because it
+  checked nothing.
+- If the workflow is renamed or deleted, GitHub answers 404 and it alarms at
+  once, saying to update `DB_CHECKS_WORKFLOW` in uptime-watch's `wrangler.toml`.
 - No finished run for 3 hours sends "the hourly database checks have stopped
   running" and opens an `incident` issue. It has its own state
   (`dbchecks-state`), separate from the app and signed-in alarms.
