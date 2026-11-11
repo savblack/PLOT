@@ -3163,12 +3163,7 @@ svg { stroke-width: 1.5; }
 
 /* ── A list's own page: optional filters + responsive collection ── */
 .list-page { display: flex; flex-direction: column; padding: 0 var(--gut) 3rem; }
-.list-page-back {
-  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
-  min-height: 36px; margin-bottom: 6px; color: var(--accent-text);
-  font-size: .8rem; font-weight: 600; text-decoration: none;
-}
-.list-page-back span { font-size: 1.25rem; line-height: 1; }
+.list-page-back--mobile { margin-bottom: 6px; }
 @media (min-width: 1024px) {
   .list-page-back--mobile { display: none; }
 }

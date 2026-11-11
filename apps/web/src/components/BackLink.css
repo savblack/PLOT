@@ -1,0 +1,20 @@
+/* The one back control (BackLink.jsx). Page-specific classes may add margins
+   or hide it at a breakpoint; size, weight and color are set here only. */
+.back-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  margin-left: -4px;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.back-link svg { width: 18px; height: 18px; flex: none; }
+.back-link:hover,
+.back-link:focus-visible { color: var(--text-primary); }

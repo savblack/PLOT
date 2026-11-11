@@ -272,7 +272,7 @@ export const SETTINGS_VIEW = {
     // The Themes gallery page.
     gallery: {
       title: 'Themes',
-      back: '← Settings',
+      back: 'Settings',
       intro: 'How Plot looks on this browser. Every theme comes in light and dark and follows the Light, Dark and System setting. The default is free; Premium themes change the paper, the ink and the accent, never what anything means.',
       free: 'Free',
       premium: 'Premium',

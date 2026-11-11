@@ -7,15 +7,6 @@
   padding: 1rem var(--gut) 2rem;
   max-width: 1100px;
 }
-.themes-back {
-  align-self: flex-start;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-decoration: none;
-}
-.themes-back:hover,
-.themes-back:focus-visible { color: var(--text-primary); }
 .themes-head {
   display: flex;
   flex-wrap: wrap;
