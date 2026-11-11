@@ -13,7 +13,10 @@ name: Dependabot auto-merge
 #
 # Safety:
 #   - Acts only on PRs authored by dependabot[bot].
-#   - Merges only when the triggering CI run concluded `success`.
+#   - Merges only when CircleCI ITSELF reported `success`: the latest
+#     `ci/circleci: check` status posted by the CircleCI GitHub App
+#     (`circleci-app[bot]`). A status with that name from anyone else is
+#     ignored, so the PR waits for a human. See the check below.
 #   - Merges only minor/patch bumps; majors get labelled + commented, never merged.
 #   - DRY RUN by default. Set repo variable DEPENDABOT_AUTOMERGE=true to arm it.
 
@@ -23,6 +26,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  statuses: read
 
 concurrency:
   group: dependabot-automerge-${{ github.event.sha }}
@@ -31,8 +35,9 @@ concurrency:
 jobs:
   automerge:
     runs-on: ubuntu-latest
-    # Pending and failed CircleCI updates create no runner. Authorship is
-    # checked from the PR itself below rather than trusting the status sender.
+    # Pending and failed CircleCI updates create no runner. Neither the status
+    # name nor its sender is trusted: who posted it, and the PR's authorship,
+    # are checked from the API below.
     if: >
       github.event.context == 'ci/circleci: check' &&
       github.event.state == 'success'
@@ -45,6 +50,46 @@ jobs:
           ARMED: ${{ vars.DEPENDABOT_AUTOMERGE }}
         run: |
           set -euo pipefail
+
+          # --- Confirm CircleCI itself reported success ---
+          # Any account with push access can post a commit status named
+          # `ci/circleci: check`, and this workflow fires on every one of them
+          # (2026-11-11 security review on #1555). So the event is only a
+          # wake-up call. Read the commit's statuses from the API and require
+          # that the LATEST `ci/circleci: check` posted by the CircleCI GitHub
+          # App is `success`.
+          #
+          # Why the app's bot account and not the status sender or target_url:
+          #   - CircleCI posts this status twice per run. The GitHub App posts it
+          #     as `circleci-app[bot]` (type Bot). The older OAuth integration
+          #     posts it as the person who set the project up (`savblack`, type
+          #     User), which is indistinguishable from that person posting it by
+          #     hand, so it cannot be trusted.
+          #   - Only the app itself can act as `circleci-app[bot]`; no user,
+          #     token or other workflow can post as it.
+          #   - `target_url` is free text anyone can set, so its host is checked
+          #     only as a second guard, never on its own.
+          # Statuses come back newest first, so `first(...)` is the latest one.
+          # A pending or failed latest run from the app means "not green yet":
+          # the PR is left alone, and the app's own success event (if it comes)
+          # triggers this workflow again.
+          CIRCLECI_STATE=$(gh api --paginate "repos/$GH_REPO/commits/$HEAD_SHA/statuses?per_page=100" \
+            --jq '.[] | select(.context == "ci/circleci: check" and .creator.login == "circleci-app[bot]" and .creator.type == "Bot") | "\(.state) \(.target_url // "")"')
+          CIRCLECI_STATE=${CIRCLECI_STATE%%$'\n'*}
+          CIRCLECI_RESULT=${CIRCLECI_STATE%% *}
+          CIRCLECI_URL=${CIRCLECI_STATE#* }
+          if [ "$CIRCLECI_RESULT" != "success" ]; then
+            echo "No success from the CircleCI GitHub App for '$HEAD_SHA' (latest: '${CIRCLECI_RESULT:-none}'). Not merging; left for human review."
+            exit 0
+          fi
+          case "$CIRCLECI_URL" in
+            https://app.circleci.com/*|https://circleci.com/*) ;;
+            *)
+              echo "CircleCI app status points at '$CIRCLECI_URL', not circleci.com. Not merging; left for human review."
+              exit 0
+              ;;
+          esac
+          echo "CircleCI GitHub App reported success: $CIRCLECI_URL"
 
           # --- Find the open PR whose head commit CircleCI just passed ---
           PR_NUM=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/pulls" \
