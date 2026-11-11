@@ -168,7 +168,6 @@ export const SETTINGS_VIEW = {
     available: 'Available',
     taken: 'That username is taken',
     formatHint: '3–30 chars · lowercase letters, numbers, hyphens',
-    saved: 'Saved',
     error: 'Something went wrong. Try again',
   },
 

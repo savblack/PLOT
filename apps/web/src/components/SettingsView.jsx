@@ -1713,7 +1713,7 @@ export default function SettingsView() {
                     {usernameStatus === 'taken' && SETTINGS_VIEW.username.taken}
                     {usernameStatus === 'invalid' && SETTINGS_VIEW.username.formatHint}
                     {usernameStatus === 'saving' && COMMON.saving}
-                    {usernameStatus === 'saved' && SETTINGS_VIEW.username.saved}
+                    {usernameStatus === 'saved' && COMMON.saved}
                     {usernameStatus === 'error' && SETTINGS_VIEW.username.error}
                   </div>
                 </>
@@ -1909,7 +1909,7 @@ export default function SettingsView() {
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsSwitch label={SETTINGS_VIEW.marketingEmails.label} checked={marketingEmailsEnabled} disabled={savingMarketingEmails} onChange={toggleMarketingEmails} />
+            <SettingsSwitch label={SETTINGS_VIEW.marketingEmails.label} checked={marketingEmailsEnabled} disabled={savingMarketingEmails} onChange={toggleMarketingEmails} saves />
           </div>
         </div>
       </div>
@@ -1940,7 +1940,7 @@ export default function SettingsView() {
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsSwitch label={SETTINGS_VIEW.kidsContent.label} checked={includeKidsContent} disabled={savingKidsContent} onChange={handleToggleKidsContent} />
+            <SettingsSwitch label={SETTINGS_VIEW.kidsContent.label} checked={includeKidsContent} disabled={savingKidsContent} onChange={handleToggleKidsContent} saves />
           </div>
         </div>
 
@@ -2097,7 +2097,7 @@ export default function SettingsView() {
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} />
+            <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} saves />
           </div>
         </div>
 
