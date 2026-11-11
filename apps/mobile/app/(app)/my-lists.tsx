@@ -1080,7 +1080,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             <View style={styles.covers}>
               <ListCover
                 name={CUSTOM_LISTS.wantToWatch}
-                count={titleCount(sortedSaved.length, 'Nothing saved yet')}
+                count={titleCount(sortedSaved.length, CUSTOM_LISTS.emptyPrompts.want.title)}
                 posters={coverPosters(sortedSaved)}
                 onPress={() => setTab('want')}
               />
