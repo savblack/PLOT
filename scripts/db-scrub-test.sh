@@ -41,7 +41,7 @@ if [ -z "$uid" ]; then
   echo "✗ Staging restore has no auth.users rows to plant into" >&2
   exit 1
 fi
-q "update auth.users set email = 'planted.person@gmail.com', raw_user_meta_data = jsonb_build_object('full_name', 'Planted Person', 'contact', jsonb_build_array('planted.person@gmail.com')) where id = '$uid'" >/dev/null
+q "update auth.users set email = 'planted.person@gmail.com', raw_user_meta_data = jsonb_build_object('full_name', 'Planted Person', 'contact', jsonb_build_array('planted.person@gmail.com'), 'Planted Key Person', true) where id = '$uid'" >/dev/null
 planted="$(q "select count(*) from auth.users where email = 'planted.person@gmail.com'")"
 echo "planted personal values on 1 user (found $planted)"
 

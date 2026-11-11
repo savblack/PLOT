@@ -7,10 +7,12 @@
 --
 -- Deny by default. Every text-like column in public, private, auth and
 -- storage is rewritten unless it is on the KEEP list below (categories,
--- catalog data, internal plumbing). Rewrites are deterministic (md5 of the old
--- value), so foreign keys, unique indexes and joins on text still line up.
--- jsonb keeps its keys and shape; every string inside it is rewritten. Secrets
--- with no testing value (sessions, tokens, MFA, audit log) are emptied.
+-- catalog data, internal plumbing). Rewrites are sha256 of the old value
+-- with a per-run secret key: consistent within a run, so foreign keys, unique
+-- indexes and joins on text still line up, but not reversible by guessing.
+-- jsonb keeps its shape and schema-like keys; other keys and every string are
+-- rewritten. Secrets with no testing value (sessions, tokens, MFA, audit log)
+-- are emptied.
 --
 -- If a rewrite breaks a constraint (a length or format check), it tries a
 -- shorter value, then NULL, then empties the table. It never leaves a column
@@ -18,19 +20,32 @@
 -- a real email address survives anywhere.
 \set ON_ERROR_STOP on
 
+-- A random key for this run only, mixed into every rewrite and never stored
+-- outside this session. Values stay consistent within the run (so joins and
+-- unique indexes hold) but cannot be reversed by hashing guesses, which a
+-- plain md5 of an email would allow.
+create temp table scrub_key as select gen_random_uuid()::text || gen_random_uuid()::text as k;
+
 create or replace function pg_temp.scrub_text(v text, maxlen int) returns text
-language sql immutable as $$
+language sql stable as $$
   select case when v is null or v = '' then v
-              else left('x' || md5(v), greatest(coalesce(maxlen, 33), 1)) end
+              else left('x' || encode(sha256(convert_to((select k from scrub_key) || v, 'UTF8')), 'hex'),
+                        greatest(coalesce(maxlen, 33), 1)) end
 $$;
 
+-- Object keys that look like fixed schema names (theme, full_name) are kept so
+-- the shape stays testable. Any other key (an email, a person's name, an
+-- external id used as a key) is rewritten like a value.
 create or replace function pg_temp.scrub_json(j jsonb) returns jsonb
-language plpgsql immutable as $$
+language plpgsql stable as $$
 declare out jsonb;
 begin
   case jsonb_typeof(j)
     when 'object' then
-      select coalesce(jsonb_object_agg(k, pg_temp.scrub_json(v)), '{}'::jsonb) into out from jsonb_each(j) as e(k, v);
+      select coalesce(jsonb_object_agg(
+               case when k ~ '^[a-z_][a-z0-9_]{0,40}$' then k else pg_temp.scrub_text(k, 33) end,
+               pg_temp.scrub_json(v)), '{}'::jsonb)
+        into out from jsonb_each(j) as e(k, v);
     when 'array' then
       select coalesce(jsonb_agg(pg_temp.scrub_json(v) order by i), '[]'::jsonb) into out from jsonb_array_elements(j) with ordinality as e(v, i);
     when 'string' then
@@ -124,7 +139,7 @@ begin
     -- Attempt 2: a short value, for format or length checks.
     if not done and r.data_type in ('text', 'character varying', 'character', 'USER-DEFINED') then
       begin
-        execute format('update %s set %I = left(md5(%I::text), 12) where %I is not null', rel, r.column_name, r.column_name, r.column_name);
+        execute format('update %s set %I = pg_temp.scrub_text(%I::text, 12) where %I is not null', rel, r.column_name, r.column_name, r.column_name);
         insert into scrub_log values (rel, r.column_name, 'rewritten short');
         done := true;
       exception when others then null;
