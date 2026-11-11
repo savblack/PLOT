@@ -225,3 +225,21 @@ test('a Letterboxd watched/watchlist file whose name says neither is refused, ne
     assert.throws(() => parseImportDocument('letterboxd', fixture('watched'), { fileName }), /Choose the \.zip file Letterboxd gave you/);
   }
 });
+
+test('a Letterboxd watchlist with unreleased films imports the rest and counts what it left out', () => {
+  const [header, ...rows] = fixture('watchlist').trim().split('\n');
+  // Hand-made: a film with no year yet, and a row with no Letterboxd link.
+  const text = [header, ...rows, rows[0].replace(/,\d{4},/, ',,'), rows[1].replace(/,https:\/\/\S+$/, ',')].join('\n');
+  configure({ importEventsEnabled: true });
+  try {
+    const document = parseImportDocument('letterboxd', text, { fileName: 'watchlist-sam-2026-11-09-23-40-utc.csv' });
+    assert.equal(document.entries.length, rows.length);
+    assert.ok(document.entries.every(row => row.destination.kind === 'watchlist' && /^\d{4}$/.test(row.year)));
+    assert.deepEqual(document.notImported, [
+      { title: 'Letterboxd', reason: 'year_unknown', count: 1 },
+      { title: 'Letterboxd', reason: 'record_incomplete', count: 1 },
+    ]);
+  } finally {
+    configure({ importEventsEnabled: false });
+  }
+});

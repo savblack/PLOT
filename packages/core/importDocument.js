@@ -6,6 +6,8 @@ import { isImdbListExport, namesWatchlist, originalExportName, parseCSV, parsePl
 import { parseTvTimeDocument } from './tvTimeImport.js';
 import { IMPORT_VIEW } from './copy/importView.js';
 
+const IMPORT_SOURCE_NAMES = { imdb: 'IMDb', letterboxd: 'Letterboxd' };
+
 /** The document report must remain visible through review and results.
  * @param {string} platform
  * @param {string} text
@@ -46,7 +48,7 @@ export function parseImportDocument(platform, text, { fileName = '' } = {}) {
     }
   }
   if (entries.some(row => row.annotation) && !annotationsAvailable) throw new Error(IMPORT_VIEW.annotationsUnavailable);
-  for (const [reason, count] of leftOut) notImported.push({ title: 'IMDb', reason, count });
+  for (const [reason, count] of leftOut) notImported.push({ title: IMPORT_SOURCE_NAMES[platform] || platform, reason, count });
   const warnings = entries.some(row => row.requiresWatchReview) ? [{ title: 'Amazon Prime', reason: 'playback_review' }] : [];
   return { entries, warnings, notImported };
 }

@@ -15,7 +15,10 @@ test('verified IMDb movie ratings preserve external IDs and ratings, not inferre
 
 test('unsupported IMDb files fail explicitly before writing', () => {
   assert.throws(() => parsePlatform('imdb', 'Title,Rating\nExample,5'), /Unsupported IMDb export/);
-  assert.throws(() => parsePlatform('imdb', fixture.replace('tt0058003', 'not-an-id')), /invalid/);
+  // A single unidentifiable row is left out and counted, not fatal.
+  const leftOut = [];
+  assert.equal(parsePlatform('imdb', fixture.replace('tt0058003', 'not-an-id'), { onLeftOut: r => leftOut.push(r) }).length, 1);
+  assert.deepEqual(leftOut, ['record_incomplete']);
 });
 
 test('verified external IDs take precedence over translated title text', async () => {
@@ -55,7 +58,9 @@ test('saved IMDb series ratings preserve rating dates without asserting any watc
   assert.ok(entries.every(row => row.hint === 'tv' && row.annotationScope === 'show' && row.date === null));
   assert.ok(entries.every(row => row.annotation.rating === 7 && row.annotation.ratedAt === '2024-01-15'));
   assert.ok(entries.every(row => row.episodeNumber == null && row.seasonNumber == null && row.eventId === `rating:${row.externalIds.imdb}`));
-  assert.throws(() => parseImportDocument('imdb', text.replaceAll('2024-01-15', '2024-02-30')), /rating date is invalid/);
+  const badDate = parseImportDocument('imdb', text.replaceAll('2024-01-15', '2024-02-30'));
+  assert.equal(badDate.entries.length, 0);
+  assert.deepEqual(badDate.notImported, [{ title: 'IMDb', reason: 'record_incomplete', count: 2 }]);
   configure({ importAnnotationsEnabled: false });
   // With show ratings off, the series rows are left out and counted rather
   // than failing the file. This file holds nothing else.
@@ -162,4 +167,42 @@ test('an IMDb watchlist is recognised by name; any other list becomes a custom l
   } finally {
     configure({ importEventsEnabled: false });
   }
+});
+
+test('a long IMDb list with shorts, episodes and unreleased titles imports what Plot can match', async () => {
+  const { parseImportDocument, importReportMessages } = await import('../../importDocument.js');
+  const { configure } = await import('../../config.js');
+  const [header, first, second] = watchlistFixture.trim().split('\n');
+  // Hand-made odd rows from the two verified records; IMDb IDs are unchanged.
+  const text = [header, first, second,
+    first.replace(',Movie,', ',Short,'),
+    second.replace(',Movie,', ',TV Episode,'),
+    first.replace(',Movie,', ',Video Game,'),
+    second.replace(',2023,', ',,'),
+    first.replace('tt0054389', ''),
+    second.replace(',Movie,', ',TV Movie,').replace(',,\r', ',11,\r').replace(/,,$/, ',11,'),
+  ].join('\n');
+  configure({ importEventsEnabled: true });
+  try {
+    const document = parseImportDocument('imdb', text, { fileName: '7aff628a-6ff9-4549-8146-212eae03c528.csv' });
+    // two originals, the short, the no-year title, and the TV movie
+    assert.equal(document.entries.length, 5);
+    assert.ok(document.entries.every(row => row.destination.kind === 'custom' && /^tt\d+$/.test(row.externalIds.imdb)));
+    assert.equal(document.entries.filter(row => row.year === null).length, 1);
+    assert.equal(document.entries.at(-1).rating, null); // 11 is not a rating
+    assert.deepEqual(document.notImported, [
+      { title: 'IMDb', reason: 'title_type_unsupported', count: 2 },
+      { title: 'IMDb', reason: 'record_incomplete', count: 1 },
+    ]);
+    assert.match(importReportMessages(document).join(' '), /2 episodes, TV specials, games/);
+  } finally {
+    configure({ importEventsEnabled: false });
+  }
+});
+
+test('an IMDb rated title with no year is still imported by its IMDb ID', () => {
+  const rows = parsePlatform('imdb', fixture.replace(',1964,', ',,'));
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].year, null);
+  assert.equal(rows[0].externalIds.imdb, 'tt0058003');
 });

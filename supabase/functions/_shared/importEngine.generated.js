@@ -120,7 +120,9 @@ var IMPORT_VIEW = {
     archive_file_unsupported: "This archive file is not imported. Supported files are reviewed separately.",
     lists_unavailable: "List import is not available in this build. These films were left out.",
     show_ratings_unavailable: `${count} TV show ratings were left out. Plot can\u2019t save show ratings from IMDb yet. Your movie ratings are imported.`,
-    title_type_unsupported: `${count} ratings for episodes, TV specials, games or other title types were left out. Plot imports movies and whole TV series.`,
+    title_type_unsupported: `${count} episodes, TV specials, games or other title types were left out. Plot imports movies and whole TV series.`,
+    record_incomplete: `${count} records were missing details Plot needs to find the title, so they were left out.`,
+    year_unknown: `${count} films without a release year yet were left out, because Plot can\u2019t match them reliably until they have one.`,
     duplicate_file: "Duplicate file selection was left out.",
     empty_list: "Empty list will not be imported."
   })[reason] || "This record needs review and will not be imported.",
@@ -1136,12 +1138,12 @@ function parsePlatform(platformId, text, { fileName = "", onOmitted = (_index) =
 } } = {}) {
   if (platformId === "trakt" && fileName === "lists-watchlist.json") return parseTraktWatchlist(text);
   if (platformId === "imdb" && isImdbListExport(text)) {
-    if (namesWatchlist(fileName)) return parseImdbWatchlist(text);
+    if (namesWatchlist(fileName)) return parseImdbWatchlist(text, void 0, { onLeftOut });
     const stem = originalExportName(fileName).replace(/\.[^.]*$/, "") || "list";
-    return parseImdbWatchlist(text, { kind: "custom", key: `imdb:list:${stem}`, name: IMPORT_VIEW.imdbListName });
+    return parseImdbWatchlist(text, { kind: "custom", key: `imdb:list:${stem}`, name: IMPORT_VIEW.imdbListName }, { onLeftOut });
   }
   if (platformId === "letterboxd") {
-    const list = parseLetterboxdList(text, fileName);
+    const list = parseLetterboxdList(text, fileName, { onLeftOut });
     if (list) return list;
   }
   switch (platformId) {
@@ -1208,16 +1210,20 @@ function parseImdbRatings(text, { onLeftOut = (_reason) => {
       onLeftOut("title_type_unsupported");
       return [];
     }
-    if (!title || !/^tt\d+$/.test(imdb || "") || !Number.isInteger(rating2) || rating2 < 1 || rating2 > 10 || !/^\d{4}$/.test(year || "")) {
-      throw new Error("An IMDb rating record is incomplete or invalid. No records have been imported.");
+    if (!title || !/^tt\d+$/.test(imdb || "") || !Number.isInteger(rating2) || rating2 < 1 || rating2 > 10) {
+      onLeftOut("record_incomplete");
+      return [];
     }
     if (IMDB_SERIES_TYPES.has(type)) {
       const ratedAt = row[column("Date Rated")]?.trim() || null;
-      if (ratedAt && (!/^\d{4}-\d{2}-\d{2}$/.test(ratedAt) || normaliseDate(ratedAt) !== ratedAt)) throw new Error("An IMDb rating date is invalid. No records have been imported.");
+      if (ratedAt && (!/^\d{4}-\d{2}-\d{2}$/.test(ratedAt) || normaliseDate(ratedAt) !== ratedAt)) {
+        onLeftOut("record_incomplete");
+        return [];
+      }
       return [{
         title,
         hint: "tv",
-        year,
+        year: /^\d{4}$/.test(year || "") ? year : null,
         date: null,
         externalIds: { imdb },
         annotationScope: "show",
@@ -1225,10 +1231,11 @@ function parseImdbRatings(text, { onLeftOut = (_reason) => {
         annotation: { kind: "rating", rating: rating2, ratedAt }
       }];
     }
-    return [{ title, hint: "movie", year, rating: rating2, date: null, externalIds: { imdb } }];
+    return [{ title, hint: "movie", year: /^\d{4}$/.test(year || "") ? year : null, rating: rating2, date: null, externalIds: { imdb } }];
   });
 }
-function parseLetterboxdList(text, fileName = "") {
+function parseLetterboxdList(text, fileName = "", { onLeftOut = (_reason) => {
+} } = {}) {
   const rows = parseCSV(text.replace(/^\uFEFF/, ""));
   const first = rows.findIndex((row) => row.some((value) => value.trim()));
   const header = rows[first] || [];
@@ -1248,9 +1255,16 @@ function parseLetterboxdList(text, fileName = "") {
     if (fileName && header.join(",") === "Date,Name,Year,Letterboxd URI" && !/watched/.test(originalExportName(fileName))) throw new Error(IMPORT_VIEW.letterboxdWatchedOrWatchlist);
     return null;
   }
-  return items.filter((row) => row.some((value) => value.trim())).map((row) => {
-    if (!row[1]?.trim() || !/^\d{4}$/.test(row[2] || "") || !/^https:\/\/(boxd\.it|letterboxd\.com)\//.test(row[3] || "")) throw new Error("Incomplete Letterboxd list record. Nothing was imported.");
-    return {
+  return items.filter((row) => row.some((value) => value.trim())).flatMap((row) => {
+    if (!row[1]?.trim() || !/^https:\/\/(boxd\.it|letterboxd\.com)\//.test(row[3] || "")) {
+      onLeftOut("record_incomplete");
+      return [];
+    }
+    if (!/^\d{4}$/.test(row[2] || "")) {
+      onLeftOut("year_unknown");
+      return [];
+    }
+    return [{
       title: row[1].trim(),
       year: row[2],
       hint: "movie",
@@ -1258,33 +1272,41 @@ function parseLetterboxdList(text, fileName = "") {
       destination,
       listNote: destination.kind === "custom" ? row[4] || null : null,
       eventId: `${destination.key}:${row[3]}`
-    };
+    }];
   });
 }
-function parseImdbWatchlist(text, destination = { kind: "watchlist", key: "imdb:watchlist", name: "Watchlist" }) {
+function parseImdbWatchlist(text, destination = { kind: "watchlist", key: "imdb:watchlist", name: "Watchlist" }, { onLeftOut = (_reason) => {
+} } = {}) {
   const [headers = [], ...rows] = parseCSV(text.replace(/^\uFEFF/, ""));
   const required = ["Position", "Const", "Created", "Modified", "Description", "Title", "URL", "Title Type", "Year", "Your Rating", "Date Rated"];
   if (required.some((name) => !headers.includes(name)) || new Set(headers).size !== headers.length) throw new Error("Unsupported IMDb watchlist format.");
   const value = (row, name) => row[headers.indexOf(name)]?.trim() || "";
-  return rows.filter((row) => row.some((cell) => cell.trim())).map((row) => {
-    const title = value(row, "Title"), imdb = value(row, "Const"), year = value(row, "Year"), rating2 = value(row, "Your Rating");
+  return rows.filter((row) => row.some((cell) => cell.trim())).flatMap((row) => {
+    const title = value(row, "Title"), imdb = value(row, "Const"), year = value(row, "Year"), rawRating = value(row, "Your Rating");
     const type = value(row, "Title Type").toLowerCase().replace(/\s+/g, "");
-    const hint = { movie: "movie", tvmovie: "movie", tvseries: "tv", tvminiseries: "tv" }[type];
-    if (!hint) throw new Error("This IMDb watchlist contains an unsupported title type. Supported types are movies, TV movies, TV series and TV miniseries. Episodes cannot be imported as whole series.");
-    if (!title || !/^tt\d+$/.test(imdb) || !/^\d{4}$/.test(year) || rating2 && (!Number.isInteger(Number(rating2)) || Number(rating2) < 1 || Number(rating2) > 10)) throw new Error("An IMDb watchlist record is incomplete or invalid. Nothing was imported.");
+    const hint = IMDB_MOVIE_TYPES.has(type) ? "movie" : IMDB_SERIES_TYPES.has(type) ? "tv" : null;
+    if (!hint) {
+      onLeftOut("title_type_unsupported");
+      return [];
+    }
+    if (!title || !/^tt\d+$/.test(imdb)) {
+      onLeftOut("record_incomplete");
+      return [];
+    }
+    const rating2 = rawRating && Number.isInteger(Number(rawRating)) && Number(rawRating) >= 1 && Number(rawRating) <= 10 ? Number(rawRating) : null;
     const eventId = destination.kind === "watchlist" ? `watchlist:${imdb}` : `${destination.key}:${imdb}`;
-    return {
+    return [{
       title,
-      year,
+      year: /^\d{4}$/.test(year) ? year : null,
       hint,
       date: null,
       externalIds: { imdb },
       eventId,
-      rating: rating2 ? Number(rating2) : null,
+      rating: rating2,
       ratedAt: value(row, "Date Rated") || null,
       listNote: value(row, "Description") || null,
       destination
-    };
+    }];
   });
 }
 
@@ -2026,6 +2048,7 @@ function parseTvTimeDocument(text, fileName) {
 }
 
 // packages/core/importDocument.js
+var IMPORT_SOURCE_NAMES = { imdb: "IMDb", letterboxd: "Letterboxd" };
 function parseImportDocument(platform, text, { fileName = "" } = {}) {
   if (platform === "letterboxd") fileName = letterboxdFileName(fileName, text);
   if (platform === "trakt" && Object.hasOwn(TRAKT_ANNOTATION_FILES, fileName)) {
@@ -2056,7 +2079,7 @@ function parseImportDocument(platform, text, { fileName = "" } = {}) {
     }
   }
   if (entries.some((row) => row.annotation) && !annotationsAvailable) throw new Error(IMPORT_VIEW.annotationsUnavailable);
-  for (const [reason, count] of leftOut) notImported.push({ title: "IMDb", reason, count });
+  for (const [reason, count] of leftOut) notImported.push({ title: IMPORT_SOURCE_NAMES[platform] || platform, reason, count });
   const warnings = entries.some((row) => row.requiresWatchReview) ? [{ title: "Amazon Prime", reason: "playback_review" }] : [];
   return { entries, warnings, notImported };
 }
