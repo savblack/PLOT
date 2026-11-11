@@ -159,7 +159,7 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     // The header row is enough to tell an IMDb list from a ratings export.
     if (sourceId === 'imdb' && files.length === 1) {
       files[0].slice(0, 4096).text()
-        .then(head => setListChoiceNeeded(importListChoiceNeeded(sourceId, head)))
+        .then(head => setListChoiceNeeded(importListChoiceNeeded(sourceId, head, files[0].name)))
         .catch(() => setListChoiceNeeded(false));
     }
   }, [source, busy, reporter]);

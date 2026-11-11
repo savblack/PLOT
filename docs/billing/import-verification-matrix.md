@@ -62,7 +62,7 @@ of every provider's native export or the deployed normal application.
 | Existing edits and duplicate-safe retries | Staging event/replay/isolation scripts, batch/lost-response browser cases, rollback list-policy proofs | Exercise each newly verified format through the normal web entry point before rollout |
 | Ratings, reviews, list membership | Event metadata, list provenance and separate annotations persist; export collector includes annotations | Imported annotation display on ordinary rating/review surfaces is not established: current web reads this table for import review only. Do not imply ratings replace existing Plot edits |
 | Free five-list allowance | Shared logic, browser selection and staging policy/RPC proofs | Further provider custom-list format support needs source evidence |
-| Release readiness | Local lint/build/unit/browser and authorised staging proofs | Production flags/deployment remain unapproved; mobile is explicitly deferred |
+| Release readiness | Local lint/build/unit/browser and authorised staging proofs. Production event and annotation flags switched on 2026-11-11 with Savannah's approval (see `docs/ops/background-imports.md`) | Imported annotations are not shown on rating/review surfaces; mobile store builds need the EAS flags; first real production imports to be watched with `pnpm run imports:report` |
 
 `apps/web/src/main.jsx` now injects the default-off
 `VITE_IMPORT_ANNOTATIONS_ENABLED` setting. Previously only fixtures could turn

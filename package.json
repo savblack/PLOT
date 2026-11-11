@@ -53,6 +53,7 @@
     "db:write-paths": "node scripts/check-db-write-paths.mjs",
     "db:cron-health": "node scripts/check-cron-jobs.mjs",
     "db:cron-http-health": "node scripts/check-cron-jobs.mjs --http",
+    "imports:report": "node --env-file-if-exists=.env scripts/import-report.mjs",
     "db:block-clause": "node scripts/check-block-clause.mjs",
     "db:migration-test": "bash scripts/db-migration-test.sh",
     "db:function-diff": "bash scripts/db-function-diff.sh",

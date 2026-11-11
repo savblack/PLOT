@@ -180,7 +180,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
       // The header row is enough to tell an IMDb list from a ratings export.
       if (source === 'imdb' && files.length === 1) {
         new FileSystem.File(files[0].uri).text()
-          .then(text => setListChoiceNeeded(importListChoiceNeeded(source, text.slice(0, 4096))))
+          .then(text => setListChoiceNeeded(importListChoiceNeeded(source, text.slice(0, 4096), files[0].name)))
           .catch(() => setListChoiceNeeded(false));
       }
     } catch (e) {

@@ -14,6 +14,10 @@ onUpgradeSheetGateHit((feature) => track(EVENTS.PREMIUM_GATE_HIT, { feature }));
 configure({
   trackingJobsEnabled: process.env.EXPO_PUBLIC_TRACKING_JOBS_ENABLED === 'true',
   importEventsEnabled: process.env.EXPO_PUBLIC_IMPORT_EVENTS_ENABLED === 'true',
+  // Same pair as web's VITE_IMPORT_* and the import-worker's IMPORT_*: keep
+  // all three surfaces in step, or a file reads one way here and another in
+  // the background worker.
+  importAnnotationsEnabled: process.env.EXPO_PUBLIC_IMPORT_ANNOTATIONS_ENABLED === 'true',
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
   tmdbProxyUrl: process.env.EXPO_PUBLIC_TMDB_PROXY_URL ?? '',

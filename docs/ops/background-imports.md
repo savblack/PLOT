@@ -85,6 +85,18 @@ stale; run `pnpm run import-engine` after touching the import pipeline.
   `IMPORT_ANNOTATIONS_ENABLED` to the same values on the project, or a
   background import will take the legacy title-summary path while the page
   takes the event path. `TVTIME_IMPORT_ENABLED` likewise.
+- **Production state (2026-11-11, approved by Savannah):** `IMPORT_EVENTS_ENABLED`
+  and `IMPORT_ANNOTATIONS_ENABLED` are `true` on the function, and
+  `VITE_IMPORT_EVENTS_ENABLED` / `VITE_IMPORT_ANNOTATIONS_ENABLED` are set on
+  the `plot` Pages project. `TVTIME_IMPORT_ENABLED` is still off. Mobile's
+  `EXPO_PUBLIC_IMPORT_EVENTS_ENABLED` / `EXPO_PUBLIC_IMPORT_ANNOTATIONS_ENABLED`
+  must be set on the EAS `production` environment before the next store build.
+  Staging's function has both off, so builds pointed at Staging leave them off.
+  Imported ratings and reviews are saved to `imported_annotations` and the data
+  export, but no screen shows them yet.
+- Check how imports are doing with `pnpm run imports:report` (last 24 hours by
+  source and status) or `-- --user <id prefix>` for one account. It prints
+  counts only, read-only.
 - The cron needs the Vault secrets `edge_webhook_bearer` and
   `edge_webhook_base_url` that the alert jobs already use.
 - `trakt-sync`, `media-sync` and `simkl-sync` gained an internal mode (service
