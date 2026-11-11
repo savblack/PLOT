@@ -51,6 +51,10 @@ on:
       - 'scripts/lib/dbWritePathChecks.mjs'
       - '.github/workflows/db-write-paths.yml'
 
+permissions:
+  contents: read
+  issues: write # failure alerting opens and closes an `incident` issue
+
 concurrency:
   group: db-write-paths
   cancel-in-progress: false
@@ -116,3 +120,41 @@ jobs:
           fi
           export SUPABASE_DB_URL="$SUPABASE_DB_URL_READONLY"
           pnpm run db:write-paths
+
+      # Failure alerting. Without these three steps a failure here was only a red
+      # X in the Actions tab, which is how the July 2026 `history` outage went
+      # unnoticed for two weeks. An `incident` issue opens on failure and closes
+      # on the next success (see .github/scripts/job-incident.sh), and the admin
+      # is emailed once per new incident rather than once per failed run. The
+      # email also goes out if the issue step itself broke, so a GitHub API
+      # problem cannot swallow the alert.
+      - name: Open an incident issue
+        id: incident
+        if: github.event_name != 'pull_request' && failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: db-write-paths
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: 'A database trigger or app upsert may point at a constraint or table that no longer exists, which makes user saves fail. Run pnpm run db:write-paths to see which.'
+        run: bash .github/scripts/job-incident.sh open
+      # Not on pull_request: a red check on the PR already tells its author, and
+      # an incident is for main or production being broken. Resend only, not the
+      # service-role relay marketing-alert.sh prefers: this job deliberately holds
+      # no write-capable Supabase credential (see the header).
+      - name: Email the admin about a new incident
+        if: github.event_name != 'pull_request' && failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: db-write-paths
+          ALERT_SUBJECT: 'Plot: daily database write-path check failed'
+          FAILURE_NOTE: 'A database trigger or app upsert may point at a constraint or table that no longer exists, which makes user saves fail. Run pnpm run db:write-paths to see which.'
+        run: bash .github/scripts/marketing-alert.sh
+      - name: Close the incident issue on recovery
+        if: github.event_name != 'pull_request' && success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: db-write-paths
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/job-incident.sh close

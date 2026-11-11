@@ -12,6 +12,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  issues: write # failure alerting opens and closes an `incident` issue
 concurrency:
   group: broadcast-guide-refresh
   cancel-in-progress: false
@@ -38,3 +39,41 @@ jobs:
           name: broadcast-guide-health
           path: .guide-cache/refresh/health.json
           retention-days: 7
+
+      # Failure alerting. Without these three steps a failure here was only a red
+      # X in the Actions tab, which is how the July 2026 `history` outage went
+      # unnoticed for two weeks. An `incident` issue opens on failure and closes
+      # on the next success (see .github/scripts/job-incident.sh), and the admin
+      # is emailed once per new incident rather than once per failed run. The
+      # email also goes out if the issue step itself broke, so a GitHub API
+      # problem cannot swallow the alert.
+      # `cancelled()` too: hitting timeout-minutes cancels the job rather than
+      # failing it, and a refresh that hangs is as broken as one that errors.
+      - name: Open an incident issue
+        id: incident
+        if: (failure() || cancelled())
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: broadcast-guide
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: 'The broadcast Guide snapshots were not refreshed. The app keeps showing the last valid snapshot, which goes stale.'
+        run: bash .github/scripts/job-incident.sh open
+      - name: Email the admin about a new incident
+        if: (failure() || cancelled()) && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: broadcast-guide
+          ALERT_SUBJECT: 'Plot: broadcast Guide refresh failed'
+          FAILURE_NOTE: 'The broadcast Guide snapshots were not refreshed. The app keeps showing the last valid snapshot, which goes stale.'
+        run: bash .github/scripts/marketing-alert.sh
+      - name: Close the incident issue on recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: broadcast-guide
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/job-incident.sh close
