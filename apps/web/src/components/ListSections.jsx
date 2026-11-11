@@ -1,6 +1,7 @@
 import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
-import { useState, useEffect, useRef } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
+import { SectionFoldContext } from './sectionFold.js';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip } from '../utils/countdown.js';
 import { posterUrl } from '../utils/images.js';
@@ -368,11 +369,42 @@ export function CreateListModal({ lists, onConfirm, onClose, onLimit }) {
 /* ── Shared section chrome ── */
 
 export function ListSection({ title, subtitle, headerRight, children }) {
+  // My Lists wraps its sections in a fold; nowhere else does.
+  const fold = useContext(SectionFoldContext);
+  if (!fold) {
+    return (
+      <section className="discover-section">
+        <DiscoverSectionHeader title={title} subtitle={subtitle} headerRight={headerRight} />
+        {children}
+      </section>
+    );
+  }
+  const heading = (
+    <button type="button" className="section-fold-btn" aria-expanded={!fold.collapsed} title={fold.hint} onClick={fold.onToggle}>
+      <span>{title}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6,9 12,15 18,9" /></svg>
+    </button>
+  );
   return (
-    <section className="discover-section">
-      <DiscoverSectionHeader title={title} subtitle={subtitle} headerRight={headerRight} />
-      {children}
+    <section className={`discover-section${fold.collapsed ? ' is-collapsed' : ''}`}>
+      <DiscoverSectionHeader title={heading} subtitle={fold.collapsed ? null : subtitle} headerRight={fold.collapsed ? null : headerRight} />
+      {!fold.collapsed && children}
     </section>
+  );
+}
+
+/* The dashed "new" tile: a list cover's shape with a plus, where a section
+   offers to start something. An empty section shows it alone, so the offer is
+   the first thing there rather than a line of grey text. */
+export function NewTile({ label, note, onClick }) {
+  return (
+    <button type="button" className="list-cover list-cover--new interactive-surface" onClick={onClick} aria-label={label}>
+      <span className="list-cover-art list-cover-art--dashed"><PlusIcon /></span>
+      <span className="list-cover-label">
+        <span className="list-cover-name list-cover-name--muted">{label}</span>
+        {note && <span className="list-cover-count">{note}</span>}
+      </span>
+    </button>
   );
 }
 
@@ -451,7 +483,7 @@ function readWatchingSort(key) {
 
 /* ── Watching ── */
 export function WatchingSection({ watching, hidden, Frame = ListSection }) {
-  const { openPanel, user } = useApp();
+  const { openPanel, openSearch, user } = useApp();
   const art = useUserArtwork();
   const [sort, setSort] = useStoredWatchingSort(user?.id);
   // The hook's rows are already last watched first and re-sorted after a tick.
@@ -508,7 +540,9 @@ export function WatchingSection({ watching, hidden, Frame = ListSection }) {
       }
     >
       {items.length === 0 ? (
-        <Empty>Not watching anything yet. Start a series from your watchlist or from Search.</Empty>
+        <div className="list-covers">
+          <NewTile label={CUSTOM_LISTS.watchingEmptyTile} note={CUSTOM_LISTS.watchingEmptyNote} onClick={openSearch} />
+        </div>
       ) : (
         <CardGrid>
           {items.map(item => {

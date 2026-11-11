@@ -2,7 +2,8 @@
  * and the order of the sidebar.
  *
  * Stored on profiles.ui_prefs as
- * `{ density: 'comfy' | 'compact', cardStyle: 'poster' | 'list', sidebar: string[] }`.
+ * `{ density: 'comfy' | 'compact', cardStyle: 'poster' | 'list', sidebar: string[],
+ *    myLists: { order: string[], collapsed: string[] } }`.
  * A missing or malformed value means the defaults, and an unknown value in a
  * known field falls back to its default, so a newer client's choice never
  * breaks an older one. Free for everyone: these change how Plot is drawn, not
@@ -13,6 +14,11 @@
  * added to the nav after the order was saved appear in their default place at
  * the end, so adding a nav item never needs a data migration. The mobile tab
  * bar and drawer do not use `sidebar`; it is web's sidebar.
+ *
+ * `myLists` is the My Lists page: `order` is its sections in the viewer's
+ * order (empty means the default) and `collapsed` the ones folded shut.
+ * Unknown ids are dropped on read and a section added later takes its default
+ * place after the saved ones, the same rule as the sidebar.
  */
 
 export const UI_DENSITIES = Object.freeze(['comfy', 'compact']);
@@ -21,11 +27,17 @@ export const CARD_STYLES = Object.freeze(['poster', 'list']);
 export const SIDEBAR_FIXED_FIRST = Object.freeze(['search']);
 export const SIDEBAR_FIXED_LAST = Object.freeze(['settings']);
 
-/** @typedef {{ density: 'comfy' | 'compact', cardStyle: 'poster' | 'list', sidebar: string[] }} UiPrefs */
+/** The My Lists page's sections, in their default order. */
+export const MY_LISTS_SECTION_IDS = Object.freeze(['watching', 'top', 'lists', 'smart', 'shared']);
+
+/**
+ * @typedef {{ order: string[], collapsed: string[] }} MyListsPrefs
+ * @typedef {{ density: 'comfy' | 'compact', cardStyle: 'poster' | 'list', sidebar: string[], myLists: MyListsPrefs }} UiPrefs
+ */
 
 /** @returns {UiPrefs} */
 export function defaultUiPrefs() {
-  return { density: 'comfy', cardStyle: 'poster', sidebar: [] };
+  return { density: 'comfy', cardStyle: 'poster', sidebar: [], myLists: { order: [], collapsed: [] } };
 }
 
 /**
@@ -45,13 +57,27 @@ export function normalizeUiPrefs(raw) {
     density: UI_DENSITIES.includes(raw.density) ? raw.density : base.density,
     cardStyle: CARD_STYLES.includes(raw.cardStyle) ? raw.cardStyle : base.cardStyle,
     sidebar,
+    myLists: normalizeMyLists(raw.myLists),
   };
+}
+
+/** @param {unknown} raw @returns {MyListsPrefs} */
+function normalizeMyLists(raw) {
+  const pick = (value) => {
+    const out = [];
+    for (const id of Array.isArray(value) ? value : []) {
+      if (MY_LISTS_SECTION_IDS.includes(id) && !out.includes(id)) out.push(id);
+    }
+    return out;
+  };
+  return { order: pick(raw?.order), collapsed: pick(raw?.collapsed) };
 }
 
 /** @param {UiPrefs} prefs */
 export function isDefaultUiPrefs(prefs) {
   const p = normalizeUiPrefs(prefs);
-  return p.density === 'comfy' && p.cardStyle === 'poster' && p.sidebar.length === 0;
+  return p.density === 'comfy' && p.cardStyle === 'poster' && p.sidebar.length === 0
+    && p.myLists.order.length === 0 && p.myLists.collapsed.length === 0;
 }
 
 /** @param {UiPrefs} prefs @param {string} density */
@@ -128,3 +154,67 @@ export function moveSidebarItem(prefs, currentIds, id, toIndex) {
 
 /** @param {UiPrefs} prefs */
 export const resetSidebar = (prefs) => ({ ...normalizeUiPrefs(prefs), sidebar: [] });
+
+/**
+ * Every My Lists section in the viewer's order: the saved ones first, then
+ * any the saved order does not mention, in their default order.
+ * @param {string[] | undefined} order
+ * @returns {string[]}
+ */
+export function orderMyListsSections(order) {
+  const saved = (order ?? []).filter((id, i, all) => MY_LISTS_SECTION_IDS.includes(id) && all.indexOf(id) === i);
+  return [...saved, ...MY_LISTS_SECTION_IDS.filter(id => !saved.includes(id))];
+}
+
+/**
+ * Move a My Lists section to a new place among the ones shown. `currentIds`
+ * is what the viewer sees (a section their account does not have is left
+ * out); the rest keep their relative order after it.
+ * @param {UiPrefs} prefs
+ * @param {string[]} currentIds
+ * @param {string} id
+ * @param {number} toIndex clamped into range
+ * @returns {UiPrefs}
+ */
+export function moveMyListsSection(prefs, currentIds, id, toIndex) {
+  const p = normalizeUiPrefs(prefs);
+  const from = currentIds.indexOf(id);
+  if (from < 0) return p;
+  const to = Math.max(0, Math.min(currentIds.length - 1, toIndex));
+  if (from === to) return p;
+  const next = [...currentIds];
+  next.splice(from, 1);
+  next.splice(to, 0, id);
+  return { ...p, myLists: { ...p.myLists, order: orderMyListsSections(next) } };
+}
+
+/** One step up (-1) or down (+1). @param {UiPrefs} prefs @param {string[]} currentIds @param {string} id @param {-1 | 1} delta */
+export function nudgeMyListsSection(prefs, currentIds, id, delta) {
+  const from = currentIds.indexOf(id);
+  const to = from + delta;
+  if (from < 0 || to < 0 || to >= currentIds.length) return normalizeUiPrefs(prefs);
+  return moveMyListsSection(prefs, currentIds, id, to);
+}
+
+/**
+ * Fold a My Lists section shut or open it.
+ * @param {UiPrefs} prefs
+ * @param {string} id
+ * @param {boolean} [collapsed] defaults to toggling
+ * @returns {UiPrefs}
+ */
+export function setMyListsCollapsed(prefs, id, collapsed) {
+  const p = normalizeUiPrefs(prefs);
+  if (!MY_LISTS_SECTION_IDS.includes(id)) return p;
+  const is = p.myLists.collapsed.includes(id);
+  const want = collapsed === undefined ? !is : collapsed;
+  if (want === is) return p;
+  const next = MY_LISTS_SECTION_IDS.filter(s => (s === id ? want : p.myLists.collapsed.includes(s)));
+  return { ...p, myLists: { ...p.myLists, collapsed: next } };
+}
+
+/** Back to the default section order. Folded sections stay folded. @param {UiPrefs} prefs */
+export function resetMyListsOrder(prefs) {
+  const p = normalizeUiPrefs(prefs);
+  return { ...p, myLists: { ...p.myLists, order: [] } };
+}

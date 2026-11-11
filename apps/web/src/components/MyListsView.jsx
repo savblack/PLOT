@@ -33,14 +33,21 @@ import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { CardGrid, ListCard, TypeGenreFilter } from './ListCards.jsx';
 import {
-  CreateListModal, HeaderIconButton, ListSection, TickIcon, TopFiveSection, TrashIcon, WatchingSection,
-  Empty,
+  CreateListModal, HeaderIconButton, ListSection, NewTile, TickIcon, TopFiveSection, TrashIcon, WatchingSection,
 } from './ListSections.jsx';
 import { ListCoverMenu, MemberStack, NewSharedListDialog, PlusSmallIcon } from './CollaborativeListParts.jsx';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { listOwner, splitListsBySharing } from '@plot/core/sharedLists.js';
 import { personName } from '@plot/core/watchTogether.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import {
+  defaultUiPrefs, moveMyListsSection, nudgeMyListsSection, orderMyListsSections, resetMyListsOrder, setMyListsCollapsed,
+} from '@plot/core/uiPrefs.js';
+import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
+import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
+import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
+import { SectionFoldContext } from './sectionFold.js';
+import MyListsLayoutSheet from './MyListsLayoutSheet.jsx';
 
 /* My Lists on the Calendar/History shell: a narrow left column beside one wide
    stream. The column is the index — every list with its count, capped by a
@@ -67,7 +74,7 @@ const ChevronUp   = () => <svg viewBox="0 0 24 24"><polyline points="18,15 12,9 
 
 /* The index. One row per collection, name and count, in the same row style as
    the filters under it. */
-function JumpToCard({ collections, counts, onOpen }) {
+function JumpToCard({ collections, counts, onOpen, onCustomize }) {
   const [expanded, setExpanded] = useState(false);
   // Folding one row away would cost a row to save a row.
   const folds = collections.length > JUMP_CAP + 1;
@@ -76,6 +83,7 @@ function JumpToCard({ collections, counts, onOpen }) {
     <div className="hist-card mylists-jump">
       <div className="hist-card-head">
         <span className="hist-card-title">{CUSTOM_LISTS.jumpTo}</span>
+        <button type="button" className="home-page-nav-customize" onClick={onCustomize}>{DISCOVER_VIEW.customize.action}</button>
       </div>
       <div>
         {shown.map(c => (
@@ -149,10 +157,32 @@ function SharedJumpCard({ collections, onOpen, onNew }) {
   );
 }
 
+/* The page's section order and folds. Signed in, they are the viewer's
+   ui_prefs (saved, and the same on their other devices). Without the app's
+   prefs (Storybook), the same rules run on local state. */
+function useMyListsLayout(uiPrefs) {
+  const [local, setLocal] = useState(defaultUiPrefs);
+  if (uiPrefs) {
+    return {
+      prefs: uiPrefs.prefs.myLists, error: uiPrefs.error,
+      nudge: uiPrefs.nudgeMyLists, move: uiPrefs.moveMyLists, toggle: uiPrefs.toggleMyListsCollapsed, reset: uiPrefs.resetMyLists,
+    };
+  }
+  return {
+    prefs: local.myLists, error: null,
+    nudge: (ids, id, delta) => setLocal(p => nudgeMyListsSection(p, ids, id, delta)),
+    move: (ids, id, to) => setLocal(p => moveMyListsSection(p, ids, id, to)),
+    toggle: (id) => setLocal(p => setMyListsCollapsed(p, id)),
+    reset: () => setLocal(p => resetMyListsOrder(p)),
+  };
+}
+
 /** @param {{ newCounts?: Record<string, number> | null }} props  newCounts: Storybook's "2 new" without a network */
 export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const art = useUserArtwork();
-  const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel } = useApp();
+  const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel, uiPrefs } = useApp();
+  const layout = useMyListsLayout(uiPrefs);
+  const [customizing, setCustomizing] = useState(false);
   const fw = favoriteWords(profile?.region);
   const navigate = useNavigate();
   // The sheet can replace the create-list dialog; focus comes back here after.
@@ -355,6 +385,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
         { label: SMART_LISTS.newSmartList, onClick: requestSmartCreate },
         ...(SHOW_WATCH_TOGETHER ? [{ label: S.newShared, onClick: requestShared }] : []),
         ...(ownLists.length > 0 ? [{ label: 'Select lists', onClick: selection.start }] : []),
+        { label: CUSTOM_LISTS.sections.title, onClick: () => setCustomizing(true) },
       ]}
     />
   );
@@ -391,6 +422,63 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const allCollections = [...collections, ...smartCollections, ...sharedCollections];
   const titles = allCollections.reduce((n, c) => n + c.items.length, 0);
 
+  // The sections, in the viewer's order. Each is wrapped in a fold below, so
+  // its heading folds it shut. Shared is only there with Watch together.
+  const sectionLabels = {
+    watching: MEDIA_PANEL.watching, top: PUBLIC_PROFILE_PAGE.topFive, lists: PUBLIC_PROFILE_PAGE.lists,
+    smart: SMART_LISTS.section, shared: S.shared,
+  };
+  const shownSections = orderMyListsSections(layout.prefs.order).filter(id => id !== 'shared' || SHOW_WATCH_TOGETHER);
+  const toggleSection = (id) => {
+    track(EVENTS.MY_LISTS_LAYOUT_CHANGED, { action: layout.prefs.collapsed.includes(id) ? 'expand' : 'collapse', section: id });
+    layout.toggle(id);
+  };
+  const sectionNodes = {
+    watching: <WatchingSection watching={watching} hidden={isTypeNarrowed(typeFilters) && !typeFilters.includes('tv')} />,
+    top: <TopFiveSection topLists={topLists} />,
+    lists: (
+      <ListSection title={sectionLabels.lists} headerRight={listActions}>
+                <div className="list-covers">
+                  {collections.map(cover)}
+                  {!selection.editMode && (
+                    <button ref={newListRef} type="button" className="list-cover list-cover--new interactive-surface"
+                      onClick={() => setChoosingKind(v => !v)} aria-label="Create new list" aria-haspopup="menu" aria-expanded={choosingKind}>
+                      <span className="list-cover-art list-cover-art--dashed">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                      </span>
+                      <span className="list-cover-label"><span className="list-cover-name list-cover-name--muted">New list</span></span>
+                    </button>
+                  )}
+                </div>
+              </ListSection>
+    ),
+    smart: (
+      <ListSection title={SMART_LISTS.section}>
+      <div className="list-covers">
+        {smartCollections.map(cover)}
+        {!selection.editMode && <NewTile label={SMART_LISTS.newSmartList} note={SMART_LISTS.newTileNote} onClick={requestSmartCreate} />}
+      </div>
+    </ListSection>
+    ),
+    shared: (
+      <ListSection title={S.shared}>
+      <div className="mylists-shared-group">
+        <h3 className="mylists-shared-label">{S.sharedByMe}</h3>
+        <div className="list-covers">
+          {sharedByMe.map(cover)}
+          {!selection.editMode && <NewTile label={S.newShared} note={S.newSharedNote} onClick={requestShared} />}
+        </div>
+      </div>
+      {sharedWithMe.length > 0 && (
+        <div className="mylists-shared-group">
+          <h3 className="mylists-shared-label">{S.sharedWithMe}</h3>
+          <div className="list-covers">{sharedWithMe.map(cover)}</div>
+        </div>
+      )}
+    </ListSection>
+    ),
+  };
+
   return (
     <div className="hist-page mylists-page">
       <div className="hist-toolbar">
@@ -417,7 +505,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
 
       <div className="cal-body">
         <aside className="cal-side mylists-side">
-          <JumpToCard collections={collections} counts={jumpCount} onOpen={jumpTo} />
+          <JumpToCard collections={collections} counts={jumpCount} onOpen={jumpTo} onCustomize={() => setCustomizing(true)} />
           <SmartJumpCard collections={smartCollections} newCounts={newCounts} onOpen={jumpTo} onNew={requestSmartCreate} />
           {SHOW_WATCH_TOGETHER && <SharedJumpCard collections={sharedCollections} onOpen={jumpTo} onNew={requestShared} />}
           <SideFilters
@@ -444,89 +532,31 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
             </div>
           ) : (
             <div className="discover-sections">
-              <WatchingSection watching={watching} hidden={isTypeNarrowed(typeFilters) && !typeFilters.includes('tv')} />
-
-              <TopFiveSection topLists={topLists} />
-
-              <ListSection title="Lists" headerRight={listActions}>
-                <div className="list-covers">
-                  {collections.map(cover)}
-                  {!selection.editMode && (
-                    <button ref={newListRef} type="button" className="list-cover list-cover--new interactive-surface"
-                      onClick={() => setChoosingKind(v => !v)} aria-label="Create new list" aria-haspopup="menu" aria-expanded={choosingKind}>
-                      <span className="list-cover-art list-cover-art--dashed">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                      </span>
-                      <span className="list-cover-label"><span className="list-cover-name list-cover-name--muted">New list</span></span>
-                    </button>
-                  )}
-                </div>
-              </ListSection>
-
-              {/* Smart lists: everyone sees the section. Free viewers can build
-                  rules and see the count; Create opens the upgrade sheet (B5). */}
-              <ListSection
-                title={SMART_LISTS.section}
-              >
-                {/* Nothing here yet: one quiet line, as Watching does. A lone
-                    poster-sized "new" tile made an empty section the tallest
-                    thing on the page. The tile stays once there are lists. */}
-                {smartCollections.length === 0 && (
-                  <Empty onAdd={requestSmartCreate} addLabel={SMART_LISTS.newSmartList}>{SMART_LISTS.emptySection}</Empty>
-                )}
-                {smartCollections.length > 0 && <div className="list-covers">
-                  {smartCollections.map(cover)}
-                  {!selection.editMode && (
-                    <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestSmartCreate} aria-label={SMART_LISTS.newSmartList}>
-                      <span className="list-cover-art list-cover-art--dashed">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                      </span>
-                      <span className="list-cover-label">
-                        <span className="list-cover-name list-cover-name--muted">{SMART_LISTS.newSmartList}</span>
-                        <span className="list-cover-count">{SMART_LISTS.newTileNote}</span>
-                      </span>
-                    </button>
-                  )}
-                </div>}
-              </ListSection>
-
-              {SHOW_WATCH_TOGETHER && (
-                <ListSection
-                  title={S.shared}
-                >
-                  <div className="mylists-shared-group">
-                    <h3 className="mylists-shared-label">{S.sharedByMe}</h3>
-                    {sharedByMe.length === 0 && (
-                      <Empty onAdd={requestShared} addLabel={S.newShared}>{S.emptyShared}</Empty>
-                    )}
-                    {sharedByMe.length > 0 && <div className="list-covers">
-                      {sharedByMe.map(cover)}
-                      {!selection.editMode && (
-                        <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestShared} aria-label={S.newShared}>
-                          <span className="list-cover-art list-cover-art--dashed">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                          </span>
-                          <span className="list-cover-label">
-                            <span className="list-cover-name list-cover-name--muted">{S.newShared}</span>
-                            <span className="list-cover-count">{S.newSharedNote}</span>
-                          </span>
-                        </button>
-                      )}
-                    </div>}
-                  </div>
-                  {sharedWithMe.length > 0 && (
-                    <div className="mylists-shared-group">
-                      <h3 className="mylists-shared-label">{S.sharedWithMe}</h3>
-                      <div className="list-covers">{sharedWithMe.map(cover)}</div>
-                    </div>
-                  )}
-                </ListSection>
-              )}
+              {shownSections.map(id => (
+                <SectionFoldContext.Provider key={id} value={{
+                  collapsed: layout.prefs.collapsed.includes(id),
+                  onToggle: () => toggleSection(id),
+                  hint: (layout.prefs.collapsed.includes(id) ? CUSTOM_LISTS.sections.expand : CUSTOM_LISTS.sections.collapse)(sectionLabels[id]),
+                }}>
+                  {sectionNodes[id]}
+                </SectionFoldContext.Provider>
+              ))}
             </div>
           )}
         </div>
       </div>
 
+      {customizing && (
+        <MyListsLayoutSheet
+          sections={shownSections.map(id => ({ id, label: sectionLabels[id] }))}
+          isDefault={layout.prefs.order.length === 0}
+          error={layout.error}
+          onNudge={(id, delta) => { track(EVENTS.MY_LISTS_LAYOUT_CHANGED, { action: 'reorder', section: id }); layout.nudge(shownSections, id, delta); }}
+          onMove={(id, to) => { track(EVENTS.MY_LISTS_LAYOUT_CHANGED, { action: 'reorder', section: id }); layout.move(shownSections, id, to); }}
+          onReset={() => { track(EVENTS.MY_LISTS_LAYOUT_CHANGED, { action: 'reset' }); layout.reset(); }}
+          onClose={() => setCustomizing(false)}
+        />
+      )}
       {choosingKind && (
         <NewListChoice anchorRef={newListRef} onClose={() => setChoosingKind(false)}
           onList={() => { setChoosingKind(false); requestCreate(); }}

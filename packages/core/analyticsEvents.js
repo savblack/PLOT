@@ -241,6 +241,9 @@ export const EVENTS = Object.freeze({
   PREMIUM_FIRST_WEEK_VIEWED: 'premium_first_week_viewed',
   PREMIUM_FIRST_WEEK_OPENED: 'premium_first_week_opened',
   PREMIUM_FIRST_WEEK_HIDDEN: 'premium_first_week_hidden',
+  // My Lists: the viewer folded a section, opened one, moved one, or reset
+  // the order. `action` (collapse | expand | reorder | reset), `section`.
+  MY_LISTS_LAYOUT_CHANGED: 'my_lists_layout_changed',
   // The Saved to watch rail on Home. Once per app session, when it is on
   // screen. `item_count`, `first_run` (true while the rail leads Home).
   SAVED_TO_WATCH_VIEWED: 'saved_to_watch_viewed',

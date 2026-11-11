@@ -3117,6 +3117,40 @@ svg { stroke-width: 1.5; }
   transition: color 0.15s ease;
 }
 
+/* My Lists holds a lot of headings: five sections and a name under every
+   cover. Both are a step smaller here than on Home, so the posters lead. */
+.mylists-page .discover-section-title { font-size: 1.05rem; }
+.mylists-page .list-cover-name { font-size: 1rem; }
+/* A section's heading folds it shut. The chevron points down while open. */
+.section-fold-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.section-fold-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+.discover-section.is-collapsed .section-fold-btn svg { transform: rotate(-90deg); }
+.section-fold-btn:hover svg { color: var(--text-secondary); }
+.section-fold-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { .section-fold-btn svg { transition: none; } }
+
 /* ── My Lists: the Calendar/History two-column shell ──
    The page is .hist-page, so it owns the gutter; the blocks inside the stream
    drop the one they carry for the full-bleed layout they used to have. The

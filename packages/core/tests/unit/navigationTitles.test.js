@@ -10,7 +10,7 @@ test('routes without a nav item still get a page title, never the brand', () => 
   }
   assert.equal(titleForView('browse'), 'Browse');
   assert.equal(titleForView('join-list/abc123'), 'Shared list');
-  assert.equal(titleForView('watch-with/sam/abc123'), 'Watch together');
+  assert.equal(titleForView('watch-with/sam/abc123'), 'Watch Together');
 });
 
 test('an unknown view falls back to the brand', () => {
