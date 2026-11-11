@@ -489,6 +489,7 @@ the import page's `?from=` param.
 | `premium_first_week_viewed` | The first-week card was on screen on Home | `done_count`, `total`. Once per app session |
 | `premium_first_week_opened` | A first-week step's button was pressed | `step` (`theme` / `people` / `together` / `calendar` / `smartList`) |
 | `premium_first_week_hidden` | "Dismiss" on the first-week card | `done_count` |
+| `my_lists_layout_changed` | A My Lists section was folded, opened or moved, or the order was reset (web) | `action` (`collapse` / `expand` / `reorder` / `reset`), `section` (`watching` / `top` / `lists` / `smart` / `shared`; absent on `reset`) |
 | `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
 
 `finishing_touches_hidden` had never fired because Hide for now was rendered

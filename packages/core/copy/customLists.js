@@ -37,6 +37,22 @@ export const CUSTOM_LISTS = Object.freeze({
   // The left column on web: an index of every list, capped so a long
   // collection does not turn the column into its own scroll.
   jumpTo: 'Jump to',
+  // My Lists sections: fold one shut, or put them in your own order
+  // (profile.ui_prefs.myLists, rules in uiPrefs.js).
+  sections: Object.freeze({
+    title: 'Customize My Lists',
+    body: 'Drag a section, or use the arrows, to put My Lists in the order you like.',
+    moveUp: (name) => `Move ${name} up`,
+    moveDown: (name) => `Move ${name} down`,
+    drag: (name) => `Drag to reorder ${name}`,
+    reset: 'Reset order',
+    saveError: 'That change didn’t save. Try again.',
+    collapse: (name) => `Collapse ${name}`,
+    expand: (name) => `Expand ${name}`,
+  }),
+  // The dashed tile where Watching has nothing in it.
+  watchingEmptyTile: 'Add a show',
+  watchingEmptyNote: 'What are you watching now?',
   viewMore: count => `View ${count} more`,
   viewLess: 'View less',
   summary: (lists, titles) =>

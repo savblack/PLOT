@@ -3,7 +3,7 @@
 // and it may not be night.
 
 export const WATCH_TOGETHER = Object.freeze({
-  navLabel: 'Watch together',
+  navLabel: 'Watch Together',
 
   hub: {
     title: 'Watch together',

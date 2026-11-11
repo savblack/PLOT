@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  defaultUiPrefs, isDefaultUiPrefs, moveSidebarItem, normalizeUiPrefs, nudgeSidebarItem, orderSidebarItems, resetSidebar,
-  setCardStyle, setDensity,
+  defaultUiPrefs, isDefaultUiPrefs, moveMyListsSection, moveSidebarItem, MY_LISTS_SECTION_IDS, normalizeUiPrefs, nudgeMyListsSection,
+  nudgeSidebarItem, orderMyListsSections, orderSidebarItems, resetMyListsOrder, resetSidebar, setCardStyle, setDensity, setMyListsCollapsed,
 } from '../../uiPrefs.js';
 
 const NAV = ['search', 'home', 'calendar', 'my-lists', 'history', 'guide', 'tonight', 'together', 'settings'].map(id => ({ id }));
@@ -19,7 +19,7 @@ test('normalize: garbage and unknown values fall back to the defaults', () => {
 test('setters: valid values apply, invalid ones are ignored, and the other fields survive', () => {
   let p = setDensity(defaultUiPrefs(), 'compact');
   p = setCardStyle(p, 'list');
-  assert.deepEqual(p, { density: 'compact', cardStyle: 'list', sidebar: [] });
+  assert.deepEqual(p, { density: 'compact', cardStyle: 'list', sidebar: [], myLists: { order: [], collapsed: [] } });
   assert.deepEqual(setDensity(p, 'nope'), p);
   assert.equal(isDefaultUiPrefs(p), false);
   assert.equal(isDefaultUiPrefs(setCardStyle(setDensity(p, 'comfy'), 'poster')), true);
@@ -56,4 +56,39 @@ test('sidebar: dragging an item to a place saves the whole order and clamps the 
   assert.deepEqual(moveSidebarItem(defaultUiPrefs(), current, 'home', 99).sidebar, ['calendar', 'my-lists', 'history', 'home']);
   assert.deepEqual(moveSidebarItem(defaultUiPrefs(), current, 'nope', 0).sidebar, []);
   assert.deepEqual(moveSidebarItem(defaultUiPrefs(), current, 'home', 0).sidebar, []);
+});
+
+test('my lists: unknown and repeated section ids are dropped on read', () => {
+  const p = normalizeUiPrefs({ myLists: { order: ['smart', 'nope', 'smart', 'lists'], collapsed: ['top', 7, 'top'] } });
+  assert.deepEqual(p.myLists, { order: ['smart', 'lists'], collapsed: ['top'] });
+  assert.deepEqual(normalizeUiPrefs({ myLists: 'x' }).myLists, { order: [], collapsed: [] });
+});
+
+test('my lists: sections missing from a saved order follow it in their default order', () => {
+  assert.deepEqual(orderMyListsSections([]), [...MY_LISTS_SECTION_IDS]);
+  assert.deepEqual(orderMyListsSections(['smart', 'lists']), ['smart', 'lists', 'watching', 'top', 'shared']);
+});
+
+test('my lists: moving a section among the ones shown keeps a section the viewer cannot see', () => {
+  // Shared is off for this viewer, so it is not in what they see.
+  const shown = ['watching', 'top', 'lists', 'smart'];
+  const moved = nudgeMyListsSection(defaultUiPrefs(), shown, 'lists', -1);
+  assert.deepEqual(moved.myLists.order, ['watching', 'lists', 'top', 'smart', 'shared']);
+  assert.deepEqual(moveMyListsSection(moved, shown, 'smart', 0).myLists.order, ['smart', 'watching', 'top', 'lists', 'shared']);
+  // The ends do not wrap, and an unknown id changes nothing.
+  assert.deepEqual(nudgeMyListsSection(defaultUiPrefs(), shown, 'watching', -1), defaultUiPrefs());
+  assert.deepEqual(moveMyListsSection(defaultUiPrefs(), shown, 'nope', 0), defaultUiPrefs());
+});
+
+test('my lists: folding toggles one section, and resetting the order leaves folds alone', () => {
+  let p = setMyListsCollapsed(defaultUiPrefs(), 'smart');
+  assert.deepEqual(p.myLists.collapsed, ['smart']);
+  assert.equal(isDefaultUiPrefs(p), false);
+  p = setMyListsCollapsed(p, 'watching');
+  assert.deepEqual(p.myLists.collapsed, ['watching', 'smart']);
+  assert.deepEqual(setMyListsCollapsed(p, 'nope'), p);
+  p = nudgeMyListsSection(p, [...MY_LISTS_SECTION_IDS], 'top', 1);
+  p = resetMyListsOrder(p);
+  assert.deepEqual(p.myLists, { order: [], collapsed: ['watching', 'smart'] });
+  assert.deepEqual(setMyListsCollapsed(p, 'smart', false).myLists.collapsed, ['watching']);
 });

@@ -292,3 +292,33 @@ export const NewSmartListPremium = {
     await body.findByRole('dialog', { name: SMART_LISTS.newSmartList });
   },
 };
+
+/* A section's heading folds it shut, and Customize puts the sections in the
+   viewer's order. The story has no saved prefs, so the page keeps both on
+   local state with the same rules. */
+export const FoldAndReorderSections = {
+  parameters: { app: emptyApp },
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Empty Watching offers the dashed tile, not a line of text.
+    const tile = await canvas.findByRole('button', { name: CUSTOM_LISTS.watchingEmptyTile });
+    // The page fades in, so the tile is in the tree a moment before it shows.
+    await waitFor(() => expect(tile).toBeVisible());
+    const smart = canvas.getByRole('button', { name: SMART_LISTS.section, expanded: true });
+    await fireEvent.click(smart);
+    await expect(smart).toHaveAttribute('aria-expanded', 'false');
+    await expect(canvasElement.querySelector('.mylists-stream [aria-label="' + SMART_LISTS.newSmartList + '"]')).toBeNull();
+    await fireEvent.click(smart);
+    await expect(smart).toHaveAttribute('aria-expanded', 'true');
+
+    const headings = () => [...canvasElement.querySelectorAll('.mylists-stream .discover-section-title')].map(h => h.textContent);
+    const before = headings();
+    await fireEvent.click(canvas.getByRole('button', { name: 'Customize' }));
+    const sheet = within(document.body.querySelector('.home-layout-sheet'));
+    await fireEvent.click(sheet.getByRole('button', { name: CUSTOM_LISTS.sections.moveUp(SMART_LISTS.section) }));
+    await waitFor(() => expect(headings().indexOf(SMART_LISTS.section)).toBe(before.indexOf(SMART_LISTS.section) - 1));
+    await fireEvent.click(sheet.getByRole('button', { name: CUSTOM_LISTS.sections.reset }));
+    await waitFor(() => expect(headings()).toEqual(before));
+  },
+};

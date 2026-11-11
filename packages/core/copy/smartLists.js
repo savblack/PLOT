@@ -77,8 +77,6 @@ export const SMART_LISTS = Object.freeze({
   // Shared, and their own group in the column.
   section: 'Smart lists',
   newTileNote: 'Set a few rules',
-  // The section with nothing in it yet: one quiet line, not a poster-sized tile.
-  emptySection: 'No smart lists yet. Set a few rules and one fills itself.',
 
   // B1: "New list" asks which kind.
   kinds: {
