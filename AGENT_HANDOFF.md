@@ -26,8 +26,9 @@ secrets set, so the check now runs every hour at :23. Left: merge the PR.
 
 - Deployed 2026-11-11 at Savannah's request: secrets `SIGNIN_PUBLISHABLE_KEY` (Staging) and `SIGNIN_PASSWORD` set, `npx wrangler deploy` from this branch, version 2eec8248-53df-4284-a09c-452b86321654, triggers `*/5 * * * *` and `23 * * * *`. Manual `?check=signin` on the live Worker returned healthy, and the uptime checks were still healthy.
 
+- Test email sent through the live Worker (`?check=signin&test-email=1`) on 2026-11-11; Savannah confirmed it arrived.
+
 ## Not done / needs approval
 - The live Worker runs this branch's code. Merge the PR so main matches it. A deploy of uptime-watch from an older main would drop the hourly check.
 - To deploy, `apps/web/.wrangler/deploy/config.json` (left behind by `pnpm run check`'s build) had to be deleted first, or wrangler refuses.
-- A real email through Resend has not been sent. `?check=signin&test-email=1` sends one to sav.black@outlook.com.
 - Production: password sign-in there requires a Turnstile captcha, so a production check needs a different design (e.g. a stored refresh token) plus a production test account. Savannah's call.
