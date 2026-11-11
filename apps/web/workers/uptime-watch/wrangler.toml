@@ -15,9 +15,17 @@
 #                                              # Endpoints and nothing else. Never the secret key.
 #   npx wrangler deploy
 #
+# The hourly signed-in check (src/signin.js) needs two more secrets, both for
+# PLOT Staging, never production:
+#   npx wrangler secret put SIGNIN_PUBLISHABLE_KEY   # Staging publishable key (VITE_SUPABASE_ANON_KEY in .env)
+#   security find-generic-password -s com.theplot.staging.signin-watch.password -w \
+#     | npx wrangler secret put SIGNIN_PASSWORD      # the watcher account's password, kept in Keychain
+# Without them the check reports "not configured" and, after BLIND_HOURS, says so by email.
+#
 # Check it by hand:
 #   curl -H "x-watch-token: <token>" https://uptime-watch.<subdomain>.workers.dev
 #   curl -H "x-watch-token: <token>" "https://uptime-watch.<subdomain>.workers.dev?test-email=1"
+#   curl -H "x-watch-token: <token>" "https://uptime-watch.<subdomain>.workers.dev?check=signin"
 # Watch live runs:  npx wrangler tail
 
 name = "uptime-watch"
@@ -25,9 +33,12 @@ main = "src/index.js"
 compatibility_date = "2025-06-01"
 workers_dev = true
 
-# Every 5 minutes. Cloudflare cron fires on time, unlike GitHub's schedule.
+# Every 5 minutes for the uptime checks, and once an hour (at :23, away from
+# the 5-minute marks) for the signed-in check. SIGNIN_CRON below must match
+# the second entry exactly: it is how a firing knows which watch it is.
+# Cloudflare cron fires on time, unlike GitHub's schedule.
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["*/5 * * * *", "23 * * * *"]
 
 # Last known state, so an outage sends one email rather than one per run.
 # Namespace "uptime-watch-state", created 2026-11-11.
@@ -71,6 +82,14 @@ STRIPE_LOOKBACK_DAYS = "15"
 # The endpoint Stripe should be sending to. Unset means SUPABASE_URL's
 # stripe-webhook, which is production's.
 # STRIPE_WEBHOOK_URL = ""
+
+# Signed-in check (src/signin.js). PLOT Staging, with a test account that
+# exists only for this watcher (created 2026-11-11). Production password
+# sign-in requires a Turnstile captcha, which a Worker cannot solve, so this
+# cannot point at production as it is. See docs/ops/monitoring.md.
+SIGNIN_CRON = "23 * * * *"
+SIGNIN_SUPABASE_URL = "https://uzrhfivnhdcfieuaxzip.supabase.co"
+SIGNIN_EMAIL = "plot-signin-watch@example.invalid"
 
 # Same destination and sender as backup-heartbeat and whats-on-watch.
 ALERT_EMAIL = "sav.black@outlook.com"

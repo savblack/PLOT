@@ -1,0 +1,136 @@
+name: Workers — deploy on merge
+
+# Deploys each Cloudflare Worker under apps/web/workers/ when a merge to main
+# changes it, so a Worker fix no longer waits for someone to run
+# `npx wrangler deploy` on a laptop. Only the Workers a push touched are
+# deployed, plus the ones that import them:
+#   whats-on-watch  imports scripts/lib/whatsOnHealth.mjs
+#   uptime-watch    imports whats-on-watch
+#   tmdb-proxy      deploys production and its [env.staging] together
+#
+# Needs the repo secret CLOUDFLARE_API_TOKEN: a Cloudflare API token from the
+# "Edit Cloudflare Workers" template, scoped to this account. Until it exists
+# the job says so and exits green, so merging this changes nothing.
+# Worker secrets (wrangler secret put) are not touched: they live on Cloudflare.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/workers/**'
+      - 'scripts/lib/whatsOnHealth.mjs'
+  workflow_dispatch:
+    inputs:
+      workers:
+        description: 'Space-separated Worker folders to deploy, or "all"'
+        required: false
+        default: all
+
+permissions:
+  contents: read
+  issues: write # failure alerting opens and closes an `incident` issue
+
+concurrency:
+  group: workers-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 6143964fcde2d7c381f189ae2645e563
+    steps:
+      - name: Stop here until the Cloudflare token is set
+        id: token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN is not set, so no Worker was deployed. See the header of this workflow."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.token.outputs.ready == 'true'
+        with:
+          fetch-depth: 0
+      - name: Work out which Workers changed
+        id: plan
+        if: steps.token.outputs.ready == 'true'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED: ${{ github.event.inputs.workers }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          all=$(cd apps/web/workers && for d in */; do d=${d%/}; [ -f "$d/wrangler.toml" ] || [ -f "$d/wrangler.jsonc" ] && echo "$d"; done)
+          if [ "$EVENT_NAME" = workflow_dispatch ]; then
+            if [ -z "$REQUESTED" ] || [ "$REQUESTED" = all ]; then picked="$all"; else picked="$REQUESTED"; fi
+          elif [ -z "$BEFORE" ] || [ "$BEFORE" = 0000000000000000000000000000000000000000 ]; then
+            picked="$all"
+          else
+            changed=$(git diff --name-only "$BEFORE" "$AFTER")
+            picked=$(printf '%s\n' "$changed" | sed -n 's|^apps/web/workers/\([^/]*\)/.*|\1|p' | sort -u)
+            if printf '%s\n' "$changed" | grep -qx 'scripts/lib/whatsOnHealth.mjs'; then picked="$picked whats-on-watch"; fi
+            if printf '%s\n' $picked | grep -qx whats-on-watch; then picked="$picked uptime-watch"; fi
+          fi
+          # Keep only real Worker folders, once each, in a stable order.
+          final=$(printf '%s\n' $picked | sort -u | grep -Fxf <(printf '%s\n' $all) | tr '\n' ' ')
+          echo "Deploying: ${final:-nothing}"
+          echo "workers=$final" >> "$GITHUB_OUTPUT"
+      - name: Set up pnpm
+        if: steps.token.outputs.ready == 'true' && steps.plan.outputs.workers != ''
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.token.outputs.ready == 'true' && steps.plan.outputs.workers != ''
+        with:
+          node-version: 22
+          cache: pnpm
+      - if: steps.token.outputs.ready == 'true' && steps.plan.outputs.workers != ''
+        run: pnpm install --frozen-lockfile
+      - name: Worker tests
+        if: steps.token.outputs.ready == 'true' && steps.plan.outputs.workers != ''
+        run: pnpm run test:workers
+      - name: Deploy
+        if: steps.token.outputs.ready == 'true' && steps.plan.outputs.workers != ''
+        env:
+          WORKERS: ${{ steps.plan.outputs.workers }}
+        run: |
+          set -euo pipefail
+          for w in $WORKERS; do
+            echo "::group::$w"
+            (cd "apps/web/workers/$w" && npx wrangler deploy)
+            if [ "$w" = tmdb-proxy ]; then (cd "apps/web/workers/$w" && npx wrangler deploy --env staging); fi
+            echo "::endgroup::"
+          done
+
+      # Failure alerting, same as the scheduled jobs: an `incident` issue opens
+      # on failure and closes on the next success, and the admin is emailed
+      # once per new incident (see .github/scripts/job-incident.sh).
+      - name: Open an incident issue
+        id: incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: workers-deploy
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: 'A merged Worker change did not deploy, so Cloudflare is still running the previous version.'
+        run: bash .github/scripts/job-incident.sh open
+      - name: Email the admin about a new incident
+        if: failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: workers-deploy
+          ALERT_SUBJECT: 'Plot: a Worker deploy failed'
+          FAILURE_NOTE: 'A merged Worker change did not deploy, so Cloudflare is still running the previous version.'
+        run: bash .github/scripts/marketing-alert.sh
+      - name: Close the incident issue on recovery
+        if: success() && steps.token.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: workers-deploy
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/job-incident.sh close

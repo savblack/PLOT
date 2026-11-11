@@ -8,6 +8,7 @@ it recovers.
 | Watcher | Every | Checks | Lives in |
 |---|---|---|---|
 | uptime-watch | 5 min | app.theplot.tv serves the app shell. The TMDB proxy returns trending titles. Edge functions answer (`billing-availability`). Stripe is delivering billing events to `stripe-webhook` (see below). | `apps/web/workers/uptime-watch` |
+| uptime-watch, signed-in check | hourly | A test account on PLOT Staging signs in, reads its own profile and History, saves a watched title the way the app does, and deletes it. Catches the July 2026 shape: pages load but saving fails. | `apps/web/workers/uptime-watch/src/signin.js` |
 | whats-on-watch | 30 min | theplot.tv/whats-on shows articles | `apps/web/workers/whats-on-watch` |
 | backup-heartbeat | daily | Last night's database backup and the weekly storage mirror landed in R2 | `apps/web/workers/backup-heartbeat` |
 
@@ -55,6 +56,26 @@ Not covered here: an event Plot accepts but can't match to a member
 (`no user for customer`). The handler answers 200 so Stripe doesn't retry
 forever, and reports it to PostHog as an error log instead.
 
+### The signed-in check
+
+It signs in as `plot-signin-watch@example.invalid`, an account on PLOT Staging
+that exists only for this check. Its password is in the Mac's Keychain
+(`com.theplot.staging.signin-watch.password`) and in the Worker's
+`SIGNIN_PASSWORD` secret, never in the repo. Each run writes one History row
+marked `plot-signin-watch` in its note and deletes it again; a row left by an
+interrupted run is cleaned up by the next one. The title comes from the TMDB
+proxy's trending list, so no TMDB id is hardcoded.
+
+It has its own emails ("saving to History is failing on Staging") and its own
+stored state, separate from the uptime checks.
+
+It watches Staging, not production. Staging gets the same migrations as
+production (`migration-drift` checks that nightly), so a migration that breaks
+saving breaks it on both. Production can't be watched this way as it stands:
+production sign-in requires a Turnstile captcha, which a Worker can't solve, and
+a production test account would be a write to live sign-in data that needs
+Savannah's yes first.
+
 ## App errors (PostHog alert)
 
 One watcher lives in PostHog, not in this repo: the alert **App errors affect
@@ -95,7 +116,7 @@ update this section.
 
 ## Not watched yet
 
-- A signed-in read and write (the shape of the July 2026 outage). Needs a dedicated Staging test account.
+- A signed-in read and write against production itself (see above for why the check runs on Staging).
 - pg_cron job failures.
 
 ## Deploying or changing a watcher

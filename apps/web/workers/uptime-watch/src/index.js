@@ -34,10 +34,16 @@
  * if Cloudflare refuses every attempt for a long time), so both watchers
  * behave the same. When GITHUB_TOKEN is set it also opens an `incident` issue
  * on the way down and closes it on recovery, so later automation has one queue.
+ *
+ * A second, hourly cron (SIGNIN_CRON) runs the signed-in check in signin.js
+ * against PLOT Staging: sign in, read, write a history row, delete it. It has
+ * its own stored state and its own email wording, so a Staging fault never
+ * reads as "the app is down" and an app outage never hides a write failure.
  */
 import { decide, probe } from '../../whats-on-watch/src/index.js';
+import { signedInReadWrite, trimSlashes } from './signin.js';
 
-const STATE_KEY = 'state';
+const STATE_KEYS = { uptime: 'state', signin: 'signin-state' };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** True when Cloudflare turned the checker away rather than the site failing. */
@@ -123,13 +129,6 @@ export const classify = {
         (others > 0 ? `. This account has ${others} other webhook endpoint${others === 1 ? '' : 's'}, so check which one failed` : ''),
     };
   },
-};
-
-/** Drop trailing slashes. A loop rather than /\/+$/, which CodeQL flags as a slow regex. */
-const trimSlashes = (url) => {
-  let s = url;
-  while (s.endsWith('/')) s = s.slice(0, -1);
-  return s;
 };
 
 const STRIPE_API = 'https://api.stripe.com/v1';
@@ -224,6 +223,38 @@ export function checksFor(env) {
   return checks;
 }
 
+/** Trending titles from the TMDB proxy, for the signed-in check's write. */
+async function trendingFor(env) {
+  const url = `${trimSlashes(env.TMDB_PROXY_URL || '')}/?path=trending/all/day`;
+  const via = env.TMDB_PROXY ? (u, i) => env.TMDB_PROXY.fetch(u, i) : fetch;
+  const res = await get(url, { headers: { Origin: env.APP_ORIGIN || 'https://app.theplot.tv' } }, via);
+  if (!res.ok) throw new Error(`TMDB proxy HTTP ${res.status}`);
+  return res.json();
+}
+
+/**
+ * The signed-in check, built from its vars and secrets. Exported for tests.
+ * Empty when SIGNIN_SUPABASE_URL is unset. With the URL set but a secret
+ * missing it reports `blocked`, so a half-finished setup ends in the
+ * "can't see" email after BLIND_HOURS rather than silence.
+ */
+export function signinChecksFor(env, deps = {}) {
+  if (!env.SIGNIN_SUPABASE_URL) return [];
+  const missing = ['SIGNIN_PUBLISHABLE_KEY', 'SIGNIN_EMAIL', 'SIGNIN_PASSWORD'].filter((k) => !env[k]);
+  const label = 'Staging signed-in read and write';
+  if (missing.length) {
+    return [{ name: 'signin', label, read: async () => ({ ok: false, blocked: true, reason: `not configured: ${missing.join(', ')} unset` }) }];
+  }
+  return [{
+    name: 'signin',
+    label,
+    read: guarded(() => signedInReadWrite(env, {
+      http: deps.http || ((u, i) => get(u, i)),
+      trending: deps.trending || (() => trendingFor(env)),
+    })),
+  }];
+}
+
 /**
  * Run every check (each retried by `probe`) and fold them into one verdict
  * for `decide`: broken if any check is broken, blocked only if nothing was
@@ -249,8 +280,9 @@ const duration = (ms) => {
 const escape = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 /** Subject and body for each alert. Exported for tests (copy rules: no em dashes). */
-export function emailContent(email, { now }) {
+export function emailContent(email, { now, watch = 'uptime' }) {
   const reason = escape(email.reason || '');
+  if (watch === 'signin') return signinEmail(email, { now, reason });
   // Which checks failed, when run() knows. Older stored emails have none, so
   // fall back to the general wording.
   const checks = Array.isArray(email.checks) ? email.checks : [];
@@ -311,12 +343,54 @@ export function emailContent(email, { now }) {
   }
 }
 
-async function sendEmail(env, email, now) {
+function signinEmail(email, { now, reason }) {
+  switch (email.kind) {
+    case 'down':
+      return {
+        subject: 'Plot: saving to History is failing on Staging',
+        html:
+          `<p><strong>Not working:</strong> ${reason}.</p>` +
+          '<p>A test account on PLOT Staging tried to sign in, read its own rows, save a watched title and remove it. ' +
+          'It failed twice in a row, so this is not a single blip.</p>' +
+          '<p>A failed write is the shape of the July 2026 outage, when a migration broke every save to History. ' +
+          'Staging runs the same migrations as production, so check whether production is affected too. ' +
+          'First checks: the most recent migration on main, <code>pnpm run db:write-paths</code>, and Supabase status.</p>' +
+          "<p>You'll get one more email when it recovers, and a reminder every few hours while it lasts.</p>",
+      };
+    case 'reminder':
+      return {
+        subject: 'Plot: saving to History is still failing on Staging',
+        html: `<p>Failing for ${duration(now - email.since)}. Latest: ${reason}.</p>`,
+      };
+    case 'recovered':
+      return {
+        subject: 'Plot: saving to History works again on Staging',
+        html: `<p>The signed-in check passes again. It was failing for about ${duration(now - email.since)}.</p>`,
+      };
+    case 'blind':
+      return {
+        subject: "Plot: the signed-in check can't run",
+        html:
+          `<p>For ${duration(now - email.since)}, the signed-in check has not been able to run (${reason}).</p>` +
+          '<p>This is not an outage signal, but until it clears a broken save would go unnoticed. ' +
+          'If it says "not configured", set the missing Worker secret on uptime-watch.</p>',
+      };
+    case 'test':
+      return {
+        subject: 'Plot: signed-in check test email',
+        html: '<p>This is a test from the signed-in check. Alerts will arrive from this address.</p>',
+      };
+    default:
+      throw new Error(`unknown email kind ${email.kind}`);
+  }
+}
+
+async function sendEmail(env, email, now, watch = 'uptime') {
   if (!env.RESEND_API_KEY) {
     console.error('UPTIME WATCH wanted to email and RESEND_API_KEY is unset:', JSON.stringify(email));
     return { sent: false, error: 'RESEND_API_KEY unset' };
   }
-  const { subject, html } = emailContent(email, { now });
+  const { subject, html } = emailContent(email, { now, watch });
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -334,7 +408,7 @@ async function sendEmail(env, email, now) {
  * 'reminder', closed on 'recovered'. Failure here never blocks the email.
  * Returns the issue number to remember, or the one already stored.
  */
-async function syncIssue(env, email, issue, now) {
+async function syncIssue(env, email, issue, now, watch = 'uptime') {
   if (!env.GITHUB_TOKEN || !env.GITHUB_REPO || !email || email.kind === 'blind' || email.kind === 'test') return issue;
   const api = `https://api.github.com/repos/${env.GITHUB_REPO}/issues`;
   const headers = {
@@ -343,7 +417,7 @@ async function syncIssue(env, email, issue, now) {
     'User-Agent': 'plot-uptime-watch',
     'Content-Type': 'application/json',
   };
-  const { subject, html } = emailContent(email, { now });
+  const { subject, html } = emailContent(email, { now, watch });
   const body = html.replace(/<[^>]+>/g, '').trim();
   try {
     if (email.kind === 'down') {
@@ -364,21 +438,40 @@ async function syncIssue(env, email, issue, now) {
 }
 
 /**
- * Each group keeps its own state, email thread and incident issue. Stripe is
- * apart from the rest because its alarm can last days (an event nobody has
- * resent), and `decide` emails only on a change: sharing one state would let
- * a standing Stripe alarm swallow a new app outage's "down" email.
+ * The uptime watch runs in groups, each with its own state, email thread and
+ * incident issue. Stripe is apart from the rest because its alarm can last
+ * days (an event nobody has resent), and `decide` emails only on a change:
+ * sharing one state would let a standing Stripe alarm swallow a new app
+ * outage's "down" email.
  */
-const GROUPS = [
-  { key: STATE_KEY, names: ['app', 'tmdb', 'functions'] },
+const UPTIME_GROUPS = [
+  { key: STATE_KEYS.uptime, names: ['app', 'tmdb', 'functions'] },
   { key: 'stripe-state', names: ['stripe'] },
 ];
 
-async function runGroup(env, group, checks, now) {
+/**
+ * Run one watch ('uptime' or 'signin'): check, decide, alert, store. For
+ * 'uptime' the Stripe group's result, when it ran, is under `stripe`.
+ * Exported for tests.
+ */
+export async function run(env, watch = 'uptime', deps = {}) {
+  const now = Date.now();
+  if (watch === 'signin') {
+    return runGroup(env, watch, { key: STATE_KEYS.signin, names: [] }, signinChecksFor(env, deps), now, deps);
+  }
+  const all = checksFor(env);
+  const [core, stripe] = await Promise.all(
+    UPTIME_GROUPS.map((g) => runGroup(env, watch, g, all.filter((c) => g.names.includes(c.name)), now, deps)),
+  );
+  return stripe.skipped ? core : { ...core, stripe };
+}
+
+async function runGroup(env, watch, group, checks, now, deps = {}) {
+  if (!checks.length) return { watch, verdict: null, email: null, alert: null, stored: false, skipped: 'nothing configured' };
   const verdict = await verdictFor(checks, {
     attempts: Number(env.ATTEMPTS ?? 2),
     waitMs: Number(env.WAIT_SECONDS ?? 30) * 1000,
-  });
+  }, deps.wait);
   const prev = await env.STATE.get(group.key, 'json');
   const { next, email } = decide(prev, verdict, {
     now,
@@ -390,37 +483,25 @@ async function runGroup(env, group, checks, now) {
 
   let alert = null;
   if (email) {
-    alert = await sendEmail(env, email, now);
+    alert = await sendEmail(env, email, now, watch);
     // If the email did not go out, keep the old state so the next run tries
     // again rather than recording an alarm nobody received.
-    if (!alert.sent) return { verdict, email: email.kind, alert, stored: false };
+    if (!alert.sent) return { watch, verdict, email: email.kind, alert, stored: false };
   }
-  next.issue = await syncIssue(env, email, prev?.issue ?? null, now);
+  next.issue = await syncIssue(env, email, prev?.issue ?? null, now, watch);
   if (JSON.stringify(next) !== JSON.stringify(prev)) await env.STATE.put(group.key, JSON.stringify(next));
-  return { verdict, email: email?.kind ?? null, alert, stored: true };
+  return { watch, verdict, email: email?.kind ?? null, alert, stored: true };
 }
 
-/** Runs every group that has checks. Exported for tests. */
-export async function run(env) {
-  const now = Date.now();
-  const all = checksFor(env);
-  const results = {};
-  await Promise.all(
-    GROUPS.map(async (group) => {
-      const checks = all.filter((c) => group.names.includes(c.name));
-      if (checks.length) results[group.key] = await runGroup(env, group, checks, now);
-    }),
-  );
-  return results;
+/** Which watch a cron firing belongs to. Exported for tests. */
+export function watchFor(cron, env) {
+  return env.SIGNIN_CRON && cron === env.SIGNIN_CRON ? 'signin' : 'uptime';
 }
-
-/** Worst state across groups, for the manual endpoint's status code. */
-const anyBroken = (results) => Object.values(results).some((r) => r.verdict.state === 'broken');
 
 export default {
-  async scheduled(_event, env, ctx) {
+  async scheduled(event, env, ctx) {
     ctx.waitUntil(
-      run(env).then((r) => {
+      run(env, watchFor(event?.cron, env)).then((r) => {
         // Logged every run so `wrangler tail` shows the watcher is alive.
         console.log('uptime watch:', JSON.stringify(r));
       }),
@@ -429,7 +510,8 @@ export default {
 
   /**
    * Manual endpoint, gated by WATCH_TOKEN (404 without it). GET runs every
-   * check now; ?test-email=1 only sends a test email.
+   * uptime check now; ?check=signin runs the signed-in check instead;
+   * ?test-email=1 only sends a test email.
    */
   async fetch(request, env) {
     const expected = env.WATCH_TOKEN;
@@ -437,10 +519,12 @@ export default {
       return new Response('Not found', { status: 404 });
     }
     const url = new URL(request.url);
+    const watch = url.searchParams.get('check') === 'signin' ? 'signin' : 'uptime';
     if (url.searchParams.get('test-email') === '1') {
-      return Response.json(await sendEmail(env, { kind: 'test' }, Date.now()));
+      return Response.json(await sendEmail(env, { kind: 'test' }, Date.now(), watch));
     }
-    const result = await run(env);
-    return Response.json(result, { status: anyBroken(result) ? 503 : 200 });
+    const result = await run(env, watch);
+    const broken = result.verdict?.state === 'broken' || result.stripe?.verdict?.state === 'broken';
+    return Response.json(result, { status: broken ? 503 : 200 });
   },
 };
