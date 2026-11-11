@@ -185,33 +185,12 @@ Two seeded demo accounts exist (GitHub #494, tracked in Linear PLO-226); the
 second already follows the first so report and block have a target. Put the
 credentials in the review notes, never in the description.
 
-Review notes text:
-
-```
-Plot is a movie and TV tracking app. Sign in with the demo account below
-(email + password; no social sign-in is enabled in this build).
-
-Demo account: <email> / <password>
-A second account, @<username2>, already follows it.
-
-To reach moderation (Guideline 1.2): open Profile tab > Followers > tap
-@<username2> > the "..." menu at the top right offers Report and Block.
-Reports are emailed to the team (notify-report) and actioned within 24 hours.
-Community rules: https://theplot.tv/community
-
-Account deletion: Settings > Reset or delete data > Delete account.
-
-Premium is not sold in this app and the app shows no prices or purchase
-links. Features marked Premium are listed for information only.
-
-Film and TV metadata and artwork come from TMDB under its API terms; the app
-does not play video.
-```
-
-Fill in the three placeholders from the seeded accounts. If the demo password
-has rotated, App Review's first response will be "we could not sign in",
-which costs a 24 to 48 hour cycle: test the login on a Release build before
-submitting.
+The review notes text lives in one place only:
+[../launch/app-review-notes.md](../launch/app-review-notes.md). It covers the
+demo sign-in, where report and block are, account deletion, and how Premium is
+shown. An earlier copy here said the app shows no prices or purchase links,
+which stopped being true when the US-only Upgrade button shipped (#1394). That
+copy was removed on 2026-11-11 so the two cannot drift again.
 
 ## Screenshots
 
@@ -257,6 +236,17 @@ so create the Max device type before capturing.
       (HTTPS only), so no export compliance form appears per build.
 - [x] Content rights: `USES_THIRD_PARTY_CONTENT`, and the description names TMDB.
 - [x] Release option: Manual release.
+- [ ] The version in App Store Connect equals `expo.version` in
+      `apps/mobile/app.json` **of the commit being built**. Release-please
+      bumps that number on every mobile release (see
+      [versioning.md](versioning.md)), so the app's number wins and App Store
+      Connect is changed to match, never the other way round. #1428 set the
+      app to 1.0.0 and the next release moved it to 1.2.0. Apple refuses an
+      upload whose version has no open version record, so check this right
+      before `eas build`. Set to 1.2.0 in App Store Connect on 2026-11-11;
+      left unticked because it has to be checked again at build time.
+- [x] Review notes in App Store Connect are the current text from
+      [../launch/app-review-notes.md](../launch/app-review-notes.md).
 
 ## Entered in App Store Connect (2026-10-15)
 

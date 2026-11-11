@@ -14,8 +14,14 @@ step. Their workflows are unchanged.
 | `release-please-config.json` | Config for `apps/mobile` only |
 | `apps/mobile/CHANGELOG.md` | Generated on the release PR. Not the public changelog. |
 
-The current version is `0.9.0`. The app is not in the App Store. `1.0.0` is
-the launch cut, not the next feature bump.
+The current version is whatever `expo.version` says (`1.2.0` on 2026-11-11).
+The app is not in the App Store yet. The plan was for `1.0.0` to be the launch
+cut (#1428 set it), but release-please kept bumping after that, so the first
+App Store version will be whatever number the submitted build carries. That is
+fine: Apple accepts any first version number. What Apple does refuse is an
+upload whose number has no matching version in App Store Connect, so the
+version there is changed to match `app.json` before each build, never the
+reverse. See the checklist in [app-store-listing.md](app-store-listing.md).
 
 ## What release-please does
 
@@ -55,6 +61,10 @@ fields when they are present, which would fight EAS. It does not add them
 when they are absent.
 
 ## Cutting 1.0.0
+
+The app is already past `1.0.0`, so this section is history. Do not use
+`Release-As` to go back to a lower number: release-please would carry on from
+there and the versions would stop matching the tags.
 
 Put this footer in the commit message of the change that should ship as the
 App Store launch:
