@@ -1,11 +1,11 @@
 /**
  * The round floating entry to Just Decide: bottom right, above the glass tab
- * bar. An ink disc with the sparkle in the page's cream, the same pairing as
- * the wordmark and the Watch together panel, so it reads as part of Plot's
- * chrome rather than a sticker on top of it. It inverts with the theme (a
- * light disc on dark). No halo: the design system keeps the accent for state
- * and rules out decorative glows. It eases in on mount and presses down under
- * the finger; nothing loops. Home is the only screen that shows it.
+ * bar. A disc in the brand fill (pink on the default theme, the theme's own
+ * accent under a Premium theme) with the sparkle in the charcoal that sits on
+ * that fill everywhere else. No halo: the design system rules out decorative
+ * glows, so the disc is flat with only the legibility shadow the tab bar has.
+ * It eases in on mount and presses down under the finger; nothing loops. Home
+ * is the only screen that shows it.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet } from 'react-native';
@@ -54,7 +54,7 @@ export default function TonightFab() {
         accessibilityLabel={DISCOVER_VIEW.tonightFab}
         style={styles.button}
       >
-        <Sparkle color={colors.bg} />
+        <Sparkle color={colors.onAccentFill} />
       </Pressable>
     </Animated.View>
   );
@@ -68,7 +68,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderRadius: SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.textPrimary,
+    backgroundColor: colors.accentFill,
     // Legibility against whatever scrolls underneath, as the tab bar.
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
