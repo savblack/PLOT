@@ -1,0 +1,93 @@
+# Hourly check that the database's own scheduled jobs (pg_cron) still run and pass.
+#
+# WHY: push sends, email alerts, the import worker, Brevo sync and the sitemap
+# refresh all run inside the database on pg_cron. A failed run was only a row
+# in cron.job_run_details, and a job pg_cron stopped starting left no row at
+# all. Nobody read either. This opens an `incident` issue and emails the admin
+# when a job's last run failed or it has gone more than twice its schedule
+# without running. See scripts/lib/cronHealth.mjs for the exact rules.
+#
+# Read-only. Connects as plot_ci_readonly (SUPABASE_DB_URL_READONLY), the same
+# role db-write-paths.yml uses, and reads only public.cron_job_health(), which
+# returns names, times and statuses, never commands or error text: this log is
+# public. There is no fallback to the owner URL.
+#
+# GitHub's schedule can start a run late. That only delays the alert: the
+# check measures how long each job has gone without running, not when this
+# workflow fires.
+#
+# Not on pull_request: a red PR check would blame the PR for production's state.
+
+name: pg_cron health (hourly)
+
+on:
+  schedule:
+    - cron: '12 * * * *' # every hour at :12, clear of the jobs that start on the hour
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write # failure alerting opens and closes an `incident` issue
+
+concurrency:
+  group: cron-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check pg_cron jobs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      # The script needs only psql and Node's standard library, so no pnpm
+      # install. The runner's psql (16) talks to a PG 17 server fine for plain
+      # queries; only pg_dump refuses a newer server.
+      - name: Check pg_cron jobs
+        id: check
+        env:
+          SUPABASE_DB_URL_READONLY: ${{ secrets.SUPABASE_DB_URL_READONLY }}
+          PLOT_DB_EXPECTED_ROLE: plot_ci_readonly
+        run: |
+          if [ -z "$SUPABASE_DB_URL_READONLY" ]; then
+            echo "::error::SUPABASE_DB_URL_READONLY is not set. Refusing to run: this check never falls back to the owner SUPABASE_DB_URL." >&2
+            exit 2
+          fi
+          export SUPABASE_DB_URL="$SUPABASE_DB_URL_READONLY"
+          node scripts/check-cron-jobs.mjs
+
+      # Same three steps as db-write-paths.yml: one `incident` issue per job,
+      # a comment on repeat failures, closed on the next healthy run, and one
+      # email per new incident. The email also goes out if the issue step broke.
+      - name: Open an incident issue
+        id: incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: pg_cron jobs
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: ${{ steps.check.outputs.summary && format('Needs attention - {0}. A database job that fails or stops can mean push notifications, alert emails or imports have stopped. Run pnpm run db:cron-health for details; cron.job_run_details on the database has the error text.', steps.check.outputs.summary) || 'The check itself could not run, so pg_cron jobs are not being watched. Open the run log.' }}
+        run: bash .github/scripts/job-incident.sh open
+      - name: Email the admin about a new incident
+        if: failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: cron-health
+          ALERT_SUBJECT: 'Plot: a scheduled database job failed or stopped'
+          FAILURE_NOTE: ${{ steps.check.outputs.summary && format('Needs attention - {0}. Push notifications, alert emails or imports may have stopped.', steps.check.outputs.summary) || 'The pg_cron health check itself could not run.' }}
+        run: bash .github/scripts/marketing-alert.sh
+      - name: Close the incident issue on recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: pg_cron jobs
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/job-incident.sh close
