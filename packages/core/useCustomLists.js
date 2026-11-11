@@ -442,9 +442,13 @@ async function withSharedLists(userId, owned) {
   const memberIds = (memberships || []).map(m => m.list_id);
   let memberLists = [];
   if (memberIds.length) {
+    // The items table has two foreign keys to the lists table (list_id, and
+    // list_id + user_id since 20260918030000). An embed that does not name one
+    // is refused by the API (PGRST201) and comes back with no data, which is
+    // how lists shared with you never showed. Name the key.
     const { data } = await supabase
       .from('user_custom_lists')
-      .select('*, items:user_custom_list_items(*)')
+      .select('*, items:user_custom_list_items!user_custom_list_items_list_id_fkey(*)')
       .in('id', memberIds)
       .order('created_at', { ascending: true });
     memberLists = (data || []).map(l => ({ ...l, role: 'member', people: [] }));

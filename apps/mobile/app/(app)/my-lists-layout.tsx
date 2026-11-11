@@ -37,6 +37,9 @@ const LABELS: Record<string, string> = {
   shared: COLLABORATIVE_LISTS.myLists.shared,
 };
 
+// Mobile's default order of the shared sections, as my-lists.tsx draws them.
+const MOBILE_DEFAULT = ['watching', 'lists', 'top', 'shared', 'smart'];
+
 function Chevron({ up, color }: { up?: boolean; color: string }) {
   return (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
@@ -54,7 +57,12 @@ export default function MyListsLayoutScreen() {
   const hasShared = SHOW_WATCH_TOGETHER && (customLists?.lists ?? []).some((list: any) => isSharedList(list, userId));
   const ui = useUiPrefs({ userId, saved: profile?.ui_prefs, onPersisted: refreshProfile });
   const saved: string[] = ui.prefs.myLists.order;
-  const shown = (orderMyListsSections(saved) as string[]).filter(id => id in LABELS && (id !== 'shared' || hasShared));
+  // With nothing saved, My Lists draws mobile's own default (my-lists.tsx:
+  // Watchlist ahead of Top 5, Shared ahead of Smart lists), not web's. The rows
+  // start from that, so the screen shows the order the viewer is looking at
+  // and the first move changes only what they moved.
+  const base = saved.length ? (orderMyListsSections(saved) as string[]) : MOBILE_DEFAULT;
+  const shown = base.filter(id => id in LABELS && (id !== 'shared' || hasShared));
   const isDefault = saved.length === 0;
 
   const nudge = (id: string, delta: -1 | 1) => {
