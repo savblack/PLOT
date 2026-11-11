@@ -258,7 +258,8 @@ export default function CalendarScreen() {
 
   const dayEvents = eventsForDate(selectedDate);
 
-  const HEADER_H = insets.top + 92;
+  // The same header height as My Lists and History: title bar plus one row.
+  const HEADER_H = insets.top + 96;
   const CELL_W   = (SCREEN_W - spacing.xl * 2) / 7;
 
   const isDataLoading = loading || watchlist.loading || watching.loading;
@@ -469,7 +470,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
+    // The page gutter, so the switch starts where My Lists' and History's
+    // row starts, under the header's search button.
+    paddingHorizontal: spacing.xl,
     gap: spacing.sm,
   },
   // Web's .cal-scope: a sunken track holding the options.
@@ -496,7 +499,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   // Web's .cal-scope-btn, and .active
   subTab: {
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: spacing.md,
     borderRadius: 10,
   },

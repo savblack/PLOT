@@ -16,6 +16,7 @@ export default function ScreenHeaderBar({
   center,
   showSearch = true,
   onSearchPress,
+  searchLabel = 'Open search',
   showNotifications = true,
   rightExtra,
 }: {
@@ -23,6 +24,8 @@ export default function ScreenHeaderBar({
   center?: ReactNode;
   showSearch?: boolean;
   onSearchPress?: () => void;
+  /** Names the search button where a screen points it at its own search (My Lists, History). */
+  searchLabel?: string;
   /** Screens that are themselves the notifications view hide the bell. */
   showNotifications?: boolean;
   /** Sits after the bell (Home's filter). */
@@ -42,7 +45,7 @@ export default function ScreenHeaderBar({
           style={styles.iconBtn}
           onPress={onSearchPress ?? (() => router.push('/(app)/search'))}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Open search"
+          accessibilityLabel={searchLabel}
           accessibilityRole="button"
         >
           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

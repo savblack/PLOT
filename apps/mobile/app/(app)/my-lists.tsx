@@ -89,6 +89,8 @@ const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collaps
 // whichever tab is active.
 const LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 const SMART_SECTION_ID = 'smart';
+// Height of the fixed header below the status bar: the title bar plus one row.
+const SUBHEADER_H = 96;
 // Which of web's My Lists sections (MY_LISTS_SECTION_IDS in uiPrefs.js) each
 // mobile section belongs to. Watchlist, Favorites and custom lists are one
 // Lists section there, so they move together here.
@@ -611,6 +613,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   };
   const [listQuery, setListQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  // The page's own search field stays out of the header until asked for: the
+  // header's search button opens it here, and closing it clears the query.
+  const [searchOpen, setSearchOpen] = useState(false);
   const requestSmartCreate = async () => {
     setRulesKept(false);
     const stored = await readStorage(smartListDraftKey(userId));
@@ -821,7 +826,10 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   );
   const listTabs = TABS.filter(t => t.id !== 'history').map(t => ({ id: t.id, label: t.label ?? fw.plural }));
   const searchPlaceholder = isHistory ? HISTORY_VIEW.searchPlaceholder : CUSTOM_LISTS.searchPlaceholder;
-  const HEADER_H = insets.top + 136;
+  const searchShown = searchOpen || listQuery.length > 0;
+  // Title bar, one 40pt row of controls, and the search field only while open.
+  // Calendar's header is the same height, so the three pages line up.
+  const HEADER_H = insets.top + (searchShown ? SUBHEADER_H + 44 : SUBHEADER_H);
 
   return (
     <View style={styles.screen}>
@@ -1174,24 +1182,19 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <ScreenHeaderBar title={mode === 'history' ? 'History' : 'My Lists'} />
+        <ScreenHeaderBar
+          title={mode === 'history' ? 'History' : 'My Lists'}
+          searchLabel={searchPlaceholder}
+          onSearchPress={() => { if (searchShown) { setListQuery(''); setSearchOpen(false); } else setSearchOpen(true); }}
+        />
         {/* Tabs and the filter/collapse controls share one row, as on web —
             the old second row of All/Movies/TV chips is gone. */}
         <View style={styles.tabsRow}>
-          <Text style={styles.viewLabel} numberOfLines={1} accessibilityRole="header">
-            {isHistory ? HISTORY_VIEW.title : openList ? openList.name : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
-          </Text>
-          <View style={styles.tabsRowActions}>
-            {/* Customize sits in the top row on the All view, as on web's
-                phone layout, so it is reachable without scrolling. */}
-            {!isHistory && isAll && !openList && (
-              <TouchableOpacity onPress={() => router.push('/(app)/my-lists-layout' as Href)} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.sections.title}>
-                <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
-              </TouchableOpacity>
-            )}
-            {/* ‹ Mar 2026 › — jumps to the adjacent month that actually has
-                entries, so empty months are never a dead step. */}
-            {isHistory && !searching && historyGroups.length > 0 && (
+          {isHistory ? (
+            // History's title is already in the bar above, so this row leads
+            // with the month switcher instead of repeating the page name.
+            <View style={styles.rowLead}>
+              {!searching && historyGroups.length > 0 && (
               <View style={styles.monthNav}>
                 <TouchableOpacity
                   onPress={() => jumpTo(historyIndex === -1 ? historyGroups[0] : historyGroups[historyIndex + 1])}
@@ -1217,7 +1220,23 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                   </Svg>
                 </TouchableOpacity>
               </View>
+              )}
+            </View>
+          ) : (
+            <Text style={styles.viewLabel} numberOfLines={1} accessibilityRole="header">
+              {openList ? openList.name : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
+            </Text>
+          )}
+          <View style={styles.tabsRowActions}>
+            {/* Customize sits in the top row on the All view, as on web's
+                phone layout, so it is reachable without scrolling. */}
+            {!isHistory && isAll && !openList && (
+              <TouchableOpacity onPress={() => router.push('/(app)/my-lists-layout' as Href)} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.sections.title}>
+                <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
+              </TouchableOpacity>
             )}
+            {/* ‹ Mar 2026 › — jumps to the adjacent month that actually has
+                entries, so empty months are never a dead step. */}
             <GroupedFilterMenu
               accessibilityLabel="Filter lists"
               groups={[
@@ -1257,6 +1276,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             )}
           </View>
         </View>
+        {searchShown && (
         <View style={[styles.listSearch, searchFocused && { borderColor: colors.accent }]}>
           <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <Circle cx={11} cy={11} r={7} />
@@ -1267,6 +1287,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             value={listQuery}
             onChangeText={setListQuery}
             placeholder={searchPlaceholder}
+            autoFocus
             placeholderTextColor={colors.textMuted}
             accessibilityLabel={searchPlaceholder}
             autoCapitalize="none"
@@ -1286,6 +1307,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             </TouchableOpacity>
           )}
         </View>
+        )}
       </BlurView>
 
       {/* Modals */}
@@ -1584,23 +1606,18 @@ function CustomListCard({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
+  // One row of controls under the title bar, the same height and gutters on
+  // My Lists, History and Calendar. No rule above it: the title bar and this
+  // row are one header, closed by the header's own bottom hairline.
   tabsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    height: 40,
     paddingRight: spacing.xl,
   },
+  rowLead: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingLeft: spacing.xl },
   tabsRowActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  monthNav: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-    // The tab row scrolls under this, so give it a hairline and some air —
-    // without it the nav butts straight against a half-clipped tab label.
-    marginLeft: spacing.xs,
-    paddingLeft: spacing.sm,
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: colors.border,
-  },
+  monthNav: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   monthNavLabel: {
     fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
     color: colors.textSecondary, minWidth: 54, textAlign: 'center',
