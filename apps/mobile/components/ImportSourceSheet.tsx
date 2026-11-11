@@ -196,6 +196,25 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
             <Text style={styles.dropHint}>{S.dropFormats(src.formats)}</Text>
           </TouchableOpacity>
         )}
+        {ready && !uploading && start.listChoiceNeeded ? (
+          <View style={{ gap: spacing.sm }}>
+            <Text style={styles.label}>{I.imdbListQuestion}</Text>
+            <View style={styles.radios} accessibilityRole="radiogroup" accessibilityLabel={I.imdbListQuestion}>
+              {([['watchlist', I.imdbListWatchlist, I.imdbListWatchlistNote], ['list', I.imdbListOther, I.imdbListOtherNote]] as const).map(([id, label, note]) => {
+                const on = start.listChoice === id;
+                return (
+                  <TouchableOpacity key={id} style={[styles.radio, on && styles.radioOn]} onPress={() => start.chooseList(id)} accessibilityRole="radio" accessibilityState={{ checked: on }}>
+                    <View style={[styles.radioDot, on && styles.radioDotOn]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.radioText}>{label}</Text>
+                      <Text style={styles.radioNote}>{note}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
         {src.steps ? (
           <View style={styles.steps}>
             {src.steps.map((step, i) => (
@@ -207,7 +226,7 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
           </View>
         ) : null}
         <View style={styles.privacy}><LockIcon color={colors.textMuted} /><Text style={styles.privacyText}>{src.noRatings ? S.privacyNoRatings : S.privacy}</Text></View>
-        {cta(uploading ? I.uploading : S.importRows(start.pendingRows), () => { void start.upload(); }, !ready || uploading)}
+        {cta(uploading ? I.uploading : S.importRows(start.pendingRows), () => { void start.upload(); }, !ready || uploading || (start.listChoiceNeeded && !start.listChoice))}
       </View>
     );
   } else if (phase === 'connect') {

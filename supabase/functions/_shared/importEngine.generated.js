@@ -162,13 +162,13 @@ var IMPORT_VIEW = {
   plexServerRequired: "Your Plex Media Server must be running and reachable while the import runs.",
   letterboxdExportHint: "Settings \u2192 Data \u2192 Export your data \u2192 unzip \u2192 choose diary.csv or watched.csv",
   imdbName: "IMDb",
-  imdbExportHint: "Your Ratings \u2192 Export \u2192 choose ratings.csv",
-  imdbFileName: "ratings.csv",
+  imdbExportHint: "Your Ratings, Watchlist or a list \u2192 Export \u2192 choose the downloaded CSV",
+  imdbFileName: "Your IMDb export (CSV)",
   imdbInstructions: [
     "Go to imdb.com and sign in",
     "Open your ratings from your profile menu",
     "Select Export in the top right",
-    "Upload the downloaded ratings.csv file here"
+    "Upload the downloaded CSV file here"
   ],
   importedSummary: (imported, existing) => `${imported} title${imported !== 1 ? "s" : ""} added${existing ? `, ${existing} already in your history` : ""}.`,
   importFailed: "We could not import this history. Nothing already in Plot was changed. Please try again.",
@@ -1139,8 +1139,7 @@ function parsePlatform(platformId, text, { fileName = "", onOmitted = (_index) =
   if (platformId === "trakt" && fileName === "lists-watchlist.json") return parseTraktWatchlist(text);
   if (platformId === "imdb" && isImdbListExport(text)) {
     if (namesWatchlist(fileName)) return parseImdbWatchlist(text, void 0, { onLeftOut });
-    const stem = originalExportName(fileName).replace(/\.[^.]*$/, "") || "list";
-    return parseImdbWatchlist(text, { kind: "custom", key: `imdb:list:${stem}`, name: IMPORT_VIEW.imdbListName }, { onLeftOut });
+    return parseImdbWatchlist(text, { kind: "custom", key: "imdb:list", name: IMPORT_VIEW.imdbListName }, { onLeftOut });
   }
   if (platformId === "letterboxd") {
     const list = parseLetterboxdList(text, fileName, { onLeftOut });

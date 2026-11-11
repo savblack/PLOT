@@ -14,6 +14,7 @@ import { emit, HISTORY_CHANGED_EVENT } from './events.js';
 export { splitImportForBackground } from './importBackground.js';
 import { IMPORT_JOBS } from './copy/importJobs.js';
 import { IMPORT_ENTRY_POINTS } from './importPipeline.js';
+import { isImdbListExport } from './importParsing.js';
 
 export const IMPORT_UPLOADS_BUCKET = 'import-uploads';
 export const IMPORT_JOB_ACTIVE = Object.freeze(['queued', 'running', 'retry_wait']);
@@ -163,16 +164,42 @@ export function enqueueError(error) {
   return error instanceof Error ? error : new Error(String(error.message || error));
 }
 
+/** @typedef {'watchlist' | 'list'} ImportListChoice */
+
+/**
+ * IMDb's watchlist and its other lists are one file layout, and IMDb names
+ * every export with a random ID, so nothing in the file says which it is.
+ * The pickers ask the person when this is true, before uploading.
+ * @param {string} source
+ * @param {string} text the file's text, or at least its first line
+ */
+export function importListChoiceNeeded(source, text) {
+  return source === 'imdb' && typeof text === 'string' && isImdbListExport(text);
+}
+
+/**
+ * The stored name carries the person's answer to the worker, which reads
+ * names (see parsePlatform). Only the name changes; the file's bytes do not.
+ * @param {string} source
+ * @param {ImportListChoice | null | undefined} listChoice
+ * @param {{ name: string }[]} files
+ */
+function namedForListChoice(source, listChoice, files) {
+  if (source !== 'imdb' || !listChoice || files.length !== 1) return files;
+  return [{ ...files[0], name: listChoice === 'watchlist' ? 'imdb-watchlist.csv' : 'imdb-list.csv' }];
+}
+
 /**
  * Upload an export and queue its import. Resolves once the row exists; the
  * worker takes it from there.
  *
- * @param {{ userId: string, source: string, entry?: string,
+ * @param {{ userId: string, source: string, entry?: string, listChoice?: ImportListChoice | null,
  *   files: { name: string, body: Blob | ArrayBuffer | Uint8Array, contentType?: string }[] }} args
  * @returns {Promise<{ job: any, error: Error | null }>}
  */
-export async function startFileImport({ userId, source, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, files }) {
+export async function startFileImport({ userId, source, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, listChoice = null, files }) {
   if (!userId || !source || !files?.length) return { job: null, error: new Error(IMPORT_JOBS.onboarding.uploadFailed) };
+  files = namedForListChoice(source, listChoice, files);
   // Checked before the upload so a repeat pick costs nothing; the enqueue
   // checks again, and a unique index settles two clicks racing.
   const contentHash = await importFileFingerprint(files).catch(() => null);

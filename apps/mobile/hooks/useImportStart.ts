@@ -15,7 +15,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { createImportReporter } from '@plot/core/importPipeline.js';
 import { rememberLetterboxdImport, clearLetterboxdImport } from '../lib/letterboxdImportPrompt';
-import { startFileImport, startConnectionImport, useImportJobs, importJobActive, importSourceName, importPillFor } from '@plot/core/importJobs.js';
+import { startFileImport, startConnectionImport, useImportJobs, importJobActive, importSourceName, importPillFor, importListChoiceNeeded } from '@plot/core/importJobs.js';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
 import { usePlexSource } from '@plot/core/usePlexSource.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
@@ -90,6 +90,9 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
   const [error, setError] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[] | null>(null);
   const [pendingRows, setPendingRows] = useState<number | null>(null);
+  // An IMDb list file: is it the watchlist? null until the person answers.
+  const [listChoiceNeeded, setListChoiceNeeded] = useState(false);
+  const [listChoice, setListChoice] = useState<'watchlist' | 'list' | null>(null);
 
   const jobs = useImportJobs(userId, { history });
   const trakt = useTraktSync(userId);
@@ -139,6 +142,8 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     setError(null);
     setPendingFiles(null);
     setPendingRows(null);
+    setListChoiceNeeded(false);
+    setListChoice(null);
     if (src.lane === 'connect') {
       const conn = id === 'trakt' ? trakt : id === 'plex' ? plex : simkl;
       setPhase(conn.isConnected ? 'ready' : 'connect');
@@ -154,6 +159,8 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     setError(null);
     setPendingFiles(null);
     setPendingRows(null);
+    setListChoiceNeeded(false);
+    setListChoice(null);
   }, [busy]);
 
   // Open the document picker; a pick is held as the receipt and its rows counted.
@@ -167,7 +174,15 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
       setError(null);
       setPendingFiles(files);
       setPendingRows(null);
+      setListChoiceNeeded(false);
+      setListChoice(null);
       countRows(files).then(count => setPendingRows(count));
+      // The header row is enough to tell an IMDb list from a ratings export.
+      if (source === 'imdb' && files.length === 1) {
+        new FileSystem.File(files[0].uri).text()
+          .then(text => setListChoiceNeeded(importListChoiceNeeded(source, text.slice(0, 4096))))
+          .catch(() => setListChoiceNeeded(false));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : IMPORT_JOBS.onboarding.uploadFailed);
     }
@@ -177,10 +192,13 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     if (phase !== 'file') return;
     setPendingFiles(null);
     setPendingRows(null);
+    setListChoiceNeeded(false);
+    setListChoice(null);
   }, [phase]);
 
   const upload = useCallback(async () => {
     if (!userId || !source || phase !== 'file' || !pendingFiles?.length) return null;
+    if (listChoiceNeeded && !listChoice) return null;
     setPhase('uploading');
     setError(null);
     try {
@@ -188,13 +206,15 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
       for (const file of pendingFiles) {
         files.push({ name: file.name, body: new Uint8Array(await new FileSystem.File(file.uri).arrayBuffer()), contentType: file.mimeType });
       }
-      const { job, error: failure } = await startFileImport({ userId, source, entry, files });
+      const { job, error: failure } = await startFileImport({ userId, source, entry, files, listChoice: listChoiceNeeded ? listChoice : null });
       if (failure || !job) { setError(failure?.message ?? IMPORT_JOBS.onboarding.uploadFailed); setPhase('file'); return null; }
       if (source === 'letterboxd') void clearLetterboxdImport(userId);
-      reporter().report('started', { source, count: pendingRows || 0 });
+      reporter().report('started', { source, count: pendingRows || 0, ...(listChoiceNeeded && listChoice ? { list_kind: listChoice } : {}) });
       onStarted?.(source, { id: job.id });
       setPendingFiles(null);
       setPendingRows(null);
+      setListChoiceNeeded(false);
+      setListChoice(null);
       setPhase('queued');
       void jobs.refresh();
       return job;
@@ -203,7 +223,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
       setPhase('file');
       return null;
     }
-  }, [userId, source, phase, pendingFiles, pendingRows, entry, reporter, jobs, onStarted]);
+  }, [userId, source, phase, pendingFiles, pendingRows, listChoiceNeeded, listChoice, entry, reporter, jobs, onStarted]);
 
   const connect = useCallback(async () => {
     if (!source) return;
@@ -249,6 +269,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     source, phase, busy, error: error || connection?.error || null,
     connectedAs: connected ? (connection?.integration?.display_name || null) : null,
     queuedBehind, pendingFiles, pendingRows,
+    listChoiceNeeded, listChoice, chooseList: setListChoice,
     jobs: jobs.jobs, current: jobs.current, queued: jobs.queued, refreshJobs: jobs.refresh, cancelJob: jobs.cancel, dismissJob: jobs.dismiss,
     connectedIds,
     pill: importPillFor(jobs.current, jobs.queued),

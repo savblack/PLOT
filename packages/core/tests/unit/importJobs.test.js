@@ -92,3 +92,42 @@ test('enqueue errors map to the shared copy', () => {
   assert.equal(enqueueError({ message: 'import_queue_full' }).message, IMPORT_JOBS.onboarding.queueFull);
   assert.equal(enqueueError(null), null);
 });
+
+test('the pickers ask about IMDb list files only', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { importListChoiceNeeded } = await import('../../importJobs.js');
+  const list = readFileSync(new URL('../fixtures/imports/imdb-watchlist.csv', import.meta.url), 'utf8');
+  const ratings = readFileSync(new URL('../fixtures/imports/imdb-movie-ratings.csv', import.meta.url), 'utf8');
+  assert.equal(importListChoiceNeeded('imdb', list), true);
+  assert.equal(importListChoiceNeeded('imdb', list.split('\n')[0]), true); // the header row is enough
+  assert.equal(importListChoiceNeeded('imdb', ratings), false);
+  assert.equal(importListChoiceNeeded('letterboxd', list), false);
+  assert.equal(importListChoiceNeeded('imdb', ''), false);
+});
+
+test('an answered IMDb list question names the upload so the worker reads the answer', async () => {
+  const { configure } = await import('../../config.js');
+  const { startFileImport } = await import('../../importJobs.js');
+  const uploads = [];
+  let enqueued;
+  const chain = { select() { return chain; }, eq() { return chain; }, in() { return chain; }, limit: async () => ({ data: [], error: null }) };
+  configure({ supabaseClient: {
+    from: () => chain,
+    storage: { from: () => ({ upload: async (path) => { uploads.push(path.split('/').pop()); return { error: null }; }, remove: async () => ({ error: null }) }) },
+    rpc: async (_name, args) => { enqueued = args; return { data: { id: args.p_job }, error: null }; },
+    auth: { getSession: async () => ({ data: { session: null } }) },
+    functions: { invoke: async () => ({ data: null, error: null }) },
+  } });
+  const file = () => [{ name: '7aff628a-6ff9-4549-8146-212eae03c528.csv', body: new TextEncoder().encode('Position,Const\n') }];
+  for (const [listChoice, stored] of [['watchlist', 'imdb-watchlist.csv'], ['list', 'imdb-list.csv'], [null, '7aff628a-6ff9-4549-8146-212eae03c528.csv']]) {
+    uploads.length = 0;
+    const { error } = await startFileImport({ userId: 'u1', source: 'imdb', listChoice, files: file() });
+    assert.equal(error, null);
+    assert.deepEqual(uploads, [stored]);
+    assert.ok(enqueued.p_files[0].endsWith(`/${stored}`));
+  }
+  // Another source ignores the answer.
+  uploads.length = 0;
+  await startFileImport({ userId: 'u1', source: 'letterboxd', listChoice: 'watchlist', files: [{ name: 'watched.csv', body: new Uint8Array([1]) }] });
+  assert.deepEqual(uploads, ['watched.csv']);
+});

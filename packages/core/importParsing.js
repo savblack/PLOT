@@ -363,12 +363,14 @@ export function parsePlatform(platformId, text, { fileName = '', onOmitted = (_i
   if (platformId === 'trakt' && fileName === 'lists-watchlist.json') return parseTraktWatchlist(text);
   if (platformId === 'imdb' && isImdbListExport(text)) {
     // IMDb's watchlist and its other lists share one layout, and IMDb's
-    // current exports are named with a random ID, so only a name that says
-    // watchlist is the watchlist. Anything else becomes a custom list: a list
-    // could be favorites, so it is never guessed into the watchlist or watches.
+    // current exports are named with a random ID, so the pickers ask the
+    // person and name the upload for the answer (importJobs.js). A name that
+    // says watchlist is the watchlist. Anything else goes to one "IMDb list":
+    // a list could be favorites, so it is never guessed into the watchlist or
+    // watches. One fixed key, not the file name, so importing a fresh export
+    // adds to the same list instead of making a second one.
     if (namesWatchlist(fileName)) return parseImdbWatchlist(text, undefined, { onLeftOut });
-    const stem = originalExportName(fileName).replace(/\.[^.]*$/, '') || 'list';
-    return parseImdbWatchlist(text, { kind: 'custom', key: `imdb:list:${stem}`, name: IMPORT_VIEW.imdbListName }, { onLeftOut });
+    return parseImdbWatchlist(text, { kind: 'custom', key: 'imdb:list', name: IMPORT_VIEW.imdbListName }, { onLeftOut });
   }
   if (platformId === 'letterboxd') {
     const list = parseLetterboxdList(text, fileName, { onLeftOut });
