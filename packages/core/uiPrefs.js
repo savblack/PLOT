@@ -231,6 +231,18 @@ export function setMyListsCollapsed(prefs, id, collapsed) {
   return { ...p, myLists: { ...p.myLists, collapsed: next } };
 }
 
+/**
+ * Fold several My Lists sections shut, or open them, in one save (mobile's
+ * collapse-all control). Unknown ids are ignored.
+ * @param {UiPrefs} prefs
+ * @param {string[]} ids
+ * @param {boolean} collapsed
+ * @returns {UiPrefs}
+ */
+export function setMyListsCollapsedMany(prefs, ids, collapsed) {
+  return (ids ?? []).reduce((p, id) => setMyListsCollapsed(p, id, collapsed), normalizeUiPrefs(prefs));
+}
+
 /** Back to the default section order. Folded sections stay folded. @param {UiPrefs} prefs */
 export function resetMyListsOrder(prefs) {
   const p = normalizeUiPrefs(prefs);

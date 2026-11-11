@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   arrangeByMyListsOrder, defaultUiPrefs, isDefaultUiPrefs, moveMyListsSection, moveSidebarItem, MY_LISTS_SECTION_IDS, normalizeUiPrefs, nudgeMyListsSection,
-  nudgeSidebarItem, orderMyListsSections, orderSidebarItems, resetMyListsOrder, resetSidebar, setCardStyle, setDensity, setMyListsCollapsed,
+  nudgeSidebarItem, orderMyListsSections, orderSidebarItems, resetMyListsOrder, resetSidebar, setCardStyle, setDensity, setMyListsCollapsed, setMyListsCollapsedMany,
 } from '../../uiPrefs.js';
 
 const NAV = ['search', 'home', 'calendar', 'my-lists', 'history', 'guide', 'tonight', 'together', 'settings'].map(id => ({ id }));
@@ -102,4 +102,11 @@ test('my lists: an app that splits a section keeps its own default until an orde
   assert.deepEqual(arrangeByMyListsOrder(['smart', 'lists'], ids, sectionOf), ['smart', 'want', 'favorites', 'lists', 'watching', 'top10']);
   // An id whose section is unknown goes last rather than vanishing.
   assert.deepEqual(arrangeByMyListsOrder(['top'], ['odd', 'top10'], (id) => (id === 'top10' ? 'top' : 'nope')), ['top10', 'odd']);
+});
+
+test('my lists: several sections fold or open in one change, ignoring unknown ids', () => {
+  const folded = setMyListsCollapsedMany(defaultUiPrefs(), ['smart', 'nope', 'watching'], true);
+  assert.deepEqual(folded.myLists.collapsed, ['watching', 'smart']);
+  assert.deepEqual(setMyListsCollapsedMany(folded, ['watching', 'top'], false).myLists.collapsed, ['smart']);
+  assert.deepEqual(setMyListsCollapsedMany(folded, [], true), folded);
 });
