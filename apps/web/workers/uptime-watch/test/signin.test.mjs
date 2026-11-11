@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { CONFLICT_TARGET, MARKER, pickTitle, signedInReadWrite } from '../src/signin.js';
-import { emailContent, run, signinChecksFor, watchFor } from '../src/index.js';
+import { CONFLICT_TARGET, MARKER, PROD_SESSION_KEY, pickTitle, productionReadWrite, signedInReadWrite } from '../src/signin.js';
+import { emailContent, run, signinChecksFor, signinProdChecksFor, watchFor } from '../src/index.js';
 
 const UID = 'user-1';
 const env = {
@@ -34,7 +34,10 @@ function fakeSupabase({ faults = {}, history = [] } = {}) {
     calls.push({ key, url: u, init, body: init.body ? JSON.parse(init.body) : undefined });
     if (faults[key]) return faults[key](u, init);
     switch (key) {
-      case 'POST /auth/v1/token': return json(200, { access_token: 'jwt', user: { id: UID } });
+      case 'POST /auth/v1/token':
+        return u.searchParams.get('grant_type') === 'refresh_token'
+          ? json(200, { access_token: 'jwt', refresh_token: `next-${calls.length}`, user: { id: UID, email: 'watch@example.invalid' } })
+          : json(200, { access_token: 'jwt', user: { id: UID, email: 'watch@example.invalid' } });
       case 'POST /auth/v1/logout': return new Response(null, { status: 204 });
       case 'GET /rest/v1/profiles': return json(200, [{ id: UID }]);
       case 'GET /rest/v1/history': return json(200, history);
@@ -215,4 +218,106 @@ test('trimSlashes drops only trailing slashes', async () => {
   assert.equal(trimSlashes('https://x.co/a'), 'https://x.co/a');
   assert.equal(trimSlashes(''), '');
   assert.equal(trimSlashes('/'.repeat(100000)), '');
+});
+
+
+// ---- production: a stored session renewed each run (no captcha) ----
+
+const memoryKv = (init = {}) => {
+  const m = new Map(Object.entries(init));
+  return {
+    m,
+    get: async (k, type) => (m.has(k) ? (type === 'json' ? JSON.parse(m.get(k)) : m.get(k)) : null),
+    put: async (k, v) => { m.set(k, v); },
+  };
+};
+const prodEnv = (kv) => ({
+  SIGNIN_PROD_SUPABASE_URL: 'https://prod.example/',
+  SIGNIN_PROD_PUBLISHABLE_KEY: 'prod-pk',
+  SIGNIN_PROD_EMAIL: 'watch@example.invalid',
+  STATE: kv,
+});
+const runProd = (sb, kv) => productionReadWrite(prodEnv(kv), { http: sb.http, trending: async () => TRENDING });
+
+test('production: renews the stored session, saves the new token first, and does not sign out', async () => {
+  const kv = memoryKv({ [PROD_SESSION_KEY]: 'seed' });
+  const sb = fakeSupabase();
+  const r = await runProd(sb, kv);
+  assert.equal(r.ok, true, r.reason);
+  assert.equal(sb.calls[0].url.searchParams.get('grant_type'), 'refresh_token');
+  assert.deepEqual(sb.calls[0].body, { refresh_token: 'seed' });
+  assert.equal(kv.m.get(PROD_SESSION_KEY), 'next-1', 'rotated token stored');
+  assert.ok(!sb.calls.some((c) => c.key === 'POST /auth/v1/logout'), 'signing out would revoke the stored token');
+  assert.equal(sb.calls.find((c) => c.key === 'POST /rest/v1/history').init.headers.apikey, 'prod-pk');
+});
+
+test('production: no stored session, or a spent one, means the watcher lost its key (blocked)', async () => {
+  const none = await runProd(fakeSupabase(), memoryKv());
+  assert.equal(none.blocked, true);
+  assert.match(none.reason, /signin-watch-seed/);
+  const spent = await runProd(
+    fakeSupabase({ faults: { 'POST /auth/v1/token': () => json(400, { error_code: 'refresh_token_already_used', msg: 'Invalid Refresh Token: Already Used' }) } }),
+    memoryKv({ [PROD_SESSION_KEY]: 'old' }),
+  );
+  assert.equal(spent.blocked, true);
+  assert.match(spent.reason, /refresh_token_already_used/);
+});
+
+test('production: auth itself failing is an outage (broken), and the old token is kept', async () => {
+  const kv = memoryKv({ [PROD_SESSION_KEY]: 'keep-me' });
+  const r = await runProd(fakeSupabase({ faults: { 'POST /auth/v1/token': () => json(503, { msg: 'upstream timeout' }) } }), kv);
+  assert.equal(r.ok, false);
+  assert.ok(!r.blocked);
+  assert.match(r.reason, /^session refresh failed: HTTP 503/);
+  assert.equal(kv.m.get(PROD_SESSION_KEY), 'keep-me');
+});
+
+test('never writes as anyone but the watcher account', async () => {
+  const someoneElse = () => json(200, { access_token: 'jwt', refresh_token: 'r2', user: { id: 'real-person', email: 'person@example.com' } });
+  const sb = fakeSupabase({ faults: { 'POST /auth/v1/token': someoneElse } });
+  const r = await runProd(sb, memoryKv({ [PROD_SESSION_KEY]: 'seed' }));
+  assert.equal(r.blocked, true);
+  assert.match(r.reason, /unexpected account/);
+  assert.ok(!sb.calls.some((c) => c.key.includes('/rest/v1/')), 'no read or write was made');
+  const staging = fakeSupabase({ faults: { 'POST /auth/v1/token': someoneElse } });
+  assert.equal((await runOnce(staging)).blocked, true);
+  assert.ok(!staging.calls.some((c) => c.key.includes('/rest/v1/')));
+});
+
+test('signinProdChecksFor: off without a URL, "not configured" without the key', async () => {
+  assert.deepEqual(signinProdChecksFor({}), []);
+  const [half] = signinProdChecksFor({ SIGNIN_PROD_SUPABASE_URL: 'https://x' });
+  assert.match((await half.read()).reason, /SIGNIN_PROD_PUBLISHABLE_KEY, SIGNIN_PROD_EMAIL unset/);
+});
+
+test('Staging and production keep separate state and say which one failed', async () => {
+  const h = harness();
+  try {
+    const kv = memoryKv({ [PROD_SESSION_KEY]: 'seed' });
+    const base = {
+      ...env, ...prodEnv(kv), RESEND_API_KEY: 'k', ALERT_EMAIL: 'a@example.invalid', ALERT_FROM: 'Plot <x@example.invalid>', ATTEMPTS: '1', WAIT_SECONDS: '0',
+    };
+    // Production's write breaks; Staging's does not.
+    const http = async (url, init) => {
+      if (String(url).startsWith('https://prod.example/rest/v1/history?on_conflict')) return json(400, { code: '42P10', message: 'no matching constraint' });
+      return fakeSupabase().http(url, init);
+    };
+    const r = await run(base, 'signin', { http, trending: async () => TRENDING, wait: async () => {} });
+    assert.equal(r.verdict.state, 'healthy', 'Staging');
+    assert.equal(r.production.verdict.state, 'broken');
+    assert.equal(h.sent.length, 1);
+    assert.equal(h.sent[0].subject, 'Plot: saving to History is failing in production');
+    assert.match(h.sent[0].html, /People using Plot are probably hitting/);
+    assert.ok(kv.m.has('signin-prod-state'));
+  } finally {
+    h.restore();
+  }
+});
+
+test('production signed-in emails: no em dash, say production', () => {
+  for (const kind of ['down', 'reminder', 'recovered', 'blind']) {
+    const { subject, html } = emailContent({ kind, reason: 'r', since: 0, checks: ['signin-prod'] }, { now: 36e5, watch: 'signin' });
+    assert.match(subject, /production/, kind);
+    assert.ok(!/—/.test(subject + html), `${kind} contains an em dash`);
+  }
 });

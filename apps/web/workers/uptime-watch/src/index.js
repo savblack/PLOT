@@ -36,14 +36,15 @@
  * on the way down and closes it on recovery, so later automation has one queue.
  *
  * A second, hourly cron (SIGNIN_CRON) runs the signed-in check in signin.js
- * against PLOT Staging: sign in, read, write a history row, delete it. It has
- * its own stored state and its own email wording, so a Staging fault never
- * reads as "the app is down" and an app outage never hides a write failure.
+ * against PLOT Staging and production: sign in, read, write a history row,
+ * delete it. Each has its own stored state and its own email wording, so a
+ * Staging fault never reads as "the app is down", a production failure is
+ * never mistaken for a Staging one, and an app outage never hides either.
  */
 import { decide, probe } from '../../whats-on-watch/src/index.js';
-import { signedInReadWrite, trimSlashes } from './signin.js';
+import { productionReadWrite, signedInReadWrite, trimSlashes } from './signin.js';
 
-const STATE_KEYS = { uptime: 'state', signin: 'signin-state' };
+const STATE_KEYS = { uptime: 'state', signin: 'signin-state', signinProd: 'signin-prod-state' };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** True when Cloudflare turned the checker away rather than the site failing. */
@@ -256,6 +257,28 @@ export function signinChecksFor(env, deps = {}) {
 }
 
 /**
+ * The production signed-in check. Empty when SIGNIN_PROD_SUPABASE_URL is
+ * unset. Its session lives in the STATE namespace (see signin.js), seeded by
+ * scripts/signin-watch-seed.mjs. Exported for tests.
+ */
+export function signinProdChecksFor(env, deps = {}) {
+  if (!env.SIGNIN_PROD_SUPABASE_URL) return [];
+  const missing = ['SIGNIN_PROD_PUBLISHABLE_KEY', 'SIGNIN_PROD_EMAIL'].filter((k) => !env[k]);
+  const label = 'production signed-in read and write';
+  if (missing.length) {
+    return [{ name: 'signin-prod', label, read: async () => ({ ok: false, blocked: true, reason: `not configured: ${missing.join(', ')} unset` }) }];
+  }
+  return [{
+    name: 'signin-prod',
+    label,
+    read: guarded(() => productionReadWrite(env, {
+      http: deps.http || ((u, i) => get(u, i)),
+      trending: deps.trending || (() => trendingFor(env)),
+    })),
+  }];
+}
+
+/**
  * Run every check (each retried by `probe`) and fold them into one verdict
  * for `decide`: broken if any check is broken, blocked only if nothing was
  * broken and something could not be seen, otherwise healthy.
@@ -282,7 +305,10 @@ const escape = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': 
 /** Subject and body for each alert. Exported for tests (copy rules: no em dashes). */
 export function emailContent(email, { now, watch = 'uptime' }) {
   const reason = escape(email.reason || '');
-  if (watch === 'signin') return signinEmail(email, { now, reason });
+  if (watch === 'signin') {
+    const prod = Array.isArray(email.checks) && email.checks.includes('signin-prod');
+    return signinEmail(email, { now, reason, prod });
+  }
   // Which checks failed, when run() knows. Older stored emails have none, so
   // fall back to the general wording.
   const checks = Array.isArray(email.checks) ? email.checks : [];
@@ -343,37 +369,42 @@ export function emailContent(email, { now, watch = 'uptime' }) {
   }
 }
 
-function signinEmail(email, { now, reason }) {
+function signinEmail(email, { now, reason, prod = false }) {
+  const where = prod ? 'in production' : 'on Staging';
   switch (email.kind) {
     case 'down':
       return {
-        subject: 'Plot: saving to History is failing on Staging',
+        subject: `Plot: saving to History is failing ${where}`,
         html:
           `<p><strong>Not working:</strong> ${reason}.</p>` +
-          '<p>A test account on PLOT Staging tried to sign in, read its own rows, save a watched title and remove it. ' +
-          'It failed twice in a row, so this is not a single blip.</p>' +
+          (prod
+            ? '<p>A test account on Plot production tried to sign in, read its own rows, save a watched title and remove it. ' +
+              'It failed twice in a row. People using Plot are probably hitting the same failure.</p>'
+            : '<p>A test account on PLOT Staging tried to sign in, read its own rows, save a watched title and remove it. ' +
+              'It failed twice in a row, so this is not a single blip.</p>') +
           '<p>A failed write is the shape of the July 2026 outage, when a migration broke every save to History. ' +
-          'Staging runs the same migrations as production, so check whether production is affected too. ' +
+          (prod ? '' : 'Staging runs the same migrations as production, so check whether production is affected too. ') +
           'First checks: the most recent migration on main, <code>pnpm run db:write-paths</code>, and Supabase status.</p>' +
           "<p>You'll get one more email when it recovers, and a reminder every few hours while it lasts.</p>",
       };
     case 'reminder':
       return {
-        subject: 'Plot: saving to History is still failing on Staging',
+        subject: `Plot: saving to History is still failing ${where}`,
         html: `<p>Failing for ${duration(now - email.since)}. Latest: ${reason}.</p>`,
       };
     case 'recovered':
       return {
-        subject: 'Plot: saving to History works again on Staging',
+        subject: `Plot: saving to History works again ${where}`,
         html: `<p>The signed-in check passes again. It was failing for about ${duration(now - email.since)}.</p>`,
       };
     case 'blind':
       return {
-        subject: "Plot: the signed-in check can't run",
+        subject: `Plot: the signed-in check can't run ${where}`,
         html:
           `<p>For ${duration(now - email.since)}, the signed-in check has not been able to run (${reason}).</p>` +
           '<p>This is not an outage signal, but until it clears a broken save would go unnoticed. ' +
-          'If it says "not configured", set the missing Worker secret on uptime-watch.</p>',
+          'If it says "not configured", set the missing Worker secret on uptime-watch. ' +
+          'If it mentions the stored session, run <code>node scripts/signin-watch-seed.mjs</code> from the main checkout.</p>',
       };
     case 'test':
       return {
@@ -457,7 +488,12 @@ const UPTIME_GROUPS = [
 export async function run(env, watch = 'uptime', deps = {}) {
   const now = Date.now();
   if (watch === 'signin') {
-    return runGroup(env, watch, { key: STATE_KEYS.signin, names: [] }, signinChecksFor(env, deps), now, deps);
+    // Staging and production apart, for the same reason as the uptime groups.
+    const [staging, production] = await Promise.all([
+      runGroup(env, watch, { key: STATE_KEYS.signin, names: ['signin'] }, signinChecksFor(env, deps), now, deps),
+      runGroup(env, watch, { key: STATE_KEYS.signinProd, names: ['signin-prod'] }, signinProdChecksFor(env, deps), now, deps),
+    ]);
+    return production.skipped ? staging : { ...staging, production };
   }
   const all = checksFor(env);
   const [core, stripe] = await Promise.all(
@@ -510,7 +546,8 @@ export default {
 
   /**
    * Manual endpoint, gated by WATCH_TOKEN (404 without it). GET runs every
-   * uptime check now; ?check=signin runs the signed-in check instead;
+   * uptime check now; ?check=signin runs the signed-in checks (Staging and
+   * production) instead;
    * ?test-email=1 only sends a test email.
    */
   async fetch(request, env) {
@@ -524,7 +561,7 @@ export default {
       return Response.json(await sendEmail(env, { kind: 'test' }, Date.now(), watch));
     }
     const result = await run(env, watch);
-    const broken = result.verdict?.state === 'broken' || result.stripe?.verdict?.state === 'broken';
+    const broken = [result, result.stripe, result.production].some((r) => r?.verdict?.state === 'broken');
     return Response.json(result, { status: broken ? 503 : 200 });
   },
 };

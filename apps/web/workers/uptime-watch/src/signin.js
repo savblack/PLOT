@@ -1,6 +1,8 @@
 /**
  * Signed-in check: sign in as a dedicated test account, read its own rows,
- * write one `history` row the way the app does, and delete it again.
+ * write one `history` row the way the app does, and delete it again. Runs
+ * against Staging (password sign-in) and production (a stored session that
+ * is renewed each run, because production sign-in requires a captcha).
  *
  * WHY: the July 2026 outage broke every write to `history` for two weeks
  * (2026-07-25 to 2026-08-03) while every page still loaded. The other uptime
@@ -60,28 +62,83 @@ export function pickTitle(trending, taken) {
 }
 
 /**
- * Run the whole sequence once. Returns { ok, reason } like every other check,
- * with `blocked: true` only when the trending list was unavailable.
+ * Staging: sign in with email and password, as the app's sign-in form does.
+ * Production can't do this: its password sign-in requires a Turnstile captcha.
+ */
+async function passwordSession(t, http) {
+  const res = await http(`${t.url}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: t.apikey, 'content-type': 'application/json' },
+    body: JSON.stringify({ email: t.email, password: t.password }),
+  });
+  const session = await body(res);
+  if (!res.ok || !session?.access_token || !session?.user?.id) return failure('sign-in', res.status, session);
+  return { session };
+}
+
+/** GoTrue's answers that mean "this refresh token is spent", not "auth is down". */
+const SPENT = new Set(['refresh_token_not_found', 'refresh_token_already_used', 'session_not_found', 'session_expired', 'invalid_grant']);
+
+/**
+ * Production: renew a stored session. A refresh needs no captcha. GoTrue
+ * rotates the token on every use, so the new one is saved before anything
+ * else happens; the old one is dead from here on.
  *
- * @param {object} env  SIGNIN_SUPABASE_URL, SIGNIN_PUBLISHABLE_KEY, SIGNIN_EMAIL, SIGNIN_PASSWORD
+ * The chain is seeded, and re-seeded if it ever breaks, by
+ * scripts/signin-watch-seed.mjs. A spent or missing token is `blocked` (the
+ * watcher lost its key), not `broken`: Plot is not down because of it.
+ */
+async function refreshSession(t, http) {
+  const refresh = await t.store.get(t.storeKey);
+  if (!refresh) return { ok: false, blocked: true, reason: 'no stored session: run scripts/signin-watch-seed.mjs' };
+  const res = await http(`${t.url}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { apikey: t.apikey, 'content-type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refresh }),
+  });
+  const session = await body(res);
+  if (!res.ok || !session?.access_token || !session?.refresh_token || !session?.user?.id) {
+    const code = session?.error_code || session?.code;
+    if ((res.status === 400 || res.status === 401) && SPENT.has(code)) {
+      return { ok: false, blocked: true, reason: `stored session no longer valid (${code}): run scripts/signin-watch-seed.mjs` };
+    }
+    return failure('session refresh', res.status, session);
+  }
+  try {
+    await t.store.put(t.storeKey, session.refresh_token);
+  } catch (err) {
+    return { ok: false, blocked: true, reason: `could not save the renewed session (${err?.message || err}): run scripts/signin-watch-seed.mjs` };
+  }
+  return { session, keep: true };
+}
+
+/**
+ * Run the whole sequence once against one Supabase project. Returns
+ * { ok, reason } like every other check, with `blocked: true` when the
+ * watcher could not look (no trending title, no usable session).
+ *
+ * @param {{ url: string, apikey: string, email: string, password?: string,
+ *           store?: { get(k: string): Promise<string|null>, put(k: string, v: string): Promise<void> },
+ *           storeKey?: string }} target  password for Staging; store + storeKey for production
  * @param {{ http: typeof fetch, trending: () => Promise<any>, now?: () => Date }} deps
  */
-export async function signedInReadWrite(env, { http, trending, now = () => new Date() }) {
-  const url = base(env.SIGNIN_SUPABASE_URL);
-  const apikey = env.SIGNIN_PUBLISHABLE_KEY;
-
-  // 1. Sign in with email and password, as the app's sign-in form does.
-  const auth = await http(`${url}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: { apikey, 'content-type': 'application/json' },
-    body: JSON.stringify({ email: env.SIGNIN_EMAIL, password: env.SIGNIN_PASSWORD }),
-  });
-  const session = await body(auth);
-  if (!auth.ok || !session?.access_token || !session?.user?.id) return failure('sign-in', auth.status, session);
+export async function readWrite(target, { http, trending, now = () => new Date() }) {
+  const t = { ...target, url: base(target.url) };
+  const signedIn = t.store ? await refreshSession(t, http) : await passwordSession(t, http);
+  if (!signedIn.session) return signedIn;
+  const { session, keep } = signedIn;
 
   const uid = session.user.id;
+  const apikey = t.apikey;
   const headers = { apikey, Authorization: `Bearer ${session.access_token}`, 'content-type': 'application/json' };
-  const rest = (path, init = {}) => http(`${url}/rest/v1/${path}`, { ...init, headers: { ...headers, ...(init.headers || {}) } });
+  const rest = (path, init = {}) => http(`${t.url}/rest/v1/${path}`, { ...init, headers: { ...headers, ...(init.headers || {}) } });
+
+  // Never write as anyone but the watcher's own account. A token stored by
+  // mistake (or a mix-up in the seed) must not touch a real person's History.
+  if (String(session.user.email || '').toLowerCase() !== String(t.email || '').toLowerCase()) {
+    if (!keep) await http(`${t.url}/auth/v1/logout?scope=local`, { method: 'POST', headers }).catch(() => {});
+    return { ok: false, blocked: true, reason: 'signed in as an unexpected account; refusing to write' };
+  }
 
   try {
     // 2. Read. The account's own profile row must come back: an empty answer
@@ -131,7 +188,28 @@ export async function signedInReadWrite(env, { http, trending, now = () => new D
 
     return { ok: true, reason: `signed in, read, wrote and deleted "${title.title}"` };
   } finally {
-    // End the session so runs do not pile up refresh tokens. Best effort.
-    try { await http(`${url}/auth/v1/logout?scope=local`, { method: 'POST', headers }); } catch { /* ignore */ }
+    // A password session is ended so runs do not pile up refresh tokens. A
+    // refreshed one is kept: signing it out would revoke the stored token.
+    if (!keep) {
+      try { await http(`${t.url}/auth/v1/logout?scope=local`, { method: 'POST', headers }); } catch { /* ignore */ }
+    }
   }
+}
+
+/** Staging, from the Worker's SIGNIN_* vars and secrets. */
+export function signedInReadWrite(env, deps) {
+  return readWrite({ url: env.SIGNIN_SUPABASE_URL, apikey: env.SIGNIN_PUBLISHABLE_KEY, email: env.SIGNIN_EMAIL, password: env.SIGNIN_PASSWORD }, deps);
+}
+
+export const PROD_SESSION_KEY = 'signin-prod-session';
+
+/** Production, from SIGNIN_PROD_* and the session stored in the STATE namespace. */
+export function productionReadWrite(env, deps) {
+  return readWrite({
+    url: env.SIGNIN_PROD_SUPABASE_URL,
+    apikey: env.SIGNIN_PROD_PUBLISHABLE_KEY,
+    email: env.SIGNIN_PROD_EMAIL,
+    store: { get: (k) => env.STATE.get(k), put: (k, v) => env.STATE.put(k, v) },
+    storeKey: PROD_SESSION_KEY,
+  }, deps);
 }
