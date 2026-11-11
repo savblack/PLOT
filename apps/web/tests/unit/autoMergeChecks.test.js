@@ -9,7 +9,7 @@ test('real CodeQL and CircleCI results pass', () => {
   assert.deepEqual(judgeChecks([codeql], [circle]), { pending: [], failed: [], missing: [] });
 });
 
-test('a workflow job named "CodeQL" does not count as GitHub's CodeQL', () => {
+test('a workflow job named "CodeQL" does not count as the real CodeQL scan', () => {
   const fake = { ...codeql, app: { slug: 'github-actions' } };
   assert.deepEqual(judgeChecks([fake], [circle]).missing, ['CodeQL']);
 });
