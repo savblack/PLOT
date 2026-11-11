@@ -49,6 +49,11 @@ export function SettingsPreferenceRow({ label, value, onEdit, disabled = false }
    a save that never answered, must not light up "Saved" minutes later). */
 const SAVED_NOTE_MS = 2000;
 const SAVED_WAIT_MS = 10000;
+/* Once busy has cleared with the switch unmoved, how much longer to wait.
+   Several settings clear busy when the save answers and only move the switch
+   after a second fetch of the profile (about 200ms). A failed save never
+   moves it, so it simply runs out. */
+const SAVED_SETTLE_MS = 3000;
 
 /**
  * @param {object} props
@@ -60,13 +65,15 @@ const SAVED_WAIT_MS = 10000;
  *   (design audit, 10 Nov 2026, pick 2.2 A: instant for choices). A small
  *   "Saved" shows beside it once the change has really landed: `checked` has
  *   moved from where it was at the click and the switch is no longer
- *   `disabled` (busy). A save that fails and puts the switch back shows
- *   nothing. Leave it off for a switch inside a form with its own Save.
+ *   `disabled` (busy). The switch may move a moment after busy clears (the
+ *   parent fetches the saved row again), so it keeps waiting briefly. A save
+ *   that fails and leaves the switch where it was shows nothing. Leave it off
+ *   for a switch inside a form with its own Save.
  */
 export function SettingsSwitch({ label, checked, onChange, disabled = false, saves = false }) {
   const [saved, setSaved] = useState(false);
   // The value at the click we are waiting on, or null when not waiting.
-  const waiting = useRef(/** @type {{ from: boolean, wasBusy: boolean } | null} */ (null));
+  const waiting = useRef(/** @type {{ from: boolean, wasBusy: boolean, settling: boolean } | null} */ (null));
   const timers = useRef(/** @type {{ wait?: ReturnType<typeof setTimeout>, note?: ReturnType<typeof setTimeout> }} */ ({}));
 
   useEffect(() => {
@@ -80,10 +87,15 @@ export function SettingsSwitch({ label, checked, onChange, disabled = false, sav
       setSaved(true);
       clearTimeout(timers.current.note);
       timers.current.note = setTimeout(() => setSaved(false), SAVED_NOTE_MS);
-    } else if (wait.wasBusy) {
-      // Busy came and went and the switch is where it started: the save failed.
-      waiting.current = null;
+    } else if (wait.wasBusy && !wait.settling) {
+      // Busy came and went and the switch is where it started. Either the save
+      // failed, or it succeeded and the parent is still fetching the saved row
+      // (kids content, marketing emails and public profile do this). Wait a
+      // little longer instead of giving up: a failure never moves the switch,
+      // so it runs out with no note.
+      wait.settling = true;
       clearTimeout(timers.current.wait);
+      timers.current.wait = setTimeout(() => { waiting.current = null; }, SAVED_SETTLE_MS);
     }
   }, [checked, disabled]);
 
@@ -91,7 +103,7 @@ export function SettingsSwitch({ label, checked, onChange, disabled = false, sav
 
   const onClick = () => {
     if (saves) {
-      waiting.current = { from: checked, wasBusy: false };
+      waiting.current = { from: checked, wasBusy: false, settling: false };
       clearTimeout(timers.current.wait);
       timers.current.wait = setTimeout(() => { waiting.current = null; }, SAVED_WAIT_MS);
     }

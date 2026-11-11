@@ -6,13 +6,20 @@ import '../components/SettingsPage.css';
 // A switch that saves the moment it is flipped shows a small "Saved" beside it
 // once the change has landed (design audit pick 2.2 A). Each story stands in
 // for one way a real setting behaves.
-function Row({ outcome = 'saves', delay = 150 }) {
+function Row({ outcome = 'saves', delay = 150, refetch = 250 }) {
   const [on, setOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const flip = () => {
     if (outcome === 'ignored') return; // e.g. the click opened an upgrade sheet
     setBusy(true);
-    setTimeout(() => { setBusy(false); if (outcome === 'saves') setOn(v => !v); }, delay);
+    setTimeout(() => {
+      setBusy(false);
+      if (outcome === 'saves') setOn(v => !v);
+      // Kids content, marketing emails and public profile: busy clears when
+      // the save answers, and the switch only moves once the profile is
+      // fetched again a moment later.
+      if (outcome === 'savesThenRefetches') setTimeout(() => setOn(v => !v), refetch);
+    }, delay);
   };
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, width: 360, padding: 16, background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 14 }}>
@@ -37,6 +44,21 @@ export const SavesAndSaysSo = {
     await userEvent.click(control);
     await waitFor(() => expect(row.getByRole('status')).toHaveTextContent('Saved'));
     await expect(control).toHaveAttribute('aria-checked', 'true');
+  },
+};
+
+/**
+ * The save lands, busy clears, and the switch only moves when the profile
+ * comes back from a second fetch. "Saved" still shows.
+ */
+export const SavesThenRefetchesAndSaysSo = {
+  render: () => <Row outcome="savesThenRefetches" />,
+  play: async ({ canvasElement }) => {
+    const row = within(canvasElement);
+    const control = row.getByRole('switch', { name: 'Kids content' });
+    await userEvent.click(control);
+    await waitFor(() => expect(control).toHaveAttribute('aria-checked', 'true'));
+    await waitFor(() => expect(row.getByRole('status')).toHaveTextContent('Saved'));
   },
 };
 
