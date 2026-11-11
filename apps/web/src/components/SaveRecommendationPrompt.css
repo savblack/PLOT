@@ -34,9 +34,11 @@
   border-radius: 50%;
   background: transparent;
   color: var(--text-muted);
-  font: 400 1.35rem/1 var(--font-sans);
+  display: grid;
+  place-items: center;
   cursor: pointer;
 }
+.save-prompt-close svg { width: 16px; height: 16px; }
 .save-prompt-close:hover { background: var(--surface-sunken); color: var(--text-primary); }
 .save-prompt-loading { min-height: 220px; display: grid; place-items: center; }
 .save-prompt-content { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 1.35rem; align-items: center; }

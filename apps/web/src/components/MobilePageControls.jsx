@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { IconClose } from './navIcons.jsx';
 import { createPortal } from 'react-dom';
 import { COMMON } from '../copy/common.js';
 import { MOBILE_CONTROLS } from '@plot/core/copy/mobileControls.js';
@@ -104,7 +105,7 @@ export default function MobilePageControls({ groups = [], options, value, onChan
               <div className="mobile-controls-handle" aria-hidden="true" />
               <div className="mobile-controls-heading">
                 <h2 id={titleId}>{title || MOBILE_CONTROLS.filters}</h2>
-                <button type="button" className="mobile-controls-close" aria-label={COMMON.close} onClick={close}>×</button>
+                <button type="button" className="mobile-controls-close" aria-label={COMMON.close} onClick={close}><IconClose /></button>
               </div>
             </div>
             <div className="mobile-controls-scroll">
