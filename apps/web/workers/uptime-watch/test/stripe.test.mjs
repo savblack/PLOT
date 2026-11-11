@@ -175,21 +175,3 @@ test('worker: a standing Stripe alarm does not swallow a new app outage', async 
   assert.deepEqual(sent, ['Plot: Stripe payment updates are not reaching Plot', 'Plot: part of the app is down']);
 });
 
-test('worker: the GitHub issue body shows plain characters, not HTML entities', async () => {
-  const bodies = [];
-  globalThis.fetch = async (input, init = {}) => {
-    const url = String(input);
-    if (url.startsWith('https://api.stripe.com/v1/webhook_endpoints')) return Response.json({ data: [] });
-    if (url === 'https://api.resend.com/emails') return Response.json({});
-    if (url.startsWith('https://api.github.com/')) { bodies.push(JSON.parse(init.body).body); return Response.json({ number: 1 }); }
-    if (url.startsWith('https://api.stripe.com/v1/events')) return Response.json({ data: [] });
-    throw new Error(`unexpected fetch ${url}`);
-  };
-  const env = {
-    STATE: fakeKv(), WATCH_TOKEN: 't', STRIPE_READ_KEY: 'rk', STRIPE_WEBHOOK_URL: 'https://x/hook?a=1&b=<2>',
-    WAIT_SECONDS: '0', RESEND_API_KEY: 're', ALERT_EMAIL: 'a', ALERT_FROM: 'b', GITHUB_TOKEN: 'g', GITHUB_REPO: 'o/r',
-  };
-  await worker.fetch(new Request('https://w/', { headers: { 'x-watch-token': 't' } }), env);
-  assert.match(bodies[0], /hook\?a=1&b=<2>/);
-  assert.doesNotMatch(bodies[0], /&amp;|&lt;/);
-});

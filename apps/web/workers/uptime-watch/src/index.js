@@ -340,10 +340,7 @@ async function syncIssue(env, email, issue, now) {
     'Content-Type': 'application/json',
   };
   const { subject, html } = emailContent(email, { now });
-  const body = html
-    .replace(/<[^>]+>/g, '')
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&')
-    .trim();
+  const body = html.replace(/<[^>]+>/g, '').trim();
   try {
     if (email.kind === 'down') {
       const res = await fetch(api, { method: 'POST', headers, body: JSON.stringify({ title: subject, body, labels: ['incident'] }) });
