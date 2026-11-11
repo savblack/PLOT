@@ -10,6 +10,9 @@
 #   npx wrangler secret put WATCH_TOKEN        # any long random string; gates the manual endpoint
 #   npx wrangler secret put SUPABASE_PUBLISHABLE_KEY   # optional; production publishable key
 #   npx wrangler secret put GITHUB_TOKEN       # optional; fine-grained, savblack/PLOT, Issues: read/write
+#   npx wrangler secret put GITHUB_DISPATCH_TOKEN  # fine-grained, savblack/PLOT, Actions: read/write and
+#                                              # nothing else; the hourly firing starts cron-health.yml
+#                                              # with it (see DB_CHECKS_WORKFLOW)
 #   npx wrangler secret put STRIPE_READ_KEY    # optional; turns on the Stripe webhook check. A restricted
 #                                              # live key with Read on Events and on Webhook
 #                                              # Endpoints and nothing else. Never the secret key.
@@ -75,6 +78,11 @@ REMIND_HOURS = "6"
 BLIND_HOURS = "12"
 
 GITHUB_REPO = "savblack/PLOT"
+
+# The hourly firing starts this workflow on main and alarms if no run of it
+# has finished in 3 hours (src/dbChecks.js). GitHub's own schedule runs it
+# only a few times a day. Empty turns it off.
+DB_CHECKS_WORKFLOW = "cron-health.yml"
 
 # Stripe check: an event still undelivered this long after it was created
 # counts as failed. Stripe normally delivers within seconds; this leaves room
