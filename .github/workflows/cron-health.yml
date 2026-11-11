@@ -16,6 +16,13 @@
 # check measures how long each job has gone without running, not when this
 # workflow fires.
 #
+# A second job, `http`, checks what pg_cron cannot see: whether the edge
+# functions those jobs (and the database webhooks) call through pg_net
+# answered OK. pg_cron counts a job as passed once its HTTP request is queued.
+# It reads public.pg_net_call_health() the same way, and keeps its own
+# incident issue and email so a failing function never hides behind (or
+# closes) a pg_cron incident. Rules: scripts/lib/pgNetHealth.mjs.
+#
 # Not on pull_request: a red PR check would blame the PR for production's state.
 
 name: pg_cron health (hourly)
@@ -89,5 +96,57 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_NAME: pg_cron jobs
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/job-incident.sh close
+
+  http:
+    name: Check pg_net calls to edge functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Check pg_net calls
+        id: check
+        env:
+          SUPABASE_DB_URL_READONLY: ${{ secrets.SUPABASE_DB_URL_READONLY }}
+          PLOT_DB_EXPECTED_ROLE: plot_ci_readonly
+        run: |
+          if [ -z "$SUPABASE_DB_URL_READONLY" ]; then
+            echo "::error::SUPABASE_DB_URL_READONLY is not set. Refusing to run: this check never falls back to the owner SUPABASE_DB_URL." >&2
+            exit 2
+          fi
+          export SUPABASE_DB_URL="$SUPABASE_DB_URL_READONLY"
+          node scripts/check-cron-jobs.mjs --http
+
+      - name: Open an incident issue
+        id: incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: pg_net calls to edge functions
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: ${{ steps.check.outputs.summary && format('Needs attention - {0}. The database called these edge functions on schedule (or from a webhook) and they did not answer OK, so the work they do (pushes, emails, imports, syncs) did not happen. Run pnpm run db:cron-http-health for details, and the function logs in Supabase for the cause.', steps.check.outputs.summary) || 'The check itself could not run, so the database''s calls to edge functions are not being watched. Open the run log.' }}
+        run: bash .github/scripts/job-incident.sh open
+      - name: Email the admin about a new incident
+        if: failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: cron-health (pg_net calls)
+          ALERT_SUBJECT: 'Plot: a scheduled job ran but its edge function failed'
+          FAILURE_NOTE: ${{ steps.check.outputs.summary && format('Needs attention - {0}. Push notifications, alert emails, imports or syncs may not have happened.', steps.check.outputs.summary) || 'The pg_net call check itself could not run.' }}
+        run: bash .github/scripts/marketing-alert.sh
+      - name: Close the incident issue on recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: pg_net calls to edge functions
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: bash .github/scripts/job-incident.sh close

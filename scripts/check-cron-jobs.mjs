@@ -6,16 +6,22 @@
 // returns names, schedules, timestamps and statuses only. pg_cron's error text
 // is never fetched, so nothing here can print it into a public Actions log.
 //
+// With --http it checks instead whether the edge functions those jobs (and the
+// database webhooks) call through pg_net actually answered OK, by reading
+// public.pg_net_call_health() (20261111190000_pg_net_call_health.sql). The
+// rules are in scripts/lib/pgNetHealth.mjs. It never fetches the answers' text.
+//
 // Usage:
 //   SUPABASE_DB_URL=… node scripts/check-cron-jobs.mjs        # CI (read-only role)
-//   node scripts/check-cron-jobs.mjs --json rows.json         # judge saved rows
+//   SUPABASE_DB_URL=… node scripts/check-cron-jobs.mjs --http # pg_net calls
+//   node scripts/check-cron-jobs.mjs [--http] --json rows.json  # judge saved rows
 //
 // CI passes SUPABASE_DB_URL from SUPABASE_DB_URL_READONLY and sets
 // PLOT_DB_EXPECTED_ROLE=plot_ci_readonly, so the connection's identity is
 // verified before anything is read, exactly as db-write-paths does.
 //
-// Exit 0 when every active job is healthy, 1 when any failed or stalled, 2
-// when the check itself could not run. With GITHUB_OUTPUT set it writes
+// Exit 0 when every active job (or called function) is healthy, 1 when any
+// failed or stalled, 2 when the check itself could not run. With GITHUB_OUTPUT set it writes
 // `summary=<job names and what is wrong>` for the incident issue and email.
 
 import { execFileSync } from 'node:child_process';
@@ -23,12 +29,14 @@ import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { evaluateCronJobs, summarizeProblems } from './lib/cronHealth.mjs';
+import { evaluatePgNetCalls, summarizePgNetProblems } from './lib/pgNetHealth.mjs';
 import {
   assertCiReadonlyIdentity, describeDbUrlShape, parseDbConnectionOptions, serializePgService,
 } from './lib/dbWritePathChecks.mjs';
 
 const jsonIndex = process.argv.indexOf('--json');
 const JSON_FILE = jsonIndex === -1 ? null : process.argv[jsonIndex + 1];
+const HTTP = process.argv.includes('--http');
 // Trimmed and unquoted for the same reason as check-db-write-paths.mjs: a
 // secret pasted with quotes or a newline otherwise reaches psql as a database name.
 const DB_URL = (process.env.SUPABASE_DB_URL ?? '').trim().replace(/^(['"])([\s\S]*)\1$/, '$2').trim() || undefined;
@@ -97,9 +105,33 @@ if (JSON_FILE) {
     console.log(`Connection role verified: ${identity.role}.\n`);
   }
 
-  const [exists] = query(`select to_regprocedure('public.cron_job_health()') is not null as ok`);
-  if (!exists?.ok) fail('public.cron_job_health() does not exist. Has 20261111173000_cron_job_health.sql been applied?');
-  rows = query('select * from public.cron_job_health()');
+  const [fn, migration] = HTTP
+    ? ['public.pg_net_call_health()', '20261111190000_pg_net_call_health.sql']
+    : ['public.cron_job_health()', '20261111173000_cron_job_health.sql'];
+  const [exists] = query(`select to_regprocedure('${fn}') is not null as ok`);
+  if (!exists?.ok) fail(`${fn} does not exist. Has ${migration} been applied?`);
+  // pg_net_call_health() raises when its logging triggers are gone, which
+  // lands in fail() above: a blind check must not read as a healthy one.
+  rows = query(`select * from ${fn}`);
+}
+
+if (HTTP) {
+  const { problems, checked } = evaluatePgNetCalls(rows);
+  console.log(`Checked ${checked} edge function(s) the database called through pg_net in the last 8 days, at ${new Date().toISOString()}.\n`);
+  for (const r of rows) {
+    const bad = problems.find((p) => p.target === r.target);
+    const mark = bad ? '✗' : '✓';
+    console.log(`${mark} ${String(r.target).padEnd(30)} last call ${r.last_called_at ?? 'none'} (${r.last_outcome ?? 'none'}), ${r.failed_last_day} of ${r.calls_last_day} failed in the last day`);
+    if (bad) console.log(`    ${bad.detail}`);
+  }
+  const summary = summarizePgNetProblems(problems);
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `summary=${summary.replace(/[\r\n]/g, ' ')}\n`);
+  if (problems.length) {
+    console.log(`\n✗ ${problems.length} edge function(s) failing: ${summary}`);
+    process.exit(1);
+  }
+  console.log('\n✓ every edge function the database called recently answered OK.');
+  process.exit(0);
 }
 
 const now = new Date();

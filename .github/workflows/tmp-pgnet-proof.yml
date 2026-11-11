@@ -1,0 +1,46 @@
+# TEMPORARY: proves the pg_net alert end to end against PLOT Staging, where a
+# deliberately failing call was made. Removed before the PR is opened.
+name: tmp pg_net alert proof
+on:
+  push:
+    branches: [agent/2026-11-11-pgnet-health]
+    paths: [.github/workflows/tmp-pgnet-proof.yml]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Check pg_net calls (Staging)
+        id: check
+        env:
+          PW: ${{ secrets.PLOT_STAGING_DB_PASSWORD }}
+        run: |
+          enc=$(node -e 'console.log(encodeURIComponent(process.env.PW))')
+          export SUPABASE_DB_URL="postgresql://postgres.uzrhfivnhdcfieuaxzip:${enc}@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres"
+          node scripts/check-cron-jobs.mjs --http
+      - name: Open an incident issue
+        id: incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: pg_net calls to edge functions (Staging proof, temporary)
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: ${{ format('Needs attention - {0}. Test of the new pg_net alert against PLOT Staging; closed by hand after the test.', steps.check.outputs.summary) }}
+        run: bash .github/scripts/job-incident.sh open
+      - name: Email the admin about a new incident
+        if: failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: cron-health (pg_net calls)
+          ALERT_SUBJECT: 'Plot (TEST on Staging): a scheduled job ran but its edge function failed'
+          FAILURE_NOTE: ${{ format('Needs attention - {0}. This is a test of the new alert against Staging; nothing is wrong in production.', steps.check.outputs.summary) }}
+        run: bash .github/scripts/marketing-alert.sh
