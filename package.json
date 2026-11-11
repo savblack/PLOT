@@ -56,6 +56,7 @@
     "imports:report": "node --env-file-if-exists=.env scripts/import-report.mjs",
     "db:block-clause": "node scripts/check-block-clause.mjs",
     "db:migration-test": "bash scripts/db-migration-test.sh",
+    "db:scrub-test": "bash scripts/db-scrub-test.sh",
     "db:function-diff": "bash scripts/db-function-diff.sh",
     "db:restore-drill": "bash scripts/db-restore-drill.sh",
     "whats-on:check": "node scripts/check-whats-on.mjs",
