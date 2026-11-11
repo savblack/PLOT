@@ -53,11 +53,17 @@ commands:
       note:
         type: string
         default: ""
+      # Send through Resend directly instead of the service-role relay, for a
+      # job that should not hand a write-capable Supabase key to anything.
+      resend_only:
+        type: boolean
+        default: false
     steps:
       - run:
           name: Alert on failure
           when: on_fail
           command: |
+            if [ "<< parameters.resend_only >>" = "true" ]; then unset SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; fi
             export ADMIN_EMAIL="$MARKETING_ADMIN_EMAIL"
             export RUN_URL="$CIRCLE_BUILD_URL"
             export WORKFLOW_NAME="<< parameters.workflow_name >>"
@@ -301,6 +307,10 @@ jobs:
       - checkout
       - setup_pnpm
       - run: node scripts/sync-streaming-top10.mjs
+      - alert_on_failure:
+          workflow_name: streaming-top10
+          subject: "Plot: weekly streaming Top 10 sync failed"
+          note: The Prime, Max, Apple and Disney Top 10 charts were not refreshed this week. Check the Movie of the Night monthly quota first.
 
   netflix-top10:
     executor: node
@@ -308,6 +318,10 @@ jobs:
       - checkout
       - setup_pnpm
       - run: node scripts/sync-netflix-top10.mjs
+      - alert_on_failure:
+          workflow_name: netflix-top10
+          subject: "Plot: daily Netflix Top 10 sync failed"
+          note: The Netflix Top 10 chart was not refreshed, so it shows the previous list until the job succeeds.
 
   broadcast-guide:
     docker:
@@ -320,6 +334,10 @@ jobs:
       - store_artifacts:
           path: .guide-cache/refresh/health.json
           destination: broadcast-guide-health.json
+      - alert_on_failure:
+          workflow_name: broadcast-guide
+          subject: "Plot: broadcast Guide refresh failed"
+          note: The broadcast Guide snapshots were not refreshed. The app keeps showing the last valid snapshot, which goes stale.
 
   db-backup:
     executor: node
@@ -421,6 +439,13 @@ jobs:
       - run:
           name: Check production write paths
           command: PATH="/usr/lib/postgresql/17/bin:$PATH" pnpm run db:write-paths
+      - alert_on_failure:
+          workflow_name: db-write-paths
+          # Read-only introspection: keep the service-role key out of its alert,
+          # as the GitHub twin does.
+          resend_only: true
+          subject: "Plot: daily database write-path check failed"
+          note: A database trigger or app upsert may point at a constraint or table that no longer exists, which makes user saves fail. Run pnpm run db:write-paths to see which.
 
 workflows:
   build-and-test:
