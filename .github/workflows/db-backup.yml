@@ -43,6 +43,10 @@ concurrency:
   group: db-backup
   cancel-in-progress: false
 
+# Checkout is the only GitHub API use; the job writes to R2, not the repo.
+permissions:
+  contents: read
+
 jobs:
   backup:
     runs-on: ubuntu-latest

@@ -64,6 +64,12 @@ test('xmlAttrs decodes entities in attribute values', () => {
   assert.equal(attrs.summary, 'a <b>');
 });
 
+test('xmlAttrs decodes each entity once, so an escaped entity stays literal', () => {
+  // "&amp;lt;" is the text "&lt;", not "<".
+  const attrs = xmlAttrs('<Video title="Tom &amp;lt;3 &amp;amp; Jerry"/>');
+  assert.equal(attrs.title, 'Tom &lt;3 &amp; Jerry');
+});
+
 test('parsePlexResources pairs each device with its connections', () => {
   const xml = `<MediaContainer>
     <Device name="Study" clientIdentifier="abc" accessToken="tok">

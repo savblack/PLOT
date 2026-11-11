@@ -37,7 +37,7 @@ function emit(colorSet, { withRadii }) {
 
 // Replace the @tokens:start…@tokens:end region inside a given selector block.
 function replaceRegion(css, selector, body) {
-  const open = new RegExp(`${selector.replace(/[[\]]/g, '\\$&')}\\s*\\{`).exec(css);
+  const open = new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{`).exec(css);
   if (!open) throw new Error(`selector not found: ${selector}`);
   const blockStart = open.index + open[0].length;
   const blockEnd = css.indexOf('}', blockStart);
