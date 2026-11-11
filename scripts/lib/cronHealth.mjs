@@ -223,7 +223,9 @@ export function evaluateCronJobs(rows, now, scheduledAt = new Map()) {
     }
 
     const gap = maxScheduleGapMinutes(row.schedule);
-    if (gap === null || gap >= HISTORY_DAYS * 1440) {
+    // Strictly longer: a weekly gap is exactly HISTORY_DAYS, and its last row
+    // is only purged after the next run, so a weekly job can still be judged.
+    if (gap === null || gap > HISTORY_DAYS * 1440) {
       unreadable.push(name);
       continue;
     }
