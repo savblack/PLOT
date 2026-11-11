@@ -24,6 +24,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: TEMP deliberate failure to test alerting (revert before merge)
+        run: exit 1
       - run: pnpm install --frozen-lockfile
       - name: Sync Netflix Top 10
         run: node scripts/sync-netflix-top10.mjs
