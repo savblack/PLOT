@@ -93,12 +93,15 @@ the platform out rather than naming another country.
 
 - **X**: ≤ 280 characters. **No URLs except the YouTube trailer link required below.** No hashtags. CTA built around
   the product ("Save it to your watchlist with Plot"), never "link in bio".
+  **A bare domain is a URL here:** X turns "theplot.tv" into a link, so never
+  write "at theplot.tv" on X. Use the X form of the CTA (see CTAs below).
 - **Instagram**: caption 1–3 short paragraphs max. 3–5 hashtags, niche over
   generic (#A24 beats #movies). The profile link is live, so point to it
   directly in the CTA ("at theplot.tv") rather than "link in bio". A director
   is welcome as one of the hashtags.
 - **Threads**: conversational, one thought. **No URLs except the YouTube trailer link required below.** The
-  system also appends the theplot.tv article link automatically.
+  system also appends the theplot.tv article link automatically, so never write
+  "theplot.tv" in the Threads text either.
 - **alt_text**: literal description of the image for accessibility, one sentence.
 - **Article (page_title + page_body)**: every post is originally published on
   theplot.tv/whats-on. Plain specific headline; a short-to-medium blog post of
@@ -193,6 +196,12 @@ the `cta_variant` field):
   at theplot.tv." Now streaming: "Save to your watchlist at theplot.tv."
 - `journal_it` — anniversaries and trending. "One of your favorites? Log it in
   your Plot at theplot.tv." / "Watched any? Add to your Plot at theplot.tv."
+
+**"at theplot.tv" is Instagram only.** On X and Threads the domain counts as a
+link and the validator rejects the post, so drop the destination there: "Save it
+to your watchlist with Plot." / "Figure out what to watch with Plot." / "Watched
+any? Add to your Plot." The save step rewrites a trailing "at theplot.tv" on X
+and Threads this way as a backstop, but write it right the first time.
 - `none` — no CTA (let a strong post breathe; use sometimes so CTAs stay fresh)
 
 ## Never
