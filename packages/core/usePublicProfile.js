@@ -71,8 +71,10 @@ export function usePublicProfile(username, viewerId = null) {
       // Lists that belong on the profile. RLS then drops the ones this viewer
       // can't read (a followers list for a non-follower). 'link' lists are
       // readable by anyone with the link but deliberately never listed here.
+      // The embed names its foreign key: there are two between these tables,
+      // and an unnamed one is refused by the API (see useCustomLists.js).
       supabase.from('user_custom_lists')
-        .select('id, name, visibility, items:user_custom_list_items(tmdb_id, media_type, title, poster_path)')
+        .select('id, name, visibility, items:user_custom_list_items!user_custom_list_items_list_id_fkey(tmdb_id, media_type, title, poster_path)')
         .eq('user_id', uid).in('visibility', ['public', 'followers']).order('created_at', { ascending: true }),
       // Last watched, the same order the owner sees: the pointer time or the
       // latest import, tick or History log, whichever is later
