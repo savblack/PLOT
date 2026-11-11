@@ -1,0 +1,193 @@
+# Nightly, and on every pull request that touches a migration: run every Staging
+# SQL test (`pnpm run staging:test -- all`).
+#
+# WHY: these are the only checks that execute RLS policies, security definer
+# RPCs and triggers under a real auth.uid(). Static checks (migrations:check,
+# db:block-clause) read SQL; db:migration-test applies it to a copy of
+# production but never signs anyone in. Until this workflow the tests ran only
+# when someone remembered, and when it was first written on 2026-11-11 17 of
+# the 26 no longer ran at all: they replayed migrations Staging already had,
+# named a fixture account Staging had lost, or called helpers a later migration
+# had moved. Nothing noticed. One that still ran was hiding a real fault
+# (anonymous readers get "permission denied" on custom lists).
+#
+# WHAT RUNS: scripts/staging-test.mjs. For each test it opens one transaction
+# on PLOT Staging, applies every migration in this checkout that Staging has not
+# recorded, runs the test, and rolls back. Nightly on main that is no
+# migrations; on a PR it is the PR's own, so every test checks them, not just
+# the one the author wrote. Staging is unchanged either way.
+#
+# STAGING ONLY. The connection lives in scripts/staging-sql.sh, which fixes
+# Staging's project ref and has no way to point at production. This workflow
+# never sees a production credential.
+#
+# The secret is Staging's database owner password (PLOT_STAGING_DB_PASSWORD,
+# also used by migration-drift.yml). An owner is needed to apply pending
+# migrations. A PR from a fork receives no secrets and is skipped; a PR from a
+# branch of this repo can run its own SQL as Staging's owner, which is the point
+# of the job, and the reason it must never be given a production secret.
+#
+# The alarm stands itself down, as supabase-deploy-guard.yml's does. A failing
+# scheduled run opens one `incident` issue (or comments on the open one); the
+# next passing scheduled run closes it. A pull request's failure is shown on the
+# pull request and raises nothing.
+
+name: Staging SQL tests
+
+on:
+  schedule:
+    - cron: '10 7 * * *'    # 07:10 UTC daily, after migration-drift (06:40)
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/staging-*.sql'
+      - 'scripts/staging-sql.sh'
+      - 'scripts/staging-test.mjs'
+      - '.github/workflows/staging-tests.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+# The tests share fixture accounts on one database. Two runs at once would wait
+# on each other's uncommitted rows, so queue rather than overlap.
+concurrency:
+  group: staging-tests
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Run the Staging SQL tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      # Supabase is on PG 17; match it, as migration-drift.yml does.
+      - name: Install psql 17
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      # The runner uses only Node built-ins, so there is no install step:
+      # nothing third-party runs next to the Staging password.
+      - name: Run every Staging test
+        id: run
+        env:
+          PLOT_STAGING_DB_PASSWORD: ${{ secrets.PLOT_STAGING_DB_PASSWORD }}
+        run: |
+          set -o pipefail
+          if [ -z "$PLOT_STAGING_DB_PASSWORD" ]; then
+            echo "PLOT_STAGING_DB_PASSWORD is not set. Add it in Settings → Secrets → Actions." >&2
+            exit 1
+          fi
+          node scripts/staging-test.mjs all 2>&1 | tee "$RUNNER_TEMP/staging-tests.log"
+
+      # Must run even when the step above died: a red run with no explanation
+      # is the next thing to get ignored.
+      - name: Summarise
+        id: summary
+        if: always()
+        run: |
+          log="$RUNNER_TEMP/staging-tests.log"
+          verdict=$(tail -n 1 "$log" 2>/dev/null || true)
+          [ -n "$verdict" ] || verdict='The runner produced no output; see the run log.'
+          {
+            echo 'verdict<<VERDICT_EOF'
+            echo "$verdict"
+            echo 'VERDICT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "## $verdict"
+            echo ''
+            echo '```'
+            grep -E '^━━|PASS|FAIL|ERROR|^✓|^✗|^pending migration' "$log" 2>/dev/null | tail -n 300 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Raise an incident for a failing nightly run
+        if: failure() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERDICT: ${{ steps.summary.outputs.verdict }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          label='incident'
+          title='Staging SQL tests are failing'
+          gh label create "$label" \
+            --color 'b60205' \
+            --description 'A scheduled job or production check is failing' \
+            2>/dev/null || true
+
+          body=$(
+            printf '%s\n' \
+              "The nightly Staging SQL tests failed on [\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)." \
+              '' \
+              "> ${VERDICT}" \
+              '' \
+              'These tests run security rules and database functions as real signed-in' \
+              'users on Staging. A failure means one of them no longer behaves the way its' \
+              'test says, or the test has gone stale. Either way, find out which before' \
+              'trusting that rule in production.' \
+              '' \
+              'Reproduce locally (Staging only, rolled back):' \
+              '' \
+              '```' \
+              'pnpm run staging:test -- <name>' \
+              '```' \
+              '' \
+              'The next passing nightly run closes this issue, so an open issue means it' \
+              'has not passed since.' \
+              '' \
+              "Raised by [Staging SQL tests]($RUN_URL)."
+          )
+
+          # The label is shared with other alarms, so match on the title too.
+          existing=$(gh issue list --state open --label "$label" --limit 50 --json number,title \
+            --jq "[.[] | select(.title == \"$title\")][0].number // \"\"")
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label "$label" --body "$body"
+          fi
+
+      - name: Stand the incident down after a passing nightly run
+        if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          label='incident'
+          title='Staging SQL tests are failing'
+          existing=$(gh issue list --state open --label "$label" --limit 50 --json number,title \
+            --jq "[.[] | select(.title == \"$title\")][0].number // \"\"")
+          [ -n "$existing" ] || exit 0
+
+          body=$(
+            printf '%s\n' \
+              "Recovered. Every Staging SQL test passed on [\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)." \
+              '' \
+              'Closing so the next failure opens its own issue instead of commenting here. An' \
+              'alarm that cannot stand down teaches people to ignore it.' \
+              '' \
+              "Stood down by [Staging SQL tests]($RUN_URL)."
+          )
+
+          gh issue comment "$existing" --body "$body"
+          gh issue close "$existing"

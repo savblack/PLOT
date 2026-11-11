@@ -1,9 +1,5 @@
 \set ON_ERROR_STOP on
 begin;
-select to_regprocedure('public.apply_stripe_subscription_event(text,text,timestamptz,uuid,text,text,text,text,boolean,timestamptz)') is null as needs_billing_migration \gset
-\if :needs_billing_migration
-\i supabase/migrations/20260923100000_atomic_stripe_subscription.sql
-\endif
 -- Only synthetic import-pilot accounts; rollback includes every fixture.
 create temporary table billing_fixture as
  select id from auth.users where email like 'plot-import-qa-%@example.invalid' order by created_at limit 1;
@@ -28,7 +24,11 @@ do $$ begin
  begin
   insert into public.user_custom_lists(user_id,name) select id,'Free sixth list' from billing_fixture;
   raise exception 'Sixth free list allowed';
- exception when insufficient_privilege then null; end;
+ -- The cap trigger (20260916180000) refuses before RLS's check does; either refusal counts.
+ exception
+  when insufficient_privilege then null;
+  when raise_exception then if sqlerrm <> 'custom_list_limit_reached' then raise; end if;
+ end;
  raise notice 'PASS five free lists; sixth denied; billing RPC inaccessible to clients';
 end $$;
 reset role;
@@ -88,7 +88,10 @@ do $$ declare uid uuid; begin
  begin
   insert into user_custom_lists(user_id,name) values(uid,'Seventh');
   raise exception 'Downgraded account created another list';
- exception when insufficient_privilege then null; end;
+ exception
+  when insufficient_privilege then null;
+  when raise_exception then if sqlerrm <> 'custom_list_limit_reached' then raise; end if;
+ end;
  if (select count(*) from history where user_id=uid)<>(select history_count from billing_before)
  or (select count(*) from watch_events where user_id=uid)<>(select event_count from billing_before) then raise exception 'Downgrade changed history access'; end if;
  raise notice 'PASS downgrade preserves all six lists, editing and history; new lists denied';

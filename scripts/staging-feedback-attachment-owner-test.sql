@@ -3,7 +3,6 @@
 -- attachment metadata, and nobody else can.
 \set ON_ERROR_STOP on
 begin;
-\i supabase/migrations/20261103130000_feedback_attachment_owner_select.sql
 select id as owner from auth.users order by id limit 1 \gset
 select id as other from auth.users where id <> :'owner' order by id limit 1 \gset
 insert into storage.objects (bucket_id, name, owner_id)
@@ -58,7 +57,4 @@ do $$ begin
   end if;
   raise notice 'PASS owner-delete policy is owner-scoped, matching the new read policy';
 end $$;
--- Applying the migration a second time must not fail.
-\i supabase/migrations/20261103130000_feedback_attachment_owner_select.sql
-do $$ begin raise notice 'PASS migration can be re-applied'; end $$;
 rollback;

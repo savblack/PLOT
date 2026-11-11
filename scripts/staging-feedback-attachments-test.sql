@@ -1,9 +1,8 @@
--- Staging only. Run with pnpm run staging:feedback-attachments-test.
+-- Staging only. Run with pnpm run staging:test -- feedback-attachments.
 -- Load the main checkout's local database credentials before running.
 -- Fictional storage metadata only; the entire test rolls back on exit or error.
 \set ON_ERROR_STOP on
 begin;
-\i supabase/migrations/20261025120000_feedback_attachments_private.sql
 select set_config('plot.test_owner', gen_random_uuid()::text, true);
 select set_config('plot.test_other', gen_random_uuid()::text, true);
 select set_config('plot.test_path', current_setting('plot.test_owner') || '/verification-' || gen_random_uuid()::text || '.txt', true);

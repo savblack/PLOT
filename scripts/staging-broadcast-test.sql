@@ -1,7 +1,6 @@
 \set ON_ERROR_STOP on
 begin;
--- Apply only inside this transaction. No staging schema/data persists.
-\i supabase/migrations/20260917000000_broadcast_guide.sql
+-- Rolled back at the end: no Staging data persists.
 select id as viewer from auth.users order by id limit 1 \gset
 select id as other from auth.users where id <> :'viewer' order by id limit 1 \gset
 insert into public.broadcast_preferences values (:'viewer', 'Sydney', null), (:'other', 'Perth', '{}');

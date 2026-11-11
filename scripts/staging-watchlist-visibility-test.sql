@@ -1,15 +1,13 @@
 -- Proof that "Who can see your Want to Watch" (20260927160000) means what each
 -- choice says, under a real auth.uid().
 --
---   set -a; . .env; set +a
---   npm run staging:watchlist-visibility-test
+--   pnpm run staging:test -- watchlist-visibility
 --
 -- Viewpoints: the owner A, an accepted follower B, a signed-in stranger C and
 -- an anonymous reader, for each setting on a private and a public profile. The
 -- stranger and anon catch a rule that is too BROAD; B catches one too narrow.
 --
--- It applies the migration itself, inside the transaction, and ends in
--- rollback, so Staging (and its ledger) is unchanged whether it passes or dies.
+-- It ends in rollback, so Staging is unchanged whether it passes or dies.
 -- Title ids are borrowed from rows already on Staging (they came from TMDB);
 -- never invent them.
 \set ON_ERROR_STOP on
@@ -21,10 +19,6 @@
 \set C_CLAIMS '''{"sub":"6afcff23-4194-4724-af1b-08328ff81f48","role":"authenticated"}'''
 
 begin;
-
--- Production runs #1071's migration first; so does this, in case Staging lacks it.
-\ir ../supabase/migrations/20260927150000_watch_together_counts_for_followers.sql
-\ir ../supabase/migrations/20260927160000_watchlist_visibility.sql
 
 -- ── fixtures (as postgres) ───────────────────────────────────────────────────
 -- See staging-block-test.sql for why the claims must be valid even here.
@@ -57,7 +51,7 @@ set local request.jwt.claims = :B_CLAIMS;
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  follower B no longer sees it (was allowed by 20260926090000)'
   from public.list_items where user_id = :A;
 select case when public.can_view_profile(:A) then 'PASS' else 'FAIL' end || '  follower B can still see the rest of A''s profile';
-select case when not public.can_view_watchlist(:A) then 'PASS' else 'FAIL' end || '  can_view_watchlist agrees for B';
+select case when not private.can_view_watchlist(:A) then 'PASS' else 'FAIL' end || '  can_view_watchlist agrees for B';
 set local request.jwt.claims = :C_CLAIMS;
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  stranger C cannot see it'
   from public.list_items where user_id = :A;

@@ -1,7 +1,6 @@
 -- Prove the site-wide import cap and the duplicate-upload refusal on Staging.
 --
---   set -a; . .env; set +a
---   pnpm run staging:import-cap-test
+--   pnpm run staging:test -- import-cap
 --
 -- WHY: claim_import_job allowed one running import per account but no limit
 -- across accounts, so every user importing at once meant that many workers
@@ -9,15 +8,11 @@
 -- (2026-11-10: one account queued the same IMDb and Letterboxd files twice
 -- each). The fix is supabase/migrations/20261111090000_import_jobs_global_cap.sql.
 --
--- The `REPRO` line runs against whatever claim_import_job is LIVE on Staging
--- first. A run that reports `no repro` means the fix is already applied there.
---
 -- Claims run as service_role (the worker's role); enqueues as a real account
 -- through auth.uid(). Simultaneous claims from separate connections cannot
 -- happen inside one transaction; that race was proven on a restored copy of
--- production (12 at once, 3 claimed). Everything, including the migration, is
--- in one transaction ending in rollback, so Staging is unchanged whether this
--- passes or dies.
+-- production (12 at once, 3 claimed). Everything is in one transaction ending
+-- in rollback, so Staging is unchanged whether this passes or dies.
 \set ON_ERROR_STOP on
 
 begin;
@@ -34,21 +29,6 @@ do $$ begin
 end $$;
 insert into public.import_jobs(user_id, kind, source, files) select id, 'file', 'imdb', '{}' from cap_users;
 grant select on cap_users to service_role, authenticated;
-
--- ── REPRO: the live body runs one job per account, with no total ─────────────
-set local role service_role;
-do $$ declare n integer := 0; begin
-  for i in 1..4 loop
-    if public.claim_import_job() is not null then n := n + 1; end if;
-  end loop;
-  if n = 4 then raise notice 'REPRO live claim_import_job ran all 4 accounts at once';
-  else raise notice 'no repro: live claim_import_job ran % of 4 (fix already applied?)', n; end if;
-end $$;
-reset role;
-update public.import_jobs set status = 'queued', lease_token = null, lease_until = null
-  where user_id in (select id from cap_users) and status = 'running';
-
-\i supabase/migrations/20261111090000_import_jobs_global_cap.sql
 
 -- ── the cap ───────────────────────────────────────────────────────────────────
 set local role service_role;

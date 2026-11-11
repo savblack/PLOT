@@ -1,9 +1,5 @@
 \set ON_ERROR_STOP on
 begin;
-select to_regprocedure('public.apply_stripe_subscription_snapshot(bigint,text,text,timestamptz,uuid,text,text,text,text,boolean,timestamptz)') is null as needs_migration \gset
-\if :needs_migration
-\i supabase/migrations/20260924040000_billing_snapshot_guard.sql
-\endif
 create temporary table ordering_fixture as select id from auth.users where email like 'plot-import-qa-%@example.invalid' order by created_at limit 1;
 do $$ declare uid uuid; result jsonb; rev bigint; begin
  select id into uid from ordering_fixture;

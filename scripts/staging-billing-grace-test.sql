@@ -1,9 +1,5 @@
 \set ON_ERROR_STOP on
 begin;
-select not exists(select 1 from information_schema.columns where table_schema='public' and table_name='billing_customers' and column_name='past_due_since') as needs_migration \gset
-\if :needs_migration
-\i supabase/migrations/20260924030000_billing_grace_start.sql
-\endif
 create temporary table grace_fixture as select id from auth.users where email like 'plot-import-qa-%@example.invalid' order by created_at limit 1;
 do $$ declare uid uuid; first_failure timestamptz; begin
  select id into uid from grace_fixture;

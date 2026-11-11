@@ -1,7 +1,6 @@
 -- Rollback-only proof for the database fixes in
--- 20260918030000_security_scan_remediation.sql. The migration itself runs
--- inside this transaction, so Staging does not need to be advanced first and
--- is unchanged even when a check fails.
+-- 20260918030000_security_scan_remediation.sql, asserted against the live
+-- Staging schema. Staging is unchanged even when a check fails.
 \set ON_ERROR_STOP on
 \set A '''467ce784-39eb-480e-8593-4632667fc9c3'''
 \set B '''e4e955fb-19f0-4e7d-b234-29c8eafa88fb'''
@@ -11,24 +10,16 @@
 
 begin;
 set local request.jwt.claims = '{"role":"service_role"}';
--- Staging intentionally trails Production and does not yet carry the scheduled
--- Linear wrapper. Supply only its signature so this migration's ACL change can
--- be exercised; the transaction rolls the fixture back with everything else.
-select $ddl$
-  create function public.run_marketing_linear_mirror() returns void
-  language sql as 'select null::void'
-$ddl$
-where to_regprocedure('public.run_marketing_linear_mirror()') is null
-\gexec
-\ir ../supabase/migrations/20260918030000_security_scan_remediation.sql
-
 \echo '=== PRIVILEGED RPC ACLS ==='
 select case when not has_function_privilege('anon', 'public.auth_note_fail(text,text,bigint)', 'execute')
                   and not has_function_privilege('authenticated', 'public.auth_note_fail(text,text,bigint)', 'execute')
             then 'PASS' else 'FAIL' end || '  auth throttle mutation is service-only';
-select case when not has_function_privilege('anon', 'public.run_marketing_linear_mirror()', 'execute')
-                  and not has_function_privilege('authenticated', 'public.run_marketing_linear_mirror()', 'execute')
-            then 'PASS' else 'FAIL' end || '  Linear sweep is service-only';
+-- 20261017120000 retired the Linear sweep. Gone is stricter than service-only;
+-- if it ever comes back it must come back locked down.
+select case when to_regprocedure('public.run_marketing_linear_mirror()') is null
+                  or (not has_function_privilege('anon', 'public.run_marketing_linear_mirror()', 'execute')
+                      and not has_function_privilege('authenticated', 'public.run_marketing_linear_mirror()', 'execute'))
+            then 'PASS' else 'FAIL' end || '  Linear sweep is retired or service-only';
 select case when not has_function_privilege('anon', 'public.admit_critic_score_request(text)', 'execute')
                   and has_function_privilege('service_role', 'public.admit_critic_score_request(text)', 'execute')
             then 'PASS' else 'FAIL' end || '  critic quota mutation is service-only';
@@ -41,12 +32,8 @@ from (
   select public.admit_critic_score_request('test-bucket' || left(i::text, 0)) as allowed
   from generate_series(1, 31) i
 ) attempts;
-select case when public.claim_marketing_linear_mirror('40000000-0000-0000-0000-000000000001')
-                  and not public.claim_marketing_linear_mirror('40000000-0000-0000-0000-000000000002')
-            then 'PASS' else 'FAIL' end || '  Linear mirror lease admits only one owner';
-select public.release_marketing_linear_mirror('40000000-0000-0000-0000-000000000001');
-select case when public.claim_marketing_linear_mirror('40000000-0000-0000-0000-000000000002')
-            then 'PASS' else 'FAIL' end || '  released Linear mirror lease is reusable';
+-- The Linear mirror lease checks went with the mirror: 20261017120000 dropped
+-- claim_ and release_marketing_linear_mirror.
 do $$
 begin
   perform public.auth_note_fail('test', '127.0.0.1', -1);

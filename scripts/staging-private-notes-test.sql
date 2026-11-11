@@ -1,7 +1,6 @@
 -- Staging only, transactional schema + fictional notes; no existing user data changes.
 \set ON_ERROR_STOP on
 begin;
-\i supabase/migrations/20260917010000_private_title_notes.sql
 select id as owner from auth.users order by id limit 1 \gset
 select id as other from auth.users where id <> :'owner' order by id limit 1 \gset
 select set_config('request.jwt.claims', json_build_object('sub', :'owner', 'role', 'authenticated')::text, true);
