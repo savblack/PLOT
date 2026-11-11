@@ -99,7 +99,19 @@ jobs:
             exit 0
           fi
 
-          PR_JSON=$(gh pr view "$PR_NUM" --json title,body,author,url,labels)
+          PR_JSON=$(gh pr view "$PR_NUM" --json title,body,author,url,labels,headRefOid)
+
+          # CircleCI was verified on HEAD_SHA, so only that exact commit may be
+          # merged. `commits/{sha}/pulls` also returns PRs that merely CONTAIN
+          # the commit, and a PR can gain commits after CircleCI reported, so
+          # without this an old pass could approve a newer, untested head
+          # (2026-11-11 Strix review on #1561). The merge below also passes
+          # --match-head-commit, so a push between here and the merge fails it.
+          PR_HEAD=$(echo "$PR_JSON" | jq -r '.headRefOid')
+          if [ "$PR_HEAD" != "$HEAD_SHA" ]; then
+            echo "PR #$PR_NUM head is '$PR_HEAD', not the commit CircleCI passed ('$HEAD_SHA'). Not merging; left for human review."
+            exit 0
+          fi
           AUTHOR=$(echo "$PR_JSON" | jq -r '.author.login')
           TITLE=$(echo "$PR_JSON" | jq -r '.title')
           BODY=$(echo "$PR_JSON" | jq -r '.body // ""')
@@ -211,9 +223,9 @@ jobs:
           # minor-patch + CI already green
           if [ "${ARMED:-}" != "true" ]; then
             echo "DRY RUN (repo variable DEPENDABOT_AUTOMERGE != 'true')."
-            echo "Would merge PR #$PR_NUM ($URL) with: gh pr merge --squash --delete-branch"
+            echo "Would merge PR #$PR_NUM ($URL) with: gh pr merge --squash --delete-branch --match-head-commit $HEAD_SHA"
             exit 0
           fi
 
           echo "Armed -> merging PR #$PR_NUM"
-          gh pr merge "$PR_NUM" --squash --delete-branch
+          gh pr merge "$PR_NUM" --squash --delete-branch --match-head-commit "$HEAD_SHA"
