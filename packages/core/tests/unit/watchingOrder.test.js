@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { configure } from '../../config.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
 import {
-  DEFAULT_WATCHING_SORT, latestActivityByShow, lastActivityAt, parseWatchingSort, sortWatching, watchingSortKey, withLastActivity,
+  DEFAULT_WATCHING_SORT, lastActivityAt, latestWatching, parseWatchingSort, sortWatching, watchingSortKey, withLastActivity,
 } from '../../watchingOrder.js';
-import { readWatchingActivity } from '../../watchingActivity.js';
+import { readLatestWatching, readWatchingActivity } from '../../watchingActivity.js';
 import { continueWatchingItems } from '../../continueWatching.js';
 import { continueWatchingIds } from '../../useHomeShelves.js';
 import { replaceWatchingRow, restorePointer } from '../../useWatching.js';
@@ -34,30 +34,22 @@ test('timestamps are compared as instants, not strings', () => {
   assert.deepEqual(ids(sortWatching(rows)), [-2, -1]);
 });
 
-test('latestActivityByShow takes the newest of events, ticks and History, and skips un-ticks', () => {
-  const byId = latestActivityByShow({
-    events: [{ tmdb_id: -1, created_at: '2026-10-01T00:00:00Z' }, { tmdb_id: -1, created_at: '2026-10-05T00:00:00Z' }],
-    overrides: [{ tmdb_id: -2, watched: false, updated_at: '2026-11-01T00:00:00Z' }, { tmdb_id: -2, watched: true, updated_at: '2026-10-02T00:00:00Z' }],
-    history: [{ tmdb_id: -1, created_at: '2026-09-01T00:00:00Z' }],
-  });
-  assert.equal(byId.get(-1), '2026-10-05T00:00:00Z');
-  assert.equal(byId.get(-2), '2026-10-02T00:00:00Z');
-});
+// The database moves last_activity_at when a show is logged in History,
+// ticked on the title page or imported (20261111160000; the Staging proof is
+// scripts/staging-watching-last-activity-test.sql). These model the row after
+// that trigger has run.
+const pointerTable = (rows) => rows.map(r => ({ user_id: 'u1', last_activity_at: null, ...r }));
 
 test('a show logged in History jumps to the front of Continue watching', async () => {
-  const client = createInMemorySupabase({
-    tables: {
-      watch_events: [],
-      episode_watch_overrides: [],
-      history: [{ user_id: 'u1', tmdb_id: -3, media_type: 'tv', created_at: '2026-11-03T12:00:00Z' }],
-    },
-  });
-  configure({ supabaseClient: client });
   const pointer = [row(-1, '2026-11-02T10:00:00Z'), row(-2, '2026-11-01T10:00:00Z'), row(-3, '2026-09-01T10:00:00Z')];
+  const client = createInMemorySupabase({ tables: { watching_progress: pointerTable(pointer) } });
+  configure({ supabaseClient: client });
 
   const before = continueWatchingItems(pointer, new Map(pointer.map(r => [r.tmdb_id, aired])));
   assert.deepEqual(before.map(i => i.tmdbId), [-1, -2, -3]);
 
+  // The History insert's trigger stamps the show's pointer row.
+  client.__db.tables.watching_progress.find(r => r.tmdb_id === -3).last_activity_at = '2026-11-03T12:00:00Z';
   const activity = await readWatchingActivity('u1', ids(pointer));
   const stamped = withLastActivity(pointer, activity);
   const after = continueWatchingItems(stamped, new Map(pointer.map(r => [r.tmdb_id, aired])));
@@ -65,32 +57,73 @@ test('a show logged in History jumps to the front of Continue watching', async (
 });
 
 test('an imported episode moves its show up too', async () => {
-  const client = createInMemorySupabase({
-    tables: {
-      watch_events: [{ user_id: 'u1', tmdb_id: -2, media_type: 'tv', created_at: '2026-11-03T08:00:00Z' }],
-      episode_watch_overrides: [],
-      history: [],
-    },
-  });
+  const pointer = [row(-1, '2026-11-02T10:00:00Z'), row(-2, '2026-10-01T10:00:00Z', { last_activity_at: '2026-11-03T08:00:00Z' })];
+  const client = createInMemorySupabase({ tables: { watching_progress: pointerTable(pointer) } });
   configure({ supabaseClient: client });
-  const pointer = [row(-1, '2026-11-02T10:00:00Z'), row(-2, '2026-10-01T10:00:00Z')];
-  const stamped = withLastActivity(pointer, await readWatchingActivity('u1', ids(pointer)));
+  const stamped = withLastActivity(pointer.map(({ last_activity_at: _, ...r }) => r), await readWatchingActivity('u1', ids(pointer)));
   assert.deepEqual(ids(sortWatching(stamped)), [-2, -1]);
 });
 
-test('a failed activity read falls back to pointer order instead of failing', async () => {
+test('a failed activity read keeps the order the list already had', async () => {
   const client = createInMemorySupabase({
-    tables: {
-      watch_events: [{ user_id: 'u1', tmdb_id: -1, media_type: 'tv', created_at: '2026-11-03T08:00:00Z' }],
-      episode_watch_overrides: [],
-      history: [{ user_id: 'u1', tmdb_id: -2, media_type: 'tv', created_at: '2026-11-02T08:00:00Z' }],
-    },
+    tables: { watching_progress: pointerTable([row(-1, '2026-11-01T00:00:00Z', { last_activity_at: '2026-11-03T08:00:00Z' })]) },
   });
   configure({ supabaseClient: client });
-  client.failNext('watch_events', 'select', { code: '42501', message: 'rls' });
-  const activity = await readWatchingActivity('u1', [-1, -2]);
-  assert.equal(activity.has(-1), false, 'the failed source is left out');
-  assert.equal(activity.get(-2), '2026-11-02T08:00:00Z', 'the others still count');
+  client.failNext('watching_progress', 'select', { code: '42501', message: 'rls' });
+  // null, not an empty map: an empty map would read as "no activity" and
+  // drop every show back to pointer order.
+  assert.equal(await readWatchingActivity('u1', [-1]), null);
+});
+
+test('un-ticking a show drops its activity on the next read', async () => {
+  // The database recomputes last_activity_at on un-tick and delete, so it can
+  // go back to null; the refresh must not keep the stale value.
+  const client = createInMemorySupabase({ tables: { watching_progress: pointerTable([row(-1, '2026-11-01T00:00:00Z')]) } });
+  configure({ supabaseClient: client });
+  const before = [row(-1, '2026-11-01T00:00:00Z', { last_activity_at: '2026-11-03T08:00:00Z' })];
+  const activity = await readWatchingActivity('u1', [-1]);
+  const after = withLastActivity(before.map(({ last_activity_at: _stale, ...r }) => r), activity);
+  assert.equal(after[0].last_activity_at, undefined);
+});
+
+/* ── A visitor's view of a public profile ── */
+
+test('a visitor sees Watching in the owner\'s order, not pointer order', async () => {
+  // 25 shows. The pointer order alone would put -1 first. -25 has the oldest
+  // pointer of all, so a pointer-only page of 18 would drop it, but it was
+  // logged in History most recently.
+  const rows = Array.from({ length: 25 }, (_, i) => row(-(i + 1), `2026-10-${String(26 - i).padStart(2, '0')}T00:00:00Z`));
+  rows[24] = row(-25, '2026-09-01T00:00:00Z', { last_activity_at: '2026-11-05T00:00:00Z' });
+  rows[19] = row(-20, '2026-09-02T00:00:00Z', { last_activity_at: '2026-10-20T12:00:00Z' });
+  const client = createInMemorySupabase({ tables: { watching_progress: pointerTable(rows) } });
+  configure({ supabaseClient: client });
+
+  const { data, error } = await readLatestWatching('u1', 18);
+  assert.equal(error, null);
+  const owner = sortWatching(pointerTable(rows)).slice(0, 18);
+  assert.deepEqual(ids(data), ids(owner), 'same shows, same order as the owner sees');
+  assert.equal(data[0].tmdb_id, -25);
+  assert.equal(data.length, 18);
+  assert.ok(ids(data).includes(-20), 'activity between pointer times is placed by it');
+});
+
+test('a visitor still sees pointer order when the activity read fails', async () => {
+  const rows = [row(-1, '2026-11-02T00:00:00Z'), row(-2, '2026-10-01T00:00:00Z', { last_activity_at: '2026-11-05T00:00:00Z' })];
+  const client = createInMemorySupabase({ tables: { watching_progress: pointerTable(rows) } });
+  configure({ supabaseClient: client });
+  // The pointer read runs first; fail the second (activity) select.
+  client.beforeNext('watching_progress', 'select', () =>
+    client.beforeNext('watching_progress', 'select', () => client.failNext('watching_progress', 'select', { message: 'boom' })));
+  const { data, error } = await readLatestWatching('u1', 18);
+  assert.equal(error, null);
+  assert.equal(data.length, 2, 'the shelf is not emptied');
+});
+
+test('latestWatching merges both pages once per show and caps after sorting', () => {
+  const a = [row(-1, '2026-11-02T00:00:00Z'), row(-2, '2026-11-01T00:00:00Z')];
+  const b = [row(-3, '2026-01-01T00:00:00Z', { last_activity_at: '2026-11-04T00:00:00Z' }), row(-1, '2026-11-02T00:00:00Z')];
+  assert.deepEqual(ids(latestWatching(a, b, 2)), [-3, -1]);
+  assert.deepEqual(ids(latestWatching(a, [], 5)), [-1, -2]);
 });
 
 /* ── After a tick ── */

@@ -35,7 +35,11 @@ class Query {
   eq(col, val) { this.filters.push([col, val]); return this; }
   in(col, vals) { this.filters.push([col, vals, 'in']); return this; }
   gte(col, val) { this.filters.push([col, val, 'gte']); return this; }
-  order(col, opts) { this.orderBy = [col, opts?.ascending !== false]; return this; }
+  not(col, op, val) {
+    if (op !== 'is' || val !== null) throw new Error(`inMemorySupabase: unsupported not(${op}, ${val})`);
+    this.filters.push([col, null, 'notnull']); return this;
+  }
+  order(col, opts) { (this.orderBy ??= []).push([col, opts?.ascending !== false]); return this; }
   range(from, to) { this.rangeArgs = [from, to]; return this; }
   limit(n) { this.rangeArgs = [0, n - 1]; return this; }
   single() { this.mode = 'single'; return this; }
@@ -43,7 +47,7 @@ class Query {
 
   matches(row) {
     return this.filters.every(([col, val, kind]) =>
-      kind === 'in' ? val.includes(row[col]) : kind === 'gte' ? row[col] >= val : row[col] === val);
+      kind === 'in' ? val.includes(row[col]) : kind === 'notnull' ? row[col] != null : kind === 'gte' ? row[col] >= val : row[col] === val);
   }
 
   rows() {
@@ -86,9 +90,14 @@ class Query {
   runSelect() {
     let matched = this.rows().filter(r => this.matches(r));
     if (this.orderBy) {
-      const [col, asc] = this.orderBy;
-      matched = [...matched].sort((a, b) =>
-        (a[col] > b[col] ? 1 : a[col] < b[col] ? -1 : 0) * (asc ? 1 : -1));
+      const keys = this.orderBy;
+      matched = [...matched].sort((a, b) => {
+        for (const [col, asc] of keys) {
+          const c = (a[col] > b[col] ? 1 : a[col] < b[col] ? -1 : 0) * (asc ? 1 : -1);
+          if (c) return c;
+        }
+        return 0;
+      });
     }
     const [from, to] = this.rangeArgs ?? [0, MAX_ROWS - 1];
     // PostgREST caps a response at db-max-rows (1000 on Supabase) whether or

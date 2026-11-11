@@ -82,9 +82,8 @@ export function useWatching(userId) {
         .eq('user_id', userId)
         .order('updated_at', { ascending: false });
       if (selErr) throw selErr;
-      const rows = data || [];
-      const activity = await readWatchingActivity(userId, rows.map(r => r.tmdb_id));
-      setItems(sortWatching(withLastActivity(rows, activity)));
+      // select('*') includes last_activity_at, the outside activity.
+      setItems(sortWatching(data || []));
     } catch (e) {
       console.error('[useWatching] load failed', e);
       setError(true);
@@ -100,12 +99,14 @@ export function useWatching(userId) {
 
   /* ── Re-read activity when an episode or show is logged elsewhere ── */
   // History, the title page's episode grid and imports never write the
-  // pointer, so without this a show logged there would not move up until the
-  // next full load. Only the order changes; no loading state.
+  // pointer; their triggers move last_activity_at instead. Without this a
+  // show logged there would not move up until the next full load. Only the
+  // order changes; no loading state.
   const refreshActivity = useCallback(async () => {
     const ids = itemsRef.current.map(r => r.tmdb_id);
     if (!userId || !ids.length) return;
     const activity = await readWatchingActivity(userId, ids);
+    if (!activity) return; // failed read: keep the current order
     setItems(prev => sortWatching(withLastActivity(
       prev.map(({ last_activity_at: _stale, ...row }) => row),
       activity,
