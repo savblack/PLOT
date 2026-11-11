@@ -97,6 +97,13 @@
 .settings-switch[aria-checked="true"] > span { background: var(--accent); }
 .settings-switch[aria-checked="true"] > span::after { transform: translateX(20px); }
 .settings-switch:disabled { opacity: .5; cursor: wait; }
+/* A switch that saves as it flips. Its "Saved" note sits under the track,
+   inside the switch's own 44px tap area, so showing it moves nothing and it
+   cannot run into the row's label. */
+.settings-switch-saves { position: relative; display: inline-flex; flex-shrink: 0; }
+.settings-saved-note { position: absolute; right: 0; bottom: -3px; font-size: 0.6875rem; font-weight: 500; line-height: 1; color: var(--text-secondary); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+.settings-saved-note.is-on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .settings-saved-note { transition: none; } }
 
 /* ── Billing ── */
 .settings-premium-card { border: 1px solid var(--border-strong); background: var(--surface); border-radius: var(--radius-md); padding: 1.5rem; }

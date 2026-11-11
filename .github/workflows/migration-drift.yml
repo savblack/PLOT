@@ -26,6 +26,10 @@ on:
     - cron: '40 6 * * *'    # 06:40 UTC daily, after db-write-paths
   workflow_dispatch: {}      # manual runs
 
+permissions:
+  contents: read
+  issues: write # failure alerting opens and closes an `incident` issue
+
 concurrency:
   group: migration-drift
   cancel-in-progress: false
@@ -63,3 +67,39 @@ jobs:
             exit 1
           fi
           node scripts/check-migration-drift.mjs
+
+      # Failure alerting. Without these three steps a failure here was only a red
+      # X in the Actions tab, which is how the July 2026 `history` outage went
+      # unnoticed for two weeks. An `incident` issue opens on failure and closes
+      # on the next success (see .github/scripts/job-incident.sh), and the admin
+      # is emailed once per new incident rather than once per failed run. The
+      # email also goes out if the issue step itself broke, so a GitHub API
+      # problem cannot swallow the alert.
+      - name: Open an incident issue
+        id: incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: migration-drift
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: 'Production or Staging no longer matches the migrations on main, or the check could not connect. Run pnpm run db:drift locally to see which.'
+        run: bash .github/scripts/job-incident.sh open
+      - name: Email the admin about a new incident
+        if: failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: migration-drift
+          ALERT_SUBJECT: 'Plot: nightly migration drift check failed'
+          FAILURE_NOTE: 'Production or Staging no longer matches the migrations on main, or the check could not connect. Run pnpm run db:drift locally to see which.'
+        run: bash .github/scripts/marketing-alert.sh
+      - name: Close the incident issue on recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: migration-drift
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/job-incident.sh close

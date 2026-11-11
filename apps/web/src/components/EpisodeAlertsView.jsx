@@ -49,6 +49,7 @@ export default function EpisodeAlertsView({ title, on, ready, busy, error, next,
           checked={on}
           onChange={onToggle}
           disabled={busy}
+          saves
         />
       </div>
       {on && ready && (

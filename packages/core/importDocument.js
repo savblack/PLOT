@@ -2,7 +2,7 @@ import { isLetterboxdDocument, parseLetterboxdDocument } from './letterboxdImpor
 import { getConfig } from './config.js';
 import { parseTraktAnnotations, TRAKT_ANNOTATION_FILES } from './traktAnnotations.js';
 import { identifyImportEntries } from './importEvents.js';
-import { parsePlatform } from './importParsing.js';
+import { isImdbListExport, namesWatchlist, originalExportName, parseCSV, parsePlatform } from './importParsing.js';
 import { parseTvTimeDocument } from './tvTimeImport.js';
 import { IMPORT_VIEW } from './copy/importView.js';
 
@@ -12,6 +12,7 @@ import { IMPORT_VIEW } from './copy/importView.js';
  * @param {{fileName?: string}} [options]
  */
 export function parseImportDocument(platform, text, { fileName = '' } = {}) {
+  if (platform === 'letterboxd') fileName = letterboxdFileName(fileName, text);
   if (platform === 'trakt' && Object.hasOwn(TRAKT_ANNOTATION_FILES, fileName)) {
     if (!getConfig().importAnnotationsEnabled || !getConfig().importEventsEnabled) throw new Error(IMPORT_VIEW.annotationsUnavailable);
     const format = TRAKT_ANNOTATION_FILES[fileName];
@@ -25,13 +26,47 @@ export function parseImportDocument(platform, text, { fileName = '' } = {}) {
     return document;
   }
   if (platform === 'tvtime') return parseTvTimeDocument(text, fileName);
+  // Every IMDb list, the watchlist included, is list membership, which needs
+  // the event importer. Say so up front rather than parse it into nothing.
+  if (platform === 'imdb' && isImdbListExport(text) && !getConfig().importEventsEnabled) throw new Error(IMPORT_VIEW.imdbListsUnavailable);
   const notImported = [];
-  const entries = parsePlatform(platform, text, { fileName, onOmitted: index => {
+  const leftOut = new Map();
+  let entries = parsePlatform(platform, text, { fileName, onOmitted: index => {
     notImported.push({ title: IMPORT_VIEW.sourceRecord(index + 1), reason: 'missing_title' });
-  } });
-  if (entries.some(row => row.annotation) && (!getConfig().importAnnotationsEnabled || !getConfig().importEventsEnabled)) throw new Error(IMPORT_VIEW.annotationsUnavailable);
+  }, onLeftOut: reason => leftOut.set(reason, (leftOut.get(reason) || 0) + 1) });
+  const annotationsAvailable = getConfig().importAnnotationsEnabled && getConfig().importEventsEnabled;
+  if (platform === 'imdb' && !annotationsAvailable) {
+    // An IMDb ratings export is mostly movies, which import as watched films
+    // with their rating. Its TV series ratings are separate annotations: leave
+    // those out and say so, instead of refusing the whole file for them.
+    const shows = entries.filter(row => row.annotation).length;
+    if (shows) {
+      entries = entries.filter(row => !row.annotation);
+      leftOut.set('show_ratings_unavailable', shows);
+    }
+  }
+  if (entries.some(row => row.annotation) && !annotationsAvailable) throw new Error(IMPORT_VIEW.annotationsUnavailable);
+  for (const [reason, count] of leftOut) notImported.push({ title: 'IMDb', reason, count });
   const warnings = entries.some(row => row.requiresWatchReview) ? [{ title: 'Amazon Prime', reason: 'playback_review' }] : [];
   return { entries, warnings, notImported };
+}
+
+/** Letterboxd names its CSVs, and watched.csv and watchlist.csv share one
+ * layout, so the name is the only thing that tells them apart. Read it past a
+ * copy marker a second download adds ("watched (1).csv") or a prefix someone
+ * added, so a renamed export still lands as what it is.
+ * @param {string} fileName
+ * @param {string} text
+ */
+function letterboxdFileName(fileName, text) {
+  if (!fileName || fileName.includes('/')) return fileName; // archive paths are exact
+  const original = originalExportName(fileName);
+  if (isLetterboxdDocument(original)) return original;
+  const [header = []] = parseCSV(text.replace(/^\uFEFF/, '').split('\n', 1)[0]);
+  if (header.join(',') !== 'Date,Name,Year,Letterboxd URI') return fileName;
+  if (namesWatchlist(original)) return 'watchlist.csv';
+  if (/watched/.test(original)) return 'watched.csv';
+  return fileName;
 }
 
 /** @param {{warnings?: any[], notImported?: any[]}} document */

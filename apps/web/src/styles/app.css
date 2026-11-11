@@ -637,6 +637,11 @@ svg { stroke-width: 1.5; }
 }
 .premium-mark svg { width: 100%; height: 100%; stroke: none; }
 .app-sidebar-item .premium-mark, .nav-drawer-item .premium-mark { margin-left: auto; }
+/* A member's own mark (MemberMark.jsx): the same spark, beside their name. */
+.member-mark { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 12px; height: 12px; color: var(--accent-text); }
+.member-mark svg { width: 100%; height: 100%; stroke: none; }
+.app-sidebar-profile-name { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.app-sidebar-profile-name .app-sidebar-label { min-width: 0; }
 .app-sidebar-scroll { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
 .app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: stretch; }
 .app-sidebar-nav > .app-sidebar-item:first-child { margin-bottom: 10px; }

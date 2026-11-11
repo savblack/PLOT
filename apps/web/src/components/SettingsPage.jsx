@@ -44,11 +44,71 @@ export function SettingsPreferenceRow({ label, value, onEdit, disabled = false }
   );
 }
 
-export function SettingsSwitch({ label, checked, onChange, disabled = false }) {
-  return (
-    <button type="button" className="settings-switch" role="switch" aria-label={label} aria-checked={checked} onClick={onChange} disabled={disabled}>
+/* How long "Saved" stays beside a switch, and how long a click may wait for
+   its change before it is forgotten (a click that opened an upgrade sheet, or
+   a save that never answered, must not light up "Saved" minutes later). */
+const SAVED_NOTE_MS = 2000;
+const SAVED_WAIT_MS = 10000;
+
+/**
+ * @param {object} props
+ * @param {string} props.label
+ * @param {boolean} props.checked
+ * @param {() => void} props.onChange
+ * @param {boolean} [props.disabled]
+ * @param {boolean} [props.saves]  this switch saves the moment it is flipped
+ *   (design audit, 10 Nov 2026, pick 2.2 A: instant for choices). A small
+ *   "Saved" shows beside it once the change has really landed: `checked` has
+ *   moved from where it was at the click and the switch is no longer
+ *   `disabled` (busy). A save that fails and puts the switch back shows
+ *   nothing. Leave it off for a switch inside a form with its own Save.
+ */
+export function SettingsSwitch({ label, checked, onChange, disabled = false, saves = false }) {
+  const [saved, setSaved] = useState(false);
+  // The value at the click we are waiting on, or null when not waiting.
+  const waiting = useRef(/** @type {{ from: boolean, wasBusy: boolean } | null} */ (null));
+  const timers = useRef(/** @type {{ wait?: ReturnType<typeof setTimeout>, note?: ReturnType<typeof setTimeout> }} */ ({}));
+
+  useEffect(() => {
+    const wait = waiting.current;
+    if (!wait) return;
+    if (disabled) { wait.wasBusy = true; return; }
+    if (checked !== wait.from) {
+      waiting.current = null;
+      clearTimeout(timers.current.wait);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the note follows the saved value the parent hands back
+      setSaved(true);
+      clearTimeout(timers.current.note);
+      timers.current.note = setTimeout(() => setSaved(false), SAVED_NOTE_MS);
+    } else if (wait.wasBusy) {
+      // Busy came and went and the switch is where it started: the save failed.
+      waiting.current = null;
+      clearTimeout(timers.current.wait);
+    }
+  }, [checked, disabled]);
+
+  useEffect(() => () => { clearTimeout(timers.current.wait); clearTimeout(timers.current.note); }, []);
+
+  const onClick = () => {
+    if (saves) {
+      waiting.current = { from: checked, wasBusy: false };
+      clearTimeout(timers.current.wait);
+      timers.current.wait = setTimeout(() => { waiting.current = null; }, SAVED_WAIT_MS);
+    }
+    onChange();
+  };
+
+  const button = (
+    <button type="button" className="settings-switch" role="switch" aria-label={label} aria-checked={checked} onClick={onClick} disabled={disabled}>
       <span aria-hidden="true" />
     </button>
+  );
+  if (!saves) return button;
+  return (
+    <span className="settings-switch-saves">
+      <span className={`settings-saved-note${saved ? ' is-on' : ''}`} role="status">{saved ? COMMON.saved : ''}</span>
+      {button}
+    </span>
   );
 }
 

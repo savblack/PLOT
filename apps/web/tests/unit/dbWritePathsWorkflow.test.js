@@ -7,7 +7,9 @@ import { spawnSync } from 'node:child_process';
 
 const workflow = readFileSync(new URL('../../../../.github/workflows/db-write-paths.yml', import.meta.url), 'utf8');
 const step = workflow.slice(workflow.indexOf('      - name: Check write paths'));
-const command = step.split('        run: |\n')[1].split('\n').map(line => line.replace(/^ {10}/, '')).join('\n');
+// Stop at the next step (or comment between steps) so later steps, such as the
+// failure alerting, are not run as part of this one's shell.
+const command = step.split('        run: |\n')[1].split(/\n {6}(?:- |# )/)[0].split('\n').map(line => line.replace(/^ {10}/, '')).join('\n');
 
 function run(t, readonly) {
   const dir = mkdtempSync(join(tmpdir(), 'plot-readonly-workflow-'));

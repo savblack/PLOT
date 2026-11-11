@@ -40,6 +40,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { usableRateCount } from '../_shared/securityGuards.js';
+import { sendBrevoTransactionalEmail } from '../_shared/brevo.ts';
 import { deliverSignupLink } from '../_shared/signupMailer.ts';
 import { deliverMagicLink, findAuthUserByEmail, linkDeliveryError, type LinkResult, type SignupLinkAdmin } from '../_shared/signupMagicLink.ts';
 import {
@@ -71,7 +72,8 @@ function json(body: unknown, origin: string | null, status = 200, extraHeaders: 
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const RESEND_API_URL = 'https://api.resend.com/emails';
-const CONFIRM_FROM = 'Plot <hello@theplot.tv>';
+const CONFIRM_SENDER = { name: 'Plot', email: 'hello@theplot.tv' };
+const CONFIRM_FROM = `${CONFIRM_SENDER.name} <${CONFIRM_SENDER.email}>`;
 
 async function sendAuthEmail(email: string, actionLink: string, action: BypassAction, code?: string) {
   const resendKey = Deno.env.get('RESEND_API_KEY');
@@ -90,12 +92,24 @@ async function sendAuthEmail(email: string, actionLink: string, action: BypassAc
   if (!res.ok) throw new Error(`Resend request failed (${res.status})`);
 }
 
-// Resend only. There is no Supabase-mailer fallback: it went through the
-// captcha-gated /otp endpoint and the per-address send cooldown that
-// generateLink has just started, so it could not deliver (see signupMailer.ts).
-// A failure here is reported as `email_failed` and the caller cleans up.
-// `_redirectTo` stays in the signature because deliverMagicLink's SendLink
-// type passes it.
+// Backup provider: Brevo, sending the identical message. It must never be a
+// GoTrue send endpoint (signInWithOtp and friends): see signupMailer.ts.
+async function sendAuthEmailViaBrevo(email: string, actionLink: string, action: BypassAction, code?: string) {
+  const brevoKey = Deno.env.get('BREVO_API_KEY')?.trim();
+  if (!brevoKey) throw new Error('BREVO_API_KEY is not configured');
+  const mail = authLinkMail(action, actionLink, code);
+  await sendBrevoTransactionalEmail({
+    apiKey: brevoKey,
+    sender: CONFIRM_SENDER,
+    to: email,
+    subject: mail.subject,
+    text: mail.text,
+  });
+}
+
+// Resend first, then Brevo. When both fail this is reported as `email_failed`
+// and the caller cleans up. `_redirectTo` stays in the signature because
+// deliverMagicLink's SendLink type passes it.
 function mailLink(
   email: string,
   actionLink: string,
@@ -103,7 +117,10 @@ function mailLink(
   _redirectTo: string,
   code?: string,
 ): Promise<LinkResult> {
-  return deliverSignupLink(() => sendAuthEmail(email, actionLink, action, code));
+  return deliverSignupLink([
+    { name: 'resend', send: () => sendAuthEmail(email, actionLink, action, code) },
+    { name: 'brevo', send: () => sendAuthEmailViaBrevo(email, actionLink, action, code) },
+  ]);
 }
 
 // Deliberately fast — a real user reads the form and types for at least this

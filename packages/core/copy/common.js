@@ -25,6 +25,8 @@ export const COMMON = {
   add: 'Add',
   remove: 'Remove',
   back: 'Back',
+  // Beside a control that saves the moment you change it.
+  saved: 'Saved',
   next: 'Next',
   continue: 'Continue',
   submit: 'Submit',
