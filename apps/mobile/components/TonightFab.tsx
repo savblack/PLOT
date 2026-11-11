@@ -21,14 +21,14 @@ const SIZE = 52;
 
 function Sparkle({ color }: { color: string }) {
   return (
-    // Centered on the pair's center of mass, not its bounding box. The box
-    // (x 1.75 to 18.5, y 2.5 to 21 on the 24 grid) centers at (10.1, 11.75),
-    // which leaves the large star, four times the small one's area, up and to
-    // the right, and the pair reads as off. Centering on the large star alone
-    // (12, 9) overshoots the other way. The area-weighted middle of the two is
-    // (10.6, 10.75), and the viewBox is a square around that point, wide
-    // enough that no tip is clipped.
-    <Svg width={25} height={25} viewBox="0.1 0.25 21 21" fill={color}>
+    // The pair is centered in the disc as one unit, so the large star sits
+    // right of the middle and the small one left of it. Side to side that is
+    // the middle of the pair's bounding box (x 1.75 to 18.5 on the 24 grid,
+    // so 10.125). Top to bottom the box's middle (11.75) leaves the large
+    // star reading high, and the pair's center of mass (10.75) leaves the
+    // pair low, so it sits between the two at 11.25. The viewBox is a square
+    // around that point, wide enough that no tip is clipped.
+    <Svg width={25} height={25} viewBox="-0.375 0.75 21 21" fill={color}>
       <Path d="M12 2.5c.5 3.9 2.6 6 6.5 6.5-3.9.5-6 2.6-6.5 6.5-.5-3.9-2.6-6-6.5-6.5 3.9-.5 6-2.6 6.5-6.5z" />
       <Path d="M5 14.5c.25 1.9 1.35 3 3.25 3.25-1.9.25-3 1.35-3.25 3.25-.25-1.9-1.35-3-3.25-3.25 1.9-.25 3-1.35 3.25-3.25z" />
     </Svg>
