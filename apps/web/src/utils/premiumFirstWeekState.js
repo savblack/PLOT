@@ -15,9 +15,20 @@ function write(userId, state) {
   return state;
 }
 
-/** The person just came back from a successful checkout. */
+/**
+ * The person just came back from a successful checkout.
+ *
+ * @returns {boolean} true only when this call started the week: none was
+ *   stored before, and the new one reads back. False when a week was already
+ *   running (a plan change) or the browser would not store it (private
+ *   mode), so the caller counts a start once and only when the card will
+ *   really show.
+ */
 export function beginPremiumFirstWeek(userId) {
-  return userId ? write(userId, startPremiumFirstWeek(readPremiumFirstWeek(userId))) : null;
+  if (!userId) return false;
+  const existing = readPremiumFirstWeek(userId);
+  write(userId, startPremiumFirstWeek(existing));
+  return !existing && !!readPremiumFirstWeek(userId);
 }
 
 function update(userId, change) {

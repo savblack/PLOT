@@ -230,9 +230,14 @@ export const EVENTS = Object.freeze({
   FINISHING_TOUCHES_VIEWED: 'finishing_touches_viewed',
   FINISHING_TOUCH_OPENED: 'finishing_touch_opened',
   FINISHING_TOUCHES_HIDDEN: 'finishing_touches_hidden',
-  // Home's card for a new Premium member ("Your first week of Premium"), the
-  // same three as Finishing touches: viewed once per session (`done_count`,
-  // `total`), a step's button (`step`), and Dismiss (`done_count`).
+  // Home's card for a new Premium member ("Your first week of Premium").
+  // started: the person came back from a successful checkout and the week
+  // was switched on for this browser. Once per account per browser; not sent
+  // for a plan change during a running week, or when storage is unavailable.
+  // Then the same three as Finishing touches: viewed once per session
+  // (`done_count`, `total`), a step's button (`step`), and Dismiss
+  // (`done_count`).
+  PREMIUM_FIRST_WEEK_STARTED: 'premium_first_week_started',
   PREMIUM_FIRST_WEEK_VIEWED: 'premium_first_week_viewed',
   PREMIUM_FIRST_WEEK_OPENED: 'premium_first_week_opened',
   PREMIUM_FIRST_WEEK_HIDDEN: 'premium_first_week_hidden',
