@@ -42,6 +42,7 @@ import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
+import { beginPremiumFirstWeek } from '../utils/premiumFirstWeekState.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
@@ -1226,6 +1227,8 @@ export default function SettingsView() {
       setBillingReturn(returnState);
     }
     if (checkout === 'success') {
+      // Home shows "Your first week of Premium" from here on.
+      beginPremiumFirstWeek(user?.id);
       const timers = [1500, 4000, 9000].map(ms => setTimeout(() => refreshProfile(), ms));
       return () => timers.forEach(clearTimeout);
     }
