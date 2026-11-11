@@ -1,4 +1,5 @@
 # Watches that app.theplot.tv, the TMDB proxy and the edge functions answer,
+# and (with STRIPE_READ_KEY) that Stripe is delivering billing events to Plot,
 # and emails (plus, optionally, opens a GitHub `incident` issue) when one
 # stops, then again when it recovers. See src/index.js for what each check does.
 #
@@ -9,6 +10,9 @@
 #   npx wrangler secret put WATCH_TOKEN        # any long random string; gates the manual endpoint
 #   npx wrangler secret put SUPABASE_PUBLISHABLE_KEY   # optional; production publishable key
 #   npx wrangler secret put GITHUB_TOKEN       # optional; fine-grained, savblack/PLOT, Issues: read/write
+#   npx wrangler secret put STRIPE_READ_KEY    # optional; turns on the Stripe webhook check. A restricted
+#                                              # live key with Read on Events and on Webhook
+#                                              # Endpoints and nothing else. Never the secret key.
 #   npx wrangler deploy
 #
 # Check it by hand:
@@ -56,6 +60,17 @@ REMIND_HOURS = "6"
 BLIND_HOURS = "12"
 
 GITHUB_REPO = "savblack/PLOT"
+
+# Stripe check: an event still undelivered this long after it was created
+# counts as failed. Stripe normally delivers within seconds; this leaves room
+# for its first quick retries before alerting.
+STRIPE_GRACE_MINUTES = "15"
+# How far back to look for undelivered events. 15 days is as long as Stripe
+# lets you resend one, so an alarm never outlasts the fix that clears it.
+STRIPE_LOOKBACK_DAYS = "15"
+# The endpoint Stripe should be sending to. Unset means SUPABASE_URL's
+# stripe-webhook, which is production's.
+# STRIPE_WEBHOOK_URL = ""
 
 # Same destination and sender as backup-heartbeat and whats-on-watch.
 ALERT_EMAIL = "sav.black@outlook.com"

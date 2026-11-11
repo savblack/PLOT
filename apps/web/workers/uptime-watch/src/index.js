@@ -12,6 +12,22 @@
  *   app       APP_URL serves the SPA shell (200, contains <div id="root">)
  *   tmdb      TMDB_PROXY_URL returns trending titles (the Worker -> edge fn -> TMDB path)
  *   functions SUPABASE_URL's billing-availability answers with its boolean
+ *   stripe    (only when STRIPE_READ_KEY is set) Stripe's endpoint for
+ *             stripe-webhook is enabled, and no event has gone undelivered
+ *             for STRIPE_GRACE_MINUTES. Stripe counts a delivery as failed when
+ *             the handler answers anything but 2xx (bad signature, a thrown
+ *             write) or does not answer at all, so this one read covers both
+ *             "Stripe can't reach Plot" and "Plot rejected the event". Either
+ *             way a payment or cancellation has not reached billing_customers.
+ *             It keeps its own state and incident issue (see GROUPS).
+ *
+ * Why the Stripe API and not the alternatives: Stripe's own failing-endpoint
+ * email arrives only after days of failures and opens no issue; a heartbeat
+ * written by the handler would false-alarm on quiet days, because Plot can go
+ * hours without a billing event. `delivery_success=false` is Stripe's own
+ * record of exactly the failure we care about, and it stays set until the
+ * event is delivered, so an alert clears only when Stripe (or a manual
+ * resend) actually lands the event.
  *
  * Alerting reuses whats-on-watch's `probe` (retry before a read counts) and
  * `decide` (one email per change, reminders while it lasts, a "blind" email
@@ -65,7 +81,58 @@ export const classify = {
     if (typeof json?.checkoutAvailable !== 'boolean') return { ok: false, reason: 'unexpected response shape' };
     return { ok: true, reason: 'answered' };
   },
+  /**
+   * @param {{ status: number, json: any }} endpoints  GET /v1/webhook_endpoints
+   * @param {{ status: number, json: any }} events     GET /v1/events?delivery_success=false&created[lte]=…
+   * @param {{ webhookUrl: string, now: number, graceMinutes: number }} opts
+   */
+  stripe(endpoints, events, { webhookUrl, now, graceMinutes }) {
+    const apiFault = (what, res) => {
+      if (res.status === 401 || res.status === 403) {
+        return { ok: false, reason: `Stripe refused the watcher's key reading ${what} (HTTP ${res.status})` };
+      }
+      return { ok: false, reason: `Stripe API HTTP ${res.status} reading ${what}` };
+    };
+    if (endpoints.status !== 200) return apiFault('webhook endpoints', endpoints);
+    const list = Array.isArray(endpoints.json?.data) ? endpoints.json.data : [];
+    // Prefer an enabled match, so an old disabled copy at the same URL beside
+    // the live one does not read as "disabled".
+    const matches = list.filter((e) => e?.url === webhookUrl);
+    const endpoint = matches.find((e) => e.status === 'enabled') ?? matches[0];
+    if (!endpoint) return { ok: false, reason: `no Stripe webhook endpoint sends to ${webhookUrl}` };
+    if (endpoint.status !== 'enabled') {
+      return { ok: false, reason: `Stripe has ${endpoint.status || 'disabled'} the webhook endpoint ${endpoint.id}` };
+    }
+    if (events.status !== 200) return apiFault('events', events);
+    const stuck = Array.isArray(events.json?.data) ? events.json.data : [];
+    if (stuck.length === 0) return { ok: true, reason: 'endpoint enabled, every event delivered' };
+    // Newest first, so the last one listed is the oldest on this page.
+    const oldest = stuck[stuck.length - 1];
+    // delivery_success=false is per event, across every endpoint on the
+    // account, not per endpoint. On 2026-11-11 live had exactly one (Plot's),
+    // so a stuck event is Plot's. If others are added, say so rather than
+    // blaming Plot outright.
+    const others = list.length - matches.length;
+    const count = `${stuck.length}${events.json?.has_more ? '+' : ''}`;
+    const age = Math.max(graceMinutes, Math.round((now / 1000 - (oldest.created ?? now / 1000)) / 60));
+    return {
+      ok: false,
+      reason:
+        `${count} event${stuck.length === 1 && !events.json?.has_more ? '' : 's'} not delivered after ${graceMinutes}+ minutes ` +
+        `(oldest ${events.json?.has_more ? 'listed ' : ''}${oldest.type} ${oldest.id}, ${age} minutes old)` +
+        (others > 0 ? `. This account has ${others} other webhook endpoint${others === 1 ? '' : 's'}, so check which one failed` : ''),
+    };
+  },
 };
+
+const STRIPE_API = 'https://api.stripe.com/v1';
+
+/** Where Stripe should be sending events: STRIPE_WEBHOOK_URL, else production's stripe-webhook. */
+export function stripeWebhookUrl(env) {
+  if (env.STRIPE_WEBHOOK_URL) return env.STRIPE_WEBHOOK_URL;
+  if (env.SUPABASE_URL) return `${env.SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/stripe-webhook`;
+  return null;
+}
 
 async function readJson(res) {
   try { return await res.json(); } catch { return null; }
@@ -116,6 +183,37 @@ export function checksFor(env) {
       }),
     });
   }
+  const webhookUrl = stripeWebhookUrl(env);
+  if (env.STRIPE_READ_KEY && webhookUrl) {
+    checks.push({
+      name: 'stripe',
+      label: 'Stripe webhooks',
+      read: guarded(async () => {
+        const now = Date.now();
+        const graceMinutes = Number(env.STRIPE_GRACE_MINUTES ?? 15);
+        // A restricted key with read access to Events and Webhook Endpoints
+        // only. It can see that a delivery failed, not change anything.
+        const headers = { Authorization: `Bearer ${env.STRIPE_READ_KEY}` };
+        // Look back 15 days: live Stripe retries for 3 days, then the event
+        // can still be resent from the dashboard until it is 15 days old. So
+        // an event Stripe gave up on keeps alerting while a resend can still
+        // fix it, and cannot hold the alarm on for longer than that.
+        const nowSec = Math.floor(now / 1000);
+        const before = nowSec - graceMinutes * 60;
+        const after = nowSec - Number(env.STRIPE_LOOKBACK_DAYS ?? 15) * 86_400;
+        const eventsUrl = `${STRIPE_API}/events?delivery_success=false&limit=100&created[gte]=${after}&created[lte]=${before}`;
+        const [endpointsRes, eventsRes] = await Promise.all([
+          get(`${STRIPE_API}/webhook_endpoints?limit=100`, { headers }),
+          get(eventsUrl, { headers }),
+        ]);
+        return classify.stripe(
+          { status: endpointsRes.status, json: await readJson(endpointsRes) },
+          { status: eventsRes.status, json: await readJson(eventsRes) },
+          { webhookUrl, now, graceMinutes },
+        );
+      }),
+    });
+  }
   return checks;
 }
 
@@ -146,15 +244,28 @@ const escape = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': 
 /** Subject and body for each alert. Exported for tests (copy rules: no em dashes). */
 export function emailContent(email, { now }) {
   const reason = escape(email.reason || '');
+  // Which checks failed, when run() knows. Older stored emails have none, so
+  // fall back to the general wording.
+  const checks = Array.isArray(email.checks) ? email.checks : [];
+  const stripe = checks.includes('stripe');
+  const stripeOnly = stripe && checks.every((c) => c === 'stripe');
   switch (email.kind) {
     case 'down':
       return {
-        subject: 'Plot: part of the app is down',
+        subject: stripeOnly ? 'Plot: Stripe payment updates are not reaching Plot' : 'Plot: part of the app is down',
         html:
           `<p><strong>Not working:</strong> ${reason}.</p>` +
           '<p>It failed several checks in a row, so this is not a single blip.</p>' +
-          '<p>First checks: Cloudflare Pages deploys for the app, Supabase status and edge function logs, ' +
-          'and <code>npx wrangler tail</code> on tmdb-proxy.</p>' +
+          (stripeOnly
+            ? ''
+            : '<p>First checks: Cloudflare Pages deploys for the app, Supabase status and edge function logs, ' +
+              'and <code>npx wrangler tail</code> on tmdb-proxy.</p>') +
+          (stripe
+            ? '<p>Stripe: a payment, renewal or cancellation has not updated the member\'s Premium status. ' +
+              'Open Stripe, Developers, Webhooks, the Plot endpoint, to see each failed delivery and what Plot answered. ' +
+              'Then check the <code>stripe-webhook</code> logs in Supabase. Once it is fixed, resend the failed events ' +
+              'from that Stripe page (resending is safe: Plot applies each event once). If Stripe disabled the endpoint, enable it there.</p>'
+            : '') +
           "<p>You'll get one more email when it recovers, and a reminder every few hours while it lasts.</p>",
       };
     case 'reminder':
@@ -163,6 +274,14 @@ export function emailContent(email, { now }) {
         html: `<p>Down for ${duration(now - email.since)}. Latest: ${reason}.</p>`,
       };
     case 'recovered':
+      if (stripeOnly) {
+        return {
+          subject: 'Plot: Stripe payment updates reach Plot again',
+          html:
+            `<p>Every event is delivered and the endpoint is enabled. It was failing for about ${duration(now - email.since)}.</p>` +
+            "<p>The delayed events have landed, so those members' Premium status is up to date.</p>",
+        };
+      }
       return {
         subject: 'Plot: the app is back',
         html: `<p>Every check passes again. It was down for about ${duration(now - email.since)}.</p>`,
@@ -218,7 +337,10 @@ async function syncIssue(env, email, issue, now) {
     'Content-Type': 'application/json',
   };
   const { subject, html } = emailContent(email, { now });
-  const body = html.replace(/<[^>]+>/g, '').trim();
+  const body = html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+    .trim();
   try {
     if (email.kind === 'down') {
       const res = await fetch(api, { method: 'POST', headers, body: JSON.stringify({ title: subject, body, labels: ['incident'] }) });
@@ -237,19 +359,30 @@ async function syncIssue(env, email, issue, now) {
   return issue;
 }
 
-async function run(env) {
-  const now = Date.now();
-  const checks = checksFor(env);
+/**
+ * Each group keeps its own state, email thread and incident issue. Stripe is
+ * apart from the rest because its alarm can last days (an event nobody has
+ * resent), and `decide` emails only on a change: sharing one state would let
+ * a standing Stripe alarm swallow a new app outage's "down" email.
+ */
+const GROUPS = [
+  { key: STATE_KEY, names: ['app', 'tmdb', 'functions'] },
+  { key: 'stripe-state', names: ['stripe'] },
+];
+
+async function runGroup(env, group, checks, now) {
   const verdict = await verdictFor(checks, {
     attempts: Number(env.ATTEMPTS ?? 2),
     waitMs: Number(env.WAIT_SECONDS ?? 30) * 1000,
   });
-  const prev = await env.STATE.get(STATE_KEY, 'json');
+  const prev = await env.STATE.get(group.key, 'json');
   const { next, email } = decide(prev, verdict, {
     now,
     remindHours: Number(env.REMIND_HOURS ?? 6),
     blindHours: Number(env.BLIND_HOURS ?? 12),
   });
+  // Which group this is, so the email can say what to look at.
+  if (email) email.checks = group.names.filter((n) => checks.some((c) => c.name === n));
 
   let alert = null;
   if (email) {
@@ -259,9 +392,26 @@ async function run(env) {
     if (!alert.sent) return { verdict, email: email.kind, alert, stored: false };
   }
   next.issue = await syncIssue(env, email, prev?.issue ?? null, now);
-  if (JSON.stringify(next) !== JSON.stringify(prev)) await env.STATE.put(STATE_KEY, JSON.stringify(next));
+  if (JSON.stringify(next) !== JSON.stringify(prev)) await env.STATE.put(group.key, JSON.stringify(next));
   return { verdict, email: email?.kind ?? null, alert, stored: true };
 }
+
+/** Runs every group that has checks. Exported for tests. */
+export async function run(env) {
+  const now = Date.now();
+  const all = checksFor(env);
+  const results = {};
+  await Promise.all(
+    GROUPS.map(async (group) => {
+      const checks = all.filter((c) => group.names.includes(c.name));
+      if (checks.length) results[group.key] = await runGroup(env, group, checks, now);
+    }),
+  );
+  return results;
+}
+
+/** Worst state across groups, for the manual endpoint's status code. */
+const anyBroken = (results) => Object.values(results).some((r) => r.verdict.state === 'broken');
 
 export default {
   async scheduled(_event, env, ctx) {
@@ -287,6 +437,6 @@ export default {
       return Response.json(await sendEmail(env, { kind: 'test' }, Date.now()));
     }
     const result = await run(env);
-    return Response.json(result, { status: result.verdict.state === 'broken' ? 503 : 200 });
+    return Response.json(result, { status: anyBroken(result) ? 503 : 200 });
   },
 };

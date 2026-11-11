@@ -7,7 +7,7 @@ it recovers.
 
 | Watcher | Every | Checks | Lives in |
 |---|---|---|---|
-| uptime-watch | 5 min | app.theplot.tv serves the app shell. The TMDB proxy returns trending titles. Edge functions answer (`billing-availability`). | `apps/web/workers/uptime-watch` |
+| uptime-watch | 5 min | app.theplot.tv serves the app shell. The TMDB proxy returns trending titles. Edge functions answer (`billing-availability`). Stripe is delivering billing events to `stripe-webhook` (see below). | `apps/web/workers/uptime-watch` |
 | whats-on-watch | 30 min | theplot.tv/whats-on shows articles | `apps/web/workers/whats-on-watch` |
 | backup-heartbeat | daily | Last night's database backup and the weekly storage mirror landed in R2 | `apps/web/workers/backup-heartbeat` |
 
@@ -26,10 +26,39 @@ GitHub-side watchers raise issues rather than email:
 uptime-watch also opens a GitHub issue labelled `incident` when its
 `GITHUB_TOKEN` secret is set, and closes the issue on recovery.
 
+### Stripe webhook deliveries
+
+When Stripe can't deliver a billing event, or `stripe-webhook` answers it with
+an error (a bad signature, a failed write), the member's payment, renewal or
+cancellation never reaches their Premium status. uptime-watch asks Stripe every
+5 minutes for two things: is the endpoint that sends to `stripe-webhook` still
+enabled, and has any event gone undelivered for 15 minutes or more
+(`GET /v1/events?delivery_success=false`). Either one sends the email, with
+the subject "Stripe payment updates are not reaching Plot", and opens the
+`incident` issue. This alarm is separate from the app checks, so a Stripe
+problem never hides a new app outage. It clears once Stripe has delivered every
+event, by its own retry (live Stripe retries for 3 days) or by a resend from
+the Stripe dashboard. Stripe's docs don't say that a resend clears the
+"not delivered" flag, and nobody has tested it yet. So the check looks back
+only 15 days, the longest Stripe allows a resend, and an alarm can never
+outlast that.
+
+The "not delivered" count covers every webhook endpoint on the Stripe account,
+not just Plot's. On 2026-11-11 live had only Plot's. If another is added, the
+alert says so, and you check in Stripe which endpoint failed.
+
+The check is off until uptime-watch has a `STRIPE_READ_KEY` secret: a
+restricted live key with Read on Events and Webhook Endpoints and nothing
+else. Make it in Stripe under Developers, API keys, Create restricted key.
+
+Not covered here: an event Plot accepts but can't match to a member
+(`no user for customer`). The handler answers 200 so Stripe doesn't retry
+forever, and reports it to PostHog as an error log instead.
+
 ## Not watched yet
 
 - A signed-in read and write (the shape of the July 2026 outage). Needs a dedicated Staging test account.
-- Stripe webhook delivery failures, pg_cron job failures, and PostHog exception spikes.
+- pg_cron job failures and PostHog exception spikes.
 
 ## Deploying or changing a watcher
 
