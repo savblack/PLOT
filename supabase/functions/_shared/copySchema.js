@@ -14,9 +14,9 @@ export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'journal_it', 'none
 // Field-by-field spec, rendered into every brief so the worker sees the exact
 // contract it must satisfy. Keep this in lockstep with validateCopy below.
 export const COPY_FIELDS = [
-  ['x', 'string', 'X post text. <=280 characters. No URLs except a YouTube trailer link on trailer-related posts. No hashtags.'],
+  ['x', 'string', 'X post text. <=280 characters. No URLs except a YouTube trailer link on trailer-related posts; a bare domain counts, so never write "at theplot.tv" here (end the CTA "with Plot" instead). No hashtags.'],
   ['instagram', 'string', 'Instagram caption, 1-3 short paragraphs. Do NOT put the hashtags here — they go in the hashtags array.'],
-  ['threads', 'string', 'Threads post text, one conversational thought. No URLs except a YouTube trailer link on trailer-related posts (the system also appends the article link). No hashtags.'],
+  ['threads', 'string', 'Threads post text, one conversational thought. No URLs except a YouTube trailer link on trailer-related posts (the system also appends the article link, so never write "theplot.tv" here). No hashtags.'],
   ['hashtags', 'string[]', '3-5 niche hashtags for Instagram only, WITHOUT the # prefix, no spaces (e.g. "A24", "mikeflanagan").'],
   ['alt_text', 'string', 'One-sentence literal description of the image for accessibility.'],
   ['cta_variant', `enum: ${CTA_VARIANTS.join(' | ')}`, 'Which approved CTA this post uses (or "none").'],
@@ -65,6 +65,22 @@ export const GUIDE_ARCHETYPE_BRIEFS = {
 };
 
 const hasUrl = (s) => /https?:\/\/|www\.|\b[a-z0-9-]+\.(com|tv|net|org|io|co)\b/i.test(s);
+
+// The approved CTAs in marketing/VOICE.md end "at theplot.tv". That is right
+// for Instagram, where the profile link is live, but on X and Threads the bare
+// domain is a link and hasUrl rejects it. The worker kept carrying the
+// Instagram form across: in the 2026-11-09 weekly batch 20 of 31 posts were
+// rejected for exactly this tail and nothing else. VOICE.md now spells out the
+// X/Threads form, and this is the deterministic backstop for that one known
+// shape. It only rewrites the CTA's destination; any other domain, or
+// theplot.tv anywhere else in the text, is left for hasUrl to reject.
+const PLOT_DOMAIN_CTA = /\s+(?:at|on)\s+(?:https?:\/\/)?(?:www\.)?theplot\.tv\/?(?=[.!?]?(?:\s|$))/gi;
+export const stripPlotDomainCta = (text) => text.replace(PLOT_DOMAIN_CTA, (_m, offset, whole) => {
+  // "Add to your Plot at theplot.tv." already names Plot, so just drop the
+  // destination; "Save it to your watchlist at theplot.tv." needs the brand.
+  const sentence = whole.slice(0, offset).split(/[.!?]\s+/).pop();
+  return /\bplot\b/i.test(sentence) ? '' : ' with Plot';
+});
 
 // Relative time references, and the furthest out each one can still be true.
 //
@@ -191,6 +207,9 @@ export const validateCopy = (raw, context = {}) => {
   if (copy.page_body.length < 3) {
     errors.push(`page_body needs at least 3 paragraphs (got ${copy.page_body.length})`);
   }
+
+  copy.x = stripPlotDomainCta(copy.x);
+  copy.threads = stripPlotDomainCta(copy.threads);
 
   // Hard platform guarantees — the same ones the API path enforced.
   const trailerRelated = context.post_type === 'trailer'
