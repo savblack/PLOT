@@ -20,10 +20,21 @@
 // keeps 7 days, so a healthy job always has a row, even a weekly one: the purge
 // only removes a weekly run once the next one has happened. That also means a
 // weekly job is flagged about a day after ONE missed run, sooner than the
-// twice-the-gap rule, because its last row is purged. Two false alarms are
-// possible, and both close themselves on the next good run: a job added in the
-// last day that has not had its first run, and a run pg_cron marks `failed`
-// because the database restarted while it was going.
+// twice-the-gap rule, because its last row is purged.
+//
+// Except a new job. pg_cron records no creation time, so a job scheduled an
+// hour ago and a job that has been dead for a week both show no runs. The repo
+// knows the difference: every job is created by a migration calling
+// cron.schedule('<name>', ...), and git knows when that file landed on main
+// (the migration applies to production then). check-cron-jobs.mjs passes that
+// time in as `scheduledAt`, and a job with no runs gets the same allowance from
+// it that a running job gets from its last run: twice its gap plus the grace.
+// Re-scheduling a job (unschedule, then schedule) gives it a new jobid and so
+// no history either, which the same rule covers. A job made by hand, outside a
+// migration, has no `scheduledAt` and is judged as before.
+//
+// One false alarm remains possible, and it closes itself on the next good run:
+// a run pg_cron marks `failed` because the database restarted while it was going.
 //
 // A schedule whose gap is longer than the kept history (monthly, say) cannot be
 // judged for staleness at all, since its last row is routinely purged. Such a
@@ -166,17 +177,35 @@ export function maxScheduleGapMinutes(schedule) {
  */
 
 /**
+ * Which migration last scheduled each job, by name, from migration files.
+ * Matches the form every Plot migration uses: cron.schedule('<name>', ...).
+ * Files must be given in version order; a later one wins.
+ * @param {{ name: string, text: string }[]} migrations
+ * @returns {Map<string, string>}  job name to migration file name
+ */
+export function jobSchedulingMigrations(migrations) {
+  const byJob = new Map();
+  for (const { name, text } of migrations) {
+    for (const match of text.matchAll(/cron\.schedule\(\s*'([^']+)'/g)) byJob.set(match[1], name);
+  }
+  return byJob;
+}
+
+/**
  * Judge every job. Inactive jobs are skipped: pausing one is a deliberate act.
  * `unreadable` lists jobs whose staleness cannot be judged (schedule not
  * understood, or longer than the kept history); their failures still count.
+ * `waiting` lists new jobs with no run yet that are still inside their allowance.
  * @param {CronJobHealthRow[]} rows
  * @param {Date} now
- * @returns {{ problems: CronJobProblem[], unreadable: string[], checked: number }}
+ * @param {Map<string, Date>} [scheduledAt]  when each job's scheduling migration landed on main
+ * @returns {{ problems: CronJobProblem[], unreadable: string[], waiting: string[], checked: number }}
  */
-export function evaluateCronJobs(rows, now) {
+export function evaluateCronJobs(rows, now, scheduledAt = new Map()) {
   /** @type {CronJobProblem[]} */
   const problems = [];
   const unreadable = [];
+  const waiting = [];
   let checked = 0;
 
   for (const row of rows) {
@@ -200,7 +229,18 @@ export function evaluateCronJobs(rows, now) {
     }
     const allowedMinutes = 2 * gap + STALL_GRACE_MINUTES;
     if (!row.last_start) {
-      problems.push({ jobname: name, kind: 'stalled', detail: 'no run in the last 7 days of history.' });
+      const added = scheduledAt.get(name);
+      if (added && (now.getTime() - added.getTime()) / 60_000 <= allowedMinutes) {
+        waiting.push(name);
+        continue;
+      }
+      problems.push({
+        jobname: name,
+        kind: 'stalled',
+        detail: added
+          ? `no run since it was scheduled at ${added.toISOString()} (it should run at least every ${formatMinutes(gap)}).`
+          : 'no run in the last 7 days of history.',
+      });
       continue;
     }
     const ageMinutes = (now.getTime() - new Date(row.last_start).getTime()) / 60_000;
@@ -216,7 +256,7 @@ export function evaluateCronJobs(rows, now) {
     }
   }
 
-  return { problems, unreadable, checked };
+  return { problems, unreadable, waiting, checked };
 }
 
 /** @param {number} minutes */
