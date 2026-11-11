@@ -167,6 +167,24 @@ export function orderMyListsSections(order) {
 }
 
 /**
+ * Put an app's own My Lists sections in the viewer's saved order. An app may
+ * split a section (mobile draws Watchlist, Favorites and custom lists as three
+ * where web has one Lists section): `sectionOf` says which shared section each
+ * of its ids belongs to, and ids of the same section keep the order given.
+ * With nothing saved the app's own default order is returned untouched.
+ * @param {string[] | undefined} order saved ui_prefs.myLists.order
+ * @param {string[]} ids the app's section ids in its default order
+ * @param {(id: string) => string} sectionOf id -> one of MY_LISTS_SECTION_IDS
+ * @returns {string[]}
+ */
+export function arrangeByMyListsOrder(order, ids, sectionOf) {
+  if (!order || order.length === 0) return [...ids];
+  const ranked = orderMyListsSections(order);
+  const rank = (id) => { const r = ranked.indexOf(sectionOf(id)); return r < 0 ? Infinity : r; };
+  return ids.map((id, i) => ({ id, i, r: rank(id) })).sort((a, b) => (a.r === b.r ? a.i - b.i : a.r - b.r)).map(x => x.id);
+}
+
+/**
  * Move a My Lists section to a new place among the ones shown. `currentIds`
  * is what the viewer sees (a section their account does not have is left
  * out); the rest keep their relative order after it.
