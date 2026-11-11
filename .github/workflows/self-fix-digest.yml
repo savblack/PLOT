@@ -30,7 +30,7 @@ jobs:
             --jq "[.[] | select(.mergedAt >= \"$since\")]" > merged.json
           count=$(jq length merged.json)
           echo "count=$count" >> "$GITHUB_OUTPUT"
-          body=$(jq -r '"<p>These fixes went live on their own in the last 24 hours. Each passed every check and the Strix security review, and matched the kinds you allowed.</p><ul>" + ([.[] | "<li><a href=\"\(.url)\">#\(.number)</a> \(.title | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;"))</li>"] | join("")) + "</ul>"' merged.json)
+          body=$(jq -r '"<p>These fixes went live on their own in the last 24 hours. Each passed every check and GitHub's CodeQL security scan, and matched the kinds you allowed.</p><ul>" + ([.[] | "<li><a href=\"\(.url)\">#\(.number)</a> \(.title | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;"))</li>"] | join("")) + "</ul>"' merged.json)
           { echo 'body<<EOF'; echo "$body"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
       - name: Email the report
         if: steps.list.outputs.count != '0'

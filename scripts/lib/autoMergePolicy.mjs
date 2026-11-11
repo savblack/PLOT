@@ -3,7 +3,7 @@
  * request changes. Used by .github/workflows/auto-merge.yml.
  *
  * Savannah chose (2026-11-11) four kinds that may go live on their own once
- * every check passes and Strix has reviewed: library updates, bug fixes that
+ * every check passes and GitHub's CodeQL security scan is clean: library updates, bug fixes that
  * come with a test, fixes to broken checks and deploys, and wording/docs.
  * Payments, the database, permissions and member data always wait for her.
  *

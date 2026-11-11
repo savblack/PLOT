@@ -7,7 +7,8 @@
  * branch. It merges (squash) only when ALL of these hold:
  *   - scripts/lib/autoMergePolicy.mjs allows every file it changes
  *   - every check and status on the head commit finished green, and the two
- *     that matter ran: the CircleCI check and the Strix security review
+ *     that matter ran: the CircleCI check and GitHub's CodeQL security scan
+ *     (Strix was the reviewer until its trial ended on 2026-11-12)
  *   - no review thread is left unresolved
  *   - GitHub reports it mergeable with no conflict
  * A PR the policy refuses is labelled `needs-savannah` with the reasons, once.
@@ -28,7 +29,9 @@ const GREEN = new Set(['success', 'neutral', 'skipped']);
 // Each required check is trusted only from its real source, so a job, a
 // status or a check run that merely borrows the name cannot satisfy it.
 const REQUIRED = [
-  { name: 'Strix Security Review', kind: 'check', app: 'strix-security' },
+  // GitHub's own code scanning summary. Only GitHub posts under this app, so a
+  // workflow job named "CodeQL" (app github-actions) does not count.
+  { name: 'CodeQL', kind: 'check', app: 'github-advanced-security' },
   // CircleCI's GitHub App. It also mirrors the status under Savannah's own
   // account, which agents act as, so that copy is not trusted.
   { name: 'ci/circleci: check', kind: 'status', creator: 'circleci-app[bot]' },
