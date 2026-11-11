@@ -35,6 +35,8 @@ export const COLLABORATIVE_LISTS = Object.freeze({
     sharedWithMe: 'Shared with me',
     newShared: 'New shared list',
     newSharedNote: 'Friends add for free',
+    // "Shared by me" with nothing in it yet: one quiet line, not a poster-sized tile.
+    emptyShared: 'No shared lists yet. Start one and friends add for free.',
     // Under a list you started: who else is on it.
     withNames: (names) => joinNames(names),
     // Under a list you were invited to: whose it is.

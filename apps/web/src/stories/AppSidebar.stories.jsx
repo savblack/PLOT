@@ -297,20 +297,20 @@ export const AccountMenuFreeLocked = {
   },
 };
 
-/* The member mark (design audit pick 3.3): a Premium member gets a small
-   spark beside their own name. A Free account gets none. */
+/* A Premium member gets the blue verified badge beside their own name, the
+   same one their public profile carries. A Free account gets none. */
 export const PremiumMember = {
   args: { ...signedIn, profile: { ...profile, is_premium: true } },
   tags: ['interaction-test'],
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('img', { name: 'Premium member' })).toBeVisible();
+    await expect(within(canvasElement).getByRole('img', { name: 'Plot Premium' })).toBeVisible();
   },
 };
 export const FreeMemberHasNoMark = {
   args: signedIn,
   tags: ['interaction-test'],
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).queryByRole('img', { name: 'Premium member' })).toBeNull();
+    await expect(within(canvasElement).queryByRole('img', { name: 'Plot Premium' })).toBeNull();
   },
 };
 // The mark stays on screen when the name is too long to fit.

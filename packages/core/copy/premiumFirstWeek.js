@@ -13,11 +13,12 @@ export const PREMIUM_FIRST_WEEK = {
   readyBody: 'Everything in Premium is yours. Enjoy the show.',
   nice: 'Nice',
 
+  // Each step leads with what the person gets, then the one thing to do.
   steps: {
-    theme: { title: 'Pick a theme', sub: 'Give Plot your own colors.', doneSub: 'Your theme is on', cta: 'Choose' },
-    people: { title: 'Follow an actor or director', sub: 'See what they have coming next.', doneSub: (n) => `Following ${n} ${n === 1 ? 'person' : 'people'}`, cta: 'Find people' },
-    together: { title: 'Invite someone to watch together', sub: 'Find something you both want to see.', doneSub: 'Invitation sent', cta: 'Invite' },
-    calendar: { title: 'Subscribe your calendar', sub: 'New episodes, in your own calendar.', doneSub: 'Your calendar feed is on', cta: 'Set up' },
-    smartList: { title: 'Make a smart list', sub: 'Set a few rules. It finds the titles.', doneSub: (n) => `${n} smart ${n === 1 ? 'list' : 'lists'}`, cta: 'Create' },
+    theme: { title: 'Make Plot yours', sub: 'Pick a favorite theme.', doneSub: 'Your theme is on', cta: 'Pick a theme' },
+    people: { title: 'Never miss their next release', sub: 'Follow your favorite actor or director.', doneSub: (n) => `Following ${n} ${n === 1 ? 'person' : 'people'}`, cta: 'Find people' },
+    together: { title: 'Agree on what to watch', sub: 'Invite someone to watch together.', doneSub: 'Invitation sent', cta: 'Invite' },
+    calendar: { title: 'Release dates where you plan', sub: 'Subscribe to your calendar.', doneSub: 'Your calendar is subscribed', cta: 'Subscribe' },
+    smartList: { title: 'Lists that fill themselves', sub: 'Make a smart list from a few rules.', doneSub: (n) => `${n} smart ${n === 1 ? 'list' : 'lists'}`, cta: 'Make a list' },
   },
 };
