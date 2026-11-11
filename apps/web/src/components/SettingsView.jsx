@@ -1227,8 +1227,10 @@ export default function SettingsView() {
       setBillingReturn(returnState);
     }
     if (checkout === 'success') {
-      // Home shows "Your first week of Premium" from here on.
-      beginPremiumFirstWeek(user?.id);
+      // Home shows "Your first week of Premium" from here on. Counted once,
+      // when the week really starts, so a paid upgrade with no card view
+      // after it can be told apart from a card that never started.
+      if (beginPremiumFirstWeek(user?.id)) track(EVENTS.PREMIUM_FIRST_WEEK_STARTED);
       const timers = [1500, 4000, 9000].map(ms => setTimeout(() => refreshProfile(), ms));
       return () => timers.forEach(clearTimeout);
     }
