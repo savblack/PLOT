@@ -3,6 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -50,7 +51,7 @@ Deno.serve(async req => {
     }
     return json({ ok: true, checked, disabled });
   } catch (error) {
-    console.error('push-receipts failed:', error);
+    reportError('push-receipts', 'push-receipts failed:', error);
     return json({ ok: false, error: 'Push receipt check failed' }, 500);
   }
 });

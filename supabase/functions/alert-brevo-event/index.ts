@@ -32,6 +32,7 @@ import {
   postAlertBrevoEvent,
   rateLimitHit,
 } from '../_shared/alertBrevoEvent.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 const WINDOW_MS = 60 * 60 * 1000;
 const MAX_HITS = 30;
@@ -101,7 +102,7 @@ Deno.serve(async (req) => {
 
   const apiKey = Deno.env.get('BREVO_API_KEY');
   if (!apiKey) {
-    console.error('alert-brevo-event BREVO_API_KEY is not configured');
+    reportError('alert-brevo-event', 'alert-brevo-event BREVO_API_KEY is not configured');
     return json({ error: 'unavailable' }, origin, 503);
   }
 
@@ -113,7 +114,7 @@ Deno.serve(async (req) => {
     properties: parsed.properties,
   });
   if (!result.ok) {
-    console.error('alert-brevo-event brevo failed');
+    reportError('alert-brevo-event', 'alert-brevo-event brevo failed');
     return json({ error: 'unavailable' }, origin, 503);
   }
   return json({ ok: true }, origin);

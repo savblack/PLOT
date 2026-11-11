@@ -9,6 +9,7 @@ import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supa
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
 import { createIntakePage, resolveNotionToken } from '../_shared/notionIntake.js'
+import { reportError } from '../_shared/posthogLog.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = 'sav.black@outlook.com'
@@ -76,10 +77,10 @@ async function sendReportEmail(resendKey: string, report: ReportRow, pageUrl: st
         html,
       }),
     })
-    if (!res.ok) console.error('Report email failed with status', res.status)
+    if (!res.ok) reportError('notify-report', 'Report email failed with status', res.status)
     return res.ok
   } catch {
-    console.error('Report email request failed')
+    reportError('notify-report', 'Report email request failed')
     return false
   }
 }
@@ -111,7 +112,7 @@ async function mirror(db: SupabaseClient, report: ReportRow, token: string, data
   } catch {
     // A Notion validation error can contain the submitted text. Keep it private.
     const error = 'Could not file report in the private Notion database'
-    console.error(error, { reportId: report.id })
+    reportError('notify-report', error, { reportId: report.id })
     try { await updateSyncState(db, report.id, { notion_sync_error: error }) } catch { /* Retry can recover. */ }
     return { ok: false as const, error, pageUrl: page?.url }
   }
@@ -174,7 +175,7 @@ Deno.serve(async (req) => {
   const emailed = resendKey
     ? await sendReportEmail(resendKey, report, result.ok ? result.page.url : ('pageUrl' in result ? result.pageUrl ?? null : null), result.ok ? null : result.error)
     : false
-  if (!resendKey) console.error('RESEND_API_KEY missing; report email not sent')
+  if (!resendKey) reportError('notify-report', 'RESEND_API_KEY missing; report email not sent')
   return Response.json({ ok: result.ok, emailed, ...(result.ok ? { pageUrl: result.page.url } : { error: result.error, ...('pageUrl' in result && result.pageUrl ? { pageUrl: result.pageUrl } : {}) }) },
     { status: result.ok || !configured ? 200 : 500 })
 })

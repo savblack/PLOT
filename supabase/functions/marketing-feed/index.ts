@@ -33,6 +33,7 @@ import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock }
 import { selectTmdbMatch } from '../_shared/tmdbMatch.js';
 import { articleSignupPromptHtml } from '../_shared/articleSignupPrompt.js';
 import { clampDescription, fitTitle } from '../_shared/seoText.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -1839,7 +1840,7 @@ Deno.serve(async (req) => {
     return await handle(req);
   } catch (err) {
     if (!(err instanceof QueryFailed)) throw err;
-    console.error('marketing-feed', err.message);
+    reportError('marketing-feed', 'marketing-feed', err.message);
     return page('What\'s On · Plot', '', `
       <article class="post r2">
         <header class="post-head"><h1>Back in a moment</h1></header>

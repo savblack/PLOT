@@ -25,6 +25,7 @@
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { upsertBrevoContact, removeContactFromList } from '../_shared/brevo.ts'
 import { adminClient } from '../_shared/supabaseAdmin.ts'
+import { reportError } from '../_shared/posthogLog.ts'
 
 const TRACKED_FIELDS = ['username', 'first_name', 'is_premium'] as const
 const BREVO_ATTRIBUTE_NAME: Record<(typeof TRACKED_FIELDS)[number], string> = {
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
   const brevoKey = Deno.env.get('BREVO_API_KEY')
   const brevoListId = Deno.env.get('BREVO_LIST_ID')
   if (!brevoKey || !brevoListId) {
-    console.error('Brevo sync is not configured (missing BREVO_API_KEY / BREVO_LIST_ID).')
+    reportError('profiles-changed', 'Brevo sync is not configured (missing BREVO_API_KEY / BREVO_LIST_ID).')
     return new Response(JSON.stringify({ ok: false, error: 'Brevo sync not configured' }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -111,7 +112,7 @@ Deno.serve(async (req) => {
     const { data, error } = await adminClient().auth.admin.getUserById(userId)
     const email = data?.user?.email
     if (error || !email) {
-      console.error('profiles-changed: could not resolve email for user', userId, error?.message)
+      reportError('profiles-changed', 'profiles-changed: could not resolve email for user', userId, error?.message)
       return new Response(JSON.stringify({ ok: false, error: 'No email for user' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -123,7 +124,7 @@ Deno.serve(async (req) => {
       if (!marketingListId) {
         // The Supabase row is already correct, so the digest still reaches them.
         // Only Brevo's view of the list is behind until the secret is set.
-        console.error('BREVO_MARKETING_LIST_ID is not set — marketing_emails not synced to Brevo.')
+        reportError('profiles-changed', 'BREVO_MARKETING_LIST_ID is not set — marketing_emails not synced to Brevo.')
       } else {
         attributes.OPT_IN = optedIn
       }
@@ -150,7 +151,7 @@ Deno.serve(async (req) => {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown profiles-changed error'
-    console.error('Failed to sync profile change to Brevo:', errorMessage, { userId })
+    reportError('profiles-changed', 'Failed to sync profile change to Brevo:', errorMessage, { userId })
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

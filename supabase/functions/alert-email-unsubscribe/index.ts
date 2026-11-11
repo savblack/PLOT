@@ -35,6 +35,7 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { verifyUnsubscribeToken } from '../_shared/alertDelivery.js';
 import { MANAGE_URL } from '../_shared/alertEmail.js';
+import { reportError } from '../_shared/posthogLog.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
       .update({ streaming_email: false, updated_at: new Date().toISOString() })
       .eq('user_id', who.userId);
     if (error) {
-      console.error('alert-email-unsubscribe: update failed:', error.message);
+      reportError('alert-email-unsubscribe', 'alert-email-unsubscribe: update failed:', error.message);
       return page('<h1>Something went wrong</h1><p>Please try again, or turn email alerts off in Settings.</p>', 500);
     }
     return done();

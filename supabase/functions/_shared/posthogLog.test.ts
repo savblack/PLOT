@@ -1,4 +1,4 @@
-import { errorText, otlpLogsBody, reportLog } from './posthogLog.ts';
+import { errorText, formatErrorParts, otlpLogsBody, reportLog } from './posthogLog.ts';
 
 function equal(actual: unknown, expected: unknown) {
   const left = JSON.stringify(actual);
@@ -89,4 +89,12 @@ Deno.test('reportLog mirrors the line and survives a delivery failure', async ()
     globalThis.fetch = originalFetch;
     runtime.EdgeRuntime = originalRuntime;
   }
+});
+
+Deno.test('error parts read like the console line, with messages only and emails masked', () => {
+  const pg = { message: 'duplicate key value', details: 'Key (email)=(a@b.co) already exists.', code: '23505' };
+  equal(formatErrorParts(['notifications write failed:', pg]), 'notifications write failed: duplicate key value');
+  equal(formatErrorParts([new Error('boom'), { feedbackId: 'f-1' }, 3]), 'boom {"feedbackId":"f-1"} 3');
+  equal(formatErrorParts(['could not reach sam.neil+x@mail.example.com today']), 'could not reach [email] today');
+  equal(formatErrorParts(['plain', undefined, null]), 'plain undefined null');
 });

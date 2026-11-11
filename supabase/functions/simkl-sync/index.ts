@@ -5,6 +5,7 @@ import { buildSimklHistoryBody, parseSimklHistory } from '../_shared/simklSync.j
 import { insertMissingHistory, type ImportedHistoryRow } from '../_shared/importHistory.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
 import { workerActingUser } from '../_shared/workerActingUser.ts'
+import { reportError } from '../_shared/posthogLog.ts'
 
 type Db = SupabaseClient<Database>
 type Integration = Database['public']['Tables']['media_integrations']['Row']
@@ -359,7 +360,7 @@ serve(async req => {
     if (action === 'disconnect') return await handleDisconnect(admin, user.id)
     return json({ error: 'Unknown action' }, 404)
   } catch (error) {
-    console.error('[simkl-sync]', error)
+    reportError('simkl-sync', '[simkl-sync]', error)
     return json({ error: 'Internal error' }, 500)
   }
 })

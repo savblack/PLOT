@@ -15,6 +15,7 @@ import { selectTmdbMatch, tmdbIdFromGuids, yearFrom } from '../_shared/tmdbMatch
 import { parsePlexItems, parsePlexResources, xmlAttrs } from '../_shared/plexXml.js'
 import { serviceKey } from '../_shared/serviceKey.ts'
 import { workerActingUser } from '../_shared/workerActingUser.ts'
+import { reportError } from '../_shared/posthogLog.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -725,7 +726,7 @@ serve(async (req) => {
 
     return json({ error: 'Unknown action' }, 404)
   } catch (err) {
-    console.error('[media-sync]', err)
+    reportError('media-sync', '[media-sync]', err)
     // The log keeps the detail; the caller learns nothing about our internals.
     return json({ error: 'Internal error' }, 500)
   }

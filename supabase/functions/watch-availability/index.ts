@@ -7,6 +7,8 @@
  * token is absent; clients retain TMDB's regional availability and its exact
  * JustWatch title page rather than reverting to a provider search.
  */
+import { reportError } from '../_shared/posthogLog.ts';
+
 function allowedOrigin(origin: string | null) {
   if (!origin) return 'https://app.theplot.tv';
   try {
@@ -115,7 +117,7 @@ Deno.serve(async (req) => {
       });
     return json({ title_verified: true, title_url: titleUrl, offers }, origin);
   } catch (error) {
-    console.error('watch-availability failed', error);
+    reportError('watch-availability', 'watch-availability failed', error);
     return json({ error: 'Availability lookup failed' }, origin, 502);
   }
 });

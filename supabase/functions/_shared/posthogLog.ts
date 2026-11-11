@@ -141,3 +141,33 @@ export function reportLog(service: string, level: LogLevel, message: string, opt
     // The function log above already has the line. Delivery must not change the response.
   }
 }
+
+const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+
+function partText(part: unknown): string {
+  if (typeof part === 'string') return part;
+  if (part === null || part === undefined) return String(part);
+  if (typeof part !== 'object') return String(part);
+  // Errors and Supabase/PostgREST errors: the message only. `details` can carry
+  // row values (a conflicting key, say), so it is never sent.
+  if (part instanceof Error || 'message' in part) return errorText(part);
+  try {
+    return JSON.stringify(part).slice(0, 500);
+  } catch {
+    return '[unserializable]';
+  }
+}
+
+/**
+ * Drop-in for `console.error(...parts)` that also reaches PostHog Logs, so the
+ * backend error alert sees it. Parts are joined the way the console prints
+ * them, error objects contribute their message only, and anything shaped like
+ * an email address is masked before the line leaves the function.
+ */
+export function formatErrorParts(parts: unknown[]): string {
+  return parts.map(partText).join(' ').replace(EMAIL, '[email]');
+}
+
+export function reportError(service: string, ...parts: unknown[]) {
+  reportLog(service, 'error', formatErrorParts(parts));
+}

@@ -20,6 +20,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { refreshPeopleFeed, upcomingCount, type FeedRow } from '../_shared/peopleFeedJob.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const FRESH_FOR_MS = 6 * 60 * 60 * 1000;
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
     const { rows } = await refreshPeopleFeed(db, tmdbKey, [{ id: personId, name: follow.data.name }], now);
     return json({ upcoming: upcomingCount(rows, now), cached: false });
   } catch (err) {
-    console.error(err);
+    reportError('people-feed-refresh', err);
     return json({ error: 'Could not refresh the feed' }, 500);
   }
 });

@@ -42,6 +42,7 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { earliest, latestIsDnf, skipReason, type Follower, type HistoryRow, type SkipReason } from '../_shared/newEpisodeRecipients.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 type Db = SupabaseClient<Database>;
 type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
@@ -264,7 +265,7 @@ Deno.serve(async (req) => {
     byShow = await followersByShow(db);
   } catch (err) {
     // Details go to the function log, not the response (no stack traces out).
-    console.error(err);
+    reportError('new-episode-notifications', err);
     return json({ ok: false, error: 'Could not read followed shows' }, 500);
   }
 
@@ -275,7 +276,7 @@ Deno.serve(async (req) => {
       return await latestAired(id, since, until, tmdbKey);
     } catch (err) {
       failures++;
-      console.error(err);
+      reportError('new-episode-notifications', err);
       return null;
     }
   })).filter((a): a is Aired => a !== null);
@@ -283,13 +284,13 @@ Deno.serve(async (req) => {
   try {
     await markDnf(db, byShow, aired.map(a => a.tmdbId));
   } catch (err) {
-    console.error(err);
+    reportError('new-episode-notifications', err);
     return json({ ok: false, error: 'Could not read watch history' }, 500);
   }
   try {
     await markMuted(db, byShow, aired.map(a => a.tmdbId));
   } catch (err) {
-    console.error(err);
+    reportError('new-episode-notifications', err);
     return json({ ok: false, error: 'Could not read episode alert settings' }, 500);
   }
 
@@ -321,7 +322,7 @@ Deno.serve(async (req) => {
         })
         .select('id');
       if (error) {
-        console.error('notifications write failed:', error);
+        reportError('new-episode-notifications', 'notifications write failed:', error);
         return json({ ok: false, error: 'Could not write notifications', written }, 500);
       }
       written += data?.length ?? 0;
