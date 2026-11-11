@@ -1,7 +1,6 @@
 -- Prove that undoing an episode tick no longer moves the show to the front.
 --
---   set -a; . .env; set +a
---   pnpm run staging:watching-progress-trigger-test
+--   pnpm run staging:test -- watching-progress-trigger
 --
 -- WHY: the client's undo (packages/core/useWatching.js restorePointer) writes
 -- the previous updated_at back, and the old trigger overwrote it with now(),
@@ -9,12 +8,8 @@
 -- supabase/migrations/20261110140000_watching_progress_keep_supplied_updated_at.sql.
 -- Unit tests can only check what the client sends; this runs the trigger.
 --
--- The `REPRO` line runs against whatever body is LIVE on Staging first. A run
--- that reports `no repro` means the fix is already applied there.
---
 -- Every write goes through RLS as fixture account A (auth.uid()), the way the
--- app writes. Everything, including the `create or replace`, is in one
--- transaction ending in rollback, so Staging is unchanged whether this passes
+-- app writes. Everything is in one transaction ending in rollback, so Staging is unchanged whether this passes
 -- or dies. tmdb_id -1 is not a TMDB id on purpose (AGENTS.md: never guess one).
 \set ON_ERROR_STOP on
 \set A '''467ce784-39eb-480e-8593-4632667fc9c3'''
@@ -30,25 +25,7 @@ insert into public.watching_progress (user_id, tmdb_id, title, current_season, c
 values (:A, -1, 'Trigger test show', 1, 2, '2026-01-01T00:00:00Z');
 
 \echo ''
-\echo '=== BEFORE: the trigger as it is live ==='
-set local role authenticated;
-set local request.jwt.claims = :A_CLAIMS;
-update public.watching_progress set current_episode = 3 where tmdb_id = -1;
-update public.watching_progress set current_episode = 2, updated_at = '2026-01-01T00:00:00Z' where tmdb_id = -1;
-select case when updated_at = '2026-01-01T00:00:00Z'
-  then 'no repro  undo kept the old updated_at against the OLD body'
-  else 'REPRO     undo stamped now(), so the show jumps to the front' end
-from public.watching_progress where tmdb_id = -1;
-
-\echo ''
-\echo '=== applying the new body ==='
-reset role;
-set local request.jwt.claims = '{"role":"service_role"}';
-\i supabase/migrations/20261110140000_watching_progress_keep_supplied_updated_at.sql
-update public.watching_progress set current_episode = 2, updated_at = '2026-01-01T00:00:00Z' where user_id = :A and tmdb_id = -1;
-
-\echo ''
-\echo '=== AFTER (as A) ==='
+\echo '=== undo (as A) ==='
 set local role authenticated;
 set local request.jwt.claims = :A_CLAIMS;
 
@@ -95,17 +72,6 @@ from hit;
 -- not a TMDB id and the row is rolled back with everything else.
 reset role;
 set local request.jwt.claims = '{"role":"service_role"}';
--- The migration creates rather than replaces, so apply it only before it is
--- live; afterwards this section checks the trigger Staging already has.
-select not exists (
-  select 1 from pg_trigger where tgname = 'episode_watch_overrides_updated_at'
-    and tgrelid = 'public.episode_watch_overrides'::regclass
-) as need_apply \gset
-\if :need_apply
-\i supabase/migrations/20261110150000_episode_watch_overrides_server_updated_at.sql
-\else
-\echo 'already applied on Staging: checking the live trigger'
-\endif
 set local role authenticated;
 set local request.jwt.claims = :A_CLAIMS;
 

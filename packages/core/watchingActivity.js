@@ -4,7 +4,7 @@ import { latestWatching } from './watchingOrder.js';
 /**
  * Latest outside activity (imports, title-page ticks, History logs) for the
  * shows a user is watching, as tmdb_id → watching_progress.last_activity_at.
- * The database recomputes that column from those tables (20261111100000; see
+ * The database recomputes that column from those tables (20261111160000; see
  * watchingOrder.js), so this reads the one column. A show with no outside
  * activity is absent from the map.
  * Best effort: a failed read returns null, and the caller keeps the order it

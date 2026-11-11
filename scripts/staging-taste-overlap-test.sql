@@ -1,8 +1,7 @@
 -- Proof that taste_overlap() gates on Premium and visibility under a real
 -- auth.uid(), and returns only what can_view_profile already lets you read.
 --
---   set -a; . .env; set +a
---   npm run staging:taste-overlap-test
+--   pnpm run staging:test -- taste-overlap
 --
 -- WHY: db:migration-test proves the SQL parses and db:block-clause proves the
 -- not_blocked clause is present. Neither runs the RPC as a signed-in user, so
@@ -12,9 +11,7 @@
 -- can_view_watchlist lets them see it). Nor whether Premium is read from the
 -- subscription rather than the badge.
 --
--- The migration is applied INSIDE the transaction (\ir below), so this proves
--- the branch's function without deploying it, and the rollback at the end
--- removes the function along with every fixture row.
+-- The rollback at the end removes every fixture row.
 --
 -- Accounts are the same three Staging fixtures the block test uses:
 --   A  the viewer, made Premium here with an active billing_customers row
@@ -34,11 +31,6 @@ begin;
 -- Valid claims even as postgres; see the note in staging-block-test.sql about
 -- protect_premium_flag() and pooled backends carrying ''.
 set local request.jwt.claims = '{"role":"service_role"}';
-
--- The latest taste_overlap body. Staging already has can_view_profile
--- (20260926090000) and can_view_watchlist (20260927160000); re-applying those
--- here would put their older list_items policy back inside the transaction.
-\ir ../supabase/migrations/20261002100000_taste_overlap_entitlement.sql
 
 select username as c_name from public.profiles where id = :C
 \gset

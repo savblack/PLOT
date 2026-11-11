@@ -3,17 +3,17 @@
 -- the log or the events) moves it back, and that a visitor to a public
 -- profile reads it and gets the owner's "last watched" order.
 --
---   set -a; . .env; set +a
---   pnpm run staging:watching-last-activity-test
+--   pnpm run staging:test -- watching-last-activity
 --
 -- WHY: the other activity sources are owner-only under RLS, so the public
 -- profile could order by the pointer time alone. The fix is
--- supabase/migrations/20261111100000_watching_progress_last_activity.sql.
+-- supabase/migrations/20261111160000_watching_progress_last_activity.sql.
 -- Unit tests cannot run triggers; this does.
 --
 -- Every write goes through RLS as fixture account A (auth.uid()), the way the
--- app writes. Everything, including the migration, is in one transaction
--- ending in rollback, so Staging is unchanged whether this passes or dies.
+-- app writes. The runner (scripts/staging-test.mjs) applies the branch's
+-- migration inside the same transaction, which ends in rollback, so Staging
+-- is unchanged whether this passes or dies.
 --
 -- now() is fixed for a transaction, so "moved" means last_activity_at = now().
 --
@@ -33,19 +33,8 @@
 
 begin;
 
--- ── migration (as postgres) ───────────────────────────────────────────────────
 -- Valid claims even here: see staging-block-test.sql on pooled backends.
 set local request.jwt.claims = '{"role":"service_role"}';
-select not exists (
-  select 1 from information_schema.columns
-  where table_schema = 'public' and table_name = 'watching_progress' and column_name = 'last_activity_at'
-) as need_apply \gset
-\if :need_apply
-\echo '=== applying 20261111100000 ==='
-\i supabase/migrations/20261111100000_watching_progress_last_activity.sql
-\else
-\echo 'already applied on Staging: checking the live triggers'
-\endif
 
 -- ── fixture (as postgres) ─────────────────────────────────────────────────────
 insert into public.watching_progress (user_id, tmdb_id, title, current_season, current_episode)

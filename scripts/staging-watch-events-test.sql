@@ -1,8 +1,5 @@
 \set ON_ERROR_STOP on
 begin;
-\i supabase/migrations/20260916140001_watch_event_foundation.sql
-\i supabase/migrations/20260916150000_import_watch_events.sql
-\i supabase/migrations/20260916170000_episode_watch_overrides.sql
 -- Existing staging identities and real catalogue IDs; no invented TMDB IDs.
 create temporary table event_test_fixture as
 select h.* from public.history h limit 1;
@@ -19,7 +16,7 @@ set local role authenticated;
 insert into public.watch_events(user_id, source, source_account, source_key, tmdb_id, media_type, date_precision)
 select user_id, 'test', 'test', 'test-owner-event', tmdb_id, media_type, 'unknown' from event_test_fixture;
 do $$ begin
-  if (select count(*) from public.watch_events) <> 1 then raise exception 'Owner cannot read event'; end if;
+  if (select count(*) from public.watch_events where source_key = 'test-owner-event') <> 1 then raise exception 'Owner cannot read event'; end if;
   raise notice 'PASS owner can insert and read own unknown-date event';
 end $$;
 reset role;
@@ -39,7 +36,8 @@ do $$ begin
 end $$;
 reset role;
 do $$ begin
-  if (select count(*) from public.watch_events) <> 1 then raise exception 'Cross-account delete succeeded'; end if;
+  -- Scoped to this test's row: watch_events is live, and postgres sees every account's.
+  if (select count(*) from public.watch_events where source_key = 'test-owner-event') <> 1 then raise exception 'Cross-account delete succeeded'; end if;
 end $$;
 set local role anon;
 do $$ begin

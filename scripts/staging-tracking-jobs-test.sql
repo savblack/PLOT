@@ -1,8 +1,5 @@
 \set ON_ERROR_STOP on
 begin;
-\i supabase/migrations/20260916140001_watch_event_foundation.sql
-\i supabase/migrations/20260916150000_import_watch_events.sql
-\i supabase/migrations/20260917100000_tracking_jobs.sql
 create temporary table tracking_fixture as select h.*,gen_random_uuid() integration_id from public.history h limit 1;
 do $$ begin if not exists(select 1 from tracking_fixture) then raise exception 'An existing staging history item is required'; end if; end $$;
 insert into public.media_integrations(id,user_id,provider,display_name,status)

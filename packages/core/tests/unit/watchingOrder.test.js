@@ -35,7 +35,7 @@ test('timestamps are compared as instants, not strings', () => {
 });
 
 // The database moves last_activity_at when a show is logged in History,
-// ticked on the title page or imported (20261111100000; the Staging proof is
+// ticked on the title page or imported (20261111160000; the Staging proof is
 // scripts/staging-watching-last-activity-test.sql). These model the row after
 // that trigger has run.
 const pointerTable = (rows) => rows.map(r => ({ user_id: 'u1', last_activity_at: null, ...r }));

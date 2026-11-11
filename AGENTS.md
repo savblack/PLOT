@@ -333,13 +333,23 @@ So:
   body that changed. **A redefinition that only ADDS lines is the safe shape** — the tool
   counts removed lines for exactly that reason. Not a CI gate: it needs production
   credentials and its output is a diff for a human to read.
-- **`pnpm run staging:block-test` / `pnpm run staging:premium-flag-test`** execute policies
-  and RPCs under a real `auth.uid()` on the Staging project, which no static check and not
-  `db:migration-test` can do. Both wrap themselves in one transaction ending in `rollback`,
-  so Staging is unchanged whether they pass or die partway — a teardown block at the bottom
-  of a script does not run when the script dies above it, which is how a previous run left a
-  profile public and a block row behind. New Staging proofs are a `.sql` file plus an entry
-  in `package.json`; `scripts/staging-sql.sh` is the shared connection wrapper.
+- **`pnpm run staging:test -- <name|all>`** runs the Staging SQL tests
+  (`scripts/staging-<name>-test.sql`; `-- --list` names them). They execute policies, RPCs
+  and triggers under a real `auth.uid()` on the Staging project, which no static check and
+  not `db:migration-test` can do. `.github/workflows/staging-tests.yml` runs `all` nightly
+  (a failure opens an `incident` issue; the next pass closes it) and on every PR touching
+  `supabase/migrations/`. Each test runs in one transaction ending in `rollback`, so Staging
+  is unchanged whether it passes or dies partway — a teardown block at the bottom of a
+  script does not run when the script dies above it, which is how a previous run left a
+  profile public and a block row behind. The runner (`scripts/staging-test.mjs`) first
+  applies, inside that transaction, every migration in your checkout that Staging has not
+  recorded, so a branch's migrations are checked by every test. **A test must never `\i` a
+  migration itself:** replaying a shipped migration puts an older function body back inside
+  the transaction and the test passes against code that is no longer live. That is how 17
+  of 26 tests had silently stopped working by November 2026; the runner refuses such a
+  file. Fixture accounts A/B/C come from `scripts/staging-test-fixtures.sql`, which
+  recreates any Staging has lost. A new test is just a new `scripts/staging-<name>-test.sql`;
+  `scripts/staging-sql.sh` is the shared connection wrapper and is hard-wired to Staging.
   The block test asserts from four viewpoints — blocker, blocked, an unrelated bystander,
   and an anonymous reader. The last two are not padding: they are the only thing that
   catches a visibility clause that is too *broad*.

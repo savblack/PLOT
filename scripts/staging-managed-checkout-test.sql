@@ -2,15 +2,8 @@
 begin;
 create temporary table managed_fixture as select id from auth.users where email like 'plot-import-qa-%@example.invalid' order by created_at limit 1;
 delete from public.billing_checkout_attempts where user_id in (select id from managed_fixture);
-select exists(select 1 from information_schema.columns where table_schema='public' and table_name='billing_checkout_attempts' and column_name='managed_payments') as already_applied \gset
-\if :already_applied
 insert into public.billing_checkout_attempts(user_id,price_id,settings_url,managed_payments)
 select id,'price_legacy_test','https://example.invalid/settings',false from managed_fixture;
-\else
-insert into public.billing_checkout_attempts(user_id,price_id,settings_url)
-select id,'price_legacy_test','https://example.invalid/settings' from managed_fixture;
-\i supabase/migrations/20260925120000_checkout_managed_payments.sql
-\endif
 do $$ declare uid uuid; claim jsonb; begin
  select id into uid from managed_fixture;
  if uid is null then raise exception 'Synthetic pilot required'; end if;

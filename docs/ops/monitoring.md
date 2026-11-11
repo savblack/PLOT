@@ -1,0 +1,30 @@
+# What watches Plot
+
+Each watcher runs on Cloudflare's cron, which fires on time, unlike GitHub's
+schedule. Every watcher emails `sav.black@outlook.com` once when something
+breaks, sends a reminder every few hours while it lasts, and emails again when
+it recovers.
+
+| Watcher | Every | Checks | Lives in |
+|---|---|---|---|
+| uptime-watch | 5 min | app.theplot.tv serves the app shell. The TMDB proxy returns trending titles. Edge functions answer (`billing-availability`). | `apps/web/workers/uptime-watch` |
+| whats-on-watch | 30 min | theplot.tv/whats-on shows articles | `apps/web/workers/whats-on-watch` |
+| backup-heartbeat | daily | Last night's database backup and the weekly storage mirror landed in R2 | `apps/web/workers/backup-heartbeat` |
+
+GitHub-side watchers raise issues rather than email:
+
+- `supabase-deploy-guard.yml` raises an issue when production misses main's migrations or function deploys.
+- `whats-on-health.yml` is a backup for whats-on-watch.
+
+uptime-watch also opens a GitHub issue labelled `incident` when its
+`GITHUB_TOKEN` secret is set, and closes the issue on recovery.
+
+## Not watched yet
+
+- A signed-in read and write (the shape of the July 2026 outage). Needs a dedicated Staging test account.
+- Stripe webhook delivery failures, pg_cron job failures, and PostHog exception spikes.
+- Five scheduled workflows that fail silently: `db-write-paths`, `migration-drift`, `netflix-top10`, `streaming-top10`, `broadcast-guide`.
+
+## Deploying or changing a watcher
+
+The deploy steps are in each Worker's `wrangler.toml` header. Run the unit tests with `pnpm run test:workers`.

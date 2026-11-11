@@ -7,7 +7,7 @@
  *   - updated_at: the episode pointer moving,
  *   - last_activity_at: an imported or synced episode, an episode ticked on
  *     the title page, or the show logged in History. Triggers keep it current
- *     (20261111100000), so it is readable wherever the pointer row is,
+ *     (20261111160000), so it is readable wherever the pointer row is,
  *     including a visitor's view of a public profile.
  * last_activity_at deliberately leaves pointer moves out: undoing a tick puts
  * the old updated_at back, and that has to move the show back too.

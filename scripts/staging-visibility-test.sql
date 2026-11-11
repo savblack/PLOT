@@ -1,8 +1,7 @@
 -- Proof that one visibility rule governs profile content, and that each custom
 -- list's visibility setting means what its label says.
 --
---   set -a; . .env; set +a
---   npm run staging:visibility-test
+--   pnpm run staging:test -- visibility
 --
 -- WHY: db:migration-test proves 20260926090000 applies to a copy of production,
 -- but it never runs a policy under a real auth.uid(). This does, from five
@@ -10,9 +9,8 @@
 -- anonymous reader, and a blocked user. The stranger and the anonymous reader
 -- catch a rule that is too BROAD; the follower catches one that is too narrow.
 --
--- It applies the migration itself, inside the transaction, so it runs whether
--- or not Staging has the migration yet, and the final rollback removes both the
--- migration and every fixture. Staging is unchanged whether it passes or dies.
+-- The final rollback removes every fixture, so Staging is unchanged whether it
+-- passes or dies.
 --
 -- Title ids are borrowed from rows already on Staging (they came from TMDB);
 -- never invent them.
@@ -26,7 +24,7 @@
 
 begin;
 
--- ── fixtures, before the migration (as postgres) ─────────────────────────────
+-- ── fixtures (as postgres) ───────────────────────────────────────────────────
 -- See staging-block-test.sql for why the claims must be valid even here.
 set local request.jwt.claims = '{"role":"service_role"}';
 
@@ -35,7 +33,9 @@ select tmdb_id as t1, media_type as m1, title as n1 from public.history order by
 select tmdb_id as t2, media_type as m2, title as n2 from public.history where tmdb_id <> :t1 order by tmdb_id limit 1
 \gset
 
-update public.profiles set is_public = false where id = :A;
+-- watchlist_visibility null is the default, so Want to Watch follows the rule
+-- below rather than whatever A last chose on Staging.
+update public.profiles set is_public = false, watchlist_visibility = null where id = :A;
 update public.profiles set is_public = true  where id in (:B, :C);
 delete from public.follows where (follower_id, following_id) in ((:B, :A), (:C, :A));
 -- trg_set_follow_status makes any follow of a private profile 'pending';
@@ -43,12 +43,11 @@ delete from public.follows where (follower_id, following_id) in ((:B, :A), (:C, 
 insert into public.follows (follower_id, following_id) values (:B, :A);
 update public.follows set status = 'accepted' where follower_id = :B and following_id = :A;
 
--- A list made "public" before visibility existed, on a private profile. The
--- backfill makes it 'public', which the private profile caps at followers.
+-- A list made "public" the way an app build that only knows is_public does it,
+-- on a private profile. It should read as 'public', which the private profile
+-- caps at followers.
 insert into public.user_custom_lists (user_id, name, is_public)
   values (:A, 'vis-test legacy', true);
-
-\i supabase/migrations/20260926090000_unified_profile_visibility.sql
 
 set local request.jwt.claims = '{"role":"service_role"}';
 
@@ -71,9 +70,9 @@ select id as public_id from public.user_custom_lists where user_id = :A and name
 \gset
 
 \echo ''
-\echo '=== migration: backfill and the is_public mirror ==='
+\echo '=== the is_public mirror for older app builds ==='
 select case when visibility = 'public' and is_public then 'PASS' else 'FAIL' end
-       || '  legacy public list became public'
+       || '  a list made public through is_public reads as public'
   from public.user_custom_lists where user_id = :A and name = 'vis-test legacy';
 select case when bool_and(is_public = (visibility in ('public', 'link'))) then 'PASS' else 'FAIL' end
        || '  is_public mirrors visibility on insert'
@@ -101,10 +100,10 @@ select case when count(*) = 4 then 'PASS' else 'FAIL' end || '  owner sees all f
 \echo ''
 \echo '=== As B (accepted follower of private A) ==='
 set local request.jwt.claims = :B_CLAIMS;
--- Applies 20260926090000 alone. 20260927160000 narrows Want to Watch again
--- (a private profile's is only me by default); staging-watchlist-visibility-test.sql
--- proves that rule.
-select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  follower sees Want to Watch (newly allowed)'
+-- 20260926090000 opened Want to Watch to followers; 20260927160000 narrowed it
+-- again (a private profile's is only me by default). This checks the default;
+-- staging-watchlist-visibility-test.sql proves each setting.
+select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  follower does not see Want to Watch by default (only me)'
   from public.list_items where user_id = :A and tmdb_id = :t1;
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  follower sees Watching progress (newly allowed)'
   from public.watching_progress where user_id = :A and tmdb_id = :t2;

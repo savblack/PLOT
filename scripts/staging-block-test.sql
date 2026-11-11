@@ -1,8 +1,7 @@
 -- Two-account (plus a bystander, plus an anonymous reader) proof that a block
 -- hides identity.
 --
---   set -a; . .env; set +a
---   npm run staging:block-test
+--   pnpm run staging:test -- block
 --
 -- WHY: db:migration-test proves the SQL parses. db:block-clause proves the
 -- clause is present in the latest definition of every identity function.
@@ -15,8 +14,9 @@
 -- hides people nobody blocked. Without them a migration that hid everyone from
 -- everyone would pass every other check in the repo.
 --
--- It cannot be a CI gate: it needs Staging credentials and it mutates rows.
--- Run it before merging anything that touches not_blocked or an identity RPC.
+-- It runs nightly and on every migration PR (.github/workflows/staging-tests.yml),
+-- with that PR's pending migrations applied first. Run it by hand too before
+-- merging anything that touches not_blocked or an identity RPC.
 --
 -- The three accounts are the Staging fixtures below. They are private by
 -- default; this makes them public inside the transaction and puts them back by
@@ -43,6 +43,11 @@ begin;
 set local request.jwt.claims = '{"role":"service_role"}';
 
 update public.profiles set is_public = true where id in (:A, :B, :C);
+-- Usernames are read, not hardcoded: scripts/staging-test-fixtures.sql may have
+-- recreated an account Staging lost, under a different name.
+select username as a_name from public.profiles where id = :A \gset
+select username as b_name from public.profiles where id = :B \gset
+select username as c_name from public.profiles where id = :C \gset
 
 insert into public.follows (follower_id, following_id, status) values
   (:A, :C, 'accepted'),   -- A and B both follow C, so C's follower list is the
@@ -60,9 +65,9 @@ set local role authenticated;
 set local request.jwt.claims = :A_CLAIMS;
 
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A sees B''s profile card'
-  from public.get_profile_card('preview');
+  from public.get_profile_card(:'b_name');
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A finds B in search'
-  from public.search_users('preview');
+  from public.search_users(:'b_name') where id = :B;
 select case when count(*) = 2 then 'PASS' else 'FAIL' end || '  A sees both of C''s followers (A and B)'
   from public.list_followers(:C);
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A sees B''s notification'
@@ -81,9 +86,9 @@ insert into public.user_blocks (blocker_id, blocked_id) values (:A, :B);
 \echo ''
 \echo '=== AFTER THE BLOCK (as A, the blocker) ==='
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  B''s profile card is gone'
-  from public.get_profile_card('preview');
+  from public.get_profile_card(:'b_name');
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  B is gone from search'
-  from public.search_users('preview');
+  from public.search_users(:'b_name') where id = :B;
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  B is gone from suggestions'
   from public.suggested_users(50) where id = :B;
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  B''s follower list is gone (p_target conjunct)'
@@ -100,14 +105,14 @@ select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  B''s follow of A
 \echo ''
 \echo '--- and A must not have lost anything else ---'
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A still sees C''s profile card'
-  from public.get_profile_card('test');
+  from public.get_profile_card(:'c_name');
 select case when count(*) = :c_before and count(*) > 0 then 'PASS' else 'FAIL' end
        || '  A still sees all ' || :c_before || ' of C''s notifications'
   from public.list_notifications() where actor_id = :C;
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A still appears in C''s follower list'
   from public.list_followers(:C) where id = :A;
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A can still see their OWN profile card'
-  from public.get_profile_card('sav-black');
+  from public.get_profile_card(:'a_name');
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A can still see B in the blocked list (the unblock path)'
   from public.list_blocked_users() where id = :B;
 
@@ -115,9 +120,9 @@ select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A can still see 
 \echo '=== AFTER THE BLOCK (as B, the blocked — must be symmetric) ==='
 set local request.jwt.claims = :B_CLAIMS;
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  A''s profile card is gone'
-  from public.get_profile_card('sav-black');
+  from public.get_profile_card(:'a_name');
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  A is gone from search'
-  from public.search_users('sav-black');
+  from public.search_users(:'a_name') where id = :A;
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  A is gone from suggestions'
   from public.suggested_users(50) where id = :A;
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  A''s follower list is gone'
@@ -127,7 +132,7 @@ select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  A is gone from C
 select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  B is told nothing: the block list is empty'
   from public.list_blocked_users();
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  B still sees C normally'
-  from public.get_profile_card('test');
+  from public.get_profile_card(:'c_name');
 
 \echo ''
 \echo '--- and B cannot put the follow back ---'
@@ -155,9 +160,9 @@ end $$;
 \echo '=== AS C, the bystander — nothing may have changed ==='
 set local request.jwt.claims = :C_CLAIMS;
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  C still sees A'
-  from public.get_profile_card('sav-black');
+  from public.get_profile_card(:'a_name');
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  C still sees B'
-  from public.get_profile_card('preview');
+  from public.get_profile_card(:'b_name');
 select case when count(*) = 2 then 'PASS' else 'FAIL' end || '  C still sees both of their own followers'
   from public.list_followers(:C);
 
@@ -167,9 +172,9 @@ reset role;
 set local role anon;
 set local request.jwt.claims = '';
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  anon still sees A'
-  from public.get_profile_card('sav-black');
+  from public.get_profile_card(:'a_name');
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  anon still sees B'
-  from public.get_profile_card('preview');
+  from public.get_profile_card(:'b_name');
 
 reset role;
 rollback;
