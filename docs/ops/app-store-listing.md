@@ -243,8 +243,9 @@ so create the Max device type before capturing.
       Connect is changed to match, never the other way round. #1428 set the
       app to 1.0.0 and the next release moved it to 1.2.0. Apple refuses an
       upload whose version has no open version record, so check this right
-      before `eas build`.
-- [ ] Review notes in App Store Connect are the current text from
+      before `eas build`. Set to 1.2.0 in App Store Connect on 2026-11-11;
+      left unticked because it has to be checked again at build time.
+- [x] Review notes in App Store Connect are the current text from
       [../launch/app-review-notes.md](../launch/app-review-notes.md).
 
 ## Entered in App Store Connect (2026-10-15)

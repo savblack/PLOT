@@ -24,15 +24,19 @@ The fix is to change App Store Connect to 1.2.0. The docs now say so.
 - docs/ops/versioning.md: current version and why the App Store Connect version
   follows app.json.
 
-## Next (App Store Connect, needs Savannah signed in)
+## Done (App Store Connect, 2026-11-11)
 
-1. Open app 6797167864 > iOS version in Prepare for Submission.
-2. Change the version string from 1.0 to 1.2.0 (it must equal expo.version in
-   apps/mobile/app.json at build time).
-3. Under App Review Information > Notes, replace the text with the block in
-   docs/launch/app-review-notes.md. Keep the password only in Sign-In
-   Information.
-4. Save. Do not submit.
+- Version string changed from 1.0 to 1.2.0, and the review notes replaced with
+  the block in docs/launch/app-review-notes.md (paragraphs unwrapped). Saved,
+  not submitted. Confirmed after a page reload: version reads 1.2.0, notes
+  contain the new Premium text and not the old "shows no prices" line. Sign-In
+  Information fields were left as they were.
+
+## Next
+
+- Open a PR for this branch (docs only), after removing this file.
+- Before the next `eas build`: confirm expo.version still equals the App Store
+  Connect version, and that the demo account is on the Free plan.
 
 ## Checks
 
