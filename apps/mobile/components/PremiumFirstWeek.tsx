@@ -135,8 +135,12 @@ export default function PremiumFirstWeek({ onState }: { onState: (next: PremiumF
   return (
     <View style={styles.card} accessibilityLabel={T.title}>
       <View style={styles.head}>
-        <Text style={styles.title} accessibilityRole="header">{T.title}</Text>
-        <View style={{ flex: 1 }} />
+        {/* The title is longer than Finishing touches', and the shared head
+            row wraps: on a phone the arrow fell to a line of its own. This
+            row does not wrap; the title gives way instead, shrinking a little
+            before it would ever push Dismiss or the arrow off the line. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' }}>
+        <Text style={[styles.title, { flex: 1 }]} accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{T.title}</Text>
         <TouchableOpacity
           onPress={async () => {
             track(EVENTS.PREMIUM_FIRST_WEEK_HIDDEN, { done_count: doneCount });
@@ -159,6 +163,7 @@ export default function PremiumFirstWeek({ onState }: { onState: (next: PremiumF
             <Path d="M6 9l6 6 6-6" />
           </Svg>
         </TouchableOpacity>
+        </View>
         <View style={styles.barFull} accessibilityRole="image" accessibilityLabel={T.progressLabel(doneCount, total)}>
           {tiles.map((tile, i) => <View key={tile.id} style={[styles.barSeg, i < doneCount && styles.barSegOn]} />)}
         </View>
