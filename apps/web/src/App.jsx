@@ -18,6 +18,7 @@ import { setUserTimezone } from './utils/date.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
 import CollectionPanel from './components/CollectionPanel.jsx';
+import PersonPanel from './components/PersonPanel.jsx';
 import SearchPalette from './components/SearchPalette.jsx';
 import SaveRecommendationPrompt from './components/SaveRecommendationPrompt.jsx';
 import { useTheme } from './hooks/useTheme.js';
@@ -304,6 +305,7 @@ export default function App() {
     // deep links) routes through here, so one call covers them all. A
     // collection is not a title, so it gets its own event.
     if (type === 'collection') track(EVENTS.COLLECTION_VIEWED, { collection_id: id, source });
+    else if (type === 'person') track(EVENTS.PERSON_VIEWED, { person_id: id, source });
     else track(EVENTS.TITLE_VIEWED, { tmdb_id: id, media_type: type, source });
   }, []);
   const { panelItem, panelClosing, openPanel, closePanel, hidePanel } = usePanelRoute({ onView: trackPanelView });
@@ -470,7 +472,15 @@ export default function App() {
         />
       )}
 
-      {panelItem && panelItem.type !== 'collection' && (
+      {panelItem && panelItem.type === 'person' && (
+        <PersonPanel
+          personId={panelItem.id}
+          closing={panelClosing}
+          onClose={closePanel}
+        />
+      )}
+
+      {panelItem && panelItem.type !== 'collection' && panelItem.type !== 'person' && (
         <MediaPanel
           itemId={panelItem.id}
           itemType={panelItem.type}

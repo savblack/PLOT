@@ -5,7 +5,7 @@
 // no session preview). Web only for now: mobile parity is
 // https://github.com/savblack/PLOT/issues/1090.
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import BackLink from './BackLink.jsx';
 import { THEME_FAMILIES, THEME_MODES, isPremiumFamily } from '@plot/core/themes.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { useApp } from '../hooks/useApp.js';
@@ -30,7 +30,7 @@ export default function ThemesGallery() {
 
   return (
     <div className="themes-gallery">
-      <Link to="/settings?section=account" className="themes-back">{G.back}</Link>
+      <BackLink to="/settings?section=account" label={G.back} />
       <div className="themes-head">
         <h2 className="themes-title">{G.title}</h2>
         <div className="settings-theme-tabs" role="tablist" aria-label={A.optionsLabel}>

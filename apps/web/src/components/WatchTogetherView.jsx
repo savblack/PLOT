@@ -24,6 +24,7 @@ import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import './WatchTogetherView.css';
 import PremiumGateButton from './PremiumGateButton.jsx';
+import BackLink from './BackLink.jsx';
 
 // The hub and start page open the upgrade sheet from a button; the overlap
 // page reports this itself when it loads locked.
@@ -285,7 +286,7 @@ function Picker({ wt }) {
 
   return (
     <div className="wt-page">
-      <Link to="/together" className="wt-back">{COMMON.back}</Link>
+      <BackLink to="/together" label={T.hub.title} />
       <h1 className="wt-title">{T.hub.whosWatching}</h1>
       <fieldset className="wt-pick">
         <legend className="wt-sr">{T.hub.partners}</legend>
@@ -339,7 +340,7 @@ function Invite({ wt }) {
   const list = query.trim().length >= 2 ? results : suggested;
   return (
     <div className="wt-page">
-      <Link to="/together" className="wt-back">{COMMON.back}</Link>
+      <BackLink to="/together" label={T.hub.title} />
       <h1 className="wt-title">{T.invite.title}</h1>
       <p className="wt-card-body">{T.invite.body}</p>
       <p className="wt-note">{T.invite.mutualNote}</p>
@@ -385,7 +386,7 @@ function NotPairedYet({ wt, username }) {
 
   return (
     <div className="wt-page">
-      <Link to="/together" className="wt-back">{COMMON.back}</Link>
+      <BackLink to="/together" label={T.hub.title} />
       {person === undefined ? null : person
         ? <WatchTogetherTile person={person} viewer={user} viewerProfile={profile} onChange={wt.refresh} />
         : <p className="wt-note">{T.overlap.notPartners}</p>}
@@ -418,7 +419,7 @@ function Together({ wt, usernames }) {
     // One person you aren't paired with yet (the usual way in from taste
     // overlap or a shared link): offer the invite rather than a dead end.
     if (usernames.length === 1) return <NotPairedYet wt={wt} username={usernames[0]} />;
-    return <div className="wt-page"><Link to="/together" className="wt-back">{COMMON.back}</Link><p className="wt-note">{T.overlap.notPartners}</p></div>;
+    return <div className="wt-page"><BackLink to="/together" label={T.hub.title} /><p className="wt-note">{T.overlap.notPartners}</p></div>;
   }
   const { all, some } = splitGroupMatches(shown, people.length + 1);
   const decide = async () => {
@@ -428,7 +429,7 @@ function Together({ wt, usernames }) {
 
   return (
     <div className="wt-page">
-      <Link to="/together" className="wt-back">{COMMON.back}</Link>
+      <BackLink to="/together" label={T.hub.title} />
       <div className="wt-who"><AvatarStack people={people} /><span className="wt-note">{group ? T.overlap.group(people.map(personName)) : T.overlap.pair(personName(people[0] || {}))}</span></div>
       <h1 className="wt-title">{group ? T.overlap.groupHeading : T.overlap.heading(titles.length)}</h1>
       {!group && titles.length > 0 && <div><button type="button" className="btn btn-primary btn-sm" onClick={decide}>{T.session.start}</button></div>}
@@ -567,7 +568,7 @@ function SessionView({ wt, sessionId }) {
   };
 
   if (loading && !session) return <div className="wt-page"><p className="wt-note" role="status">{COMMON.loading}</p></div>;
-  if (error || !session) return <div className="wt-page"><Link to="/together" className="wt-back">{COMMON.back}</Link><p className="wt-note">{T.errors[error || 'generic']}</p></div>;
+  if (error || !session) return <div className="wt-page"><BackLink to="/together" label={T.hub.title} /><p className="wt-note">{T.errors[error || 'generic']}</p></div>;
 
   const matchList = (
     <section className="wt-section">
@@ -586,7 +587,7 @@ function SessionView({ wt, sessionId }) {
   return (
     <div className="wt-page wt-session">
       <header className="wt-session-head">
-        <Link to="/together" className="wt-back">{T.session.leave}</Link>
+        <BackLink to="/together" label={T.session.leave} />
         <div className="wt-session-title">
           <h1 className="wt-card-title">{T.session.heading(name)}</h1>
           <span className="wt-note">{T.session.fromBoth}</span>
@@ -653,11 +654,11 @@ function JoinSession({ wt, username }) {
     });
     return () => { live = false; };
   }, [partner, navigate]);
-  if (!wt.loading && !partner) return <div className="wt-page"><Link to="/together" className="wt-back">{COMMON.back}</Link><p className="wt-note">{T.overlap.notPartners}</p></div>;
+  if (!wt.loading && !partner) return <div className="wt-page"><BackLink to="/together" label={T.hub.title} /><p className="wt-note">{T.overlap.notPartners}</p></div>;
   if (!missing) return <div className="wt-page"><p className="wt-note" role="status">{COMMON.loading}</p></div>;
   return (
     <div className="wt-page">
-      <Link to="/together" className="wt-back">{COMMON.back}</Link>
+      <BackLink to="/together" label={T.hub.title} />
       <p className="wt-card-body">{T.session.ended}</p>
       <div><Link to={`/together/with/${encodeURIComponent(username)}`} className="btn btn-primary btn-sm">{T.tile.pairedAction}</Link></div>
     </div>

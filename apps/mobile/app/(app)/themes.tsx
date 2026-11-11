@@ -32,7 +32,7 @@ export default function ThemesScreen() {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE, paddingHorizontal: spacing.xl, gap: spacing.lg }}>
         <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.back}>{A.gallery.back}</Text>
+          <Text style={styles.back}>{`‹ ${A.gallery.back}`}</Text>
         </TouchableOpacity>
         <Text style={styles.title} accessibilityRole="header">{A.gallery.title}</Text>
         <Text style={styles.intro}>{premium ? A.themesHint(colour) : A.gallery.lockedNote}</Text>

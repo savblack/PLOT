@@ -96,7 +96,7 @@ export default function HomeLayoutSheet({
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel home-layout-sheet" role="dialog" aria-label={C.title} ref={sheetRef}>
         <div className="home-layout-sheet-head">
-          <SheetHeader title={C.title} onClose={onClose} action={{ label: C.done, onClick: onClose }} />
+          <SheetHeader title={C.title} onClose={onClose} />
         </div>
         <div className="home-layout-sheet-body">
           <p className="home-layout-sheet-intro"><span className="home-layout-intro-drag">{C.body}</span><span className="home-layout-intro-arrows">{C.bodyArrows}</span></p>

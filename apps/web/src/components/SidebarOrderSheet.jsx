@@ -34,7 +34,7 @@ export default function SidebarOrderSheet({ order, isDefault, error, onNudge, on
       <div className="panel-overlay" onClick={onClose} />
       <div className="panel home-layout-sheet" role="dialog" aria-label={C.title} ref={sheetRef}>
         <div className="home-layout-sheet-head">
-          <SheetHeader title={C.title} onClose={onClose} action={{ label: C.done, onClick: onClose }} />
+          <SheetHeader title={C.title} onClose={onClose} />
         </div>
         <div className="home-layout-sheet-body">
           <p className="home-layout-sheet-intro">{C.body}</p>

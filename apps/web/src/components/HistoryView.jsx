@@ -271,7 +271,7 @@ function CompareCard() {
   );
 }
 
-function PeopleCard({ entries, details, navigateTo, onShare, shareReady }) {
+function PeopleCard({ entries, details, openPanel, onShare, shareReady }) {
   const art = useUserArtwork();
   const people = recurringPeople(entries, details);
   if (!people.length) return null;
@@ -282,7 +282,7 @@ function PeopleCard({ entries, details, navigateTo, onShare, shareReady }) {
         {people.map(p => {
           const img = profileUrl(art.path('person', p.id, 'profile') || p.profile_path, 'w185');
           return (
-            <button key={p.id} type="button" className="hist-person" onClick={() => navigateTo(`person/${p.id}`)}>
+            <button key={p.id} type="button" className="hist-person" onClick={() => openPanel(p.id, 'person', 'history')}>
               <span className="hist-person-avatar">{img && <img src={img} alt="" />}</span>
               <span className="hist-person-text">
                 <span className="hist-person-name">{p.name}</span>
@@ -370,12 +370,11 @@ function MonthGroup({ group, allGroups, today, openPanel }) {
  * @param {boolean} props.detailsLoading
  * @param {Array<{id:number,name:string}>} props.genreList
  * @param {Function} props.openPanel
- * @param {Function} props.navigateTo
  * @param {number}  props.activeYear
  * @param {Function} props.onYear
  * @param {Date}    [props.today]
  */
-export function HistoryPage({ entries, details, detailsLoading, genreList, openPanel, navigateTo, activeYear, onYear, today = new Date(), topLists, profile, sharePreset = null, onSharePresetUsed, premium = false, drilldown = null, onDrilldown, onClearDrilldown }) {
+export function HistoryPage({ entries, details, detailsLoading, genreList, openPanel, activeYear, onYear, today = new Date(), topLists, profile, sharePreset = null, onSharePresetUsed, premium = false, drilldown = null, onDrilldown, onClearDrilldown }) {
   const years = useMemo(() => yearsWithEntries(entries), [entries]);
   const yearEntries = useMemo(() => entriesInYear(entries, activeYear), [entries, activeYear]);
 
@@ -548,7 +547,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
           )}
           <CrowdCard entries={yearEntries} details={details} openPanel={openPanel}
             onShare={canShare ? () => setShareCard(CARD_IDS.CROWD) : null} shareReady={cardReady(CARD_IDS.CROWD)} />
-          <PeopleCard entries={yearEntries} details={details} navigateTo={navigateTo}
+          <PeopleCard entries={yearEntries} details={details} openPanel={openPanel}
             onShare={canShare ? () => setShareCard(CARD_IDS.PERSON) : null} shareReady={cardReady(CARD_IDS.PERSON)} />
           <CompareCard />
           <Filters
@@ -587,7 +586,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
 /* Container: the signed-in user's history, TMDB details for the selected
    year, and the genre list. */
 export default function HistoryView() {
-  const { user, profile, openPanel, navigateTo } = useApp();
+  const { user, profile, openPanel } = useApp();
   const { lists: topLists } = useTopLists(user?.id);
   // ?share=<card> opens the sheet on that card once, then leaves the URL clean.
   const [sharePreset, clearSharePreset] = useSharePreset();
@@ -619,7 +618,6 @@ export default function HistoryView() {
       detailsLoading={detailsLoading}
       genreList={genreList}
       openPanel={openPanel}
-      navigateTo={navigateTo}
       activeYear={activeYear}
       onYear={y => { clearDrilldown(); setYear(y); }}
       today={today}
