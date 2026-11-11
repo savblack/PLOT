@@ -229,7 +229,7 @@ export function WatchTogetherSettings({ user, profile }) {
             {watchlistVisibility !== 'everyone' && (
               <div className="wt-settings-share">
                 <span>{T.settings.shareFull}</span>
-                <SettingsSwitch label={`${T.settings.shareFull}: ${personName(p)}`} checked={p.i_share_full} onChange={async () => { await setShareFull(p.other_id, !p.i_share_full); refreshWatchlistVisibility(); }} />
+                <SettingsSwitch label={`${T.settings.shareFull}: ${personName(p)}`} checked={p.i_share_full} onChange={async () => { await setShareFull(p.other_id, !p.i_share_full); refreshWatchlistVisibility(); }} saves />
               </div>
             )}
           </div>

@@ -286,7 +286,7 @@ export function SmartListSection({ list, customLists, historyEntries, historyRea
               {rollUpError ? SMART_LISTS.rollUpFailed : inRollUp ? SMART_LISTS.rollUpOn : SMART_LISTS.rollUpOff}
             </span>
           </span>
-          <SettingsSwitch label={SMART_LISTS.rollUp} checked={inRollUp} disabled={rollUpDraft !== null} onChange={toggleRollUp} />
+          <SettingsSwitch label={SMART_LISTS.rollUp} checked={inRollUp} disabled={rollUpDraft !== null} onChange={toggleRollUp} saves />
         </div>
       )}
     </>
