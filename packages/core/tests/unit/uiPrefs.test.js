@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  defaultUiPrefs, isDefaultUiPrefs, moveMyListsSection, moveSidebarItem, MY_LISTS_SECTION_IDS, normalizeUiPrefs, nudgeMyListsSection,
+  arrangeByMyListsOrder, defaultUiPrefs, isDefaultUiPrefs, moveMyListsSection, moveSidebarItem, MY_LISTS_SECTION_IDS, normalizeUiPrefs, nudgeMyListsSection,
   nudgeSidebarItem, orderMyListsSections, orderSidebarItems, resetMyListsOrder, resetSidebar, setCardStyle, setDensity, setMyListsCollapsed,
 } from '../../uiPrefs.js';
 
@@ -91,4 +91,15 @@ test('my lists: folding toggles one section, and resetting the order leaves fold
   p = resetMyListsOrder(p);
   assert.deepEqual(p.myLists, { order: [], collapsed: ['watching', 'smart'] });
   assert.deepEqual(setMyListsCollapsed(p, 'smart', false).myLists.collapsed, ['watching']);
+});
+
+test('my lists: an app that splits a section keeps its own default until an order is saved, then follows it', () => {
+  const ids = ['watching', 'want', 'top10', 'favorites', 'lists', 'smart'];
+  const sectionOf = (id) => ({ watching: 'watching', top10: 'top', smart: 'smart' }[id] ?? 'lists');
+  assert.deepEqual(arrangeByMyListsOrder([], ids, sectionOf), ids);
+  assert.deepEqual(arrangeByMyListsOrder(undefined, ids, sectionOf), ids);
+  // Smart lists first: the three Lists pieces stay together, in the app's order.
+  assert.deepEqual(arrangeByMyListsOrder(['smart', 'lists'], ids, sectionOf), ['smart', 'want', 'favorites', 'lists', 'watching', 'top10']);
+  // An id whose section is unknown goes last rather than vanishing.
+  assert.deepEqual(arrangeByMyListsOrder(['top'], ['odd', 'top10'], (id) => (id === 'top10' ? 'top' : 'nope')), ['top10', 'odd']);
 });

@@ -3,7 +3,9 @@ import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { arrangeByMyListsOrder, normalizeUiPrefs } from '@plot/core/uiPrefs.js';
+import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity,
   Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, LayoutAnimation,
@@ -83,6 +85,10 @@ const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collaps
 // whichever tab is active.
 const LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 const SMART_SECTION_ID = 'smart';
+// Which of web's My Lists sections (MY_LISTS_SECTION_IDS in uiPrefs.js) each
+// mobile section belongs to. Watchlist, Favorites and custom lists are one
+// Lists section there, so they move together here.
+const sharedSectionOf = (id: string) => ({ watching: 'watching', top10: 'top', smart: 'smart' }[id] ?? 'lists');
 
 // Type filter options match web's, and the filtering itself runs through
 // core's filterByType so `cinema` (a client-side flag, not a TMDB
@@ -720,6 +726,12 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
 
   // The Show choices: every list tab except History, which has its own screen. The
   // favourites tab carries a null label in the shared list (region-spelled).
+  // The sections in the viewer's saved order (Customize, or set on web). With
+  // nothing saved this is mobile's own order. History is its own view, first.
+  const sectionOrder = ['history', ...arrangeByMyListsOrder(
+    normalizeUiPrefs(profile?.ui_prefs).myLists.order, [...LIST_SECTION_IDS, SMART_SECTION_ID], sharedSectionOf)];
+  const inOrder = (nodes: Record<string, ReactNode>) => sectionOrder.map(id => <Fragment key={id}>{nodes[id]}</Fragment>);
+
   const listTabs = TABS.filter(t => t.id !== 'history').map(t => ({ id: t.id, label: t.label ?? fw.plural }));
   const searchPlaceholder = isHistory ? HISTORY_VIEW.searchPlaceholder : CUSTOM_LISTS.searchPlaceholder;
   const HEADER_H = insets.top + 136;
@@ -751,6 +763,10 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           </View>
         ) : (
         <>
+        {/* Each section is a keyed piece so the viewer's saved order can place it
+            (ui_prefs.myLists, shared with web). */}
+        {inOrder({
+          watching: (<>
         {/* ── Watching ── */}
         {showWatching && watchingList.length > 0 && (
           <CollapsibleSection
@@ -797,6 +813,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           </View>
         )}
 
+          </>),
+          want: (<>
         {/* ── Want to Watch ── */}
         {showWant && (
           <CollapsibleSection
@@ -840,6 +858,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           </CollapsibleSection>
         )}
 
+          </>),
+          top10: (<>
         {/* ── Top 5 ── */}
         {showTop10 && (
           <CollapsibleSection
@@ -853,6 +873,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           </CollapsibleSection>
         )}
 
+          </>),
+          favorites: (<>
         {/* ── Favourites ── */}
         {showFavs && (
           <CollapsibleSection
@@ -906,6 +928,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           </CollapsibleSection>
         )}
 
+          </>),
+          history: (<>
         {/* ── History ── */}
         {isHistory && (
           <HistorySection
@@ -924,6 +948,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           />
         )}
 
+          </>),
+          lists: (<>
         {/* ── My Lists ── */}
         {showLists && (
           <CollapsibleSection
@@ -970,6 +996,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           </CollapsibleSection>
         )}
 
+          </>),
+          smart: (<>
         {showLists && (
           <CollapsibleSection
             id={SMART_SECTION_ID}
@@ -1007,6 +1035,13 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
               );
             })}
           </CollapsibleSection>
+        )}
+          </>),
+        })}
+        {isAll && (
+          <TouchableOpacity style={styles.customize} onPress={() => router.push('/(app)/my-lists-layout' as Href)} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.sections.title}>
+            <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
+          </TouchableOpacity>
         )}
         </>
         )}
@@ -1585,6 +1620,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   emptyPromptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
   emptyPromptAction: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   empty: { padding: spacing.xl, alignItems: 'center' },
+  customize: { alignSelf: 'center', marginTop: spacing.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg },
+  customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   emptyAddBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },

@@ -42,6 +42,10 @@ export const CUSTOM_LISTS = Object.freeze({
   sections: Object.freeze({
     title: 'Customize My Lists',
     body: 'Drag a section, or use the arrows, to put My Lists in the order you like.',
+    // Mobile has no drag, and draws Watchlist, Favorites and custom lists as
+    // separate sections that move together as one row.
+    bodyArrows: 'Use the arrows to put My Lists in the order you like. The same order shows on the web.',
+    listsGroup: 'Watchlist and your lists',
     moveUp: (name) => `Move ${name} up`,
     moveDown: (name) => `Move ${name} down`,
     drag: (name) => `Drag to reorder ${name}`,
