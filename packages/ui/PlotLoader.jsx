@@ -1,10 +1,10 @@
 import { WORDMARK_INK_HEIGHT, WORDMARK_LETTERS, WORDMARK_TOP } from '../core/wordmark.js';
 import './PlotLoader.css';
 
-// The wordmark loader: the plot wordmark outlines (l joined to the o), each
-// letter rising into place in sequence, with a thin bar sweeping underneath.
-// Loops until the content lands. Takes the theme from data-theme on <html>
-// unless told otherwise.
+// The wordmark loader: a faint plot wordmark (l joined to the o) that fills
+// from left to right and then empties the same way. Each pass fills in the
+// next colour: charcoal, grey, pink, grey. Loops until the content lands.
+// Takes the theme from data-theme on <html> unless told otherwise.
 
 const SIZE_MAP = { xs: 10, sm: 14, md: 22, lg: 30, button: 10 };
 
@@ -32,6 +32,23 @@ export default function PlotLoader({
   const classes = ['plot-loader', className].filter(Boolean).join(' ');
   const ariaProps = ariaHidden ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label };
 
+  // Drawn twice: once faint underneath, once on top as the fill that sweeps.
+  const letters = WORDMARK_LETTERS.map(({ letter, path, x0, x1 }) => {
+    const width = x1 - x0;
+    return (
+      <svg
+        key={letter}
+        className="plot-loader__letter"
+        viewBox={`${x0} ${WORDMARK_TOP} ${width} ${WORDMARK_INK_HEIGHT}`}
+        style={{ width: `${width / 1000}em`, height: `${WORDMARK_INK_HEIGHT / 1000}em`, overflow: 'hidden' }}
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d={path} />
+      </svg>
+    );
+  });
+
   return (
     <span
       className={classes}
@@ -39,23 +56,9 @@ export default function PlotLoader({
       {...ariaProps}
     >
       <span className="plot-loader__word">
-        {WORDMARK_LETTERS.map(({ letter, path, x0, x1 }) => {
-          const width = x1 - x0;
-          return (
-            <svg
-              key={letter}
-              className="plot-loader__letter"
-              viewBox={`${x0} ${WORDMARK_TOP} ${width} ${WORDMARK_INK_HEIGHT}`}
-              style={{ width: `${width / 1000}em`, height: `${WORDMARK_INK_HEIGHT / 1000}em`, overflow: 'hidden' }}
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d={path} />
-            </svg>
-          );
-        })}
+        <span className="plot-loader__ghost">{letters}</span>
+        <span className="plot-loader__fill" aria-hidden="true">{letters}</span>
       </span>
-      <span className="plot-loader__bar" />
     </span>
   );
 }

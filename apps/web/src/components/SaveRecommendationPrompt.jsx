@@ -3,6 +3,7 @@ import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { COMMON } from '../copy/common.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { useEffect, useState } from 'react';
+import { IconClose } from './navIcons.jsx';
 import { posterUrl } from '../utils/images.js';
 import Spinner from './Spinner.jsx';
 import './SaveRecommendationPrompt.css';
@@ -58,7 +59,7 @@ export default function SaveRecommendationPrompt({ itemId, itemType, source, wat
   return (
     <div className="save-prompt-backdrop" onMouseDown={onClose}>
       <section className="save-prompt" role="dialog" aria-modal="true" aria-labelledby="save-prompt-title" onMouseDown={event => event.stopPropagation()}>
-        <button type="button" className="save-prompt-close" onClick={onClose} aria-label="Close">×</button>
+        <button type="button" className="save-prompt-close" onClick={onClose} aria-label={COMMON.close}><IconClose /></button>
         {loading ? <div className="save-prompt-loading"><Spinner /></div> : (
           <div className="save-prompt-content">
             {poster ? <img className="save-prompt-poster" src={poster} alt="" /> : <div className="save-prompt-poster save-prompt-poster-empty" />}

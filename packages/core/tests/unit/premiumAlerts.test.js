@@ -71,6 +71,15 @@ test('the alerts upgrade sheet leads with alerts and has no Free cap meter', () 
   assert.deepEqual(content.also.map(r => r.label), ['Just Decide', 'Find something you both want']);
 });
 
+test('the whole-season alert sheet is about seasons, not following people', () => {
+  const content = upgradeSheetContent('seasonAlerts');
+  assert.equal(content.meter, 0);
+  assert.equal(content.context, 'Whole-season alerts are part of Premium');
+  assert.match(content.title + content.body, /season/i);
+  assert.doesNotMatch(content.context + content.title + content.body, /follow|—/i);
+  assert.deepEqual(content.also.map(r => r.label), ['Just Decide', 'Find something you both want']);
+});
+
 test('people and season-ready alerts are live Premium features; episode alerts are live on Free', () => {
   for (const id of ['peopleAlerts', 'seasonReady']) {
     assert.equal(PLANS_PAGE.premiumFeatures.find(f => f.id === id).live, true, id);
@@ -80,8 +89,12 @@ test('people and season-ready alerts are live Premium features; episode alerts a
   const faq = PLANS_PAGE.faqs.find(item => item.q === 'Are these alerts available now?').a;
   // The alerts answer covers what is live; Free's plans are in 'What happens to Free?'.
   assert.doesNotMatch(faq, /planned for Free and are not available yet/);
-  assert.match(faq, /whole-season-ready alerts are available with plot Premium/);
+  assert.match(faq, /whole-season-ready alerts are available with Plot Premium/);
   assert.doesNotMatch(faq, /People alerts.*still planned/);
+  // Taste overlap is live for Premium, so deeper stats are not "planned".
+  assert.doesNotMatch(faq, /Deeper stats[^.]*planned/);
+  assert.match(faq, /taste overlap/);
+  assert.doesNotMatch(PLANS_PAGE.freeFeatures.find(f => f.id === 'statistics').description, /planned/);
 });
 
 test('streaming alerts on the watchlist are a live Free feature; push is Free and email is Premium, neither built yet', () => {

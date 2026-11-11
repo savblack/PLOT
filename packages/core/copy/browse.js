@@ -1,4 +1,6 @@
 export const BROWSE = {
+  // Shell header for /browse (navigation.js VIEW_TITLES). The page's own h1 names the keyword.
+  pageTitle: 'Browse',
   keywordsLabel: 'Keywords',
   moreKeywords: (n) => `+${n} more`,
   fewerKeywords: 'Show fewer',

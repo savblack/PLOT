@@ -1,10 +1,11 @@
 // The Finishing touches card, render only (FinishingTouches.jsx owns the data,
 // the stored state and the sheets), so Storybook can show every state.
-import { FINISHING_TOUCHES as T } from '../copy/finishingTouches.js';
+// PremiumFirstWeek.jsx draws the same card with its own wording (`labels`).
+import { FINISHING_TOUCHES } from '../copy/finishingTouches.js';
 import { COMMON } from '../copy/common.js';
 import './FinishingTouches.css';
 
-function Tick({ done }) {
+function Tick({ done, T }) {
   return (
     <span className={`ft-tick${done ? ' is-done' : ''}`} role="img" aria-label={done ? T.done : T.notDone}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5L19 7" /></svg>
@@ -18,9 +19,10 @@ function Tick({ done }) {
  *   doneCount: number, total: number, allDone: boolean, expanded: boolean,
  *   onToggle: () => void, onHide: () => void, onClose: () => void,
  *   onAction: (id: string) => void, onDismiss?: (id: string) => void,
+ *   labels?: Pick<typeof FINISHING_TOUCHES, 'title' | 'count' | 'progressLabel' | 'expand' | 'collapse' | 'done' | 'notDone' | 'ready' | 'readyBody' | 'nice'>,
  * }} props
  */
-export default function FinishingTouchesCard({ tiles, doneCount, total, allDone, expanded, onToggle, onHide, onClose, onAction, onDismiss }) {
+export default function FinishingTouchesCard({ tiles, doneCount, total, allDone, expanded, onToggle, onHide, onClose, onAction, onDismiss, labels: T = FINISHING_TOUCHES }) {
   if (allDone) {
     return (
       <section className="ft-ready" aria-live="polite">
@@ -52,7 +54,7 @@ export default function FinishingTouchesCard({ tiles, doneCount, total, allDone,
         <div className="ft-grid" style={{ '--ft-cols': String(tiles.length) }}>
           {tiles.map(tile => (
             <div key={tile.id} className={`ft-tile ft-tile--${tile.id}${tile.done ? ' is-done' : ''}`}>
-              <span className="ft-tile-head"><Tick done={tile.done} /><span className="ft-tile-title">{tile.title}</span></span>
+              <span className="ft-tile-head"><Tick done={tile.done} T={T} /><span className="ft-tile-title">{tile.title}</span></span>
               <span className="ft-tile-sub">{tile.sub}</span>
               {!tile.done && tile.cta && (
                 <button type="button" className="ft-tile-cta" onClick={() => onAction(tile.id)}>

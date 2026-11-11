@@ -4,6 +4,7 @@ import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { isListShareable, listVisibility } from '@plot/core/customLists.js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import BackLink from './BackLink.jsx';
 import { useApp } from '../hooks/useApp.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useShare } from '../hooks/useShare.js';
@@ -55,7 +56,7 @@ function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, 
   const searching = searchOpen || query !== '';
   return (
     <section className={`list-page list-page--${view}${shared ? ' list-page--shared' : ''}${shared && searching ? ' list-page--search-open' : ''}`}>
-      <Link className="list-page-back list-page-back--mobile" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>
+      <BackLink className="list-page-back--mobile" to="/my-lists" label={CUSTOM_LISTS.backToMyLists} />
       <header className="list-page-head">
         {shared && <Link className="list-page-bar-back" to="/my-lists" aria-label={CUSTOM_LISTS.backToMyLists}><IconChevronLeft /></Link>}
         <div className="list-page-heading">

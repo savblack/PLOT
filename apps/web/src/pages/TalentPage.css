@@ -1,6 +1,4 @@
 .talent-page { max-width: 760px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
 .talent-page--loading, .talent-page--empty { min-height: 50vh; display: grid; place-content: center; text-align: center; }
 .talent-page--empty p { color: var(--text-muted); margin: 0.4rem 0 1rem; }
-.talent-back { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin: 0 0 1.5rem -0.4rem; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--text-secondary); cursor: pointer; }
-.talent-back svg { width: 18px; height: 18px; }
-.talent-back:hover { color: var(--text-primary); background: var(--surface-raised); }
+.talent-back { margin-bottom: 1rem; }

@@ -70,7 +70,7 @@ const motionRules = [
   ['Keep motion structural', 'Transitions should explain state changes, not decorate them.'],
   ['Use fast feedback first', 'Buttons, chips, and tabs should resolve within the fast transition token.'],
   ['Reserve bounce for delight', '--ease-bounce (cubic-bezier 0.34, 1.56, 0.64, 1) is for special arrivals like sheets and modals — never routine navigation.'],
-  ['Fade loaders sequentially', 'The plot loader should stay centered and animate letter-by-letter in order.'],
+  ['Fill the loader', 'The plot loader should stay centered and fill left to right, each pass in the next color: charcoal, grey, pink, grey.'],
 ];
 
 const motionTokens = [

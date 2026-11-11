@@ -69,7 +69,7 @@ export function SeasonReadyAlert({ show }) {
         </button>
       </div>
       {gate.failed && <p className="alert-toggle-error" role="alert">{A.error}</p>}
-      {gate.sheetOpen && <UpgradeSheet reason="alerts" onClose={gate.closeSheet} />}
+      {gate.sheetOpen && <UpgradeSheet reason="seasonAlerts" onClose={gate.closeSheet} />}
     </section>
   );
 }

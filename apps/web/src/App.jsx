@@ -2,6 +2,7 @@ import { useBroadcastPreferences } from '@plot/core/useBroadcastPreferences.js';
 import { usePrivateNotes } from '@plot/core/usePrivateNotes.js';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { usePanelRoute } from './hooks/usePanelRoute.js';
 // The bulk of the app's CSS (~4800 lines: every authenticated view — Discover,
 // Settings, Calendar, etc.) lives here instead of the global stylesheet, so
 // visitors who never reach the app shell (/login, /terms, /save, ...) don't pay
@@ -17,6 +18,7 @@ import { setUserTimezone } from './utils/date.js';
 import AppShell from './components/AppShell.jsx';
 import MediaPanel from './components/MediaPanel.jsx';
 import CollectionPanel from './components/CollectionPanel.jsx';
+import PersonPanel from './components/PersonPanel.jsx';
 import SearchPalette from './components/SearchPalette.jsx';
 import SaveRecommendationPrompt from './components/SaveRecommendationPrompt.jsx';
 import { useTheme } from './hooks/useTheme.js';
@@ -152,8 +154,6 @@ export default function App() {
   });
 
   // Media panel state
-  const [panelItem,    setPanelItem]    = useState(null);
-  const [panelClosing, setPanelClosing] = useState(false);
   const [savePrompt, setSavePrompt] = useState(null);
 
   // Search palette. One box for titles, people and friends, opened from the
@@ -297,28 +297,23 @@ export default function App() {
     setTzCheckTime(dismissedAt);
   }, [tzBanner]);
 
-  /* ── Media Panel ── */
-  const openPanel = useCallback((id, type, source) => {
-    setPanelItem({ id, type });
-    setPanelClosing(false);
+  /* ── Media Panel ──
+     The open panel has an address (`?panel=movie-123`), kept in step with
+     the browser history by usePanelRoute. */
+  const trackPanelView = useCallback((id, type, source) => {
     // Canonical "opened a title" action — every surface (rails, search, feed,
     // deep links) routes through here, so one call covers them all. A
     // collection is not a title, so it gets its own event.
     if (type === 'collection') track(EVENTS.COLLECTION_VIEWED, { collection_id: id, source });
+    else if (type === 'person') track(EVENTS.PERSON_VIEWED, { person_id: id, source });
     else track(EVENTS.TITLE_VIEWED, { tmdb_id: id, media_type: type, source });
   }, []);
-
-  const closePanel = useCallback(() => {
-    setPanelClosing(true);
-    setTimeout(() => { setPanelItem(null); setPanelClosing(false); }, 280);
-  }, []);
+  const { panelItem, panelClosing, openPanel, closePanel, hidePanel } = usePanelRoute({ onView: trackPanelView });
+  const panelItemRef = useRef(panelItem);
+  useEffect(() => { panelItemRef.current = panelItem; }, [panelItem]);
 
   // Out-of-panel save (Discover card, search row, …): open the title so the
   // watch prompt can show in the same session. Skip if that title is already open.
-  const panelItemRef = useRef(panelItem);
-  useEffect(() => {
-    panelItemRef.current = panelItem;
-  }, [panelItem]);
   useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type, source }) => {
     // Adds from the release-calendar sheet stay in that sheet. Opening the
     // title panel here would cover it.
@@ -329,10 +324,13 @@ export default function App() {
   }), [openPanel]);
 
   // Genre and keyword chips on a title: close the panel and open the browse page.
+  // The browse page is a new history entry, so Back from it returns to this
+  // title. Only the animation runs here: closePanel would also step back in
+  // history, which races the navigation.
   const handleBrowse = useCallback((path) => {
-    closePanel();
+    hidePanel();
     navigate(path);
-  }, [closePanel, navigate]);
+  }, [hidePanel, navigate]);
 
   /* ── Navigation ── */
   const navigateTo = useCallback((view) => navigate(pathForView(view)), [navigate]);
@@ -461,9 +459,7 @@ export default function App() {
           onChooseList={() => {
             const { itemId, itemType } = savePrompt;
             setSavePrompt(null);
-            setPanelItem({ id: itemId, type: itemType, initialListOpen: true });
-            setPanelClosing(false);
-            track(EVENTS.TITLE_VIEWED, { tmdb_id: itemId, media_type: itemType, source: 'editorial_save' });
+            openPanel(itemId, itemType, 'editorial_save', { initialListOpen: true });
           }}
         />
       )}
@@ -476,7 +472,15 @@ export default function App() {
         />
       )}
 
-      {panelItem && panelItem.type !== 'collection' && (
+      {panelItem && panelItem.type === 'person' && (
+        <PersonPanel
+          personId={panelItem.id}
+          closing={panelClosing}
+          onClose={closePanel}
+        />
+      )}
+
+      {panelItem && panelItem.type !== 'collection' && panelItem.type !== 'person' && (
         <MediaPanel
           itemId={panelItem.id}
           itemType={panelItem.type}

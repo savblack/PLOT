@@ -550,6 +550,7 @@ export type Database = {
           attempts: number
           available_at: string
           checkpoint: Json
+          content_hash: string | null
           created_at: string
           duplicates: number
           entry: string
@@ -576,6 +577,7 @@ export type Database = {
           attempts?: number
           available_at?: string
           checkpoint?: Json
+          content_hash?: string | null
           created_at?: string
           duplicates?: number
           entry?: string
@@ -602,6 +604,7 @@ export type Database = {
           attempts?: number
           available_at?: string
           checkpoint?: Json
+          content_hash?: string | null
           created_at?: string
           duplicates?: number
           entry?: string

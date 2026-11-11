@@ -23,7 +23,10 @@
  *  - pg_cron every 5 minutes via run_import_worker_tick (service bearer): claims
  *    any due job.
  *  - the app, right after enqueueing and while Home watches the job (user
- *    JWT): claims only that user's job, so a nudge cannot run someone else's.
+ *    JWT): claims that user's job, unless another account's job has waited
+ *    longer (claim_import_job, 20261111090000: at most 3 imports run at once,
+ *    and a nudge must not starve someone who closed the app). The response
+ *    then reports nothing about that other job.
  *
  * Private: verify_jwt = false in config.toml; both paths verify in code.
  */
@@ -344,6 +347,8 @@ serve(async (req) => {
   const startedAt = Date.now();
   try {
     const result = job.kind === 'connection' ? await runConnectionJob(admin, job) : await runFileJob(admin, job, startedAt);
+    // A nudge may run someone else's job (oldest first); it learns nothing about it.
+    if (scope.user && job.user_id !== scope.user) return json({ ran: true });
     return json({ jobId: job.id, status: result.status, phase: result.phase, progress: result.progress_done });
   } catch (error) {
     const terminal = error instanceof TerminalError;
@@ -359,6 +364,7 @@ serve(async (req) => {
     } catch (failError) {
       console.error('[import-worker] fail', failError);
     }
+    if (scope.user && job.user_id !== scope.user) return json({ ran: true });
     return json({ jobId: job.id, failed: true, terminal });
   }
 });

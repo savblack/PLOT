@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@plot/core/supabase.js';
 import { loadCheckoutAvailability } from '@plot/core/checkoutAvailability.js';
 import { track, EVENTS } from '../lib/analytics.js';
-import { useBillingStatus } from '@plot/core/useBillingStatus.js';
+import { useBillingStatusResult } from '@plot/core/useBillingStatus.js';
 import { billingAccess, trialEligible } from '@plot/core/billing.js';
 import { PLANS_PAGE } from '../copy/plansPage.js';
 import { checkoutErrorMessage, checkoutPlan, redirectToCheckout, requestBillingUrl, signupPathForPlan } from '../utils/premiumCheckout.js';
@@ -19,8 +19,15 @@ import { checkoutErrorMessage, checkoutPlan, redirectToCheckout, requestBillingU
 // The Stripe URL request is shared with the phone app (@plot/core/premiumCheckout.js).
 const callBilling = requestBillingUrl;
 
+// Users the server has refused a promised trial to, for the life of the page.
+// Kept outside the hook: every upgrade sheet mounts its own usePremium, so
+// state inside it would forget the refusal the moment the sheet closed and
+// offer the trial again on the next one.
+const trialRefusedFor = new Set();
+
 export function usePremium(profile) {
-  const billing = useBillingStatus(profile?.id);
+  const userId = profile?.id ?? null;
+  const { data: billing, ready: billingReady } = useBillingStatusResult(userId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   // null until billing-availability answers. false is the closed state: the
@@ -28,8 +35,8 @@ export function usePremium(profile) {
   const [checkoutAvailable, setCheckoutAvailable] = useState(null);
   // The server refused a promised trial (Stripe knows of an earlier
   // subscription Plot's record does not). Stop promising it in this session.
-  const [trialRefused, setTrialRefused] = useState(false);
-  const promisesTrial = !trialRefused && trialEligible(billing);
+  const [trialRefused, setTrialRefused] = useState(() => trialRefusedFor.has(userId));
+  const promisesTrial = !trialRefused && !trialRefusedFor.has(userId) && trialEligible(billing);
 
   useEffect(() => {
     let active = true;
@@ -46,15 +53,19 @@ export function usePremium(profile) {
     if (busy) return false;
     const chosen = checkoutPlan(plan);
     setError(null);
+    // Busy from the first moment, before the availability read: the plan
+    // rows lock, so the plan on screen is the plan that is sent, and a second
+    // press cannot start a second request.
+    setBusy(true);
     if (checkoutAvailable !== true) {
       const fresh = await loadCheckoutAvailability();
       if (fresh === false) {
         setCheckoutAvailable(false);
+        setBusy(false);
         return false;
       }
       if (fresh === true) setCheckoutAvailable(true);
     }
-    setBusy(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -76,7 +87,10 @@ export function usePremium(profile) {
       }
       // Nothing was charged or created. The button becomes Upgrade to Premium
       // and the server's sentence says why; pressing it again is a plain checkout.
-      if (e?.code === 'trial_unavailable') setTrialRefused(true);
+      if (e?.code === 'trial_unavailable') {
+        if (userId) trialRefusedFor.add(userId);
+        setTrialRefused(true);
+      }
       setError(checkoutErrorMessage(e?.status, e?.message, PLANS_PAGE.checkoutMessage, {
         code: e?.code,
         closed: PLANS_PAGE.checkoutClosed,
@@ -85,7 +99,7 @@ export function usePremium(profile) {
       setBusy(false);
       return false;
     }
-  }, [busy, checkoutAvailable, promisesTrial]);
+  }, [busy, checkoutAvailable, promisesTrial, userId]);
 
   const openPortal = useCallback(async () => {
     if (busy) return;
@@ -115,6 +129,8 @@ export function usePremium(profile) {
   return {
     ...billingAccess(billing),
     billing,
+    // False only while the first billing read for this viewer is still out.
+    billingReady,
     // The button may say Start free trial: a signed-in viewer with no
     // subscription on Plot's record, and the server has not said otherwise.
     trialEligible: promisesTrial,

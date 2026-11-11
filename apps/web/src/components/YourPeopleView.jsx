@@ -9,7 +9,6 @@
 // Data and rules: @plot/core/usePeopleFollows.js and @plot/core/peopleFeed.js.
 // Mobile parity: not shipped on mobile yet (issue 1093).
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { usePeopleFeed, usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { feedItems, filterFeedByType, groupByDate, groupByPerson } from '@plot/core/peopleFeed.js';
@@ -185,7 +184,6 @@ export function YourPeoplePage({ follows, items, today, loading, view, setView, 
 
 export default function YourPeopleView() {
   const { user, profile, openPanel, watchlist } = useApp();
-  const navigate = useNavigate();
   const people = usePeopleFollows(user?.id);
   const follow = useFollowPerson();
   const [view, setView] = useState('date');
@@ -206,7 +204,7 @@ export default function YourPeopleView() {
       setTypeFilters={setTypeFilters}
       follow={follow}
       onUnfollow={id => people.unfollow(id)}
-      onOpenPerson={id => navigate(`/person/${id}`)}
+      onOpenPerson={id => openPanel(id, 'person', 'your_people')}
       onOpenTitle={item => openPanel(item.tmdbId, item.mediaType, 'your_people')}
       isSaved={item => watchlist.isInList(item.tmdbId)}
       onSave={item => watchlist.toggle({ id: item.tmdbId, media_type: item.mediaType, title: item.title, name: item.title, poster_path: item.posterPath })}
