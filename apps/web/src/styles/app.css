@@ -3195,6 +3195,10 @@ svg { stroke-width: 1.5; }
   .mylists-stream .list-covers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.25rem 2rem; }
   .mylists-stream .top5 { margin-inline: 0; padding-inline: 0; }
 }
+/* Customize in the top bar is the phone's way in; at sidebar widths the
+   Jump to card has it. */
+.mylists-toolbar-customize { min-height: 44px; padding: 0 4px; white-space: nowrap; }
+@media (min-width: 1024px) { .mylists-toolbar-customize { display: none; } }
 @media (max-width: 1023px) {
   .mylists-page .hist-toolbar-controls { width: 100%; }
   .mylists-page .hist-search { width: 100%; }

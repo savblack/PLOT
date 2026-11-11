@@ -314,7 +314,8 @@ export const FoldAndReorderSections = {
 
     const headings = () => [...canvasElement.querySelectorAll('.mylists-stream .discover-section-title')].map(h => h.textContent);
     const before = headings();
-    await fireEvent.click(canvas.getByRole('button', { name: 'Customize' }));
+    // Two ways in: the Jump to card at sidebar widths, the top bar on a phone.
+    await fireEvent.click(canvas.getAllByRole('button', { name: 'Customize' })[0]);
     const sheet = within(document.body.querySelector('.home-layout-sheet'));
     await fireEvent.click(sheet.getByRole('button', { name: CUSTOM_LISTS.sections.moveUp(SMART_LISTS.section) }));
     await waitFor(() => expect(headings().indexOf(SMART_LISTS.section)).toBe(before.indexOf(SMART_LISTS.section) - 1));
