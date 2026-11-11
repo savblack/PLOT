@@ -14,11 +14,12 @@ export function xmlAttrs(tag) {
   const attrPattern = /([A-Za-z_:][\w:.-]*)="([^"]*)"/g
   let match
   while ((match = attrPattern.exec(tag))) {
+    // &amp; last: decoding it first would turn a literal "&amp;lt;" into "<".
     attrs[match[1]] = match[2]
       .replaceAll('&quot;', '"')
-      .replaceAll('&amp;', '&')
       .replaceAll('&lt;', '<')
       .replaceAll('&gt;', '>')
+      .replaceAll('&amp;', '&')
   }
   return attrs
 }
