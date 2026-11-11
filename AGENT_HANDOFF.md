@@ -36,7 +36,7 @@ The fix is to change App Store Connect to 1.2.0. The docs now say so.
 
 ## Checks
 
-- pnpm run check: running at time of writing.
+- pnpm run check: passed (lint + build, exit 0) on a96718c67.
 
 ## Approvals
 
