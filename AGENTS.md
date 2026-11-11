@@ -105,8 +105,9 @@ gitignored so a stray one cannot be committed, but delete it rather than leave i
   watches and raises an issue for. So run `edge:check` before merging, and watch the guard
   after.
 - Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`;
-  Supabase functions via `supabase functions deploy <name>`; Worker via
-  `cd apps/web/workers/tmdb-proxy && npx wrangler deploy`.
+  Supabase functions via `supabase functions deploy <name>`; Workers under
+  `apps/web/workers/` deploy on merge via `.github/workflows/workers-deploy.yml`
+  (needs the `CLOUDFLARE_API_TOKEN` repo secret; by hand: `cd apps/web/workers/<name> && npx wrangler deploy`).
 
 ## Tech stack
 
