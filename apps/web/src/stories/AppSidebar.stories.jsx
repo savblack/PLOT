@@ -296,3 +296,24 @@ export const AccountMenuFreeLocked = {
     await expect(document.documentElement.dataset.palette).toBeUndefined();
   },
 };
+
+/* The member mark (design audit pick 3.3): a Premium member gets a small
+   spark beside their own name. A Free account gets none. */
+export const PremiumMember = {
+  args: { ...signedIn, profile: { ...profile, is_premium: true } },
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('img', { name: 'Premium member' })).toBeVisible();
+  },
+};
+export const FreeMemberHasNoMark = {
+  args: signedIn,
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByRole('img', { name: 'Premium member' })).toBeNull();
+  },
+};
+// The mark stays on screen when the name is too long to fit.
+export const PremiumMemberLongName = {
+  args: { ...signedIn, profile: { ...profile, is_premium: true, display_name: 'Savannah Alexandra Blackwood-Fitzgerald' } },
+};
