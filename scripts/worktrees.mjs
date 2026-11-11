@@ -38,7 +38,11 @@ const readJson = (path) => {
 };
 
 const slugFrom = (raw) => {
-  const slug = String(raw || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  // `new` adds today's date itself. AGENTS.md shows folders as
+  // <YYYY-MM-DD-task>, so a dated name is an easy thing to pass, and it
+  // produced agent/2026-11-11-2026-11-11-<task> (seen 2026-11-11). Drop it.
+  const slug = String(raw || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    .replace(/^\d{4}-\d{2}-\d{2}-/, '');
   if (!slug || slug.length > 48) {
     throw new Error('Pass a short name, like watchlist-empty.');
   }
