@@ -17,7 +17,7 @@ test('opening another title replaces the panel instead of adding a second one', 
 });
 
 test('a value this app does not write is ignored, not guessed at', () => {
-  for (const bad of ['', '?panel=', '?panel=movie', '?panel=movie-', '?panel=movie-abc', '?panel=person-12', '?panel=movie-0', '?panel=movie--3', '?panel=movie-1.5', '?panel=MOVIE-3', '?other=movie-3', '?panel=movie-99999999999999999999']) {
+  for (const bad of ['', '?panel=', '?panel=movie', '?panel=movie-', '?panel=movie-abc', '?panel=list-12', '?panel=movie-0', '?panel=movie--3', '?panel=movie-1.5', '?panel=MOVIE-3', '?other=movie-3', '?panel=movie-99999999999999999999']) {
     assert.equal(parsePanelParam(bad), null, bad);
   }
   assert.equal(parsePanelParam(null), null);
@@ -30,4 +30,9 @@ test('samePanel compares id and type, and nothing is the same as no panel', () =
   assert.equal(samePanel(null, { id: 1, type: 'tv' }), false);
   assert.equal(samePanel(null, null), false);
   assert.equal(panelParamValue({ id: 603, type: 'movie' }), 'movie-603');
+});
+
+test('a person has a panel address, like a title', () => {
+  assert.deepEqual(parsePanelParam('?panel=person-287'), { id: 287, type: 'person' });
+  assert.equal(searchWithPanel('?view=upcoming', { id: 287, type: 'person' }), '?view=upcoming&panel=person-287');
 });

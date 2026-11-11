@@ -192,7 +192,7 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
     } else if (kind === 'collection') {
       openPanel(data.id, 'collection', 'search');
     } else if (kind === 'person') {
-      navigate(`/person/${data.id}`);
+      openPanel(data.id, 'person', 'search');
     } else if (kind === 'friend') {
       navigate(`/u/${data.username}`);
     }

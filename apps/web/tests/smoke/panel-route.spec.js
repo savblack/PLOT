@@ -77,7 +77,24 @@ test('the panel stays open, with its address, when the page behind it changes', 
 });
 
 test('an address this app did not write opens nothing', async ({ page }) => {
-  await page.goto(`${page_url}?panel=person-9`);
+  await page.goto(`${page_url}?panel=list-9`);
   await expect(page.getByTestId('where')).toHaveText('home');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('a person opens in the panel, and a film from their credits goes back to them', async ({ page }) => {
+  await page.goto(page_url);
+  await page.getByRole('button', { name: 'Open person 5' }).click();
+  await expect(panel(page, 'person 5')).toBeVisible();
+  await expect(page).toHaveURL(/\?panel=person-5$/);
+  await expect(page.getByTestId('where')).toHaveText('home');
+
+  await page.getByRole('button', { name: 'Open film 13 from the person' }).click();
+  await expect(panel(page, 'movie 13')).toBeVisible();
+  await page.goBack();
+  await expect(panel(page, 'person 5')).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page).not.toHaveURL(/panel=/);
 });
