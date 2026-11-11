@@ -5,8 +5,8 @@ signs in as a test account on Staging, saves a watched title and removes it
 again, and emails if any step fails. That would have caught the July 2026
 outage (saving to History broken for two weeks) within an hour. The Staging
 test account now exists (Savannah approved it on 2026-11-11) and the check has
-run live. Before it runs on its own schedule, the Worker needs two secrets and
-a deploy.
+run live. On 2026-11-11 the Worker was deployed from this branch with both
+secrets set, so the check now runs every hour at :23. Left: merge the PR.
 
 - Status: active
 - Owner: Jacob (CTO bot) area; built by a Claude Code side session
@@ -24,7 +24,10 @@ a deploy.
 - Staging account `plot-signin-watch@example.invalid` created 2026-11-11 (user id 32388655-51eb-40a1-bc93-f206fb447c25), email confirmed. Password in Keychain `com.theplot.staging.signin-watch.password`.
 - Live proof on Staging, run from this Mac: healthy run passed; a write with `on_conflict=user_id,tmdb_id` returned the real 42P10; `run()` with that fault produced the down email ("Plot: saving to History is failing on Staging", Resend call captured, not sent), then a recovery email on the next healthy run; 0 history rows left on the account.
 
+- Deployed 2026-11-11 at Savannah's request: secrets `SIGNIN_PUBLISHABLE_KEY` (Staging) and `SIGNIN_PASSWORD` set, `npx wrangler deploy` from this branch, version 2eec8248-53df-4284-a09c-452b86321654, triggers `*/5 * * * *` and `23 * * * *`. Manual `?check=signin` on the live Worker returned healthy, and the uptime checks were still healthy.
+
 ## Not done / needs approval
-- Set Worker secrets `SIGNIN_PUBLISHABLE_KEY` (Staging) and `SIGNIN_PASSWORD`, then `npx wrangler deploy` in `apps/web/workers/uptime-watch`.
-- A real email delivered through Resend: only possible once the Worker is deployed (`?check=signin&test-email=1`).
+- The live Worker runs this branch's code. Merge the PR so main matches it. A deploy of uptime-watch from an older main would drop the hourly check.
+- To deploy, `apps/web/.wrangler/deploy/config.json` (left behind by `pnpm run check`'s build) had to be deleted first, or wrangler refuses.
+- A real email through Resend has not been sent. `?check=signin&test-email=1` sends one to sav.black@outlook.com.
 - Production: password sign-in there requires a Turnstile captcha, so a production check needs a different design (e.g. a stored refresh token) plus a production test account. Savannah's call.
