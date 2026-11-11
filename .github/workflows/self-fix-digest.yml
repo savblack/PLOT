@@ -1,0 +1,46 @@
+name: Auto-merge daily report
+
+# One email each morning listing the agent fixes that went live on their own
+# in the last 24 hours (PRs labelled `auto-merged` by auto-merge.yml). Sends
+# nothing on a day with none.
+on:
+  schedule:
+    # 21:00 UTC: 8:00am Sydney in daylight time (7:00am in standard time).
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: List yesterday's automatic merges
+        id: list
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          since=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          gh pr list --repo "$REPO" --state merged --label auto-merged --limit 100 \
+            --json number,title,url,mergedAt \
+            --jq "[.[] | select(.mergedAt >= \"$since\")]" > merged.json
+          count=$(jq length merged.json)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          body=$(jq -r '"<p>These fixes went live on their own in the last 24 hours. Each passed every check and the Strix security review, and matched the kinds you allowed.</p><ul>" + ([.[] | "<li><a href=\"\(.url)\">#\(.number)</a> \(.title | gsub("<"; "&lt;"))</li>"] | join("")) + "</ul>"' merged.json)
+          { echo 'body<<EOF'; echo "$body"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
+      - name: Email the report
+        if: steps.list.outputs.count != '0'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/pulls?q=label%3Aauto-merged
+          WORKFLOW_NAME: self-fix-digest
+          ALERT_SUBJECT: 'Plot: ${{ steps.list.outputs.count }} fix(es) went live on their own'
+          ALERT_BODY: ${{ steps.list.outputs.body }}
+        run: bash .github/scripts/marketing-alert.sh
