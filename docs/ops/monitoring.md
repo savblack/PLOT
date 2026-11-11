@@ -51,9 +51,13 @@ GitHub issue.
   (`setValueWithKeyAsync` / `getValueWithKeyAsync`). A bar of 3 would have
   fired on that day only. Raise it as the user base grows, so it keeps sitting
   above a normal day.
-- **Known noise:** a browser wallet extension throws
-  `window.ethereum.selectedAddress` on theplot.tv for about one visitor every
-  few days. It counts toward the 3 but cannot reach it alone.
+- **Known noise:** four visitors to theplot.tv (2026-10-23, 10-26, 10-30,
+  11-10), one per day, hit `window.ethereum.selectedAddress = undefined`. Plot's
+  code never mentions `window.ethereum`, which is what crypto-wallet browser
+  add-ons put on every page, so this is most likely such an add-on (which one is
+  unconfirmed). It counts toward the 3. At current traffic it is unlikely to
+  reach 3 on its own, but three such visitors on one day would fire the alert.
+  If that happens, filter that message out of the insight.
 - **Proven:** on 2026-11-11 the bar was set to 1 person, the alert fired and
   emailed, and the bar went back to 3.
 
