@@ -56,6 +56,12 @@ jobs:
       # The script needs only psql and Node's standard library, so no pnpm
       # install. The runner's psql (16) talks to a PG 17 server fine for plain
       # queries; only pg_dump refuses a newer server.
+      # Just enough history to tell when each job's migration landed, so a job
+      # merged in the last few days with no run yet is not reported as stopped.
+      # A failed fetch only makes the check stricter, so it does not stop the run.
+      - name: Fetch recent history
+        run: git fetch --quiet --shallow-since="9 days ago" origin "${{ github.ref }}" || echo "::warning::could not fetch recent history"
+
       - name: Check pg_cron jobs
         id: check
         env:

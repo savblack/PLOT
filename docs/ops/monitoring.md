@@ -30,8 +30,11 @@ GitHub-side watchers raise issues rather than email:
   long). It closes the issue on the next healthy run. It reads
   `public.cron_job_health()` as the read-only `plot_ci_readonly` role and never
   sees pg_cron's error text; for that, query `cron.job_run_details` as the
-  owner. Run it by hand with `SUPABASE_DB_URL=… pnpm run db:cron-health`. A job
-  added in the last day can show as stopped until its first run.
+  owner. Run it by hand with `SUPABASE_DB_URL=… pnpm run db:cron-health`. A new
+  job that hasn't run yet is listed as waiting, not stopped: the check finds the
+  migration that scheduled it and gives it twice its schedule from when that
+  migration landed on main (git history). A job made by hand, outside a
+  migration, has no such date and can show as stopped until its first run.
 
 - The same workflow's second job checks what pg_cron can't see: whether the
   edge function a job calls actually worked. Most jobs (send-push,
