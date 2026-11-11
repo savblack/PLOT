@@ -26,7 +26,16 @@ export const MARKER = 'plot-signin-watch';
 // A Worker can't import core (it is deployed on its own), and a test pins it.
 export const CONFLICT_TARGET = 'user_id,tmdb_id,media_type';
 
-const base = (url) => url.replace(/\/+$/, '');
+/**
+ * `url` without trailing slashes. A loop rather than /\/+$/, whose
+ * backtracking CodeQL flags as slow on long runs of '/'.
+ */
+export function trimSlashes(url) {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === '/') end--;
+  return url.slice(0, end);
+}
+const base = trimSlashes;
 
 async function body(res) {
   const text = await res.text();

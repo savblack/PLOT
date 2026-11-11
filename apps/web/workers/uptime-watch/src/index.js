@@ -25,7 +25,7 @@
  * reads as "the app is down" and an app outage never hides a write failure.
  */
 import { decide, probe } from '../../whats-on-watch/src/index.js';
-import { signedInReadWrite } from './signin.js';
+import { signedInReadWrite, trimSlashes } from './signin.js';
 
 const STATE_KEYS = { uptime: 'state', signin: 'signin-state' };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -92,7 +92,7 @@ export function checksFor(env) {
     });
   }
   if (env.TMDB_PROXY_URL) {
-    const url = `${env.TMDB_PROXY_URL.replace(/\/+$/, '')}/?path=trending/all/day`;
+    const url = `${trimSlashes(env.TMDB_PROXY_URL)}/?path=trending/all/day`;
     checks.push({
       name: 'tmdb',
       label: 'TMDB proxy',
@@ -110,7 +110,7 @@ export function checksFor(env) {
     });
   }
   if (env.SUPABASE_URL) {
-    const url = `${env.SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/billing-availability`;
+    const url = `${trimSlashes(env.SUPABASE_URL)}/functions/v1/billing-availability`;
     checks.push({
       name: 'functions',
       label: 'edge functions',
@@ -127,7 +127,7 @@ export function checksFor(env) {
 
 /** Trending titles from the TMDB proxy, for the signed-in check's write. */
 async function trendingFor(env) {
-  const url = `${(env.TMDB_PROXY_URL || '').replace(/\/+$/, '')}/?path=trending/all/day`;
+  const url = `${trimSlashes(env.TMDB_PROXY_URL || '')}/?path=trending/all/day`;
   const via = env.TMDB_PROXY ? (u, i) => env.TMDB_PROXY.fetch(u, i) : fetch;
   const res = await get(url, { headers: { Origin: env.APP_ORIGIN || 'https://app.theplot.tv' } }, via);
   if (!res.ok) throw new Error(`TMDB proxy HTTP ${res.status}`);

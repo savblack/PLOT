@@ -208,3 +208,11 @@ test('signed-in emails: subject, no em dash, reason escaped', () => {
   }
   assert.match(emailContent({ kind: 'down', reason: '<b>x</b>' }, { now: 0, watch: 'signin' }).html, /&lt;b&gt;x/);
 });
+
+test('trimSlashes drops only trailing slashes', async () => {
+  const { trimSlashes } = await import('../src/signin.js');
+  assert.equal(trimSlashes('https://x.co///'), 'https://x.co');
+  assert.equal(trimSlashes('https://x.co/a'), 'https://x.co/a');
+  assert.equal(trimSlashes(''), '');
+  assert.equal(trimSlashes('/'.repeat(100000)), '');
+});
