@@ -29,8 +29,8 @@ function refused(res) {
   return (res.status === 403 || res.status === 429) && res.headers.get('cf-mitigated') !== null;
 }
 
-async function get(url, init = {}) {
-  return fetch(url, {
+async function get(url, init = {}, via = fetch) {
+  return via(url, {
     ...init,
     headers: { 'user-agent': 'plot-uptime-watch', ...(init.headers || {}) },
     signal: AbortSignal.timeout(20_000),
@@ -93,7 +93,11 @@ export function checksFor(env) {
       read: guarded(async () => {
         // The app's Origin, as the web client sends it. The proxy rejects an
         // unknown Origin, so a 403 here is a real fault, not the watcher.
-        const res = await get(url, { headers: { Origin: env.APP_ORIGIN || 'https://app.theplot.tv' } });
+        // Through the TMDB_PROXY service binding when present: Cloudflare
+        // refuses a Worker's fetch to another workers.dev Worker on the same
+        // account (it comes back 404), so the public URL only works off-platform.
+        const via = env.TMDB_PROXY ? (u, i) => env.TMDB_PROXY.fetch(u, i) : fetch;
+        const res = await get(url, { headers: { Origin: env.APP_ORIGIN || 'https://app.theplot.tv' } }, via);
         if (refused(res)) return { ok: false, blocked: true, reason: `Cloudflare refused (HTTP ${res.status})` };
         return classify.tmdb(res.status, await readJson(res));
       }),

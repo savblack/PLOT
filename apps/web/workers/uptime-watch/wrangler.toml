@@ -26,9 +26,16 @@ workers_dev = true
 crons = ["*/5 * * * *"]
 
 # Last known state, so an outage sends one email rather than one per run.
+# Namespace "uptime-watch-state", created 2026-11-11.
 [[kv_namespaces]]
 binding = "STATE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "a8899df7a9734917a4710f48167351c0"
+
+# The TMDB check goes through this binding, not the public URL: a Worker's
+# fetch to another workers.dev Worker on the same account returns 404.
+[[services]]
+binding = "TMDB_PROXY"
+service = "tmdb-proxy"
 
 [vars]
 APP_URL = "https://app.theplot.tv/"
