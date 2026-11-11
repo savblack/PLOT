@@ -23,6 +23,9 @@ import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
 import { favoriteWords } from '../../lib/spelling';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import CollapsibleSection from '../../components/CollapsibleSection';
+import ListCover, { NewListCover, COVER_GAP } from '../../components/ListCover';
+import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
+import { titleCount } from '@plot/core/listCollections.js';
 import SectionToggleIcon from '../../components/SectionToggleIcon';
 import SelectCircle from '../../components/SelectCircle';
 import KebabMenu, { KebabMenuItem } from '../../components/KebabMenu';
@@ -526,6 +529,11 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const clearDrilldown = () => router.setParams({ stat: '', year: '', genre: '', weekday: '' });
   const [tab,          setTab]          = useState(mode === 'history' ? 'history' : 'all');
   const [topDragging, setTopDragging]  = useState(false);
+  // A custom or shared list opened from its cover: the page shows that one
+  // list, as web's cover opens the list's own page.
+  const [openListId, setOpenListId] = useState<string | null>(null);
+  // Top 5 shows one type at a time, behind a Movies / TV switch, as on web.
+  const [topType, setTopType] = useState<'movies' | 'tv'>('movies');
   // ?share=<card> opens History on that card. The param holds the tab on
   // History until the sheet closes, so a cold link does not land on All.
   const viewTab = sharePreset ? 'history' : tab;
@@ -692,9 +700,11 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
 
   const isAll       = viewTab === 'all';
   const showWatching  = isAll || viewTab === 'watching';
-  const showWant      = isAll || viewTab === 'want';
+  // On All, Watchlist and Favorites are covers under Lists (web's layout);
+  // each still has its own view, opened from its cover or the Show filter.
+  const showWant      = viewTab === 'want';
   const showTop10     = isAll || viewTab === 'top10';
-  const showFavs      = FAVOURITES_ENABLED && (isAll || viewTab === 'favorites');
+  const showFavs      = FAVOURITES_ENABLED && viewTab === 'favorites';
   const showLists     = isAll || viewTab === 'lists';
   // History is the one tab that isn't part of "All" — web scopes it the
   // same way, since a full watch history would bury every other section.
@@ -727,6 +737,33 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     : { own: allManualLists, sharedByMe: [], sharedWithMe: [] };
   const manualLists = listSplit.own;
   const hasShared = listSplit.sharedByMe.length + listSplit.sharedWithMe.length > 0;
+  // The three posters a cover fans: the list's newest titles first.
+  const coverPosters = (items: { poster_path?: string | null }[]) => items.slice(0, 3).map(item => item.poster_path);
+  const listCover = (list: any) => {
+    const items = [...(list.items || [])].reverse();
+    const visibility = listVisibility(list);
+    const others = (Array.isArray(list.people) ? list.people : []).filter((person: { user_id?: string }) => person.user_id !== userId);
+    const names = others.map((person: { display_name?: string | null; username?: string | null }) => person.display_name || person.username || '').filter(Boolean);
+    const owner = (Array.isArray(list.people) ? list.people : []).find((person: { user_id?: string }) => person.user_id === list.user_id);
+    const ownerName = owner?.display_name || owner?.username || '';
+    const byline = !names.length ? null
+      : list.role === 'member' && ownerName ? COLLABORATIVE_LISTS.myLists.from(ownerName)
+      : COLLABORATIVE_LISTS.myLists.withNames(names);
+    return (
+      <ListCover
+        key={list.id}
+        name={list.name}
+        count={titleCount(items.length, 'Empty')}
+        posters={coverPosters(items)}
+        badge={visibility !== 'private' ? PROFILE_PRIVACY.listVisibilityBadge[visibility] : null}
+        byline={byline}
+        onPress={() => setOpenListId(list.id)}
+      />
+    );
+  };
+  const openList = openListId ? allManualLists.find((list: { id: string }) => list.id === openListId) ?? null : null;
+  // Back to the whole page from one list or one section's own view.
+  const backToAll = () => { setOpenListId(null); setTab('all'); };
   const renderListCard = (list: any) => (
     <CustomListCard
       key={list.id}
@@ -813,9 +850,20 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           </View>
         ) : (
         <>
+        {/* One list or one section on its own: a way back to the whole page,
+            as web's list page has. */}
+        {!isHistory && (openList || !isAll) && (
+          <TouchableOpacity style={styles.backRow} onPress={backToAll} hitSlop={{ top: 8, bottom: 8 }} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.backToMyLists}>
+            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <Polyline points="15,18 9,12 15,6" />
+            </Svg>
+            <Text style={styles.backRowText}>{CUSTOM_LISTS.backToMyLists}</Text>
+          </TouchableOpacity>
+        )}
+        {openList && !isHistory ? renderListCard(openList) : null}
         {/* Each section is a keyed piece so the viewer's saved order can place it
             (ui_prefs.myLists, shared with web). */}
-        {inOrder({
+        {!openList || isHistory ? inOrder({
           watching: (<>
         {/* ── Watching ── */}
         {showWatching && watchingList.length > 0 && (
@@ -918,8 +966,19 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             open={isSectionOpen('top10')}
             onOpenChange={(next) => setSectionOpenFor('top10', next)}
           >
-            <TopTenSection listType="movies" title="Movies"   topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
-            <TopTenSection listType="tv"     title="TV Shows" topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
+            <View style={styles.topSwitch} accessibilityRole="tablist">
+              {(['movies', 'tv'] as const).map(type => {
+                const on = topType === type;
+                return (
+                  <TouchableOpacity key={type} onPress={() => setTopType(type)} hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }} accessibilityRole="tab" accessibilityState={{ selected: on }} style={[styles.topSwitchTab, on && styles.topSwitchTabOn]}>
+                    <Text style={[styles.topSwitchText, on && styles.topSwitchTextOn]}>{type === 'movies' ? MEDIA.movies : MEDIA.tv}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {topType === 'movies'
+              ? <TopTenSection listType="movies" title="Movies"   showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
+              : <TopTenSection listType="tv"     title="TV Shows" showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />}
           </CollapsibleSection>
         )}
 
@@ -1000,8 +1059,37 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
 
           </>),
           lists: (<>
-        {/* ── My Lists ── */}
-        {showLists && (
+        {/* ── Lists ── On All: every list as a cover (Watchlist, Favorites,
+            then your own), as on web. On the Lists view: each list in full. */}
+        {showLists && isAll && (
+          <CollapsibleSection
+            id="lists"
+            label={PUBLIC_PROFILE_PAGE.lists}
+            open={isSectionOpen('lists')}
+            onOpenChange={(next) => setSectionOpenFor('lists', next)}
+            headerRight={<SectionAddButton onPress={requestCreateList} label="Create list" />}
+          >
+            <View style={styles.covers}>
+              <ListCover
+                name={CUSTOM_LISTS.wantToWatch}
+                count={titleCount(sortedSaved.length, 'Nothing saved yet')}
+                posters={coverPosters(sortedSaved)}
+                onPress={() => setTab('want')}
+              />
+              {FAVOURITES_ENABLED && (
+                <ListCover
+                  name={fw.plural}
+                  count={titleCount(favList.length, 'Nothing hearted yet')}
+                  posters={coverPosters(favList)}
+                  onPress={() => setTab('favorites')}
+                />
+              )}
+              {manualLists.map(listCover)}
+              <NewListCover label="New list" onPress={requestCreateList} />
+            </View>
+          </CollapsibleSection>
+        )}
+        {showLists && !isAll && (
           <CollapsibleSection
             id="lists"
             label="My Lists"
@@ -1010,24 +1098,18 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             onOpenChange={(next) => setSectionOpenFor('lists', next)}
             headerRight={<SectionAddButton onPress={requestCreateList} label="Create list" />}
           >
-            {(
-              <>
-                {!isAll && (
-                  <TouchableOpacity style={styles.newListRow} onPress={requestCreateList}>
-                    <Text style={styles.newListText}>+ New list</Text>
-                  </TouchableOpacity>
-                )}
-                {manualLists.length === 0 && (
-                  <EmptyPrompt
-                    title={CUSTOM_LISTS.emptyPrompts.lists.title}
-                    body={CUSTOM_LISTS.emptyPrompts.lists.body}
-                    actionLabel={CUSTOM_LISTS.emptyPrompts.lists.action}
-                    onPress={requestCreateList}
-                  />
-                )}
-                {manualLists.map(renderListCard)}
-              </>
+            <TouchableOpacity style={styles.newListRow} onPress={requestCreateList}>
+              <Text style={styles.newListText}>+ New list</Text>
+            </TouchableOpacity>
+            {manualLists.length === 0 && (
+              <EmptyPrompt
+                title={CUSTOM_LISTS.emptyPrompts.lists.title}
+                body={CUSTOM_LISTS.emptyPrompts.lists.body}
+                actionLabel={CUSTOM_LISTS.emptyPrompts.lists.action}
+                onPress={requestCreateList}
+              />
             )}
+            {manualLists.map(renderListCard)}
           </CollapsibleSection>
         )}
 
@@ -1045,9 +1127,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             onOpenChange={(next) => setSectionOpenFor(SHARED_SECTION_ID, next)}
           >
             {listSplit.sharedByMe.length > 0 && <Text style={styles.sharedGroupLabel} accessibilityRole="header">{COLLABORATIVE_LISTS.myLists.sharedByMe}</Text>}
-            {listSplit.sharedByMe.map(renderListCard)}
+            {isAll ? <View style={styles.covers}>{listSplit.sharedByMe.map(listCover)}</View> : listSplit.sharedByMe.map(renderListCard)}
             {listSplit.sharedWithMe.length > 0 && <Text style={styles.sharedGroupLabel} accessibilityRole="header">{COLLABORATIVE_LISTS.myLists.sharedWithMe}</Text>}
-            {listSplit.sharedWithMe.map(renderListCard)}
+            {isAll ? <View style={styles.covers}>{listSplit.sharedWithMe.map(listCover)}</View> : listSplit.sharedWithMe.map(renderListCard)}
           </CollapsibleSection>
         )}
           </>),
@@ -1061,37 +1143,27 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             onOpenChange={(next) => setSectionOpenFor(SMART_SECTION_ID, next)}
             headerRight={<SectionAddButton onPress={requestSmartCreate} label={SMART_LISTS.newSmartList} />}
           >
-            <TouchableOpacity style={styles.smartNewRow} onPress={requestSmartCreate} accessibilityRole="button">
-              <Text style={styles.newListText}>+ {SMART_LISTS.newSmartList}</Text>
-              <Text style={styles.smartNote}>{SMART_LISTS.newTileNote}</Text>
-            </TouchableOpacity>
             {!!keptNote && <Text style={styles.smartKept} accessibilityLiveRegion="polite">{keptNote}</Text>}
-            {smartRows.map((row) => {
-              const fresh = newCounts[row.id];
-              return (
-                <TouchableOpacity
-                  key={row.id}
-                  style={styles.smartRow}
-                  onPress={() => router.push(`/(app)/smart-list/${row.id}` as Href)}
-                  accessibilityRole="button"
-                >
-                  <View style={styles.smartRowText}>
-                    <Text style={styles.smartRowTitle} numberOfLines={1}>{row.name}</Text>
-                    <Text style={styles.smartRowMeta}>{SMART_LISTS.coverCount}</Text>
-                  </View>
-                  {typeof fresh === 'number' && fresh > 0 && (
-                    <Text style={styles.smartNew}>{SMART_LISTS.newCount(fresh)}</Text>
-                  )}
-                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <Polyline points="9,18 15,12 9,6" />
-                  </Svg>
-                </TouchableOpacity>
-              );
-            })}
+            <View style={styles.covers}>
+              {smartRows.map((row) => {
+                const fresh = newCounts[row.id];
+                return (
+                  <ListCover
+                    key={row.id}
+                    name={row.name}
+                    count={SMART_LISTS.coverCount}
+                    posters={[]}
+                    trailing={typeof fresh === 'number' && fresh > 0 ? <Text style={styles.smartNew}>{SMART_LISTS.newCount(fresh)}</Text> : null}
+                    onPress={() => router.push(`/(app)/smart-list/${row.id}` as Href)}
+                  />
+                );
+              })}
+              <NewListCover label={SMART_LISTS.newSmartList} note={SMART_LISTS.newTileNote} onPress={requestSmartCreate} />
+            </View>
           </CollapsibleSection>
         )}
           </>),
-        })}
+        }) : null}
         </>
         )}
       </ScrollView>
@@ -1107,12 +1179,12 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             the old second row of All/Movies/TV chips is gone. */}
         <View style={styles.tabsRow}>
           <Text style={styles.viewLabel} numberOfLines={1} accessibilityRole="header">
-            {isHistory ? HISTORY_VIEW.title : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
+            {isHistory ? HISTORY_VIEW.title : openList ? openList.name : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
           </Text>
           <View style={styles.tabsRowActions}>
             {/* Customize sits in the top row on the All view, as on web's
                 phone layout, so it is reachable without scrolling. */}
-            {!isHistory && isAll && (
+            {!isHistory && isAll && !openList && (
               <TouchableOpacity onPress={() => router.push('/(app)/my-lists-layout' as Href)} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.sections.title}>
                 <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
               </TouchableOpacity>
@@ -1676,6 +1748,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   emptyPromptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
   emptyPromptAction: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   empty: { padding: spacing.xl, alignItems: 'center' },
+  covers: { flexDirection: 'row', flexWrap: 'wrap', gap: COVER_GAP, rowGap: spacing.xl, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
+  backRowText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
+  topSwitch: { flexDirection: 'row', gap: spacing.lg, paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
+  topSwitchTab: { paddingBottom: 3, borderBottomWidth: 1.5, borderBottomColor: 'transparent' },
+  topSwitchTabOn: { borderBottomColor: colors.accent },
+  topSwitchText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textMuted },
+  topSwitchTextOn: { color: colors.textPrimary },
   sharedGroupLabel: { marginHorizontal: spacing.xl, marginTop: spacing.md, marginBottom: spacing.sm, fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.9, textTransform: 'uppercase', color: colors.textMuted },
   customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
