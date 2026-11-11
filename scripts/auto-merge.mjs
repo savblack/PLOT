@@ -96,6 +96,40 @@ export function judgeChecks(runs, statuses) {
   return { pending: [...new Set(pending)], failed: [...new Set(failed)], missing };
 }
 
+// GitHub's default CodeQL setup records one analysis per language under this
+// key. Uploaded SARIF (anyone with security_events write) gets a different
+// key, so the check run alone is not proof that the real scan ran.
+const CODEQL_KEY = 'dynamic/github-code-scanning/codeql:analyze';
+const CODEQL_CATEGORIES = ['/language:javascript-typescript', '/language:actions'];
+
+/**
+ * Blockers from the code-scanning record of one commit: every language the
+ * default setup scans must have a clean analysis of exactly this SHA, no
+ * other CodeQL analysis may claim it, and no code-scanning alert may be open
+ * on the PR. CodeQL is a scanner, not a reviewer, so open alerts of any
+ * severity block. Exported for tests.
+ */
+export function judgeCodeql(analyses, sha, openAlerts) {
+  const mine = analyses.filter((a) => a.commit_sha === sha && a.tool?.name === 'CodeQL');
+  const blockers = [];
+  const foreign = mine.filter((a) => a.analysis_key !== CODEQL_KEY);
+  if (foreign.length) blockers.push(`a CodeQL result for this commit did not come from GitHub's own setup (${foreign.map((a) => a.analysis_key).join(', ')})`);
+  for (const category of CODEQL_CATEGORIES) {
+    const run = mine.find((a) => a.analysis_key === CODEQL_KEY && a.category === category);
+    if (!run) blockers.push(`waiting on the CodeQL scan for ${category.replace('/language:', '')}`);
+    else if (run.error) blockers.push(`CodeQL scan for ${category.replace('/language:', '')} errored`);
+  }
+  if (openAlerts > 0) blockers.push(`${openAlerts} open code-scanning alert(s) on this PR`);
+  return blockers;
+}
+
+async function codeqlBlockers(number, sha) {
+  const ref = encodeURIComponent(`refs/pull/${number}/head`);
+  const analyses = await all(`/repos/${REPO}/code-scanning/analyses?ref=${ref}&tool_name=CodeQL`);
+  const alerts = await all(`/repos/${REPO}/code-scanning/alerts?ref=${ref}&state=open`);
+  return judgeCodeql(analyses, sha, alerts.length);
+}
+
 export async function checkState(sha) {
   const runs = await all(`/repos/${REPO}/commits/${sha}/check-runs?filter=all`);
   const statuses = await all(`/repos/${REPO}/commits/${sha}/statuses`);
@@ -157,6 +191,7 @@ async function consider(pr) {
   }
 
   const checks = await checkState(sha);
+  const scan = await codeqlBlockers(n, sha);
   const threads = await unresolvedThreads(n);
   const again = await gh(`/repos/${REPO}/pulls/${n}`);
   const blockers = [
@@ -164,6 +199,7 @@ async function consider(pr) {
     ...checks.pending.map((c) => `waiting on ${c}`),
     ...checks.failed.map((c) => `failed: ${c}`),
     ...checks.missing.map((c) => `has not run from its real source: ${c}`),
+    ...scan,
     ...(threads ? [`${threads === Infinity ? 'over 100' : threads} unresolved review thread(s)`] : []),
     // clean only: not behind main (untested on top of it), not conflicting, not blocked.
     ...(again.mergeable_state !== 'clean' ? [`GitHub reports it ${again.mergeable_state ?? 'not yet computed'}`] : []),

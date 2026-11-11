@@ -2,7 +2,8 @@ name: Auto-merge agent fixes
 
 # Merges open PRs labelled `agent-fix` that Savannah's rules allow to go live
 # on their own (scripts/lib/autoMergePolicy.mjs): library updates, bug fixes
-# with a test, broken check/deploy fixes, wording and docs. Payments, the
+# with a test, broken check/deploy fixes, wording and docs. GitHub's default
+# CodeQL scan must have analysed the exact commit, with no open alerts. Payments, the
 # database, permissions and member data always wait for her. See
 # scripts/auto-merge.mjs for the full list of conditions.
 #
@@ -21,6 +22,7 @@ permissions:
   issues: write
   checks: read
   statuses: read
+  security-events: read # CodeQL analyses and open code-scanning alerts
 
 concurrency:
   group: auto-merge
