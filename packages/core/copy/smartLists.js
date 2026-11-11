@@ -82,6 +82,7 @@ export const SMART_LISTS = Object.freeze({
   kinds: {
     list: { title: 'List', body: 'Add titles yourself, one at a time' },
     smart: { title: 'Smart list', body: 'Set a few rules. It finds the titles and keeps looking.' },
+    shared: { title: 'Shared list', body: 'Build it with the people you watch with.' },
   },
 
   // A4: coming back. New matches since the list was last opened lead.

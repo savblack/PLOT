@@ -27,6 +27,7 @@ import { useHistory } from '../hooks/useHistory.js';
 import { posterUrl } from '../utils/images.js';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
+import DialogActions from './DialogActions.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import SmartListRules from './SmartListRules.jsx';
 import { SettingsSwitch } from './SettingsPage.jsx';
@@ -119,15 +120,8 @@ export default function SmartListDialog({
       onClose={onClose}
       tall
       surfaceClassName="smart-builder-dialog"
-      footer={(
-        <div className="smart-footer">
-          {error && <p className="smart-error" role="alert">{error}</p>}
-          <button type="button" className="btn btn-ghost btn-sm" disabled={submitting} onClick={onClose}>{COMMON.cancel}</button>
-          <button type="button" className="btn btn-primary btn-sm smart-footer-primary" disabled={(!editing && !shownName.trim()) || submitting} onClick={submit}>
-            {submitting ? (editing ? COMMON.saving : SMART_LISTS.creating) : action}
-          </button>
-        </div>
-      )}
+      footer={<DialogActions onCancel={onClose} busy={submitting} error={error}
+        primary={{ label: submitting ? (editing ? COMMON.saving : SMART_LISTS.creating) : action, onClick: submit, disabled: !editing && !shownName.trim() }} />}
     >
       <div className="smart-builder">
         {intro && <p className="smart-intro smart-builder-intro">{intro}</p>}

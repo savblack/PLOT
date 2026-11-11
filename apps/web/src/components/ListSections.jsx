@@ -16,6 +16,7 @@ import KebabMenu from './KebabMenu.jsx';
 import { useSelection } from '../hooks/useSelection.js';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import DialogActions from './DialogActions.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { DiscoverSectionHeader } from './DiscoverView.jsx';
 import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
@@ -301,8 +302,10 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
 }
 
 /* ── Create list sheet ── */
-/* onSmart: offer a smart list instead (My Lists only). */
-export function CreateListModal({ lists, onConfirm, onClose, onLimit, onSmart }) {
+/* The smart list shortcut that used to sit in this dialog is gone: the New
+   list menu already offers the three kinds, and a dialog about one kind
+   should not start another (design audit, pick 4.2 B). */
+export function CreateListModal({ lists, onConfirm, onClose, onLimit }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -331,7 +334,9 @@ export function CreateListModal({ lists, onConfirm, onClose, onLimit, onSmart })
   };
 
   return (
-    <ResponsiveDialog title="New list" onClose={onClose} size="compact">
+    <ResponsiveDialog title="New list" onClose={onClose} size="compact"
+      footer={<DialogActions onCancel={onClose} busy={isSubmitting} error={error}
+        primary={{ label: isSubmitting ? 'Creating…' : 'Create list', onClick: handleSubmit, disabled: !name.trim() }} />}>
       <div style={{ padding: '1.25rem' }}>
         <label htmlFor="new-list-name" style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', marginBottom: '0.45rem' }}>
           List name
@@ -349,24 +354,12 @@ export function CreateListModal({ lists, onConfirm, onClose, onLimit, onSmart })
           autoFocus
           onKeyDown={e => e.key === 'Enter' && name.trim() && !isSubmitting && handleSubmit()}
           style={{
-            width: '100%', padding: '0.7rem 0.8rem', marginBottom: '0.75rem',
+            width: '100%', padding: '0.7rem 0.8rem',
             border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
             background: 'var(--bg)', color: 'var(--text-primary)',
             fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
           }}
         />
-        {error && (
-          <div style={{ marginBottom: '0.75rem', color: 'var(--danger)', fontSize: '0.75rem' }}>
-            {error}
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-          {onSmart && <button type="button" className="btn btn-ghost btn-sm" style={{ marginRight: 'auto' }} disabled={isSubmitting} onClick={onSmart}>{SMART_LISTS.newSmartList}</button>}
-          <button className="btn btn-ghost btn-sm" disabled={isSubmitting} onClick={onClose}>{COMMON.cancel}</button>
-          <button className="btn btn-primary btn-sm" disabled={!name.trim() || isSubmitting} onClick={handleSubmit}>
-            {isSubmitting ? 'Creating…' : 'Create list'}
-          </button>
-        </div>
       </div>
     </ResponsiveDialog>
   );
