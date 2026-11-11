@@ -385,7 +385,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
         { label: SMART_LISTS.newSmartList, onClick: requestSmartCreate },
         ...(SHOW_WATCH_TOGETHER ? [{ label: S.newShared, onClick: requestShared }] : []),
         ...(ownLists.length > 0 ? [{ label: 'Select lists', onClick: selection.start }] : []),
-        { label: CUSTOM_LISTS.sections.title, onClick: () => setCustomizing(true) },
       ]}
     />
   );
@@ -483,6 +482,9 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     <div className="hist-page mylists-page">
       <div className="hist-toolbar">
         <span className="hist-toolbar-sub">{CUSTOM_LISTS.summary(allCollections.length, titles)}</span>
+        {/* Below sidebar widths the Jump to card (and its Customize) is hidden,
+            so the top bar carries it. */}
+        <button type="button" className="home-page-nav-customize mylists-toolbar-customize" onClick={() => setCustomizing(true)}>{DISCOVER_VIEW.customize.action}</button>
         <div className="hist-toolbar-controls">
           {/* At sidebar widths the column carries the filters; below it, the
               pill and its sheet are how a phone reaches them. */}
