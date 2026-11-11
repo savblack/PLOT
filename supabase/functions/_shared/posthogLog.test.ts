@@ -98,3 +98,10 @@ Deno.test('error parts read like the console line, with messages only and emails
   equal(formatErrorParts(['could not reach sam.neil+x@mail.example.com today']), 'could not reach [email] today');
   equal(formatErrorParts(['plain', undefined, null]), 'plain undefined null');
 });
+
+Deno.test('error parts never carry a URL query string, where upstream tokens live', () => {
+  const err = new TypeError('error sending request for url (https://10.0.0.2:32400/library/sections?X-Plex-Token=abc123&type=1): connection refused');
+  equal(formatErrorParts(['[media-sync]', err]), '[media-sync] error sending request for url (https://10.0.0.2:32400/library/sections?[query removed]): connection refused');
+  equal(formatErrorParts(['GET http://api.themoviedb.org/3/movie/1?api_key=k failed']), 'GET http://api.themoviedb.org/3/movie/1?[query removed] failed');
+  equal(formatErrorParts(['Brevo 401: {"message":"Key not found","code":"unauthorized"}']), 'Brevo 401: {"message":"Key not found","code":"unauthorized"}');
+});
