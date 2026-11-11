@@ -489,7 +489,7 @@ the import page's `?from=` param.
 | `premium_first_week_viewed` | The first-week card was on screen on Home | `done_count`, `total`. Once per app session |
 | `premium_first_week_opened` | A first-week step's button was pressed | `step` (`theme` / `people` / `together` / `calendar` / `smartList`) |
 | `premium_first_week_hidden` | "Dismiss" on the first-week card | `done_count` |
-| `my_lists_layout_changed` | A My Lists section was folded, opened or moved, or the order was reset. Web sends all four actions; mobile sends `reorder` and `reset` from its Customize screen (its folds are per device and not counted) | `action` (`collapse` / `expand` / `reorder` / `reset`), `section` (`watching` / `top` / `lists` / `smart` / `shared`; absent on `reset`) |
+| `my_lists_layout_changed` | A My Lists section was folded, opened or moved, or the order was reset. Web and mobile both send all four actions. On mobile `collapse` and `expand` fire for the sections whose fold is saved to the profile (Watching, Top 5, Lists, Smart lists, Shared), not for Watchlist and Favorites, whose fold stays on the device, and not for its collapse-all control | `action` (`collapse` / `expand` / `reorder` / `reset`), `section` (`watching` / `top` / `lists` / `smart` / `shared`; absent on `reset`) |
 | `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
 
 `finishing_touches_hidden` had never fired because Hide for now was rendered

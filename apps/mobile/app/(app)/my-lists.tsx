@@ -61,7 +61,8 @@ import { upgradeSheetContent } from '@plot/core/upgradeSheet.js';
 import { readStorage, removeStorage, writeStorage } from '../../lib/storage';
 import SmartListDialog from '../../components/smart/SmartListDialog';
 import { asDraft, asNamedLists, asSmartRow, type SmartRules } from '../../lib/smartListModel';
-import { addedById, isSharedList, joinNames } from '@plot/core/sharedLists.js';
+import { addedById, isSharedList, joinNames, splitListsBySharing } from '@plot/core/sharedLists.js';
+import { useUiPrefs } from '@plot/core/useUiPrefs.js';
 import { personName } from '@plot/core/watchTogether.js';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
@@ -88,7 +89,14 @@ const SMART_SECTION_ID = 'smart';
 // Which of web's My Lists sections (MY_LISTS_SECTION_IDS in uiPrefs.js) each
 // mobile section belongs to. Watchlist, Favorites and custom lists are one
 // Lists section there, so they move together here.
-const sharedSectionOf = (id: string) => ({ watching: 'watching', top10: 'top', smart: 'smart' }[id] ?? 'lists');
+const sharedSectionOf = (id: string) => ({ watching: 'watching', top10: 'top', smart: 'smart', shared: 'shared' }[id] ?? 'lists');
+// Shared lists, when Watch together is on: web's Shared section.
+const SHARED_SECTION_ID = 'shared';
+// Sections whose fold is saved to the profile (ui_prefs.myLists.collapsed), so
+// folding one on web folds it here and the other way round. Watchlist and
+// Favorites are covers inside web's Lists section and have no fold of their
+// own there, so theirs stays on this device (lib/sectionOpenState.ts).
+const FOLD_SYNCED: Record<string, string> = { watching: 'watching', top10: 'top', lists: 'lists', smart: 'smart', shared: 'shared' };
 
 // Type filter options match web's, and the filtering itself runs through
 // core's filterByType so `cinema` (a client-side flag, not a TMDB
@@ -496,7 +504,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { open: openPanel } = useMediaPanel();
-  const { userId, watchlist, watching, favorites, customLists, topLists, history, profile } = useAppData();
+  const { userId, watchlist, watching, favorites, customLists, topLists, history, profile, refreshProfile } = useAppData();
+  const ui = useUiPrefs({ userId, saved: profile?.ui_prefs, onPersisted: refreshProfile });
   const fw = favoriteWords(profile?.region);
 
   const shareRaw = useLocalSearchParams<{ share?: string | string[] }>().share;
@@ -544,8 +553,16 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   // Seeded synchronously from the cache hydrated at app start.
   const [sectionsOpen, setSectionsOpen] = useState<Record<string, boolean>>(() =>
     Object.fromEntries([...LIST_SECTION_IDS, SMART_SECTION_ID].map(id => [id, getSectionOpen(id, true)])));
-  const setSectionOpenFor = (id: string, open: boolean) =>
-    setSectionsOpen(prev => ({ ...prev, [id]: open }));
+  // A synced section is open unless the profile says it is folded; the rest
+  // read this device's stored state.
+  const foldedOnProfile: string[] = ui.prefs.myLists.collapsed;
+  const isSectionOpen = (id: string) => (FOLD_SYNCED[id] ? !foldedOnProfile.includes(FOLD_SYNCED[id]) : sectionsOpen[id]);
+  const setSectionOpenFor = (id: string, open: boolean) => {
+    const synced = FOLD_SYNCED[id];
+    if (!synced) { setSectionsOpen(prev => ({ ...prev, [id]: open })); return; }
+    track(EVENTS.MY_LISTS_LAYOUT_CHANGED, { action: open ? 'expand' : 'collapse', section: synced });
+    ui.foldMyLists([synced], !open);
+  };
 
   // One edit state per selectable section. Independent, as on web: putting
   // Watching into select mode leaves Favourites alone.
@@ -698,15 +715,38 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   // every section on "All", or just the one section the current tab shows
   // (tab ids match section ids 1:1). Web: MyListsView's relevantSectionIds.
   const relevantSectionIds = isAll
-    ? [...LIST_SECTION_IDS, SMART_SECTION_ID]
+    ? [...LIST_SECTION_IDS, SMART_SECTION_ID, SHARED_SECTION_ID]
     : tab === 'lists'
-      ? ['lists', SMART_SECTION_ID]
+      ? ['lists', SMART_SECTION_ID, SHARED_SECTION_ID]
       : LIST_SECTION_IDS.filter(id => id === tab);
-  const manualLists = customLists.lists.filter((list: { rules?: unknown }) => !isSmartList(list));
+  const allManualLists = customLists.lists.filter((list: { rules?: unknown }) => !isSmartList(list));
+  // Shared lists get their own section, split by who started them, as on web.
+  // Off with Watch together, when every list is simply one of yours.
+  const listSplit = SHOW_WATCH_TOGETHER
+    ? splitListsBySharing(allManualLists, userId)
+    : { own: allManualLists, sharedByMe: [], sharedWithMe: [] };
+  const manualLists = listSplit.own;
+  const hasShared = listSplit.sharedByMe.length + listSplit.sharedWithMe.length > 0;
+  const renderListCard = (list: any) => (
+    <CustomListCard
+      key={list.id}
+      list={list}
+      typeFilters={typeFilters}
+      onDelete={() => Alert.alert('Delete list?', `"${list.name}" will be removed.`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => customLists.deleteList(list.id) },
+      ])}
+      onAddItem={() => setShowAddToList(list.id)}
+      onRemoveItem={(tmdbId, opts) => customLists.removeItem(list.id, tmdbId, opts)}
+      onSetVisibility={(visibility) => customLists.setListVisibility(list.id, visibility)}
+      onShare={() => handleShareList(list)}
+      onRename={(name) => customLists.renameList(list.id, name)}
+    />
+  );
   const keptNote = rulesKept ? upgradeSheetContent('smartLists', { kept: true })?.kept ?? null : null;
   const sectionsOpenForView = isHistory
     ? historyOpen
-    : relevantSectionIds.length > 0 && relevantSectionIds.every(id => sectionsOpen[id]);
+    : relevantSectionIds.length > 0 && relevantSectionIds.every(id => isSectionOpen(id));
   const toggleSectionsForView = () => {
     // History's sections are the month groups, which own their own state —
     // bump a token so they re-apply even when the value hasn't changed.
@@ -719,6 +759,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     const next = !sectionsOpenForView;
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSectionsOpen(prev => ({ ...prev, ...Object.fromEntries(relevantSectionIds.map(id => [id, next])) }));
+    const synced = relevantSectionIds.map(id => FOLD_SYNCED[id]).filter(Boolean);
+    if (synced.length) ui.foldMyLists(synced, !next);
     // CollapsibleSection persists on its own toggle, but a bulk change never
     // goes through it — write these directly or the choice is forgotten.
     relevantSectionIds.forEach(id => setSectionOpen(id, next));
@@ -729,7 +771,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   // The sections in the viewer's saved order (Customize, or set on web). With
   // nothing saved this is mobile's own order. History is its own view, first.
   const sectionOrder = ['history', ...arrangeByMyListsOrder(
-    normalizeUiPrefs(profile?.ui_prefs).myLists.order, [...LIST_SECTION_IDS, SMART_SECTION_ID], sharedSectionOf)];
+    normalizeUiPrefs(profile?.ui_prefs).myLists.order, [...LIST_SECTION_IDS, SHARED_SECTION_ID, SMART_SECTION_ID], sharedSectionOf)];
   const inOrder = (nodes: Record<string, ReactNode>) => sectionOrder.map(id => <Fragment key={id}>{nodes[id]}</Fragment>);
 
   const listTabs = TABS.filter(t => t.id !== 'history').map(t => ({ id: t.id, label: t.label ?? fw.plural }));
@@ -773,7 +815,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             id="watching"
             label="Watching"
             count={watchingList.length}
-            open={sectionsOpen.watching}
+            open={isSectionOpen('watching')}
             onOpenChange={(next) => setSectionOpenFor('watching', next)}
             headerRight={
               <SectionSelectActions
@@ -865,7 +907,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           <CollapsibleSection
             id="top10"
             label="Top 5"
-            open={sectionsOpen.top10}
+            open={isSectionOpen('top10')}
             onOpenChange={(next) => setSectionOpenFor('top10', next)}
           >
             <TopTenSection listType="movies" title="Movies"   topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
@@ -956,7 +998,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             id="lists"
             label="My Lists"
             count={manualLists.length}
-            open={sectionsOpen.lists}
+            open={isSectionOpen('lists')}
             onOpenChange={(next) => setSectionOpenFor('lists', next)}
             headerRight={<SectionAddButton onPress={requestCreateList} label="Create list" />}
           >
@@ -975,27 +1017,31 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                     onPress={requestCreateList}
                   />
                 )}
-                {manualLists.map((list: any) => (
-                  <CustomListCard
-                    key={list.id}
-                    list={list}
-                    typeFilters={typeFilters}
-                    onDelete={() => Alert.alert('Delete list?', `"${list.name}" will be removed.`, [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Delete', style: 'destructive', onPress: () => customLists.deleteList(list.id) },
-                    ])}
-                    onAddItem={() => setShowAddToList(list.id)}
-                    onRemoveItem={(tmdbId, opts) => customLists.removeItem(list.id, tmdbId, opts)}
-                    onSetVisibility={(visibility) => customLists.setListVisibility(list.id, visibility)}
-                    onShare={() => handleShareList(list)}
-                    onRename={(name) => customLists.renameList(list.id, name)}
-                  />
-                ))}
+                {manualLists.map(renderListCard)}
               </>
             )}
           </CollapsibleSection>
         )}
 
+          </>),
+          shared: (<>
+        {/* ── Shared (web's Shared section). Only once there is a shared list:
+            starting one is Invite people on a list's own menu, so an empty
+            section here would offer nothing to press. ── */}
+        {showLists && hasShared && (
+          <CollapsibleSection
+            id={SHARED_SECTION_ID}
+            label={COLLABORATIVE_LISTS.myLists.shared}
+            count={listSplit.sharedByMe.length + listSplit.sharedWithMe.length}
+            open={isSectionOpen(SHARED_SECTION_ID)}
+            onOpenChange={(next) => setSectionOpenFor(SHARED_SECTION_ID, next)}
+          >
+            {listSplit.sharedByMe.length > 0 && <Text style={styles.sharedGroupLabel} accessibilityRole="header">{COLLABORATIVE_LISTS.myLists.sharedByMe}</Text>}
+            {listSplit.sharedByMe.map(renderListCard)}
+            {listSplit.sharedWithMe.length > 0 && <Text style={styles.sharedGroupLabel} accessibilityRole="header">{COLLABORATIVE_LISTS.myLists.sharedWithMe}</Text>}
+            {listSplit.sharedWithMe.map(renderListCard)}
+          </CollapsibleSection>
+        )}
           </>),
           smart: (<>
         {showLists && (
@@ -1003,7 +1049,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             id={SMART_SECTION_ID}
             label={SMART_LISTS.section}
             count={smartRows.length}
-            open={sectionsOpen.smart}
+            open={isSectionOpen('smart')}
             onOpenChange={(next) => setSectionOpenFor(SMART_SECTION_ID, next)}
             headerRight={<SectionAddButton onPress={requestSmartCreate} label={SMART_LISTS.newSmartList} />}
           >
@@ -1620,6 +1666,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   emptyPromptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
   emptyPromptAction: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   empty: { padding: spacing.xl, alignItems: 'center' },
+  sharedGroupLabel: { marginHorizontal: spacing.xl, marginTop: spacing.md, marginBottom: spacing.sm, fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.9, textTransform: 'uppercase', color: colors.textMuted },
   customize: { alignSelf: 'center', marginTop: spacing.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg },
   customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },

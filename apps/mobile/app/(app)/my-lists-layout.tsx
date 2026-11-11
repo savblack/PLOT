@@ -2,8 +2,8 @@
  * Customize My Lists — /(app)/my-lists-layout (mirrors web's MyListsLayoutSheet).
  * One row per section in the viewer's order, with up/down and Reset. The order
  * is profile.ui_prefs.myLists, shared with web: rules in @plot/core/uiPrefs.js,
- * saving in useUiPrefs.js. Mobile has no drag, and no Shared section yet, so
- * that row is left out; Watchlist, Favorites and custom lists are web's one
+ * saving in useUiPrefs.js. Mobile has no drag. The Shared row shows once the
+ * viewer has a shared list, which is when My Lists draws that section. Watchlist, Favorites and custom lists are web's one
  * Lists section and move as one row. Folding stays on each section's heading.
  */
 import { useMemo } from 'react';
@@ -19,6 +19,9 @@ import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
+import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
+import { isSharedList } from '@plot/core/sharedLists.js';
+import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
 import { EVENTS, track } from '../../lib/analytics';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -31,6 +34,7 @@ const LABELS: Record<string, string> = {
   top: PUBLIC_PROFILE_PAGE.topFive,
   lists: C.listsGroup,
   smart: SMART_LISTS.section,
+  shared: COLLABORATIVE_LISTS.myLists.shared,
 };
 
 function Chevron({ up, color }: { up?: boolean; color: string }) {
@@ -46,10 +50,11 @@ export default function MyListsLayoutScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { userId, profile, refreshProfile } = useAppData();
+  const { userId, profile, refreshProfile, customLists } = useAppData();
+  const hasShared = SHOW_WATCH_TOGETHER && (customLists?.lists ?? []).some((list: any) => isSharedList(list, userId));
   const ui = useUiPrefs({ userId, saved: profile?.ui_prefs, onPersisted: refreshProfile });
   const saved: string[] = ui.prefs.myLists.order;
-  const shown = (orderMyListsSections(saved) as string[]).filter(id => id in LABELS);
+  const shown = (orderMyListsSections(saved) as string[]).filter(id => id in LABELS && (id !== 'shared' || hasShared));
   const isDefault = saved.length === 0;
 
   const nudge = (id: string, delta: -1 | 1) => {
