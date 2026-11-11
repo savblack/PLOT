@@ -63,9 +63,9 @@ for (const width of [390, 1440]) {
     expect(billingRequests).toEqual([]);
 
     await page.goto('/pricing?from=%2Fsettings%3Fsection%3Dbilling');
-    await expect(page.getByRole('link', { name: 'Back to plot' })).toHaveAttribute('href', '/settings?section=billing');
+    await expect(page.getByRole('link', { name: 'Back to Plot' })).toHaveAttribute('href', '/settings?section=billing');
     await page.goto('/pricing?from=%2Fterms');
-    await page.getByRole('link', { name: 'Back to plot' }).click();
+    await page.getByRole('link', { name: 'Back to Plot' }).click();
     await expect(page).toHaveURL(/\/terms/);
   });
 

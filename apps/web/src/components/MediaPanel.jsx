@@ -11,7 +11,7 @@ import { customListCreationError, isCustomListLimitError } from '@plot/core/cust
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { countdownChip, formatDate } from '../utils/countdown.js';
-import { backdropUrl, logoUrl, posterUrl, profileUrl } from '../utils/images.js';
+import { backdropUrl, logoUrl, posterUrl } from '../utils/images.js';
 import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { recommendationsFromDetails } from '@plot/core/media.js';
@@ -28,10 +28,11 @@ import { STAR_COUNT } from '../utils/ratings.js';
 import { useShareTitle } from '../hooks/useShareTitle.js';
 import { track, EVENTS, captureException } from '../lib/analytics.js';
 import { TalentWork } from './TalentCredits.jsx';
+import TalentPanelView from './TalentPanelView.jsx';
 import { BROWSE } from '@plot/core/copy/browse.js';
 import { browseTapProps, collapseKeywords, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
 import CollectionCard from './CollectionCard.jsx';
-import { creditMeta, creditTitle, dedupedActingCredits, mediaType, shortBiography } from '../utils/talentCredits.js';
+import { creditMeta, creditTitle, mediaType } from '../utils/talentCredits.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import { SeasonReadyAlert } from './PremiumAlertButtons.jsx';
@@ -89,48 +90,6 @@ function BackIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="15 18 9 12 15 6"/>
     </svg>
-  );
-}
-
-/* ── Talent (cast member) mini-profile shown inline within the panel ──
-   Presentational only: the panel owns the fetch. Uses a portrait
-   thumbnail rather than a full-bleed header image — a portrait crop
-   stretched across a 16:9 backdrop zooms in on the face awkwardly. ── */
-function TalentPanelView({ person, credits, error, onOpenTitle }) {
-  const art = useUserArtwork();
-  if (!person && !error) {
-    return <div style={{ padding: '2rem 0', textAlign: 'center' }}><LoadingSpinner /></div>;
-  }
-  if (error) {
-    return (
-      <div style={{ textAlign: 'center', paddingTop: '1rem' }}>
-        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Couldn't load this profile.</div>
-      </div>
-    );
-  }
-
-  const actingCredits = dedupedActingCredits(credits?.cast).slice(0, 12);
-  const image = profileUrl(art.path('person', person.id, 'profile') || person.profile_path, 'h632');
-  const knownFor = person.known_for_department || MEDIA_PANEL.talentFallback;
-  const biographyPreview = shortBiography(person.biography);
-
-  return (
-    <div className="panel-talent-view">
-      <header className="talent-header">
-        <div className="talent-portrait">
-          {image ? <img src={image} alt={person.name} /> : <span aria-hidden="true">{person.name?.charAt(0)}</span>}
-        </div>
-        <div>
-          <div className="talent-kicker">{knownFor}</div>
-          <h1>{person.name}</h1>
-          {person.birthday && <p className="talent-birthday">Born {new Date(person.birthday).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
-          <PersonFollow person={person} />
-          <CustomizeArtwork mediaType="person" tmdbId={person.id} defaults={{ profile: person.profile_path }} />
-        </div>
-      </header>
-      {person.biography && <p className="talent-biography">{biographyPreview}</p>}
-      <TalentWork credits={credits} actingCredits={actingCredits} openPanel={onOpenTitle} emptyText="No screen credits available." />
-    </div>
   );
 }
 

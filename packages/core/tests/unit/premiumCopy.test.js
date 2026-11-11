@@ -111,7 +111,7 @@ test('public copy does not sell automatic Plex or Trakt sync as Premium', () => 
 
 test('live calendar subscription is a Premium benefit that exists', () => {
   const alerts = PLANS_PAGE.faqs.find(item => item.q === 'Are these alerts available now?');
-  assert.match(alerts.a, /Live calendar subscription is available with plot Premium/);
+  assert.match(alerts.a, /Live calendar subscription is available with Plot Premium/);
   assert.doesNotMatch(alerts.a, /planned Premium features/);
   assert.equal(SETTINGS_VIEW.billing.calendarComingSoon, undefined);
   assert.match(SETTINGS_VIEW.calendarFeed.needsPremiumMessage, /one-time snapshot/);
@@ -139,4 +139,25 @@ test('the plans FAQ states the refund policy and keeps consumer-law rights', () 
   assert.match(refund.a, /aren’t refundable/);
   assert.match(refund.a, /within 14 days/);
   assert.match(refund.a, /consumer-law rights/);
+});
+
+test('the upgrade sheet states the same prices and trial as the plans page', () => {
+  const S = PLANS_PAGE.upgradeSheet;
+  // US$3 a month and US$24 a year, as premium.priceTerms says. If the price
+  // moves, every one of these has to move with it.
+  assert.match(PLANS_PAGE.premium.priceTerms, /US\$3\/month or US\$24\/year, taxes included/);
+  assert.equal(S.yearlyPrice, '$24 a year');
+  assert.equal(S.monthlyPrice, '$3 a month');
+  assert.equal(S.price.yearly, 'US$24 a year, taxes included. Cancel anytime.');
+  assert.equal(S.price.monthly, 'US$3 a month, taxes included. Cancel anytime.');
+  // The trial version is the same sentence with "Then" in front, never a different price.
+  assert.equal(S.afterTrial.yearly, `Then ${S.price.yearly}`);
+  assert.equal(S.afterTrial.monthly, `Then ${S.price.monthly}`);
+  // Seven days, as the plans page and the server's PREMIUM_TRIAL_DAYS say.
+  assert.match(PLANS_PAGE.premium.trialNote, /^7-day free trial/);
+  assert.equal(S.trialTitle, 'Try Premium free for 7 days.');
+  // "4 months free": a year at the monthly price is US$36, the yearly plan is US$24.
+  assert.equal(PLANS_PAGE.billing.annualBadge, '4 months free');
+  assert.equal((36 - 24) / 3, 4);
+  for (const line of [S.trialTitle, S.seeAll, S.yearlyPrice, S.monthlyPrice, ...Object.values(S.price), ...Object.values(S.afterTrial)]) assert.doesNotMatch(line, /—/);
 });

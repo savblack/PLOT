@@ -14,6 +14,8 @@ const titles = (n) => `${n} ${n === 1 ? 'title' : 'titles'}`;
 
 export const COLLABORATIVE_LISTS = Object.freeze({
   invite: 'Invite people',
+  // Shell header for /join-list/<key> (navigation.js VIEW_TITLES). The page's own h1 names the list.
+  pageTitle: 'Shared list',
 
   dialog: {
     body: 'Anyone with the link can join and add titles for free. Only you need Premium.',

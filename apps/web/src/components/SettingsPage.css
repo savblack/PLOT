@@ -148,3 +148,15 @@
 
 /* Premium spark after a row label. */
 .settings-premium-mark { margin-left: 0.35rem; }
+
+/* The membership card (Settings > Billing, Premium members). Rows are
+   hairline-separated links to each Premium feature. */
+.settings-status--attention { color: var(--danger); background: var(--danger-dim); }
+.settings-membership-date { color: var(--text-primary); font-weight: 600; }
+.settings-membership-title { margin: 1.5rem 0 0; padding-top: 1.25rem; border-top: 1px solid var(--border); font: 700 .68rem/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+.settings-membership-rows { list-style: none; margin: .5rem 0 1.25rem; padding: 0; }
+.settings-membership-rows li + li { border-top: 1px solid var(--border); }
+.settings-membership-rows a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 0; color: inherit; text-decoration: none; }
+.settings-membership-rows a:hover .settings-membership-label, .settings-membership-rows a:focus-visible .settings-membership-label { color: var(--accent-text); }
+.settings-membership-label { display: block; font-size: .88rem; font-weight: 600; }
+.settings-membership-note { display: block; margin-top: .15rem; font-size: .78rem; color: var(--text-secondary); }

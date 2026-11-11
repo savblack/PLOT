@@ -371,6 +371,15 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Title and collection links
+
+An open title or collection has an address: `?panel=movie-123` on the page
+behind it (`packages/core/panelLink.js`, `apps/web/src/hooks/usePanelRoute.js`).
+`title_viewed` and `collection_viewed` fire as before when a surface opens one,
+with that surface's `source`. Arriving on such an address (a shared or
+bookmarked link, a reload) fires the same event once with `source: link`.
+Going Back or Forward to a panel fires nothing: it is not a new view.
+
 ## Premium gates and the upgrade sheet
 
 Every in-app Premium gate on web opens the same upgrade sheet (`UpgradeSheet.jsx`,
@@ -385,6 +394,7 @@ the sheet stays silent for those and nothing is counted twice.
 | `themes` | A Premium theme, or the themes gallery |
 | `pins` | Pinning a Home shelf |
 | `people_alerts` | Following an actor or director |
+| `season_alerts` | The whole-season-ready alert on a show |
 | `alert_email` | Email alerts |
 | `custom_artwork` | Customize artwork on a title |
 | `history_drilldown` | A stat tile or the genre link on History |

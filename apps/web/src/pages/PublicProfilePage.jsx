@@ -6,6 +6,7 @@ import './PublicProfilePage.css';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import BackLink from '../components/BackLink.jsx';
 import { useApp } from '../hooks/useApp.js';
 import { supabase } from '@plot/core/supabase.js';
 import { usePublicProfile } from '../hooks/usePublicProfile.js';
@@ -802,7 +803,7 @@ export function ProfileSectionPage({ section }) {
     <style>{profileStyles}</style>
     <div className="pp-view pp-section-page">
       <div className="pp-section-heading pp-section-page-head">
-        <div><Link to={`/u/${username}`} className="pp-back">{name || `@${username}`}</Link><h1 className="pp-section-title">{title}</h1></div>
+        <div><BackLink to={`/u/${username}`} label={name || `@${username}`} /><h1 className="pp-section-title">{title}</h1></div>
       </div>
       {busy ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><PlotLoader /></div>
         : locked ? <p className="pp-sparse-line">{PROFILE_PRIVACY.lockedSubPage}</p>

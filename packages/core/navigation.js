@@ -1,5 +1,7 @@
 import { WATCH_TOGETHER } from './copy/watchTogether.js';
 import { PEOPLE } from './copy/people.js';
+import { BROWSE } from './copy/browse.js';
+import { COLLABORATIVE_LISTS } from './copy/collaborativeLists.js';
 import { FAVOURITES_ENABLED } from './features.js';
 
 export const APP_NAV_ITEMS = [
@@ -42,6 +44,12 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
     // page shows the person's own name, so the chrome only needs to say where
     // you are.
     person: 'Talent',
+    // Also keyed on the first segment (`join-list/<key>`,
+    // `watch-with/<username>/<key>`). Each page's own heading names the list
+    // or the person; without an entry the chrome showed the brand.
+    browse: BROWSE.pageTitle,
+    'join-list': COLLABORATIVE_LISTS.pageTitle,
+    'watch-with': WATCH_TOGETHER.navLabel,
   },
 );
 
