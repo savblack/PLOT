@@ -14,7 +14,7 @@ import { emit, HISTORY_CHANGED_EVENT } from './events.js';
 export { splitImportForBackground } from './importBackground.js';
 import { IMPORT_JOBS } from './copy/importJobs.js';
 import { IMPORT_ENTRY_POINTS } from './importPipeline.js';
-import { isImdbListExport } from './importParsing.js';
+import { isImdbListExport, namesWatchlist } from './importParsing.js';
 
 export const IMPORT_UPLOADS_BUCKET = 'import-uploads';
 export const IMPORT_JOB_ACTIVE = Object.freeze(['queued', 'running', 'retry_wait']);
@@ -169,12 +169,15 @@ export function enqueueError(error) {
 /**
  * IMDb's watchlist and its other lists are one file layout, and IMDb names
  * every export with a random ID, so nothing in the file says which it is.
- * The pickers ask the person when this is true, before uploading.
+ * The pickers ask the person when this is true, before uploading. A name
+ * that already says watchlist (an older export, or one the person named) is
+ * its own answer.
  * @param {string} source
  * @param {string} text the file's text, or at least its first line
+ * @param {string} [fileName]
  */
-export function importListChoiceNeeded(source, text) {
-  return source === 'imdb' && typeof text === 'string' && isImdbListExport(text);
+export function importListChoiceNeeded(source, text, fileName = '') {
+  return source === 'imdb' && typeof text === 'string' && isImdbListExport(text) && !namesWatchlist(fileName);
 }
 
 /**
@@ -186,7 +189,15 @@ export function importListChoiceNeeded(source, text) {
  */
 function namedForListChoice(source, listChoice, files) {
   if (source !== 'imdb' || !listChoice || files.length !== 1) return files;
-  return [{ ...files[0], name: listChoice === 'watchlist' ? 'imdb-watchlist.csv' : 'imdb-list.csv' }];
+  return [{ ...files[0], name: importFileNameForListChoice(listChoice) }];
+}
+
+/** The name an answered IMDb list file is read under, by the worker and by
+ * the in-browser /import page alike (parsePlatform reads the name).
+ * @param {ImportListChoice} listChoice
+ */
+export function importFileNameForListChoice(listChoice) {
+  return listChoice === 'watchlist' ? 'imdb-watchlist.csv' : 'imdb-list.csv';
 }
 
 /**

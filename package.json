@@ -52,6 +52,7 @@
     "gen:db-types": "supabase gen types typescript --project-id mkegtssedjyqldysvzga --schema public > supabase/functions/_shared/database.types.ts",
     "db:write-paths": "node scripts/check-db-write-paths.mjs",
     "db:cron-health": "node scripts/check-cron-jobs.mjs",
+    "imports:report": "node --env-file-if-exists=.env scripts/import-report.mjs",
     "db:block-clause": "node scripts/check-block-clause.mjs",
     "db:migration-test": "bash scripts/db-migration-test.sh",
     "db:function-diff": "bash scripts/db-function-diff.sh",
