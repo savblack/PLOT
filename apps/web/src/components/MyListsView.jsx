@@ -34,6 +34,7 @@ import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { CardGrid, ListCard, TypeGenreFilter } from './ListCards.jsx';
 import {
   CreateListModal, HeaderIconButton, ListSection, TickIcon, TopFiveSection, TrashIcon, WatchingSection,
+  Empty,
 } from './ListSections.jsx';
 import { ListCoverMenu, MemberStack, NewSharedListDialog, PlusSmallIcon } from './CollaborativeListParts.jsx';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
@@ -467,7 +468,13 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
               <ListSection
                 title={SMART_LISTS.section}
               >
-                <div className="list-covers">
+                {/* Nothing here yet: one quiet line, as Watching does. A lone
+                    poster-sized "new" tile made an empty section the tallest
+                    thing on the page. The tile stays once there are lists. */}
+                {smartCollections.length === 0 && (
+                  <Empty onAdd={requestSmartCreate} addLabel={SMART_LISTS.newSmartList}>{SMART_LISTS.emptySection}</Empty>
+                )}
+                {smartCollections.length > 0 && <div className="list-covers">
                   {smartCollections.map(cover)}
                   {!selection.editMode && (
                     <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestSmartCreate} aria-label={SMART_LISTS.newSmartList}>
@@ -480,7 +487,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
                       </span>
                     </button>
                   )}
-                </div>
+                </div>}
               </ListSection>
 
               {SHOW_WATCH_TOGETHER && (
@@ -489,7 +496,10 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
                 >
                   <div className="mylists-shared-group">
                     <h3 className="mylists-shared-label">{S.sharedByMe}</h3>
-                    <div className="list-covers">
+                    {sharedByMe.length === 0 && (
+                      <Empty onAdd={requestShared} addLabel={S.newShared}>{S.emptyShared}</Empty>
+                    )}
+                    {sharedByMe.length > 0 && <div className="list-covers">
                       {sharedByMe.map(cover)}
                       {!selection.editMode && (
                         <button type="button" className="list-cover list-cover--new interactive-surface" onClick={requestShared} aria-label={S.newShared}>
@@ -502,7 +512,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
                           </span>
                         </button>
                       )}
-                    </div>
+                    </div>}
                   </div>
                   {sharedWithMe.length > 0 && (
                     <div className="mylists-shared-group">

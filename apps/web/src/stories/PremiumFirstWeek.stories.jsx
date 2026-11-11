@@ -47,7 +47,7 @@ export const JustUpgraded = {
     const card = within(canvasElement);
     await expect(card.getByRole('heading', { name: T.title })).toBeVisible();
     await expect(card.getByText('0 of 5')).toBeVisible();
-    await expect(card.getAllByRole('button', { name: /Choose|Find people|Invite|Set up|Create/ })).toHaveLength(5);
+    await expect(card.getAllByRole('button', { name: /Pick a theme|Find people|Invite|Subscribe|Make a list/ })).toHaveLength(5);
   },
 };
 
@@ -58,7 +58,7 @@ export const TwoDone = {
     const card = within(canvasElement);
     await expect(card.getByText('2 of 5')).toBeVisible();
     await expect(card.getByText('Following 2 people')).toBeVisible();
-    await expect(card.queryByRole('button', { name: 'Choose' })).toBeNull();
+    await expect(card.queryByRole('button', { name: 'Pick a theme' })).toBeNull();
   },
 };
 

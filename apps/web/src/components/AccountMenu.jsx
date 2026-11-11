@@ -14,7 +14,7 @@ import { IconSettings } from './navIcons.jsx';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import './AccountMenu.css';
-import MemberMark from './MemberMark.jsx';
+import { PremiumBadge } from './ProfileBadges.jsx';
 import PremiumMark from './PremiumMark.jsx';
 
 const A = SETTINGS_VIEW.appearance;
@@ -275,7 +275,7 @@ export default function AccountMenu({
           ? <img className="app-sidebar-avatar" src={profile.avatar_url} alt="" />
           : <span className="app-sidebar-avatar app-sidebar-avatar-initial">{name.charAt(0).toUpperCase()}</span>}
         <span className="app-sidebar-profile-copy">
-          <span className="app-sidebar-profile-name"><span className="app-sidebar-label">{name}</span>{isPremium && <MemberMark />}</span>
+          <span className="app-sidebar-profile-name"><span className="app-sidebar-label">{name}</span>{isPremium && <PremiumBadge className="app-sidebar-verified" />}</span>
           <small>{APP_SHELL.viewYourProfile}</small>
         </span>
       </button>

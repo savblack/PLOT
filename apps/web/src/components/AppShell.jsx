@@ -17,7 +17,7 @@ import {
   IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
 } from './navIcons.jsx';
 import PlotLogo from './PlotLogo.jsx';
-import MemberMark from './MemberMark.jsx';
+import { PremiumBadge } from './ProfileBadges.jsx';
 import PremiumMark from './PremiumMark.jsx';
 import ServiceNotice from './ServiceNotice.jsx';
 
@@ -259,7 +259,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
                 ? <img className="nav-drawer-avatar" src={profile.avatar_url} alt="" />
                 : <span className="nav-drawer-avatar nav-drawer-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
               <span className="nav-drawer-label">{APP_SHELL.profile}</span>
-              {isPremiumProfile(profile) && <MemberMark />}
+              {isPremiumProfile(profile) && <PremiumBadge className="app-sidebar-verified" />}
             </button>
           )}
           {user && (
