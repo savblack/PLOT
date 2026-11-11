@@ -53,11 +53,17 @@ commands:
       note:
         type: string
         default: ""
+      # Send through Resend directly instead of the service-role relay, for a
+      # job that should not hand a write-capable Supabase key to anything.
+      resend_only:
+        type: boolean
+        default: false
     steps:
       - run:
           name: Alert on failure
           when: on_fail
           command: |
+            if [ "<< parameters.resend_only >>" = "true" ]; then unset SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; fi
             export ADMIN_EMAIL="$MARKETING_ADMIN_EMAIL"
             export RUN_URL="$CIRCLE_BUILD_URL"
             export WORKFLOW_NAME="<< parameters.workflow_name >>"
@@ -435,6 +441,9 @@ jobs:
           command: PATH="/usr/lib/postgresql/17/bin:$PATH" pnpm run db:write-paths
       - alert_on_failure:
           workflow_name: db-write-paths
+          # Read-only introspection: keep the service-role key out of its alert,
+          # as the GitHub twin does.
+          resend_only: true
           subject: "Plot: daily database write-path check failed"
           note: A database trigger or app upsert may point at a constraint or table that no longer exists, which makes user saves fail. Run pnpm run db:write-paths to see which.
 
