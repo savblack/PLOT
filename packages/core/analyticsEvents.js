@@ -234,6 +234,8 @@ export const EVENTS = Object.freeze({
   // started: the person came back from a successful checkout and the week
   // was switched on for this browser. Once per account per browser; not sent
   // for a plan change during a running week, or when storage is unavailable.
+  // Mobile sends it when the phone sees a Free account turn Premium
+  // (premiumFirstWeekShouldStart), once per account per phone.
   // Then the same three as Finishing touches: viewed once per session
   // (`done_count`, `total`), a step's button (`step`), and Dismiss
   // (`done_count`).

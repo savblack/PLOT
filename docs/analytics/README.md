@@ -485,7 +485,7 @@ the import page's `?from=` param.
 | `finishing_touches_viewed` | The Finishing touches card was on screen | `done_count`, `total`. Once per app session, after the watchlist has loaded |
 | `finishing_touch_opened` | A Finishing touches step's action was opened | `step` (`progress` / `friends` / `import` / `people`) |
 | `finishing_touches_hidden` | "Dismiss" (was "Hide for now") | `done_count` |
-| `premium_first_week_started` | Back from a successful checkout, the "Your first week of Premium" card was switched on for this browser | None. Once per account per browser. Web only for now. Compare with `premium_converted` (server side) to see how many upgrades got a card |
+| `premium_first_week_started` | The "Your first week of Premium" card was switched on for this browser or phone. Web: back from a successful checkout. Mobile: the phone saw an account it had seen on Free turn Premium, or a Premium account less than seven days old (checkout is in the browser and may have been on web, so there is no return to watch for) | None. Once per account per browser or phone, so one upgrade can send it from web and again from mobile; split by platform before comparing with `premium_converted` (server side) to see how many upgrades got a card |
 | `premium_first_week_viewed` | The first-week card was on screen on Home | `done_count`, `total`. Once per app session |
 | `premium_first_week_opened` | A first-week step's button was pressed | `step` (`theme` / `people` / `together` / `calendar` / `smartList`) |
 | `premium_first_week_hidden` | "Dismiss" on the first-week card | `done_count` |
