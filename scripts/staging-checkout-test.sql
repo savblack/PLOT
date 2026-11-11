@@ -1,9 +1,5 @@
 \set ON_ERROR_STOP on
 begin;
-select to_regclass('public.billing_checkout_attempts') is null as needs_migration \gset
-\if :needs_migration
-  \i supabase/migrations/20260924020000_checkout_attempts.sql
-\endif
 create temporary table checkout_fixture as select id from auth.users where email like 'plot-import-qa-%@example.invalid' order by created_at limit 1;
 -- Isolate the synthetic fixture inside this rolled-back transaction on repeat runs.
 delete from public.billing_checkout_attempts where user_id in (select id from checkout_fixture);

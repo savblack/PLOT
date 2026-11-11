@@ -1,8 +1,7 @@
 -- Proof that refresh_premium_badges() clears a stale Premium badge once
 -- past_due grace has run out, and touches nothing else.
 --
---   set -a; . .env; set +a
---   npm run staging:premium-badge-refresh-test
+--   pnpm run staging:test -- premium-badge-refresh
 --
 -- WHY: the badge is written by apply_stripe_subscription_event at the moment a
 -- Stripe event lands. Grace then expires with no event, so the badge used to
@@ -10,8 +9,7 @@
 -- the migration applies; only this proves the function fixes the drift, and
 -- that it leaves a no-billing (legacy supporter) badge alone.
 --
--- The migration is applied INSIDE the transaction (\ir below), and the whole
--- run ends in rollback, so Staging keeps no function, cron job or fixture.
+-- The whole run ends in rollback, so Staging keeps no fixture.
 --
 -- Accounts are the three Staging fixtures the block test uses:
 --   A  past_due for 4 days: grace over, badge stale      -> cleared
@@ -25,13 +23,6 @@
 begin;
 
 set local request.jwt.claims = '{"role":"service_role"}';
-
--- Staging never received 20260913100000, so its protect_premium_flag() still
--- crashes on the empty claims a pooled backend carries. Production has the
--- fixed body; load it here (idempotent where already live) so this runs
--- against what production runs.
-\ir ../supabase/migrations/20260913100000_premium_flag_empty_claims.sql
-\ir ../supabase/migrations/20260926160000_refresh_premium_badges.sql
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 delete from public.billing_customers where user_id in (:A, :B, :C);

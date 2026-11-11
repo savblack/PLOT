@@ -1,6 +1,5 @@
 \set ON_ERROR_STOP on
 begin;
-\i supabase/migrations/20260917130000_imported_annotations.sql
 create temporary table annotation_fixture as select h.* from public.history h limit 1;
 do $$ begin if not exists(select 1 from annotation_fixture) then raise exception 'An existing staging title is required'; end if; end $$;
 grant select on annotation_fixture to authenticated;

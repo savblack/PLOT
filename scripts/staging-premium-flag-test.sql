@@ -1,37 +1,18 @@
--- Reproduce the protect_premium_flag() crash, then prove the new body fixes it.
+-- Prove protect_premium_flag() (20260913100000) survives the empty claims a
+-- pooled backend carries, and still guards is_premium and is_supporter.
 --
---   set -a; . .env; set +a
---   npm run staging:premium-flag-test
+--   pnpm run staging:test -- premium-flag
 --
--- The `REPRO` line is the point: it runs the assertion against whatever body is
--- LIVE on Staging first, so a run that reports `no repro` is telling you the fix
--- has already been applied there and the before/after is no longer meaningful.
---
--- Everything is in one transaction ending in rollback — including the `create or
--- replace` — so Staging keeps the body it had whether this passes or dies.
--- See supabase/migrations/20260913100000_premium_flag_empty_claims.sql for why
--- an empty string ends up in request.jwt.claims in the first place.
+-- Everything is in one transaction ending in rollback, so Staging is unchanged
+-- whether this passes or dies. See
+-- supabase/migrations/20260913100000_premium_flag_empty_claims.sql for why an
+-- empty string ends up in request.jwt.claims in the first place.
 \set ON_ERROR_STOP on
 \set A '''467ce784-39eb-480e-8593-4632667fc9c3'''
 begin;
 
 \echo ''
-\echo '=== BEFORE: the function as it is live ==='
-set local request.jwt.claims = '';
-do $$
-begin
-  update public.profiles set display_name = display_name where id = '467ce784-39eb-480e-8593-4632667fc9c3';
-  raise notice 'no repro  an empty-claims update succeeded against the OLD body';
-exception when others then
-  raise notice 'REPRO     empty claims break every profile write: %', sqlerrm;
-end $$;
-
-\echo ''
-\echo '=== applying the new body ==='
-\i supabase/migrations/20260913100000_premium_flag_empty_claims.sql
-
-\echo ''
-\echo '=== AFTER ==='
+\echo '=== empty claims ==='
 set local request.jwt.claims = '';
 do $$
 begin

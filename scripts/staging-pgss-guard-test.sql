@@ -12,8 +12,7 @@
 -- keeps the old predicate around as a live counter-example so the fix cannot
 -- be quietly undone.
 --
---   set -a; . .env; set +a
---   npm run staging:pgss-guard-test
+--   pnpm run staging:test -- pgss-guard
 --
 -- WHY STAGING AND NOT db:migration-test: the migration's own first branch skips
 -- everything when there is no `cron` schema, which is exactly the case in the
@@ -28,9 +27,8 @@
 -- below is no longer meaningful against THIS project — production's signature
 -- is what the migration has to survive, and it was verified there directly.
 --
--- Everything is in one transaction ending in rollback. Note that Staging has no
--- pg_cron, so the scheduling half of the migration is explicitly NOT covered
--- here and says so in its own output rather than passing quietly.
+-- Everything is in one transaction ending in rollback, except the reset call
+-- itself (see below).
 \set ON_ERROR_STOP on
 begin;
 
@@ -84,22 +82,42 @@ exception when others then
 end $$;
 
 \echo ''
-\echo '=== end-to-end scheduling: NOT provable here ==='
-\echo '---  Staging has no pg_cron, so cron.schedule() is unproven until production.'
-\echo '---  The Postgres 17 sandbox skips it for the same reason. What IS proven'
-\echo '---  above is the predicate, which is what broke. The scheduling half was'
-\echo '---  proven on PRODUCTION on 2026-09-14 instead: a throwaway job running'
-\echo '---  the same command fired at 03:10:00 UTC, status=succeeded, and dropped'
-\echo '---  pg_stat_statements from 524 rows to 27. Repeat that with a job two'
-\echo '---  minutes out if the scheduled command ever changes.'
--- Stated with \echo so it survives the wrapper's line filter: a notice that gets
--- grepped away is precisely the silent skip the migration under test warns about.
--- The assertion below then stops that text going stale — the day Staging grows a
--- cron schema, this run turns red until someone extends the test.
+\echo '=== the job pg_cron actually holds ==='
+-- Staging gained pg_cron after this test was written (the old tripwire here
+-- said to extend it when that happened). The migration's scheduling half is
+-- now provable: the job exists, runs weekly, and runs the schema-qualified
+-- command, which is the detail the migration warns about.
 do $$
+declare j record;
 begin
-  if to_regnamespace('cron') is not null then
-    raise notice 'FAIL      Staging now has pg_cron: extend this test to assert cron.schedule()';
+  if to_regnamespace('cron') is null then
+    raise notice 'FAIL      Staging has no pg_cron, so the scheduled job cannot be checked';
+    return;
+  end if;
+  select schedule, command, active into j from cron.job where jobname = 'pg-stat-statements-reset';
+  if not found then
+    raise notice 'FAIL      no pg-stat-statements-reset job in cron.job';
+  elsif j.schedule <> '5 0 * * 0' or j.command <> 'select extensions.pg_stat_statements_reset()' or not j.active then
+    raise notice 'FAIL      job is %, %, active=%', j.schedule, j.command, j.active;
+  else
+    raise notice 'PASS      weekly job runs `select extensions.pg_stat_statements_reset()`';
+  end if;
+end $$;
+
+-- cron-history-purge keeps a week of run history and this job runs weekly, so
+-- there may be no row; when there is one, the latest must have succeeded.
+do $$
+declare st text;
+begin
+  if to_regnamespace('cron') is null then return; end if;
+  select d.status into st from cron.job_run_details d join cron.job j using (jobid)
+   where j.jobname = 'pg-stat-statements-reset' order by d.start_time desc limit 1;
+  if st is null then
+    raise notice 'PASS      no run in the retained history to judge (it runs Sundays 00:05 UTC)';
+  elsif st = 'succeeded' then
+    raise notice 'PASS      the last scheduled run succeeded';
+  else
+    raise notice 'FAIL      the last scheduled run ended %', st;
   end if;
 end $$;
 

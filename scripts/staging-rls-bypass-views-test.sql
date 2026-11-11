@@ -13,8 +13,7 @@
 -- defaults. So this checks every such view in public, not just the two that
 -- were fixed, and needs no edit when a new one is added.
 --
---   set -a; . .env; set +a
---   npm run staging:rls-bypass-views-test
+--   pnpm run staging:test -- rls-bypass-views
 --
 -- Catalog reads only, inside a transaction that ends in rollback. It is also
 -- safe to point at production by hand (same file, production credentials):

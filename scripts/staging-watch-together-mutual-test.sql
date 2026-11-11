@@ -1,17 +1,14 @@
 -- Proof that accepting a Watch together request between people who follow each
 -- other shares the sender's watchlist, and that it doesn't otherwise.
 --
---   set -a; . .env; set +a
---   pnpm run staging:watch-together-mutual-test
+--   pnpm run staging:test -- watch-together-mutual
 --
 -- WHY: 20261004100000 set a column 20260927160000 had dropped, and neither
 -- migrations:check nor db:migration-test notices that (plpgsql resolves NEW's
 -- fields only when the line runs). This runs the real accept under a real
--- auth.uid(). Pass `-v nofix=1` through psql to leave the fix migration out and
--- see the original trigger fail.
+-- auth.uid().
 --
--- Applies the two migrations itself inside the transaction and ends in
--- rollback, so Staging and its ledger are unchanged whether it passes or dies.
+-- Ends in rollback, so Staging is unchanged whether it passes or dies.
 -- A, B and C are the Staging fixtures used by staging-watch-together-test.sql.
 \set ON_ERROR_STOP on
 \set A '''467ce784-39eb-480e-8593-4632667fc9c3'''
@@ -22,12 +19,6 @@
 \set C_CLAIMS '''{"sub":"6afcff23-4194-4724-af1b-08328ff81f48","role":"authenticated"}'''
 
 begin;
-
-\ir ../supabase/migrations/20261004100000_watch_together_mutual_follow_share.sql
-\if :{?nofix}
-\else
-\ir ../supabase/migrations/20261005100000_watch_together_mutual_follow_share_fix.sql
-\endif
 
 set local request.jwt.claims = '{"role":"service_role"}';
 delete from public.watch_together where requester_id in (:A, :B, :C) or recipient_id in (:A, :B, :C);
@@ -54,7 +45,7 @@ set local request.jwt.claims = :B_CLAIMS;
 select public.respond_watch_together_request(:A, true);
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  B accepted without an error, A and B are paired'
   from public.list_watch_together() where other_id = :A and direction = 'paired';
-select case when public.can_view_watchlist(:A) then 'PASS' else 'FAIL' end || '  B can now see A''s full watchlist (A was private)';
+select case when private.can_view_watchlist(:A) then 'PASS' else 'FAIL' end || '  B can now see A''s full watchlist (A was private)';
 reset role;
 set local request.jwt.claims = '{"role":"service_role"}';
 select case when watchlist_visibility = 'selected' then 'PASS' else 'FAIL' end || '  A''s watchlist moved from private to selected people'
@@ -63,7 +54,7 @@ select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A shares with B 
   from public.watchlist_viewers where owner_id = :A;
 set local role authenticated;
 set local request.jwt.claims = :A_CLAIMS;
-select case when not public.can_view_watchlist(:B) then 'PASS' else 'FAIL' end || '  A cannot see B''s watchlist (B accepted without sharing)';
+select case when not private.can_view_watchlist(:B) then 'PASS' else 'FAIL' end || '  A cannot see B''s watchlist (B accepted without sharing)';
 
 \echo ''
 \echo '=== A follows C, C does not follow A ==='
@@ -71,6 +62,6 @@ set local request.jwt.claims = :A_CLAIMS;
 select case when public.send_watch_together_request(:C) = 'pending' then 'PASS' else 'FAIL' end || '  A sends C a request';
 set local request.jwt.claims = :C_CLAIMS;
 select public.respond_watch_together_request(:A, true);
-select case when not public.can_view_watchlist(:A) then 'PASS' else 'FAIL' end || '  C cannot see A''s watchlist (not mutual, nothing shared)';
+select case when not private.can_view_watchlist(:A) then 'PASS' else 'FAIL' end || '  C cannot see A''s watchlist (not mutual, nothing shared)';
 
 rollback;

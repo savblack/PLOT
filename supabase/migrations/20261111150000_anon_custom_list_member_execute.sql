@@ -1,0 +1,28 @@
+-- Let logged-out visitors read public custom lists again.
+--
+-- The SELECT policies "Public custom lists are readable" (user_custom_lists)
+-- and "Items of public custom lists are readable" (user_custom_list_items)
+-- both mention private.is_custom_list_member(uuid), behind a
+-- `current_user = 'authenticated'` guard. Postgres checks EXECUTE on every
+-- function named in a policy expression before it evaluates any of it, so the
+-- guard does not help: since 20260927120000 revoked EXECUTE from anon, every
+-- anon read of either table raised "permission denied for function
+-- is_custom_list_member", and a logged-out visitor to a public profile saw no
+-- lists (packages/core/usePublicProfile.js swallows the error).
+--
+-- 20261012150000 says anon keeps EXECUTE on the helpers it moved to private;
+-- for this one it never had it.
+--
+-- Granting EXECUTE reveals nothing. The function is
+--   exists (select 1 from user_custom_list_members m ...
+--           where m.list_id = p_list and m.user_id = auth.uid() ...)
+-- and auth.uid() is null for anon, so `m.user_id = null` is never true and it
+-- returns false. The guard in the policies also keeps it from deciding anything
+-- for anon. private is not in the Data API schema list, so this does not make
+-- it callable as an RPC.
+--
+-- private.can_edit_shared_list is deliberately left without anon EXECUTE: the
+-- only policy naming it ("Owners and members read list members") is scoped
+-- to authenticated, so anon never evaluates it.
+
+grant execute on function private.is_custom_list_member(uuid) to anon;

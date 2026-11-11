@@ -384,7 +384,7 @@ From `docs/launch/app-store-launch-sprint.md` and billing docs:
 - [ ] Flip / keep `SHOW_PRICING_PAGE` appropriately (web already `true`; website Pages env; mobile stays web-upgrade)
 - [ ] Re-add `/plans.html` to `apps/website/llms.txt` and `apps/website/sitemap.xml` if still missing (were deleted, not gated)
 - [ ] Deploy `stripe-billing` + `stripe-webhook`; confirm `verify_jwt` in `supabase/config.toml`
-- [ ] Run `pnpm run edge:check` for function changes; `pnpm run staging:premium-flag-test` when touching entitlement SQL
+- [ ] Run `pnpm run edge:check` for function changes; `pnpm run staging:test -- premium-flag` when touching entitlement SQL
 - [ ] Analytics: premium conversion / status person props already exist (`packages/core/analyticsEvents.js`); do not invent duplicate events without `docs/analytics/README.md`
 
 ---

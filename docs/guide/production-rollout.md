@@ -67,8 +67,8 @@ or snapshots as part of an automatic rollback.
 - `pnpm run check`, `pnpm run test:unit`, `pnpm --filter @plot/mobile run typecheck`
 - `pnpm run test:guide` (provider/importer validation and last-valid upload behaviour)
 - `pnpm run db:migration-test` (production read into a temporary local cluster)
-- `pnpm run staging:broadcast-test` (migration and owner/other/anonymous/storage-policy
-  assertions in a single Staging transaction ending in rollback)
+- `pnpm run staging:test -- broadcast` (owner/other/anonymous/storage-policy assertions
+  in a single Staging transaction ending in rollback)
 - `pnpm --filter @plot/web exec playwright test` (production-route Guide and Settings
   tests use intercepted fake account data; config forces a placeholder backend even
   when CI has production secrets)

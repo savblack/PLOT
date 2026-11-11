@@ -2,18 +2,15 @@
 -- every side that could break them: the two partners, a third person who is
 -- nobody's partner, an anonymous caller, and a blocked partner.
 --
---   set -a; . .env; set +a
---   npm run staging:watch-together-test
+--   pnpm run staging:test -- watch-together
 --
 -- WHY: db:migration-test proves the four migrations apply to a copy of
 -- production, and the PR's local scenarios used stand-in tables. Neither runs
 -- the real policies and security definer functions under a real auth.uid()
 -- against the real schema. This does.
 --
--- It applies 20260927100000 to 20260927160000 itself, inside the transaction,
--- so it works whatever Staging's migration ledger says, and the final rollback
--- removes the migrations, every fixture and the Premium row. Staging (and its
--- ledger) is unchanged whether it passes or dies.
+-- The final rollback removes every fixture and the Premium row, so Staging is
+-- unchanged whether it passes or dies.
 --
 -- A (Premium), B and C (Free) are the Staging fixtures used by
 -- staging-block-test.sql. Title ids are borrowed from rows already on Staging
@@ -27,27 +24,6 @@
 \set C_CLAIMS '''{"sub":"6afcff23-4194-4724-af1b-08328ff81f48","role":"authenticated"}'''
 
 begin;
-
--- Staging already ran an earlier copy of these migrations, so two functions
--- exist there in their final shape (20260927130000 adds a column to each).
--- Production has never had them. Drop both so phase 1 starts from where
--- production will; the rollback puts Staging's copies back.
-drop function if exists public.list_watch_together();
-drop function if exists public.suggest_watch_together();
--- 20260927160000 drops the share-full columns in favour of watchlist_viewers,
--- and phase 1's functions name them, so put them back for the replay. The
--- replay of 20260927160000 below carries any flags over and drops them again.
-alter table if exists public.watch_together
-  add column if not exists requester_shares_full boolean not null default false,
-  add column if not exists recipient_shares_full boolean not null default false;
-
-\ir ../supabase/migrations/20260927100000_watch_together.sql
-\ir ../supabase/migrations/20260927110000_watch_together_sessions.sql
-\ir ../supabase/migrations/20260927120000_watch_together_shared_lists.sql
-\ir ../supabase/migrations/20260927130000_watch_together_free.sql
-\ir ../supabase/migrations/20260927140000_watch_together_visibility_and_stop.sql
-\ir ../supabase/migrations/20260927150000_watch_together_counts_for_followers.sql
-\ir ../supabase/migrations/20260927160000_watchlist_visibility.sql
 
 -- ── fixtures (as postgres) ───────────────────────────────────────────────────
 -- See staging-block-test.sql for why the claims must be valid even here.
@@ -333,7 +309,7 @@ select case when :c_rows = 0 and not public.can_see_full_watchlist(:A) then 'PAS
 set local role authenticated;
 set local request.jwt.claims = :A_CLAIMS;
 select public.set_watch_together_share_full(:C, true);
-select case when public.can_view_watchlist(:A) then 'PASS' else 'FAIL' end
+select case when private.can_view_watchlist(:A) then 'PASS' else 'FAIL' end
        || '  A''s own view is unchanged';
 reset role;
 select case when watchlist_visibility = 'selected' then 'PASS' else 'FAIL' end

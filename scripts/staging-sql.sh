@@ -11,9 +11,12 @@
 # above it — which is how a previous run left a profile public and a block row
 # behind on Staging.
 #
-# Usage:
+# Usage: run tests through `pnpm run staging:test -- <name|all>`
+# (scripts/staging-test.mjs), which calls this with each test wrapped so that
+# pending migrations are applied first. Calling it directly still works for a
+# one-off .sql file:
 #   set -a; . .env; set +a          # from the MAIN checkout
-#   scripts/staging-sql.sh scripts/staging-premium-flag-test.sql
+#   scripts/staging-sql.sh some-file.sql
 #
 # Requires: brew install postgresql@17
 set -uo pipefail
@@ -42,14 +45,19 @@ export PGCONNECT_TIMEOUT=10
 out="$(psql -X -tA -f "$FILE" 2>&1)"
 status=$?
 
-printf '%s\n' "$out" | grep -E 'PASS|FAIL|REPRO|^===|^---|rolled back|ERROR' | sed 's/^psql:[^ ]* //' || true
+printf '%s\n' "$out" | grep -E 'PASS|FAIL|REPRO|^===|^---|rolled back|ERROR|^pending migration' | sed 's/^psql:[^ ]* //' || true
 
 passed="$(printf '%s\n' "$out" | grep -c 'PASS ' || true)"
 failed="$(printf '%s\n' "$out" | grep -c 'FAIL ' || true)"
 
 echo
-if [ "$status" -ne 0 ] || [ "$failed" -gt 0 ]; then
+if [ "$failed" -gt 0 ]; then
   echo "✗ $failed of $((passed + failed)) checks FAILED on Staging."
+  echo "  The transaction rolled back, so Staging is unchanged — but do not merge."
+  exit 1
+fi
+if [ "$status" -ne 0 ]; then
+  echo "✗ stopped on the ERROR above after $passed passing checks; the rest did not run."
   echo "  The transaction rolled back, so Staging is unchanged — but do not merge."
   exit 1
 fi
