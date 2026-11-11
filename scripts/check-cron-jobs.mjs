@@ -25,10 +25,11 @@
 // `summary=<job names and what is wrong>` for the incident issue and email.
 
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { evaluateCronJobs, summarizeProblems } from './lib/cronHealth.mjs';
+import { fileURLToPath } from 'node:url';
+import { evaluateCronJobs, jobSchedulingMigrations, summarizeProblems } from './lib/cronHealth.mjs';
 import { evaluatePgNetCalls, summarizePgNetProblems } from './lib/pgNetHealth.mjs';
 import {
   assertCiReadonlyIdentity, describeDbUrlShape, parseDbConnectionOptions, serializePgService,
@@ -134,8 +135,45 @@ if (HTTP) {
   process.exit(0);
 }
 
+/**
+ * When each job's scheduling migration landed on this branch, from git. A job
+ * with no runs yet is given its schedule's allowance from that time, so a job
+ * merged an hour ago is not reported as stopped (see cronHealth.mjs).
+ *
+ * CI fetches only the last 9 days of history. In a shallow clone the oldest
+ * fetched commits appear to add every file, so a file whose "adding" commit is
+ * one of those boundary commits is treated as old (no date), which is right:
+ * anything that landed before the window should have run by now. Any git
+ * failure gives an empty map, which is the stricter, pre-existing behaviour.
+ * @returns {Map<string, Date>}
+ */
+function migrationLandingTimes() {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const dir = join(root, 'supabase', 'migrations');
+  const times = new Map();
+  try {
+    const migrations = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()
+      .map((name) => ({ name, text: readFileSync(join(dir, name), 'utf8') }));
+    const git = (args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    const shallowFile = git(['rev-parse', '--path-format=absolute', '--git-path', 'shallow']);
+    const boundary = new Set(existsSync(shallowFile) ? readFileSync(shallowFile, 'utf8').split('\n').filter(Boolean) : []);
+    const landed = new Map();
+    for (const [job, file] of jobSchedulingMigrations(migrations)) {
+      if (!landed.has(file)) {
+        const [hash, date] = git(['log', '-1', '--diff-filter=A', '--format=%H %cI', '--', join('supabase', 'migrations', file)]).split(' ');
+        landed.set(file, hash && date && !boundary.has(hash) ? new Date(date) : null);
+      }
+      if (landed.get(file)) times.set(job, landed.get(file));
+    }
+  } catch {
+    console.log('(could not read migration history from git; new jobs with no run yet are judged without it)\n');
+    return new Map();
+  }
+  return times;
+}
+
 const now = new Date();
-const { problems, unreadable, checked } = evaluateCronJobs(rows, now);
+const { problems, unreadable, waiting, checked } = evaluateCronJobs(rows, now, migrationLandingTimes());
 
 console.log(`Checked ${checked} active pg_cron job(s) at ${now.toISOString()}.\n`);
 for (const r of rows) {
@@ -145,6 +183,9 @@ for (const r of rows) {
   const mark = bad.length ? '✗' : '✓';
   console.log(`${mark} ${name.padEnd(30)} ${String(r.schedule).padEnd(20)} last run ${r.last_start ?? 'none'} (${r.last_status ?? 'none'})`);
   for (const p of bad) console.log(`    ${p.kind}: ${p.detail}`);
+}
+for (const name of waiting) {
+  console.log(`\n· ${name}: new, scheduled recently and not run yet. It counts as stopped if it has not run within twice its schedule.`);
 }
 for (const name of unreadable) {
   console.log(`\n! ${name}: schedule not understood or longer than the 7 days of kept history, so only its failures are checked, not whether it stopped.`);

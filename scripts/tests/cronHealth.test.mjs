@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  HISTORY_DAYS, STALL_GRACE_MINUTES, evaluateCronJobs, maxScheduleGapMinutes, summarizeProblems,
+  HISTORY_DAYS, STALL_GRACE_MINUTES, evaluateCronJobs, jobSchedulingMigrations, maxScheduleGapMinutes, summarizeProblems,
 } from '../lib/cronHealth.mjs';
 
 const NOW = new Date('2026-11-11T12:00:00Z');
@@ -194,4 +194,40 @@ test('weekly jobs are still judged for staleness, not listed as unreadable', () 
   ], NOW);
   assert.deepEqual(missed.unreadable, []);
   assert.equal(missed.problems[0].kind, 'stalled');
+});
+
+test('a job scheduled an hour ago with no run yet is waiting, not stopped (the 2026-11-11 false alarm)', () => {
+  const fresh = row({ jobname: 'pg-net-calls-purge', schedule: '58 3 * * *', last_start: null, last_status: null, last_finished_status: null, last_finished_at: null });
+  const scheduledAt = new Map([['pg-net-calls-purge', new Date(minutesAgo(60))]]);
+  const result = evaluateCronJobs([fresh], NOW, scheduledAt);
+  assert.deepEqual(result.problems, []);
+  assert.deepEqual(result.waiting, ['pg-net-calls-purge']);
+  // Without the landing time it is judged exactly as before.
+  assert.equal(evaluateCronJobs([fresh], NOW).problems[0].kind, 'stalled');
+});
+
+test('a new job that never runs is reported once its allowance from scheduling has passed', () => {
+  const never = row({ jobname: 'send-push', schedule: '*/15 * * * *', last_start: null, last_status: null, last_finished_status: null });
+  const allowed = 2 * 15 + STALL_GRACE_MINUTES;
+  const at = (m) => evaluateCronJobs([never], NOW, new Map([['send-push', new Date(minutesAgo(m))]]));
+  assert.deepEqual(at(allowed - 1).problems, []);
+  const late = at(allowed + 1);
+  assert.equal(late.problems[0].kind, 'stalled');
+  assert.match(late.problems[0].detail, /no run since it was scheduled at/);
+});
+
+test('a landing time does not excuse a job that has run before and then stopped', () => {
+  const old = row({ jobname: 'send-push', last_start: minutesAgo(200) });
+  const result = evaluateCronJobs([old], NOW, new Map([['send-push', new Date(minutesAgo(5))]]));
+  assert.equal(result.problems[0].kind, 'stalled');
+});
+
+test('jobSchedulingMigrations finds each job and lets a later migration win', () => {
+  const map = jobSchedulingMigrations([
+    { name: '20261012160000_a.sql', text: "select cron.schedule(\n  'brevo-lifecycle-sync', '27 * * * *', $$select 1$$);" },
+    { name: '20261013190000_b.sql', text: "perform cron.unschedule('brevo-lifecycle-sync');\nperform cron.schedule('brevo-lifecycle-sync', '27 */4 * * *', $$x$$);\nselect cron.schedule('send-push', '*/15 * * * *', $$y$$);" },
+  ]);
+  assert.equal(map.get('brevo-lifecycle-sync'), '20261013190000_b.sql');
+  assert.equal(map.get('send-push'), '20261013190000_b.sql');
+  assert.equal(map.size, 2);
 });
