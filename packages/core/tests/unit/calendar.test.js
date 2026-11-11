@@ -10,6 +10,11 @@ import {
   getCalendarRelativeLabel,
   buildCalendarEvents,
   filterCalendarEvents,
+  groupCalendarEventsByDay,
+  groupCalendarDaysByMonth,
+  describeCalendarEvent,
+  calendarEventMeta,
+  calendarEventBehind,
 } from '../../calendar.js';
 
 test('msUntilNextLocalMidnight returns a full day from local midnight', () => {
@@ -348,4 +353,64 @@ test('filterCalendarEvents searches event titles case-insensitively', () => {
   ];
   assert.deepEqual(filterCalendarEvents(events, undefined, [], ' LANT ').map(e => e.item.name), ['Lanterns']);
   assert.equal(filterCalendarEvents(events, undefined, [], 'missing').length, 0);
+});
+
+test('groupCalendarEventsByDay keeps one entry per day from today forward, in order', () => {
+  const events = [
+    { date: '2024-06-14', type: 'cinema', item: { title: 'Past' } },
+    { date: '2024-06-15', type: 'episode', item: { title: 'A' } },
+    { date: '2024-06-15', type: 'streaming', item: { title: 'B' } },
+    { date: '2024-07-02', type: 'cinema', item: { title: 'C' } },
+  ];
+  const days = groupCalendarEventsByDay(events, '2024-06-15');
+  assert.deepEqual(days.map(d => d.ds), ['2024-06-15', '2024-07-02']);
+  assert.deepEqual(days[0].events.map(e => e.item.title), ['A', 'B']);
+  assert.deepEqual(groupCalendarEventsByDay([], '2024-06-15'), []);
+});
+
+test('groupCalendarDaysByMonth groups days under their month and sums the count', () => {
+  const days = [
+    { ds: '2024-12-30', events: [1, 2] },
+    { ds: '2024-12-31', events: [3] },
+    { ds: '2025-01-01', events: [4] },
+  ];
+  const months = groupCalendarDaysByMonth(days, d => d.events.length);
+  assert.deepEqual(
+    months.map(m => [m.key, m.year, m.month, m.count, m.days.length]),
+    [['2024-12', 2024, 11, 3, 2], ['2025-01', 2025, 0, 1, 1]],
+  );
+  assert.deepEqual(groupCalendarDaysByMonth([], () => 1), []);
+});
+
+test('describeCalendarEvent says what each kind of date is', () => {
+  assert.equal(
+    describeCalendarEvent({ type: 'episode', label: 'S05E03', item: { episode: { name: 'Blindsided', episode_number: 3 } } }),
+    'S05E03 · Blindsided',
+  );
+  assert.equal(
+    describeCalendarEvent({ type: 'episode', label: 'S02E01', item: { episode: { episode_number: 1 } } }),
+    'S02E01 · Season premiere',
+  );
+  assert.equal(
+    describeCalendarEvent({ type: 'episode', label: 'S02E04', item: { episode: { episode_number: 4 } } }),
+    'S02E04',
+  );
+  assert.equal(describeCalendarEvent({ type: 'cinema', label: 'Cinema', item: {} }), 'In cinemas');
+  assert.equal(describeCalendarEvent({ type: 'streaming', label: 'Streaming', item: {} }), 'Streaming');
+  assert.equal(describeCalendarEvent({ type: 'reminder', label: '8:30 pm', item: {} }), 'Reminder');
+  assert.equal(describeCalendarEvent({ type: 'other', label: 'Something' }), 'Something');
+});
+
+test('calendarEventMeta joins the network and air time it knows', () => {
+  assert.equal(calendarEventMeta({ item: { network_name: 'ABC', air_time: '8:30 pm' } }), 'ABC · 8:30 pm');
+  assert.equal(calendarEventMeta({ item: { network_name: 'Apple TV+' } }), 'Apple TV+');
+  assert.equal(calendarEventMeta({ item: {} }), '');
+  assert.equal(calendarEventMeta({}), '');
+});
+
+test('calendarEventBehind only counts for an episode you are behind on', () => {
+  assert.equal(calendarEventBehind({ type: 'episode', behind: 2 }), 2);
+  assert.equal(calendarEventBehind({ type: 'episode', behind: 0 }), 0);
+  assert.equal(calendarEventBehind({ type: 'episode' }), 0);
+  assert.equal(calendarEventBehind({ type: 'cinema', behind: 3 }), 0);
 });

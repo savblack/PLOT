@@ -1,6 +1,7 @@
 import { dateToLocalStr } from './date.js';
 import { genreIdsFromItem, titleMatchesQuery } from './media.js';
 import { ALL_TYPES } from './mediaFilters.js';
+import { CALENDAR_VIEW } from './copy/calendarView.js';
 
 export function msUntilNextLocalMidnight(now = new Date()) {
   const nextMidnight = new Date(now);
@@ -304,4 +305,101 @@ export function getCalendarRelativeLabel(selectedDate, todayStr) {
   if (diff === -1) return 'Yesterday';
 
   return selected.toLocaleDateString('en', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+/* ── The Calendar stream ──────────────────────────────────────────────────
+   Web's "My dates" stream and mobile's Agenda draw the same thing: built
+   events from today forward, one entry per day, the days grouped under month
+   headings, and three lines of text per row. The grouping and the wording
+   live here so the two apps cannot disagree on either; only the drawing is
+   per platform. */
+
+/**
+ * Built events as one entry per day, from today forward.
+ *
+ * @template {{ date: string }} E
+ * @param {E[]} events - date-sorted, as buildCalendarEvents returns them
+ * @param {string} todayStr - local YYYY-MM-DD; earlier dates are dropped
+ * @returns {{ ds: string, events: E[] }[]} date-ascending
+ */
+export function groupCalendarEventsByDay(events, todayStr) {
+  const days = new Map();
+  for (const ev of events) {
+    if (ev.date < todayStr) continue;
+    let day = days.get(ev.date);
+    if (!day) { day = { ds: ev.date, events: [] }; days.set(ev.date, day); }
+    day.events.push(ev);
+  }
+  return [...days.values()]; // events arrive date-sorted, so this is too
+}
+
+/**
+ * Group date-ascending days into months, with each month's count for the
+ * muted label beside its heading ("6 dates").
+ *
+ * @template {{ ds: string }} D
+ * @param {D[]} days
+ * @param {(day: D) => number} countOf - how many things a day contributes to the month count
+ * @returns {{ key: string, year: number, month: number, count: number, days: D[] }[]}
+ *   `key` is YYYY-MM; `month` is zero-based, as Date takes it
+ */
+export function groupCalendarDaysByMonth(days, countOf) {
+  const byMonth = new Map();
+  for (const day of days) {
+    const key = day.ds.slice(0, 7);
+    let m = byMonth.get(key);
+    if (!m) {
+      const [y, mo] = key.split('-').map(Number);
+      m = { key, year: y, month: mo - 1, count: 0, days: [] };
+      byMonth.set(key, m);
+    }
+    m.count += countOf(day);
+    m.days.push(day);
+  }
+  return [...byMonth.values()];
+}
+
+/**
+ * Line 2 of a stream row: what this date actually is. Episodes read as their
+ * code and name ("S05E03 · Blindsided"); a first episode with no name yet is
+ * the season premiere; releases say which kind.
+ *
+ * @param {{ type?: string, label?: string, item?: any }} ev - a built calendar event
+ * @returns {string}
+ */
+export function describeCalendarEvent(ev) {
+  switch (ev.type) {
+    case 'episode': {
+      const ep   = ev.item?.episode;
+      const name = ep?.name || (ep?.episode_number === 1 ? CALENDAR_VIEW.seasonPremiere : null);
+      return name ? `${ev.label} · ${name}` : ev.label;
+    }
+    case 'cinema':    return CALENDAR_VIEW.inCinemas;
+    case 'streaming': return CALENDAR_VIEW.eventLabel.streaming;
+    case 'reminder':  return CALENDAR_VIEW.eventLabel.reminder;
+    default:          return ev.label;
+  }
+}
+
+/**
+ * Line 3 of a stream row: network and air time, whichever we know
+ * ("ABC · 8:30 pm"). Empty when we know neither.
+ *
+ * @param {{ item?: any }} ev - a built calendar event
+ * @returns {string}
+ */
+export function calendarEventMeta(ev) {
+  return [ev.item?.network_name, ev.item?.air_time].filter(Boolean).join(' · ');
+}
+
+/**
+ * How many already-aired episodes sit between where the viewer is and this
+ * airing: the number in the "1 episode behind" pill. Zero means no pill.
+ * Only in-progress shows carry it.
+ *
+ * @param {{ type?: string, behind?: number }} ev - a built calendar event
+ * @returns {number}
+ */
+export function calendarEventBehind(ev) {
+  return ev.type === 'episode' && ev.behind > 0 ? ev.behind : 0;
 }
