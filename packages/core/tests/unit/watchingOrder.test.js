@@ -70,10 +70,20 @@ test('a failed activity read keeps the order the list already had', async () => 
   });
   configure({ supabaseClient: client });
   client.failNext('watching_progress', 'select', { code: '42501', message: 'rls' });
+  // null, not an empty map: an empty map would read as "no activity" and
+  // drop every show back to pointer order.
+  assert.equal(await readWatchingActivity('u1', [-1]), null);
+});
+
+test('un-ticking a show drops its activity on the next read', async () => {
+  // The database recomputes last_activity_at on un-tick and delete, so it can
+  // go back to null; the refresh must not keep the stale value.
+  const client = createInMemorySupabase({ tables: { watching_progress: pointerTable([row(-1, '2026-11-01T00:00:00Z')]) } });
+  configure({ supabaseClient: client });
+  const before = [row(-1, '2026-11-01T00:00:00Z', { last_activity_at: '2026-11-03T08:00:00Z' })];
   const activity = await readWatchingActivity('u1', [-1]);
-  assert.equal(activity.size, 0);
-  const rows = [row(-1, '2026-11-01T00:00:00Z', { last_activity_at: '2026-11-03T08:00:00Z' })];
-  assert.equal(withLastActivity(rows, activity)[0], rows[0], 'rows keep their activity');
+  const after = withLastActivity(before.map(({ last_activity_at: _stale, ...r }) => r), activity);
+  assert.equal(after[0].last_activity_at, undefined);
 });
 
 /* ── A visitor's view of a public profile ── */

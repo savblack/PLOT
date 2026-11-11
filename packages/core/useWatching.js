@@ -106,6 +106,7 @@ export function useWatching(userId) {
     const ids = itemsRef.current.map(r => r.tmdb_id);
     if (!userId || !ids.length) return;
     const activity = await readWatchingActivity(userId, ids);
+    if (!activity) return; // failed read: keep the current order
     setItems(prev => sortWatching(withLastActivity(
       prev.map(({ last_activity_at: _stale, ...row }) => row),
       activity,
