@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/savblack/PLOT/compare/mobile-v1.2.0...mobile-v1.2.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* **copy:** no promises of features that are not built, and Plot in running text ([#1554](https://github.com/savblack/PLOT/issues/1554)) ([3e44d8e](https://github.com/savblack/PLOT/commit/3e44d8e7c615fe7a30bd95644296945bfbb97234))
+
 ## [1.2.0](https://github.com/savblack/PLOT/compare/mobile-v1.1.0...mobile-v1.2.0) (2026-11-11)
 
 
