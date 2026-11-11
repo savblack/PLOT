@@ -48,6 +48,7 @@ import {
   MOVIE_LOOK_BACK_DAYS, movieReleaseKey, regionsInWindow, skipReason, worthChecking,
 } from '../_shared/movieReleaseAlerts.js';
 import { mapWithConcurrency, tmdbGet, TMDB_CONCURRENCY } from '../_shared/peopleFeedJob.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 type Db = SupabaseClient<Database>;
 type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
@@ -172,7 +173,7 @@ Deno.serve(async (req) => {
     saved = await savedMovies(db);
   } catch (err) {
     // Details go to the function log, not the response (no stack traces out).
-    console.error(err);
+    reportError('movie-release-notifications', err);
     return json({ ok: false, error: 'Could not read saved films' }, 500);
   }
 
@@ -188,7 +189,7 @@ Deno.serve(async (req) => {
       return { movie, inRange: regionsInWindow(await tmdbGet(`/movie/${movie.tmdbId}/release_dates`, tmdbKey), today, since) };
     } catch (err) {
       failures++;
-      console.error(err);
+      reportError('movie-release-notifications', err);
       return null;
     }
   });
@@ -200,7 +201,7 @@ Deno.serve(async (req) => {
   try {
     regions = await regionsFor(db, [...new Set(outNow.flatMap(r => [...r.movie.savers.keys()]))]);
   } catch (err) {
-    console.error(err);
+    reportError('movie-release-notifications', err);
     return json({ ok: false, error: 'Could not read profiles' }, 500);
   }
 
@@ -217,7 +218,7 @@ Deno.serve(async (req) => {
   try {
     watched = await watchedPairs(db, [...new Set(hits.map(h => h.movie.tmdbId))], [...new Set(hits.map(h => h.userId))]);
   } catch (err) {
-    console.error(err);
+    reportError('movie-release-notifications', err);
     return json({ ok: false, error: 'Could not read watch history' }, 500);
   }
 
@@ -249,7 +250,7 @@ Deno.serve(async (req) => {
         .upsert(rows.slice(i, i + INSERT_CHUNK), { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true })
         .select('id');
       if (error) {
-        console.error('notifications write failed:', error);
+        reportError('movie-release-notifications', 'notifications write failed:', error);
         return json({ ok: false, error: 'Could not write notifications', written }, 500);
       }
       written += data?.length ?? 0;

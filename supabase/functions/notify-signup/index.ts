@@ -25,6 +25,7 @@
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { upsertBrevoContact } from '../_shared/brevo.ts'
 import { adminClient } from '../_shared/supabaseAdmin.ts'
+import { reportError } from '../_shared/posthogLog.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const TO_EMAIL = Deno.env.get('SIGNUP_NOTIFY_TO_EMAIL')
@@ -134,7 +135,7 @@ Deno.serve(async (req) => {
   const resendKey = Deno.env.get('RESEND_API_KEY')
   if (!resendKey) {
     const errorMessage = 'Signup notifications are not configured (missing RESEND_API_KEY).'
-    console.error(errorMessage)
+    reportError('notify-signup', errorMessage)
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -143,7 +144,7 @@ Deno.serve(async (req) => {
 
   if (!TO_EMAIL) {
     const errorMessage = 'Signup notifications are not configured (missing SIGNUP_NOTIFY_TO_EMAIL).'
-    console.error(errorMessage)
+    reportError('notify-signup', errorMessage)
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -184,7 +185,7 @@ Deno.serve(async (req) => {
     } catch (error) {
       // A 401 is a dead BREVO_API_KEY. The trigger is still running. The
       // signup email below is independent of this sync.
-      console.error('Failed to sync signup to Brevo:', error instanceof Error ? error.message : error)
+      reportError('notify-signup', 'Failed to sync signup to Brevo:', error instanceof Error ? error.message : error)
     }
   }
 
@@ -202,7 +203,7 @@ Deno.serve(async (req) => {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown signup notification error'
-    console.error('Failed to send signup notification:', errorMessage, { userId })
+    reportError('notify-signup', 'Failed to send signup notification:', errorMessage, { userId })
     return new Response(JSON.stringify({ ok: false, error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

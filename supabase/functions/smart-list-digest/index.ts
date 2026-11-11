@@ -47,6 +47,7 @@ import {
   buildDigest, cleanRules, digestDedupeKey, discoverQuery, inDigest, isoWeek, listRun, matchKey, pageMatches,
   providerIdsOf, rulesTypes,
 } from '../_shared/smartListDigest.js';
+import { reportError } from '../_shared/posthogLog.ts';
 
 type Db = SupabaseClient<Database>;
 type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
@@ -214,7 +215,7 @@ Deno.serve(async (req) => {
           }
         } catch (err) {
           failures++;
-          console.error(err);
+          reportError('smart-list-digest', err);
           return null;
         }
         const row = seen.get(list.id) ?? null;
@@ -235,7 +236,7 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     // Details go to the function log, not the response.
-    console.error(err);
+    reportError('smart-list-digest', err);
     return json({ ok: false, error: 'Could not read smart lists' }, 500);
   }
 
@@ -250,7 +251,7 @@ Deno.serve(async (req) => {
         .upsert(rows, { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true })
         .select('id');
       if (error) {
-        console.error('notifications write failed:', error);
+        reportError('smart-list-digest', 'notifications write failed:', error);
         return json({ ok: false, error: 'Could not write notifications', week, written }, 500);
       }
       written += data?.length ?? 0;
@@ -258,7 +259,7 @@ Deno.serve(async (req) => {
     for (const rows of chunks(seenInserts, INSERT_CHUNK)) {
       const { error } = await db.from('smart_list_seen').upsert(rows, { onConflict: 'list_id', ignoreDuplicates: true });
       if (error) {
-        console.error('smart_list_seen insert failed:', error);
+        reportError('smart-list-digest', 'smart_list_seen insert failed:', error);
         return json({ ok: false, error: 'Could not record matches', week, written }, 500);
       }
       seenWritten += rows.length;
@@ -268,7 +269,7 @@ Deno.serve(async (req) => {
         .update({ pending_keys: update.pending_keys, last_checked_at: now.toISOString() })
         .eq('list_id', update.list_id);
       if (error) {
-        console.error('smart_list_seen update failed:', error);
+        reportError('smart-list-digest', 'smart_list_seen update failed:', error);
         return json({ ok: false, error: 'Could not record matches', week, written }, 500);
       }
       seenWritten++;

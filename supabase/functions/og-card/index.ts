@@ -26,6 +26,7 @@ import satori from 'npm:satori@0.33.5';
 import { initWasm, Resvg } from 'npm:@resvg/resvg-wasm@2.6.2';
 import jpeg from 'npm:jpeg-js@0.4.4';
 import { WORDMARK_EM, WORDMARK_PATH, WORDMARK_VIEWBOX } from './wordmark.generated.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 type Props = Record<string, unknown>;
 type El = { type: string; props: Props } | null;
@@ -494,7 +495,7 @@ Deno.serve(async (request) => {
     if (!fonts.length) throw new Error('brand fonts unavailable');
     return await png(el, fonts, miss ? OG_CACHE_MISS : OG_CACHE);
   } catch (e) {
-    console.error('og-card render failed', e);
+    reportError('og-card', 'og-card render failed', e);
     // Uncacheable, so the app proxy keeps its static fallback and retries later.
     return new Response('Card unavailable', { status: 503, headers: { 'cache-control': 'no-store' } });
   }

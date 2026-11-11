@@ -32,6 +32,7 @@ import {
   notionSignatureOk,
   pageIdFromWebhook,
 } from '../_shared/notionReview.js';
+import { reportError } from '../_shared/posthogLog.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const NOTION_TOKEN = Deno.env.get('NOTION_TOKEN') || Deno.env.get('NOTION_API_KEY') || '';
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
   }
 
   if (!WEBHOOK_SECRET) {
-    console.error('NOTION_WEBHOOK_SECRET is not set — refusing the delivery. The cron sweep still applies edits.');
+    reportError('marketing-notion-sync', 'NOTION_WEBHOOK_SECRET is not set — refusing the delivery. The cron sweep still applies edits.');
     return json({ error: 'Not configured' }, 503);
   }
   const signature = req.headers.get('X-Notion-Signature') ?? req.headers.get('x-notion-signature') ?? '';
@@ -116,10 +117,10 @@ Deno.serve(async (req) => {
     if (!result) return json({ ok: true, ignored: 'not a mirrored post' });
     return json({ ok: true, page_id: notionId(pageId), ...result });
   } catch (err) {
-    console.error('Notion webhook failed:', err);
+    reportError('marketing-notion-sync', 'Notion webhook failed:', err);
     return json({ error: 'Internal error' }, 500);
   } finally {
     const { error } = await supabase.rpc('release_marketing_notion_mirror', { p_owner: leaseOwner });
-    if (error) console.error('Could not release Notion mirror lease:', error);
+    if (error) reportError('marketing-notion-sync', 'Could not release Notion mirror lease:', error);
   }
 });

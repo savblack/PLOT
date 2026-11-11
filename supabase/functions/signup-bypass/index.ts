@@ -54,6 +54,7 @@ import {
   SIGNUP_BYPASS_GLOBAL_SCOPE,
   type BypassAction,
 } from '../_shared/signupBypass.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 function cors(origin: string | null) {
   return {
@@ -301,7 +302,7 @@ Deno.serve(async (req) => {
   // via `scope`.
   const ip = clientIp(req);
   if (!ip) {
-    console.error('[signup-bypass] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
+    reportError('signup-bypass', '[signup-bypass] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 503);
   }
   const [perIp, global] = await Promise.all([
@@ -311,7 +312,7 @@ Deno.serve(async (req) => {
   const attempts = usableRateCount(perIp);
   const globalAttempts = usableRateCount(global);
   if (attempts === null || globalAttempts === null) {
-    console.error('Signup rate check failed:', perIp.error ?? global.error ?? 'invalid attempt count');
+    reportError('signup-bypass', 'Signup rate check failed:', perIp.error ?? global.error ?? 'invalid attempt count');
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 503);
   }
   if (attempts > RATE_MAX_ATTEMPTS || globalAttempts > RATE_MAX_GLOBAL) {

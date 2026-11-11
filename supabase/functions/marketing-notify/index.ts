@@ -11,6 +11,7 @@
  * choose it.
  */
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 const FROM = 'Plot <hello@theplot.tv>';
 
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
   });
   if (!res.ok) {
     const detail = (await res.text()).slice(0, 180);
-    console.error('marketing-notify Resend failed', res.status, detail);
+    reportError('marketing-notify', 'marketing-notify Resend failed', res.status, detail);
     return json({ error: `Resend ${res.status}` }, 502);
   }
   return json({ ok: true });

@@ -26,6 +26,7 @@ import { HISTORY_CONFLICT_TARGET, dedupeHistoryRows } from '../_shared/historyCo
 import { insertMissingHistory, type ImportedHistoryRow } from '../_shared/importHistory.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
 import { workerActingUser } from '../_shared/workerActingUser.ts'
+import { reportError } from '../_shared/posthogLog.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -722,7 +723,7 @@ serve(async (req) => {
 
     return json({ error: 'Unknown action' }, 404)
   } catch (err) {
-    console.error('[trakt-sync]', err)
+    reportError('trakt-sync', '[trakt-sync]', err)
     return json({ error: 'Internal error' }, 500)
   }
 })

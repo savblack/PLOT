@@ -23,6 +23,7 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceKeyBearer } from '../_shared/serviceBearer.ts';
 import { clampDescription, fitTitle } from '../_shared/seoText.ts';
 import { scheduleTitleIndexWrite, type IndexedTitle } from '../_shared/titlePageIndex.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -239,7 +240,7 @@ async function storeTitlesSitemap(): Promise<{ xml: string; count: number }> {
   const { error } = await admin()
     .from('title_sitemap_cache')
     .upsert({ id: 1, xml: built.xml, url_count: built.count, generated_at: new Date().toISOString() }, { onConflict: 'id' });
-  if (error) console.error('title_sitemap_cache write failed:', error.message);
+  if (error) reportError('title-page', 'title_sitemap_cache write failed:', error.message);
   return built;
 }
 
@@ -276,7 +277,7 @@ function recordTitles(rows: IndexedTitle[]) {
   const runtime = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
   scheduleTitleIndexWrite(rows, async (unique) => {
     const { error } = await admin().rpc('record_title_page_index', { p_rows: unique });
-    if (error) console.error('title_page_index write failed:', error.message);
+    if (error) reportError('title-page', 'title_page_index write failed:', error.message);
   }, runtime ? (promise) => runtime.waitUntil(promise) : undefined);
 }
 

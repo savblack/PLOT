@@ -16,6 +16,7 @@ import { attachmentPathsFrom, signedFeedbackUrl } from '../_shared/feedbackAttac
 type Db = SupabaseClient
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
+import { reportError } from '../_shared/posthogLog.ts'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 // The operator's own mailbox, deliberately direct rather than the branded
@@ -185,13 +186,13 @@ async function sendFeedbackEmail({
 
     if (!res.ok) {
       // Resend validation errors can echo feedback text. Log only the status.
-      console.error('Resend error:', res.status)
+      reportError('notify-feedback', 'Resend error:', res.status)
       return false
     }
 
     return true
   } catch {
-    console.error('Resend request failed')
+    reportError('notify-feedback', 'Resend request failed')
     return false
   }
 }
@@ -245,7 +246,7 @@ async function mirrorFeedbackToNotion({
     const message = error instanceof Error && error.message.startsWith('Failed to update feedback sync state:')
       ? 'Could not save the Notion page link on the feedback row'
       : 'Could not file feedback in the private Notion database'
-    console.error(message, { feedbackId })
+    reportError('notify-feedback', message, { feedbackId })
     try {
       await updateFeedbackSyncState(supabaseAdmin, feedbackId, { notion_sync_error: message })
     } catch { /* Already logged above. The Notion query makes the next retry safe. */ }
@@ -329,7 +330,7 @@ Deno.serve(async (req) => {
     : { ok: false as const, error: notConfiguredMessage }
   if (!configured) {
     try { await updateFeedbackSyncState(supabaseAdmin, feedbackId, { notion_sync_error: notConfiguredMessage }) }
-    catch { console.error('Could not record feedback Notion configuration error', { feedbackId }) }
+    catch { reportError('notify-feedback', 'Could not record feedback Notion configuration error', { feedbackId }) }
   }
 
   // Email is independent of the Notion write.
@@ -338,7 +339,7 @@ Deno.serve(async (req) => {
     pageUrl: mirror.ok ? mirror.page.url : ('pageUrl' in mirror ? mirror.pageUrl ?? null : null),
     syncError: mirror.ok ? null : mirror.error,
   }) : false
-  if (!resendKey) console.error('RESEND_API_KEY is not set; no feedback email was sent', { feedbackId })
+  if (!resendKey) reportError('notify-feedback', 'RESEND_API_KEY is not set; no feedback email was sent', { feedbackId })
   return Response.json({
     ok: mirror.ok, emailed,
     ...(mirror.ok ? { pageUrl: mirror.page.url } : { error: mirror.error, ...('pageUrl' in mirror && mirror.pageUrl ? { pageUrl: mirror.pageUrl } : {}) }),

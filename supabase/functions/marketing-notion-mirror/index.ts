@@ -39,6 +39,7 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { githubDispatch, sweepNotion } from '../_shared/notionMirror.js';
 import { notionId } from '../_shared/notionReview.js';
+import { reportError } from '../_shared/posthogLog.ts';
 
 type Db = SupabaseClient<Database>;
 
@@ -58,7 +59,7 @@ const startRun = async (supabase: Db): Promise<string | null> => {
       .insert({ run_type: 'notion_mirror' }).select('id').single();
     return data?.id ?? null;
   } catch (err) {
-    console.error('Could not open a Notion run record:', err);
+    reportError('marketing-notion-mirror', 'Could not open a Notion run record:', err);
     return null;
   }
 };
@@ -69,7 +70,7 @@ const finishRun = async (supabase: Db, runId: string | null, patch: Record<strin
     await supabase.from('marketing_batch_runs')
       .update({ finished_at: new Date().toISOString(), ...patch }).eq('id', runId);
   } catch (err) {
-    console.error('Could not close the Notion run record:', err);
+    reportError('marketing-notion-mirror', 'Could not close the Notion run record:', err);
   }
 };
 
@@ -79,7 +80,7 @@ const pruneHeartbeats = async (supabase: Db) => {
     await supabase.from('marketing_batch_runs').delete()
       .eq('run_type', 'notion_mirror').eq('status', 'idle').lt('started_at', cutoff);
   } catch (err) {
-    console.error('Notion heartbeat prune failed:', err);
+    reportError('marketing-notion-mirror', 'Notion heartbeat prune failed:', err);
   }
 };
 
@@ -132,13 +133,13 @@ Deno.serve(async (req) => {
     await pruneHeartbeats(supabase);
     return json({ ok: true, ...counts });
   } catch (err) {
-    console.error('Notion mirror failed:', err);
+    reportError('marketing-notion-mirror', 'Notion mirror failed:', err);
     await finishRun(supabase, runId, { status: 'failed', error: String((err as Error).message).slice(0, 500) });
     return json({ error: String((err as Error).message) }, 500);
   } finally {
     if (!dryRun) {
       const { error } = await supabase.rpc('release_marketing_notion_mirror', { p_owner: leaseOwner });
-      if (error) console.error('Could not release Notion mirror lease:', error);
+      if (error) reportError('marketing-notion-mirror', 'Could not release Notion mirror lease:', error);
     }
   }
 });

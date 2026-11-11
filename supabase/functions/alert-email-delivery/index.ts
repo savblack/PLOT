@@ -53,6 +53,7 @@ import {
   sendRunFailed, signUnsubscribeToken, unsubscribeUrl,
 } from '../_shared/alertDelivery.js';
 import { ALERT_EMAIL_FROM, APP_ORIGIN, alertLinks, buildAlertEmail } from '../_shared/alertEmail.js';
+import { reportError } from '../_shared/posthogLog.ts';
 
 type Db = SupabaseClient<Database>;
 type NotificationRow = Pick<
@@ -217,7 +218,7 @@ async function sendBatch(resendKey: string, messages: Message[]): Promise<{ sent
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (err) {
-    console.error(`${JOB}: resend request failed:`, err instanceof Error ? err.name : 'error');
+    reportError('alert-email-delivery', `${JOB}: resend request failed:`, err instanceof Error ? err.name : 'error');
     return { sent: false, refs: [], note: failureNote(null, null) };
   }
   let body: unknown = null;
@@ -253,14 +254,14 @@ Deno.serve(async (req) => {
   let runId: number | null = null;
   if (!dryRun) {
     const { data, error } = await db.from('alert_job_runs').insert({ job: JOB, started_at: nowIso }).select('id').single();
-    if (error) console.error('alert_job_runs insert failed:', error); else runId = data.id;
+    if (error) reportError('alert-email-delivery', 'alert_job_runs insert failed:', error); else runId = data.id;
   }
   const finish = async (status: number, body: Record<string, unknown>) => {
     if (runId !== null) {
       const { error } = await db.from('alert_job_runs')
         .update({ finished_at: new Date().toISOString(), ok: body.ok === true, stats: body as Json })
         .eq('id', runId);
-      if (error) console.error('alert_job_runs update failed:', error);
+      if (error) reportError('alert-email-delivery', 'alert_job_runs update failed:', error);
     }
     return json(body, status);
   };
@@ -384,7 +385,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     // Details go to the function log, not the response (no stack traces out).
-    console.error(`${JOB}: failed at ${stage}:`, err);
+    reportError('alert-email-delivery', `${JOB}: failed at ${stage}:`, err);
     return await finish(500, { ok: false, error: 'Run failed', stage });
   }
 });

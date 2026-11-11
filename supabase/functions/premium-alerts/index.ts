@@ -57,6 +57,7 @@ import {
   releaseForRegion, seasonFullyAired, seasonReadyKey, selectedProviderIds,
 } from '../_shared/premiumAlerts.js';
 import { mapWithConcurrency, refreshPeopleFeed, tmdbGet, TMDB_CONCURRENCY, type FeedRow } from '../_shared/peopleFeedJob.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 type Db = SupabaseClient<Database>;
 type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
@@ -257,7 +258,7 @@ async function seasonAlerts(db: Db, tmdbKey: string, now: Date): Promise<Outcome
       }
     } catch (err) {
       failures++;
-      console.error(err);
+      reportError('premium-alerts', err);
     }
   });
   return { rows, subjects: followers.size, checked: showIds.length, capped: followers.size > showIds.length, hits, failures, calls };
@@ -287,7 +288,7 @@ Deno.serve(async (req) => {
     outcome = only === 'people' ? await peopleAlerts(db, tmdbKey, now, dryRun) : await seasonAlerts(db, tmdbKey, now);
   } catch (err) {
     // Details go to the function log, not the response.
-    console.error(err);
+    reportError('premium-alerts', err);
     return json({ ok: false, only, error: 'Could not read alert opt-ins' }, 500);
   }
 
@@ -298,7 +299,7 @@ Deno.serve(async (req) => {
         .upsert(outcome.rows.slice(i, i + INSERT_CHUNK), { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true })
         .select('id');
       if (error) {
-        console.error('notifications write failed:', error);
+        reportError('premium-alerts', 'notifications write failed:', error);
         return json({ ok: false, only, error: 'Could not write notifications', written }, 500);
       }
       written += data?.length ?? 0;

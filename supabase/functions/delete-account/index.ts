@@ -5,6 +5,7 @@ import { stopAccountBilling } from './billingCleanup.js'
 import { deleteBrevoContact } from '../_shared/brevo.ts'
 import { serviceKey } from '../_shared/serviceKey.ts'
 import { attachmentPathsFrom } from '../_shared/feedbackAttachments.ts'
+import { reportError } from '../_shared/posthogLog.ts'
 
 function jsonError(message: string, status = 500, extra: Record<string, unknown> = {}) {
   return new Response(JSON.stringify({ error: message, ...extra }), {
@@ -100,7 +101,7 @@ Deno.serve(async (req) => {
       httpClient: Stripe.createFetchHttpClient(),
     }), userId)
   } catch (error) {
-    console.error('delete-account: billing cleanup failed:', error instanceof Error ? error.message : error)
+    reportError('delete-account', 'delete-account: billing cleanup failed:', error instanceof Error ? error.message : error)
     return jsonError('Could not stop account billing. Please try again.', 503)
   }
 
@@ -123,7 +124,7 @@ Deno.serve(async (req) => {
     try {
       await deleteBrevoContact({ apiKey: brevoKey, email: user.email })
     } catch (error) {
-      console.error('Failed to delete Brevo contact:', error instanceof Error ? error.message : error)
+      reportError('delete-account', 'Failed to delete Brevo contact:', error instanceof Error ? error.message : error)
     }
   }
 

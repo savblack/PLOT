@@ -66,6 +66,7 @@ import {
 } from '../_shared/availabilityAlerts.js';
 import { mapWithConcurrency, TMDB_CONCURRENCY } from '../_shared/peopleFeedJob.ts';
 import { tmdbGetWithRetry } from '../_shared/tmdbRetry.ts';
+import { reportError } from '../_shared/posthogLog.ts';
 
 type Db = SupabaseClient<Database>;
 type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
@@ -283,14 +284,14 @@ Deno.serve(async (req) => {
   let runId: number | null = null;
   if (!dryRun) {
     const { data, error } = await db.from('alert_job_runs').insert({ job: JOB, started_at: nowIso }).select('id').single();
-    if (error) console.error('alert_job_runs insert failed:', error); else runId = data.id;
+    if (error) reportError('streaming-arrival-alerts', 'alert_job_runs insert failed:', error); else runId = data.id;
   }
   const finish = async (status: number, body: Record<string, unknown>) => {
     if (runId !== null) {
       const { error } = await db.from('alert_job_runs')
         .update({ finished_at: new Date().toISOString(), ok: body.ok === true, stats: body as Json })
         .eq('id', runId);
-      if (error) console.error('alert_job_runs update failed:', error);
+      if (error) reportError('streaming-arrival-alerts', 'alert_job_runs update failed:', error);
     }
     return json(body, status);
   };
@@ -332,7 +333,7 @@ Deno.serve(async (req) => {
       try {
         body = await tmdbGetWithRetry(`/movie/${tmdbId}/watch/providers`, tmdbKey);
       } catch (err) {
-        console.error(err);
+        reportError('streaming-arrival-alerts', err);
         return { tmdbId, status: 'failed', regions: [] };
       }
       const regions: Looked['regions'] = [];
@@ -369,7 +370,7 @@ Deno.serve(async (req) => {
     // can be, once a dry run has shown it is real.
     const tripped = breaker.tripped && !(forceBreaker && breaker.reason === 'anomaly');
     if (tripped) {
-      console.error(`${JOB}: breaker tripped (${breaker.reason}); nothing written`, stats);
+      reportError('streaming-arrival-alerts', `${JOB}: breaker tripped (${breaker.reason}); nothing written`, stats);
       return await finish(200, { ok: false, breaker: breaker.reason, ...stats });
     }
 
@@ -464,13 +465,13 @@ Deno.serve(async (req) => {
 
       stage = 'prune';
       const { error } = await db.from('title_availability').delete().lt('last_checked_at', isoDay(now, PRUNE_AFTER_DAYS));
-      if (error) console.error('title_availability prune failed:', error);
+      if (error) reportError('streaming-arrival-alerts', 'title_availability prune failed:', error);
     }
 
     return await finish(200, { ok: true, ...stats, skipped, rows_candidate: rows.length, rows_written: written });
   } catch (err) {
     // Details go to the function log, not the response (no stack traces out).
-    console.error(`${JOB}: failed at ${stage}:`, err);
+    reportError('streaming-arrival-alerts', `${JOB}: failed at ${stage}:`, err);
     return await finish(500, { ok: false, error: 'Run failed', stage });
   }
 });

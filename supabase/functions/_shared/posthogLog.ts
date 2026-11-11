@@ -141,3 +141,40 @@ export function reportLog(service: string, level: LogLevel, message: string, opt
     // The function log above already has the line. Delivery must not change the response.
   }
 }
+
+const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+// A failed fetch names its URL, and several upstreams (Plex, TMDB, OMDb) take
+// their credential in the query string. Drop every query string rather than
+// guess at parameter names.
+const URL_QUERY = /(\bhttps?:\/\/[^\s?#"'<>)]+)\?[^\s#"'<>)]*/gi;
+
+function partText(part: unknown): string {
+  if (typeof part === 'string') return part;
+  if (part === null || part === undefined) return String(part);
+  if (typeof part !== 'object') return String(part);
+  // Errors and Supabase/PostgREST errors: the message only. `details` can carry
+  // row values (a conflicting key, say), so it is never sent.
+  if (part instanceof Error || 'message' in part) return errorText(part);
+  try {
+    return JSON.stringify(part).slice(0, 500);
+  } catch {
+    return '[unserializable]';
+  }
+}
+
+/**
+ * Drop-in for `console.error(...parts)` that also reaches PostHog Logs, so the
+ * backend error alert sees it. Parts are joined the way the console prints
+ * them and error objects contribute their message only. Before the line leaves
+ * the function, URL query strings (where upstream credentials live) are
+ * removed and anything shaped like an email address is masked. Provider
+ * response bodies (Brevo's `{"message":"Key not found"}`, say) are kept: they
+ * are what makes the alert diagnosable, and the masking covers echoed emails.
+ */
+export function formatErrorParts(parts: unknown[]): string {
+  return parts.map(partText).join(' ').replace(URL_QUERY, '$1?[query removed]').replace(EMAIL, '[email]');
+}
+
+export function reportError(service: string, ...parts: unknown[]) {
+  reportLog(service, 'error', formatErrorParts(parts));
+}

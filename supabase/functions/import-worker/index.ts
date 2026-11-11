@@ -37,6 +37,7 @@ import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceKeyBearer } from '../_shared/serviceBearer.ts';
 // @ts-ignore: generated JavaScript bundle (scripts/build-import-engine.mjs)
 import * as engineModule from '../_shared/importEngine.generated.js';
+import { reportError } from '../_shared/posthogLog.ts';
 
 // The bundle keeps core's JSDoc, which Deno reads as types looser than the
 // code (an `[]` default infers never[]). Core's own suite covers the engine;
@@ -323,7 +324,7 @@ serve(async (req) => {
     try {
       return json({ swept: await sweepReviews(admin) });
     } catch (error) {
-      console.error('[import-worker] sweep', error);
+      reportError('import-worker', '[import-worker] sweep', error);
       return json({ error: 'Sweep failed.' }, 500);
     }
   }
@@ -339,7 +340,7 @@ serve(async (req) => {
   try {
     job = await rpc<Job | null>(admin, 'claim_import_job', { p_user: scope.user });
   } catch (error) {
-    console.error('[import-worker] claim', error);
+    reportError('import-worker', '[import-worker] claim', error);
     return json({ error: 'Import storage is unavailable.' }, 503);
   }
   if (!job) return json({ idle: true });
@@ -353,7 +354,7 @@ serve(async (req) => {
   } catch (error) {
     const terminal = error instanceof TerminalError;
     const message = error instanceof Error ? error.message : 'Import failed.';
-    console.error('[import-worker]', job.id, message);
+    reportError('import-worker', '[import-worker]', job.id, message);
     try {
       await rpc(admin, 'fail_import_job', {
         p_job: job.id, p_lease: job.lease_token, p_error: terminal ? message : ERRORS.gaveUp,
@@ -362,7 +363,7 @@ serve(async (req) => {
       // A job that will not run again leaves nothing behind.
       if (terminal || job.attempts >= 5) await cleanup(admin, job, false);
     } catch (failError) {
-      console.error('[import-worker] fail', failError);
+      reportError('import-worker', '[import-worker] fail', failError);
     }
     if (scope.user && job.user_id !== scope.user) return json({ ran: true });
     return json({ jobId: job.id, failed: true, terminal });

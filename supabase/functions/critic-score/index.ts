@@ -15,6 +15,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { serviceKey } from '../_shared/serviceKey.ts'
+import { reportError } from '../_shared/posthogLog.ts'
 
 function allowedOrigin(origin: string | null) {
   if (!origin) return 'https://app.theplot.tv';
@@ -77,7 +78,7 @@ Deno.serve(async (req) => {
   // column migration applied) must not turn every panel open into an OMDb
   // call: the write below would fail too, so nothing would ever be cached.
   if (cacheError) {
-    console.error('[critic-score] cache read failed; skipping OMDb', cacheError.message);
+    reportError('critic-score', '[critic-score] cache read failed; skipping OMDb', cacheError.message);
     return json({ criticScore: null, source: null, awards: null }, origin);
   }
 
@@ -94,7 +95,7 @@ Deno.serve(async (req) => {
   // turn the limiter itself into unbounded storage growth.
   const bucket = await callerBucket(req, Deno.env.get('CRITIC_RATE_LIMIT_SALT') || serviceRole);
   if (!bucket) {
-    console.error('[critic-score] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
+    reportError('critic-score', '[critic-score] no cf-connecting-ip header; refusing rather than sharing one rate bucket');
     return json({ error: 'Service unavailable' }, origin, 503);
   }
   const { data: allowed, error: quotaError } = await admin.rpc('admit_critic_score_request', {
