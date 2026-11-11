@@ -103,6 +103,10 @@ test('the pickers ask about IMDb list files only', async () => {
   assert.equal(importListChoiceNeeded('imdb', ratings), false);
   assert.equal(importListChoiceNeeded('letterboxd', list), false);
   assert.equal(importListChoiceNeeded('imdb', ''), false);
+  // A name that already says watchlist answers the question itself.
+  assert.equal(importListChoiceNeeded('imdb', list, 'watchlist.csv'), false);
+  assert.equal(importListChoiceNeeded('imdb', list, 'WATCHLIST (1).csv'), false);
+  assert.equal(importListChoiceNeeded('imdb', list, '7aff628a-6ff9-4549-8146-212eae03c528.csv'), true);
 });
 
 test('an answered IMDb list question names the upload so the worker reads the answer', async () => {

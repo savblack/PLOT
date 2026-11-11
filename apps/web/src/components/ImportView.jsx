@@ -380,7 +380,7 @@ function AccountImportView() {
     if (platform.id === 'imdb' && picked.length === 1) {
       if (!listChoice) {
         const head = await picked[0].slice(0, 4096).text().catch(() => '');
-        if (importListChoiceNeeded('imdb', head)) { setPendingListFiles(picked); return; }
+        if (importListChoiceNeeded('imdb', head, picked[0].name)) { setPendingListFiles(picked); return; }
       } else {
         const file = picked[0];
         picked = [{ name: importFileNameForListChoice(listChoice), size: file.size, text: () => file.text(), arrayBuffer: () => file.arrayBuffer() }];
