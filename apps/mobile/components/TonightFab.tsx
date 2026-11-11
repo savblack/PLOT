@@ -1,11 +1,14 @@
 /**
  * The round floating entry to Just Decide: bottom right, above the glass tab
- * bar, a sparkle on the brand fill with a soft ring. It eases in on mount and
- * presses down under the finger; nothing loops. Home is the only screen that
- * shows it.
+ * bar. An ink disc with the sparkle in the page's cream, the same pairing as
+ * the wordmark and the Watch together panel, so it reads as part of Plot's
+ * chrome rather than a sticker on top of it. It inverts with the theme (a
+ * light disc on dark). No halo: the design system keeps the accent for state
+ * and rules out decorative glows. It eases in on mount and presses down under
+ * the finger; nothing loops. Home is the only screen that shows it.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -14,11 +17,11 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Palette, spacing } from '../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../lib/tabBar';
 
-const SIZE = 56;
+const SIZE = 52;
 
 function Sparkle({ color }: { color: string }) {
   return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill={color}>
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill={color}>
       <Path d="M12 2.5c.5 3.9 2.6 6 6.5 6.5-3.9.5-6 2.6-6.5 6.5-.5-3.9-2.6-6-6.5-6.5 3.9-.5 6-2.6 6.5-6.5z" />
       <Path d="M5 14.5c.25 1.9 1.35 3 3.25 3.25-1.9.25-3 1.35-3.25 3.25-.25-1.9-1.35-3-3.25-3.25 1.9-.25 3-1.35 3.25-3.25z" />
     </Svg>
@@ -48,8 +51,7 @@ export default function TonightFab() {
         accessibilityLabel={DISCOVER_VIEW.tonightFab}
         style={styles.button}
       >
-        <View style={styles.ring} pointerEvents="none" />
-        <Sparkle color={colors.onAccentFill} />
+        <Sparkle color={colors.bg} />
       </Pressable>
     </Animated.View>
   );
@@ -63,20 +65,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderRadius: SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accentFill,
+    backgroundColor: colors.textPrimary,
     // Legibility against whatever scrolls underneath, as the tab bar.
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
     shadowRadius: 14,
     elevation: 6,
-  },
-  // A soft halo in the same fill, a step outside the disc.
-  ring: {
-    position: 'absolute',
-    width: SIZE + 12,
-    height: SIZE + 12,
-    borderRadius: (SIZE + 12) / 2,
-    backgroundColor: colors.accentDim,
   },
 });
