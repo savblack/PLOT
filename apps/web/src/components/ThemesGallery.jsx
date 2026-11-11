@@ -41,13 +41,12 @@ export default function ThemesGallery() {
           ))}
         </div>
       </div>
-      <p className="themes-intro">{G.intro}</p>
-      {!isPremium && (
-        <div className="themes-locked">
-          <p>{G.lockedNote}</p>
-          <PremiumGateButton reason="themes" />
-        </div>
-      )}
+      {/* A Free account gets the Premium button beside the intro. It used to
+          sit in a bordered banner of its own under it. */}
+      <div className="themes-intro-row">
+        <p className="themes-intro">{G.intro}</p>
+        {!isPremium && <PremiumGateButton reason="themes" />}
+      </div>
       <ul className="themes-grid" aria-label={A.themesOptionsLabel}>
         {THEME_FAMILIES.map(id => {
           const premium = isPremiumFamily(id);

@@ -1,4 +1,4 @@
-/* DialogActions.jsx: Cancel then the main button, bottom right. */
+/* DialogActions.jsx: the main button, bottom right. */
 .dialog-actions {
   flex: 1;
   min-width: 0;

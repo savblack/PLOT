@@ -120,7 +120,7 @@ export default function SmartListDialog({
       onClose={onClose}
       tall
       surfaceClassName="smart-builder-dialog"
-      footer={<DialogActions onCancel={onClose} busy={submitting} error={error}
+      footer={<DialogActions busy={submitting} error={error}
         primary={{ label: submitting ? (editing ? COMMON.saving : SMART_LISTS.creating) : action, onClick: submit, disabled: !editing && !shownName.trim() }} />}
     >
       <div className="smart-builder">

@@ -335,7 +335,7 @@ export function CreateListModal({ lists, onConfirm, onClose, onLimit }) {
 
   return (
     <ResponsiveDialog title="New list" onClose={onClose} size="compact"
-      footer={<DialogActions onCancel={onClose} busy={isSubmitting} error={error}
+      footer={<DialogActions busy={isSubmitting} error={error}
         primary={{ label: isSubmitting ? 'Creating…' : 'Create list', onClick: handleSubmit, disabled: !name.trim() }} />}>
       <div style={{ padding: '1.25rem' }}>
         <label htmlFor="new-list-name" style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', marginBottom: '0.45rem' }}>

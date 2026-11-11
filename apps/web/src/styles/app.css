@@ -8181,12 +8181,13 @@ a.provider-chip--link:hover {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
-  .app-tab svg { width: 21px; height: 21px; flex-shrink: 0; }
-  .app-tab-label { font-size: 0.66rem; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+  /* Icons only: each button carries its name as its accessible label and
+     tooltip instead of a line of text under the icon. */
+  .app-tab svg { width: 24px; height: 24px; flex-shrink: 0; }
   /* The active tab takes the accent's text shade, one of its approved roles. */
   .app-tab.active { color: var(--accent-text); }
   .app-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 10px; }
-  .app-tab .mobile-menu-unread { top: 8px; right: calc(50% - 16px); }
+  .app-tab .mobile-menu-unread { top: 12px; right: calc(50% - 16px); }
   /* The menu's last rows: plain text actions under Settings. */
   .nav-drawer-item--text { color: var(--text-secondary); }
   .nav-drawer-item--signout { color: var(--accent-text); }

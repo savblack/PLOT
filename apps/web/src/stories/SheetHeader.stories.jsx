@@ -15,21 +15,8 @@ export const WithBack = {
   args: { onBack: () => {}, onClose: undefined },
 };
 
-export const WithAction = {
-  args: {
-    action: { label: 'Save', onClick: () => {} },
-  },
-};
-
-export const WithBackAndAction = {
-  args: {
-    onBack: () => {},
-    action: { label: 'Save', onClick: () => {} },
-  },
-};
-
-export const DisabledAction = {
-  args: {
-    action: { label: 'Save', onClick: () => {}, disabled: true },
-  },
+// Back on the left, close on the right. There is no Save in the header: a
+// dialog's main button sits in its foot (DialogActions).
+export const BackAndClose = {
+  args: { onBack: () => {} },
 };

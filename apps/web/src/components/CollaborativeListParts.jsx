@@ -192,7 +192,7 @@ export function RenameListDialog({ list, onClose }) {
   };
   return (
     <ResponsiveDialog title={C.myLists.renameTitle} onClose={onClose}
-      footer={<DialogActions onCancel={onClose} busy={busy}
+      footer={<DialogActions busy={busy}
         primary={{ label: COMMON.save, onClick: save, disabled: !name.trim() }} />}>
       <form className="wt-accept" onSubmit={e => { e.preventDefault(); save(); }}>
         <label className="wt-field">
@@ -308,7 +308,7 @@ export function NewSharedListDialog({ onClose, partners: givenPartners }) {
 
   return (
     <ResponsiveDialog title={C.create.title} onClose={onClose}
-      footer={<DialogActions onCancel={onClose} busy={busy}
+      footer={<DialogActions busy={busy}
         note={pickedNames.length ? C.create.notify(pickedNames) : C.create.linkNote}
         primary={{ label: C.create.create, onClick: create, disabled: !name.trim() }} />}>
       <form className="wt-accept" onSubmit={e => { e.preventDefault(); create(); }}>
