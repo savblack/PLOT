@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/savblack/PLOT/compare/mobile-v1.2.1...mobile-v1.3.0) (2026-11-11)
+
+
+### Features
+
+* **imports:** ask whether an IMDb list is the watchlist; keep one IMDb list ([#1578](https://github.com/savblack/PLOT/issues/1578)) ([b6d2914](https://github.com/savblack/PLOT/commit/b6d2914807068c834dca76b64f6412b9123b56dd))
+* **mobile:** My Lists follows the saved section order, with a Customize screen ([#1576](https://github.com/savblack/PLOT/issues/1576)) ([72b7616](https://github.com/savblack/PLOT/commit/72b7616e4d1916480fc8f0af94e55ee3a05959c0))
+
 ## [1.2.1](https://github.com/savblack/PLOT/compare/mobile-v1.2.0...mobile-v1.2.1) (2026-11-11)
 
 
