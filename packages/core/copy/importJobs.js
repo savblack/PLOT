@@ -22,6 +22,13 @@ export const IMPORT_JOBS = {
     starting: 'Starting…',
     connectedAs: (name) => `as ${name}`,
     plexServer: 'Server',
+    // Asked when an IMDb file is a list: IMDb exports the watchlist and every
+    // other list in one layout, under a random file name.
+    imdbListQuestion: 'Is this your IMDb watchlist?',
+    imdbListWatchlist: 'Yes, my watchlist',
+    imdbListWatchlistNote: 'Adds these titles to your Plot watchlist',
+    imdbListOther: 'No, another list',
+    imdbListOtherNote: 'Adds them to a Plot list called IMDb list',
     plexProfile: 'Profile',
     plexOwned: 'Owned',
     plexShared: 'Shared with you',

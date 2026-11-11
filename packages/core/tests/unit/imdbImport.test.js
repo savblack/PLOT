@@ -154,16 +154,16 @@ test('an IMDb watchlist is recognised by name; any other list becomes a custom l
       assert.equal(entries.length, 2, fileName);
       assert.ok(entries.every(row => row.destination.kind === 'watchlist'));
     }
-    // IMDb's current exports are named with a random ID, like this one.
-    for (const [fileName, key] of [['7aff628a-6ff9-4549-8146-212eae03c528.csv', 'imdb:list:7aff628a-6ff9-4549-8146-212eae03c528'], ['favorites (1).csv', 'imdb:list:favorites']]) {
+    // IMDb's current exports are named with a random ID, like the first one,
+    // and the pickers upload a "No, another list" answer as imdb-list.csv.
+    // Every one lands in the same "IMDb list", so a fresh export of the same
+    // list (new random name) adds to it rather than making a second list.
+    for (const fileName of ['7aff628a-6ff9-4549-8146-212eae03c528.csv', '0c1d2e3f-0000-4000-8000-000000000000.csv', 'imdb-list.csv', 'favorites (1).csv']) {
       const { entries } = parseImportDocument('imdb', watchlistFixture, { fileName });
       assert.equal(entries.length, 2, fileName);
-      assert.ok(entries.every(row => row.destination.kind === 'custom' && row.destination.key === key && row.destination.name === 'IMDb list'));
-      assert.ok(entries.every(row => row.eventId === `${key}:${row.externalIds.imdb}` && row.date === null));
+      assert.ok(entries.every(row => row.destination.kind === 'custom' && row.destination.key === 'imdb:list' && row.destination.name === 'IMDb list'), fileName);
+      assert.ok(entries.every(row => row.eventId === `imdb:list:${row.externalIds.imdb}` && row.date === null), fileName);
     }
-    // Retrying the same file gives the same keys, so nothing is added twice.
-    const again = parseImportDocument('imdb', watchlistFixture, { fileName: '7aff628a-6ff9-4549-8146-212eae03c528.csv' });
-    assert.equal(again.entries[0].eventId, `imdb:list:7aff628a-6ff9-4549-8146-212eae03c528:${again.entries[0].externalIds.imdb}`);
   } finally {
     configure({ importEventsEnabled: false });
   }

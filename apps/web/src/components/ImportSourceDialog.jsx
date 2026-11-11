@@ -43,6 +43,29 @@ function ReadsList({ id }) {
   );
 }
 
+/** An IMDb list file: the watchlist, or another list? Asked before upload. */
+function ListChoice({ start }) {
+  const options = [
+    { id: 'watchlist', label: I.imdbListWatchlist, note: I.imdbListWatchlistNote },
+    { id: 'list', label: I.imdbListOther, note: I.imdbListOtherNote },
+  ];
+  return (
+    <div className="isp-plex">
+      <div className="isp-lbl" id="isp-list-choice">{I.imdbListQuestion}</div>
+      <div className="isp-radios" role="radiogroup" aria-labelledby="isp-list-choice">
+        {options.map(option => {
+          const on = start.listChoice === option.id;
+          return (
+            <button type="button" role="radio" aria-checked={on} key={option.id} className={`isp-radio${on ? ' is-on' : ''}`} onClick={() => start.chooseList(option.id)}>
+              <i aria-hidden="true" /><span className="isp-radio-copy"><span>{option.label}</span><small>{option.note}</small></span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** Server then profile, as radio lists. Shared with the Settings source detail. */
 export function PlexPicker({ plex, quiet = false }) {
   return (
@@ -137,13 +160,14 @@ export default function ImportSourceDialog({ start, onContinue, continueLabel = 
             <span className="isp-drop-hint">{S.dropFormats(src.formats)}</span>
           </label>
         )}
+        {ready && start.listChoiceNeeded && phase !== 'uploading' && <ListChoice start={start} />}
         {src.steps && (
           <ol className="isp-steps">
             {src.steps.map((step, i) => <li key={step}><i>{i + 1}</i><span>{step}</span></li>)}
           </ol>
         )}
         <p className="isp-privacy"><LockIcon /><span>{src.noRatings ? S.privacyNoRatings : S.privacy}</span></p>
-        <button type="button" className="onboarding-cta" disabled={!ready || phase === 'uploading'} onClick={start.upload}>
+        <button type="button" className="onboarding-cta" disabled={!ready || phase === 'uploading' || (start.listChoiceNeeded && !start.listChoice)} onClick={start.upload}>
           {phase === 'uploading' ? I.uploading : S.importRows(start.pendingRows)}
         </button>
       </div>

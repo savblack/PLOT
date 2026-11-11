@@ -60,6 +60,16 @@ const channelFor = async (service) => {
   return id;
 };
 
+// VOICE.md forbids URLs on X (downranking), with one exception: trailer posts
+// must carry the official YouTube trailer link (copySchema.js requires it, and
+// only on trailer-related posts). This guard used to refuse every URL, so a
+// trailer post that passed validation was then refused here: the 2026-11-09
+// batch failed to schedule trailer:movie:1260649 on X for exactly that reason.
+// IG/Threads captions may say "theplot.tv", so the guard is X-only.
+const YOUTUBE_LINK = /https:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[A-Za-z0-9_-]+|youtu\.be\/[A-Za-z0-9_-]+)(?:&[^\s]*)?/g;
+export const xTextHasForbiddenUrl = (text) =>
+  /https?:\/\/|www\./i.test(String(text ?? '').replace(YOUTUBE_LINK, ''));
+
 /**
  * Publish (or schedule, or draft) one post to one Buffer channel.
  * @param {object} content
@@ -74,9 +84,7 @@ const channelFor = async (service) => {
 export const publishToBuffer = async ({
   service = 'twitter', text, imageUrls, imageUrl, altText, scheduledAt, draft = false,
 }) => {
-  // VOICE.md forbids URLs on X (downranking). IG/Threads captions may say
-  // "theplot.tv", so the guard is X-only.
-  if (service === 'twitter' && /https?:\/\/|www\./i.test(text)) {
+  if (service === 'twitter' && xTextHasForbiddenUrl(text)) {
     throw new Error('X copy contains a URL — refusing to publish');
   }
 

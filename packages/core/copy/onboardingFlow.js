@@ -74,7 +74,7 @@ export const ONBOARDING_FLOW = {
     max: 'Watch history with dates',
     apple: 'Apple TV+ watch history',
     tvtime: 'Shows and movies you tracked',
-    imdb: 'Ratings and watchlist',
+    imdb: 'Ratings, watchlist and lists',
     note: 'It runs in the background while you finish setting up. One entry per title, so nothing doubles up.',
     queuedNote: (name) => `The next one starts when ${name} finishes.`,
     later: 'I’ll do this later',
@@ -105,7 +105,7 @@ export const ONBOARDING_FLOW = {
       max: ['Sign in at privacycenter.max.com', 'Choose Download your data', 'Drop the CSV or JSON here'],
       apple: ['Sign in at privacy.apple.com and choose Request a copy of your data', 'Pick Apple TV & Purchases', 'When the ZIP arrives, drop the TV interactions JSON here'],
       tvtime: ['Use the export TV Time already sent you (GDPR archive or TV Time Liberator)', 'Drop tracking-prod-records-v2.csv, tracking-prod-records.csv, the JSON or the ZIP here', 'Keep the original file names'],
-      imdb: ['On imdb.com open Your Ratings', 'Choose Export', 'Drop ratings.csv or watchlist.csv here'],
+      imdb: ['On imdb.com open Your Ratings, your Watchlist or a list', 'Choose Export', 'Drop the downloaded CSV here'],
     },
     // One privacy line under the drop zone.
     privacy: 'We read titles, dates and ratings. The file is deleted once it’s matched.',
