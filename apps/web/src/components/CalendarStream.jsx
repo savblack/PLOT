@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { monthLongName } from '../utils/date.js';
+import { groupCalendarDaysByMonth } from '@plot/core/calendar.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 
 /* One continuous stream from today forward, grouped by month then by day.
@@ -8,29 +9,6 @@ import LoadingSpinner from './LoadingSpinner.jsx';
    headings, the day wrappers (with data-day / data-month anchors the side
    panel scrolls to) and the empty/loading states; what goes in a day is the
    caller's `renderDay`. */
-
-/**
- * Group date-ascending days into months.
- * @template {{ ds: string }} D
- * @param {D[]} days
- * @param {(day: D) => number} countOf  how many things a day contributes to the month count
- * @returns {{ key: string, year: number, month: number, count: number, days: D[] }[]}
- */
-function groupDaysByMonth(days, countOf) {
-  const byMonth = new Map();
-  for (const day of days) {
-    const key = day.ds.slice(0, 7);
-    let m = byMonth.get(key);
-    if (!m) {
-      const [y, mo] = key.split('-').map(Number);
-      m = { key, year: y, month: mo - 1, count: 0, days: [] };
-      byMonth.set(key, m);
-    }
-    m.count += countOf(day);
-    m.days.push(day);
-  }
-  return [...byMonth.values()];
-}
 
 /* The 56px left column of a diary row: the day number and weekday, plus
    whatever the day's body wants parked under them (a rail's arrows). */
@@ -58,7 +36,7 @@ export function DayGutter({ ds, children }) {
  * @param {import('react').RefObject<HTMLDivElement>} [props.streamRef]
  */
 export default function CalendarStream({ days, countOf, todayYear, countLabel, renderDay, loading, empty, variant = 'rows', streamRef }) {
-  const months = useMemo(() => groupDaysByMonth(days, countOf), [days, countOf]);
+  const months = useMemo(() => groupCalendarDaysByMonth(days, countOf), [days, countOf]);
   return (
     <div className={`cal-stream cal-stream--${variant}`} ref={streamRef}>
       {loading ? (

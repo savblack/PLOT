@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { calendarSuggestRequested } from '@plot/core/upcomingSuggestions.js';
 import { useApp } from '../hooks/useApp.js';
 import { localDateStr, todayLongLabel } from '../utils/date.js';
-import { msUntilNextLocalMidnight, filterCalendarEvents } from '../utils/calendar.js';
+import { msUntilNextLocalMidnight, filterCalendarEvents, groupCalendarEventsByDay } from '../utils/calendar.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useFilteredUpcoming } from '../hooks/useFilteredUpcoming.js';
 import { useGenres } from '../hooks/useGenres.js';
@@ -41,18 +41,6 @@ const SearchIcon = () => (
     <path d="m20 20-4-4" />
   </svg>
 );
-
-/* Your own dates, one day per entry, from today forward. */
-function groupEventsByDay(events, todayStr) {
-  const days = new Map();
-  for (const ev of events) {
-    if (ev.date < todayStr) continue;
-    let day = days.get(ev.date);
-    if (!day) { day = { ds: ev.date, events: [] }; days.set(ev.date, day); }
-    day.events.push(ev);
-  }
-  return [...days.values()]; // events arrive date-sorted, so this is too
-}
 
 function EmptyState({ title, body, action }) {
   return (
@@ -100,7 +88,7 @@ export default function CalendarView() {
     { ready: listsReady },
   );
   const myDays = useMemo(
-    () => groupEventsByDay(filterCalendarEvents(events, typeFilters, genreFilters, query), todayStr),
+    () => groupCalendarEventsByDay(filterCalendarEvents(events, typeFilters, genreFilters, query), todayStr),
     [events, typeFilters, genreFilters, query, todayStr],
   );
   const hasAnyEvents = useMemo(() => events.some(ev => ev.date >= todayStr), [events, todayStr]);
