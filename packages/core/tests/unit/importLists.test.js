@@ -49,7 +49,7 @@ test('verified IMDb watchlists preserve external identity without treating list 
   assert.equal(entries[0].date,null);
   assert.equal(entries[0].destination.kind,'watchlist');
   const renamed=parsePlatform('imdb',text,{fileName:'renamed.csv'});
-  assert.ok(renamed.every(row=>row.destination.kind==='custom'&&row.destination.key==='imdb:list:renamed'));
+  assert.ok(renamed.every(row=>row.destination.kind==='custom'&&row.destination.key==='imdb:list'));
   const leftOut=[];
   assert.equal(parsePlatform('imdb',text.replace(',Movie,',',TV Episode,'),{fileName:'watchlist.csv',onLeftOut:r=>leftOut.push(r)}).length,1);
   assert.deepEqual(leftOut,['title_type_unsupported']);

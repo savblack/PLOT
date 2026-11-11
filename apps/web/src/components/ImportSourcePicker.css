@@ -124,6 +124,10 @@
 .isp-radio i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border-strong); flex-shrink: 0; box-sizing: border-box; }
 .isp-radio.is-on i { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 45%, transparent 50%); }
 .isp-radio em { margin-left: auto; font-style: normal; font-size: 12.5px; color: var(--text-secondary); }
+/* A choice with its consequence underneath, so the label never wraps. */
+.isp-radio-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.isp-radio-copy > span { white-space: nowrap; }
+.isp-radio-copy small { font-size: 12.5px; color: var(--text-secondary); }
 
 /* The import pill: one line above the steps that follow a pick. */
 .isp-pill {

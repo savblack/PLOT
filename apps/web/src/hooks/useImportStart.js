@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createImportReporter } from '@plot/core/importPipeline.js';
 import { rememberLetterboxdImport, clearLetterboxdImport } from '../utils/letterboxdImportPrompt.js';
-import { startFileImport, startConnectionImport, useImportJobs, importJobActive, importSourceName, importPillFor } from '@plot/core/importJobs.js';
+import { startFileImport, startConnectionImport, useImportJobs, importJobActive, importSourceName, importPillFor, importListChoiceNeeded } from '@plot/core/importJobs.js';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
 import { usePlexSource } from '@plot/core/usePlexSource.js';
 import { getConfig } from '@plot/core/config.js';
@@ -60,6 +60,9 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
   const [error, setError] = useState(null);
   const [pendingFiles, setPendingFiles] = useState(null);
   const [pendingRows, setPendingRows] = useState(null);
+  // An IMDb list file: is it the watchlist? null until the person answers.
+  const [listChoiceNeeded, setListChoiceNeeded] = useState(false);
+  const [listChoice, setListChoice] = useState(/** @type {'watchlist' | 'list' | null} */ (null));
 
   const jobs = useImportJobs(userId, { history });
   const trakt = useTraktSync(userId);
@@ -114,6 +117,8 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     setError(null);
     setPendingFiles(null);
     setPendingRows(null);
+    setListChoiceNeeded(false);
+    setListChoice(null);
     if (src.lane === 'connect') {
       const conn = id === 'trakt' ? trakt : id === 'plex' ? plex : simkl;
       setPhase(conn.isConnected ? 'ready' : 'connect');
@@ -129,6 +134,8 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     setError(null);
     setPendingFiles(null);
     setPendingRows(null);
+    setListChoiceNeeded(false);
+    setListChoice(null);
   }, [busy]);
 
   // A file lands on the drop zone (or on a tile): hold it and count its rows.
@@ -137,6 +144,8 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     const src = findImportSource(sourceId);
     if (!src || src.lane !== 'upload' || busy) return;
     // An empty list clears the receipt ("Choose a different file").
+    setListChoiceNeeded(false);
+    setListChoice(null);
     if (!files.length) { setPendingFiles(null); setPendingRows(null); return; }
     if (sourceId !== source) {
       reporter().selected(sourceId);
@@ -147,23 +156,32 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     setPendingFiles(files);
     setPendingRows(null);
     countRows(files).then(count => setPendingRows(count));
+    // The header row is enough to tell an IMDb list from a ratings export.
+    if (sourceId === 'imdb' && files.length === 1) {
+      files[0].slice(0, 4096).text()
+        .then(head => setListChoiceNeeded(importListChoiceNeeded(sourceId, head)))
+        .catch(() => setListChoiceNeeded(false));
+    }
   }, [source, busy, reporter]);
 
   const upload = useCallback(async () => {
     if (!userId || !source || phase !== 'file' || !pendingFiles?.length) return null;
+    if (listChoiceNeeded && !listChoice) return null;
     const files = pendingFiles.map(file => ({ name: file.name, body: file, contentType: file.type || undefined }));
     setPhase('uploading');
     setError(null);
-    const { job, error: failure } = await startFileImport({ userId, source, entry, files });
+    const { job, error: failure } = await startFileImport({ userId, source, entry, files, listChoice: listChoiceNeeded ? listChoice : null });
     if (failure) { setError(failure.message); setPhase('file'); return null; }
     if (source === 'letterboxd') void clearLetterboxdImport(userId);
-    reporter().report('started', { source, count: pendingRows || 0 });
+    reporter().report('started', { source, count: pendingRows || 0, ...(listChoiceNeeded && listChoice ? { list_kind: listChoice } : {}) });
     setPendingFiles(null);
     setPendingRows(null);
+    setListChoiceNeeded(false);
+    setListChoice(null);
     await jobs.refresh();
     setPhase('queued');
     return job;
-  }, [userId, source, phase, pendingFiles, pendingRows, entry, reporter, jobs]);
+  }, [userId, source, phase, pendingFiles, pendingRows, listChoiceNeeded, listChoice, entry, reporter, jobs]);
 
   const connect = useCallback(() => {
     if (source === 'plex') {
@@ -213,6 +231,7 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     source, phase, busy, error: error || connection?.error || null,
     connectedAs: connected ? (connection?.integration?.display_name || null) : null,
     queuedBehind, pendingFiles, pendingRows,
+    listChoiceNeeded, listChoice, chooseList: setListChoice,
     jobs: jobs.jobs, current: jobs.current, queued: jobs.queued, refreshJobs: jobs.refresh, cancelJob: jobs.cancel, dismissJob: jobs.dismiss,
     connectedIds,
     pill: importPillFor(jobs.current, jobs.queued),
