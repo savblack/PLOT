@@ -15,6 +15,13 @@ GitHub-side watchers raise issues rather than email:
 
 - `supabase-deploy-guard.yml` raises an issue when production misses main's migrations or function deploys.
 - `whats-on-health.yml` is a backup for whats-on-watch.
+- `db-write-paths`, `migration-drift`, `netflix-top10`, `streaming-top10` and
+  `broadcast-guide` each open an `incident` issue when they fail, comment on it
+  if they fail again, and close it on the next success. The first failure also
+  emails through `.github/scripts/marketing-alert.sh`. Their CircleCI twins
+  email only. See `.github/scripts/job-incident.sh`.
+- `staging-tests.yml` opens an `incident` issue when the nightly Staging SQL
+  tests fail, and closes it on the next pass.
 
 uptime-watch also opens a GitHub issue labelled `incident` when its
 `GITHUB_TOKEN` secret is set, and closes the issue on recovery.
@@ -23,7 +30,6 @@ uptime-watch also opens a GitHub issue labelled `incident` when its
 
 - A signed-in read and write (the shape of the July 2026 outage). Needs a dedicated Staging test account.
 - Stripe webhook delivery failures, pg_cron job failures, and PostHog exception spikes.
-- Five scheduled workflows that fail silently: `db-write-paths`, `migration-drift`, `netflix-top10`, `streaming-top10`, `broadcast-guide`.
 
 ## Deploying or changing a watcher
 
