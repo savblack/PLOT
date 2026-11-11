@@ -8,7 +8,7 @@ import { PLANS_PAGE } from './plansPage.js';
 export const SETTINGS_VIEW = {
   page: {
     title: 'Settings',
-    subtitle: 'Make plot feel like yours.',
+    subtitle: 'Make Plot feel like yours.',
     navigation: 'Settings sections',
     search: 'Find a setting…',
     noResults: 'No matching settings. Try another word.',
@@ -18,7 +18,7 @@ export const SETTINGS_VIEW = {
       connections: { title: 'Connections', description: 'Your sources and your calendar.' },
       billing: { title: 'Billing', description: 'Your plan, your subscription, and a little support.' },
       privacy: { title: 'Data & privacy', description: 'Control your visibility and take your data with you.' },
-      help: { title: 'Help & about', description: 'Help with plot, and the people behind the data.' },
+      help: { title: 'Help & about', description: 'Help with Plot, and the people behind the data.' },
     },
     emailPreferences: 'Email preferences',
     whereYouWatch: 'Where you watch',
@@ -45,7 +45,7 @@ export const SETTINGS_VIEW = {
     intro: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch.',
     // Keep this list aligned with PLANS_PAGE.planSummary — SettingsBilling also
     // reads the plans catalog for price copy so the two surfaces cannot drift.
-    features: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Themes now, with widgets and app icons to come'],
+    features: ['Pick a movie or show by time and service', 'Deeper viewing stats', 'Every theme, in light and dark'],
     cycle: 'Choose your billing cycle',
     monthly: 'Monthly',
     yearly: 'Yearly',
@@ -108,7 +108,7 @@ export const SETTINGS_VIEW = {
     bugReportLabel: 'Bug report',
     bugReportDescription: 'Something broke, behaved oddly, or felt unreliable.',
     featureRequestLabel: 'Feature request',
-    featureRequestDescription: 'An idea that would make plot more useful or more delightful.',
+    featureRequestDescription: 'An idea that would make Plot more useful or more delightful.',
     generalFeedbackLabel: 'General feedback',
     generalFeedbackDescription: 'Anything else about the experience, product, or taste of the app.',
     notSaved: 'Your feedback was not saved. Please try again.',
@@ -153,9 +153,9 @@ export const SETTINGS_VIEW = {
     'A curated view of my screen time.',
     "Keep up with what I'm watching, on plot.",
   ],
-  shareTitleWithUsername: (username) => `@${username} on plot`,
+  shareTitleWithUsername: (username) => `@${username} on Plot`,
   shareTitleDefault: 'My profile',
-  shareJoinMe: 'Join me on plot',
+  shareJoinMe: 'Join me on Plot',
   inviteText: "Join me on plot. Here's what I'm watching.",
 
   addYourName: 'Add your name',
@@ -223,7 +223,7 @@ export const SETTINGS_VIEW = {
   // so a stated cadence would be a promise nothing keeps.
   marketingEmails: {
     label: 'Email digest',
-    onHint: "You'll get the plot digest by email. Unsubscribe any time.",
+    onHint: "You'll get the Plot digest by email. Unsubscribe any time.",
     offHint: 'The chart, what to watch this weekend, and what just landed on streaming.',
   },
 
@@ -292,7 +292,7 @@ export const SETTINGS_VIEW = {
   premium: {
     groupTitle: 'plot Premium',
     youHavePremium: 'You have Plot Premium',
-    thankYou: 'Thank you for keeping plot running',
+    thankYou: 'Thank you for keeping Plot running',
     opening: 'Opening…',
     manageSubscription: 'Manage subscription',
     accessProvidedByPlot: 'Your Premium access is provided by Plot. There is no Stripe subscription to manage.',
@@ -370,7 +370,7 @@ export const SETTINGS_VIEW = {
   calendarFeed: {
     groupTitle: 'Calendar',
     subscribeLabel: 'Subscribe to Calendar',
-    needsPremium: 'A live calendar feed needs plot Premium',
+    needsPremium: 'A live calendar feed needs Plot Premium',
     needsPremiumMessage: 'Live calendar subscription is included with Plot Premium. The one-time snapshot on this page stays free.',
     liveFeedPrivate: 'Live feed of your watchlist',
     getUrlHint: 'Get a URL for Google or Apple Calendar',
@@ -413,7 +413,7 @@ export const SETTINGS_VIEW = {
   // the Terms page. TVMaze and OMDb ask for credit too, so they sit here with it.
   credits: {
     groupTitle: 'Credits',
-    intro: 'plot is built on data from these sources.',
+    intro: 'Plot is built on data from these sources.',
     tmdbName: 'TMDB',
     tmdbNotice: 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
     tvmazeName: 'TVmaze',

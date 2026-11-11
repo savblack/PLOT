@@ -43,5 +43,5 @@ export const CUSTOM_LISTS = Object.freeze({
     `${lists} ${lists === 1 ? 'list' : 'lists'} · ${titles} ${titles === 1 ? 'title' : 'titles'}`,
   // The undo toast after creating a list (copy/undo.js adds the full stop).
   created: 'List created',
-  limitMessage: `You can create up to ${FREE_CUSTOM_LIST_CAP} custom lists for free. Unlimited custom lists are planned for Plot Premium.`,
+  limitMessage: `You can create up to ${FREE_CUSTOM_LIST_CAP} custom lists for free. Plot Premium has unlimited custom lists.`,
 });

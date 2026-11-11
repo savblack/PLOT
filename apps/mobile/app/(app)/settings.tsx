@@ -999,7 +999,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
               numberOfLines={6}
               placeholder={
                 type === 'bug' ? 'Describe what happened…' :
-                type === 'feature' ? 'What would you like to see in plot?' :
+                type === 'feature' ? 'What would you like to see in Plot?' :
                 'Share your thoughts…'
               }
               placeholderTextColor={colors.textMuted}
@@ -1139,7 +1139,7 @@ export default function SettingsScreen() {
 
   const handleShareCalUrl = () => shareLink({
     url: calFeedUrl,
-    text: 'Subscribe to my plot calendar:',
+    text: 'Subscribe to my Plot calendar:',
     event: EVENTS.LIST_SHARED,
     eventProps: { kind: 'calendar_feed' },
   });

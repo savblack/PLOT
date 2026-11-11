@@ -30,7 +30,7 @@ test('a concurrent insert rejected by the cap produces the shared coming-soon me
     assert.equal(error.code, CUSTOM_LIST_LIMIT_CODE);
     assert.equal(customListCreationError(error, 'fallback'), CUSTOM_LISTS.limitMessage);
     assert.equal(isCustomListLimitError(error), true);
-    assert.match(error.message, /5 custom lists.*planned for Plot Premium/);
+    assert.match(error.message, /5 custom lists.*Plot Premium has unlimited custom lists/);
     return true;
   });
   assert.equal(db.calls.length, 2);

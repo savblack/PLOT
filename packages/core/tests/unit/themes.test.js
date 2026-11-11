@@ -213,15 +213,16 @@ test('the default family is exactly the base tokens', () => {
   assert.deepEqual(themeColors('default', 'dark'), { ...colors.light, ...colors.dark });
 });
 
-test('the plans copy sells themes as live and widgets and app icons as coming', () => {
+test('the plans copy sells themes as live and promises nothing that is not built', () => {
   const themes = PLANS_PAGE.premiumFeatures.find(row => row.id === 'themes');
   assert.equal(themes.live, true);
-  const customize = PLANS_PAGE.premiumFeatures.find(row => row.id === 'customize');
-  assert.notEqual(customize.live, true);
-  assert.doesNotMatch(customize.description, /themes/i);
+  // Widgets and app icons are not built, so nothing lists them or says they are coming.
+  assert.equal(PLANS_PAGE.premiumFeatures.some(row => row.id === 'customize'), false);
   const rows = PLANS_PAGE.comparison.groups.flatMap(group => group.rows);
-  assert.equal(rows.find(row => row.label === 'Widgets and app icons').tag, undefined);
-  assert.equal(rows.some(row => row.label === 'Widgets, app icons and themes'), false);
+  assert.equal(rows.some(row => /widget|app icon/i.test(row.label)), false);
   const card = PLANS_PAGE.premiumCard.find(row => row.icon === 'customise');
-  assert.match(card.note, /Widgets and app icons are coming/);
+  assert.equal(card.label, 'Customize your Plot');
+  const everything = JSON.stringify(PLANS_PAGE);
+  assert.doesNotMatch(everything, /widget|app icons/i);
+  assert.doesNotMatch(everything, /to come|are coming|still planned|are planned|is planned/i);
 });
