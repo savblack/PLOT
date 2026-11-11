@@ -1,6 +1,6 @@
 # staging-suite-ci
 
-Status: active (PR open, waiting on Savannah; not merged)
+Status: active. PR https://github.com/savblack/PLOT/pull/1550 open, waiting on Savannah; not merged
 Branch: agent/2026-11-11-staging-suite-ci
 Worktree: ~/Developer/PLOT-worktrees/2026-11-11-staging-suite-ci
 Updated: 2026-11-11 (see the latest commit for the time)
@@ -62,7 +62,7 @@ session `local_e768aa0c-0f82-457d-aecd-d54ea4a12447`.
   Staging had no function, no ledger row, no fixture C. Probe files deleted.
 - Visibility with `grant execute … to anon` added inside the rollback: 33/33 pass,
   so that grant is the whole fault.
-- `pnpm run check`: see the PR body for the result.
+- `pnpm run check`: passes (0 errors; 175 pre-existing mobile warnings).
 - CI on the PR: expected red until the anon bug is fixed (that is the job working).
 
 ## Real bug found (not fixed here; needs a migration, so needs Savannah's OK)
