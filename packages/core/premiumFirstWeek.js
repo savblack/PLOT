@@ -8,9 +8,11 @@
 //
 // Like finishingTouches.js, the card's own state is per account and per
 // device, and this module owns only the key, the encoding and the rules; web
-// reads localStorage, mobile reads AsyncStorage. It starts when the app sees
-// the person come back from a successful checkout, so someone who has been a
-// member for a year never gets a "first week" card.
+// reads localStorage, mobile reads AsyncStorage. On web it starts when the
+// app sees the person come back from a successful checkout; on mobile, when
+// the phone sees a Free account turn Premium (premiumFirstWeekShouldStart).
+// Either way someone who has been a member for a year never gets a "first
+// week" card.
 
 /** @typedef {'theme' | 'people' | 'together' | 'calendar' | 'smartList'} PremiumFirstWeekId */
 
@@ -71,6 +73,49 @@ export function serialisePremiumFirstWeek(state) {
  */
 export function startPremiumFirstWeek(existing, now = Date.now()) {
   return existing || { startedAt: now };
+}
+
+/**
+ * Mobile's marker that this device has seen the account on the Free plan.
+ * The profile carries no "Premium since" date and web keeps its start in the
+ * browser, so a phone cannot read when someone upgraded. What it can know is
+ * that the account was Free the last time it looked and is Premium now.
+ * @param {string} userId
+ */
+export function premiumSeenFreeKey(userId) {
+  return `plot.premiumSeenFree.${userId}`;
+}
+
+/** The stored value of the marker above. */
+export const PREMIUM_SEEN_FREE = '1';
+
+/**
+ * Whether a device with no checkout return to watch for (mobile: the payment
+ * is in the browser, and may have been made on web) should start the week
+ * now. It starts when the account is Premium, no week is stored, and the
+ * upgrade is known to be recent, by either of two signals:
+ *
+ * - this device saw the account on Free before (it upgraded since), or
+ * - the account itself is younger than the week, so the upgrade must be too
+ *   (someone who signed up and upgraded on web, then opened the phone).
+ *
+ * A Premium account with neither is a long-standing member on a new device
+ * or a new app version, and gets no "first week" card.
+ *
+ * @param {{
+ *   existing: PremiumFirstWeekState | null,
+ *   isPremium: boolean,
+ *   seenFree: boolean,
+ *   accountCreatedAt?: string | number | null,
+ *   now?: number,
+ * }} facts
+ *   accountCreatedAt: the auth user's created_at (ISO string or ms epoch).
+ */
+export function premiumFirstWeekShouldStart({ existing, isPremium, seenFree, accountCreatedAt, now = Date.now() }) {
+  if (existing || !isPremium) return false;
+  if (seenFree) return true;
+  const created = typeof accountCreatedAt === 'number' ? accountCreatedAt : Date.parse(accountCreatedAt || '');
+  return Number.isFinite(created) && created <= now && now - created <= PREMIUM_FIRST_WEEK_DAYS * DAY_MS;
 }
 
 /** @param {PremiumFirstWeekState} state @param {number} [now] */

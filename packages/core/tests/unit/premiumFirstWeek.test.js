@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   PREMIUM_FIRST_WEEK_IDS, PREMIUM_FIRST_WEEK_PATHS, derivePremiumFirstWeek, hidePremiumFirstWeek,
-  parsePremiumFirstWeek, premiumFirstWeekVisible, serialisePremiumFirstWeek, startPremiumFirstWeek,
+  parsePremiumFirstWeek, premiumFirstWeekKey, premiumFirstWeekShouldStart, premiumFirstWeekVisible, premiumSeenFreeKey,
+  serialisePremiumFirstWeek, startPremiumFirstWeek,
 } from '../../premiumFirstWeek.js';
 import { PREMIUM_FIRST_WEEK } from '../../copy/premiumFirstWeek.js';
 
@@ -54,4 +55,31 @@ test('every step has wording and somewhere to go', () => {
     assert.ok(PREMIUM_FIRST_WEEK.steps[id].cta, id);
     assert.match(PREMIUM_FIRST_WEEK_PATHS[id], /^\//, id);
   }
+});
+
+test('a phone starts the week when it has seen the account go from Free to Premium', () => {
+  const base = { existing: null, isPremium: true, seenFree: true, accountCreatedAt: T0 - 400 * DAY, now: T0 };
+  assert.equal(premiumFirstWeekShouldStart(base), true);
+  // Still Free: nothing to start.
+  assert.equal(premiumFirstWeekShouldStart({ ...base, isPremium: false }), false);
+  // A week already stored (running, dismissed or long over) is never restarted.
+  assert.equal(premiumFirstWeekShouldStart({ ...base, existing: { startedAt: T0 - 30 * DAY } }), false);
+});
+
+test('a long-standing member on a new phone gets no first week; a brand new account does', () => {
+  const base = { existing: null, isPremium: true, seenFree: false, now: T0 };
+  assert.equal(premiumFirstWeekShouldStart({ ...base, accountCreatedAt: T0 - 400 * DAY }), false);
+  assert.equal(premiumFirstWeekShouldStart({ ...base, accountCreatedAt: null }), false);
+  assert.equal(premiumFirstWeekShouldStart({ ...base, accountCreatedAt: 'not a date' }), false);
+  // Signed up and upgraded on web within the week, then opened the phone.
+  assert.equal(premiumFirstWeekShouldStart({ ...base, accountCreatedAt: T0 - 2 * DAY }), true);
+  assert.equal(premiumFirstWeekShouldStart({ ...base, accountCreatedAt: new Date(T0 - 2 * DAY).toISOString() }), true);
+  assert.equal(premiumFirstWeekShouldStart({ ...base, accountCreatedAt: T0 - 8 * DAY }), false);
+  // A clock that puts the sign-up in the future proves nothing.
+  assert.equal(premiumFirstWeekShouldStart({ ...base, accountCreatedAt: T0 + DAY }), false);
+});
+
+test('the seen-Free marker has its own key per account', () => {
+  assert.notEqual(premiumSeenFreeKey('user-1'), premiumSeenFreeKey('user-2'));
+  assert.notEqual(premiumSeenFreeKey('user-1'), premiumFirstWeekKey('user-1'));
 });

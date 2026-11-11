@@ -62,12 +62,12 @@ export function useFinishingTouchesState(userId: string | null | undefined) {
   return { state, setState, reload, ready: loadedFor === userId, visible: finishingTouchesVisible(state) };
 }
 
-function Tick({ done, size = 12 }: { done: boolean; size?: number }) {
+function Tick({ done, size = 12, labels = T }: { done: boolean; size?: number; labels?: { done: string; notDone: string } }) {
   const { colors } = useTheme();
   return (
     <View
       accessibilityRole="image"
-      accessibilityLabel={done ? T.done : T.notDone}
+      accessibilityLabel={done ? labels.done : labels.notDone}
       style={{
         width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
         borderWidth: 1.5, borderColor: done ? colors.accentFill : colors.borderStrong,
@@ -617,3 +617,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   pillOn: { borderColor: colors.accent },
   pillText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
 });
+
+// PremiumFirstWeek.tsx draws the same card with its own wording, as web's
+// PremiumFirstWeek.jsx does through FinishingTouchesCard.
+export { Tick as ChecklistTick, makeStyles as makeChecklistStyles };
