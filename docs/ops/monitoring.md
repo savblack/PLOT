@@ -9,6 +9,7 @@ it recovers.
 |---|---|---|---|
 | uptime-watch | 5 min | app.theplot.tv serves the app shell. The TMDB proxy returns trending titles. Edge functions answer (`billing-availability`). Stripe is delivering billing events to `stripe-webhook` (see below). | `apps/web/workers/uptime-watch` |
 | uptime-watch, signed-in check | hourly | A test account on PLOT Staging, and one on production, signs in, reads its own profile and History, saves a watched title the way the app does, and deletes it. Catches the July 2026 shape: pages load but saving fails. | `apps/web/workers/uptime-watch/src/signin.js` |
+| uptime-watch, database checks | hourly | Starts `cron-health.yml` (the pg_cron and pg_net checks below) on time, because GitHub's own schedule runs it only a few times a day, and emails "the hourly database checks have stopped running" if no run of it has finished in 3 hours. See below. | `apps/web/workers/uptime-watch/src/dbChecks.js` |
 | whats-on-watch | 30 min | theplot.tv/whats-on shows articles | `apps/web/workers/whats-on-watch` |
 | backup-heartbeat | daily | Last night's database backup and the weekly storage mirror landed in R2 | `apps/web/workers/backup-heartbeat` |
 
@@ -47,6 +48,30 @@ GitHub-side watchers raise issues rather than email:
 
 uptime-watch also opens a GitHub issue labelled `incident` when its
 `GITHUB_TOKEN` secret is set, and closes the issue on recovery.
+
+### Starting the database checks on time
+
+GitHub's scheduler barely runs this repository's schedules. On 2026-11-11,
+`cron-health.yml` (scheduled hourly) had not run once in its first 3.5 hours,
+and `whats-on-health.yml` (every 30 minutes) was running every 4 to 8 hours.
+So on its hourly firing (`SIGNIN_CRON`), uptime-watch asks GitHub to start
+`cron-health.yml` on main (the `DB_CHECKS_WORKFLOW` var), then checks that a
+run of it has finished in the last 3 hours. The GitHub schedule stays on as a
+backup.
+
+- It doesn't judge the run's result: `cron-health.yml` raises its own
+  incidents for a failing job. A failed run still counts as "running".
+- No finished run for 3 hours sends "the hourly database checks have stopped
+  running" and opens an `incident` issue. It has its own state
+  (`dbchecks-state`), separate from the app and signed-in alarms.
+- It needs `GITHUB_TOKEN` on uptime-watch to have **Actions: Read and write**
+  on savblack/PLOT, as well as Issues. Without it GitHub refuses, which counts
+  as "can't run", and after `BLIND_HOURS` emails "the watcher can't start the
+  hourly database checks" with the fix. Editing the existing fine-grained
+  token's permissions is enough; the secret itself doesn't change.
+- That permission lets the token start any workflow in the repo, not just this
+  one. The Worker only ever starts `DB_CHECKS_WORKFLOW`.
+- Run it by hand: `curl -H "x-watch-token: <token>" "https://uptime-watch.<subdomain>.workers.dev?check=dbchecks"`.
 
 ### Stripe webhook deliveries
 
