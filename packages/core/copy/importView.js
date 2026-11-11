@@ -8,7 +8,9 @@ export const IMPORT_VIEW = {
   annotationsUnavailable: 'Rating and review imports are not available in this build.',
   letterboxdWatchedOrWatchlist: 'Plot can’t tell whether this Letterboxd file is your watched films or your watchlist, because the two look the same inside. Nothing was imported. Choose the .zip file Letterboxd gave you instead, and Plot will read both.',
   imdbListsUnavailable: 'This is an IMDb watchlist or list. Plot can’t import lists from IMDb yet, so nothing was imported. Your IMDb ratings export imports normally.',
-  imdbCustomListUnsupported: 'This is an IMDb list export. Plot can import your IMDb ratings and your watchlist, but not other lists yet. Nothing was imported.',
+  // Name of the Plot list an IMDb list export lands in. IMDb's export file
+  // carries no list name, so this is what the user sees and can rename.
+  imdbListName: 'IMDb list',
   annotationPreview: 'Ratings and reviews are saved privately as imported source records and included in your data export. They do not mark titles watched or replace your Plot ratings and notes.',
   annotationCounts: (saved, unmatched) => `${saved} already imported · ${unmatched} unmatched`,
   annotationAlreadySaved: 'Already imported',
@@ -46,7 +48,7 @@ export const IMPORT_VIEW = {
   reviewMatch: 'Review match',
   searchFailed: 'Search failed. Retry the file to try again.',
   unknownDate: 'Watch date unknown',
-  imdbHint: 'Choose a saved IMDb ratings CSV or watchlist.csv containing movies and TV series. TV ratings are saved without marking episodes watched. Keep the original filename. Episode and custom-list formats are not supported yet.',
+  imdbHint: 'Choose an IMDb ratings, watchlist or list export (CSV). Rated movies are marked watched with your rating. TV ratings are saved without marking episodes watched. Episode ratings are not imported.',
   archiveChooseOne: 'Choose one supported Letterboxd, Trakt or TV Time ZIP, or choose its extracted files separately.',
   selectionTooLarge: 'These files are too large to import together. Select up to 100 extracted files with a combined size of 50 MB at a time.',
   archiveTooLarge: 'This archive is too large. Choose extracted files instead (ZIP limit: 20 MB compressed, 50 MB expanded, 100 files).',

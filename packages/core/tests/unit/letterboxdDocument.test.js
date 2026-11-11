@@ -205,7 +205,8 @@ test('a second download of watched.csv or watchlist.csv still imports as what it
       assert.equal(entries.length, 2, fileName);
       assert.ok(entries.every(row => !row.destination && row.eventId === `watched:${row.externalIds.letterboxd}`), fileName);
     }
-    for (const fileName of ['watchlist (1).csv', 'Watchlist 2.csv', 'my-watchlist.csv']) {
+    // Letterboxd's single-file watchlist download is named like the first one.
+    for (const fileName of ['watchlist-sam-2026-11-09-23-40-utc.csv', 'watchlist (1).csv', 'Watchlist 2.csv', 'my-watchlist.csv']) {
       const { entries } = parseImportDocument('letterboxd', fixture('watchlist'), { fileName });
       assert.ok(entries.length && entries.every(row => row.destination?.kind === 'watchlist'), fileName);
     }

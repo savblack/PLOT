@@ -56,7 +56,9 @@ var IMPORT_VIEW = {
   annotationsUnavailable: "Rating and review imports are not available in this build.",
   letterboxdWatchedOrWatchlist: "Plot can\u2019t tell whether this Letterboxd file is your watched films or your watchlist, because the two look the same inside. Nothing was imported. Choose the .zip file Letterboxd gave you instead, and Plot will read both.",
   imdbListsUnavailable: "This is an IMDb watchlist or list. Plot can\u2019t import lists from IMDb yet, so nothing was imported. Your IMDb ratings export imports normally.",
-  imdbCustomListUnsupported: "This is an IMDb list export. Plot can import your IMDb ratings and your watchlist, but not other lists yet. Nothing was imported.",
+  // Name of the Plot list an IMDb list export lands in. IMDb's export file
+  // carries no list name, so this is what the user sees and can rename.
+  imdbListName: "IMDb list",
   annotationPreview: "Ratings and reviews are saved privately as imported source records and included in your data export. They do not mark titles watched or replace your Plot ratings and notes.",
   annotationCounts: (saved, unmatched) => `${saved} already imported \xB7 ${unmatched} unmatched`,
   annotationAlreadySaved: "Already imported",
@@ -94,7 +96,7 @@ var IMPORT_VIEW = {
   reviewMatch: "Review match",
   searchFailed: "Search failed. Retry the file to try again.",
   unknownDate: "Watch date unknown",
-  imdbHint: "Choose a saved IMDb ratings CSV or watchlist.csv containing movies and TV series. TV ratings are saved without marking episodes watched. Keep the original filename. Episode and custom-list formats are not supported yet.",
+  imdbHint: "Choose an IMDb ratings, watchlist or list export (CSV). Rated movies are marked watched with your rating. TV ratings are saved without marking episodes watched. Episode ratings are not imported.",
   archiveChooseOne: "Choose one supported Letterboxd, Trakt or TV Time ZIP, or choose its extracted files separately.",
   selectionTooLarge: "These files are too large to import together. Select up to 100 extracted files with a combined size of 50 MB at a time.",
   archiveTooLarge: "This archive is too large. Choose extracted files instead (ZIP limit: 20 MB compressed, 50 MB expanded, 100 files).",
@@ -1135,7 +1137,8 @@ function parsePlatform(platformId, text, { fileName = "", onOmitted = (_index) =
   if (platformId === "trakt" && fileName === "lists-watchlist.json") return parseTraktWatchlist(text);
   if (platformId === "imdb" && isImdbListExport(text)) {
     if (namesWatchlist(fileName)) return parseImdbWatchlist(text);
-    throw new Error(IMPORT_VIEW.imdbCustomListUnsupported);
+    const stem = originalExportName(fileName).replace(/\.[^.]*$/, "") || "list";
+    return parseImdbWatchlist(text, { kind: "custom", key: `imdb:list:${stem}`, name: IMPORT_VIEW.imdbListName });
   }
   if (platformId === "letterboxd") {
     const list = parseLetterboxdList(text, fileName);
@@ -1189,7 +1192,7 @@ function parseImdbRatings(text, { onLeftOut = (_reason) => {
 } } = {}) {
   const [rawHeaders, ...rows] = parseCSV(text.replace(/^\uFEFF/, ""));
   const headers = rawHeaders || [];
-  if (headers.includes("Position")) throw new Error(IMPORT_VIEW.imdbCustomListUnsupported);
+  if (headers.includes("Position")) throw new Error("Unsupported IMDb export. Choose an IMDb ratings, watchlist or list export.");
   const required = ["Const", "Your Rating", "Date Rated", "Title", "Title Type", "Year"];
   if (required.some((header) => !headers.includes(header)) || new Set(headers).size !== headers.length) {
     throw new Error("Unsupported IMDb export. Choose an IMDb movie ratings CSV. Watchlists and other export formats are not supported yet.");
@@ -1258,7 +1261,7 @@ function parseLetterboxdList(text, fileName = "") {
     };
   });
 }
-function parseImdbWatchlist(text) {
+function parseImdbWatchlist(text, destination = { kind: "watchlist", key: "imdb:watchlist", name: "Watchlist" }) {
   const [headers = [], ...rows] = parseCSV(text.replace(/^\uFEFF/, ""));
   const required = ["Position", "Const", "Created", "Modified", "Description", "Title", "URL", "Title Type", "Year", "Your Rating", "Date Rated"];
   if (required.some((name) => !headers.includes(name)) || new Set(headers).size !== headers.length) throw new Error("Unsupported IMDb watchlist format.");
@@ -1269,17 +1272,18 @@ function parseImdbWatchlist(text) {
     const hint = { movie: "movie", tvmovie: "movie", tvseries: "tv", tvminiseries: "tv" }[type];
     if (!hint) throw new Error("This IMDb watchlist contains an unsupported title type. Supported types are movies, TV movies, TV series and TV miniseries. Episodes cannot be imported as whole series.");
     if (!title || !/^tt\d+$/.test(imdb) || !/^\d{4}$/.test(year) || rating2 && (!Number.isInteger(Number(rating2)) || Number(rating2) < 1 || Number(rating2) > 10)) throw new Error("An IMDb watchlist record is incomplete or invalid. Nothing was imported.");
+    const eventId = destination.kind === "watchlist" ? `watchlist:${imdb}` : `${destination.key}:${imdb}`;
     return {
       title,
       year,
       hint,
       date: null,
       externalIds: { imdb },
-      eventId: `watchlist:${imdb}`,
+      eventId,
       rating: rating2 ? Number(rating2) : null,
       ratedAt: value(row, "Date Rated") || null,
       listNote: value(row, "Description") || null,
-      destination: { kind: "watchlist", key: "imdb:watchlist", name: "Watchlist" }
+      destination
     };
   });
 }
