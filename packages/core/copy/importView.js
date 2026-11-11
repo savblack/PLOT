@@ -6,6 +6,11 @@
 export const IMPORT_VIEW = {
   letterboxdUnsupported: 'Unsupported Letterboxd export layout or invalid record. Keep the original CSV filename and contents. Nothing was imported.',
   annotationsUnavailable: 'Rating and review imports are not available in this build.',
+  letterboxdWatchedOrWatchlist: 'Plot can’t tell whether this Letterboxd file is your watched films or your watchlist, because the two look the same inside. Nothing was imported. Choose the .zip file Letterboxd gave you instead, and Plot will read both.',
+  imdbListsUnavailable: 'This is an IMDb watchlist or list. Plot can’t import lists from IMDb yet, so nothing was imported. Your IMDb ratings export imports normally.',
+  // Name of the Plot list an IMDb list export lands in. IMDb's export file
+  // carries no list name, so this is what the user sees and can rename.
+  imdbListName: 'IMDb list',
   annotationPreview: 'Ratings and reviews are saved privately as imported source records and included in your data export. They do not mark titles watched or replace your Plot ratings and notes.',
   annotationCounts: (saved, unmatched) => `${saved} already imported · ${unmatched} unmatched`,
   annotationAlreadySaved: 'Already imported',
@@ -43,7 +48,7 @@ export const IMPORT_VIEW = {
   reviewMatch: 'Review match',
   searchFailed: 'Search failed. Retry the file to try again.',
   unknownDate: 'Watch date unknown',
-  imdbHint: 'Choose a saved IMDb ratings CSV or watchlist.csv containing movies and TV series. TV ratings are saved without marking episodes watched. Keep the original filename. Episode and custom-list formats are not supported yet.',
+  imdbHint: 'Choose an IMDb ratings, watchlist or list export (CSV). Rated movies are marked watched with your rating. TV ratings are saved without marking episodes watched. Episode ratings are not imported.',
   archiveChooseOne: 'Choose one supported Letterboxd, Trakt or TV Time ZIP, or choose its extracted files separately.',
   selectionTooLarge: 'These files are too large to import together. Select up to 100 extracted files with a combined size of 50 MB at a time.',
   archiveTooLarge: 'This archive is too large. Choose extracted files instead (ZIP limit: 20 MB compressed, 50 MB expanded, 100 files).',
@@ -66,6 +71,8 @@ export const IMPORT_VIEW = {
     followed_show_without_watches: 'Followed show has no watched episodes. It will not be marked watched or added to your watchlist.',
     archive_file_unsupported: 'This archive file is not imported. Supported files are reviewed separately.',
     lists_unavailable: 'List import is not available in this build. These films were left out.',
+    show_ratings_unavailable: `${count} TV show ratings were left out. Plot can’t save show ratings from IMDb yet. Your movie ratings are imported.`,
+    title_type_unsupported: `${count} ratings for episodes, TV specials, games or other title types were left out. Plot imports movies and whole TV series.`,
     duplicate_file: 'Duplicate file selection was left out.',
     empty_list: 'Empty list will not be imported.',
   }[reason] || 'This record needs review and will not be imported.'),
