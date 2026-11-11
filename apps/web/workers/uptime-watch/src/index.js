@@ -125,16 +125,20 @@ export const classify = {
   },
 };
 
+/** Drop trailing slashes. A loop rather than /\/+$/, which CodeQL flags as a slow regex. */
+const trimSlashes = (url) => {
+  let s = url;
+  while (s.endsWith('/')) s = s.slice(0, -1);
+  return s;
+};
+
 const STRIPE_API = 'https://api.stripe.com/v1';
 
 /** Where Stripe should be sending events: STRIPE_WEBHOOK_URL, else production's stripe-webhook. */
 export function stripeWebhookUrl(env) {
   if (env.STRIPE_WEBHOOK_URL) return env.STRIPE_WEBHOOK_URL;
   if (!env.SUPABASE_URL) return null;
-  // A loop rather than /\/+$/, which CodeQL flags as a slow regex.
-  let base = env.SUPABASE_URL;
-  while (base.endsWith('/')) base = base.slice(0, -1);
-  return `${base}/functions/v1/stripe-webhook`;
+  return `${trimSlashes(env.SUPABASE_URL)}/functions/v1/stripe-webhook`;
 }
 
 async function readJson(res) {
@@ -156,7 +160,7 @@ export function checksFor(env) {
     });
   }
   if (env.TMDB_PROXY_URL) {
-    const url = `${env.TMDB_PROXY_URL.replace(/\/+$/, '')}/?path=trending/all/day`;
+    const url = `${trimSlashes(env.TMDB_PROXY_URL)}/?path=trending/all/day`;
     checks.push({
       name: 'tmdb',
       label: 'TMDB proxy',
@@ -174,7 +178,7 @@ export function checksFor(env) {
     });
   }
   if (env.SUPABASE_URL) {
-    const url = `${env.SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/billing-availability`;
+    const url = `${trimSlashes(env.SUPABASE_URL)}/functions/v1/billing-availability`;
     checks.push({
       name: 'functions',
       label: 'edge functions',
