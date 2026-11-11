@@ -4,23 +4,24 @@
 // Mobile: apps/mobile/components/ImportJobCard.tsx, on the same core hook.
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useImportJobs, importJobTitle, importJobStatusLine, importJobActive, importJobFinished, importSourceName } from '@plot/core/importJobs.js';
+import { importCardsShown, importJobTitle, importJobStatusLine, importJobActive, importJobFinished, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_ENTRY_POINTS, createImportReporter, IMPORT_FAILURE_REASONS } from '@plot/core/importPipeline.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { useApp } from '../hooks/useApp.js';
 import { markImportDone } from '../utils/finishingTouchesState.js';
-import { suppressFirstWinForImport } from '../utils/firstWinCardState.js';
 import ImportSourceIcon from './ImportSourceIcon.jsx';
 import './ImportJobCard.css';
 
 const C = IMPORT_JOBS.card;
 
-export default function ImportJobCard() {
+/**
+ * @param {{ imports: ReturnType<typeof import('@plot/core/importJobs.js').useImportJobs> }} props  the import
+ *   jobs, read once by HomeTopCards so the slot and this card agree.
+ */
+export default function ImportJobCard({ imports }) {
   const { user } = useApp();
-  const { jobs, current, queued, cancel, dismiss } = useImportJobs(user?.id);
-  // The running job (with what waits behind it), then each finished job the
-  // user hasn't seen off. Queued jobs don't get a card of their own.
-  const shown = [current, ...jobs.filter(job => importJobFinished(job) && !job.seen_at)].filter(Boolean);
+  const { current, queued, cancel, dismiss } = imports;
+  const shown = importCardsShown(imports);
   if (!shown.length) return null;
   return shown.map(job => (
     <JobCard key={job.id} user={user} job={job} queued={job.id === current?.id ? queued : []} cancel={() => cancel(job.id)} dismiss={() => dismiss(job.id)} />
@@ -32,7 +33,7 @@ function JobCard({ user, job, queued, cancel, dismiss }) {
   const active = importJobActive(job);
 
   // The first time a finished job is seen on this device: tick Finishing
-  // touches and stand the first-win card down, as the page import does.
+  // touches, as the page import does.
   const noted = useRef(null);
   useEffect(() => {
     if (!user?.id || !job || !importJobFinished(job) || noted.current === job.id) return;
@@ -41,10 +42,7 @@ function JobCard({ user, job, queued, cancel, dismiss }) {
     const reporter = createImportReporter({ entry: job.entry });
     if (job.status === 'failed') reporter.report('failed', { source: job.source, reason: IMPORT_FAILURE_REASONS.WRITE_FAILED });
     else if (job.status !== 'cancelled') reporter.report('completed', { source: job.source, count: job.imported, failed_count: job.failed });
-    if (job.imported > 0) {
-      markImportDone(user.id, job.source, job.imported);
-      suppressFirstWinForImport(user.id, job.source);
-    }
+    if (job.imported > 0) markImportDone(user.id, job.source, job.imported);
   }, [user?.id, job]);
 
   const pct = job.progress_total ? Math.min(100, Math.round((job.progress_done / job.progress_total) * 100)) : null;

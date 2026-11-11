@@ -359,9 +359,17 @@ export function parseApple(text, { onOmitted = (_index) => {} } = {}) {
  * @param {string} text
  * @returns {ParsedImportEntry[]}
  */
-export function parsePlatform(platformId, text, { fileName = '', onOmitted = (_index) => {} } = {}) {
+export function parsePlatform(platformId, text, { fileName = '', onOmitted = (_index) => {}, onLeftOut = (_reason) => {} } = {}) {
   if (platformId === 'trakt' && fileName === 'lists-watchlist.json') return parseTraktWatchlist(text);
-  if (platformId === 'imdb' && /^(imdb[_-])?watchlist\.csv$/i.test(fileName)) return parseImdbWatchlist(text);
+  if (platformId === 'imdb' && isImdbListExport(text)) {
+    // IMDb's watchlist and its other lists share one layout, and IMDb's
+    // current exports are named with a random ID, so only a name that says
+    // watchlist is the watchlist. Anything else becomes a custom list: a list
+    // could be favorites, so it is never guessed into the watchlist or watches.
+    if (namesWatchlist(fileName)) return parseImdbWatchlist(text);
+    const stem = originalExportName(fileName).replace(/\.[^.]*$/, '') || 'list';
+    return parseImdbWatchlist(text, { kind: 'custom', key: `imdb:list:${stem}`, name: IMPORT_VIEW.imdbListName });
+  }
   if (platformId === 'letterboxd') {
     const list = parseLetterboxdList(text, fileName);
     if (list) return list;
@@ -374,7 +382,7 @@ export function parsePlatform(platformId, text, { fileName = '', onOmitted = (_i
     case 'max':        return parseMax(text, { onOmitted });
     case 'apple':      return parseApple(text, { onOmitted });
     case 'letterboxd': return parseLetterboxd(text);
-    case 'imdb': return parseImdbRatings(text);
+    case 'imdb': return parseImdbRatings(text, { onLeftOut });
     default:           return [];
   }
 }
@@ -387,35 +395,77 @@ export function watchedAtFor(entry) {
   return entry.date || null;
 }
 
-/** IMDb ratings CSV, verified against captured public export fixtures.
- * Date Rated is not a watch date. Reject other exports/types instead of guessing.
+/** An export's file name as the source wrote it, before a browser or the
+ * operating system added a copy marker on a second download: "watched (1).csv",
+ * macOS "watched 2.csv", "watched copy.csv". Lowercase, last path segment only.
+ * @param {string} fileName
  */
-export function parseImdbRatings(text) {
+export function originalExportName(fileName) {
+  const base = String(fileName || '').split(/[\\/]/).pop().toLowerCase().trim();
+  const dot = base.lastIndexOf('.');
+  const ext = dot > 0 ? base.slice(dot) : '';
+  let stem = dot > 0 ? base.slice(0, dot) : base;
+  for (let previous = ''; previous !== stem;) {
+    previous = stem;
+    stem = stem.replace(/\s*\(\d{1,3}\)$/, '').replace(/\s+\d{1,3}$/, '').replace(/[\s_-]*(?:-\s*)?copy(?:\s*\d{1,3})?$/, '').trim();
+  }
+  return `${stem}${ext}`;
+}
+
+/** The name says watchlist, either as IMDb/Letterboxd wrote it or with the
+ * source, an account name or a date around it ("letterboxd-sam-watchlist.csv").
+ * @param {string} fileName
+ */
+export function namesWatchlist(fileName) {
+  return /watch[\s_-]?list/.test(originalExportName(fileName));
+}
+
+/** IMDb's list layout (watchlist and every other list) leads with Position.
+ * @param {string} text
+ */
+export function isImdbListExport(text) {
+  const [headers = []] = parseCSV(text.replace(/^\uFEFF/, '').split('\n', 1)[0]);
+  return headers.includes('Position') && headers.includes('Const');
+}
+
+// IMDb title types, compared without spaces or case. Every row is resolved by
+// its IMDb ID, so a TV movie or a short lands on its own TMDB movie record.
+const IMDB_MOVIE_TYPES = new Set(['movie', 'tvmovie', 'short', 'tvshort', 'video']);
+const IMDB_SERIES_TYPES = new Set(['tvseries', 'tvminiseries']);
+
+/** IMDb ratings CSV, verified against captured public export fixtures.
+ * Date Rated is not a watch date. A row of a type Plot does not import (an
+ * episode, a TV special, a game) is left out and counted, never guessed into
+ * a parent series, and it does not sink the rest of the file.
+ * @param {string} text
+ * @param {{ onLeftOut?: (reason: string) => void }} [options]
+ */
+export function parseImdbRatings(text, { onLeftOut = (_reason) => {} } = {}) {
   const [rawHeaders, ...rows] = parseCSV(text.replace(/^\uFEFF/, ''));
   const headers = rawHeaders || [];
-  if (headers.includes('Position')) throw new Error('Unsupported IMDb list export. For a movie watchlist, keep the original watchlist.csv filename. Custom-list formats are not supported yet.');
+  if (headers.includes('Position')) throw new Error('Unsupported IMDb export. Choose an IMDb ratings, watchlist or list export.');
   const required = ['Const', 'Your Rating', 'Date Rated', 'Title', 'Title Type', 'Year'];
   if (required.some(header => !headers.includes(header)) || new Set(headers).size !== headers.length) {
     throw new Error('Unsupported IMDb export. Choose an IMDb movie ratings CSV. Watchlists and other export formats are not supported yet.');
   }
   const column = name => headers.indexOf(name);
-  return rows.filter(row => row.some(value => value.trim())).map(row => {
+  return rows.filter(row => row.some(value => value.trim())).flatMap(row => {
     const title = row[column('Title')]?.trim();
     const imdb = row[column('Const')]?.trim();
     const type = row[column('Title Type')]?.trim().toLowerCase().replace(/\s+/g, '');
     const rating = Number(row[column('Your Rating')]);
     const year = row[column('Year')]?.trim();
-    if (!['movie', 'tvseries', 'tvminiseries'].includes(type)) throw new Error('This IMDb file contains unsupported ratings. Supported types are movies, TV series and TV miniseries. Episode ratings require verified episode identities.');
+    if (!IMDB_MOVIE_TYPES.has(type) && !IMDB_SERIES_TYPES.has(type)) { onLeftOut('title_type_unsupported'); return []; }
     if (!title || !/^tt\d+$/.test(imdb || '') || !Number.isInteger(rating) || rating < 1 || rating > 10 || !/^\d{4}$/.test(year || '')) {
       throw new Error('An IMDb rating record is incomplete or invalid. No records have been imported.');
     }
-    if (type !== 'movie') {
+    if (IMDB_SERIES_TYPES.has(type)) {
       const ratedAt = row[column('Date Rated')]?.trim() || null;
       if (ratedAt && (!/^\d{4}-\d{2}-\d{2}$/.test(ratedAt) || normaliseDate(ratedAt) !== ratedAt)) throw new Error('An IMDb rating date is invalid. No records have been imported.');
-      return { title, hint: 'tv', year, date: null, externalIds: { imdb }, annotationScope: 'show',
-        eventId: `rating:${imdb}`, annotation: { kind: 'rating', rating, ratedAt } };
+      return [{ title, hint: 'tv', year, date: null, externalIds: { imdb }, annotationScope: 'show',
+        eventId: `rating:${imdb}`, annotation: { kind: 'rating', rating, ratedAt } }];
     }
-    return { title, hint: 'movie', year, rating, date: null, externalIds: { imdb } };
+    return [{ title, hint: 'movie', year, rating, date: null, externalIds: { imdb } }];
   });
 }
 
@@ -432,12 +482,15 @@ export function parseLetterboxdList(text, fileName = '') {
     if (!metadata?.[1]?.trim() || !/^https:\/\/(boxd\.it|letterboxd\.com)\//.test(metadata[3] || '') || start < first + 2) throw new Error('Unsupported Letterboxd custom-list export.');
     destination = { kind: 'custom', key: `letterboxd:list:${metadata[3]}`, name: metadata[1].trim(), description: metadata[4] || null };
     items = rows.slice(start + 1);
-  } else if (/^(letterboxd[_-])?watchlist\.csv$/i.test(fileName)) {
+  } else if (namesWatchlist(fileName)) {
     if (header.join(',') !== 'Date,Name,Year,Letterboxd URI') throw new Error('Unsupported Letterboxd watchlist export.');
     destination = { kind: 'watchlist', key: 'letterboxd:watchlist', name: 'Watchlist' };
     items = rows.slice(first + 1);
   } else {
-    if (fileName && header.join(',') === 'Date,Name,Year,Letterboxd URI' && !/^(letterboxd[_-])?watched\.csv$/i.test(fileName)) throw new Error('This file could be a watchlist or watched export. Keep the original watched.csv or watchlist.csv filename so Plot can distinguish them.');
+    // watched.csv and watchlist.csv have the same columns and the same kind of
+    // rows, so the content cannot say which one this is. A name with neither
+    // word must not be guessed into watches (or out of them).
+    if (fileName && header.join(',') === 'Date,Name,Year,Letterboxd URI' && !/watched/.test(originalExportName(fileName))) throw new Error(IMPORT_VIEW.letterboxdWatchedOrWatchlist);
     return null;
   }
   return items.filter(row => row.some(value => value.trim())).map(row => {
@@ -448,8 +501,12 @@ export function parseLetterboxdList(text, fileName = '') {
   });
 }
 
-/** Saved watchlist export, verified independently of IMDb's ratings export. */
-export function parseImdbWatchlist(text) {
+/** Saved watchlist export, verified independently of IMDb's ratings export.
+ * IMDb's other lists use the same layout and pass a custom destination.
+ * @param {string} text
+ * @param {{ kind: string, key: string, name: string }} [destination]
+ */
+export function parseImdbWatchlist(text, destination = { kind: 'watchlist', key: 'imdb:watchlist', name: 'Watchlist' }) {
   const [headers = [], ...rows] = parseCSV(text.replace(/^\uFEFF/,''));
   const required = ['Position','Const','Created','Modified','Description','Title','URL','Title Type','Year','Your Rating','Date Rated'];
   if (required.some(name => !headers.includes(name)) || new Set(headers).size !== headers.length) throw new Error('Unsupported IMDb watchlist format.');
@@ -460,8 +517,10 @@ export function parseImdbWatchlist(text) {
     const hint = { movie: 'movie', tvmovie: 'movie', tvseries: 'tv', tvminiseries: 'tv' }[type];
     if (!hint) throw new Error('This IMDb watchlist contains an unsupported title type. Supported types are movies, TV movies, TV series and TV miniseries. Episodes cannot be imported as whole series.');
     if (!title || !/^tt\d+$/.test(imdb) || !/^\d{4}$/.test(year) || (rating && (!Number.isInteger(Number(rating)) || Number(rating)<1 || Number(rating)>10))) throw new Error('An IMDb watchlist record is incomplete or invalid. Nothing was imported.');
-    return {title,year,hint,date:null,externalIds:{imdb},eventId:`watchlist:${imdb}`,
+    // The watchlist keeps its original source keys so earlier imports dedupe.
+    const eventId = destination.kind === 'watchlist' ? `watchlist:${imdb}` : `${destination.key}:${imdb}`;
+    return {title,year,hint,date:null,externalIds:{imdb},eventId,
       rating: rating ? Number(rating) : null, ratedAt: value(row,'Date Rated') || null, listNote:value(row,'Description') || null,
-      destination:{kind:'watchlist',key:'imdb:watchlist',name:'Watchlist'}};
+      destination};
   });
 }

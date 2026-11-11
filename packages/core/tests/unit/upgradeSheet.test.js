@@ -50,6 +50,7 @@ test('upgradeSheetGateFeature maps sheet-only reasons and skips caller-tracked l
   assert.equal(upgradeSheetGateFeature('themes'), 'themes');
   assert.equal(upgradeSheetGateFeature('pins'), 'pins');
   assert.equal(upgradeSheetGateFeature('alerts'), 'people_alerts');
+  assert.equal(upgradeSheetGateFeature('seasonAlerts'), 'season_alerts');
   assert.equal(upgradeSheetGateFeature('alertEmail'), 'alert_email');
   assert.equal(upgradeSheetGateFeature('lists'), null);
   assert.equal(upgradeSheetGateFeature('smartLists'), null);

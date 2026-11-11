@@ -51,7 +51,7 @@ export default function StreamingAlertsSettings({ userId, isPremium = false }) {
           </div>
         </div>
         <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-          <SettingsSwitch label={S.switchLabel} checked={all.on} disabled={all.busy} onChange={() => all.setOn(!all.on)} />
+          <SettingsSwitch label={S.switchLabel} checked={all.on} disabled={all.busy} onChange={() => all.setOn(!all.on)} saves />
         </div>
       </div>
       {all.error && <div className="settings-row" style={{ cursor: 'default' }}><div className="settings-row-left"><div style={muted} role="alert">{STREAMING_ALERTS.error}</div></div></div>}
@@ -64,7 +64,7 @@ export default function StreamingAlertsSettings({ userId, isPremium = false }) {
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsSwitch label={E.label} checked={email.on} disabled={email.busy || emailBlocked} onChange={toggleEmail} />
+            <SettingsSwitch label={E.label} checked={email.on} disabled={email.busy || emailBlocked} onChange={toggleEmail} saves />
           </div>
         </div>
       )}

@@ -335,15 +335,15 @@ export const C4WeeklyRollUp = {
 
 /* ── Free ── */
 
-/** A5: the Just Decide gate names smart lists. The gate is the shared upgrade
-    sheet now, so the line is its "Also in Premium" row. */
+/** A5: a Free viewer who has used the day's pick gets the shared upgrade sheet,
+    opening on what just happened. */
 export const A5FreeGate = {
   parameters: { app: app(false) },
   render: () => <Tonight premium={false} />,
   tags: ['interaction-test'],
   play: async () => {
     // The sheet portals to document.body, outside the story canvas.
-    await expect(await within(document.body).findByText(PLANS_PAGE.premiumCard.find(row => row.icon === 'lists').label)).toBeVisible();
+    await expect(await within(document.body).findByText(PLANS_PAGE.upgradeSheet.reasons.justDecide.context())).toBeVisible();
   },
 };
 

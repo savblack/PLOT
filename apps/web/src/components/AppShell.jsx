@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { preloadAppViews } from '../routeChunks.js';
-import { APP_NAV_ITEMS, isActiveView, titleForView } from '../navigation.js';
+import { APP_NAV_ITEMS, isActiveView, sidebarNavItems, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
@@ -17,6 +17,7 @@ import {
   IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
 } from './navIcons.jsx';
 import PlotLogo from './PlotLogo.jsx';
+import MemberMark from './MemberMark.jsx';
 import PremiumMark from './PremiumMark.jsx';
 import ServiceNotice from './ServiceNotice.jsx';
 
@@ -25,8 +26,13 @@ import ServiceNotice from './ServiceNotice.jsx';
 
 const FeedbackPanel = lazy(() => import('./SettingsView.jsx').then(module => ({ default: module.FeedbackPanel })));
 
-// Every page remains reachable through the mobile menu.
-const DRAWER_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.id !== 'search' && item.id !== 'settings');
+// Phones get a bottom tab bar: the four everyday places (the same primary
+// items the mobile app's tab bar uses) and More. More opens the menu, which
+// holds everything that is not a tab, in the order saved for the sidebar.
+// Before this, every move between Home and Calendar was two taps through a
+// menu button, and the menu ignored the saved order (design audit pick 1.4 A).
+const TAB_ITEMS = APP_NAV_ITEMS.filter(item => item.primary);
+const menuItems = (order) => sidebarNavItems(order).filter(item => !item.primary && item.id !== 'search');
 
 export default function AppShell({ currentView, navigateTo, children, profile, user, panelOpen, onOpenSearch }) {
   const navigate = useNavigate();
@@ -162,19 +168,9 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
 
       {/* ── Header ── */}
       <header className="app-header">
-        <div className="header-start">
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={openDrawer}
-            aria-label={APP_SHELL.openMenu}
-            aria-expanded={drawerOpen}
-            aria-controls="app-nav-drawer"
-          >
-            <IconMenu />
-            {unread > 0 && <span className="mobile-menu-unread" aria-label={`${unread} unread notifications`} />}
-          </button>
-        </div>
+        {/* Empty on purpose: the menu button moved to the tab bar's More. The
+            slot stays so the title keeps its centre. */}
+        <div className="header-start" />
 
         {!isListDetail && <span className="app-page-title">{desktopTitle}</span>}
         <div className="header-end">
@@ -235,7 +231,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         </div>
 
         <nav className="nav-drawer-nav">
-          {DRAWER_NAV_ITEMS.map(({ id, label, premium }) => {
+          {menuItems(uiPrefs?.prefs.sidebar).map(({ id, label, premium }) => {
             const Icon = NAV_ICONS[id];
             return (
               <button
@@ -262,10 +258,11 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               {profile.avatar_url
                 ? <img className="nav-drawer-avatar" src={profile.avatar_url} alt="" />
                 : <span className="nav-drawer-avatar nav-drawer-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
-              <span className="nav-drawer-label">Profile</span>
+              <span className="nav-drawer-label">{APP_SHELL.profile}</span>
+              {isPremiumProfile(profile) && <MemberMark />}
             </button>
           )}
-          {user && !DRAWER_NAV_ITEMS.some(item => item.id === 'notifications') && (
+          {user && (
             <button type="button" className={`nav-drawer-item${currentView === 'notifications' ? ' active' : ''}`} onClick={() => handleNav('notifications')}>
               <IconBell />
               <span className="nav-drawer-label">{APP_SHELL.notifications}</span>
@@ -282,10 +279,48 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             aria-current={currentView === 'settings' ? 'page' : undefined}
           >
             <IconSettings />
-            <span className="nav-drawer-label">Settings</span>
+            <span className="nav-drawer-label">{SETTINGS_VIEW.page.title}</span>
           </button>
+          {/* Feedback and sign out were only in the desktop account menu, so a
+              phone had no way to reach either from the menu. */}
+          {user && (
+            <button type="button" className="nav-drawer-item nav-drawer-item--text" onClick={() => { closeDrawer(); setFeedbackOpen(true); }}>
+              <span className="nav-drawer-label">{APP_SHELL.giveFeedback}</span>
+            </button>
+          )}
+          {user && (
+            <button type="button" className="nav-drawer-item nav-drawer-item--text nav-drawer-item--signout" onClick={() => { closeDrawer(); navigate('/logout'); }}>
+              <span className="nav-drawer-label">{SETTINGS_VIEW.signOut}</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* ── Tab bar (phones and tablets; the sidebar replaces it when wide) ── */}
+      <nav className="app-tabbar" aria-label={APP_SHELL.tabBar}>
+        {TAB_ITEMS.map(({ id, label }) => {
+          const Icon = NAV_ICONS[id];
+          const active = isActiveView(currentView, id);
+          return (
+            <button key={id} type="button" className={`app-tab${active ? ' active' : ''}`} onClick={() => go(id)} aria-current={active ? 'page' : undefined}>
+              {Icon && <Icon />}
+              <span className="app-tab-label">{label}</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          className={`app-tab${drawerOpen ? ' active' : ''}`}
+          onClick={openDrawer}
+          aria-label={unread > 0 ? `${APP_SHELL.more} (${unread} unread notifications)` : APP_SHELL.more}
+          aria-expanded={drawerOpen}
+          aria-controls="app-nav-drawer"
+        >
+          <IconMenu />
+          <span className="app-tab-label">{APP_SHELL.more}</span>
+          {unread > 0 && <span className="mobile-menu-unread" aria-hidden="true" />}
+        </button>
+      </nav>
     </div>
   );
 }

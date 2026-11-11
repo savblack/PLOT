@@ -25,7 +25,8 @@ const A = SETTINGS_VIEW.appearance;
  *   region?: string | null,
  *   premiumBadge?: import('react').ReactNode,
  * }} props  onLocked: a Free viewer picked a Premium family (open the upgrade
- *   sheet with its preview). onPreview: open the Themes gallery (Premium only).
+ *   sheet with its preview). onPreview: open the Themes gallery (everyone; the
+ *   gallery has its own Free state).
  *   region: the viewer's own profile region, for colour/color.
  */
 export default function SettingsThemeRows({ mode, family, setMode, setFamily, isPremium, onLocked, onPreview, region, premiumBadge }) {
@@ -88,11 +89,9 @@ export default function SettingsThemeRows({ mode, family, setMode, setFamily, is
               </button>
             );
           })}
-          {isPremium && (
-            <span className="settings-theme-preview">
-              <SettingsTextAction onClick={onPreview} label={A.previewLabel}>{A.preview}</SettingsTextAction>
-            </span>
-          )}
+          <span className="settings-theme-preview">
+            <SettingsTextAction onClick={onPreview} label={A.previewLabel}>{A.preview}</SettingsTextAction>
+          </span>
         </div>
       </div>
     </>

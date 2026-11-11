@@ -139,7 +139,7 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
               <div className="ss-card">
                 <div className="ss-row ss-row--switch">
                   <div className="ss-row-text"><b>{T.automaticLabel}</b><span>{T.automaticHint(src.name)}</span></div>
-                  <SettingsSwitch label={T.automaticLabel} checked={!!connection?.automatic_enabled} disabled={tracking.busy} onChange={toggleAutomatic} />
+                  <SettingsSwitch label={T.automaticLabel} checked={!!connection?.automatic_enabled} disabled={tracking.busy} onChange={toggleAutomatic} saves />
                 </div>
               </div>
             )}

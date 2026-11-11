@@ -108,8 +108,6 @@
 }
 
 /* ── New shared list (B2) ── */
-.cl-create-foot { align-items: center; justify-content: space-between; gap: 12px; }
-.cl-create-foot .wt-note { flex: 1; min-width: 0; }
 .cl-chip-btn { border: 0; cursor: pointer; font: inherit; }
 
 /* ── The invite landing (A3, A4, A7 and B3, B4, B7): centred ── */

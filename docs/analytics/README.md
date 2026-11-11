@@ -371,6 +371,15 @@ pick" is `tonight_pick_opened`, or `watchlist_saved` with `source: tonight`
 ids. The picker is Premium, so free viewers only ever produce
 `premium_gate_hit` (`feature: tonight_picker`).
 
+## Title and collection links
+
+An open title or collection has an address: `?panel=movie-123` on the page
+behind it (`packages/core/panelLink.js`, `apps/web/src/hooks/usePanelRoute.js`).
+`title_viewed` and `collection_viewed` fire as before when a surface opens one,
+with that surface's `source`. Arriving on such an address (a shared or
+bookmarked link, a reload) fires the same event once with `source: link`.
+Going Back or Forward to a panel fires nothing: it is not a new view.
+
 ## Premium gates and the upgrade sheet
 
 Every in-app Premium gate on web opens the same upgrade sheet (`UpgradeSheet.jsx`,
@@ -385,6 +394,7 @@ the sheet stays silent for those and nothing is counted twice.
 | `themes` | A Premium theme, or the themes gallery |
 | `pins` | Pinning a Home shelf |
 | `people_alerts` | Following an actor or director |
+| `season_alerts` | The whole-season-ready alert on a show |
 | `alert_email` | Email alerts |
 | `custom_artwork` | Customize artwork on a title |
 | `history_drilldown` | A stat tile or the genre link on History |
@@ -474,7 +484,11 @@ the import page's `?from=` param.
 | `onboarding_completed` | Setup saved | `region`, `seed_titles_added`, `services_added`, `import_source` (null unless they took the switching-apps step), `skipped` |
 | `finishing_touches_viewed` | The Finishing touches card was on screen | `done_count`, `total`. Once per app session, after the watchlist has loaded |
 | `finishing_touch_opened` | A Finishing touches step's action was opened | `step` (`progress` / `friends` / `import` / `people`) |
-| `finishing_touches_hidden` | "Hide for now" | `done_count` |
+| `finishing_touches_hidden` | "Dismiss" (was "Hide for now") | `done_count` |
+| `premium_first_week_started` | Back from a successful checkout, the "Your first week of Premium" card was switched on for this browser | None. Once per account per browser. Web only for now. Compare with `premium_converted` (server side) to see how many upgrades got a card |
+| `premium_first_week_viewed` | The first-week card was on screen on Home | `done_count`, `total`. Once per app session |
+| `premium_first_week_opened` | A first-week step's button was pressed | `step` (`theme` / `people` / `together` / `calendar` / `smartList`) |
+| `premium_first_week_hidden` | "Dismiss" on the first-week card | `done_count` |
 | `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
 
 `finishing_touches_hidden` had never fired because Hide for now was rendered

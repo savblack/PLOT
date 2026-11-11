@@ -61,6 +61,16 @@ export const SETTINGS_VIEW = {
     syncComingSoon: 'Connections are not available',
     syncComingSoonMessage: 'Manual imports stay free.',
     confirming: 'Confirming your subscription. This may take a moment.',
+    // The membership card: what a Premium member sees here in place of the
+    // sales pitch (core/membership.js decides which state applies).
+    membership: {
+      status: { active: 'Active', trial: 'Free trial', ending: 'Ending', attention: 'Payment needed', granted: 'Active' },
+      renews: (date) => `Renews on ${date}.`,
+      trialEnds: (date) => `Your free trial ends on ${date}. Your first payment is taken then.`,
+      ends: (date) => `Your membership ends on ${date}. You keep Premium until then.`,
+      includedTitle: 'In your membership',
+      open: (label) => `Open ${label}`,
+    },
   },
   region: {
     savingRegion: 'Saving region',
@@ -72,6 +82,7 @@ export const SETTINGS_VIEW = {
   timezone: {
     savingTimezone: 'Saving timezone',
     saveTimezone: 'Save timezone',
+    failedToSaveTimezone: 'Failed to save your timezone.',
     openTimezoneSettings: 'Open timezone settings',
     searchPlaceholder: 'Search timezones…',
     useDevice: (name) => `Use device timezone · ${name}`,
@@ -157,7 +168,6 @@ export const SETTINGS_VIEW = {
     available: 'Available',
     taken: 'That username is taken',
     formatHint: '3–30 chars · lowercase letters, numbers, hyphens',
-    saved: 'Saved',
     error: 'Something went wrong. Try again',
   },
 
@@ -255,13 +265,13 @@ export const SETTINGS_VIEW = {
       ink: 'Ink',
     },
     lockedTheme: (name) => `${name} (Premium)`,
-    // Opens the Themes gallery (/settings/themes) from the Settings row. Premium only.
+    // Opens the Themes gallery (/settings/themes) from the Settings row, for everyone.
     preview: 'Preview',
     previewLabel: 'Preview every theme',
     // The Themes gallery page.
     gallery: {
       title: 'Themes',
-      back: '← Settings',
+      back: 'Settings',
       intro: 'How Plot looks on this browser. Every theme comes in light and dark and follows the Light, Dark and System setting. The default is free; Premium themes change the paper, the ink and the accent, never what anything means.',
       free: 'Free',
       premium: 'Premium',
@@ -281,7 +291,7 @@ export const SETTINGS_VIEW = {
 
   premium: {
     groupTitle: 'plot Premium',
-    youHavePremium: 'You have plot Premium',
+    youHavePremium: 'You have Plot Premium',
     thankYou: 'Thank you for keeping plot running',
     opening: 'Opening…',
     manageSubscription: 'Manage subscription',
@@ -361,7 +371,7 @@ export const SETTINGS_VIEW = {
     groupTitle: 'Calendar',
     subscribeLabel: 'Subscribe to Calendar',
     needsPremium: 'A live calendar feed needs plot Premium',
-    needsPremiumMessage: 'Live calendar subscription is included with plot Premium. The one-time snapshot on this page stays free.',
+    needsPremiumMessage: 'Live calendar subscription is included with Plot Premium. The one-time snapshot on this page stays free.',
     liveFeedPrivate: 'Live feed of your watchlist',
     getUrlHint: 'Get a URL for Google or Apple Calendar',
     requestedCalendarSubscribeMessage: 'Requested access: Calendar subscribe',

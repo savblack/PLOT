@@ -196,3 +196,32 @@ test('a Letterboxd export keeps diary and watched rows when list import is off',
     'reviews.csv:archive_file_unsupported',
   ]);
 });
+
+test('a second download of watched.csv or watchlist.csv still imports as what it is', () => {
+  configure({ importEventsEnabled: true });
+  try {
+    for (const fileName of ['watched (1).csv', 'Watched 2.csv', 'watched copy.csv', 'letterboxd-watched.csv', 'letterboxd-sam-2026-11-10-22-58-utc-watched.csv']) {
+      const { entries } = parseImportDocument('letterboxd', fixture('watched'), { fileName });
+      assert.equal(entries.length, 2, fileName);
+      assert.ok(entries.every(row => !row.destination && row.eventId === `watched:${row.externalIds.letterboxd}`), fileName);
+    }
+    // Letterboxd's single-file watchlist download is named like the first one.
+    for (const fileName of ['watchlist-sam-2026-11-09-23-40-utc.csv', 'watchlist (1).csv', 'Watchlist 2.csv', 'my-watchlist.csv']) {
+      const { entries } = parseImportDocument('letterboxd', fixture('watchlist'), { fileName });
+      assert.ok(entries.length && entries.every(row => row.destination?.kind === 'watchlist'), fileName);
+    }
+    // Other Letterboxd documents too: "diary (1).csv" keeps its watch dates.
+    const diary = parseImportDocument('letterboxd', fixture('diary'), { fileName: 'diary (1).csv' });
+    assert.ok(diary.entries.every(row => row.eventId.startsWith('diary:')));
+  } finally {
+    configure({ importEventsEnabled: false });
+  }
+});
+
+test('a Letterboxd watched/watchlist file whose name says neither is refused, never guessed', () => {
+  // The two files have identical columns and rows, so nothing inside says
+  // which one this is. Importing a watchlist as watched would invent watches.
+  for (const fileName of ['export.csv', 'films.csv', 'document 3.csv']) {
+    assert.throws(() => parseImportDocument('letterboxd', fixture('watched'), { fileName }), /Choose the \.zip file Letterboxd gave you/);
+  }
+});

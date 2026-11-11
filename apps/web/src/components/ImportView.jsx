@@ -11,7 +11,6 @@ import { clearLetterboxdImport, rememberLetterboxdImport } from '../utils/letter
 import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
 import { readImportJob, readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
-import { suppressFirstWinForImport } from '../utils/firstWinCardState.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
@@ -360,7 +359,6 @@ function AccountImportView() {
       setConnectionResult(result);
       importReport.report('completed', { source, count: result.importedCount || 0 });
       markImportDone(user?.id, source, result.importedCount || 0);
-      suppressFirstWinForImport(user?.id, source);
     } else {
       importReport.report('failed', { source, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
     }
@@ -481,10 +479,7 @@ function AccountImportView() {
     setImportedCount(inserted);
     setImportResult({ duplicates, failed });
     if (failed) setImportError(IMPORT_VIEW.partialFailure(failed));
-    if (inserted > 0) {
-      markImportDone(user.id, platform?.id, inserted);
-      suppressFirstWinForImport(user.id, platform?.id);
-    }
+    if (inserted > 0) markImportDone(user.id, platform?.id, inserted);
     // A background job's leftovers are done with: drop the review file.
     if (reviewJob) await finishImportJobReview(reviewJob);
     setImporting(false);

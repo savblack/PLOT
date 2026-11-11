@@ -11,9 +11,10 @@
 // The 7-day trial is requested by the stripe-billing checkout, not set on the Stripe Price. It is for
 // new subscribers only. Do not put Stripe price IDs in this file.
 export const PLANS_PAGE = {
-  back: '← Back',
-  backToApp: '← Back to plot',
-  eyebrow: 'plot Premium',
+  back: 'Back',
+  backToApp: 'Back to Plot',
+  // Sans, uppercased by .plans-eyebrow: not the Gabarito wordmark, so it is prose casing.
+  eyebrow: 'Plot Premium',
   title: 'Less deciding. More watching.',
   lede: 'A movie that fits your evening. A new episode you won’t miss. Something you both want to watch. Make more of the time you set aside for it.',
   pendingValidation: 'Pending validation',
@@ -91,13 +92,26 @@ export const PLANS_PAGE = {
     'Everything free today stays free',
     'Friends join shared lists for free',
   ],
-  // In-app upgrade sheet, opened where a Free limit is hit. Each reason leads with
-  // the Premium feature that lifts that limit; `also` picks premiumCard rows by icon.
+  // In-app upgrade sheet, opened where a Free limit is hit. Each reason names the
+  // Premium feature that lifts that limit. `also` picks premiumCard rows by icon;
+  // the mobile sheet lists them, the web sheet no longer does.
   upgradeSheet: {
     close: 'Close',
     compare: 'Compare every feature',
     notNow: 'Not now',
     alsoIn: 'Also in Premium',
+    // The web sheet, redesigned 11 Nov 2026 (Savannah's pick "A2"): the free
+    // trial is the headline and the button, the feature that was tapped is the
+    // supporting sentence, and each plan is one row with its real price. A
+    // returning subscriber gets no trial, so their sheet leads with the feature
+    // and the price line drops the "Then". Mobile still shows the older sheet.
+    trialTitle: 'Try Premium free for 7 days.',
+    seeAll: 'See everything in Premium',
+    planLabel: 'Plan',
+    yearlyPrice: '$24 a year',
+    monthlyPrice: '$3 a month',
+    afterTrial: { yearly: 'Then US$24 a year, taxes included. Cancel anytime.', monthly: 'Then US$3 a month, taxes included. Cancel anytime.' },
+    price: { yearly: 'US$24 a year, taxes included. Cancel anytime.', monthly: 'US$3 a month, taxes included. Cancel anytime.' },
     reasons: {
       lists: {
         context: (cap) => `You’ve used all ${cap} free lists`,
@@ -117,7 +131,7 @@ export const PLANS_PAGE = {
         title: 'Lists that fill themselves.',
         body: 'Save a few rules, like comedies from the 2010s on your services, and the list keeps finding matches, including new discoveries.',
         // B5: shown when a Free viewer built rules and pressed Create.
-        kept: 'Your rules are kept. Upgrade and the list is ready.',
+        kept: 'Your rules are kept. The list is ready as soon as you have Premium.',
         also: ['pick', 'together'],
       },
       // A Free list owner choosing Invite people. Only the host needs Premium.
@@ -138,6 +152,13 @@ export const PLANS_PAGE = {
         context: (_cap) => 'Following people is part of Premium',
         title: 'Follow the people you love watching.',
         body: 'Hear when they have something new.',
+        also: ['pick', 'together'],
+      },
+      // Opened from the whole-season alert toggle on a show. Following people is `alerts`.
+      seasonAlerts: {
+        context: () => 'Whole-season alerts are part of Premium',
+        title: 'Know when the whole season is ready.',
+        body: 'Premium tells you when every episode of a season is on your services, so you can watch it straight through.',
         also: ['pick', 'together'],
       },
       // The reasons below were added with the design audit (pick 3.2 A): every
@@ -169,7 +190,7 @@ export const PLANS_PAGE = {
       calendarFeed: {
         context: () => 'A live calendar feed is part of Premium',
         title: 'Your releases, in your own calendar.',
-        body: 'Subscribe once and a private link keeps upcoming releases up to date in your calendar app. The one-time snapshot stays free.',
+        body: 'Add it once and a private link keeps upcoming releases up to date in your calendar app. The one-time snapshot stays free.',
         also: ['pick', 'together'],
       },
       // Turning on automatic imports for a connected source in Settings.
@@ -267,7 +288,7 @@ export const PLANS_PAGE = {
     { id: 'discovery', label: 'Discovery, search, where to watch, and More like this',
       description: 'Browse what’s on, search titles, and see similar titles on a title page. plot does not offer personally tailored recommendations yet.' },
     { id: 'statistics', label: 'Your viewing statistics', freeValue: 'Limited',
-      description: 'The stats in the app today stay free. Deeper, additional stats are planned for Premium.' },
+      description: 'The stats in the app today stay free. Premium adds deeper stats, starting with taste overlap.' },
     { id: 'calendar', label: 'In-app release calendar and downloadable calendar snapshot' },
     { id: 'social', label: 'Follow friends and share profiles' },
     { id: 'episodeAlerts', label: 'New episode notifications',
@@ -328,7 +349,7 @@ export const PLANS_PAGE = {
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
     { q: 'Can I get a refund?', a: 'The 7-day free trial is there so you can try Premium before you pay, so charges after the trial aren’t refundable and we don’t refund partial months or years. Cancel anytime and keep Premium until the end of the period you’ve paid for. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.' },
     { q: 'What currency will I pay in?', a: 'Prices are in US dollars and include tax. At checkout, Stripe shows the price in your local currency, so you see the exact amount before you pay.' },
-    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with plot Premium on the web. Premium themes are available. Deeper stats, widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service. Streaming alerts for films on your watchlist are free and arrive in the app. Push notifications on your phone are planned for everyone, and email alerts are planned for Premium.' },
+    { q: 'Are these alerts available now?', a: 'Live calendar subscription is available with Plot Premium. A private link keeps upcoming releases updated in your calendar app. Actor and director release alerts and whole-season-ready alerts are available with Plot Premium on the web. Premium themes are available. Deeper stats have started with taste overlap, which is available with Premium now. Widgets and app icons are still planned. Whole-season alerts need verified availability for every episode on your selected service. Streaming alerts for films on your watchlist are free and arrive in the app. Push notifications on your phone are planned for everyone, and email alerts are planned for Premium.' },
   ],
   fineprint: 'Prices in US dollars, taxes included. Premium has a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0. At checkout, Stripe shows the price in your local currency. Payments are processed securely by Stripe. Need a hand? support@theplot.tv',
   terms: 'Terms',

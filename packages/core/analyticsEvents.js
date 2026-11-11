@@ -176,6 +176,9 @@ export const EVENTS = Object.freeze({
   COLLECTION_SAVED_AS_LIST: 'collection_saved_as_list',
   CURATED_LIST_SAVED: 'curated_list_saved',
   COLLECTION_VIEWED: 'collection_viewed',
+  // A person (cast or crew) opened in the panel from outside a title: search,
+  // Home, Your People, the year in History. Not a title, so not TITLE_VIEWED.
+  PERSON_VIEWED: 'person_viewed',
   // Putting a title *in* a list is a separate action from making the list, and
   // it's the one that actually indicates the feature is being used.
   LIST_ITEM_ADDED: 'list_item_added',
@@ -222,11 +225,22 @@ export const EVENTS = Object.freeze({
   // finishing_touches_viewed: the card was on screen (`done_count`, `total`).
   // Once per app session, after the watchlist has loaded.
   // finishing_touch_opened: a step's action was opened (`step`: progress | friends | import | people).
-  // finishing_touches_hidden: Hide for now (`done_count`). The control is in the
+  // finishing_touches_hidden: Dismiss, which hides the card for now (`done_count`). The control is in the
   // header whether the card is expanded or not.
   FINISHING_TOUCHES_VIEWED: 'finishing_touches_viewed',
   FINISHING_TOUCH_OPENED: 'finishing_touch_opened',
   FINISHING_TOUCHES_HIDDEN: 'finishing_touches_hidden',
+  // Home's card for a new Premium member ("Your first week of Premium").
+  // started: the person came back from a successful checkout and the week
+  // was switched on for this browser. Once per account per browser; not sent
+  // for a plan change during a running week, or when storage is unavailable.
+  // Then the same three as Finishing touches: viewed once per session
+  // (`done_count`, `total`), a step's button (`step`), and Dismiss
+  // (`done_count`).
+  PREMIUM_FIRST_WEEK_STARTED: 'premium_first_week_started',
+  PREMIUM_FIRST_WEEK_VIEWED: 'premium_first_week_viewed',
+  PREMIUM_FIRST_WEEK_OPENED: 'premium_first_week_opened',
+  PREMIUM_FIRST_WEEK_HIDDEN: 'premium_first_week_hidden',
   // The Saved to watch rail on Home. Once per app session, when it is on
   // screen. `item_count`, `first_run` (true while the rail leads Home).
   SAVED_TO_WATCH_VIEWED: 'saved_to_watch_viewed',

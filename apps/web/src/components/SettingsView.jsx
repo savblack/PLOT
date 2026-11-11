@@ -7,13 +7,14 @@ import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { USERNAME_RE } from '@plot/core/profileFields.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { logoUrl } from '../utils/images.js';
 import { tmdb, setTmdbRegion } from '@plot/core/tmdb.js';
 import { supabase } from '@plot/core/supabase.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { usePremium } from '../hooks/usePremium.js';
+import { useEscapeToClose } from '../hooks/useEscapeToClose.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
@@ -41,6 +42,7 @@ import { IANA_TIMEZONES } from '../utils/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
+import { beginPremiumFirstWeek } from '../utils/premiumFirstWeekState.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
@@ -67,18 +69,29 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function RegionPicker({ current, onSave, onClose }) {
   const [chosen, setChosen] = useState(current || DEFAULT_REGION);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
+  // onSave resolves to { error }. On success the parent closes the sheet; on
+  // failure the sheet stays open and says so here, because the page's own
+  // error banner is hidden behind it.
   const handleSave = async () => {
     if (saving || chosen === current) return;
     setSaving(true);
-    const saved = await onSave(chosen).catch(() => false);
-    if (!saved) setSaving(false);
+    setError(null);
+    const result = await onSave(chosen).catch(() => ({ error: SETTINGS_VIEW.region.failedToSaveRegion }));
+    if (result?.error) {
+      setError(result.error);
+      setSaving(false);
+    }
   };
+
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
 
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <SheetHeader title={SETTINGS_VIEW.page.regionLabel} onClose={onClose} />
         <div style={{ padding: '1rem', overflow: 'auto', flex: 1 }}>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
@@ -108,6 +121,7 @@ function RegionPicker({ current, onSave, onClose }) {
           </div>
         </div>
         <div className="settings-picker-footer">
+          {error && <p className="settings-picker-error" role="alert">{error}</p>}
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
@@ -182,10 +196,13 @@ function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onCl
     onClear({ saved: selected.saved, watching: selected.watching, customListIds: [...selected.custom] });
   };
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <SheetHeader title={SETTINGS_VIEW.dangerZone.clearListsLabel} onClose={onClose} />
         <div style={{ padding: '1rem 1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 0.25rem' }}>
@@ -255,6 +272,7 @@ function TimezonePicker({ current, onSave, onClose }) {
   const [query,   setQuery]   = useState('');
   const [saving,  setSaving]  = useState(false);
   const [chosen,  setChosen]  = useState(current || '');
+  const [error,   setError]   = useState(null);
 
   // Use static list — Intl.supportedValuesOf('timeZone') is unsupported in Hermes (React Native)
   const allTzs = IANA_TIMEZONES;
@@ -270,16 +288,25 @@ function TimezonePicker({ current, onSave, onClose }) {
       })
     : allTzs;
 
+  // Same contract as RegionPicker: { error } back, stay open and say so on failure.
   const handleSave = async () => {
-    if (!chosen) return;
+    if (!chosen || saving) return;
     setSaving(true);
-    await onSave(chosen);
+    setError(null);
+    const result = await onSave(chosen).catch(() => ({ error: SETTINGS_VIEW.timezone.failedToSaveTimezone }));
+    if (result?.error) {
+      setError(result.error);
+      setSaving(false);
+    }
   };
+
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
 
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <SheetHeader title={SETTINGS_VIEW.page.timezoneLabel} onClose={onClose} />
 
         <div style={{ padding: '0.75rem 1rem 0', position: 'relative' }}>
@@ -358,6 +385,7 @@ function TimezonePicker({ current, onSave, onClose }) {
         </div>
 
         <div className="settings-picker-footer">
+          {error && <p className="settings-picker-error" role="alert">{error}</p>}
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
@@ -411,10 +439,13 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
     ? all.filter(p => p.provider_name.toLowerCase().includes(search.trim().toLowerCase()))
     : all;
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         {/* Sticky header — title + Save always visible */}
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
           <SheetHeader title={title} onClose={onClose} />
@@ -497,10 +528,13 @@ function GenrePicker({ selected, onSave, onClose }) {
     onSave(allGenres.filter(g => next.includes(g.id)).map(g => g.name));
   };
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
     <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
           <SheetHeader title={SETTINGS_VIEW.integrations.genresLabel} onClose={onClose} />
         </div>
@@ -975,10 +1009,13 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
     track(EVENTS.FEEDBACK_SUBMITTED, { type, has_attachments: attachmentUrls.length > 0 });
   };
 
+  const panelRef = useRef(null);
+  useEscapeToClose(true, onClose, { rootRef: panelRef });
+
   return createPortal(
 <>
       <div className="panel-overlay" onClick={onClose} />
-      <div className="panel">
+      <div className="panel" ref={panelRef}>
         <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
           <SheetHeader title={SETTINGS_VIEW.feedback.panelTitle} onClose={onClose} />
         </div>
@@ -1190,6 +1227,10 @@ export default function SettingsView() {
       setBillingReturn(returnState);
     }
     if (checkout === 'success') {
+      // Home shows "Your first week of Premium" from here on. Counted once,
+      // when the week really starts, so a paid upgrade with no card view
+      // after it can be told apart from a card that never started.
+      if (beginPremiumFirstWeek(user?.id)) track(EVENTS.PREMIUM_FIRST_WEEK_STARTED);
       const timers = [1500, 4000, 9000].map(ms => setTimeout(() => refreshProfile(), ms));
       return () => timers.forEach(clearTimeout);
     }
@@ -1312,24 +1353,27 @@ export default function SettingsView() {
     setActionError(null);
     const { error } = await updateProfile({ userId: user.id, patch: { region: code } });
 
-    if (error) {
-      setActionError(error.message || SETTINGS_VIEW.region.failedToSaveRegion);
-      return false;
-    }
+    // Shown inside the open sheet (RegionPicker), not in the page banner behind it.
+    if (error) return { error: error.message || SETTINGS_VIEW.region.failedToSaveRegion };
 
     setTmdbRegion(code);
     refreshProfile();
     setShowRegion(false);
-    return true;
+    return { error: null };
   };
 
   const saveTimezone = async (tz) => {
-    await updateProfile({ userId: user.id, patch: { timezone: tz } });
+    setActionError(null);
+    const { error } = await updateProfile({ userId: user.id, patch: { timezone: tz } });
+    // Shown inside the open sheet (TimezonePicker), which stays open.
+    if (error) return { error: error.message || SETTINGS_VIEW.timezone.failedToSaveTimezone };
+
     setUserTimezone(tz);
     refreshProfile();
     setShowTimezone(false);
     // Clear any pending nudge dismissal so the banner doesn't re-appear
     try { localStorage.removeItem('plot_tz_dismissed'); } catch { /* storage unavailable */ }
+    return { error: null };
   };
 
   const handleClearHistory = () => {
@@ -1669,7 +1713,7 @@ export default function SettingsView() {
                     {usernameStatus === 'taken' && SETTINGS_VIEW.username.taken}
                     {usernameStatus === 'invalid' && SETTINGS_VIEW.username.formatHint}
                     {usernameStatus === 'saving' && COMMON.saving}
-                    {usernameStatus === 'saved' && SETTINGS_VIEW.username.saved}
+                    {usernameStatus === 'saved' && COMMON.saved}
                     {usernameStatus === 'error' && SETTINGS_VIEW.username.error}
                   </div>
                 </>
@@ -1865,7 +1909,7 @@ export default function SettingsView() {
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsSwitch label={SETTINGS_VIEW.marketingEmails.label} checked={marketingEmailsEnabled} disabled={savingMarketingEmails} onChange={toggleMarketingEmails} />
+            <SettingsSwitch label={SETTINGS_VIEW.marketingEmails.label} checked={marketingEmailsEnabled} disabled={savingMarketingEmails} onChange={toggleMarketingEmails} saves />
           </div>
         </div>
       </div>
@@ -1896,7 +1940,7 @@ export default function SettingsView() {
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsSwitch label={SETTINGS_VIEW.kidsContent.label} checked={includeKidsContent} disabled={savingKidsContent} onChange={handleToggleKidsContent} />
+            <SettingsSwitch label={SETTINGS_VIEW.kidsContent.label} checked={includeKidsContent} disabled={savingKidsContent} onChange={handleToggleKidsContent} saves />
           </div>
         </div>
 
@@ -2053,7 +2097,7 @@ export default function SettingsView() {
             </div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
-            <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} />
+            <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} saves />
           </div>
         </div>
 
@@ -2262,8 +2306,8 @@ export default function SettingsView() {
       </div>
 
       <div className="settings-legal-links">
-        <a className="settings-text-action" href="/terms">{COMMON.termsOfService}<span aria-hidden="true">→</span></a>
-        <a className="settings-text-action" href="/privacy">{COMMON.privacyPolicy}<span aria-hidden="true">→</span></a>
+        <Link className="settings-text-action" to="/terms">{COMMON.termsOfService}<span aria-hidden="true">→</span></Link>
+        <Link className="settings-text-action" to="/privacy">{COMMON.privacyPolicy}<span aria-hidden="true">→</span></Link>
       </div>
         </>}
       </SettingsPage>

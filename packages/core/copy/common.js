@@ -25,6 +25,8 @@ export const COMMON = {
   add: 'Add',
   remove: 'Remove',
   back: 'Back',
+  // Beside a control that saves the moment you change it.
+  saved: 'Saved',
   next: 'Next',
   continue: 'Continue',
   submit: 'Submit',
@@ -39,6 +41,8 @@ export const COMMON = {
   deselect: 'Deselect',
   sending: 'Sending…',
   saving: 'Saving…',
+  // The quiet way out of a Home card (Finishing touches).
+  dismiss: 'Dismiss',
   send: 'Send',
   turnOn: 'Turn on',
   turnOff: 'Turn off',

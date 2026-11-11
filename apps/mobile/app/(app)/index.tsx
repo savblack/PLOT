@@ -60,11 +60,9 @@ import { greetingFor } from '@plot/core/greeting.js';
 import { visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
-import FirstWinCard from '../../components/FirstWinCard';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 import ImportJobCard, { type ImportJobRow } from '../../components/ImportJobCard';
 import { markImportDone } from '../../lib/finishingTouches';
-import { suppressFirstWinForImport } from '../../lib/firstWinCard';
 import { takePendingImportSource } from '../../lib/pendingImport';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
@@ -1001,7 +999,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           }}
       >
 
-        {userId && importSource !== 'trakt' && importSource !== 'trakt-export' && <FirstWinCard userId={userId} />}
         <Text style={styles.dateLine}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
         {!history.loading && (
@@ -1041,7 +1038,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
             reviewJob={reviewJob}
             onImported={async (source, count) => {
               ft.setState(await markImportDone(userId, source, count));
-              await suppressFirstWinForImport(userId, source);
             }}
             onClose={() => setReviewJob(null)}
           />
@@ -1053,7 +1049,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
             initialPlatform={importSource as never}
             onImported={async (source, count) => {
               ft.setState(await markImportDone(userId, source, count));
-              await suppressFirstWinForImport(userId, source);
             }}
             onClose={() => setImportSource(null)}
           />

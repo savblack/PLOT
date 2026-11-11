@@ -1,6 +1,7 @@
 // Thin Brevo wrapper for contact upserts and lifecycle events (Deno edge functions).
 const API_URL = 'https://api.brevo.com/v3/contacts'
 const EVENTS_URL = 'https://api.brevo.com/v3/events'
+const SMTP_EMAIL_URL = 'https://api.brevo.com/v3/smtp/email'
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 
@@ -167,5 +168,41 @@ export async function sendBrevoEvent({
   if (!res.ok) {
     const err = await res.text()
     throw new Error(`Brevo ${res.status}: ${err}`)
+  }
+}
+
+/**
+ * One plain-text transactional email. POST /v3/smtp/email.
+ * https://developers.brevo.com/reference/sendtransacemail
+ *
+ * Plain text only, on purpose: Brevo's click tracking rewrites links in HTML
+ * bodies, and a sign-in link must reach the reader unchanged. The sender
+ * domain has to be authenticated in Brevo (theplot.tv is: see the
+ * brevo1/brevo2 DKIM records). The error carries the status only, never the
+ * body, so an address or link Brevo echoes back cannot reach the logs.
+ */
+export async function sendBrevoTransactionalEmail({
+  apiKey,
+  sender,
+  to,
+  subject,
+  text,
+  fetchImpl = fetch,
+}: {
+  apiKey: string
+  sender: { name: string; email: string }
+  to: string
+  subject: string
+  text: string
+  fetchImpl?: FetchLike
+}) {
+  const res = await fetchImpl(SMTP_EMAIL_URL, {
+    method: 'POST',
+    headers: brevoHeaders(apiKey),
+    body: JSON.stringify({ sender, to: [{ email: to }], subject, textContent: text }),
+  })
+  if (!res.ok) {
+    await res.body?.cancel()
+    throw new Error(`Brevo email request failed (${res.status})`)
   }
 }

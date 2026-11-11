@@ -520,14 +520,14 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
       {choosingKind && (
         <NewListChoice anchorRef={newListRef} onClose={() => setChoosingKind(false)}
           onList={() => { setChoosingKind(false); requestCreate(); }}
-          onSmart={requestSmartCreate} />
+          onSmart={requestSmartCreate}
+          onShared={SHOW_WATCH_TOGETHER ? () => { setChoosingKind(false); requestShared(); } : undefined} />
       )}
       {showCapNotice && <UpgradeSheet reason={upgradeReason} kept={upgradeReason === 'smartLists' && rulesKept}
         onClose={() => setShowCapNotice(false)} returnFocusRef={newListRef} />}
       {creatingList && (
         <CreateListModal lists={ownLists} onConfirm={handleCreate} onClose={() => setCreatingList(false)}
-          onLimit={() => { setCreatingList(false); setUpgradeReason('lists'); setShowCapNotice(true); }}
-          onSmart={requestSmartCreate} />
+          onLimit={() => { setCreatingList(false); setUpgradeReason('lists'); setShowCapNotice(true); }} />
       )}
       {creatingSmart && (
         <SmartListDialog

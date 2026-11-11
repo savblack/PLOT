@@ -24,7 +24,7 @@
 /** Order matters: it is the order on the card and in the progress bar. */
 export const FINISHING_TOUCH_IDS = /** @type {const} */ (['watchlist', 'progress', 'friends', 'import', 'people']);
 
-/** How long "Hide for now" hides the card. */
+/** How long "Dismiss" hides the card. */
 export const HIDE_DAYS = 7;
 /** The card is for new accounts: it stops showing this long after onboarding. */
 export const ACTIVE_DAYS = 30;
@@ -34,7 +34,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /**
  * @typedef {object} FinishingTouchesState
  * @property {number} startedAt     ms epoch, when onboarding finished
- * @property {number} [hiddenUntil] ms epoch, set by "Hide for now"
+ * @property {number} [hiddenUntil] ms epoch, set by "Dismiss"
  * @property {boolean} [importDone] an import finished on this device
  * @property {boolean} [traktImportDone] a Trakt import wrote at least one history row on this device
  * @property {boolean} [closed]     dismissed for good after the all-done moment

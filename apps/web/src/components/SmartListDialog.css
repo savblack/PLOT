@@ -27,16 +27,6 @@
 }
 .smart-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.smart-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  width: 100%;
-}
-.smart-error { flex: 1 1 100%; margin: 0; color: var(--danger); font-size: 0.75rem; }
-
 /* ── The builder ── */
 
 .smart-builder {
@@ -84,7 +74,7 @@
   .smart-builder-rules { order: 1; }
   .smart-builder-preview { order: 2; }
   .smart-builder-name { order: 3; }
-  .smart-builder-dialog .smart-footer .btn { min-height: 44px; padding-inline: 1.1rem; }
+  .smart-builder-dialog .dialog-actions .btn { min-height: 44px; padding-inline: 1.1rem; }
 }
 
 /* ── The sentence of chips ── */

@@ -18,18 +18,7 @@
   border: 1px solid #e8e8e8;
 }
 
-.legal-back {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #666;
-  text-decoration: none;
-  margin-bottom: 2rem;
-  transition: color 0.2s;
-}
-.legal-back:hover { color: #1a1a1a; }
+.legal-back { margin-bottom: 2rem; }
 
 .legal-label {
   font-size: 0.72rem;
