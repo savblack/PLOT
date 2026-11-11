@@ -23,6 +23,15 @@ GitHub-side watchers raise issues rather than email:
   email only. See `.github/scripts/job-incident.sh`.
 - `staging-tests.yml` opens an `incident` issue when the nightly Staging SQL
   tests fail, and closes it on the next pass.
+- `cron-health.yml` checks the database's own scheduled jobs (pg_cron) every
+  hour. It opens an `incident` issue and emails when a job's last run failed,
+  or when an active job has gone more than twice its schedule plus 10 minutes
+  without running (a job pg_cron stopped starting, or a run stuck for that
+  long). It closes the issue on the next healthy run. It reads
+  `public.cron_job_health()` as the read-only `plot_ci_readonly` role and never
+  sees pg_cron's error text; for that, query `cron.job_run_details` as the
+  owner. Run it by hand with `SUPABASE_DB_URL=… pnpm run db:cron-health`. A job
+  added in the last day can show as stopped until its first run.
 
 uptime-watch also opens a GitHub issue labelled `incident` when its
 `GITHUB_TOKEN` secret is set, and closes the issue on recovery.
@@ -88,7 +97,10 @@ update this section.
 ## Not watched yet
 
 - A signed-in read and write against production itself (see above for why the check runs on Staging).
-- Stripe webhook delivery failures and pg_cron job failures.
+- Stripe webhook delivery failures.
+- Whether a pg_cron job's HTTP call worked. Most jobs hand work to an edge
+  function through pg_net, and pg_cron records the hand-off as a success even
+  when the function then fails.
 
 ## Deploying or changing a watcher
 
