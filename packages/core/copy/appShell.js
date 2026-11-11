@@ -23,6 +23,9 @@ export const APP_SHELL = {
   beta: 'Beta',
   // Marks a Premium nav destination for Free viewers.
   premium: 'Premium',
+  // The spark beside a member's own name (MemberMark). Not `premium`, which
+  // labels a feature a Free viewer does not have.
+  premiumMember: 'Premium member',
   viewYourProfile: 'View your profile',
   // Accessible name of the desktop sidebar's account menu (the profile row opens it).
   accountMenu: 'Account',
