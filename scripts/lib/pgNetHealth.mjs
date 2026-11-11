@@ -20,12 +20,20 @@
 // followed by a good answer is not worth an email. A failure that then
 // recovers never alerts; one that keeps failing does within the hour.
 //
+// A busy function that fails on and off (every other call a 500) never shows
+// two in a row, so it also alerts when at least FLAKY_MIN_FAILURES of its calls
+// in the last day failed and they are at least half of them, whatever its
+// latest call did.
+//
 // "Settled" and "failed" are defined in SQL: answered 2xx in time is ok;
 // another status, a timeout, a pg_net error, or no answer after 15 minutes is
 // a failure.
 
 /** Below this many calls in a day, a single failure is enough to alert. */
 export const RARE_CALLS_PER_DAY = 4;
+
+/** A function failing this many times a day, at least half its calls, alerts even between OK answers. */
+export const FLAKY_MIN_FAILURES = 5;
 
 /**
  * @typedef {object} PgNetHealthRow   one row of public.pg_net_call_health()
@@ -51,6 +59,18 @@ export const RARE_CALLS_PER_DAY = 4;
  * @returns {boolean}
  */
 export function isFailing(row) {
+  return isFlaky(row) || failingNow(row);
+}
+
+/** @param {PgNetHealthRow} row */
+function isFlaky(row) {
+  const failed = Number(row.failed_last_day) || 0;
+  const calls = Number(row.calls_last_day) || 0;
+  return failed >= FLAKY_MIN_FAILURES && failed * 2 >= calls;
+}
+
+/** @param {PgNetHealthRow} row */
+function failingNow(row) {
   if (!row.last_outcome || row.last_outcome === 'ok') return false;
   const failures = Number(row.failures_since_ok) || 0;
   if (failures >= 2) return true;
@@ -67,6 +87,14 @@ export function evaluatePgNetCalls(rows) {
   for (const row of rows) {
     if (!isFailing(row)) continue;
     const failures = Number(row.failures_since_ok) || 0;
+    if (!failingNow(row)) {
+      problems.push({
+        target: row.target,
+        outcome: 'failing on and off',
+        detail: `${row.failed_last_day} of its ${row.calls_last_day} calls in the last day failed, though its latest call (${row.last_called_at ?? 'unknown time'}) was ${row.last_outcome ?? 'not judged yet'}.`,
+      });
+      continue;
+    }
     const since = row.last_ok_at
       ? `It last answered OK at ${row.last_ok_at}.`
       : 'It has not answered OK in the last 8 days.';

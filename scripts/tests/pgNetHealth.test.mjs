@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  RARE_CALLS_PER_DAY, describeOutcome, evaluatePgNetCalls, isFailing, summarizePgNetProblems,
+  FLAKY_MIN_FAILURES, RARE_CALLS_PER_DAY, describeOutcome, evaluatePgNetCalls, isFailing, summarizePgNetProblems,
 } from '../lib/pgNetHealth.mjs';
 
 const row = (overrides) => ({
@@ -90,4 +90,19 @@ test('describeOutcome explains the common answers in plain words', () => {
 test('nothing to report gives an empty summary', () => {
   assert.equal(summarizePgNetProblems([]), '');
   assert.deepEqual(evaluatePgNetCalls([]).problems, []);
+});
+
+test('a busy function failing every other call alerts even when its latest call was OK', () => {
+  const flaky = row({ target: 'profiles-changed', calls_last_day: 40, failed_last_day: 20, failures_since_ok: 0 });
+  assert.equal(isFailing(flaky), true);
+  const { problems } = evaluatePgNetCalls([flaky]);
+  assert.equal(problems[0].outcome, 'failing on and off');
+  assert.match(problems[0].detail, /20 of its 40 calls/);
+});
+
+test('the on-and-off rule needs both enough failures and at least half the calls', () => {
+  const at = (failed, calls) => isFailing(row({ calls_last_day: calls, failed_last_day: failed, failures_since_ok: 0 }));
+  assert.equal(at(FLAKY_MIN_FAILURES, FLAKY_MIN_FAILURES * 2), true);
+  assert.equal(at(FLAKY_MIN_FAILURES - 1, FLAKY_MIN_FAILURES), false); // too few to matter
+  assert.equal(at(FLAKY_MIN_FAILURES, FLAKY_MIN_FAILURES * 2 + 1), false); // under half
 });

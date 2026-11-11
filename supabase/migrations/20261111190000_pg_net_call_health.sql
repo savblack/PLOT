@@ -24,6 +24,13 @@
 -- Only Supabase can drop these triggers once created; see the trigger block
 -- below for how Plot switches them off.
 --
+-- Cost: one small insert per call and one update per answer. The error guard
+-- in each trigger is a sub-transaction, so a single statement that queues
+-- more than 64 calls (a backfill updating many profiles at once, each firing
+-- profiles-changed) overflows Postgres's per-session sub-transaction cache and
+-- slows other sessions' reads until it commits. It is not an error. Batch such
+-- backfills; do not remove the guard.
+--
 -- Read by .github/workflows/cron-health.yml as plot_ci_readonly through
 -- public.pg_net_call_health(), which returns function names, counts, times and
 -- outcomes only. Execute goes to plot_ci_readonly alone.
