@@ -21,7 +21,10 @@ const SIZE = 52;
 
 function Sparkle({ color }: { color: string }) {
   return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill={color}>
+    // The two stars span x 1.75 to 18.5 and y 2.5 to 21 of the 24 grid, so
+    // drawn in the full grid they sat left of the middle. The viewBox is a
+    // square around the pair itself, which centers them in the disc.
+    <Svg width={22} height={22} viewBox="0.875 2.5 18.5 18.5" fill={color}>
       <Path d="M12 2.5c.5 3.9 2.6 6 6.5 6.5-3.9.5-6 2.6-6.5 6.5-.5-3.9-2.6-6-6.5-6.5 3.9-.5 6-2.6 6.5-6.5z" />
       <Path d="M5 14.5c.25 1.9 1.35 3 3.25 3.25-1.9.25-3 1.35-3.25 3.25-.25-1.9-1.35-3-3.25-3.25 1.9-.25 3-1.35 3.25-3.25z" />
     </Svg>

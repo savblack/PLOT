@@ -1016,19 +1016,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
             <Text style={styles.weekText}>{weekNights > 0 ? DISCOVER_VIEW.weekLine(weekNights, bestStreak) : DISCOVER_VIEW.weekEmpty}</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity
-          style={styles.searchField}
-          onPress={() => router.push('/(app)/search' as Href)}
-          accessibilityRole="search"
-          accessibilityLabel={MEDIA.searchPlaceholder}
-          activeOpacity={0.8}
-        >
-          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Circle cx={11} cy={11} r={7} />
-            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-          </Svg>
-          <Text style={styles.searchFieldText} numberOfLines={1}>{MEDIA.searchPlaceholder}</Text>
-        </TouchableOpacity>
         {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
         {firstWeek.visible
           ? <PremiumFirstWeek onState={firstWeek.setState} />
@@ -1098,7 +1085,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       >
         <ScreenHeaderBar
           title={mode === 'new' ? 'New Releases' : 'Home'}
-          showSearch={false}
           rightExtra={
             <View style={styles.headerFilter}>
               <GroupedFilterMenu
@@ -1442,13 +1428,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   weekLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, marginBottom: spacing.md, minHeight: 24 },
   weekDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accentSecondary },
   weekText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
-  searchField: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    marginHorizontal: spacing.xl, marginBottom: spacing.lg,
-    minHeight: 44, paddingHorizontal: spacing.lg,
-    borderRadius: radii.pill, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface,
-  },
-  searchFieldText: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
   // ── Up next, empty ──
   upNextEmpty: { marginHorizontal: spacing.xl, padding: spacing.md, gap: spacing.md, borderRadius: radii.md, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.borderStrong },
   upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },

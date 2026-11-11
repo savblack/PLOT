@@ -2,15 +2,14 @@ import { ReactNode, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
-import HamburgerIcon from './HamburgerIcon';
-import { useDrawer } from '../contexts/DrawerContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { useNotifications } from '@plot/core/useNotifications.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 
-// The hamburger (open drawer) + title + search row shared by every fixed
-// blurred screen header. Screens keep their own BlurView/fixedHeader wrapper
+// The search + title + bell row shared by every fixed blurred screen header.
+// Search sits on the left, where the menu button used to be: the menu is now
+// the last button in the tab bar (app/(app)/_layout.tsx), on every screen. Screens keep their own BlurView/fixedHeader wrapper
 // (heights and extra content like tabs vary) and render just this row inside it.
 export default function ScreenHeaderBar({
   title,
@@ -26,12 +25,11 @@ export default function ScreenHeaderBar({
   onSearchPress?: () => void;
   /** Screens that are themselves the notifications view hide the bell. */
   showNotifications?: boolean;
-  /** Fills the slot after the bell when the screen has no search button (Home's filter). */
+  /** Sits after the bell (Home's filter). */
   rightExtra?: ReactNode;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { open } = useDrawer();
   const router = useRouter();
   const { userId } = useAppData();
   // Count only — the list is loaded by the notifications screen itself.
@@ -39,15 +37,23 @@ export default function ScreenHeaderBar({
 
   return (
     <View style={styles.row}>
-      <TouchableOpacity
-        style={styles.iconBtn}
-        onPress={() => open()}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityLabel="Open menu"
-        accessibilityRole="button"
-      >
-        <HamburgerIcon />
-      </TouchableOpacity>
+      {showSearch ? (
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={onSearchPress ?? (() => router.push('/(app)/search'))}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Open search"
+          accessibilityRole="button"
+        >
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Circle cx={11} cy={11} r={7} />
+            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
+          </Svg>
+        </TouchableOpacity>
+      ) : (
+        // Keeps the row's two ends in place on a screen with no search.
+        <View style={styles.iconBtn} />
+      )}
 
       {center ?? (title ? <Text style={styles.title} pointerEvents="none">{title}</Text> : null)}
 
@@ -72,23 +78,7 @@ export default function ScreenHeaderBar({
         </TouchableOpacity>
       ) : null}
 
-      {showSearch ? (
-        <TouchableOpacity
-          style={styles.iconBtn}
-          onPress={onSearchPress ?? (() => router.push('/(app)/search'))}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Open search"
-          accessibilityRole="button"
-        >
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Circle cx={11} cy={11} r={7} />
-            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-          </Svg>
-        </TouchableOpacity>
-      ) : (
-        // Keeps the title centered when there's no search button on the right.
-        rightExtra ?? <View style={styles.iconBtn} />
-      )}
+      {rightExtra ?? (showNotifications ? null : <View style={styles.iconBtn} />)}
       </View>
     </View>
   );
@@ -104,7 +94,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingBottom: spacing.md,
   },
   iconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  // Bell + search share the right slot; the title stays absolutely centred, so
+  // The bell and a screen's extra share the right slot; the title stays absolutely centred, so
   // grouping them keeps the row's space-between layout intact.
   rightGroup: { flexDirection: 'row', alignItems: 'center' },
   badge: {
