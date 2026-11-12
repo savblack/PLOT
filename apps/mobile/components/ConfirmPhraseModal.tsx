@@ -16,6 +16,7 @@ import {
   View, Text, TouchableOpacity, Modal, StyleSheet,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+import Button from './Button';
 import { TextInput } from './TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
@@ -102,16 +103,13 @@ export default function ConfirmPhraseModal({
           </View>
 
           <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-            <TouchableOpacity
-              style={[styles.confirmBtn, (!matches || busy) && styles.confirmBtnDisabled]}
+            <Button
+              variant="danger"
+              label={busy ? (busyLabel || CONFIRM_MODAL.working) : confirmLabel}
               onPress={handleConfirm}
               disabled={!matches || busy}
-              activeOpacity={0.8}
-              accessibilityRole="button"
               accessibilityLabel={confirmLabel}
-            >
-              <Text style={styles.confirmBtnText}>{busy ? (busyLabel || CONFIRM_MODAL.working) : confirmLabel}</Text>
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -140,10 +138,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   error: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger },
   footer: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
-  confirmBtn: {
-    backgroundColor: colors.danger, borderRadius: radii.md,
-    paddingVertical: spacing.md, alignItems: 'center',
-  },
-  confirmBtnDisabled: { backgroundColor: colors.surfaceSunken },
-  confirmBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
 });

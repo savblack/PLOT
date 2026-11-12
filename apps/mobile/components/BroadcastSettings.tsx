@@ -8,7 +8,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { GUIDE_REGIONS, GUIDE_COUNTRIES, guideMarketsForCountry } from '@plot/core/broadcastGuide.js';
 import { BROADCAST_GUIDE as COPY } from '@plot/core/copy/broadcastGuide.js';
 import { COMMON } from '@plot/core/copy/common.js';
-import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import Button from './Button';
+import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 
 export function BroadcastRegionSheet({ onClose }: { onClose: () => void }) {
   const { broadcastPreferences: preferences } = useAppData();
@@ -78,16 +79,12 @@ export function BroadcastRegionSheet({ onClose }: { onClose: () => void }) {
         </ScrollView>
         <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
           {error && <Text accessibilityRole="alert" style={styles.error}>{COPY.saveError}</Text>}
-          <Pressable
-            accessibilityRole="button"
-            disabled={!region || preferences.saving}
+          <Button
+            variant="primary"
+            label={preferences.saving ? COMMON.saving : COPY.saveRegion}
             onPress={() => { void save(); }}
-            style={[styles.save, (!region || preferences.saving) && styles.saveDisabled]}
-          >
-            <Text style={[styles.saveText, (!region || preferences.saving) && { color: colors.textMuted }]}>
-              {preferences.saving ? COMMON.saving : COPY.saveRegion}
-            </Text>
-          </Pressable>
+            disabled={!region || preferences.saving}
+          />
         </View>
       </View>
     </Modal>
@@ -129,12 +126,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   footer: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.sm },
   error: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.danger },
-  save: {
-    backgroundColor: colors.accentFill,
-    borderRadius: radii.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  saveDisabled: { backgroundColor: colors.surfaceSunken },
-  saveText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.onAccentFill },
 });

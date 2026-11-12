@@ -13,7 +13,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackBar from '../../components/BackBar';
 import ReorderRows from '../../components/ReorderRows';
-import QuietButton from '../../components/QuietButton';
+import Button from '../../components/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
@@ -98,7 +98,7 @@ export default function HomeLayoutScreen() {
           />
         ) : null}
         {premium && !picking ? (
-          <QuietButton label={full ? C.pinLimit(MAX_HOME_PINS) : C.pinAction} onPress={() => setPicking(true)} disabled={full} />
+          <Button label={full ? C.pinLimit(MAX_HOME_PINS) : C.pinAction} onPress={() => setPicking(true)} disabled={full} style={styles.action} />
         ) : null}
         {premium && picking ? (
           <View style={styles.picker}>
@@ -113,11 +113,11 @@ export default function HomeLayoutScreen() {
                 ))}
               </View>
             ))}
-            <QuietButton label={C.pinCancel} onPress={() => setPicking(false)} />
+            <Button label={C.pinCancel} onPress={() => setPicking(false)} style={styles.action} />
           </View>
         ) : null}
         {!premium ? (
-          <QuietButton label={C.pinsUpgrade} onPress={() => setUpgrade(true)} />
+          <Button label={C.pinsUpgrade} onPress={() => setUpgrade(true)} style={styles.action} />
         ) : null}
 
         <Text style={styles.heading} accessibilityRole="header">{C.shelvesTitle}</Text>
@@ -127,7 +127,7 @@ export default function HomeLayoutScreen() {
           onToggle={setVisible}
           labels={{ moveUp: C.moveUp, moveDown: C.moveDown, hiddenTag: C.hiddenTag, show: C.show, hide: C.hide }}
         />
-        <QuietButton label={C.reset} onPress={reset} disabled={isDefault} />
+        <Button label={C.reset} onPress={reset} disabled={isDefault} style={styles.action} />
       </ScrollView>
       <UpgradeSheet
         visible={upgrade}
@@ -153,6 +153,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   segBtnOn: { backgroundColor: colors.surface },
   segText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   segTextOn: { color: colors.textPrimary },
+  action: { marginTop: spacing.lg },
   picker: { marginTop: spacing.sm, padding: spacing.md, gap: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radii.md, backgroundColor: colors.surface },
   pickerTitle: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.textMuted },
   pickerItem: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.sm, borderRadius: radii.sm },

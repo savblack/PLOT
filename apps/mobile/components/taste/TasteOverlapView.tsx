@@ -27,6 +27,7 @@ import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
 import { captureTasteCard, shareTasteImage, tasteCardText, tastePostText, TASTE_CARD_WIDTH, type TasteCardContent, type TasteOverlapModel } from '../../lib/tasteShare';
 import TasteShareCard, { type TasteTheme } from './TasteShareCard';
 import TasteShareSheet from './TasteShareSheet';
+import Button from '../Button';
 
 type TasteModel = TasteOverlapModel;
 
@@ -147,9 +148,7 @@ function TasteOverlapBody({
     <View style={styles.state}>
       <Text style={styles.stateTitle}>{T.upsellTitle}</Text>
       <Text style={styles.stateBody}>{T.upsellBody}</Text>
-      <TouchableOpacity style={styles.primary} accessibilityRole="button" onPress={() => router.push(PREMIUM_SETTINGS_PATH as Href)}>
-        <Text style={styles.primaryText}>{PLANS_PAGE.previewAction}</Text>
-      </TouchableOpacity>
+      <Button variant="primary" label={PLANS_PAGE.previewAction} onPress={() => router.push(PREMIUM_SETTINGS_PATH as Href)} style={styles.primary} />
     </View>
   ) : loading ? (
     <LoadingSkeleton styles={styles} />
@@ -271,14 +270,10 @@ function OverlapMessage({
     <View style={styles.state}>
       <Text style={styles.stateBody}>{message}</Text>
       {message === T.failed && (
-        <TouchableOpacity style={styles.secondary} accessibilityRole="button" onPress={onRetry}>
-          <Text style={styles.secondaryText}>{T.retry}</Text>
-        </TouchableOpacity>
+        <Button size="sm" label={T.retry} onPress={onRetry} />
       )}
       {error === 'not_visible' && (
-        <TouchableOpacity style={styles.secondary} accessibilityRole="button" onPress={onProfile}>
-          <Text style={styles.secondaryText}>{name}</Text>
-        </TouchableOpacity>
+        <Button size="sm" label={name} onPress={onProfile} />
       )}
     </View>
   );
@@ -447,9 +442,7 @@ function OverlapBody({
         />
       )}
 
-      <TouchableOpacity style={styles.primary} onPress={onShare} accessibilityRole="button">
-        <Text style={styles.primaryText}>{T.share}</Text>
-      </TouchableOpacity>
+      <Button variant="primary" label={T.share} onPress={onShare} style={styles.primary} />
     </>
   );
 }
@@ -599,16 +592,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   watchCopy: { flex: 1, gap: 2 },
   watchText: { fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.onAccentSecondaryFill },
   watchCta: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.onAccentSecondaryFill },
-  primary: {
-    alignSelf: 'center', minHeight: 44, paddingHorizontal: spacing.xl, borderRadius: radii.pill,
-    backgroundColor: colors.accentFill, alignItems: 'center', justifyContent: 'center',
-  },
-  primaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.onAccentFill },
-  secondary: {
-    minHeight: 36, paddingHorizontal: spacing.lg, borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.textPrimary, alignItems: 'center', justifyContent: 'center',
-  },
-  secondaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
+  primary: { alignSelf: 'center' },
   state: { alignItems: 'flex-start', gap: spacing.md, padding: 18, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   stateTitle: { fontFamily: fontFamily.display, fontSize: 22, letterSpacing: -0.4, color: colors.textPrimary },
   stateBody: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 21, color: colors.textSecondary },

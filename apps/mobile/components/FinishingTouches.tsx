@@ -10,9 +10,8 @@
  * either way: a phone that never expands the card can still dismiss it.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { IconChevronDown } from './icons';
 import { followUser } from '@plot/core/useFollows.js';
@@ -41,6 +40,8 @@ import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { useFollows } from '../hooks/useFollows';
+import BottomSheet from './BottomSheet';
+import Button, { TextLink } from './Button';
 import ImportHistoryModal from './ImportHistoryModal';
 import ImportSourceIcon from './ImportSourceIcon';
 import { FollowPill, PersonFace } from './people/FollowControls';
@@ -178,13 +179,7 @@ export default function FinishingTouches({ state, onState }: {
           <Text style={styles.readyTitle}>{T.ready}</Text>
           <Text style={styles.readyBody}>{T.readyBody}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.pill}
-          onPress={async () => onState(await closeFinishingTouches(userId))}
-          accessibilityRole="button"
-        >
-          <Text style={styles.pillText}>{T.nice}</Text>
-        </TouchableOpacity>
+        <Button size="sm" label={T.nice} onPress={async () => onState(await closeFinishingTouches(userId))} style={styles.readyButton} />
       </View>
     );
   }
@@ -292,25 +287,15 @@ export default function FinishingTouches({ state, onState }: {
   );
 }
 
-/* ── Shared bottom sheet ── */
-function BottomSheet({ title, sub, onClose, children }: { title: string; sub: string; onClose: () => void; children: React.ReactNode }) {
+/* ── A step's sheet: the app's BottomSheet with the step's line under the title ── */
+function StepSheet({ title, sub, onClose, children }: { title: string; sub: string; onClose: () => void; children: React.ReactNode }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const insets = useSafeAreaInsets();
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.layer}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel={T.close} />
-        <View style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]} accessibilityViewIsModal>
-          <View style={styles.grab} />
-          <ScrollView contentContainerStyle={styles.sheetContent} bounces={false} showsVerticalScrollIndicator={false}>
-            <Text style={styles.sheetTitle} accessibilityRole="header">{title}</Text>
-            <Text style={styles.sheetSub}>{sub}</Text>
-            {children}
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+    <BottomSheet visible onClose={onClose} title={title}>
+      <Text style={styles.sheetSub}>{sub}</Text>
+      {children}
+    </BottomSheet>
   );
 }
 
@@ -342,7 +327,7 @@ function FriendsSheet({ userId, onClose }: { userId: string; onClose: () => void
   };
 
   return (
-    <BottomSheet title={T.friendsSheet.title} sub={T.friendsSheet.sub} onClose={onClose}>
+    <StepSheet title={T.friendsSheet.title} sub={T.friendsSheet.sub} onClose={onClose}>
       {rows === null ? null : rows.length === 0 ? (
         <Text style={styles.empty}>{failed ? T.friendsSheet.loadError : T.friendsSheet.empty}</Text>
       ) : rows.map(row => {
@@ -370,10 +355,8 @@ function FriendsSheet({ userId, onClose }: { userId: string; onClose: () => void
           </View>
         );
       })}
-      <TouchableOpacity onPress={() => { onClose(); router.push('/(app)/search' as Href); }} accessibilityRole="link" style={styles.sheetLink}>
-        <Text style={styles.sheetLinkText}>{T.friendsSheet.search}</Text>
-      </TouchableOpacity>
-    </BottomSheet>
+      <TextLink label={T.friendsSheet.search} onPress={() => { onClose(); router.push('/(app)/search' as Href); }} accessibilityRole="link" style={styles.sheetLink} />
+    </StepSheet>
   );
 }
 
@@ -395,7 +378,7 @@ function ImportSourceSheet({ userId, onImported, onClose }: { userId: string; on
     );
   }
   return (
-    <BottomSheet title={T.importSheet.title} sub={T.importSheet.sub} onClose={onClose}>
+    <StepSheet title={T.importSheet.title} sub={T.importSheet.sub} onClose={onClose}>
       {availableImportSources(getConfig()).map(src => (
         <TouchableOpacity
           key={src.id}
@@ -413,7 +396,7 @@ function ImportSourceSheet({ userId, onImported, onClose }: { userId: string; on
           </View>
         </TouchableOpacity>
       ))}
-    </BottomSheet>
+    </StepSheet>
   );
 }
 
@@ -435,7 +418,7 @@ function PeopleSheet({ watchlistItems, favourites, follow, onClose }: {
     : (s.count > 1 ? PEOPLE.shelf.actedIn(s.count) : PEOPLE.shelf.actedInOne(s.title)));
 
   return (
-    <BottomSheet title={T.peopleSheet.title(favourites)} sub={T.peopleSheet.sub} onClose={onClose}>
+    <StepSheet title={T.peopleSheet.title(favourites)} sub={T.peopleSheet.sub} onClose={onClose}>
       <Text style={styles.sheetH}>{T.peopleSheet.fromWatchlist}</Text>
       {!loading && suggestions.length === 0 ? (
         <Text style={styles.empty}>{T.peopleSheet.empty}</Text>
@@ -454,7 +437,7 @@ function PeopleSheet({ watchlistItems, favourites, follow, onClose }: {
           />
         </View>
       ))}
-    </BottomSheet>
+    </StepSheet>
   );
 }
 
@@ -526,7 +509,7 @@ function UpToSheet({ show, watching, onClose }: {
   const title = details?.name || pick.title;
 
   return (
-    <BottomSheet title={T.steps.progress.title} sub={T.steps.progress.sheetSub(title)} onClose={onClose}>
+    <StepSheet title={T.steps.progress.title} sub={T.steps.progress.sheetSub(title)} onClose={onClose}>
       {failed && <Text style={styles.empty}>{MEDIA_PANEL.episodesLoadError}</Text>}
       {seasons.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.seasonRow}>
@@ -561,7 +544,7 @@ function UpToSheet({ show, watching, onClose }: {
           <Text style={styles.personName} numberOfLines={1}>{ep.name || MEDIA_PANEL.seasonEpisode(selSeason, ep.episode_number)}</Text>
         </TouchableOpacity>
       ))}
-    </BottomSheet>
+    </StepSheet>
   );
 }
 
@@ -589,16 +572,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   readyMark: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentFill },
   readyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary },
   readyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  readyButton: { alignSelf: 'center' },
 
-  layer: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.imageScrim },
-  sheet: { maxHeight: '88%', backgroundColor: colors.surfaceRaised, borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg },
-  grab: { alignSelf: 'center', marginTop: spacing.md, width: 40, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong },
-  sheetContent: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.md },
-  sheetTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, lineHeight: 29, letterSpacing: -0.78, color: colors.textPrimary },
   sheetSub: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 22, color: colors.textSecondary },
   sheetH: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textSecondary },
-  sheetLink: { alignSelf: 'flex-start', paddingVertical: spacing.xs },
-  sheetLinkText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
+  sheetLink: { alignSelf: 'flex-start' },
   empty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
   personRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   personName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },

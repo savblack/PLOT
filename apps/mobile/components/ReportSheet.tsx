@@ -13,6 +13,7 @@ import {
   View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet,
   KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
+import Button from './Button';
 import { TextInput } from './TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
@@ -134,18 +135,13 @@ export default function ReportSheet({
               </ScrollView>
 
               <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-                <TouchableOpacity
-                  style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
+                <Button
+                  variant="primary"
+                  label={busy ? MODERATION.submitting : MODERATION.submitReport}
                   onPress={handleSubmit}
                   disabled={!canSubmit}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
                   accessibilityLabel={`${MODERATION.submitReport}${targetName ? `: ${targetName}` : ''}`}
-                >
-                  <Text style={styles.submitBtnText}>
-                    {busy ? MODERATION.submitting : MODERATION.submitReport}
-                  </Text>
-                </TouchableOpacity>
+                />
               </View>
             </>
           )}
@@ -189,10 +185,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   error: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger },
   footer: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
-  submitBtn: {
-    backgroundColor: colors.accent, borderRadius: radii.md,
-    paddingVertical: spacing.md, alignItems: 'center',
-  },
-  submitBtnDisabled: { backgroundColor: colors.surfaceSunken },
-  submitBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
 });

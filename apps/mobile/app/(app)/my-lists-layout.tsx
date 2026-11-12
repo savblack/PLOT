@@ -11,7 +11,7 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackBar from '../../components/BackBar';
 import ReorderRows from '../../components/ReorderRows';
-import QuietButton from '../../components/QuietButton';
+import Button from '../../components/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useUiPrefs } from '@plot/core/useUiPrefs.js';
@@ -77,7 +77,7 @@ export default function MyListsLayoutScreen() {
           onNudge={nudge}
           labels={{ moveUp: C.moveUp, moveDown: C.moveDown }}
         />
-        <QuietButton label={C.reset} onPress={reset} disabled={isDefault} />
+        <Button label={C.reset} onPress={reset} disabled={isDefault} style={styles.action} />
       </ScrollView>
     </View>
   );
@@ -87,4 +87,5 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   intro: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary, marginTop: spacing.md, marginBottom: spacing.lg },
   error: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger, marginBottom: spacing.md },
+  action: { marginTop: spacing.lg },
 });

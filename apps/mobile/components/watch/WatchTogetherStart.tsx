@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { TextInput } from '../TextInput';
+import SearchField from '../SearchField';
 import Svg, { Path } from 'react-native-svg';
 import { IconClose } from '../icons';
 import { pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
@@ -179,24 +179,7 @@ function FriendSearch({ sent, onInvite }: {
 
   return (
     <View style={{ gap: spacing.sm }}>
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder={T.invite.search}
-        placeholderTextColor={colors.textMuted}
-        accessibilityLabel={S.findLabel}
-        autoCapitalize="none"
-        autoCorrect={false}
-        style={{
-          minHeight: 48,
-          borderRadius: radii.pill,
-          paddingHorizontal: spacing.lg,
-          backgroundColor: colors.surface,
-          color: colors.textPrimary,
-          fontFamily: fontFamily.sans,
-          fontSize: fontSize.md,
-        }}
-      />
+      <SearchField value={query} onChangeText={setQuery} placeholder={T.invite.search} accessibilityLabel={S.findLabel} />
       {failed && <ErrorNote>{T.errors.generic}</ErrorNote>}
       {results && (
         <View style={{ borderRadius: radii.md, backgroundColor: colors.surface, paddingHorizontal: spacing.md }}>

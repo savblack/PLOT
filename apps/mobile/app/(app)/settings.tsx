@@ -21,6 +21,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line } from 'react-native-svg';
 import { IconChevronRight, IconClose, IconCheck } from '../../components/icons';
 import ModalHeader from '../../components/ModalHeader';
+import Button, { TextLink } from '../../components/Button';
+import SearchField from '../../components/SearchField';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
@@ -603,14 +605,12 @@ function RegionModal({ current, onSave, onClose }: { current: string; onSave: (c
           ))}
         </ScrollView>
         <View style={[styles.modalFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-          <TouchableOpacity
-            style={[styles.saveBtn, (saving || chosen === current) && styles.saveBtnDisabled]}
+          <Button
+            variant="primary"
+            label={saving ? COMMON.saving : SETTINGS_VIEW.region.saveRegion}
             onPress={async () => { setSaving(true); await onSave(chosen); }}
             disabled={saving || chosen === current}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.saveBtnText}>{saving ? COMMON.saving : SETTINGS_VIEW.region.saveRegion}</Text>
-          </TouchableOpacity>
+          />
         </View>
       </View>
     </Modal>
@@ -634,21 +634,7 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
         <ModalHeader title={SETTINGS_VIEW.page.timezoneLabel} actionLabel="Cancel" onAction={onClose} />
         <View style={styles.modalSearchWrap}>
-          <View style={styles.modalSearchInner}>
-            <TextInput
-              style={styles.modalSearchInput}
-              placeholder={SETTINGS_VIEW.timezone.searchPlaceholder}
-              placeholderTextColor={colors.textMuted}
-              value={query}
-              onChangeText={setQuery}
-              autoCorrect={false}
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={COMMON.clearSearch} accessibilityRole="button">
-                <Text style={styles.modalSearchClear}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <SearchField value={query} onChangeText={setQuery} placeholder={SETTINGS_VIEW.timezone.searchPlaceholder} />
         </View>
         <ScrollView style={{ flex: 1 }}>
           {!query && deviceTz && deviceTz !== chosen && (
@@ -668,14 +654,12 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
           ))}
         </ScrollView>
         <View style={[styles.modalFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-          <TouchableOpacity
-            style={[styles.saveBtn, (!chosen || saving) && styles.saveBtnDisabled]}
+          <Button
+            variant="primary"
+            label={saving ? COMMON.saving : COMMON.save}
             onPress={async () => { setSaving(true); await onSave(chosen); }}
             disabled={!chosen || saving}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.saveBtnText}>{saving ? COMMON.saving : COMMON.save}</Text>
-          </TouchableOpacity>
+          />
         </View>
       </View>
     </Modal>
@@ -737,20 +721,7 @@ function ProviderModal({
           }
         />
         <View style={styles.modalSearchWrap}>
-          <View style={styles.modalSearchInner}>
-            <TextInput
-              style={styles.modalSearchInput}
-              placeholder="Search…"
-              placeholderTextColor={colors.textMuted}
-              value={search}
-              onChangeText={setSearch}
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={COMMON.clearSearch} accessibilityRole="button">
-                <Text style={styles.modalSearchClear}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <SearchField value={search} onChangeText={setSearch} placeholder="Search…" />
         </View>
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
@@ -825,14 +796,7 @@ function NameModal({ current, onSave, onClose }: { current: string; onSave: (nam
           {error && <Text style={{ color: '#e5484d', fontSize: fontSize.xs, marginTop: spacing.xs }}>{error}</Text>}
         </View>
         <View style={[styles.modalFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-          <TouchableOpacity
-            style={[styles.saveBtn, (!dirty || saving) && styles.saveBtnDisabled]}
-            onPress={handleSave}
-            disabled={!dirty || saving}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
-          </TouchableOpacity>
+          <Button variant="primary" label={saving ? 'Saving…' : 'Save'} onPress={handleSave} disabled={!dirty || saving} />
         </View>
       </View>
     </Modal>
@@ -892,13 +856,12 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
         ) : loadError ? (
           <View style={styles.genreErrorWrap}>
             <Text style={styles.genreErrorText}>{SETTINGS_VIEW.genres.loadError}</Text>
-            <TouchableOpacity
-              style={styles.genreRetryBtn}
+            <Button
+              size="sm"
+              label={SETTINGS_VIEW.genres.tryAgain}
               onPress={() => { setLoading(true); setLoadError(false); setAttempt(n => n + 1); }}
-              accessibilityRole="button"
-            >
-              <Text style={styles.genreRetryText}>{SETTINGS_VIEW.genres.tryAgain}</Text>
-            </TouchableOpacity>
+              style={styles.centeredButton}
+            />
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.regionGrid}>
@@ -952,9 +915,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
             </View>
             <Text style={styles.feedbackDoneTitle}>Thanks for your feedback!</Text>
             <Text style={styles.feedbackDoneBody}>We read every submission and use it to improve plot.</Text>
-            <TouchableOpacity style={[styles.saveBtn, { marginTop: spacing.lg }]} onPress={onClose} activeOpacity={0.8}>
-              <Text style={styles.saveBtnText}>Done</Text>
-            </TouchableOpacity>
+            <Button variant="primary" label="Done" onPress={onClose} style={[styles.centeredButton, { marginTop: spacing.lg }]} />
           </View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}>
@@ -992,14 +953,12 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
                 {SETTINGS_VIEW.username.error}
               </Text>
             )}
-            <TouchableOpacity
-              style={[styles.saveBtn, (!message.trim() || status === 'submitting') && styles.saveBtnDisabled]}
+            <Button
+              variant="primary"
+              label={status === 'submitting' ? 'Sending…' : 'Send Feedback'}
               onPress={handleSubmit}
               disabled={!message.trim() || status === 'submitting'}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.saveBtnText}>{status === 'submitting' ? 'Sending…' : 'Send Feedback'}</Text>
-            </TouchableOpacity>
+            />
           </ScrollView>
         )}
       </View>
@@ -1394,19 +1353,13 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <View style={styles.searchWrap}>
-          <TextInput
-            style={styles.searchInput}
-            value={query}
-            onChangeText={setQuery}
-            placeholder={SETTINGS_VIEW.page.search}
-            placeholderTextColor={colors.textMuted}
-            accessibilityLabel={SETTINGS_VIEW.page.search}
-            autoCapitalize="none"
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-          />
-        </View>
+        <SearchField
+          style={styles.searchWrap}
+          value={query}
+          onChangeText={setQuery}
+          placeholder={SETTINGS_VIEW.page.search}
+          accessibilityLabel={SETTINGS_VIEW.page.search}
+        />
 
         {searching ? (
           <View style={styles.searchResults}>
@@ -1690,13 +1643,12 @@ export default function SettingsScreen() {
                 description={IMPORT_VIEW.letterboxdFinishSub}
                 onPress={() => setShowLetterboxdImport(true)}
               />
-              <TouchableOpacity
+              <TextLink
+                quiet
+                label={IMPORT_VIEW.letterboxdFinishDismiss}
                 onPress={() => { void dismissLetterboxdImport(); }}
-                accessibilityRole="button"
-                style={{ alignSelf: 'flex-start', paddingHorizontal: 16, paddingBottom: 12 }}
-              >
-                <Text style={{ color: colors.textMuted, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{IMPORT_VIEW.letterboxdFinishDismiss}</Text>
-              </TouchableOpacity>
+                style={{ alignSelf: 'flex-start', marginHorizontal: 16, marginBottom: 12 }}
+              />
             </View>
           ) : null}
         </SettingsGroup>
@@ -1943,17 +1895,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   accountFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   accountPlan: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   searchWrap: { marginHorizontal: spacing.xl, marginTop: spacing.md },
-  searchInput: {
-    minHeight: 44,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
-  },
   searchResults: { marginHorizontal: spacing.xl, marginTop: spacing.md, gap: spacing.sm },
   searchEmpty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   searchHit: {
@@ -2062,32 +2003,16 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // Modal
   modalContainer: { flex: 1, backgroundColor: colors.bg },
   modalSearchWrap: { padding: spacing.md, paddingHorizontal: spacing.xl },
-  modalSearchInner: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.surface, borderRadius: radii.pill,
-    paddingRight: spacing.lg,
-    borderWidth: 1, borderColor: colors.border,
-  },
   modalSearchInput: {
     flex: 1,
     paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
     fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary,
   },
-  modalSearchClear: { fontSize: 14, color: colors.textMuted },
   modalFooter: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
 
   regionGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.xl, gap: spacing.sm },
   genreErrorWrap: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
   genreErrorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center' },
-  genreRetryBtn: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
-  },
-  genreRetryText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   regionCard: {
     width: '47%', padding: spacing.md,
     borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border,
@@ -2118,12 +2043,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   providerLogoFallback: { width: 48, height: 48, borderRadius: 8, backgroundColor: colors.surfaceSunken, alignItems: 'center', justifyContent: 'center' },
   providerName: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
 
-  saveBtn: {
-    backgroundColor: colors.accent, borderRadius: radii.md,
-    paddingVertical: spacing.md, alignItems: 'center',
-  },
-  saveBtnDisabled: { backgroundColor: colors.surfaceSunken },
-  saveBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
+  centeredButton: { alignSelf: 'center' },
 
   feedbackDone: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
   feedbackDoneIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.accentDim, alignItems: 'center', justifyContent: 'center' },

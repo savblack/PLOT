@@ -12,14 +12,15 @@
  * default, so a filter left on somewhere off-screen is still visible.
  */
 import { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, Pressable, ScrollView, StyleSheet, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { IconClose, IconCheck } from './icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { IconCheck } from './icons';
 import { COMMON } from '@plot/core/copy/common.js';
 import { MOBILE_CONTROLS } from '@plot/core/copy/mobileControls.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, iconButtonSize } from '../lib/tokens';
+import BottomSheet, { SheetActions } from './BottomSheet';
+import Button from './Button';
 
 export interface FilterOption { id: string; label: string }
 export interface FilterGroup {
@@ -53,8 +54,6 @@ export default function GroupedFilterMenu({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [open, setOpen] = useState(false);
-  const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
 
   const visibleGroups = groups.filter(g => g.options.length > 0);
   if (!visibleGroups.length) return null;
@@ -88,21 +87,21 @@ export default function GroupedFilterMenu({
         <FilterIcon color={hasActiveFilters ? colors.accent : colors.textMuted} />
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
-        <View style={styles.overlay}>
-          {/* Tapping the dimmed page dismisses, as on web. */}
-          <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel={COMMON.close} />
-          <View style={[styles.sheet, { maxHeight: height * 0.75, paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
-            <View style={styles.handle} />
-            <View style={styles.headingRow}>
-              <Text style={styles.heading} accessibilityRole="header">{MOBILE_CONTROLS.filters}</Text>
-              <TouchableOpacity onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={COMMON.close}>
-                <IconClose color={colors.textPrimary} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
+      {/* Tapping the dimmed page dismisses, as on web. */}
+      <BottomSheet
+        visible={open}
+        onClose={close}
+        title={MOBILE_CONTROLS.filters}
+        maxHeight="75%"
+        footer={(
+          <SheetActions>
+            <Button flex label={MOBILE_CONTROLS.reset} onPress={reset} />
+            <Button flex variant="primary" label={COMMON.done} onPress={close} />
+          </SheetActions>
+        )}
+      >
               {visibleGroups.map(group => (
-                <View key={group.heading} style={styles.group}>
+                <View key={group.heading}>
                   <Text style={styles.groupHeading}>{group.heading}</Text>
                   {group.options.map((opt, index) => {
                     const chosen = group.value.includes(opt.id);
@@ -127,18 +126,7 @@ export default function GroupedFilterMenu({
                   })}
                 </View>
               ))}
-            </ScrollView>
-            <View style={styles.footer}>
-              <TouchableOpacity onPress={reset} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button">
-                <Text style={styles.reset}>{MOBILE_CONTROLS.reset}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.done} onPress={close} accessibilityRole="button">
-                <Text style={styles.doneText}>{COMMON.done}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      </BottomSheet>
     </>
   );
 }
@@ -151,21 +139,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     justifyContent: 'center',
   },
   triggerActive: {},
-  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: spacing.xl,
-  },
-  handle: { alignSelf: 'center', width: 32, height: 3, borderRadius: 3, backgroundColor: colors.borderStrong, marginTop: 10, marginBottom: 5 },
-  headingRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    minHeight: 56, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-  },
-  heading: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary },
-  scroll: { flexGrow: 0 },
-  group: { paddingTop: spacing.lg },
   groupHeading: {
     fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.6,
     textTransform: 'uppercase', color: colors.textMuted, paddingBottom: spacing.xs,
@@ -175,11 +148,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowText: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textSecondary },
   rowTextChosen: { fontFamily: fontFamily.sansMedium, color: colors.textPrimary },
   tick: { width: 22, alignItems: 'center' },
-  footer: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: spacing.lg, marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
-  },
-  reset: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
-  done: { minHeight: 44, paddingHorizontal: spacing.xl, borderRadius: 22, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-  doneText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: '#fff' },
 });

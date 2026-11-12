@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { TextInput } from '../TextInput';
+import SearchField from '../SearchField';
 import { useRouter, type Href } from 'expo-router';
 import { personName, unlockedPartners } from '@plot/core/watchTogether.js';
 import { useWatchTogetherSuggestions, startWatchTogetherSession } from '@plot/core/useWatchTogether.js';
@@ -287,7 +287,6 @@ export function WatchPicker({ together }: { together?: TogetherApi }) {
 }
 
 export function WatchInvite() {
-  const { colors } = useTheme();
   const { userId } = useAppData();
   const together = useTogether(userId);
   const suggestions = useWatchTogetherSuggestions(userId);
@@ -321,24 +320,7 @@ export function WatchInvite() {
       <PageTitle>{T.invite.title}</PageTitle>
       <Note>{T.invite.body}</Note>
       <Note>{T.invite.mutualNote}</Note>
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder={T.invite.search}
-        placeholderTextColor={colors.textMuted}
-        autoCapitalize="none"
-        autoCorrect={false}
-        style={{
-          minHeight: 44,
-          borderWidth: 1,
-          borderColor: colors.border,
-          borderRadius: radii.md,
-          paddingHorizontal: spacing.md,
-          color: colors.textPrimary,
-          fontFamily: fontFamily.sans,
-          fontSize: fontSize.md,
-        }}
-      />
+      <SearchField value={query} onChangeText={setQuery} placeholder={T.invite.search} />
       {!!error && <ErrorNote>{error}</ErrorNote>}
       {query.trim().length < 2 && <SectionLabel>{T.invite.suggested}</SectionLabel>}
       {list.length === 0 && query.trim().length < 2 && <Note>{T.invite.noSuggestions}</Note>}

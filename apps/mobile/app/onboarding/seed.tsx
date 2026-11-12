@@ -15,9 +15,7 @@ import {
   View, Text, TouchableOpacity, FlatList, Image, ScrollView,
   StyleSheet, Dimensions,
 } from 'react-native';
-import { TextInput } from '../../components/TextInput';
 import { useRouter } from 'expo-router';
-import { IconClose } from '../../components/icons';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { tmdb } from '../../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -29,6 +27,7 @@ import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { importSourceName } from '@plot/core/importJobs.js';
 import { useImportStart } from '../../hooks/useImportStart';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
+import SearchField from '../../components/SearchField';
 import ImportSourceIcon from '../../components/ImportSourceIcon';
 import ImportSourceLanes, { ImportPill } from '../../components/ImportSourceLanes';
 import ImportSourceSheet from '../../components/ImportSourceSheet';
@@ -237,30 +236,12 @@ export default function Seed() {
       ) : (
         <>
           {/* Search */}
-          <View style={styles.searchBar}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder={F.step2.searchPlaceholder}
-              placeholderTextColor={colors.textMuted}
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {/* No loader in onboarding: the clear button stays while a search runs. */}
-            {query.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setQuery('')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={styles.searchTrailing}
-                  accessibilityRole="button"
-                  accessibilityLabel={F.clearSearch}
-                >
-                  <IconClose size={14} color={colors.textMuted} />
-                </TouchableOpacity>
-              )
-            }
-          </View>
+          <SearchField
+            style={styles.searchBar}
+            placeholder={F.step2.searchPlaceholder}
+            value={query}
+            onChangeText={setQuery}
+          />
 
           {hasQuery && searchFailed ? (
             <InlineError message={F.seed.searchError} onRetry={retrySearch} styles={styles} />
@@ -338,14 +319,7 @@ function InlineError({ message, onRetry, styles }: { message: string; onRetry: (
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  searchBar: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.surface, borderRadius: radii.md,
-    paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border,
-    marginBottom: spacing.sm,
-  },
-  searchInput:    { flex: 1, paddingVertical: 12, fontFamily: fontFamily.sans, fontSize: 14, color: colors.textPrimary },
-  searchTrailing: { marginLeft: spacing.sm },
+  searchBar:   { marginBottom: spacing.sm },
   switchRow:   { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, marginBottom: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   switchMarks: { flexDirection: 'row', gap: 4 },
   switchText:  { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },

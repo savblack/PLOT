@@ -8,14 +8,15 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, ScrollView, Image, TouchableOpacity,
+  View, Text, ScrollView,
   Modal, StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { TextInput } from './TextInput';
+import SearchField from './SearchField';
+import ListRow from './ListRow';
 import SubTab from './SubTab';
 import ModalHeader from './ModalHeader';
 import { tmdb } from '../lib/tmdb';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import { posterUrl, Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function SearchPickModal({
@@ -69,43 +70,26 @@ export default function SearchPickModal({
         </View>
 
         {/* Search input */}
-        <View style={styles.modalSearch}>
-          <TextInput
-            style={styles.modalSearchInput}
-            placeholder={tab === 'history' ? 'Filter…' : 'Search…'}
-            placeholderTextColor={colors.textMuted}
-            value={query}
-            onChangeText={setQuery}
-            autoCorrect={false}
-          />
-        </View>
+        <SearchField
+          style={styles.modalSearch}
+          placeholder={tab === 'history' ? 'Filter…' : 'Search…'}
+          value={query}
+          onChangeText={setQuery}
+        />
 
         {loading && <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />}
         <ScrollView style={{ flex: 1 }}>
-          {rows.map((item: any) => {
-            const img = posterUrl(item.poster_path, 'w92');
-            return (
-              <TouchableOpacity
-                key={item.id || item.tmdb_id}
-                style={styles.modalRow}
+          {rows.map((item: any) => (
+            <View key={item.id || item.tmdb_id} style={styles.modalRow}>
+              <ListRow
+                posterUri={posterUrl(item.poster_path, 'w92')}
+                title={item.title || item.name}
+                titleLines={2}
+                meta={(item.release_date || item.first_air_date || '').slice(0, 4)}
                 onPress={() => { onSelect(item); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <View style={styles.modalRowPoster}>
-                  {img
-                    ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                    : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
-                  }
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.modalRowTitle}>{item.title || item.name}</Text>
-                  <Text style={styles.modalRowMeta}>
-                    {(item.release_date || item.first_air_date || '').slice(0, 4)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+              />
+            </View>
+          ))}
           {!loading && rows.length === 0 && (
             <Text style={styles.modalEmpty}>
               {tab === 'search' && !query.trim() ? 'Start typing to search' : 'No results'}
@@ -120,11 +104,7 @@ export default function SearchPickModal({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   modalContainer: { flex: 1, backgroundColor: colors.bg, paddingTop: spacing.xl },
   modalTabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
-  modalSearch: { paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
-  modalSearchInput: { backgroundColor: colors.surface, borderRadius: radii.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
-  modalRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
-  modalRowPoster: { width: 40, height: 60, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, flexShrink: 0 },
-  modalRowTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary, marginBottom: 3 },
-  modalRowMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
+  modalSearch: { marginHorizontal: spacing.xl, marginBottom: spacing.sm },
+  modalRow: { paddingHorizontal: spacing.xl, paddingVertical: spacing.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   modalEmpty: { padding: spacing.xl, textAlign: 'center', color: colors.textMuted, fontFamily: fontFamily.sans, fontSize: fontSize.sm },
 });

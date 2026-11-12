@@ -5,7 +5,7 @@
 // opens the upgrade sheet.
 import { useMemo, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, Image, Modal, Switch, StyleSheet,
+  View, Text, ScrollView, Image, Modal, Switch, StyleSheet,
 } from 'react-native';
 import { TextInput } from '../TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import SmartListRules from './SmartListRules';
+import Button, { TextLink } from '../Button';
 import {
   asCatalog, asMatches, asRules, suggestedName,
   type SmartListRow, type SmartRules,
@@ -111,9 +112,7 @@ export default function SmartListDialog({
       <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
         <View style={styles.header}>
           <Text style={styles.title} accessibilityRole="header">{title}</Text>
-          <TouchableOpacity onPress={onClose} disabled={submitting} accessibilityRole="button">
-            <Text style={styles.cancel}>{COMMON.cancel}</Text>
-          </TouchableOpacity>
+          <TextLink quiet label={COMMON.cancel} onPress={onClose} disabled={submitting} />
         </View>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {!editing && <Text style={styles.intro}>{SMART_LISTS.intro}</Text>}
@@ -169,16 +168,13 @@ export default function SmartListDialog({
         </ScrollView>
         <View style={styles.footer}>
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-          <TouchableOpacity
-            style={[styles.primary, !canSubmit && styles.primaryOff]}
+          <Button
+            variant="primary"
+            label={submitting ? busyLabel : action}
             disabled={!canSubmit}
             onPress={submit}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.primaryText, !canSubmit && styles.primaryTextOff]}>
-              {submitting ? busyLabel : action}
-            </Text>
-          </TouchableOpacity>
+            style={styles.primary}
+          />
         </View>
       </View>
     </Modal>
@@ -198,7 +194,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     gap: spacing.md,
   },
   title: { flex: 1, fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, letterSpacing: -0.6 },
-  cancel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
   body: { padding: spacing.xl, gap: spacing.lg },
   intro: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   field: { gap: spacing.sm },
@@ -225,8 +220,5 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterImage: { width: '100%', height: '100%' },
   footer: { paddingHorizontal: spacing.xl, paddingTop: spacing.sm, paddingBottom: spacing.lg, gap: spacing.sm },
   error: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
-  primary: { backgroundColor: colors.accentFill, borderRadius: radii.md, paddingVertical: spacing.md, alignItems: 'center' },
-  primaryOff: { backgroundColor: colors.surfaceSunken },
-  primaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.onAccentFill },
-  primaryTextOff: { color: colors.textMuted },
+  primary: { alignSelf: 'flex-end' },
 });

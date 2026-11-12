@@ -17,6 +17,8 @@ import { captureShareCard, saveCardToPhotos, shareCardFile } from '../../lib/sha
 import { useTheme } from '../../contexts/ThemeContext';
 import { fontFamily, fontSize, spacing, radii, type Palette } from '../../lib/tokens';
 import ShareCardView, { type ShareCardModel } from './ShareCardView';
+import Button from '../Button';
+import { SheetActions } from '../BottomSheet';
 
 function unlockLine(card: ShareCardModel) {
   const { have, needed } = card.need;
@@ -235,26 +237,10 @@ function Caption({
         style={styles.caption}
         accessibilityLabel={T.caption}
       />
-      <View style={styles.bar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={T.shareAction}
-          disabled={!!busy}
-          onPress={onShare}
-          style={[styles.shareBtn, !!busy && styles.btnOff]}
-        >
-          <Text style={styles.shareBtnText}>{busy === 'share' ? T.working : T.shareAction}</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={T.saveToPhotos}
-          disabled={!!busy}
-          onPress={onSave}
-          style={[styles.saveBtn, !!busy && styles.btnOff]}
-        >
-          <Text style={styles.saveBtnText}>{busy === 'save' ? T.working : T.saveToPhotos}</Text>
-        </Pressable>
-      </View>
+      <SheetActions>
+        <Button variant="primary" flex label={busy === 'share' ? T.working : T.shareAction} accessibilityLabel={T.shareAction} disabled={!!busy} onPress={onShare} />
+        <Button flex label={busy === 'save' ? T.working : T.saveToPhotos} accessibilityLabel={T.saveToPhotos} disabled={!!busy} onPress={onSave} />
+      </SheetActions>
       <CaptionBridge text={edited ?? written} />
     </View>
   );
@@ -344,26 +330,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.surface,
     textAlignVertical: 'top',
   },
-  bar: { flexDirection: 'row', gap: spacing.sm },
-  shareBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surfaceSunken,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shareBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
-  saveBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surfaceSunken,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
-  btnOff: { opacity: 0.5 },
   status: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   capture: { position: 'absolute', left: -4000, top: 0 },
 });

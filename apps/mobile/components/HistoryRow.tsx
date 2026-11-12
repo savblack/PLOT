@@ -7,12 +7,13 @@
  * never adopted.
  */
 import { useState, useMemo } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, LayoutAnimation } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation } from 'react-native';
 import { IconChevronDown } from './icons';
+import ListRow from './ListRow';
 import { HistoryEntry } from '../hooks/useHistory';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../lib/tokens';
+import { posterUrl, Palette, fontFamily, fontSize, spacing, iconButtonSize } from '../lib/tokens';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { historyRatingLabel } from '@plot/core/history.js';
@@ -38,22 +39,14 @@ export default function HistoryRow({ entry }: { entry: HistoryEntry }) {
   };
 
   return (
-    <TouchableOpacity
-      style={styles.row}
-      activeOpacity={0.7}
-      onPress={openDetails}
-      accessibilityRole="button"
-      accessibilityLabel={`View details for ${entry.title}`}
-    >
-      <View style={styles.rowHeader}>
-        <View style={styles.rowPoster}>
-          {img
-            ? <Image source={{ uri: img }} style={styles.rowImg} resizeMode="cover" />
-            : <View style={[styles.rowImg, { backgroundColor: colors.surfaceSunken }]} />
-          }
-        </View>
-        <View style={styles.rowInfo}>
-          <Text style={styles.rowTitle} numberOfLines={2}>{entry.title}</Text>
+    <View style={styles.row}>
+      <ListRow
+        posterUri={img}
+        title={entry.title}
+        titleLines={2}
+        onPress={openDetails}
+        label={`View details for ${entry.title}`}
+        below={(
           <View style={styles.rowMeta}>
             <View style={styles.typeBadge}>
               <Text style={styles.typeBadgeText}>{type}</Text>
@@ -61,8 +54,8 @@ export default function HistoryRow({ entry }: { entry: HistoryEntry }) {
             {date ? <Text style={styles.rowDate}>{date}</Text> : null}
             {ratingLabel ? <Text style={styles.rowRating}>{ratingLabel}</Text> : null}
           </View>
-        </View>
-        {hasNote && (
+        )}
+        trailing={hasNote ? (
           // Own tap zone (with a hitSlop buffer well past the visible glyph) so a
           // fat-finger tap toggles the review instead of falling through to the
           // row's onPress, which opens the detail panel.
@@ -76,19 +69,21 @@ export default function HistoryRow({ entry }: { entry: HistoryEntry }) {
           >
             <IconChevronDown size={iconButtonSize.sm * 0.5} color={colors.textMuted} strokeWidth={2.5} style={{ transform: [{ rotate: expanded ? '0deg' : '-90deg' }] }} />
           </TouchableOpacity>
-        )}
-      </View>
+        ) : null}
+      />
       {hasNote && expanded && (
-        <Text style={styles.rowQuote}>{entry.note}</Text>
+        // The note sits under the whole row, outside the shared row's press
+        // target, so it carries the same tap itself.
+        <Text style={styles.rowQuote} onPress={openDetails}>{entry.note}</Text>
       )}
-    </TouchableOpacity>
+    </View>
   );
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   row: {
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
@@ -97,13 +92,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.textMuted,
   },
-  rowHeader: { flexDirection: 'row', alignItems: 'center' },
-  rowImg: { width: 44, height: 66, borderRadius: radii.sm },
-  rowInfo: { flex: 1 },
   rowMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  rowPoster: { marginRight: spacing.md },
   rowQuote: {
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
     fontFamily: fontFamily.display,
     fontSize: fontSize.sm,
     lineHeight: fontSize.sm * 1.3,
@@ -114,16 +106,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.rating,
   },
-  rowTitle: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
-    marginBottom: 6,
-  },
   rowToggle: {
     width: iconButtonSize.sm,
     height: iconButtonSize.sm,
-    marginLeft: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },

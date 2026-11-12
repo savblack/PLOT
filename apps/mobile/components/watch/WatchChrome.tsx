@@ -1,10 +1,12 @@
 import { ReactNode } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft, IconChevronRight } from '../icons';
 import SectionTitle from '../SectionTitle';
+import Button from '../Button';
+import BottomSheet from '../BottomSheet';
 import { personName } from '@plot/core/watchTogether.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -35,50 +37,13 @@ export function PosterThumb({ path, width, height }: { path: string | null; widt
   return <Image source={{ uri: url }} style={{ width, height, borderRadius: radii.sm, backgroundColor: colors.surfaceSunken }} resizeMode="cover" />;
 }
 
+/** Watch together's names for the shared buttons, so every caller reads the same. */
 export function PrimaryButton({ label, onPress, disabled, flex }: { label: string; onPress: () => void; disabled?: boolean; flex?: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      style={{
-        flex: flex ? 1 : undefined,
-        minHeight: 44,
-        paddingHorizontal: spacing.lg,
-        borderRadius: radii.pill,
-        backgroundColor: disabled ? colors.surfaceSunken : colors.accentFill,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: disabled ? colors.textMuted : colors.onAccentFill }}>{label}</Text>
-    </TouchableOpacity>
-  );
+  return <Button variant="primary" label={label} onPress={onPress} disabled={disabled} flex={flex} />;
 }
 
 export function SecondaryButton({ label, onPress, disabled, flex }: { label: string; onPress: () => void; disabled?: boolean; flex?: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      style={{
-        flex: flex ? 1 : undefined,
-        minHeight: 44,
-        paddingHorizontal: spacing.lg,
-        borderRadius: radii.pill,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: colors.textPrimary,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: disabled ? 0.45 : 1,
-      }}
-    >
-      <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }}>{label}</Text>
-    </TouchableOpacity>
-  );
+  return <Button label={label} onPress={onPress} disabled={disabled} flex={flex} />;
 }
 
 export function openPremium(router: { push: (href: Href) => void }) {
@@ -141,20 +106,7 @@ export function ButtonRow({ children }: { children: ReactNode }) {
 }
 
 export function Sheet({ visible, title, onClose, children, footer }: { visible: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} onPress={onClose} accessibilityRole="button" accessibilityLabel={COMMON.close} />
-        <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg, paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: insets.bottom + spacing.xl, gap: spacing.md, maxHeight: '88%' }}>
-          <PageTitle>{title}</PageTitle>
-          <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ gap: spacing.md }}>{children}</ScrollView>
-          {footer}
-        </View>
-      </View>
-    </Modal>
-  );
+  return <BottomSheet visible={visible} title={title} onClose={onClose} footer={footer}>{children}</BottomSheet>;
 }
 
 export function SectionLabel({ children }: { children: string }) {

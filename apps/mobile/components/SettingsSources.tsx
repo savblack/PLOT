@@ -24,7 +24,8 @@ import { useImportStart, type ImportStart } from '../hooks/useImportStart';
 import type { MediaIntegration } from '../hooks/useTraktSync';
 import ImportSourceIcon from './ImportSourceIcon';
 import ImportSourceLanes, { ImportPill } from './ImportSourceLanes';
-import ImportSourceSheet, { BottomSheet, PlexPicker, SourceTitle } from './ImportSourceSheet';
+import Button, { TextLink } from './Button';
+import ImportSourceSheet, { ImportSheet, PlexPicker, SourceTitle } from './ImportSourceSheet';
 
 const T = SETTINGS_VIEW.sources;
 const C = IMPORT_JOBS.card;
@@ -125,12 +126,12 @@ function HistoryRow({ job, current, onFinish, onRetry, onCancel }: { job: Job; c
       </View>
       {line ? <Text style={styles.histLine}>{line}</Text> : null}
       <View style={styles.histActions}>
-        {active && <TouchableOpacity onPress={() => onCancel(job)} accessibilityRole="button"><Text style={styles.linkText}>{T.cancel}</Text></TouchableOpacity>}
+        {active && <TextLink quiet label={T.cancel} onPress={() => onCancel(job)} />}
         {!active && job.review_count > 0 && (
-          <TouchableOpacity style={styles.smallButton} onPress={() => onFinish(job)} accessibilityRole="button"><Text style={styles.smallButtonText}>{T.finishMatching}</Text></TouchableOpacity>
+          <Button size="sm" label={T.finishMatching} onPress={() => onFinish(job)} style={styles.rowButton} />
         )}
         {job.status === 'failed' && (
-          <TouchableOpacity style={styles.smallButtonSecondary} onPress={onRetry} accessibilityRole="button"><Text style={styles.smallButtonSecondaryText}>{T.tryAgain}</Text></TouchableOpacity>
+          <Button size="sm" label={T.tryAgain} onPress={onRetry} style={styles.rowButton} />
         )}
       </View>
     </View>
@@ -163,7 +164,7 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
   };
   const ctaOff = !!status.active || (!!plexSource && !plexSource.selected);
   return (
-    <BottomSheet title={<SourceTitle id={src.id} name={src.name} />} onClose={onClose} tall>
+    <ImportSheet title={<SourceTitle id={src.id} name={src.name} />} onClose={onClose}>
       <View style={styles.detail}>
         <View style={styles.statusRow}>
           <Chip kind={status.chip.kind} text={status.chip.text} />
@@ -183,16 +184,12 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
             {plexSource && plexLoaded && (
               <PlexPicker plex={{ servers: plexSource.servers || [], profiles: plexSource.profiles || [], serverId: plexSource.serverId || null, selected: !!plexSource.selected, selection: plexSource.selection || null, busy: plexSource.busy, error: plexSource.error || null, choose: plexSource.choose }} />
             )}
-            <TouchableOpacity style={[styles.cta, ctaOff && styles.ctaOff]} disabled={ctaOff} onPress={onImport} accessibilityRole="button" accessibilityState={{ disabled: ctaOff }}>
-              <Text style={styles.ctaText}>{src.id === 'plex' ? T.importFromProfile : T.importHistory}</Text>
-            </TouchableOpacity>
+            <Button variant="primary" label={src.id === 'plex' ? T.importFromProfile : T.importHistory} onPress={onImport} disabled={ctaOff} />
           </>
         )}
         {src.lane === 'upload' && (
           <>
-            <TouchableOpacity style={[styles.cta, !!status.active && styles.ctaOff]} disabled={!!status.active} onPress={onImport} accessibilityRole="button" accessibilityState={{ disabled: !!status.active }}>
-              <Text style={styles.ctaText}>{T.importNewerExport}</Text>
-            </TouchableOpacity>
+            <Button variant="primary" label={T.importNewerExport} onPress={onImport} disabled={!!status.active} />
             <Text style={styles.hint}>{T.importNewerHint}</Text>
           </>
         )}
@@ -205,8 +202,8 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
               <Text style={styles.histWhen}>{T.duplicateWatch}</Text>
               <Text style={styles.histLine}>{review.payload?.summary?.title} · {TRACKING.reviewDetails(review.payload.event)}</Text>
               <View style={styles.histActions}>
-                <TouchableOpacity style={styles.smallButtonSecondary} disabled={tracking.busy} onPress={() => { void tracking.resolve(review.id, true); }} accessibilityRole="button"><Text style={styles.smallButtonSecondaryText}>{T.keepWatch}</Text></TouchableOpacity>
-                <TouchableOpacity disabled={tracking.busy} onPress={() => { void tracking.resolve(review.id, false); }} accessibilityRole="button"><Text style={styles.linkText}>{T.skipWatch}</Text></TouchableOpacity>
+                <Button size="sm" label={T.keepWatch} onPress={() => { void tracking.resolve(review.id, true); }} disabled={tracking.busy} style={styles.rowButton} />
+                <TextLink quiet label={T.skipWatch} onPress={() => { void tracking.resolve(review.id, false); }} disabled={tracking.busy} />
               </View>
             </View>
           ))}
@@ -219,7 +216,7 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
           </>
         )}
       </View>
-    </BottomSheet>
+    </ImportSheet>
   );
 }
 
@@ -309,7 +306,7 @@ export default function SettingsSources({ userId, isPremium, onPremium, onFinish
       {current && start.pill && (
         <View style={styles.running} accessibilityLiveRegion="polite">
           <ImportPill pill={start.pill} />
-          <TouchableOpacity onPress={() => cancelJob(current)} accessibilityRole="button" style={styles.runningCancel}><Text style={styles.linkText}>{C.cancel}</Text></TouchableOpacity>
+          <TextLink quiet label={C.cancel} onPress={() => cancelJob(current)} style={styles.runningCancel} />
         </View>
       )}
 
@@ -323,7 +320,7 @@ export default function SettingsSources({ userId, isPremium, onPremium, onFinish
               </View>
               <Text style={styles.emptyTitle}>{T.emptyTitle}</Text>
               <Text style={styles.emptyBody}>{T.emptyBody}</Text>
-              <TouchableOpacity style={styles.smallButton} onPress={() => setAdding(true)} accessibilityRole="button"><Text style={styles.smallButtonText}>{T.addSource}</Text></TouchableOpacity>
+              <Button variant="primary" size="sm" label={T.addSource} onPress={() => setAdding(true)} style={styles.rowButton} />
             </View>
           ) : (
             <>
@@ -343,8 +340,8 @@ export default function SettingsSources({ userId, isPremium, onPremium, onFinish
                         {status.line ? <Text style={styles.rowHint} numberOfLines={2}>{status.line}</Text> : null}
                       </View>
                     </View>
-                    {needsServer && <TouchableOpacity style={styles.smallButton} onPress={() => setOpen(src.id)} accessibilityRole="button"><Text style={styles.smallButtonText}>{T.chooseServer}</Text></TouchableOpacity>}
-                    {toMatch && <TouchableOpacity style={styles.smallButton} onPress={() => onFinish(toMatch)} accessibilityRole="button"><Text style={styles.smallButtonText}>{T.finishMatching}</Text></TouchableOpacity>}
+                    {needsServer && <Button size="sm" label={T.chooseServer} onPress={() => setOpen(src.id)} style={styles.rowButton} />}
+                    {toMatch && <Button size="sm" label={T.finishMatching} onPress={() => onFinish(toMatch)} style={styles.rowButton} />}
                     <Chevron />
                   </TouchableOpacity>
                 );
@@ -361,9 +358,9 @@ export default function SettingsSources({ userId, isPremium, onPremium, onFinish
       </View>
 
       {adding && (
-        <BottomSheet title={T.addSourceTitle} sub={T.addSourceSub} onClose={() => setAdding(false)} tall>
+        <ImportSheet title={T.addSourceTitle} sub={T.addSourceSub} onClose={() => setAdding(false)}>
           <ImportSourceLanes jobs={start.jobs} current={current} connectedIds={start.connectedIds} onPick={importFrom} />
-        </BottomSheet>
+        </ImportSheet>
       )}
 
       {openSrc && !start.source && (
@@ -417,11 +414,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   emptyLogos: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.lg, letterSpacing: -0.3, color: colors.textPrimary, textAlign: 'center' },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xs },
-  smallButton: { height: 32, paddingHorizontal: 12, borderRadius: radii.pill, backgroundColor: colors.textPrimary, alignItems: 'center', justifyContent: 'center' },
-  smallButtonText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.bg },
-  smallButtonSecondary: { height: 32, paddingHorizontal: 12, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
-  smallButtonSecondaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary },
-  linkText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary, paddingVertical: 4 },
+  rowButton: { alignSelf: 'center' },
   detail: { gap: spacing.md },
   card: { borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: 'hidden' },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
@@ -435,9 +428,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   histWhen: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   histLine: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, lineHeight: 16, color: colors.textSecondary },
   histActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
-  cta: { height: 48, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.textPrimary },
-  ctaOff: { opacity: 0.5 },
-  ctaText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.bg },
   removeLink: { alignSelf: 'center', paddingVertical: spacing.xs },
   removeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.danger },
 });
