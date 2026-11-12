@@ -22,7 +22,6 @@ import BottomSheet from './BottomSheet';
 import Button, { TextLink } from './Button';
 import Chip from './Chip';
 import Loader from './Loader';
-import SectionTitle from './SectionTitle';
 
 const BANDS = [
   ['peak', MEDIA_PANEL.episodeRatingsBandPeak],
@@ -103,14 +102,9 @@ function EpisodeRatingsSheet({ tvId, details, onClose }: { tvId: number; details
   }
 
   return (
-    <BottomSheet visible onClose={onClose} scroll={false}>
+    <BottomSheet visible onClose={onClose} title={MEDIA_PANEL.episodeRatingsTitle} scroll={false}>
       {/* A fixed height that gives way to the sheet's own limit, so the grid has room to scroll. */}
       <View style={[styles.sheet, { height: height * 0.88 }]}>
-        <View style={styles.head}>
-          <SectionTitle style={styles.title}>{MEDIA_PANEL.episodeRatingsTitle}</SectionTitle>
-          <TextLink label={MEDIA_PANEL.episodeRatingsClose} onPress={onClose} />
-        </View>
-
         {data.status === 'loading' || data.status === 'idle' ? (
           <Loader />
         ) : (
@@ -241,14 +235,6 @@ function makeStyles(colors: Palette) {
   return StyleSheet.create({
     open: { alignSelf: 'flex-start', marginBottom: spacing.sm },
     sheet: { flexShrink: 1 },
-    head: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.md,
-      marginBottom: spacing.md,
-    },
-    title: { flex: 1 },
     sources: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
     message: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 22 },
     retry: { marginTop: spacing.sm },

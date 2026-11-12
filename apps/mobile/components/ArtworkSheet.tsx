@@ -130,7 +130,7 @@ export default function CustomizeArtwork({
         }}
         style={[styles.link, inline && styles.linkInline]}
       />
-      <BottomSheet visible={open} onClose={() => setOpen(false)} title={ARTWORK.customize} maxHeight="82%">
+      <BottomSheet visible={open} onClose={() => setOpen(false)} title={ARTWORK.customize} maxHeight="82%" closeLabel={COMMON.done}>
             {art.error ? <Text style={styles.note} accessibilityRole="alert">{art.error}</Text> : null}
             {loading ? <Loader /> : failed ? (
               <Text style={styles.note} accessibilityRole="alert">{ARTWORK.couldNotLoad}</Text>

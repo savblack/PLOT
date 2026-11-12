@@ -255,6 +255,17 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
     padding (approved by Savannah, 2 Oct 2026, for the shared list's people
     sheet: Add a person and Watch together). It is a row of two, not one
     stretched button, and it is for sheets only.
+- Pop-ups (dialogs, bottom sheets, full-page sheets) share one header on web
+  and mobile: the title on the left, and the word Cancel on the right
+  (Savannah, 12 Nov 2026; replaces the centred title and ✕ from the 10 Nov
+  design audit). A picker that applies as you tap says Done instead. The
+  header never holds Save: a pop-up that edits something has its one main
+  button bottom right, and nothing is kept until it is pressed. A confirm
+  pop-up ends in Cancel and the action side by side, with no header Cancel.
+  The title panel and other long-form panels keep their ✕ over the artwork.
+  Shared components: web `SheetHeader` / `ResponsiveDialog` /
+  `DialogActions`; mobile `ModalHeader` / `PageSheet` / `BottomSheet` /
+  `useDialog`.
 
 ## Accessibility contract
 

@@ -1,9 +1,9 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { IconClose } from './navIcons.jsx';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { COMMON } from '../copy/common.js';
 import { MOBILE_CONTROLS } from '@plot/core/copy/mobileControls.js';
 import { activeFilterGroupCount, nextSheetSnap } from '../utils/mobileSheets.js';
+import SheetHeader from './SheetHeader.jsx';
 
 function sameValues(values, defaults) {
   if (values.length !== defaults.length) return false;
@@ -12,7 +12,10 @@ function sameValues(values, defaults) {
 }
 
 // Web-only presentation: the native dialog owns modal focus handling while the
-// page continues to own every filter value and data query.
+// page continues to own every filter value and data query. It keeps its own
+// shell rather than ResponsiveDialog's because the sheet snaps between two
+// heights and drags down to dismiss; the header is the shared SheetHeader.
+// Every tap applies a filter straight away, so it closes with Done.
 export default function MobilePageControls({ groups = [], options, value, onChange, label, title }) {
   const [open, setOpen] = useState(false);
   const [snap, setSnap] = useState('collapsed');
@@ -20,7 +23,6 @@ export default function MobilePageControls({ groups = [], options, value, onChan
   const sheet = useRef(null);
   const trigger = useRef(null);
   const drag = useRef({ active: false, startY: 0, startTime: 0, snap: 'collapsed' });
-  const titleId = useId();
   const normalizedGroups = useMemo(() => options ? [{
     heading: title || MOBILE_CONTROLS.filters,
     mode: 'single',
@@ -99,14 +101,11 @@ export default function MobilePageControls({ groups = [], options, value, onChan
         </button>
       </div>, document.body)}
       {open && createPortal(
-        <dialog ref={dialog} className="mobile-controls-dialog" aria-labelledby={titleId} onCancel={close} onClick={event => { if (event.target === event.currentTarget) close(); }}>
+        <dialog ref={dialog} className="mobile-controls-dialog" aria-label={title || MOBILE_CONTROLS.filters} onCancel={close} onClick={event => { if (event.target === event.currentTarget) close(); }}>
           <section ref={sheet} className={`mobile-controls-sheet mobile-controls-sheet--${snap}`}>
             <div className="mobile-controls-grab" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
               <div className="mobile-controls-handle" aria-hidden="true" />
-              <div className="mobile-controls-heading">
-                <h2 id={titleId}>{title || MOBILE_CONTROLS.filters}</h2>
-                <button type="button" className="mobile-controls-close" aria-label={COMMON.close} onClick={close}><IconClose /></button>
-              </div>
+              <SheetHeader title={title || MOBILE_CONTROLS.filters} onClose={close} closeLabel={COMMON.done} />
             </div>
             <div className="mobile-controls-scroll">
               {visible.map(group => {
@@ -136,7 +135,6 @@ export default function MobilePageControls({ groups = [], options, value, onChan
             </div>
             <div className="mobile-controls-footer">
               <button type="button" className="mobile-controls-reset" onClick={reset}>{MOBILE_CONTROLS.reset}</button>
-              <button type="button" className="btn btn-primary btn-sm" onClick={close}>{COMMON.done}</button>
             </div>
           </section>
         </dialog>, document.body

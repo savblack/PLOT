@@ -1,46 +1,52 @@
+import { COMMON } from '@plot/core/copy/common.js';
+
 /**
- * One header for every modal / pop-up across the web app, so they stay
- * consistent in alignment, type size, and padding — mirrors the mobile
- * app's <SheetHeader>.
+ * One header for every modal / pop-up across the web app, matching the
+ * mobile app's (apps/mobile/components/ModalHeader.tsx and BottomSheet.tsx).
  *
- * A centred Gabarito title (1.4rem), ✕ close on the right, and a back-chevron
- * on the left when there is somewhere to go back to. The header carries no
- * Save or other action: a dialog's main button is in its foot, bottom right
- * (DialogActions.jsx), so it is in the same place in every dialog. The title
- * is absolutely centred so it sits mid-header whichever sides carry buttons.
- * `bordered` (default true) draws the hairline divider.
+ * The title on the left in Gabarito, and the word Cancel on the right
+ * (Savannah, 12 Nov 2026: both apps close a pop-up with Cancel, title left;
+ * this replaces the centred title and ✕ from the 10 Nov design audit). A
+ * back-chevron sits before the title when there is somewhere to go back to.
+ * The header carries no Save or other action: a dialog's main button is in
+ * its foot, bottom right (DialogActions.jsx). `closeLabel` swaps the word
+ * for a picker that applies as you tap (Done). `bordered` (default true)
+ * draws the hairline divider.
  */
 
-const ICON_BTN = {
+const BACK_BTN = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  minWidth: 44, height: 34, padding: 0,
+  width: 34, height: 34, padding: 0, marginLeft: -8, flexShrink: 0,
   background: 'none', border: 'none', cursor: 'pointer',
   color: 'var(--text-secondary)',
 };
 
-export default function SheetHeader({ title, onClose, onBack, bordered = true }) {
+const CLOSE_BTN = {
+  flexShrink: 0, minHeight: 34, padding: '0 2px',
+  background: 'none', border: 'none', cursor: 'pointer',
+  fontFamily: 'var(--font-sans)', fontSize: '1rem', fontWeight: 500,
+  color: 'var(--text-secondary)', whiteSpace: 'nowrap',
+};
+
+export default function SheetHeader({ title, onClose, onBack, closeLabel = COMMON.cancel, bordered = true }) {
   return (
     <div
       style={{
-        position: 'relative',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        minHeight: 56, padding: '0.9rem 1.1rem',
+        display: 'flex', alignItems: 'center', gap: '0.5rem',
+        minHeight: 56, padding: '0.9rem 1.25rem',
         borderBottom: bordered ? '1px solid var(--border)' : 'none',
         flexShrink: 0,
       }}
     >
-      {/* Left slot: the back chevron, when there is somewhere to go back to. */}
-      {onBack ? (
-        <button type="button" onClick={onBack} aria-label="Back" style={ICON_BTN}>
+      {onBack && (
+        <button type="button" onClick={onBack} aria-label={COMMON.back} style={BACK_BTN}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
-      ) : <span style={{ minWidth: 44 }} />}
+      )}
 
       <h2
         style={{
-          position: 'absolute', top: 0, bottom: 0, left: 56, right: 56,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: 0, pointerEvents: 'none', textAlign: 'center',
+          flex: 1, minWidth: 0, margin: 0,
           fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 500,
           color: 'var(--text-primary)',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -49,15 +55,11 @@ export default function SheetHeader({ title, onClose, onBack, bordered = true })
         {title}
       </h2>
 
-      {/* Right slot: ✕. Close is always top right (design audit, 10 Nov 2026,
-          pick 1.2 A). */}
-      <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', zIndex: 1 }}>
-        {onClose && (
-          <button type="button" onClick={onClose} aria-label="Close" style={ICON_BTN}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-          </button>
-        )}
-      </div>
+      {onClose && (
+        <button type="button" onClick={onClose} style={CLOSE_BTN}>
+          {closeLabel}
+        </button>
+      )}
     </div>
   );
 }

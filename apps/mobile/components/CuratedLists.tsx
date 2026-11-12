@@ -20,7 +20,6 @@ import UpgradeSheet from './UpgradeSheet';
 import BottomSheet from './BottomSheet';
 import Button from './Button';
 import { Tag } from './Chip';
-import SectionTitle from './SectionTitle';
 
 /** The poster wall: six across, three down, as on web. */
 const WALL_POSTERS = 18;
@@ -164,6 +163,7 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
     <BottomSheet
       visible
       onClose={onClose}
+      title={curated.title}
       scroll={false}
       flush
       maxHeight="92%"
@@ -182,16 +182,6 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
         </View>
       )}
     >
-        <View style={styles.panelHead}>
-          <SectionTitle style={styles.panelTitle} numberOfLines={2}>{curated.title}</SectionTitle>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={COPY.closeLabel} accessibilityRole="button">
-            {/* Two bars rather than an Svg icon: react-native-svg does not load in the web Storybook. */}
-            <View style={styles.closeIcon}>
-              <View style={[styles.closeBar, { transform: [{ rotate: '45deg' }] }]} />
-              <View style={[styles.closeBar, { transform: [{ rotate: '-45deg' }] }]} />
-            </View>
-          </TouchableOpacity>
-        </View>
         <FlatList
           data={curated.entries}
           keyExtractor={entry => `${entry.media_type}-${entry.tmdb_id}`}
@@ -234,10 +224,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   title: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: '#fff' },
   meta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: 'rgba(255,255,255,0.72)', marginTop: 2 },
 
-  panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingHorizontal: spacing.xl },
-  closeIcon: { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
-  closeBar: { position: 'absolute', width: 20, height: 2.5, borderRadius: 2, backgroundColor: colors.textSecondary },
-  panelTitle: { flex: 1 },
   intro: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
   blurb: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   source: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, textDecorationLine: 'underline', marginTop: spacing.xs },

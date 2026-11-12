@@ -63,7 +63,7 @@ export default function TasteShareSheet({
   };
 
   return (
-    <PageSheet title={T.shareTitle} onClose={onClose} closeLabel={T.close}>
+    <PageSheet title={T.shareTitle} onClose={onClose}>
         <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]} showsVerticalScrollIndicator={false}>
           <View accessibilityLabel={`${text.pairLine}. ${T.matchKicker}: ${text.headline}. ${text.subline}.`}>
             <TasteShareCard width={previewWidth} theme={SHARE_CARD_THEMES[theme] as TasteTheme} content={content} text={text} />

@@ -12,7 +12,9 @@ import { TAB_BAR_CLEARANCE } from '../lib/tabBar';
 import { GUIDE_REGIONS, guideDay, broadcastTime, broadcastDayLabel, isOnNow } from '@plot/core/broadcastGuide.js';
 import { useBroadcastAgenda } from '@plot/core/useBroadcastAgenda.js';
 import { BROADCAST_GUIDE as COPY } from '@plot/core/copy/broadcastGuide.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import BroadcastGuideSetup from './BroadcastGuideSetup';
+import ModalHeader from './ModalHeader';
 
 type Programme = { id: string; channelId: string; title: string; start: string; end: string; description?: string };
 type Channel = { id: string; name: string };
@@ -79,10 +81,12 @@ export function BroadcastAgenda({ region, preferences, endpoint = '', showHeadin
       </ScrollView>
     </Modal>
     <Modal visible={selected !== null} animationType="slide" onRequestClose={() => setSelected(null)}>
-      <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ padding: 24, paddingTop: insets.top + 24, gap: 16 }}>
-        {button(COPY.close, () => setSelected(null))}
-        {selected && <><Text style={{ color: colors.textPrimary, fontFamily: fontFamily.display, fontSize: 28 }}>{selected.title}</Text><Text style={{ color: colors.textMuted }}>{names.get(selected.channelId)} · {time(selected.start)}–{time(selected.end)}</Text><Text style={{ color: colors.textPrimary }}>{selected.description || COPY.noDescription}</Text></>}
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
+        <ModalHeader title={selected?.title ?? ''} actionLabel={COMMON.cancel} onAction={() => setSelected(null)} />
+        <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
+          {selected && <><Text style={{ color: colors.textMuted }}>{names.get(selected.channelId)} · {time(selected.start)}–{time(selected.end)}</Text><Text style={{ color: colors.textPrimary }}>{selected.description || COPY.noDescription}</Text></>}
+        </ScrollView>
+      </View>
     </Modal>
   </View>;
 }

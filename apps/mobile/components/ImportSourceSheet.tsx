@@ -35,8 +35,7 @@ export function ImportSheet({ title, sub, onClose, children }: {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <BottomSheet visible onClose={onClose} title={typeof title === 'string' ? title : undefined}>
-      {typeof title === 'string' ? null : title}
+    <BottomSheet visible onClose={onClose} title={title}>
       {sub ? <Text style={styles.sheetSub}>{sub}</Text> : null}
       {children}
     </BottomSheet>

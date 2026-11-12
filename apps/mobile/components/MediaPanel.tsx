@@ -748,7 +748,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
   };
 
   return (
-    <BottomSheet visible onClose={onClose} title="Add to list" scroll={false}>
+    <BottomSheet visible onClose={onClose} title="Add to list" scroll={false} closeLabel={COMMON.done}>
       <UpgradeSheet visible={showUpgrade} reason="lists" onClose={() => setShowUpgrade(false)} onCompare={() => { onClose(); router.push(PREMIUM_SETTINGS_PATH as any); }} />
       <View style={styles.lsBody}>
 

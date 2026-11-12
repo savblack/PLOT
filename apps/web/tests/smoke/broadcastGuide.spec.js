@@ -93,7 +93,8 @@ test('phone Guide channels save from the Filters sheet and keep the tick after a
   await expect(abc).toHaveAttribute('aria-pressed', 'false');
   await expect(sbs).toHaveAttribute('aria-pressed', 'false');
   expect(backend.getPreferences().channel_ids).toEqual([]);
-  await sheet.getByRole('button', { name: 'Close' }).click();
+  // The Filters sheet applies each tap, so it closes with Done.
+  await sheet.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByText('Choose some channels to build your guide.')).toBeVisible();
 });
 
@@ -180,8 +181,8 @@ test('programme details and narrow agenda render on the production route', async
   await page.goto('/guide');
   await page.getByRole('button', { name: /Test evening news/ }).click();
   await expect(page.getByText('A test programme description.')).toBeVisible();
-  await page.getByRole('button', { name: 'Close program details' }).click();
-  await expect(page.locator('dialog')).not.toBeVisible();
+  await page.getByRole('dialog', { name: 'Test evening news' }).getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

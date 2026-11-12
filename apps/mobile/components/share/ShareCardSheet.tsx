@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft, IconChevronRight } from '../icons';
 import { CARD_FORMATS, presetIndex, shareCaption } from '@plot/core/shareCards.js';
 import { SHARE_CARDS as T } from '@plot/core/copy/shareCards.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 import { track } from '../../lib/analytics';
 import { captureShareCard, saveCardToPhotos, shareCardFile } from '../../lib/shareCardImage';
@@ -126,7 +127,7 @@ export default function ShareCardSheet({
               );
             })}
           </View>
-          <TextLink quiet label={T.close} onPress={onClose} />
+          <TextLink quiet label={COMMON.cancel} onPress={onClose} />
           </View>
         )} />
 

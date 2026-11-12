@@ -4,7 +4,6 @@ import { SHARING } from '@plot/core/copy/sharing.js';
 import { publicProfileLayout, profileHistoryPage, profileFavouritesPage, PUBLIC_LIST_LIMIT } from '@plot/core/publicProfileLayout.js';
 import './PublicProfilePage.css';
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import DialogActions from '../components/DialogActions.jsx';
 import BackLink from '../components/BackLink.jsx';
@@ -28,8 +27,9 @@ import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import UserList from '../components/UserList.jsx';
 import ProfileBadges from '../components/ProfileBadges.jsx';
-import SheetHeader from '../components/SheetHeader.jsx';
 import ResponsiveDialog from '../components/ResponsiveDialog.jsx';
+import { useStableClose } from '../hooks/useDialogClose.js';
+import { safeImageSrc } from '../utils/safeImageSrc.js';
 import ListCover from '../components/ListCover.jsx';
 import { SaveButton, FavoriteButton } from '../components/TitleActions.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -150,10 +150,7 @@ export const profileStyles = `
   }
 
   /* ── Edit profile modal ── */
-  .pp-edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-  .pp-edit-modal { background: var(--surface); width: 100%; max-width: 440px; max-height: 90vh; border-radius: var(--radius-lg); overflow-y: auto; }
   .pp-edit-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.4rem; }
-  .pp-edit-foot { position: sticky; bottom: 0; z-index: 2; display: flex; padding: 0.8rem 1.1rem 1rem; border-top: 1px solid var(--border); background: var(--surface); }
   .pp-photo { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
   .pp-photo-btn { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 0.9rem; cursor: pointer; }
   .pp-field-label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
@@ -274,17 +271,17 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
   const unameInputRef = useRef(null);
   const { lists: customLists, setListVisibility } = useCustomLists(userId);
 
+  const close = useStableClose(onClose);
+
   useEffect(() => {
     // .app-main (not document.body) is the actual scrolling container — it's
     // a fixed-position div with its own overflow-y: auto — so locking body
-    // alone left the page scrollable behind the modal.
+    // alone (which ResponsiveDialog does) left the page scrollable behind the
+    // modal.
     const scroller = document.querySelector('.app-main');
-    const previousBodyOverflow = document.body.style.overflow;
     const previousScrollerOverflow = scroller?.style.overflow;
-    document.body.style.overflow = 'hidden';
     if (scroller) scroller.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = previousBodyOverflow;
       if (scroller) scroller.style.overflow = previousScrollerOverflow;
     };
   }, []);
@@ -365,174 +362,163 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
 
   const initial = (displayName || uname || '?').charAt(0).toUpperCase();
 
-  const modal = (
-    <div className="pp-edit-overlay" onClick={onClose}>
-      <div className="pp-edit-modal" onClick={(e) => e.stopPropagation()}>
-        <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader
-            title={PUBLIC_PROFILE_PAGE.editProfile}
-            onClose={onClose}
-          />
+  // Cancel in the header closes without saving; Save sits bottom right, as in
+  // every dialog you type into. It used to be in the header's top right corner.
+  return (
+    <ResponsiveDialog
+      title={PUBLIC_PROFILE_PAGE.editProfile}
+      onClose={close}
+      size="compact"
+      tall
+      footer={<DialogActions busy={saving} error={error || ''}
+        primary={{ label: saving ? PUBLIC_PROFILE_PAGE.saving : COMMON.save, onClick: save, disabled: !canSave }} />}
+    >
+      <div className="pp-edit-body">
+        <div className="pp-photo">
+          {safeImageSrc(avatar) ? <img className="pp-avatar" src={safeImageSrc(avatar)} alt="" /> : <div className="pp-avatar">{initial}</div>}
+          <button type="button" className="pp-photo-btn" onClick={() => fileRef.current?.click()} disabled={saving}>
+            Change photo
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickPhoto} />
         </div>
-        <div className="pp-edit-body">
-          <div className="pp-photo">
-            {avatar ? <img className="pp-avatar" src={avatar} alt="" /> : <div className="pp-avatar">{initial}</div>}
-            <button type="button" className="pp-photo-btn" onClick={() => fileRef.current?.click()} disabled={saving}>
-              Change photo
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickPhoto} />
-          </div>
 
-          <div>
-            <label className="pp-field-label" htmlFor="pp-name-input">Display name</label>
-            <div className="pp-input-wrap">
-              <input
-                id="pp-name-input"
-                ref={nameInputRef}
-                className="pp-input"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                maxLength={50}
-                placeholder={PUBLIC_PROFILE_PAGE.namePlaceholder}
-                readOnly={!editingName}
-              />
-              <button
-                type="button"
-                className="pp-input-edit-btn"
-                aria-label={editingName ? PUBLIC_PROFILE_PAGE.saveDisplayName : PUBLIC_PROFILE_PAGE.editDisplayName}
-                title={editingName ? COMMON.save : COMMON.edit}
-                onClick={() => {
-                  setEditingName((was) => {
-                    if (!was) setTimeout(() => nameInputRef.current?.focus(), 0);
-                    return !was;
-                  });
-                }}
-              >
-                {editingName ? <SaveFieldIcon /> : <DotsFieldIcon />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="pp-field-label" htmlFor="pp-bio-input">Bio</label>
-            <textarea
-              id="pp-bio-input"
-              className="pp-textarea"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              maxLength={280}
-              placeholder={PUBLIC_PROFILE_PAGE.bioPlaceholder}
-              rows={3}
+        <div>
+          <label className="pp-field-label" htmlFor="pp-name-input">Display name</label>
+          <div className="pp-input-wrap">
+            <input
+              id="pp-name-input"
+              ref={nameInputRef}
+              className="pp-input"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              maxLength={50}
+              placeholder={PUBLIC_PROFILE_PAGE.namePlaceholder}
+              readOnly={!editingName}
             />
-            <div className="pp-hint">{bio.length}/280</div>
+            <button
+              type="button"
+              className="pp-input-edit-btn"
+              aria-label={editingName ? PUBLIC_PROFILE_PAGE.saveDisplayName : PUBLIC_PROFILE_PAGE.editDisplayName}
+              title={editingName ? COMMON.save : COMMON.edit}
+              onClick={() => {
+                setEditingName((was) => {
+                  if (!was) setTimeout(() => nameInputRef.current?.focus(), 0);
+                  return !was;
+                });
+              }}
+            >
+              {editingName ? <SaveFieldIcon /> : <DotsFieldIcon />}
+            </button>
           </div>
+        </div>
 
-          <div>
-            <label className="pp-field-label" htmlFor="pp-uname-input">Username</label>
-            <div className="pp-input-wrap">
+        <div>
+          <label className="pp-field-label" htmlFor="pp-bio-input">Bio</label>
+          <textarea
+            id="pp-bio-input"
+            className="pp-textarea"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            maxLength={280}
+            placeholder={PUBLIC_PROFILE_PAGE.bioPlaceholder}
+            rows={3}
+          />
+          <div className="pp-hint">{bio.length}/280</div>
+        </div>
+
+        <div>
+          <label className="pp-field-label" htmlFor="pp-uname-input">Username</label>
+          <div className="pp-input-wrap">
+            <input
+              id="pp-uname-input"
+              ref={unameInputRef}
+              className="pp-input"
+              value={uname}
+              onChange={(e) => setUname(e.target.value)}
+              maxLength={30}
+              autoCapitalize="none"
+              autoCorrect="off"
+              placeholder="username"
+              readOnly={!editingUname}
+            />
+            <button
+              type="button"
+              className="pp-input-edit-btn"
+              aria-label={editingUname ? PUBLIC_PROFILE_PAGE.saveUsername : PUBLIC_PROFILE_PAGE.editUsername}
+              title={editingUname ? COMMON.save : COMMON.edit}
+              onClick={() => {
+                setEditingUname((was) => {
+                  if (!was) setTimeout(() => unameInputRef.current?.focus(), 0);
+                  return !was;
+                });
+              }}
+            >
+              {editingUname ? <SaveFieldIcon /> : <DotsFieldIcon />}
+            </button>
+          </div>
+          {unameStatus === 'checking' && <div className="pp-hint">Checking…</div>}
+          {unameStatus === 'ok'       && <div className="pp-hint" style={{ color: 'var(--chip-today, #16a34a)' }}>Available</div>}
+          {unameStatus === 'taken'    && <div className="pp-hint" style={{ color: 'var(--accent)' }}>That username is taken.</div>}
+          {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>{PUBLIC_PROFILE_PAGE.usernameRule}</div>}
+        </div>
+
+        {/* Fixed set of social/external links */}
+        <div>
+          <label className="pp-field-label">Links</label>
+          {SOCIAL_LINKS.map(({ key, label, placeholder }) => { const Icon = SOCIAL_ICONS[key]; return (
+            <div key={key} className="pp-social-input-row">
+              <span className="pp-social-input-icon" aria-hidden="true"><Icon /></span>
               <input
-                id="pp-uname-input"
-                ref={unameInputRef}
                 className="pp-input"
-                value={uname}
-                onChange={(e) => setUname(e.target.value)}
-                maxLength={30}
+                value={links[key] || ''}
+                onChange={(e) => setLinks((prev) => ({ ...prev, [key]: e.target.value }))}
+                placeholder={`${label} ${placeholder}`}
                 autoCapitalize="none"
                 autoCorrect="off"
-                placeholder="username"
-                readOnly={!editingUname}
               />
-              <button
-                type="button"
-                className="pp-input-edit-btn"
-                aria-label={editingUname ? PUBLIC_PROFILE_PAGE.saveUsername : PUBLIC_PROFILE_PAGE.editUsername}
-                title={editingUname ? COMMON.save : COMMON.edit}
-                onClick={() => {
-                  setEditingUname((was) => {
-                    if (!was) setTimeout(() => unameInputRef.current?.focus(), 0);
-                    return !was;
-                  });
-                }}
-              >
-                {editingUname ? <SaveFieldIcon /> : <DotsFieldIcon />}
-              </button>
             </div>
-            {unameStatus === 'checking' && <div className="pp-hint">Checking…</div>}
-            {unameStatus === 'ok'       && <div className="pp-hint" style={{ color: 'var(--chip-today, #16a34a)' }}>Available</div>}
-            {unameStatus === 'taken'    && <div className="pp-hint" style={{ color: 'var(--accent)' }}>That username is taken.</div>}
-            {unameStatus === 'invalid'  && <div className="pp-hint" style={{ color: 'var(--accent)' }}>{PUBLIC_PROFILE_PAGE.usernameRule}</div>}
-          </div>
+          ); })}
+        </div>
 
-          {/* Fixed set of social/external links */}
-          <div>
-            <label className="pp-field-label">Links</label>
-            {SOCIAL_LINKS.map(({ key, label, placeholder }) => { const Icon = SOCIAL_ICONS[key]; return (
-              <div key={key} className="pp-social-input-row">
-                <span className="pp-social-input-icon" aria-hidden="true"><Icon /></span>
-                <input
-                  className="pp-input"
-                  value={links[key] || ''}
-                  onChange={(e) => setLinks((prev) => ({ ...prev, [key]: e.target.value }))}
-                  placeholder={`${label} ${placeholder}`}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                />
-              </div>
-            ); })}
-          </div>
-
-          {/* Which sections show on the profile */}
-          <div>
-            <label className="pp-field-label">{PROFILE_PRIVACY.sectionsHeading}</label>
-            <p className="pp-toggle-help" style={{ marginBottom: '0.5rem' }}>{PROFILE_PRIVACY.sectionsHelp}</p>
-            {PROFILE_SECTIONS.map((s) => (
-              <label key={s.key} className="pp-section-toggle">
-                <span>{s.key === 'favourites' ? favWord : s.label}</span>
+        {/* Which sections show on the profile */}
+        <div>
+          <label className="pp-field-label">{PROFILE_PRIVACY.sectionsHeading}</label>
+          <p className="pp-toggle-help" style={{ marginBottom: '0.5rem' }}>{PROFILE_PRIVACY.sectionsHelp}</p>
+          {PROFILE_SECTIONS.map((s) => (
+            <label key={s.key} className="pp-section-toggle">
+              <span>{s.key === 'favourites' ? favWord : s.label}</span>
+              <input
+                type="checkbox"
+                checked={enabled.includes(s.key)}
+                onChange={(e) => setEnabled((prev) => e.target.checked ? [...prev, s.key] : prev.filter((k) => k !== s.key))}
+                style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
+              />
+            </label>
+          ))}
+          {customLists.length > 0 && <p className="pp-toggle-help" style={{ margin: '0.6rem 0 0.3rem' }}>{PUBLIC_PROFILE_PAGE.publicListLimit(PUBLIC_LIST_LIMIT)}</p>}
+          {/* Checked = on the profile (followers or public). This writes the
+              list's visibility, so the label says who that is. */}
+          {customLists.map((list) => {
+            const visibility = listVisibility(list);
+            const onProfile = showsOnProfile(visibility);
+            return (
+              <label key={list.id} className="pp-section-toggle">
+                <span>{list.name}<span className="pp-toggle-help" style={{ display: 'block' }}>{PROFILE_PRIVACY.listVisibility[visibility]}</span></span>
                 <input
                   type="checkbox"
-                  checked={enabled.includes(s.key)}
-                  onChange={(e) => setEnabled((prev) => e.target.checked ? [...prev, s.key] : prev.filter((k) => k !== s.key))}
+                  checked={onProfile}
+                  disabled={!onProfile && customLists.filter((l) => showsOnProfile(listVisibility(l))).length >= PUBLIC_LIST_LIMIT}
+                  onChange={(e) => setListVisibility(list.id, e.target.checked ? 'public' : 'private')}
                   style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
                 />
               </label>
-            ))}
-            {customLists.length > 0 && <p className="pp-toggle-help" style={{ margin: '0.6rem 0 0.3rem' }}>{PUBLIC_PROFILE_PAGE.publicListLimit(PUBLIC_LIST_LIMIT)}</p>}
-            {/* Checked = on the profile (followers or public). This writes the
-                list's visibility, so the label says who that is. */}
-            {customLists.map((list) => {
-              const visibility = listVisibility(list);
-              const onProfile = showsOnProfile(visibility);
-              return (
-                <label key={list.id} className="pp-section-toggle">
-                  <span>{list.name}<span className="pp-toggle-help" style={{ display: 'block' }}>{PROFILE_PRIVACY.listVisibility[visibility]}</span></span>
-                  <input
-                    type="checkbox"
-                    checked={onProfile}
-                    disabled={!onProfile && customLists.filter((l) => showsOnProfile(listVisibility(l))).length >= PUBLIC_LIST_LIMIT}
-                    onChange={(e) => setListVisibility(list.id, e.target.checked ? 'public' : 'private')}
-                    style={{ width: 20, height: 20, accentColor: 'var(--accent)' }}
-                  />
-                </label>
-              );
-            })}
-          </div>
+            );
+          })}
+        </div>
 
-        </div>
-        {/* Save sits bottom right, as in every dialog you type into. It used
-            to be in the header's top right corner. The X closes without saving. */}
-        <div className="pp-edit-foot">
-          <DialogActions busy={saving} error={error || ''}
-            primary={{ label: saving ? PUBLIC_PROFILE_PAGE.saving : COMMON.save, onClick: save, disabled: !canSave }} />
-        </div>
       </div>
-    </div>
+    </ResponsiveDialog>
   );
-
-  // Portal to <body> — this modal renders inside .app-main, whose animate-in
-  // class leaves a non-'none' transform after the entrance animation, which
-  // makes position:fixed descendants fix to that ancestor instead of the
-  // viewport (clipped top/bottom, background scrolls, wrong scrollbar).
-  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal;
 }
 
 export default function PublicProfilePage() {

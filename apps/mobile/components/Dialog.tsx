@@ -109,6 +109,7 @@ export function useDialog(): {
       title={open.title}
       onClose={() => close(false)}
       scroll={false}
+      closeLabel={open.kind === 'confirm' ? null : COMMON.cancel}
       footer={open.kind === 'confirm' ? (
         <SheetActions>
           <Button flex label={open.cancelLabel ?? COMMON.cancel} onPress={() => close(false)} />

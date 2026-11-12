@@ -1,29 +1,18 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useRef, useState } from 'react';
 import { useReport } from '@plot/core/useReport.js';
 import { REPORT_DETAIL_MAX } from '@plot/core/moderation.js';
-import { COMMON } from '../copy/common.js';
 import { MODERATION } from '../copy/moderation.js';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
+import DialogActions from './DialogActions.jsx';
+import { useFocusCancel, useStableClose } from '../hooks/useDialogClose.js';
 
-// Matches ConfirmModal's buttons exactly. Web has no shared compact-button
-// class — the modals style theirs inline — and a one-off class here would be a
-// second source of truth for the same pill.
-const SECONDARY_BTN = {
-  background: 'transparent', border: '1px solid var(--border-strong)',
-  borderRadius: '9999px', padding: '0.55rem 1.1rem',
-  fontSize: '0.8rem', fontWeight: 500, fontFamily: 'var(--font-sans)',
-  color: 'var(--text-secondary)', cursor: 'pointer',
-};
-const PRIMARY_BTN = {
-  background: 'var(--accent)', border: 'none',
-  borderRadius: '9999px', padding: '0.55rem 1.1rem',
-  fontSize: '0.8rem', fontWeight: 600, fontFamily: 'var(--font-sans)',
-  color: '#fff', cursor: 'pointer',
-};
+// Read by screen readers, not drawn.
+const SR_ONLY = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
 
 /**
- * Report an account. Mirrors ConfirmModal's shell (portal, overlay, escape,
- * scroll lock, focus restore) so the two read as one system.
+ * Report an account. The shell is ResponsiveDialog's (portal, overlay,
+ * Escape, scroll lock, focus restore): Cancel in the header, Submit report
+ * bottom right. Nothing closes it while a report is being sent.
  *
  * The success state is a state of this dialog rather than a toast: Guideline
  * 1.2 asks for "timely responses to concerns", and the floor for that is the
@@ -39,26 +28,11 @@ export default function ReportDialog({ targetId, targetName, surface, viewerId, 
   const [reason, setReason] = useState(null);
   const [detail, setDetail] = useState('');
   const [alsoBlock, setAlsoBlock] = useState(false);
-  const closeRef = useRef(null);
-  const restoreFocusRef = useRef(null);
-  const titleId = useId();
-  const leadId = useId();
-
-  useEffect(() => {
-    restoreFocusRef.current = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape' && !busy) { event.preventDefault(); onClose(); }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      restoreFocusRef.current?.focus?.();
-    };
-  }, [busy, onClose]);
+  const bodyRef = useRef(null);
+  const close = useStableClose(onClose, busy);
+  // Focus starts on Cancel, and goes back there once the report is sent and
+  // the submit button is gone.
+  useFocusCancel(bodyRef, sent);
 
   const handleSubmit = async () => {
     const ok = await submit({ reportedId: targetId, surface, reason, detail });
@@ -69,48 +43,32 @@ export default function ReportDialog({ targetId, targetName, surface, viewerId, 
 
   const overLimit = detail.length > REPORT_DETAIL_MAX;
 
-  return createPortal(
-    <div
-      onClick={() => { if (!busy) onClose(); }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 100,
-        background: 'rgba(0,0,0,0.55)',
-        backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
-        animation: 'confirmFadeIn 0.15s ease',
-      }}
+  return (
+    <ResponsiveDialog
+      title={sent ? MODERATION.reportSentTitle : MODERATION.reportTitle}
+      onClose={close}
+      size="compact"
+      footer={sent ? null : (
+        <DialogActions
+          busy={busy}
+          primary={{
+            // The visible label stays short; the person being reported is in
+            // the button's accessible name, as it was before.
+            label: <>{busy ? MODERATION.submitting : MODERATION.submitReport}{targetName && <span style={SR_ONLY}>{`: ${targetName}`}</span>}</>,
+            onClick: handleSubmit,
+            disabled: !reason || overLimit,
+          }}
+        />
+      )}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={leadId}
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)', padding: '1.5rem',
-          width: '100%', maxWidth: '420px', maxHeight: '85vh', overflowY: 'auto',
-          boxShadow: 'var(--shadow-overlay)', animation: 'confirmSlideUp 0.18s var(--ease)',
-        }}
-      >
+      <div ref={bodyRef} style={{ padding: '1rem 1.25rem 1.25rem' }}>
         {sent ? (
-          <>
-            <p id={titleId} style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', margin: '0 0 0.5rem' }}>
-              {MODERATION.reportSentTitle}
-            </p>
-            <p id={leadId} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 1.25rem' }}>
-              {MODERATION.reportSentBody}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button ref={closeRef} onClick={onClose} style={PRIMARY_BTN}>{COMMON.done}</button>
-            </div>
-          </>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+            {MODERATION.reportSentBody}
+          </p>
         ) : (
           <>
-            <p id={titleId} style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', margin: '0 0 0.4rem' }}>
-              {MODERATION.reportTitle}
-            </p>
-            <p id={leadId} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 1.1rem' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 1.1rem' }}>
               {MODERATION.reportLead}
             </p>
 
@@ -179,28 +137,9 @@ export default function ReportDialog({ targetId, targetName, surface, viewerId, 
                 {overLimit ? MODERATION.detailTooLong : error}
               </p>
             )}
-
-            <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'flex-end', marginTop: '1.25rem' }}>
-              <button ref={closeRef} onClick={onClose} disabled={busy} style={SECONDARY_BTN}>
-                {COMMON.cancel}
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={busy || !reason || overLimit}
-                style={{
-                  ...PRIMARY_BTN,
-                  cursor: reason && !overLimit ? 'pointer' : 'not-allowed',
-                  opacity: reason && !overLimit ? 1 : 0.5,
-                }}
-                aria-label={`${MODERATION.submitReport}${targetName ? `: ${targetName}` : ''}`}
-              >
-                {busy ? MODERATION.submitting : MODERATION.submitReport}
-              </button>
-            </div>
           </>
         )}
       </div>
-    </div>,
-    document.body,
+    </ResponsiveDialog>
   );
 }

@@ -2,8 +2,7 @@
 // which mobile can call when it gets the same sheet. This file is the dialog,
 // the poster rows, and the one-tap watchlist save.
 
-import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
 import { localDateStr, weekdayDayMonth } from '@plot/core/date.js';
 import { getTmdbRegion, tmdb } from '@plot/core/tmdb.js';
 import {
@@ -15,7 +14,8 @@ import { CALENDAR_VIEW } from '../copy/calendarView.js';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { posterUrl } from '../utils/images.js';
-import SheetHeader from './SheetHeader.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
+import { useFocusCancel, useStableClose } from '../hooks/useDialogClose.js';
 import './UpcomingSuggestionsSheet.css';
 
 const COPY = CALENDAR_VIEW.suggest;
@@ -95,85 +95,46 @@ export function UpcomingSuggestionsDialog({
   onRetry,
   onClose,
 }) {
-  const titleId = useId();
+  const bodyRef = useRef(null);
+  const close = useStableClose(onClose);
+  // Cancel is the one we want focused when the dialog opens.
+  useFocusCancel(bodyRef);
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (event) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [onClose]);
-
-  const dialog = (
-    <div className="uss-overlay" onClick={onClose}>
-      <div
-        className="uss"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onClick={event => event.stopPropagation()}
-      >
-        <div className="uss-head">
-          <SheetHeader title={<span id={titleId}>{COPY.title}</span>} onClose={onClose} />
-        </div>
-        <div className="uss-scroll">
-          <p className="uss-intro">{COPY.body}</p>
-          {loading ? (
-            <p className="uss-status" role="status">{COMMON.loading}</p>
-          ) : (
-            <>
-              <SuggestionSection
-                heading={COPY.airingHeading}
-                body={COPY.airingBody}
-                items={shows}
-                unavailable={showsUnavailable}
-                savedIds={savedIds}
-                pendingIds={pendingIds}
-                failedId={failedId}
-                onAdd={onAdd}
-                onRetry={onRetry}
-              />
-              <SuggestionSection
-                heading={COPY.moviesHeading}
-                body={COPY.moviesBody}
-                items={movies}
-                unavailable={moviesUnavailable}
-                savedIds={savedIds}
-                pendingIds={pendingIds}
-                failedId={failedId}
-                onAdd={onAdd}
-                onRetry={onRetry}
-              />
-            </>
-          )}
-        </div>
+  return (
+    <ResponsiveDialog title={COPY.title} onClose={close} zIndex={2000}>
+      <div className="uss-scroll" ref={bodyRef}>
+        <p className="uss-intro">{COPY.body}</p>
+        {loading ? (
+          <p className="uss-status" role="status">{COMMON.loading}</p>
+        ) : (
+          <>
+            <SuggestionSection
+              heading={COPY.airingHeading}
+              body={COPY.airingBody}
+              items={shows}
+              unavailable={showsUnavailable}
+              savedIds={savedIds}
+              pendingIds={pendingIds}
+              failedId={failedId}
+              onAdd={onAdd}
+              onRetry={onRetry}
+            />
+            <SuggestionSection
+              heading={COPY.moviesHeading}
+              body={COPY.moviesBody}
+              items={movies}
+              unavailable={moviesUnavailable}
+              savedIds={savedIds}
+              pendingIds={pendingIds}
+              failedId={failedId}
+              onAdd={onAdd}
+              onRetry={onRetry}
+            />
+          </>
+        )}
       </div>
-    </div>
+    </ResponsiveDialog>
   );
-
-  // SheetHeader's close button is the one we want focused. The ref on a
-  // wrapper does not reach it, so focus the dialog's first button after paint.
-  return createPortal(
-    <FocusClose>{dialog}</FocusClose>,
-    document.body,
-  );
-}
-
-function FocusClose({ children }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    ref.current?.querySelector('button')?.focus();
-  }, []);
-  return <div ref={ref}>{children}</div>;
 }
 
 export default function UpcomingSuggestionsSheet({ open, onClose, watchlist, watching }) {
