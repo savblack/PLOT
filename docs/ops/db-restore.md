@@ -13,6 +13,18 @@ repo), R2 credentials, and `pg_restore`/`psql` v17 (`brew install postgresql@17`
 > `scripts/db-restore-drill.sh` — it streams prod into a throwaway local cluster and
 > destroys it afterwards, so no plaintext dump ever touches disk.
 
+> **Checked automatically every month** since 2026-11-12:
+> `.github/workflows/db-backup-restore-check.yml` restores the newest backup
+> *file* from R2 (the drill above dumps Production afresh and never opens one)
+> and fails if any table, row or RLS policy is missing. Run it by hand with
+> `BACKUP_GPG_PASSPHRASE=… SUPABASE_DB_URL=… scripts/db-backup-restore-check.sh plot-<stamp>.dump.gpg`.
+> Its first run found that backups made before 2026-11-12 leave out the
+> `private` schema, so restoring one drops the 9 policies that call its helpers.
+> To use one of those older files, first recreate the `private` schema and its
+> functions in the target from Production's live bodies
+> (`select pg_get_functiondef(p.oid) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'private'`),
+> then restore. They age out of R2 thirty days after the fix.
+
 ## 0. Prerequisites — do NOT skip, or the restore loses tables silently
 
 **`pg_restore` reports failures on stderr and still exits 0.** The 2026-08-14 drill
