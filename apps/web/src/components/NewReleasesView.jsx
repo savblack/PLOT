@@ -5,6 +5,7 @@ import { useApp } from '../hooks/useApp.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useNewReleases } from '../hooks/useNewReleases.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import EmptyState from './EmptyState.jsx';
 import { DiscoverToolbar, RailSection, RankedCard } from './DiscoverView.jsx';
 import SideFilters from './SideFilters.jsx';
 
@@ -59,10 +60,7 @@ function NewReleasesContent({ openPanel, watchlist, rails, loading }) {
 
   if (!rails.length) {
     return (
-      <div className="empty-state" style={{ marginTop: '1rem' }}>
-        <div className="empty-title">Nothing new</div>
-        <div className="empty-body">Nothing matches right now. Try widening your filters.</div>
-      </div>
+      <EmptyState className="empty-state--below" title="Nothing new" body="Nothing matches right now. Try widening your filters." />
     );
   }
 

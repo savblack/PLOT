@@ -17,6 +17,7 @@ import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { COMMON } from '../copy/common.js';
 import Spinner from './Spinner.jsx';
 import Icon from './Icon.jsx';
+import EmptyState from './EmptyState.jsx';
 import Chip, { ChipRow } from './Chip.jsx';
 import './SearchPalette.css';
 
@@ -333,10 +334,7 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
           )}
 
           {emptyCopy && (
-            <div className="search-palette-empty">
-              <div className="search-palette-empty-title">{emptyCopy.title}</div>
-              <div className="search-palette-empty-body">{emptyCopy.body}</div>
-            </div>
+            <EmptyState className="search-palette-empty" title={emptyCopy.title} body={emptyCopy.body} />
           )}
         </div>
 

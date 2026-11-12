@@ -4,6 +4,7 @@ import { parseKeywordBrowse } from '@plot/core/browse.js';
 import { useKeywordBrowse } from '@plot/core/useKeywordBrowse.js';
 import { BROWSE } from '@plot/core/copy/browse.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { RankedCard } from '../components/DiscoverView.jsx';
 import './BrowsePage.css';
 
@@ -24,10 +25,7 @@ export default function BrowsePage() {
       </header>
       {!browse && <p className="browse-note">{BROWSE.empty}</p>}
       {browse && error && (
-        <div className="empty-state">
-          <div className="empty-title">{BROWSE.loadError}</div>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={retry}>{BROWSE.retry}</button>
-        </div>
+        <EmptyState title={BROWSE.loadError} action={<button type="button" className="btn btn-ghost btn-sm" onClick={retry}>{BROWSE.retry}</button>} />
       )}
       {browse && !error && items === null && <LoadingSpinner />}
       {browse && !error && items?.length === 0 && <p className="browse-note">{BROWSE.empty}</p>}

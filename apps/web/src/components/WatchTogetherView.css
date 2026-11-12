@@ -396,7 +396,7 @@
 .wt-card-title--sm { font-size: 1.125rem; }
 
 .wt-find--dark { margin-top: 0; }
-.wt-find--dark .wt-search { background: var(--surface); border: 0; }
+.wt-find--dark .wt-search-field:not(:focus-within) { border-color: transparent; }
 .wt-find-results { background: var(--surface); color: var(--text-primary); border-radius: var(--radius-md); padding: 0.25rem 1rem; }
 .wt-find-results .wt-row:first-child { border-top: 0; }
 .wt-find-results .wt-note { color: var(--text-secondary); }

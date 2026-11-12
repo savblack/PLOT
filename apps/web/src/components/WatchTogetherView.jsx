@@ -26,6 +26,8 @@ import './WatchTogetherView.css';
 import PremiumGateButton from './PremiumGateButton.jsx';
 import BackLink from './BackLink.jsx';
 import Chip, { ChipRow, Tag } from './Chip.jsx';
+import EmptyState from './EmptyState.jsx';
+import SearchField from './SearchField.jsx';
 
 // The hub and start page open the upgrade sheet from a button; the overlap
 // page reports this itself when it loads locked.
@@ -195,7 +197,7 @@ function Hub({ wt, premium, profile }) {
               <h2 className="wt-heading" id="wt-partners">{T.hub.partners}</h2>
             </div>
             {partners.length === 0
-              ? <div className="empty-state"><div className="empty-title">{T.hub.noPartnersTitle}</div><div className="empty-body">{T.hub.noPartnersBody}</div></div>
+              ? <EmptyState title={T.hub.noPartnersTitle} body={T.hub.noPartnersBody} />
               : (
                 <div className="wt-list">
                   {partners.map(p => p.can_decide === false ? (
@@ -345,8 +347,7 @@ function Invite({ wt }) {
       <h1 className="wt-title">{T.invite.title}</h1>
       <p className="wt-card-body">{T.invite.body}</p>
       <p className="wt-note">{T.invite.mutualNote}</p>
-      <label className="wt-sr" htmlFor="wt-invite-search">{T.invite.search}</label>
-      <input id="wt-invite-search" type="search" className="wt-search" placeholder={T.invite.search} value={query} onChange={e => setQuery(e.target.value)} />
+      <SearchField id="wt-invite-search" placeholder={T.invite.search} value={query} onChange={setQuery} />
       {error && <p className="wt-error" role="alert">{error}</p>}
       {query.trim().length < 2 && <h2 className="wt-section-label">{T.invite.suggested}</h2>}
       {list.length === 0 && query.trim().length < 2 && <p className="wt-note">{T.invite.noSuggestions}</p>}
@@ -454,7 +455,7 @@ function Together({ wt, usernames }) {
       {error && !locked && <p className="wt-error" role="alert">{T.errors[error]}</p>}
       {loading ? <p className="wt-note" role="status">{COMMON.loading}</p>
         : locked ? null
-        : !shown.length ? <div className="empty-state"><div className="empty-title">{T.overlap.emptyTitle}</div><div className="empty-body">{T.overlap.emptyBody(group ? T.overlap.everyone : personName(people[0] || {}))}</div></div>
+        : !shown.length ? <EmptyState title={T.overlap.emptyTitle} body={T.overlap.emptyBody(group ? T.overlap.everyone : personName(people[0] || {}))} />
         : group ? (
           <>
             {all.length > 0 && <TitleSection label={T.overlap.savedByAll} titles={all} openPanel={openPanel} />}
@@ -603,7 +604,7 @@ function SessionView({ wt, sessionId }) {
           {matchList}
         </div>
       ) : progress.total === 0 ? (
-        <div className="empty-state"><div className="empty-body">{T.session.empty(name)}</div></div>
+        <EmptyState body={T.session.empty(name)} />
       ) : showMatches ? (
         <>
           {matchList}

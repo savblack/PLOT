@@ -21,7 +21,10 @@ import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import { IconChevronLeft, IconChevronRight, IconSearch, IconShare } from './navIcons.jsx';
+import { IconChevronLeft, IconChevronRight, IconShare } from './navIcons.jsx';
+import EmptyState from './EmptyState.jsx';
+import Segmented from './Segmented.jsx';
+import SearchField from './SearchField.jsx';
 import ShareCardSheet from './ShareCardSheet.jsx';
 import SideFilters, { FilterRow } from './SideFilters.jsx';
 import MobilePageControls from './MobilePageControls.jsx';
@@ -447,10 +450,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
 
   if (!entries.length) {
     return (
-      <div className="empty-state" style={{ marginTop: '1rem' }}>
-        <div className="empty-title">{T.emptyTitle}</div>
-        <div className="empty-body">{T.emptyBody}</div>
-      </div>
+      <EmptyState className="empty-state--below" title={T.emptyTitle} body={T.emptyBody} />
     );
   }
 
@@ -461,21 +461,14 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
         <div className="hist-toolbar-controls">
           {years.length > 1 && (
             years.length <= 4 ? (
-              <div className="cal-scope" role="tablist">
-                {[...years].reverse().map(y => (
-                  <button key={y} type="button" role="tab" className={`cal-scope-btn${y === activeYear ? ' active' : ''}`} aria-selected={y === activeYear} onClick={() => onYear(y)}>{y}</button>
-                ))}
-              </div>
+              <Segmented options={[...years].reverse().map(y => ({ value: y, label: String(y) }))} value={activeYear} onChange={onYear} />
             ) : (
               <select className="hist-year-select" value={activeYear} onChange={e => onYear(Number(e.target.value))} aria-label="Year">
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             )
           )}
-          <label className="hist-search">
-            <IconSearch />
-            <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder={T.searchPlaceholder} aria-label={T.searchPlaceholder} />
-          </label>
+          <SearchField className="hist-search" value={query} onChange={setQuery} placeholder={T.searchPlaceholder} ariaLabel={T.searchPlaceholder} />
         </div>
       </div>
 
@@ -567,10 +560,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
         <div className="hist-stream">
           {drill && drillLabel && <DrilldownChip label={drillLabel} onRemove={onClearDrilldown} />}
           {monthGroups.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-title">{T.noMatchesTitle}</div>
-              <div className="empty-body">{T.noMatchesBody}</div>
-            </div>
+            <EmptyState title={T.noMatchesTitle} body={T.noMatchesBody} />
           ) : monthGroups.map(g => (
             <MonthGroup key={g.key} group={g} allGroups={allYearGroups} today={today} openPanel={openPanel} />
           ))}

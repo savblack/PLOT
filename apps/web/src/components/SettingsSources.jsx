@@ -16,6 +16,7 @@ import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { useImportStart } from '../hooks/useImportStart.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import ImportSourceIcon from './ImportSourceIcon.jsx';
+import EmptyState from './EmptyState.jsx';
 import ImportSourceLanes from './ImportSourceLanes.jsx';
 import ImportSourceDialog, { PlexPicker } from './ImportSourceDialog.jsx';
 import { SettingsSwitch } from './SettingsPage.jsx';
@@ -271,12 +272,13 @@ export default function SettingsSources({ userId, premium, showConfirm, onPremiu
         <div className="settings-group-title">{T.groupTitle}</div>
         <div className="ss-card">
           {rows.length === 0 ? (
-            <div className="ss-empty">
-              <div className="ss-empty-logos" aria-hidden="true">{['trakt', 'letterboxd', 'netflix', 'plex', 'disney', 'apple'].map(id => <ImportSourceIcon key={id} id={id} name={id} size={26} />)}</div>
-              <h3 className="ss-empty-title">{T.emptyTitle}</h3>
-              <p className="ss-empty-body">{T.emptyBody}</p>
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>{T.addSource}</button>
-            </div>
+            <EmptyState
+              className="ss-empty"
+              icon={<div className="ss-empty-logos">{['trakt', 'letterboxd', 'netflix', 'plex', 'disney', 'apple'].map(id => <ImportSourceIcon key={id} id={id} name={id} size={26} />)}</div>}
+              title={T.emptyTitle}
+              body={T.emptyBody}
+              action={<button type="button" className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>{T.addSource}</button>}
+            />
           ) : (
             <>
               {rows.map(src => {

@@ -58,10 +58,6 @@
 
 .home-layout-seg-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
 .home-layout-seg-label { font-size: 14px; font-weight: 500; color: var(--text-primary); }
-.home-layout-seg { display: inline-flex; padding: 3px; border-radius: var(--radius-pill); background: var(--surface-raised); border: 1px solid var(--border); }
-.home-layout-seg-btn { border: 0; background: transparent; padding: 6px 14px; border-radius: var(--radius-pill); font: inherit; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
-.home-layout-seg-btn.is-active { background: var(--surface); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
-.home-layout-seg-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .home-layout-picker { margin-top: 0.5rem; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
 .home-layout-picker-group { display: flex; flex-direction: column; gap: 4px; }

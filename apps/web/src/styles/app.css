@@ -5389,6 +5389,11 @@ a.provider-chip--link:hover {
   gap: 0.65rem;
 }
 .empty-icon { font-size: 2.8rem; opacity: 0.6; }
+/* An empty state that sits under a page's toolbar rather than filling the page. */
+.empty-state--below { margin-top: 1rem; }
+/* Inside a pop-up or a settings card the page-sized padding would dwarf it. */
+.responsive-dialog .empty-state,
+.settings-search-results .empty-state { padding: 1.5rem 1rem; }
 .empty-title {
   font-family: var(--font-display);
   font-weight: 700;
@@ -7583,30 +7588,8 @@ a.provider-chip--link:hover {
   font-size: 13px;
 }
 
-.hist-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-  width: 220px;
-  padding: 0 12px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--text-muted);
-}
-.hist-search svg { width: 16px; height: 16px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; }
-.hist-search input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: 13px;
-  color: var(--text-primary);
-  outline: none;
-}
-.hist-search:focus-within { border-color: var(--accent); }
+/* A page toolbar's search (SearchField draws it). Phones hide it below. */
+.hist-search { width: 220px; }
 
 .hist-body { display: flex; flex-direction: column; gap: 24px; }
 

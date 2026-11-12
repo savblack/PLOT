@@ -28,7 +28,7 @@ import SmartListDialog from './SmartListDialog.jsx';
 import NewListChoice from './NewListChoice.jsx';
 import { collectionPath, customListKey, titleCount, wantToWatchItems, searchCollectionTitles, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
-import { IconSearch } from './navIcons.jsx';
+import SearchField from './SearchField.jsx';
 import { posterUrl } from '../utils/images.js';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
@@ -495,10 +495,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
               setGenreFilters={setGenreFilters}
             />
           </span>
-          <label className="hist-search">
-            <IconSearch />
-            <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchPlaceholder} aria-label={CUSTOM_LISTS.searchPlaceholder} />
-          </label>
+          <SearchField className="hist-search" value={query} onChange={setQuery} placeholder={CUSTOM_LISTS.searchPlaceholder} ariaLabel={CUSTOM_LISTS.searchPlaceholder} />
         </div>
       </div>
 

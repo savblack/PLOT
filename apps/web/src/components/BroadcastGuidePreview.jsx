@@ -13,6 +13,9 @@ import MobilePageControls from './MobilePageControls.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { useStableClose } from '../hooks/useDialogClose.js';
+import EmptyState from './EmptyState.jsx';
+import Segmented from './Segmented.jsx';
+import SearchField from './SearchField.jsx';
 import './BroadcastGuidePreview.css';
 
 function readSelection(region) {
@@ -40,7 +43,6 @@ function PreviewAgenda({ region }) {
   return <BroadcastAgenda region={region} selection={selection} onSave={save} endpoint="/__guide-preview" settingsPath="/guide-settings-preview" preview />;
 }
 
-const SearchIcon = () => <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.5" y2="16.5" /></svg>;
 const ChevronRight = () => <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6" /></svg>;
 
 /* The network's own logo when the feed supplies one, else a monogram tile. */
@@ -142,11 +144,13 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
     <div className="hist-toolbar">
       <RegionLink market={market} settingsPath={settingsPath} className="hist-toolbar-sub guide-mobile-region" />
       <div className="hist-toolbar-controls">
-        <div className="cal-scope" role="group" aria-label={COPY.title}>
-          <button type="button" className={`cal-scope-btn${mode === 'all' ? ' active' : ''}`} aria-pressed={mode === 'all'} onClick={() => setMode('all')}>{COPY.allDay}</button>
-          <button type="button" className={`cal-scope-btn${mode === 'now' ? ' active' : ''}`} aria-pressed={mode === 'now'} onClick={() => { setMode('now'); setOffset(0); }}>{COPY.now}</button>
-        </div>
-        <label className="hist-search guide-search"><SearchIcon /><input type="search" placeholder={COPY.search} aria-label={COPY.search} value={query} onChange={event => setQuery(event.target.value)} /></label>
+        <Segmented
+          options={[{ value: 'all', label: COPY.allDay }, { value: 'now', label: COPY.now }]}
+          value={mode}
+          onChange={next => { setMode(next); if (next === 'now') setOffset(0); }}
+          ariaLabel={COPY.title}
+        />
+        <SearchField className="hist-search guide-search" value={query} onChange={setQuery} placeholder={COPY.search} ariaLabel={COPY.search} />
       </div>
     </div>
 
@@ -223,8 +227,8 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
 
         {(stale || ((error || data?.refreshFailed) && data)) && <p role="status" className="hist-card-note guide-notice">{error || data?.refreshFailed ? COPY.cached : COPY.stale} <button type="button" className="btn btn-secondary btn-xs" onClick={retry}>{COPY.retry}</button></p>}
         {loading ? <LoadingSpinner />
-          : !data ? <div className="empty-state"><div className="empty-title">{COPY.unavailable}</div><div className="empty-body">{COPY.unavailableBody}</div><button type="button" className="btn btn-secondary btn-sm" onClick={retry}>{COPY.retry}</button></div>
-          : !visibleChannels.length ? <div className="empty-state"><div className="empty-body">{COPY.noneSelected}</div></div>
+          : !data ? <EmptyState title={COPY.unavailable} body={COPY.unavailableBody} action={<button type="button" className="btn btn-secondary btn-sm" onClick={retry}>{COPY.retry}</button>} />
+          : !visibleChannels.length ? <EmptyState body={COPY.noneSelected} />
           : <>
             {offset === 0 && <>
               <div className="cal-stream-month"><h2 className="cal-stream-month-name">{COPY.now}</h2><span className="cal-stream-month-count">{time(now)}</span></div>

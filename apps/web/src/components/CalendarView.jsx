@@ -20,6 +20,9 @@ import CalendarStream from './CalendarStream.jsx';
 import CalendarEventRows from './CalendarEventRows.jsx';
 import CalendarReleaseRail from './CalendarReleaseRail.jsx';
 import UpcomingSuggestionsSheet from './UpcomingSuggestionsSheet.jsx';
+import EmptyState from './EmptyState.jsx';
+import Segmented from './Segmented.jsx';
+import SearchField from './SearchField.jsx';
 
 const SUGGEST_DISMISS_KEY = 'plot_calendar_suggest_dismissed';
 
@@ -34,23 +37,6 @@ function monthOf(date) {
 
 const countEvents = (day) => day.events.length;
 const countItems  = (day) => day.items.length;
-
-const SearchIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="11" cy="11" r="7" />
-    <path d="m20 20-4-4" />
-  </svg>
-);
-
-function EmptyState({ title, body, action }) {
-  return (
-    <div className="empty-state">
-      <div className="empty-title">{title}</div>
-      <div className="empty-body">{body}</div>
-      {action}
-    </div>
-  );
-}
 
 /* ═══════════════════════════════════════
    CalendarView
@@ -173,34 +159,15 @@ export default function CalendarView() {
           <button type="button" className="btn btn-primary btn-sm cal-suggest-btn" onClick={openSuggest}>
             {CALENDAR_VIEW.suggest.open}
           </button>
-          <div className="cal-scope" role="tablist">
-            <button
-              role="tab"
-              aria-selected={view === 'mine'}
-              className={`cal-scope-btn${view === 'mine' ? ' active' : ''}`}
-              onClick={() => setView('mine')}
-            >
-              {CALENDAR_VIEW.scope.mine}
-            </button>
-            <button
-              role="tab"
-              aria-selected={view === 'all'}
-              className={`cal-scope-btn${view === 'all' ? ' active' : ''}`}
-              onClick={() => setView('all')}
-            >
-              {CALENDAR_VIEW.scope.all}
-            </button>
-          </div>
-          <label className="hist-search cal-search">
-            <SearchIcon />
-            <input
-              type="search"
-              value={query}
-              onChange={event => setQuery(event.target.value)}
-              placeholder={COMMON.searchTitles}
-              aria-label={COMMON.searchTitles}
-            />
-          </label>
+          <Segmented
+            options={[
+              { value: 'mine', label: CALENDAR_VIEW.scope.mine },
+              { value: 'all', label: CALENDAR_VIEW.scope.all },
+            ]}
+            value={view}
+            onChange={setView}
+          />
+          <SearchField className="hist-search cal-search" value={query} onChange={setQuery} placeholder={COMMON.searchTitles} ariaLabel={COMMON.searchTitles} />
         </div>
       </div>
 

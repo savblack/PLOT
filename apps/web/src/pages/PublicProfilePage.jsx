@@ -48,6 +48,8 @@ import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 import { EVENTS } from '../lib/analytics.js';
 import { WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import EmptyState from '../components/EmptyState.jsx';
+import Segmented from '../components/Segmented.jsx';
 
 const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
@@ -856,10 +858,12 @@ export function ProfileContent({ username, isOwn, openPanel, watchlist, favourit
     {hasPicks && <section className="pp-section pp-featured">
       <div className="pp-section-heading"><h2 className="pp-section-title">{PUBLIC_PROFILE_PAGE.topFive}</h2>
         {/* Always both, so a visitor can see the other list exists even when it is empty. */}
-        <div className="cal-scope" role="group" aria-label={PUBLIC_PROFILE_PAGE.topFive}>
-          <button type="button" className={`cal-scope-btn${pickType === 'movie' ? ' active' : ''}`} aria-pressed={pickType === 'movie'} onClick={() => setPickType('movie')}>{MEDIA.movies}</button>
-          <button type="button" className={`cal-scope-btn${pickType === 'tv' ? ' active' : ''}`} aria-pressed={pickType === 'tv'} onClick={() => setPickType('tv')}>{MEDIA.tv}</button>
-        </div>
+        <Segmented
+          options={[{ value: 'movie', label: MEDIA.movies }, { value: 'tv', label: MEDIA.tv }]}
+          value={pickType}
+          onChange={setPickType}
+          ariaLabel={PUBLIC_PROFILE_PAGE.topFive}
+        />
       </div>
       {picks.length > 0
         ? <><TopFiveGrid items={picks} openPanel={openPanel} watchlist={watchlist} /><p className="pp-top5-hint">{PUBLIC_PROFILE_PAGE.tapPosterForDetails}</p></>
@@ -893,6 +897,6 @@ export function ProfileContent({ username, isOwn, openPanel, watchlist, favourit
     {[[PUBLIC_PROFILE_PAGE.watching, content.watching], [PUBLIC_PROFILE_PAGE.wantToWatch, content.wantToWatch]].map(([label, items]) => items.length > 0 && <section className="pp-section" key={label}>
       <h2 className="pp-section-title">{label}</h2><PosterRail items={items} openPanel={openPanel} watchlist={watchlist} />
     </section>)}
-    {content.empty && <div className="pp-sparse"><p>{PUBLIC_PROFILE_PAGE.noPublicTitles}</p>{isOwn && <Link className="btn btn-secondary btn-sm" to="/my-lists">{PUBLIC_PROFILE_PAGE.addFirstPick}</Link>}</div>}
+    {content.empty && <EmptyState body={PUBLIC_PROFILE_PAGE.noPublicTitles} action={isOwn && <Link className="btn btn-secondary btn-sm" to="/my-lists">{PUBLIC_PROFILE_PAGE.addFirstPick}</Link>} />}
   </div>;
 }

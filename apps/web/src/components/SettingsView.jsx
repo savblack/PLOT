@@ -63,6 +63,7 @@ import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipe
 import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
 import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../utils/letterboxdImportPrompt.js';
 import PremiumMark from './PremiumMark.jsx';
+import SearchField from './SearchField.jsx';
 import Chip, { ChipRow } from './Chip.jsx';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -285,35 +286,13 @@ function TimezonePicker({ current, onSave, onClose }) {
       footer={<DialogActions busy={saving} error={error}
         primary={{ label: saving ? COMMON.saving : COMMON.save, onClick: handleSave, disabled: !chosen }} />}
     >
-      <div style={{ padding: '0.75rem 1rem 0', position: 'relative' }}>
-        <input
-          style={{
-            width: '100%',
-            padding: '0.6rem 2.25rem 0.6rem 1rem',
-            borderRadius: 'var(--radius-pill)',
-            border: '1px solid var(--border)',
-            background: 'var(--surface)',
-            fontSize: '0.86rem',
-            fontFamily: 'var(--font-sans)',
-            color: 'var(--text-primary)',
-            outline: 'none',
-          }}
+      <div style={{ padding: '0.75rem 1rem 0' }}>
+        <SearchField
           placeholder={SETTINGS_VIEW.timezone.searchPlaceholder}
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={setQuery}
           autoFocus
         />
-        {query && (
-          <button
-            type="button"
-            className="search-input-clear"
-            style={{ right: '1.75rem' }}
-            onClick={() => setQuery('')}
-            aria-label={COMMON.clearSearch}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        )}
       </div>
 
       <div style={{ overflow: 'auto', flex: 1, padding: '0.5rem 0', maxHeight: '55vh' }}>
@@ -439,29 +418,8 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
           {hint && (
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.4 }}>{hint}</p>
           )}
-          <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
-            <input
-              type="text"
-              placeholder="Search…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{
-                width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem',
-                background: 'var(--surface-raised)', border: '1px solid var(--border)',
-                borderRadius: 8, fontSize: '0.9rem', color: 'var(--text)',
-                fontFamily: 'inherit', outline: 'none',
-              }}
-            />
-            {search && (
-              <button
-                type="button"
-                className="search-input-clear"
-                onClick={() => setSearch('')}
-                aria-label={COMMON.clearSearch}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            )}
+          <div style={{ marginBottom: '0.75rem' }}>
+            <SearchField placeholder="Search…" value={search} onChange={setSearch} />
           </div>
           <div className="providers-select-grid">
             {visible.map(p => (
