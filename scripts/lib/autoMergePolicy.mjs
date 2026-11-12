@@ -59,28 +59,88 @@ const MANIFEST = /(^|\/)package\.json$|^pnpm-lock\.yaml$/;
 // A workflow fix may only change these kinds of line. Anything else (a new
 // step, a new `run:`, a secret, a trigger, token scope) waits for Savannah:
 // a deny-list cannot see an exfiltrating curl spelled some new way.
-// `continue-on-error` is not on the list: it turns a safety check that should
-// go red into one that never does.
-const CI_SAFE_LINE = /^\s*(-\s*)?(runs-on|timeout-minutes|node-version|deno-version|python-version|cache|fetch-depth):\s*[\w.'"/@-]+\s*(#.*)?$|^\s*(-\s*)?uses:\s*[\w.-]+\/[\w./-]+@[0-9a-f]{40}\s*(#.*)?$|^\s*-\s*cron:\s*'[0-9*\/, -]+'\s*(#.*)?$|^\s*(#.*)?$/;
+// Not on the list, because each can switch a safety check off without a red X:
+// `continue-on-error` (a failing step passes), `cron:` (a schedule that never
+// fires, like 31 February), and any runner but the exact labels below (an
+// unknown label leaves the job queued forever).
+// Values are a bare word or one balanced pair of quotes around it, and never
+// contain `..`; timeout-minutes and fetch-depth are numbers.
+const CI_SAFE_LINE = /^\s*(-\s*)?(timeout-minutes|fetch-depth):\s*\d+\s*(#.*)?$|^\s*(-\s*)?(node-version|deno-version|python-version|cache):\s*(?:([\w.@/-]+)|'([\w.@/-]+)'|"([\w.@/-]+)")\s*(#.*)?$|^\s*(-\s*)?runs-on:\s*(?:([\w.-]+)|'([\w.-]+)'|"([\w.-]+)")\s*(#.*)?$|^\s*(-\s*)?uses:\s*[\w.-]+\/[\w./-]+@[0-9a-f]{40}\s*(#.*)?$|^\s*(#.*)?$/;
+const NO_DOTDOT = (line) => !line.replace(/#.*$/, '').includes('..');
 // The action a `uses:` line runs (owner/repo, plus any sub-path), without its pin.
-const USES = /^\s*(?:-\s*)?uses:\s*([\w.-]+\/[\w./-]+)@/;
+const USES = /^(\s*(?:-\s*)?)uses:\s*([\w.-]+\/[\w./-]+)@/;
+// A key line's identity: its indentation, list dash and key name.
+const KEY = /^(\s*(?:-\s*)?[\w-]+):/;
+// Only these GitHub-hosted runner labels. A self-hosted runner is a machine
+// outside GitHub, and a label GitHub doesn't have leaves the job queued.
+const RUNNERS = new Set([
+  'ubuntu-latest', 'ubuntu-24.04', 'ubuntu-22.04', 'ubuntu-24.04-arm', 'ubuntu-22.04-arm',
+  'macos-latest', 'macos-15', 'macos-14',
+  'windows-latest', 'windows-2025', 'windows-2022',
+]);
+const RUNS_ON = /^\s*(?:-\s*)?runs-on:\s*(?:([\w.-]+)|'([\w.-]+)'|"([\w.-]+)")\s*(#.*)?$/;
+const knownRunner = (line) => {
+  const m = line.match(RUNS_ON);
+  return Boolean(m) && RUNNERS.has(m[1] || m[2] || m[3]);
+};
+// Printable ASCII and tab only. YAML treats some other characters (U+0085, for
+// one) as a line break that git and this parser do not, so a "comment" could
+// carry a second line, such as a new `run:` step.
+const PLAIN = /^[\t\x20-\x7e]*$/;
 
-/** Every changed line of a workflow patch is on the safe list. */
+/** What a changed line stands for, so a replacement can be matched to it. */
+function identity(line) {
+  const uses = line.match(USES);
+  if (uses) return `${uses[1]}uses:${uses[2]}`;
+  const key = line.match(KEY);
+  return key ? key[1] : null; // null: a comment or blank line
+}
+
+/**
+ * Split a unified diff into change blocks: removed lines directly followed by
+ * the lines that replaced them, with no context or hunk header between.
+ */
+function changeBlocks(patch) {
+  const blocks = [];
+  let cur = null;
+  for (const raw of patch.split('\n')) {
+    const line = raw.replace(/\r$/, '');
+    // File headers only; a removed `---` YAML document marker is content.
+    if (/^(\+\+\+|---) (a\/|b\/|\/dev\/null)/.test(line)) { cur = null; continue; }
+    const sign = line[0];
+    if (sign === '-' || sign === '+') {
+      if (!cur || (sign === '-' && cur.added.length)) blocks.push((cur = { removed: [], added: [] }));
+      (sign === '-' ? cur.removed : cur.added).push(line.slice(1));
+    } else {
+      cur = null; // context, `@@`, `\ No newline at end of file`
+    }
+  }
+  return blocks;
+}
+
+/**
+ * A workflow patch that only changes values in place: every changed line is
+ * on the safe list, and every changed setting replaces the same setting at the
+ * same place. So a pin bump passes, and a new, swapped, moved or dropped step
+ * waits. A pinned `uses:` line runs someone's code with the workflow's
+ * secrets, which is why a fix may only re-pin an action the workflow already
+ * runs, where it already runs it.
+ */
 export function isSafeWorkflowPatch(patch) {
   if (!patch) return false;
-  const changed = patch.split('\n').filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)/.test(l));
-  if (changed.length === 0 || !changed.every((l) => CI_SAFE_LINE.test(l.slice(1)))) return false;
-  // A pinned `uses:` line runs someone's code with the workflow's secrets, so
-  // a fix may only move an action the workflow already runs to a new pin: each
-  // added `uses:` replaces a removed one for the same action, in order. A new
-  // step, a swapped action, or a dropped step waits.
-  const actions = (sign) => changed
-    .filter((l) => l[0] === sign)
-    .map((l) => (l.slice(1).match(USES) || [])[1])
-    .filter(Boolean);
-  const removed = actions('-');
-  const added = actions('+');
-  return removed.length === added.length && removed.every((a, i) => a === added[i]);
+  const blocks = changeBlocks(patch);
+  if (blocks.length === 0) return false;
+  for (const { removed, added } of blocks) {
+    const lines = [...removed, ...added];
+    if (!lines.every((l) => PLAIN.test(l) && CI_SAFE_LINE.test(l) && NO_DOTDOT(l))) return false;
+    if (!added.every((l) => !/^\s*(?:-\s*)?runs-on:/.test(l) || knownRunner(l))) return false;
+    // Comments and blank lines may come and go; settings must be replaced in
+    // place, one for one, by the same setting at the same indentation.
+    const before = removed.map(identity).filter(Boolean);
+    const after = added.map(identity).filter(Boolean);
+    if (before.length !== after.length || !before.every((id, i) => id === after[i])) return false;
+  }
+  return true;
 }
 const MAX_CHANGED_LINES = 400;
 
