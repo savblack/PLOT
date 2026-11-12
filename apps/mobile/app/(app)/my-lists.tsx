@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Rect } from 'react-native-svg';
 import { IconSearch, IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
 import SectionTitle from '../../components/SectionTitle';
+import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -336,22 +337,6 @@ function releaseCaption(item: { release_date?: string | null; streaming_date?: s
   if (strm) return `Streaming ${countdownPhrase(strm.label)}`;
   const rel = countdownChip(item.release_date, noPalette);
   return rel ? `Out ${countdownPhrase(rel.label)}` : null;
-}
-
-// One calm prompt for an empty section: says what belongs here and offers the
-// next step (NN/g: status, teach, direct path), instead of blank slots.
-function EmptyPrompt({ title, body, actionLabel, onPress }: { title: string; body: string; actionLabel: string; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  return (
-    <TouchableOpacity style={styles.emptyPrompt} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`${title}. ${actionLabel}`}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.emptyPromptTitle}>{title}</Text>
-        <Text style={styles.emptyPromptBody}>{body}</Text>
-      </View>
-      <Text style={styles.emptyPromptAction}>{actionLabel}</Text>
-    </TouchableOpacity>
-  );
 }
 
 // ── Poster grid ───────────────────────────────────────────────────────
@@ -1726,14 +1711,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterCaption: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
   sharedLine: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
 
-  emptyPrompt: {
-    marginHorizontal: spacing.xl, marginVertical: spacing.sm, padding: spacing.lg,
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    borderRadius: radii.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.borderStrong,
-  },
-  emptyPromptTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
-  emptyPromptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
-  emptyPromptAction: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   empty: { padding: spacing.xl, alignItems: 'center' },
   covers: { flexDirection: 'row', flexWrap: 'wrap', gap: COVER_GAP, rowGap: spacing.xl, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
