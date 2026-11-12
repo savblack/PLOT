@@ -4,7 +4,7 @@ Status: paused
 Owner: Jacob (mobile implementation), Hailey (signup flow)
 Branch: agent/2026-11-12-mobile-social-login
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-11-12-mobile-social-login
-Updated: 2026-11-12 15:30 AEDT
+Updated: 2026-11-12 (resumed check; waiting on Savannah's choice of device test route)
 
 ## Goal
 Enable Google and Apple login in the mobile release configuration and verify the flows.
@@ -26,4 +26,4 @@ Arrange an installable internal iOS build with the production provider settings,
 No physical device is connected to this workspace, and the completed iOS production archive is store-distribution only, so interactive sign-in could not be completed. Savannah explicitly authorized enabling both logins and verification in this chat. No submission or publication was authorized. No live user records were changed.
 
 ## Latest pushed commit
-fb374c820 (initial checkpoint); final checkpoint pending.
+fad05b75e (pushed; branch matches origin). Checks above still stand; no code changed since.
