@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Linking from 'expo-linking';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
@@ -169,10 +168,16 @@ const AUTH_WEB_CALLBACK = 'https://app.theplot.tv/auth/callback';
 // app/(auth)/callback.tsx listens for. A link opened on another device cannot
 // open this app, which is why the same email also carries a numeric code
 // (see the 'inbox' mode below).
-// PRODUCTION REQUIREMENT: this resolves to plot://auth/callback — add that
-// exact URL to Supabase Dashboard → Authentication → URL Configuration →
-// Redirect URLs, or signInWithOtp will reject it and fall back to erroring.
-const AUTH_APP_CALLBACK = Linking.createURL('/auth/callback');
+// PRODUCTION REQUIREMENT: this exact URL must be in Supabase Dashboard →
+// Authentication → URL Configuration → Redirect URLs. Supabase compares it
+// literally; on a mismatch it silently sends the person to the Site URL (the
+// web app) instead of back into this app.
+// Written out rather than built with Linking.createURL('/auth/callback'): in a
+// store build that returns plot:///auth/callback (three slashes, empty host),
+// which did not match the allow-listed plot://auth/callback, so Google sign-in
+// on TestFlight build 6 finished on theplot.tv instead of in the app.
+// The scheme is `expo.scheme` in app.json.
+const AUTH_APP_CALLBACK = 'plot://auth/callback';
 
 // Supabase's email OTP length setting allows 6 to 10 digits.
 const OTP_MIN_DIGITS = 6;

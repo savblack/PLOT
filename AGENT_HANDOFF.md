@@ -34,7 +34,8 @@ No physical device is connected to this workspace, and the completed iOS product
 - 2026-11-12: Savannah installed build 6 from TestFlight on her iPhone and reported Sign in with Apple worked (her report in chat; not independently checked).
 - Google sign-in on her iPhone FAILED: Google succeeded, but the auth sheet landed on the theplot.tv homepage instead of returning to the app (her screenshot).
 - Diagnosis (code reading, not yet proven on device): `apps/mobile/app/(auth)/index.tsx:175` builds the return address with `Linking.createURL('/auth/callback')`. In a store build there is no hostUri, so expo-linking (`node_modules/expo-linking/build/createURL.js`) produces `plot:///auth/callback` (three slashes). Production Supabase's Redirect URLs list (read in the dashboard, unchanged) has `plot://auth/callback` (two slashes) but not the three-slash form, so Supabase falls back to the Site URL `https://app.theplot.tv`. Apple is unaffected because it signs in with a native token and never uses a redirect. The same constant is the `emailRedirectTo` for mobile magic links and signup confirmation, so those likely land on the web too.
-- Proposed fix, awaiting Savannah's yes (production auth setting): add `plot:///auth/callback` to production Redirect URLs. No new build needed; she can retest build 6 straight away. Then correct the comment at index.tsx:172.
+- Savannah chose to fix the app rather than allow-list the three-slash form. `AUTH_APP_CALLBACK` is now the literal `'plot://auth/callback'` (already on production's list), and the unused `expo-linking` import is removed. No production Supabase setting was changed. The deep-link handlers (`callback.tsx`, `lib/magicLink.ts`) already expect `plot://auth/callback`.
+- Needs a new iOS build (7) and TestFlight upload; build 6 still has the old address.
 - Not yet confirmed: Google sign-in on her iPhone after the fix; Google sign-in on Android.
 
 ## Latest pushed commit
