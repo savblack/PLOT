@@ -17,8 +17,25 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      mobile_released: ${{ steps.release.outputs['apps/mobile--release_created'] }}
+      mobile_tag: ${{ steps.release.outputs['apps/mobile--tag_name'] }}
     steps:
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  # A new mobile-vX.Y.Z starts the iOS store build. Called directly because a
+  # tag pushed with GITHUB_TOKEN does not trigger other workflows.
+  mobile-build:
+    needs: release-please
+    if: needs.release-please.outputs.mobile_released == 'true'
+    permissions:
+      contents: read
+      issues: write
+    uses: ./.github/workflows/mobile-build.yml
+    with:
+      ref: ${{ needs.release-please.outputs.mobile_tag }}
+    secrets: inherit
