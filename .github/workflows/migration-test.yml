@@ -29,7 +29,9 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          run_id=$(gh run list --repo "$REPO" --workflow db-scrubbed-snapshot.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          # Before db-scrubbed-snapshot.yml is on main, GitHub answers 404 for it;
+          # that is the same "no snapshot yet" case as an empty run list.
+          run_id=$(gh run list --repo "$REPO" --workflow db-scrubbed-snapshot.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty' 2>/dev/null || true)
           if [ -z "$run_id" ]; then
             echo "::warning::No scrubbed snapshot has been built yet (db-scrubbed-snapshot.yml). Skipping; the Staging SQL tests still run on this PR."
             echo "found=false" >> "$GITHUB_OUTPUT"
