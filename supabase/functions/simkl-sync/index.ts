@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import type { Database } from '../_shared/database.types.ts'
 import { buildSimklHistoryBody, parseSimklHistory } from '../_shared/simklSync.js'
 import { insertMissingHistory, type ImportedHistoryRow } from '../_shared/importHistory.ts'
