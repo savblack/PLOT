@@ -7,6 +7,7 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { regionalWords } from '@plot/core/spelling.js';
 import { THEME_FAMILIES, familySwatch, isPremiumFamily, type ThemeFamily } from '@plot/core/themes.js';
 import UpgradeSheet from '../../components/UpgradeSheet';
+import { TextLink } from '../../components/Button';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
@@ -54,13 +55,7 @@ export default function ThemesScreen() {
               <View style={styles.foot}>
                 <Text style={styles.meta}>{lockedFamily ? A.gallery.premium : current ? A.gallery.inUse : isPremiumFamily(id) ? A.gallery.premium : A.gallery.free}</Text>
                 {current ? null : (
-                  <TouchableOpacity
-                    onPress={() => pick(id)}
-                    accessibilityRole="button"
-                    accessibilityLabel={lockedFamily ? A.lockedTheme(name) : A.gallery.applyLabel(name)}
-                  >
-                    <Text style={styles.apply}>{A.gallery.applyLabel(name)}</Text>
-                  </TouchableOpacity>
+                  <TextLink tone="accent" label={A.gallery.applyLabel(name)} accessibilityLabel={lockedFamily ? A.lockedTheme(name) : A.gallery.applyLabel(name)} onPress={() => pick(id)} />
                 )}
               </View>
             </View>
@@ -89,5 +84,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   bar: { height: 8, borderRadius: 4 },
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32 },
   meta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
-  apply: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accentText },
 });

@@ -3,7 +3,7 @@
 // A live calendar subscription is Premium. Sharing this show's .ics is free.
 // new-episode-notifications enforces the mute. Push is not wired here.
 import { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useEpisodeAlerts } from '@plot/core/useEpisodeAlerts.js';
 import { nextEpisodeLine } from '@plot/core/episodeAlerts.js';
@@ -25,6 +25,8 @@ import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { track, EVENTS } from '../lib/analytics';
 import { shareCalendarFile } from '../lib/shareCalendarFile';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
+import Toggle from './Toggle';
+import { useDialog } from './Dialog';
 
 type EpisodeAlertsShow = {
   id: number;
@@ -46,6 +48,7 @@ export default function EpisodeAlertsCard({ show }: { show: EpisodeAlertsShow })
   const { close } = useMediaPanel();
   const router = useRouter();
   const alerts = useEpisodeAlerts(userId, show?.id);
+  const { confirm, notify, dialog } = useDialog();
   const [menuOpen, setMenuOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
   const title = show?.name || '';
@@ -69,14 +72,12 @@ export default function EpisodeAlertsCard({ show }: { show: EpisodeAlertsShow })
   const subscribe = () => {
     if (!premium) {
       track(EVENTS.TITLE_CALENDAR_ACTION, { action: 'upgrade' });
-      Alert.alert(
-        SETTINGS_VIEW.calendarFeed.needsPremium,
-        SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
-        [
-          { text: SETTINGS_VIEW.premium.upgradeButton, onPress: () => go(PREMIUM_SETTINGS_PATH) },
-          { text: COMMON.cancel, style: 'cancel' },
-        ],
-      );
+      void confirm({
+        title: SETTINGS_VIEW.calendarFeed.needsPremium,
+        message: SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
+        confirmLabel: SETTINGS_VIEW.premium.upgradeButton,
+        cancelLabel: COMMON.cancel,
+      }).then(ok => { if (ok) go(PREMIUM_SETTINGS_PATH); });
       return;
     }
     if (!profile?.calendar_token) {
@@ -86,7 +87,7 @@ export default function EpisodeAlertsCard({ show }: { show: EpisodeAlertsShow })
     }
     const feed = edgeFunctionUrl('calendar-feed', { token: profile.calendar_token });
     if (!feed) {
-      Alert.alert(SETTINGS_VIEW.calendarFeed.subscribeLabel, COMMON.genericError);
+      notify(SETTINGS_VIEW.calendarFeed.subscribeLabel, COMMON.genericError);
       return;
     }
     const webcal = feed.replace(/^https?:\/\//, 'webcal://');
@@ -101,7 +102,7 @@ export default function EpisodeAlertsCard({ show }: { show: EpisodeAlertsShow })
     void (async () => {
       const ok = await opened(webcal) || await opened(feed);
       if (!ok) {
-        Alert.alert(SETTINGS_VIEW.calendarFeed.subscribeLabel, COMMON.genericError);
+        notify(SETTINGS_VIEW.calendarFeed.subscribeLabel, COMMON.genericError);
         return;
       }
       track(EVENTS.TITLE_CALENDAR_ACTION, { action: 'subscribe' });
@@ -125,7 +126,7 @@ export default function EpisodeAlertsCard({ show }: { show: EpisodeAlertsShow })
       track(EVENTS.TITLE_CALENDAR_ACTION, { action: 'download', count: events.length });
       await shareCalendarFile(generateICS(events));
     } catch {
-      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
+      notify(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
     } finally {
       setSharing(false);
     }
@@ -142,11 +143,10 @@ export default function EpisodeAlertsCard({ show }: { show: EpisodeAlertsShow })
           <Text style={styles.title}>{T.title}</Text>
           <Text style={styles.hint}>{alerts.on ? T.hintOn : T.hintOff}</Text>
         </View>
-        <Switch
+        <Toggle
           value={alerts.on}
           onValueChange={() => { void onToggle(); }}
           disabled={alerts.loading || alerts.busy}
-          trackColor={{ true: colors.accent }}
           accessibilityLabel={alerts.on ? T.turnOff(title) : T.turnOn(title)}
         />
       </View>
@@ -191,6 +191,7 @@ export default function EpisodeAlertsCard({ show }: { show: EpisodeAlertsShow })
           )}
         </View>
       )}
+      {dialog}
     </View>
   );
 }

@@ -13,10 +13,11 @@
  */
 import { useState, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, Modal, StyleSheet,
+  View, Text, Modal, StyleSheet,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import Button from './Button';
+import ModalHeader from './ModalHeader';
 import { TextInput } from './TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePageSheetTop } from './PageSheet';
@@ -80,12 +81,7 @@ export default function ConfirmPhraseModal({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={[styles.container, { paddingTop: sheetTop }]}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onClose} disabled={busy}>
-              <Text style={styles.cancel}>{COMMON.cancel}</Text>
-            </TouchableOpacity>
-          </View>
+          <ModalHeader title={title} actionLabel={COMMON.cancel} onAction={busy ? undefined : onClose} />
 
           <View style={styles.body}>
             <Text style={styles.message}>{message}</Text>
@@ -122,13 +118,6 @@ export default function ConfirmPhraseModal({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-  },
-  title: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
-  cancel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
   body: { padding: spacing.xl, gap: spacing.md },
   message: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 21 },
   prompt: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },

@@ -20,6 +20,7 @@ import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { tmdb } from '../../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TextLink } from '../../components/Button';
 import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
@@ -311,9 +312,7 @@ function InlineError({ message, onRetry, styles }: { message: string; onRetry: (
   return (
     <View style={styles.inlineError} accessibilityLiveRegion="polite">
       <Text style={styles.inlineErrorText}>{message}</Text>
-      <TouchableOpacity onPress={onRetry} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Text style={styles.inlineErrorRetry}>{F.seed.retry}</Text>
-      </TouchableOpacity>
+      <TextLink tone="accent" label={F.seed.retry} onPress={onRetry} />
     </View>
   );
 }
@@ -328,7 +327,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   note:        { marginTop: spacing.lg, marginBottom: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted, textAlign: 'center' },
   inlineError: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, marginBottom: spacing.sm, borderRadius: radii.md, backgroundColor: colors.dangerDim },
   inlineErrorText:  { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
-  inlineErrorRetry: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accent },
   gridLabel:   { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.7, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: spacing.sm },
   grid:        { maxHeight: GRID_MAX_H, marginBottom: spacing.md },
   row:         { gap: spacing.sm, marginBottom: spacing.sm },

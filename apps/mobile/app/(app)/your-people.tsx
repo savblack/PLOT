@@ -1,12 +1,14 @@
 import BackBar from '../../components/BackBar';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { IconCheck } from '../../components/icons';
 import SearchField from '../../components/SearchField';
 import Button from '../../components/Button';
+import Chip, { ChipRow } from '../../components/Chip';
+import Loader from '../../components/Loader';
 import ListRow from '../../components/ListRow';
 import { usePeopleFeed, usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { feedItems, filterFeedByType, groupByDate, groupByPerson } from '@plot/core/peopleFeed.js';
@@ -204,24 +206,11 @@ export default function YourPeopleScreen() {
         contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
       >
         <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }}>{P.page.subtitle}</Text>
-        <View style={{ flexDirection: 'row', alignSelf: 'flex-start', marginTop: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
-          {(['date', 'person'] as const).map(id => {
-            const on = view === id;
-            return (
-              <TouchableOpacity
-                key={id}
-                onPress={() => setView(id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: on }}
-                style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: on ? colors.accentFill : colors.bg }}
-              >
-                <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: on ? colors.onAccentFill : colors.textPrimary }}>
-                  {id === 'date' ? P.page.byDate : P.page.byPerson}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <ChipRow style={{ marginTop: spacing.md }}>
+          {(['date', 'person'] as const).map(id => (
+            <Chip key={id} label={id === 'date' ? P.page.byDate : P.page.byPerson} selected={view === id} onPress={() => setView(id)} />
+          ))}
+        </ChipRow>
 
         <View style={{ marginTop: spacing.lg, padding: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -272,7 +261,7 @@ export default function YourPeopleScreen() {
         </View>
 
         <View style={{ marginTop: spacing.lg }}>
-          {busy && sections.length === 0 && <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xl }} />}
+          {busy && sections.length === 0 && <Loader fill={false} />}
           {!busy && people.follows.length === 0 && (
             <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{P.page.empty}</Text>
           )}

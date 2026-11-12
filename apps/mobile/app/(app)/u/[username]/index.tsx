@@ -16,11 +16,11 @@ import { EVENTS } from '../../../../lib/analytics';
 import { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator,
 } from 'react-native';
 import { Linking } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import EditProfileModal from '../../../../components/EditProfileModal';
+import Loader from '../../../../components/Loader';
 import { SOCIAL_LINKS } from '@plot/core/profileFields.js';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -123,7 +123,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
         {!found ? (
           <View style={styles.emptyWrap}>
             {loading ? (
-              <ActivityIndicator color={colors.accent} />
+              <Loader fill={false} />
             ) : (
               <>
                 <Text style={styles.emptyTitle}>This profile isn't public</Text>
@@ -349,7 +349,6 @@ function Stat({ num, label, styles }: { num: number; label: string; styles: Retu
 function FollowListModal({
   kind, targetId, viewerId, onClose,
 }: { kind: 'followers' | 'following'; targetId: string; viewerId?: string | null; onClose: () => void }) {
-  const { colors } = useTheme();
   const [users, setUsers] = useState<SocialUser[] | null>(null);
 
   useEffect(() => {
@@ -360,7 +359,7 @@ function FollowListModal({
   }, [kind, targetId]);
 
   return users === null
-    ? <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xl }} />
+    ? <Loader fill={false} />
     : <UserList users={users} viewerId={viewerId} onNavigate={onClose} showCompare empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />;
 }
 

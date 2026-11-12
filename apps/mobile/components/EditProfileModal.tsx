@@ -14,10 +14,9 @@
  * group (lib/avatar.ts), as it does on web, not in this sheet.
  */
 import { useState, useEffect, useMemo } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet,
-  ActivityIndicator, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import PageSheet from './PageSheet';
+import { Spinner } from './Loader';
 import { TextInput } from './TextInput';
 import { IconCheck } from './icons';
 import { Avatar } from './Avatar';
@@ -27,7 +26,6 @@ import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
-import { COMMON } from '@plot/core/copy/common.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import {
   SOCIAL_LINKS, PROFILE_SECTIONS, ALL_SECTION_KEYS, USERNAME_RE, normaliseUsername,
@@ -120,29 +118,20 @@ export default function EditProfileModal({
     : '';
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.screen}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={styles.cancel}>{COMMON.cancel}</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>{PUBLIC_PROFILE_PAGE.editProfile}</Text>
-            <TouchableOpacity onPress={save} disabled={!canSave} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={[styles.save, !canSave && styles.saveDisabled]}>
-                {saving ? PUBLIC_PROFILE_PAGE.saving : COMMON.save}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
+    <PageSheet
+      title={PUBLIC_PROFILE_PAGE.editProfile}
+      onClose={onClose}
+      onSave={save}
+      canSave={canSave}
+      saving={saving}
+      error={error || null}
+    >
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             {/* Photo is display-only for now: picking one needs expo-image-picker,
                 a native module, so it can't ship without a dev-client rebuild. */}
             <View style={styles.photoRow}>
               <Avatar url={current.avatar_url} name={displayName || uname} size={72} colors={colors} />
             </View>
-
-            {!!error && <Text style={styles.error}>{error}</Text>}
 
             <View style={styles.field}>
               <Text style={styles.label}>Name</Text>
@@ -166,7 +155,7 @@ export default function EditProfileModal({
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-                {unameStatus === 'checking' && <ActivityIndicator color={colors.textMuted} />}
+                {unameStatus === 'checking' && <Spinner />}
               </View>
               {!!unameHint && (
                 <Text style={[styles.hint, unameStatus === 'ok' ? styles.hintOk : styles.hintBad]}>{unameHint}</Text>
@@ -228,31 +217,13 @@ export default function EditProfileModal({
               })}
             </View>
           </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+    </PageSheet>
   );
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    // Extra top padding: a pageSheet has no status bar of its own, so without
-    // it the controls sit hard against the card's rounded edge.
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-  },
-  title:  { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
-  cancel: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textMuted },
-  save:   { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.accent },
-  saveDisabled: { color: colors.textMuted },
-
   body: { padding: spacing.xl, paddingTop: spacing.xl * 1.5, gap: spacing.xl * 1.5, paddingBottom: spacing.xl * 3 },
   photoRow: { alignItems: 'center' },
-  error: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger, textAlign: 'center' },
 
   field: { gap: spacing.md },
   label: {

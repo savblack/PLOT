@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import SearchField from '../SearchField';
+import { Tag } from '../Chip';
 import { useRouter, type Href } from 'expo-router';
 import { personName, unlockedPartners } from '@plot/core/watchTogether.js';
 import { useWatchTogetherSuggestions, startWatchTogetherSession } from '@plot/core/useWatchTogether.js';
@@ -17,7 +18,7 @@ import WatchTogetherStart from './WatchTogetherStart';
 import { InviteLinkCard, useInviteShare } from './InviteLinkCard';
 import { AcceptSheet } from './AcceptSheet';
 import {
-  ButtonRow, Chip, ErrorNote, InkCard, InkText, InkTitle, ListCard, Note, PageTitle, PersonRow, PrimaryButton, SecondaryButton, SectionLabel, WatchPage, WhoChip, openPremium,
+  ButtonRow, ErrorNote, InkCard, InkText, InkTitle, ListCard, Note, PageTitle, PersonRow, PrimaryButton, SecondaryButton, SectionLabel, WatchPage, WhoChip, openPremium,
 } from './WatchChrome';
 import { TogetherApi, WtPerson, asPeople, asResult, errorText, sessionIdFrom, useTogether } from './watchModel';
 
@@ -137,10 +138,10 @@ export function WatchHub() {
                 person={person}
                 note={T.hub.bothSaved(person.overlap_count ?? 0)}
                 onPress={() => router.push(`/(app)/together/with/${encodeURIComponent(person.username)}` as Href)}
-                trailing={news.unlocked.some(p => p.id === person.id) ? <Chip label={T.hub.unlocked} tone="ok" /> : undefined}
+                trailing={news.unlocked.some(p => p.id === person.id) ? <Tag label={T.hub.unlocked} tone="sage" style={{ alignSelf: 'center' }} /> : undefined}
               />
             ) : (
-              <PersonRow key={person.id} person={person} note={T.hub.bothSaved(person.overlap_count ?? 0)} trailing={<Chip label={T.hub.needsPremium} />} />
+              <PersonRow key={person.id} person={person} note={T.hub.bothSaved(person.overlap_count ?? 0)} trailing={<Tag label={T.hub.needsPremium} style={{ alignSelf: 'center' }} />} />
             ))}
           </ListCard>
         )}

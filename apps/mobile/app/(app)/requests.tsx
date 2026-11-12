@@ -3,9 +3,10 @@
  * Incoming requests to follow a private profile; approve or decline each.
  */
 import BackBar from '../../components/BackBar';
+import Loader from '../../components/Loader';
 import { useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -40,7 +41,7 @@ export default function RequestsScreen() {
         <Text style={styles.intro}>{PROFILE_PRIVACY.followRequestsIntro}</Text>
 
         {loading ? (
-          <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xxl }} />
+          <Loader fill={false} />
         ) : requests.length === 0 ? (
           <Text style={styles.empty}>No pending requests.{'\n'}When someone asks to follow you, they'll show up here.</Text>
         ) : (

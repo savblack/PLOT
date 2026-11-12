@@ -8,7 +8,7 @@ import { holdPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  Modal, Alert, ActivityIndicator, StyleSheet, FlatList, Linking, AppState,
+  Modal, StyleSheet, FlatList, Linking, AppState,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -17,6 +17,8 @@ import { usePageSheetTop } from './PageSheet';
 import Svg, { Path, Polyline, Line } from 'react-native-svg';
 import { IconChevronRight, IconClose, IconCheck } from './icons';
 import Button, { TextLink } from './Button';
+import Loader from './Loader';
+import { useDialog } from './Dialog';
 import { tmdb } from '../lib/tmdb';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
@@ -195,6 +197,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   useEffect(() => holdPremiumTrialPrompt(), []);
   const insets = useSafeAreaInsets();
   const sheetTop = usePageSheetTop();
+  const { notify, dialog } = useDialog();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const plex = useMediaSync(userId);
@@ -238,14 +241,14 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     let alive = true;
     readImportJobReview(reviewJob).then(entries => {
       if (!alive) return;
-      if (!entries.length) { Alert.alert(IMPORT_JOBS.review.title(importSourceName(reviewJob.source)), IMPORT_JOBS.review.missing); return; }
+      if (!entries.length) { notify(IMPORT_JOBS.review.title(importSourceName(reviewJob.source)), IMPORT_JOBS.review.missing); return; }
       setPlatform(reviewJob.source as Platform);
       setExistingRows([]);
       setResolved(entries as ResolvedEntry[]);
       setStep('preview');
     });
     return () => { alive = false; };
-  }, [reviewJob]);
+  }, [reviewJob, notify]);
 
   const handleSelectPlatform = (p: Platform) => {
     importReport.selected(p);
@@ -315,12 +318,12 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
       setDocumentReport(importReportMessages(document));
       if (!raw.length && (document.warnings.length || document.notImported.length)) { setResolved([]); setStep('preview'); return; }
       if (raw.some(row => row.destination) && !getConfig().importEventsEnabled) {
-        Alert.alert(IMPORT_VIEW.incomplete, IMPORT_VIEW.listNotImported('not_available'));
+        notify(IMPORT_VIEW.incomplete, IMPORT_VIEW.listNotImported('not_available'));
         importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.LISTS_UNAVAILABLE });
         return;
       }
       if (raw.length === 0) {
-        Alert.alert('No entries found', 'The file could not be parsed or contains no viewing history. Make sure you selected the right platform and file.');
+        notify('No entries found', 'The file could not be parsed or contains no viewing history. Make sure you selected the right platform and file.');
         importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.EMPTY_FILE });
         return;
       }
@@ -352,7 +355,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
 
       // Planning against a partial history is the data-loss path. Stop.
       if (error) {
-        Alert.alert('Import stopped', IMPORT_VIEW.couldNotReadHistory);
+        notify('Import stopped', IMPORT_VIEW.couldNotReadHistory);
         importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
         setStep('pick-file');
         return;
@@ -360,7 +363,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
 
       const review = await reviewImportDuplicates({ userId, resolved: results });
       if (review.error) {
-        Alert.alert('Import stopped', IMPORT_VIEW.couldNotReadHistory);
+        notify('Import stopped', IMPORT_VIEW.couldNotReadHistory);
         importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.HISTORY_READ_FAILED });
         setStep('pick-file');
         return;
@@ -369,7 +372,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
       setResolved(review.resolved);
       setStep('preview');
     } catch (error) {
-      Alert.alert(IMPORT_VIEW.incomplete, error instanceof Error ? error.message : IMPORT_VIEW.fileReadFailed);
+      notify(IMPORT_VIEW.incomplete, error instanceof Error ? error.message : IMPORT_VIEW.fileReadFailed);
       // Past `started`, the file read fine and matching titles is what threw.
       importReport.report('failed', {
         source: platform,
@@ -379,7 +382,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     } finally {
       letterboxdPicking.current = false;
     }
-  }, [platform, userId, importReport]);
+  }, [platform, userId, importReport, notify]);
 
   /* One plan drives both the preview and the write. Nothing here deletes: the
      old version cleared every history row for the titles in the file before
@@ -440,7 +443,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     setImportedCount(inserted);
     setImportResult({ duplicates, failed });
     if (failed) {
-      Alert.alert(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
+      notify(IMPORT_VIEW.partialFailureHeading, IMPORT_VIEW.partialFailure(failed));
     }
     if (inserted > 0 && platform) {
       onImported?.(platform, inserted);
@@ -448,7 +451,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     // A background job's leftovers are done with: drop the review file.
     if (reviewJob) await finishImportJobReview(reviewJob);
     setStep('done');
-  }, [plan, resolved, userId, platform, importReport, onImported, reviewJob]);
+  }, [plan, resolved, userId, platform, importReport, onImported, reviewJob, notify]);
 
   const connection = platform === 'plex' ? plex : platform === 'trakt' ? trakt : platform === 'simkl' ? simkl : null;
   const connectionName = platform === 'plex' ? 'Plex' : platform === 'trakt' ? 'Trakt' : 'Simkl';
@@ -458,7 +461,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     importReport.report('started', { source: platform });
     const result = await connection.importHistory();
     if (!result) {
-      Alert.alert('Import stopped', connection.error || IMPORT_VIEW.importFailed);
+      notify('Import stopped', connection.error || IMPORT_VIEW.importFailed);
       importReport.report('failed', { source: platform, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
       return;
     }
@@ -468,7 +471,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     setPushedCount(result.pushedCount || 0);
     onImported?.(platform, result.importedCount || 0);
     setStep('done');
-  }, [connection, platform, importReport, onImported]);
+  }, [connection, platform, importReport, onImported, notify]);
 
   const reset = () => {
     setStep('pick-platform');
@@ -582,9 +585,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
                   {IMPORT_VIEW.letterboxdSteps.map((item, index) => (
                     <Text key={item} style={styles.hintText}>{index + 1}. {item}</Text>
                   ))}
-                  <TouchableOpacity onPress={openLetterboxdExport} accessibilityRole="link" style={styles.exportLink}>
-                    <Text style={styles.exportLinkText}>{IMPORT_VIEW.letterboxdExportLink}</Text>
-                  </TouchableOpacity>
+                  <TextLink tone="accent" label={IMPORT_VIEW.letterboxdExportLink} onPress={openLetterboxdExport} accessibilityRole="link" style={styles.exportLink} />
                 </>
               ) : (
                 <Text style={styles.hintText}>{PLATFORMS.find(p => p.id === platform)!.hint}</Text>
@@ -606,7 +607,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
         {/* ── Step: resolving ─────────────────────────────────────────── */}
         {step === 'resolving' && (
           <View style={[styles.body, styles.center]}>
-            <ActivityIndicator size="large" color={colors.accent} />
+            <Loader fill={false} />
             <Text style={styles.resolvingTitle}>Matching titles…</Text>
             <Text style={styles.resolvingCount}>{resolveDone} / {resolveTotal}</Text>
             <View style={styles.progressBarBg}>
@@ -648,15 +649,11 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
                     {item.reason === 'episode_identity_required' && <Text style={styles.previewMeta}>{IMPORT_VIEW.episodeIdentityRequired}</Text>}
                     {(needsDuplicateReview(item) || leftOutWatchSummary(item)) && <View>
                       <Text style={styles.previewMeta}>{leftOutWatchSummary(item) && !getConfig().importEventsEnabled ? IMPORT_VIEW.overlappingSummaryOmitted : item.pendingDuplicates?.length ? IMPORT_VIEW.pendingWatchSummary : IMPORT_VIEW.possibleDuplicate}</Text>
-                      {(needsDuplicateReview(item) || getConfig().importEventsEnabled) && <TouchableOpacity accessibilityRole="button" onPress={() => setResolved(current => current.map((entry, i) => i === index ? { ...entry, duplicateDecision: 'keep' } : entry))}>
-                        <Text style={[styles.previewMeta, { color: colors.accent, paddingVertical: spacing.sm }]}>{IMPORT_VIEW.keepSeparateWatch}</Text>
-                      </TouchableOpacity>}
+                      {(needsDuplicateReview(item) || getConfig().importEventsEnabled) && <TextLink tone="accent" label={IMPORT_VIEW.keepSeparateWatch} onPress={() => setResolved(current => current.map((entry, i) => i === index ? { ...entry, duplicateDecision: 'keep' } : entry))} style={styles.rowLink} />}
                     </View>}
                     {item.duplicateDecision === 'keep' && <Text style={styles.previewMeta}>{IMPORT_VIEW.duplicateConfirmed}</Text>}
                     {!!item.candidates?.length && (
-                      <TouchableOpacity accessibilityRole="button" onPress={() => setReviewIndex(reviewIndex === index ? null : index)}>
-                        <Text style={[styles.previewMeta, { color: colors.accent, paddingVertical: spacing.sm }]}>{IMPORT_VIEW.reviewMatch}</Text>
-                      </TouchableOpacity>
+                      <TextLink tone="accent" label={IMPORT_VIEW.reviewMatch} onPress={() => setReviewIndex(reviewIndex === index ? null : index)} style={styles.rowLink} />
                     )}
                     {reviewIndex === index && <>
                       <TouchableOpacity accessibilityRole="button" onPress={() => {
@@ -691,7 +688,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
         {/* ── Step: importing ─────────────────────────────────────────── */}
         {step === 'importing' && (
           <View style={[styles.body, styles.center]}>
-            <ActivityIndicator size="large" color={colors.accent} />
+            <Loader fill={false} />
             <Text style={styles.resolvingTitle}>Importing…</Text>
             <Text style={styles.resolvingCount}>{importDone} / {importTotal}</Text>
             <View style={styles.progressBarBg}>
@@ -720,6 +717,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
           </View>
         )}
 
+        {dialog}
       </View>
     </Modal>
   );
@@ -789,7 +787,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   hintLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textSecondary },
   hintText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
   exportLink: { alignSelf: 'flex-start', marginTop: spacing.sm },
-  exportLinkText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
+  rowLink: { alignSelf: 'flex-start' },
   errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger, lineHeight: 20, marginBottom: spacing.md },
 
   filePicker: {
