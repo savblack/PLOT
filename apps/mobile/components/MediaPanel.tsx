@@ -27,6 +27,7 @@ import { TextInput } from './TextInput';
 import { shouldDismissSheet, sheetDismissDuration } from '@plot/core/sheetDrag.js';
 import Svg, { Path, Line, Polyline, Circle, Polygon } from 'react-native-svg';
 import { IconChevronDown, IconChevronUp, IconClose, IconCheck as CheckGlyph, IconPlus as PlusGlyph } from './icons';
+import RetryButton from './RetryButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';
 import { backdropUrl, posterUrl, logoUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
@@ -1341,9 +1342,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
             ) : error ? (
               <View style={{ alignItems: 'center', paddingVertical: spacing.xxl }}>
                 <Text style={styles.errorText}>Couldn't load details. Check your connection.</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={() => setRetryKey(k => k + 1)}>
-                  <Text style={styles.retryText}>Retry</Text>
-                </TouchableOpacity>
+                <RetryButton onPress={() => setRetryKey(k => k + 1)} />
               </View>
             ) : (
               <>
@@ -2083,8 +2082,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   seasonBulkBtnTextPending: { color: colors.textMuted },
 
   errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md },
-  retryBtn:  { paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
-  retryText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
 
   // ── Add-to-list sheet ──
   lsOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.5)' },

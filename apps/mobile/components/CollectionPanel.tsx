@@ -10,6 +10,7 @@ import { collectionPartYear, orderedCollectionParts } from '@plot/core/collectio
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { backdropUrl, posterUrl, palettes, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
+import RetryButton from './RetryButton';
 import CollectionFilms, { CollectionRun, useCollectionProgress } from './CollectionFilms';
 
 const PANEL_H = Dimensions.get('window').height * 0.92;
@@ -79,7 +80,7 @@ export default function CollectionPanel({ collectionId, onClose }: { collectionI
             ) : error || !stub ? (
               <View style={{ alignItems: 'center', paddingVertical: spacing.xxl }}>
                 <Text style={styles.errorText}>{MEDIA_PANEL.couldNotLoadCollection}</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={() => setRetryKey(k => k + 1)}><Text style={styles.retryText}>Retry</Text></TouchableOpacity>
+                <RetryButton onPress={() => setRetryKey(k => k + 1)} />
               </View>
             ) : (
               <>
@@ -136,6 +137,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   overview: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginBottom: spacing.lg },
   card: { borderWidth: 1, borderColor: colors.border, borderRadius: radii.md, backgroundColor: colors.surface, overflow: 'hidden', marginTop: spacing.sm },
   errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md },
-  retryBtn: { paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
-  retryText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
 });
