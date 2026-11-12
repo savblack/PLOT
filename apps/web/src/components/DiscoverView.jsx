@@ -156,7 +156,7 @@ const HOME_SECTION = {
   platforms: { id: 'home-platforms', label: 'Top 10 by Platform', navLabel: 'Top 10 By Platform' },
 };
 
-export function HomePageNav({ sections, onCustomize }) {
+export function HomePageNav({ sections }) {
   const [activeId, setActiveId] = useState(sections[0]?.id);
   const currentId = sections.some(section => section.id === activeId) ? activeId : sections[0]?.id;
 
@@ -170,7 +170,7 @@ export function HomePageNav({ sections, onCustomize }) {
     return () => observer.disconnect();
   }, [sections]);
 
-  if (!sections.length && !onCustomize) return null;
+  if (!sections.length) return null;
   const goTo = (id) => {
     setActiveId(id);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -180,7 +180,6 @@ export function HomePageNav({ sections, onCustomize }) {
     <nav className="hist-card home-page-nav" aria-label="Jump to">
       <div className="home-page-nav-head">
         <h2 className="home-page-nav-title">Jump to</h2>
-        {onCustomize && <button type="button" className="home-page-nav-customize" onClick={onCustomize}>{DISCOVER_VIEW.customize.action}</button>}
       </div>
       <div className="home-page-nav-list">
         {sections.map(section => (
@@ -868,12 +867,10 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
       <aside className="cal-side home-side">
         <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} />
         <OnThisDayCard item={onThisDay} openPanel={openPanel} />
-        <HomePageNav sections={pageSections} onCustomize={() => setCustomizing(true)} />
+        <HomePageNav sections={pageSections} />
         <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
       </aside>
       <div className="discover-sections home-stream">
-      {/* The sidebar holding the Jump to card is hidden below 1024px, so phones get their own way in. */}
-      <div className="home-customize-bar"><button type="button" className="home-page-nav-customize" onClick={() => setCustomizing(true)}>{DISCOVER_VIEW.customize.action}</button></div>
       {savedItems.length > 0 && (
         <RailSection id={HOME_SECTION.saved.id} title={HOME_SECTION.saved.label}>
           {savedItems.map(item => (
@@ -893,6 +890,9 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         </RailSection>
       ))}
       {orderedIds.map(id => renderSection[id]())}
+      {/* Customize sits at the foot of the page at every width, as on every
+          page that has one (Savannah, 12 Nov 2026). */}
+      <div className="page-customize-foot"><button type="button" className="home-page-nav-customize" onClick={() => setCustomizing(true)}>{DISCOVER_VIEW.customize.action}</button></div>
       </div>
       {customizing && (
         <HomeLayoutSheet
