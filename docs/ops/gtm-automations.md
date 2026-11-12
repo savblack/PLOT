@@ -13,7 +13,7 @@ the same change.
 There is no Inngest, Trigger.dev, Temporal, or third-party CMS. Articles are
 rows in Supabase (`marketing_posts`), rendered by the `marketing-feed` edge
 function, and proxied onto theplot.tv. Social posts are scheduled in Buffer.
-Copy is written by the Grok CLI on this Mac. Claude runs only when `grok` is not on PATH.
+Copy is written by the Grok CLI on a GitHub-hosted Mac, signed in with a login made for GitHub alone. Claude runs only when `grok` is not on PATH.
 
 **Changelog posts: not found.** Nothing in workflows, scripts, edge functions,
 or docs plans a product changelog, release-notes feed, or "what's new" post.
@@ -25,7 +25,7 @@ outside the repo (a private note or a manual Buffer post).
 
 ## How a normal week works
 
-1. Monday 5:30am Sydney, GitHub Actions on this Mac plans the coming week, asks Grok to write
+1. Monday 5:30am Sydney, GitHub Actions (on a GitHub-hosted Mac) plans the coming week, asks Grok to write
    the copy, renders social cards, and pushes as many posts as Buffer will hold.
    Each post is 9:00am America/New_York. 5:30am Monday Sydney is Sunday afternoon
    in the US, so the week runs Monday through Sunday Eastern. Buffer then uses
@@ -56,17 +56,20 @@ The two halves do not gate each other. That is deliberate. See
 **What it is.** The production content factory. Plans posts, writes copy,
 renders images, and starts the Buffer queue.
 
-**Trigger.** GitHub Actions schedule on the self-hosted macOS runner `plot-mac`
-(this Mac, running as savannahblack), plus manual "Run workflow", plus a
-Notion comment `/generate` (which dispatches this same workflow).
+**Trigger.** A dispatch from the uptime-watch Worker at 5:30am Monday Sydney
+(`apps/web/workers/uptime-watch/src/weeklyBatch.js`), GitHub's own schedule as
+a late backup, manual "Run workflow", and a Notion comment `/generate` (which
+dispatches this same workflow). It runs on `macos-latest`, because the copy
+worker needs `sandbox-exec`. Until 2026-11-12 it ran on the self-hosted runner
+`plot-mac` (Savannah's Mac) and a LaunchAgent there did the 5:30 dispatch.
 
 **Schedule.** Cron `30 18 * * 0` in [`.github/workflows/marketing-weekly-batch.yml`](../../.github/workflows/marketing-weekly-batch.yml).
 That is 5:30am Monday Sydney during daylight time (AEDT, UTC+11) and 4:30am
 Monday during standard time (AEST, UTC+10). A step waits until 5:30 when the
 clock is still early. GitHub cron is UTC and does not follow Sydney daylight
 time, and this repo's scheduler often starts the job hours after the cron line.
-A LaunchAgent on this Mac dispatches the same workflow at 5:30am Monday Sydney.
-If that run already succeeded, the later scheduled start exits without planning
+The uptime-watch Worker dispatches the same workflow at 5:30am Monday Sydney
+(Cloudflare cron fires on time). If that run already succeeded, the later scheduled start exits without planning
 the week again.
 
 Posts stay 9:00am America/New_York. 5:30am Monday Sydney is Sunday afternoon in
@@ -88,8 +91,12 @@ Monday's post.
 
 **Secrets (names only).** `CLAUDE_CODE_OAUTH_TOKEN`, `VITE_SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`, `TMDB_API_KEY`, `OMDB_API_KEY`, `RESEND_API_KEY`,
-`MARKETING_ADMIN_EMAIL`, `BUFFER_API_KEY`. The workflow does not set
-`XAI_API_KEY`. Grok uses the login in `~/.grok` on this Mac.
+`MARKETING_ADMIN_EMAIL`, `BUFFER_API_KEY`, `GROK_AUTH_PASSPHRASE`,
+`GROK_AUTH_JSON`. The workflow does not set `XAI_API_KEY`. Grok signs in with
+a login made for GitHub alone, restored at the start of each run from the
+newest `grok-auth` artifact (encrypted with `GROK_AUTH_PASSPHRASE`) and saved
+again at the end, because Grok replaces its refresh token on every refresh.
+`GROK_AUTH_JSON` only seeds the first run. Renewing it: `marketing/README.md`.
 `CLAUDE_CODE_OAUTH_TOKEN` is for the week where `grok` is missing. The copy
 worker itself is given a stripped environment (no database or Buffer key) plus
 `HOME`, so it can read that login. See
@@ -106,8 +113,8 @@ worker itself is given a stripped environment (no database or Buffer key) plus
 - A `marketing_batch_runs` row with `run_type = 'generate'`.
 - Buffer scheduled posts, as many as each channel's cap allows.
 
-**Dependencies.** The Grok CLI already installed at `~/.grok/bin` on this Mac,
-signed in. Claude Code CLI `@anthropic-ai/claude-code@2.1.226` only when `grok`
+**Dependencies.** The Grok CLI, installed each run from `https://x.ai/cli/install.sh`,
+and the carried login above. Claude Code CLI `@anthropic-ai/claude-code@2.1.226` only when `grok`
 is not on PATH. Playwright Chromium, TMDB, OMDb, Wikipedia (research pack),
 Supabase, Buffer, Resend.
 
@@ -510,7 +517,7 @@ There is no eval harness and no prompt registry. The Sunday learning loop that u
 
 The production prompt the CLI actually receives is short and lives in `codexPrompt` inside [`marketing/scripts/automation.mjs`](../../marketing/scripts/automation.mjs): read `AGENT.md`, write one JSON per brief, touch nothing else. The function name is historical. Grok, Codex, and Claude all use it. The real tone instructions are inside the brief, which embeds `VOICE.md`.
 
-The weekly job uses the Grok CLI already on this Mac and passes `--copy-runner=grok`. It does not reinstall Grok and it does not set an API key. A local `pnpm run weekly` uses Grok when `grok` is on PATH, otherwise Codex. Claude runs only when the weekly job cannot find `grok`.
+The weekly job installs the Grok CLI on a GitHub-hosted Mac, signs in with its own carried login, and passes `--copy-runner=grok`. It does not set an API key. A local `pnpm run weekly` uses Grok when `grok` is on PATH, otherwise Codex. Claude runs only when the weekly job cannot find `grok`.
 
 ---
 
@@ -531,10 +538,10 @@ What you can already see:
 Gaps:
 
 - No status page, dashboard, or Slack/Linear ping that says "weekly batch succeeded, 14 posts in Buffer, 11 articles in Review". Success is the absence of an email.
-- The weekly job's own failure email cannot send if this Mac's runner is offline. The daily queue check is the backup. That check is requested at 02:00 UTC and often starts hours later, still before 9:00am ET.
+- If GitHub Actions itself is down, the weekly job's own failure email cannot send, but the Worker emails when it cannot start the job. The daily queue check is the backup. That check is requested at 02:00 UTC and often starts hours later, still before 9:00am ET.
 - Cron comments and real start times disagree by several hours. Buffer sends at the Eastern hour it was given. The reconcile catching up is a later clock. A post stored at 9:00am ET can already be in Buffer at a different ET hour from that channel's schedule.
 - No alert when Notion mirror heartbeats stop, unless someone runs the SQL.
-- No alert when the Grok CLI on this Mac changes a flag the weekly job relies on. The preflight in `cli-runner.mjs` helps only once the job is running. The Claude fallback is still pinned to `@anthropic-ai/claude-code@2.1.226`.
+- No alert when a new Grok CLI release changes a flag the weekly job relies on (it installs the latest each run). The preflight in `cli-runner.mjs` helps only once the job is running. The Claude fallback is still pinned to `@anthropic-ai/claude-code@2.1.226`.
 - Social analytics are dark (section 13). You cannot see which tone is working from inside this system.
 - IndexNow failures are a log line, not an email. Guides never enter that path.
 

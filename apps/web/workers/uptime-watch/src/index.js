@@ -53,6 +53,7 @@ import { decide, probe } from '../../whats-on-watch/src/index.js';
 import { productionReadWrite, signedInReadWrite, trimSlashes } from './signin.js';
 import { dbChecksEmail, dispatchToken, readDbChecks, startDbChecks } from './dbChecks.js';
 import { maybeRollback, rollbackEmail } from './rollback.js';
+import { startWeeklyBatch, weeklyBatchEmail } from './weeklyBatch.js';
 
 const STATE_KEYS = { uptime: 'state', signin: 'signin-state', signinProd: 'signin-prod-state', dbChecks: 'dbchecks-state', rollback: 'rollback-state' };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -667,12 +668,25 @@ async function runGroup(env, watch, group, checks, now, deps = {}) {
 
 /** Which watch a cron firing belongs to. Exported for tests. */
 export function watchFor(cron, env) {
+  if (env.WEEKLY_BATCH_CRON && cron === env.WEEKLY_BATCH_CRON) return 'weekly';
   return env.SIGNIN_CRON && cron === env.SIGNIN_CRON ? 'signin' : 'uptime';
 }
 
 export default {
   async scheduled(event, env, ctx) {
     const watch = watchFor(event?.cron, env);
+    // Sunday's two UTC firings: start the weekly marketing batch at 5:30am
+    // Monday Sydney (weeklyBatch.js). Not a watch; it only emails on failure.
+    if (watch === 'weekly') {
+      ctx.waitUntil(startWeeklyBatch(env).then(async (r) => {
+        console.log('uptime watch (weekly batch):', JSON.stringify(r));
+        if (!r.started && !r.skipped) {
+          const { subject, html } = weeklyBatchEmail(r);
+          await sendRaw(env, subject, html);
+        }
+      }));
+      return;
+    }
     // The hourly firing also starts and watches the database checks, as its
     // own watch so neither can hide the other's alarm.
     const watches = watch === 'signin' ? ['signin', 'dbchecks'] : [watch];
