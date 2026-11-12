@@ -88,7 +88,7 @@ declare
     'poster_path', 'backdrop_path', 'profile_path', 'portrait_path', 'person_profile_path',
     'logo_path', 'still_path', 'bucket_id', 'aud', 'instance_id', 'timezone', 'release_date',
     'streaming_date', 'price_id', 'tmdb_refs', 'date_precision', 'versioning_status',
-    'watch_together_requests_from'
+    'watch_together_requests_from', 'list_type'
   ];
   -- (table, column) pairs that are catalog data rather than anything a member wrote.
   keep_pair text[] := array[

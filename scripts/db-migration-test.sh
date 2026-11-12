@@ -34,12 +34,21 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MIGRATIONS_DIR="${MIGRATIONS_DIR:-$HERE/../supabase/migrations}"
 
 sandbox_require_pg17 || exit 1
-PROD_URL="$(sandbox_prod_url)" || exit 1
+# SCRUBBED_DUMP: restore the scrubbed snapshot (personal data removed, see
+# scripts/db-scrubbed-snapshot.sh) instead of reading production. This is how
+# CI runs it; a local run without it still reads production as before.
+if [ -z "${SCRUBBED_DUMP:-}" ]; then
+  PROD_URL="$(sandbox_prod_url)" || exit 1
+fi
 
 sandbox_up || exit 1
 sandbox_prereqs
 sandbox_stub_supabase_platform
-sandbox_restore_prod "$PROD_URL" || exit 1
+if [ -n "${SCRUBBED_DUMP:-}" ]; then
+  sandbox_restore_file "$SCRUBBED_DUMP" || exit 1
+else
+  sandbox_restore_prod "$PROD_URL" || exit 1
+fi
 
 # What production has already applied, straight from the restored history.
 applied="$(psql "$SANDBOX_URL" -At -c \

@@ -1,0 +1,89 @@
+name: Database — scrubbed snapshot
+
+# Builds the copy of production that migration tests run against, with
+# members' personal data removed (scripts/lib/scrub-pii.sql). Production is
+# read the same way db-backup.yml reads it; the restored sandbox that briefly
+# holds real data lives only inside this job and is torn down. Only the
+# scrubbed dump leaves, encrypted with its own passphrase, as an artifact of
+# this run. migration-test.yml downloads the newest one on each migration PR,
+# so pull requests never get production credentials or backup keys.
+#
+# Runs only from main (schedule and manual dispatch). A change to this file
+# goes through the normal PR review; auto-merge never accepts workflow edits
+# like this one.
+on:
+  schedule:
+    - cron: '47 4 * * 0' # 04:47 UTC Sunday, after the nightly backup
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write # failure alerting opens and closes an `incident` issue
+
+concurrency:
+  group: db-scrubbed-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install PostgreSQL 17
+        run: |
+          set -euo pipefail
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-17 postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Restore, scrub, dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: bash scripts/db-scrubbed-snapshot.sh "$RUNNER_TEMP/scrubbed.dump"
+      - name: Encrypt
+        env:
+          SCRUBBED_SNAPSHOT_PASSPHRASE: ${{ secrets.SCRUBBED_SNAPSHOT_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          # Passphrase on stdin, not argv: argv is readable by every process on the runner.
+          gpg --batch --yes --symmetric --cipher-algo AES256 --pinentry-mode loopback \
+            --passphrase-fd 0 -o "$RUNNER_TEMP/scrubbed.dump.gpg" "$RUNNER_TEMP/scrubbed.dump" <<< "$SCRUBBED_SNAPSHOT_PASSPHRASE"
+          rm -f "$RUNNER_TEMP/scrubbed.dump"
+          ls -lh "$RUNNER_TEMP/scrubbed.dump.gpg"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: scrubbed-db-snapshot
+          path: ${{ runner.temp }}/scrubbed.dump.gpg
+          retention-days: 35
+          if-no-files-found: error
+
+      - name: Open an incident issue
+        id: incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: db-scrubbed-snapshot
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: 'The weekly scrubbed database snapshot was not built, so migration tests keep using last week''s copy until it succeeds.'
+        run: bash .github/scripts/job-incident.sh open
+      - name: Email the admin about a new incident
+        if: failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: db-scrubbed-snapshot
+          ALERT_SUBJECT: 'Plot: scrubbed database snapshot failed'
+          FAILURE_NOTE: 'The weekly scrubbed database snapshot was not built, so migration tests keep using last week''s copy until it succeeds.'
+        run: bash .github/scripts/marketing-alert.sh
+      - name: Close the incident issue on recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: db-scrubbed-snapshot
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/job-incident.sh close

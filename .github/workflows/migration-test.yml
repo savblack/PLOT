@@ -1,0 +1,62 @@
+name: Database — migration test (scrubbed copy)
+
+# Applies a PR's pending migrations to the newest scrubbed snapshot of
+# production (db-scrubbed-snapshot.yml) and fails if any of them errors. This
+# is `pnpm run db:migration-test` without the personal data: the PR gets only
+# the snapshot's passphrase, never production credentials or backup keys.
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/db-migration-test.sh'
+      - 'scripts/lib/pg-sandbox.sh'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read # download the snapshot artifact from the scheduled run
+
+jobs:
+  migration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Find the newest scrubbed snapshot
+        id: snap
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          run_id=$(gh run list --repo "$REPO" --workflow db-scrubbed-snapshot.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          if [ -z "$run_id" ]; then
+            echo "::warning::No scrubbed snapshot has been built yet (db-scrubbed-snapshot.yml). Skipping; the Staging SQL tests still run on this PR."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh run download "$run_id" --repo "$REPO" --name scrubbed-db-snapshot --dir "$RUNNER_TEMP/snap"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "Using the snapshot from run $run_id"
+      - name: Install PostgreSQL 17
+        if: steps.snap.outputs.found == 'true'
+        run: |
+          set -euo pipefail
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-17 postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Decrypt the snapshot
+        if: steps.snap.outputs.found == 'true'
+        env:
+          SCRUBBED_SNAPSHOT_PASSPHRASE: ${{ secrets.SCRUBBED_SNAPSHOT_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            -o "$RUNNER_TEMP/scrubbed.dump" -d "$RUNNER_TEMP/snap/scrubbed.dump.gpg" <<< "$SCRUBBED_SNAPSHOT_PASSPHRASE"
+      - name: Apply pending migrations to the scrubbed copy
+        if: steps.snap.outputs.found == 'true'
+        env:
+          SCRUBBED_DUMP: ${{ runner.temp }}/scrubbed.dump
+        run: bash scripts/db-migration-test.sh
