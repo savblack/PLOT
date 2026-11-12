@@ -233,6 +233,17 @@ disagrees with the one EAS is incrementing.
    the app record exists. See [app-store-listing.md](app-store-listing.md).
 5. Install Xcode when convenient, for the faster local loop.
 
+## Social sign-in status on 2026-11-12
+
+- The production EAS environment has `EXPO_PUBLIC_SHOW_APPLE_LOGIN=true` and
+  `EXPO_PUBLIC_SHOW_GOOGLE_LOGIN=true`. Both providers are enabled in production
+  Supabase. The production build key reached Auth settings, and authorization
+  requests redirected to `appleid.apple.com` and `accounts.google.com`.
+- These flags are embedded at build time. The existing iOS production build 5
+  predates the flag change; a new build is needed before users see the buttons.
+- An interactive Apple and Google sign-in on an iPhone, including the return to
+  `plot://auth/callback`, remains to be verified before submission.
+
 ## State on 2026-10-14
 
 - Five EAS iOS builds exist, the newest from 2026-09-25 (`simulator` and
