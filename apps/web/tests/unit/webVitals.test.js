@@ -40,3 +40,19 @@ test('web vitals payload keeps metric values and strips performance entries', ()
   });
   assert.equal('$web_vitals_LCP_event' in payload, true);
 });
+
+test('web vitals are filed under the page that loaded, not the live location', () => {
+  // posthog-js fills $pathname from window.location at send time, which by
+  // then may be a different in-app page (#1596). The payload must override it.
+  const payload = buildWebVitalsProperties(
+    [{ name: 'LCP', value: 7092 }],
+    'https://app.theplot.tv/signup',
+  );
+  assert.equal(payload.$current_url, 'https://app.theplot.tv/signup');
+  assert.equal(payload.$pathname, '/signup');
+});
+
+test('an empty page URL leaves $pathname to posthog-js', () => {
+  const payload = buildWebVitalsProperties([{ name: 'FCP', value: 900 }]);
+  assert.equal('$pathname' in payload, false);
+});

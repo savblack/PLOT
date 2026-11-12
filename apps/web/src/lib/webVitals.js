@@ -33,12 +33,21 @@ function serialiseMetric(metric) {
 /**
  * Keep the payload compatible with PostHog's native `$web_vitals` shape while
  * stripping the large PerformanceEntry objects returned by web-vitals.
+ *
+ * `pageUrl` is the page the browser actually loaded, not wherever the app is
+ * when the event is sent. Both `$current_url` and `$pathname` are set from it,
+ * because posthog-js would otherwise fill `$pathname` from the live location.
  */
-export function buildWebVitalsProperties(metrics, currentUrl = '') {
+export function buildWebVitalsProperties(metrics, pageUrl = '') {
   const properties = {
-    $current_url: currentUrl,
+    $current_url: pageUrl,
     $web_vitals_enabled_server_side: false,
   };
+  try {
+    if (pageUrl) properties.$pathname = new URL(pageUrl).pathname;
+  } catch {
+    // An unparseable URL leaves $pathname to posthog-js.
+  }
 
   for (const metric of metrics) {
     const serialised = serialiseMetric(metric);
@@ -66,9 +75,18 @@ function safeCurrentUrl() {
  * Start one page-load Web Vitals observer after a trusted interaction on the
  * production app. The dynamic import keeps the measurement library out of the
  * initial bundle, and the five-second flush mirrors PostHog's native batching.
+ *
+ * Every metric here describes the document load: web-vitals does not measure
+ * in-app (client-side) navigations. So readings are filed under the URL the
+ * page loaded on, captured here at startup. Before 2026-11-12 they used the URL
+ * at send time, and LCP is only sent on the next click, which is often a click
+ * that navigates. A slow /signup load was reported as /onboarding, and a /home
+ * load sent half an hour later showed up as /my-lists or /settings (#1596).
  */
 export function startHumanWebVitalsCapture({ capture = track } = {}) {
   if (typeof window === 'undefined' || !isHumanWebVitalsHost()) return () => {};
+
+  const pageUrl = safeCurrentUrl();
 
   let started = false;
   let disposed = false;
@@ -93,7 +111,7 @@ export function startHumanWebVitalsCapture({ capture = track } = {}) {
         if (metrics.size === 0 || disposed) return;
         if (flushTimer) window.clearTimeout(flushTimer);
         flushTimer = undefined;
-        capture(WEB_VITALS_EVENT, buildWebVitalsProperties(metrics.values(), safeCurrentUrl()));
+        capture(WEB_VITALS_EVENT, buildWebVitalsProperties(metrics.values(), pageUrl));
         metrics.clear();
       };
       const addMetric = (metric) => {

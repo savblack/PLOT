@@ -196,6 +196,16 @@ all. The web app starts a manual observer only on `app.theplot.tv`, and only
 after a trusted visible pointer, touch, wheel, or keyboard interaction. Synthetic
 events, preview hosts, and the marketing site are ignored.
 
+Each `$web_vitals` reading is filed under the page the browser **loaded**
+(`$current_url` and `$pathname` are both set to it), because every metric
+describes that one document load and in-app navigations are not measured.
+Before 2026-11-12 readings carried the URL at send time instead, and LCP is
+only sent on the next click, which is often a navigating one. Per-page numbers
+from before then are misfiled: in the week of issue #1596 every slow
+"/onboarding" reading was a /signup load, and "/my-lists", "/settings" and
+"/import" readings were sent 20 to 95 minutes after the page loaded. Do not
+compare per-page LCP across that date.
+
 Bots are the exact complement of Real visitors, widened so it can never swallow
 a person: a `$pageview` and then no Tier 1 action (it negates **action 333111**,
 not a list of event names, so it tracks the catalog on its own), no `$pageleave`,
