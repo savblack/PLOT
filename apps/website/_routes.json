@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": [
+    "/js/*",
+    "/images/*",
+    "/fonts/*",
+    "/copy/*",
+    "/data/*",
+    "/ui.css",
+    "/theme.css",
+    "/nav.css",
+    "/taste-match.css",
+    "/support.css",
+    "/premium-stories.css",
+    "/title-page.css",
+    "/title-page.js",
+    "/favicon.svg",
+    "/apple-touch-icon.png",
+    "/icon-192.png",
+    "/icon-512.png",
+    "/og-image.png",
+    "/site.webmanifest"
+  ]
+}
