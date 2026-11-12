@@ -8,7 +8,7 @@ import { arrangeByMyListsOrder, normalizeUiPrefs } from '@plot/core/uiPrefs.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity,
-  Modal, StyleSheet, Dimensions, ActivityIndicator, Alert, LayoutAnimation,
+  Modal, StyleSheet, Dimensions, Alert, LayoutAnimation,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
@@ -16,7 +16,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Rect } from 'react-native-svg';
 import { IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
 import SearchField, { SEARCH_FIELD_H } from '../../components/SearchField';
-import Button from '../../components/Button';
+import Button, { TextLink } from '../../components/Button';
+import { Tag } from '../../components/Chip';
+import { useDialog } from '../../components/Dialog';
 import { SheetActions } from '../../components/BottomSheet';
 import SectionTitle from '../../components/SectionTitle';
 import EmptyPrompt from '../../components/EmptyPrompt';
@@ -487,6 +489,7 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
 /** `history` is the History tab's own screen: the same body with the list tabs left out. */
 export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }) {
   const { colors, resolved } = useTheme();
+  const { confirm, dialog } = useDialog();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { open: openPanel } = useMediaPanel();
@@ -754,10 +757,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
       key={list.id}
       list={list}
       typeFilters={typeFilters}
-      onDelete={() => Alert.alert('Delete list?', `"${list.name}" will be removed.`, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => customLists.deleteList(list.id) },
-      ])}
+      onDelete={async () => {
+        if (await confirm({ title: 'Delete list?', message: `"${list.name}" will be removed.`, confirmLabel: COMMON.delete, cancelLabel: COMMON.cancel, destructive: true })) customLists.deleteList(list.id);
+      }}
       onAddItem={() => setShowAddToList(list.id)}
       onRemoveItem={(tmdbId, opts) => customLists.removeItem(list.id, tmdbId, opts)}
       onSetVisibility={(visibility) => customLists.setListVisibility(list.id, visibility)}
@@ -1084,9 +1086,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             onOpenChange={(next) => setSectionOpenFor('lists', next)}
             headerRight={<SectionAddButton onPress={requestCreateList} label="Create list" />}
           >
-            <TouchableOpacity style={styles.newListRow} onPress={requestCreateList}>
-              <Text style={styles.newListText}>+ New list</Text>
-            </TouchableOpacity>
+            <TextLink tone="accent" label="+ New list" onPress={requestCreateList} style={styles.newListRow} />
             {manualLists.length === 0 && (
               <EmptyPrompt
                 title={CUSTOM_LISTS.emptyPrompts.lists.title}
@@ -1310,7 +1310,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           onClose={() => setShowAddToList(null)}
         />
       )}
-
+      {dialog}
     </View>
   );
 }
@@ -1323,6 +1323,7 @@ function CustomListCard({
   onSetVisibility: (visibility: ListVisibility) => void; onShare: () => void; onRename: (name: string) => void; typeFilters: string[];
 }) {
   const { colors } = useTheme();
+  const { confirm, dialog } = useDialog();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
   const { profile, userId, customLists, history, watching } = useAppData();
@@ -1362,11 +1363,8 @@ function CustomListCard({
   ) as any[];
   const visibility = listVisibility(list);
   const shareable = isListShareable(visibility, profile?.is_public);
-  const confirmLeave = () => {
-    Alert.alert(WATCH_TOGETHER.sharedList.leaveTitle(list.name), WATCH_TOGETHER.sharedList.leaveBody, [
-      { text: COMMON.cancel, style: 'cancel' },
-      { text: WATCH_TOGETHER.sharedList.leave, style: 'destructive', onPress: () => { void customLists.leaveList(list.id); } },
-    ]);
+  const confirmLeave = async () => {
+    if (await confirm({ title: WATCH_TOGETHER.sharedList.leaveTitle(list.name), message: WATCH_TOGETHER.sharedList.leaveBody, confirmLabel: WATCH_TOGETHER.sharedList.leave, cancelLabel: COMMON.cancel, destructive: true })) void customLists.leaveList(list.id);
   };
 
   const openInvite = () => {
@@ -1429,10 +1427,10 @@ function CustomListCard({
           {!!sharedLine && <Text style={styles.sharedLine} numberOfLines={1}>{sharedLine}</Text>}
         </View>
         {!member && visibility !== 'private' && (
-          <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>{PROFILE_PRIVACY.listVisibilityBadge[visibility]}</Text></View>
+          <Tag label={PROFILE_PRIVACY.listVisibilityBadge[visibility]} style={styles.publicBadge} />
         )}
         {shared && (
-          <View style={styles.publicBadge}><Text style={styles.publicBadgeText}>{WATCH_TOGETHER.sharedList.shared}</Text></View>
+          <Tag label={WATCH_TOGETHER.sharedList.shared} style={styles.publicBadge} />
         )}
         <Text style={styles.customListCount}>{list.items?.length || 0}</Text>
         {sel.editMode ? (
@@ -1550,6 +1548,7 @@ function CustomListCard({
         onClose={() => setInviteUpgrade(false)}
         onCompare={() => openPremium(router)}
       />
+      {dialog}
     </View>
   );
 }
@@ -1585,16 +1584,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  publicBadge: {
-    marginLeft: spacing.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.accent + '55',
-    backgroundColor: colors.accent + '1F',
-  },
-  publicBadgeText: { fontFamily: fontFamily.sansBold, fontSize: 9, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.accent },
+  publicBadge: { marginLeft: spacing.sm, alignSelf: 'center' },
   subTab: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1684,7 +1674,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   emptyAddBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
 
   newListRow: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  newListText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   smartNewRow: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: 2 },
   smartNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   smartKept: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm },

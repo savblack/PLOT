@@ -5,9 +5,10 @@
  * and they open the title rather than a profile).
  */
 import BackBar from '../../components/BackBar';
+import Loader from '../../components/Loader';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { supabase } from '../../lib/supabase';
@@ -139,7 +140,7 @@ export default function NotificationsScreen() {
           </TouchableOpacity>
         ) : null}
         {loading ? (
-          <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xxl }} />
+          <Loader fill={false} />
         ) : list.length === 0 && together.incoming.length === 0 ? (
           <Text style={styles.empty}>{NOTIFICATIONS_EMPTY.title}{'\n'}{NOTIFICATIONS_EMPTY.body}</Text>
         ) : (

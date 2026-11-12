@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { personName, filterByKind, splitGroupMatches, shufflePick } from '@plot/core/watchTogether.js';
 import { startWatchTogetherSession } from '@plot/core/useWatchTogether.js';
@@ -9,11 +9,12 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { supabase } from '@plot/core/supabase.js';
 import { EVENTS, track } from '../../lib/analytics';
-import { fontFamily, fontSize, spacing, radii, posterUrl } from '../../lib/tokens';
+import { fontFamily, fontSize, spacing, posterUrl } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import UpgradeSheet from '../UpgradeSheet';
 import ListRow from '../ListRow';
+import Chip from '../Chip';
 import { ShareListSheet } from './ShareListSheet';
 import { WatchTogetherTile } from './WatchTogetherTile';
 import {
@@ -97,23 +98,7 @@ export function WatchOverlap({ usernames }: { usernames: string[] }) {
         {([['all', T.overlap.all], ['movie', T.overlap.movies], ['tv', T.overlap.shows]] as const).map(([id, label]) => {
           const on = kind === id;
           return (
-            <TouchableOpacity
-              key={id}
-              onPress={() => { setKind(id); setTopId(null); }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: on }}
-              style={{
-                minHeight: 36,
-                paddingHorizontal: spacing.md,
-                borderRadius: radii.pill,
-                justifyContent: 'center',
-                backgroundColor: on ? colors.accentFill : 'transparent',
-                borderWidth: 1,
-                borderColor: on ? colors.accentFill : colors.border,
-              }}
-            >
-              <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: on ? colors.onAccentFill : colors.textPrimary }}>{label}</Text>
-            </TouchableOpacity>
+            <Chip key={id} label={label} selected={on} onPress={() => { setKind(id); setTopId(null); }} />
           );
         })}
       </View>

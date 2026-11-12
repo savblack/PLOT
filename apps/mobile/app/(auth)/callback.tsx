@@ -5,12 +5,13 @@
  * The root _layout auth listener then redirects to /(app).
  */
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import * as Linking from 'expo-linking';
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { consumeMagicLink } from '../../lib/magicLink';
 import { useTheme } from '../../contexts/ThemeContext';
+import Loader from '../../components/Loader';
 
 // The email types whose links come back into the app (see
 // app/(auth)/index.tsx AUTH_APP_CALLBACK). Recovery stays on the web.
@@ -54,8 +55,8 @@ export default function AuthCallback() {
   }, []);
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
-      <ActivityIndicator color={colors.accent} />
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Loader />
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SearchField from '../SearchField';
+import { Tag } from '../Chip';
 import Svg, { Path } from 'react-native-svg';
 import { IconClose } from '../icons';
 import { pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
@@ -13,7 +14,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useRouter } from 'expo-router';
 import {
-  ButtonRow, Chip, ErrorNote, InkCard, InkText, InkTitle, ListCard, Note, PersonRow, PosterThumb, PrimaryButton, SecondaryButton, SectionLabel, openPremium, useInk,
+  ButtonRow, ErrorNote, InkCard, InkText, InkTitle, ListCard, Note, PersonRow, PosterThumb, PrimaryButton, SecondaryButton, SectionLabel, openPremium, useInk,
 } from './WatchChrome';
 import { readStorage, writeStorage } from '../../lib/storage';
 import { useInviteShare } from './InviteLinkCard';
@@ -53,7 +54,7 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }: {
                 person={person}
                 note={typeof person.overlap_count === 'number' ? S.inCommon(person.overlap_count) : S.countLater}
                 trailing={sent.includes(person.id)
-                  ? <Chip label={T.invite.sent} />
+                  ? <Tag label={T.invite.sent} style={{ alignSelf: 'center' }} />
                   : <SecondaryButton label={T.invite.invite} onPress={() => invite(person)} />}
               />
             ))}
@@ -190,7 +191,7 @@ function FriendSearch({ sent, onInvite }: {
               person={person}
               note={person.username ? `@${person.username}` : undefined}
               trailing={sent.includes(person.id)
-                ? <Chip label={T.invite.sent} />
+                ? <Tag label={T.invite.sent} style={{ alignSelf: 'center' }} />
                 : <SecondaryButton label={T.invite.invite} onPress={() => invite(person)} />}
             />
           ))}

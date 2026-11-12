@@ -8,6 +8,7 @@ import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
+import { Tag } from '../Chip';
 import { ErrorNote, Note, PersonRow, PrimaryButton, SectionLabel, Sheet } from './WatchChrome';
 import { useTogether, WtPerson } from './watchModel';
 
@@ -122,7 +123,7 @@ export function AddPeopleSheet({ listId, people, locked, onClose }: {
           key={p.id}
           person={p}
           trailing={added.includes(p.id)
-            ? <Chip label={L.shared} on />
+            ? <Tag label={L.shared} style={{ alignSelf: 'center' }} />
             : <PrimaryButton label={L.add} onPress={async () => {
               const ok = await customLists.addMember(listId, p.id);
               if (ok) setAdded(prev => prev.includes(p.id) ? prev : [...prev, p.id]);

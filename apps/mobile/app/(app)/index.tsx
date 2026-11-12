@@ -1059,9 +1059,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         <PinnedShelves />
         {homeShelves.map(id => <View key={id}>{renderShelf[id]?.()}</View>)}
 
-        <TouchableOpacity style={styles.customize} onPress={() => router.push('/(app)/home-layout' as Href)} accessibilityRole="button" accessibilityLabel={DISCOVER_VIEW.customize.title}>
-          <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
-        </TouchableOpacity>
+        <TextLink quiet label={DISCOVER_VIEW.customize.action} accessibilityLabel={DISCOVER_VIEW.customize.title} onPress={() => router.push('/(app)/home-layout' as Href)} style={styles.customize} />
 
       </ScrollView>
       )}
@@ -1427,8 +1425,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   upNextEmpty: { marginHorizontal: spacing.xl, padding: spacing.md, gap: spacing.md, borderRadius: radii.md, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.borderStrong },
   upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
   upNextEmptyRow: { flexDirection: 'row', gap: spacing.md },
-  customize: { alignSelf: 'center', marginTop: spacing.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg },
-  customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
+  customize: { alignSelf: 'center', marginTop: spacing.xl },
   emptyWatchlist: {
     marginHorizontal: spacing.xl,
     padding: spacing.xl,

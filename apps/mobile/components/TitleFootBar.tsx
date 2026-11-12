@@ -33,6 +33,7 @@ import { fontFamily, fontSize, radii, spacing, type Palette } from '../lib/token
 import { clearPendingRate, noteWatchedUnrated } from '../lib/ratePrompt';
 import Stars from './Stars';
 import Button, { TextLink } from './Button';
+import { Tag } from './Chip';
 
 const FOOT = MEDIA_PANEL.foot;
 
@@ -162,7 +163,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
         <View style={styles.boxLabelRow}>
           {icon}
           <Text style={[styles.boxLabel, kind === 'private' && styles.boxLabelMuted]}>{label.toUpperCase()}</Text>
-          {draft && <Text style={[styles.draftTag, kind === 'private' && styles.draftTagMuted]}>{FOOT.draft}</Text>}
+          {draft && <Tag label={FOOT.draft} tone={kind === 'private' ? 'neutral' : 'accent'} style={styles.draftTag} />}
         </View>
         <Text style={[styles.boxText, (!filled || kind === 'private') && { color: colors.textMuted }]} numberOfLines={2}>{filled ? text : empty}</Text>
       </TouchableOpacity>
@@ -393,11 +394,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   boxLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   boxLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.9, color: colors.accentText },
   boxLabelMuted: { color: colors.textMuted },
-  draftTag: {
-    fontFamily: fontFamily.sansBold, fontSize: 9, letterSpacing: 0.4, color: colors.accentText,
-    backgroundColor: colors.accentDim, borderRadius: radii.pill, paddingHorizontal: 6, paddingVertical: 1, overflow: 'hidden', marginLeft: 4,
-  },
-  draftTagMuted: { color: colors.textMuted, backgroundColor: colors.border },
+  draftTag: { alignSelf: 'center', marginLeft: 4 },
   boxText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 19, color: colors.textSecondary },
 
   drain: { position: 'absolute', left: 0, bottom: 0, height: 2, backgroundColor: colors.statusWatched },

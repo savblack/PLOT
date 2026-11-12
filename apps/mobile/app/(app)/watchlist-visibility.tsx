@@ -6,7 +6,7 @@
  */
 import BackBar from '../../components/BackBar';
 import { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -14,6 +14,7 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { useWatchlistVisibility, useWatchlistViewers, watchlistVisibilityOptions } from '@plot/core/watchlistVisibility.js';
 import { Avatar } from '../../components/Avatar';
+import Toggle from '../../components/Toggle';
 import { Palette, fontFamily, fontSize, spacing } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 
@@ -66,7 +67,7 @@ export default function WatchlistVisibilityScreen() {
                     <Text style={styles.personName} numberOfLines={1}>{name}</Text>
                     <Text style={styles.hint}>{relation}</Text>
                   </View>
-                  <Switch value={p.selected} onValueChange={on => { setSelected(p.id, on); }} trackColor={{ true: colors.accent }}
+                  <Toggle value={p.selected} onValueChange={on => { setSelected(p.id, on); }}
                     accessibilityLabel={`${T.pickHeading}: ${name}`} />
                 </View>
               );

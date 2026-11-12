@@ -22,7 +22,7 @@ export default function ModalHeader({ title, actionLabel, onAction, accent = fal
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.header}>
-      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.title} accessibilityRole="header">{title}</Text>
       {action ?? (
         <TouchableOpacity onPress={onAction}>
           <Text style={[styles.action, accent && styles.actionAccent]}>{actionLabel}</Text>

@@ -20,6 +20,7 @@ import { readStorage, writeStorage } from '../lib/storage';
 import { readFinishingTouches } from '../lib/finishingTouches';
 import { useAppData } from '../contexts/AppDataContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { Tag } from './Chip';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 
 export default function WatchTogetherHomeCard() {
@@ -63,7 +64,7 @@ export default function WatchTogetherHomeCard() {
       >
         <View style={styles.row}>
           <Text style={styles.title}>{WATCH_TOGETHER.navLabel}</Text>
-          {!premium && <Text style={styles.pill}>{APP_SHELL.premium}</Text>}
+          {!premium && <Tag tone="accent" label={APP_SHELL.premium} style={styles.pill} />}
         </View>
         <Text style={styles.body}>{WATCH_TOGETHER.start.pitchTitle}</Text>
         {!premium && <Text style={styles.note}>{WATCH_TOGETHER.hub.lockedNote}</Text>}
@@ -96,18 +97,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   open: { flex: 1, minWidth: 0, gap: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   title: { fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textPrimary },
-  pill: {
-    overflow: 'hidden',
-    borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    backgroundColor: colors.accentFill,
-    color: colors.onAccentFill,
-    fontFamily: fontFamily.sansBold,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
+  pill: { alignSelf: 'center' },
   body: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   note: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   dismiss: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },

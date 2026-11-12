@@ -43,6 +43,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useFollows } from '../hooks/useFollows';
 import BottomSheet from './BottomSheet';
 import Button, { TextLink } from './Button';
+import Chip from './Chip';
 import ImportHistoryModal from './ImportHistoryModal';
 import ImportSourceIcon from './ImportSourceIcon';
 import { FollowPill, PersonFace } from './people/FollowControls';
@@ -215,7 +216,9 @@ export default function FinishingTouches({ state, onState }: {
               </View>
               <Text style={styles.tileSub}>{tile.sub}</Text>
               {!tile.done && tile.cta && (
-                <TouchableOpacity
+                <TextLink
+                  tone="accent"
+                  label={`${tile.cta} →`}
                   style={styles.tileCta}
                   onPress={() => {
                     track(EVENTS.FINISHING_TOUCH_OPENED, { step: tile.id });
@@ -225,11 +228,7 @@ export default function FinishingTouches({ state, onState }: {
                     }
                     setSheet(tile.id as Sheet);
                   }}
-                  accessibilityRole="button"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.tileCtaText}>{tile.cta} →</Text>
-                </TouchableOpacity>
+                />
               )}
               {!tile.done && 'dismiss' in tile && tile.dismiss && (
                 <TouchableOpacity
@@ -516,15 +515,12 @@ function UpToSheet({ show, watching, onClose }: {
       {seasons.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.seasonRow}>
           {seasons.map(s => (
-            <TouchableOpacity
+            <Chip
               key={s.season_number}
-              style={[styles.seasonPill, s.season_number === selSeason && styles.seasonPillOn]}
+              label={MEDIA_PANEL.seasonLabel(s.season_number)}
+              selected={s.season_number === selSeason}
               onPress={() => setSelSeason(s.season_number)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: s.season_number === selSeason }}
-            >
-              <Text style={styles.pillText}>{MEDIA_PANEL.seasonLabel(s.season_number)}</Text>
-            </TouchableOpacity>
+            />
           ))}
         </ScrollView>
       )}
@@ -567,7 +563,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   tileTitle: { flex: 1, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   tileSub: { marginLeft: 28, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   tileCta: { marginLeft: 28, marginTop: spacing.xs, alignSelf: 'flex-start' },
-  tileCtaText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accent },
   tileDismiss: { marginLeft: 28, alignSelf: 'flex-start' },
   tileDismissText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textMuted },
 
@@ -589,8 +584,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   avatarInitial: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   source: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.surfaceSunken },
   seasonRow: { gap: spacing.sm, paddingVertical: spacing.xs },
-  seasonPill: { minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg },
-  seasonPillOn: { borderColor: colors.accent },
   ep: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   epNum: { width: 36, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   pill: { minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg },

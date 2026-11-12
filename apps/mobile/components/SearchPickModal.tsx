@@ -7,14 +7,13 @@
  * pad). Folding the ranked list into My Lists made keeping both indefensible.
  */
 import { useState, useEffect, useMemo } from 'react';
-import {
-  View, Text, ScrollView,
-  Modal, StyleSheet, ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { COMMON } from '@plot/core/copy/common.js';
 import SearchField from './SearchField';
 import ListRow from './ListRow';
 import SubTab from './SubTab';
-import ModalHeader from './ModalHeader';
+import PageSheet from './PageSheet';
+import Loader from './Loader';
 import { tmdb } from '../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -59,10 +58,7 @@ export default function SearchPickModal({
   const rows = tab === 'history' ? filtered : results;
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={styles.modalContainer}>
-        <ModalHeader title={title} actionLabel="Done" onAction={onClose} accent />
-
+    <PageSheet title={title} onClose={onClose} closeLabel={COMMON.done}>
         {/* Tabs */}
         <View style={styles.modalTabs}>
           <SubTab label="From history" active={tab === 'history'} onPress={() => { setTab('history'); setQuery(''); }} />
@@ -77,7 +73,7 @@ export default function SearchPickModal({
           onChangeText={setQuery}
         />
 
-        {loading && <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />}
+        {loading && <Loader fill={false} />}
         <ScrollView style={{ flex: 1 }}>
           {rows.map((item: any) => (
             <View key={item.id || item.tmdb_id} style={styles.modalRow}>
@@ -96,13 +92,11 @@ export default function SearchPickModal({
             </Text>
           )}
         </ScrollView>
-      </View>
-    </Modal>
+    </PageSheet>
   );
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  modalContainer: { flex: 1, backgroundColor: colors.bg, paddingTop: spacing.xl },
   modalTabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   modalSearch: { marginHorizontal: spacing.xl, marginBottom: spacing.sm },
   modalRow: { paddingHorizontal: spacing.xl, paddingVertical: spacing.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },

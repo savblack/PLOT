@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Switch, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import Toggle from '../Toggle';
 import { IconClose, IconCheck } from '../icons';
 import { personName } from '@plot/core/watchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
@@ -53,10 +54,9 @@ export function AcceptSheet({ person, busy = false, onAccept, onDecline, onClose
             <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }}>{T.accept.shareFull}</Text>
             <Note>{`${T.accept.shareFullBody(name)}${mutual && shareFull ? ` ${T.accept.shareFullMutual}` : ''}`}</Note>
           </View>
-          <Switch
+          <Toggle
             value={shareFull}
             onValueChange={setChosen}
-            trackColor={{ true: colors.accent, false: colors.surfaceSunken }}
             accessibilityLabel={T.accept.shareFull}
           />
         </View>

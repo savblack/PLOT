@@ -13,7 +13,7 @@ import { THEME_FAMILIES, THEME_MODES, isPremiumFamily, type ThemeFamily } from '
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
-  Modal, Alert, ActivityIndicator, StyleSheet, Switch, Platform, Linking,
+  Modal, StyleSheet, Platform, Linking,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
@@ -23,6 +23,10 @@ import { IconChevronRight, IconClose, IconCheck } from '../../components/icons';
 import PageSheet from '../../components/PageSheet';
 import Button, { TextLink } from '../../components/Button';
 import SearchField from '../../components/SearchField';
+import Chip, { ChipRow } from '../../components/Chip';
+import Loader from '../../components/Loader';
+import Toggle from '../../components/Toggle';
+import { useDialog } from '../../components/Dialog';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
@@ -128,6 +132,17 @@ function Chevron() {
   );
 }
 
+// The action word at the end of a row (Edit, Manage, Remove). The row itself
+// is the button, so the word takes no touches of its own and stays out of the
+// screen reader's way; the row's label already says what a press does.
+function RowAction({ label, muted = false }: { label: string; muted?: boolean }) {
+  return (
+    <View style={{ pointerEvents: 'none' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <TextLink label={label} onPress={() => {}} tone={muted ? undefined : 'accent'} quiet={muted} style={{ minHeight: 0 }} />
+    </View>
+  );
+}
+
 // ── Settings row ──────────────────────────────────────────────────────
 function SettingsRow({
   icon, label, description, value, onPress, danger = false, trailing, edit = false, accessibilityLabel,
@@ -163,7 +178,7 @@ function SettingsRow({
       </View>
       <View style={styles.rowRight}>
         {!valueBelow && value ? <Text style={styles.rowValue} numberOfLines={1}>{value}</Text> : null}
-        {edit ? <Text style={styles.editAction}>{COMMON.edit}</Text> : (trailing ?? (onPress ? <Chevron /> : null))}
+        {edit ? <RowAction label={COMMON.edit} /> : (trailing ?? (onPress ? <Chevron /> : null))}
       </View>
     </TouchableOpacity>
   );
@@ -182,7 +197,6 @@ function SettingsGroup({ title, children }: { title?: string; children: React.Re
 }
 
 function PeopleFollowSettings({ userId, isPremium }: { userId: string | null; isPremium: boolean }) {
-  const { colors } = useTheme();
   const router = useRouter();
   const people = usePeopleFollows(userId);
   const alerts = useMyAlerts(userId);
@@ -190,9 +204,6 @@ function PeopleFollowSettings({ userId, isPremium }: { userId: string | null; is
   if (!userId || alerts.loading || people.loading) return null;
   const showPeople = isPremium || people.follows.length > 0;
   if (!showPeople && alerts.shows.length === 0) return null;
-  const action = (word: string) => (
-    <Text style={{ color: colors.accentText, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm }}>{word}</Text>
-  );
   const remove = async (id: number) => {
     setBusy(true);
     await alerts.removeShow(id);
@@ -206,7 +217,7 @@ function PeopleFollowSettings({ userId, isPremium }: { userId: string | null; is
             icon={null}
             label={PEOPLE.settings.label}
             description={PEOPLE.settings.count(people.follows.length)}
-            trailing={action(PEOPLE.settings.manage)}
+            trailing={<RowAction label={PEOPLE.settings.manage} />}
             onPress={() => router.push('/(app)/your-people' as Href)}
           />
         </SettingsGroup>
@@ -219,7 +230,7 @@ function PeopleFollowSettings({ userId, isPremium }: { userId: string | null; is
               key={show.tmdb_id}
               icon={null}
               label={show.title}
-              trailing={action(PREMIUM_ALERTS.settings.remove)}
+              trailing={<RowAction label={PREMIUM_ALERTS.settings.remove} />}
               onPress={busy ? undefined : () => { void remove(show.tmdb_id); }}
             />
           ))}
@@ -236,7 +247,6 @@ function PeopleFollowSettings({ userId, isPremium }: { userId: string | null; is
 // nothing to opt in to, only this to opt out of. Logic and copy are shared
 // (@plot/core useStreamingAlerts.js, copy/streamingAlerts.js).
 function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: string | null; isPremium: boolean; onCompare: () => void }) {
-  const { colors } = useTheme();
   const S = STREAMING_ALERTS.settings;
   const E = ALERT_EMAIL.settings;
   const all = useStreamingAlertsSwitch(userId);
@@ -268,7 +278,7 @@ function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: str
           icon={null}
           label={S.switchLabel}
           description={S.switchHint}
-          trailing={<Switch value={all.on} onValueChange={(next) => { void all.setOn(next); }} disabled={all.busy} trackColor={{ true: colors.accent }} accessibilityLabel={S.switchLabel} />}
+          trailing={<Toggle value={all.on} onValueChange={(next) => { void all.setOn(next); }} disabled={all.busy} accessibilityLabel={S.switchLabel} />}
         />
         {all.error ? <SettingsRow icon={null} label={STREAMING_ALERTS.error} /> : null}
         {ALERT_EMAIL_ENABLED ? (
@@ -276,7 +286,7 @@ function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: str
             icon={null}
             label={E.label}
             description={emailBlocked ? E.needsAlerts : E.hint}
-            trailing={<Switch value={email.on} onValueChange={() => { void toggleEmail(); }} disabled={email.busy || emailBlocked} trackColor={{ true: colors.accent }} accessibilityLabel={E.label} />}
+            trailing={<Toggle value={email.on} onValueChange={() => { void toggleEmail(); }} disabled={email.busy || emailBlocked} accessibilityLabel={E.label} />}
           />
         ) : null}
         {ALERT_EMAIL_ENABLED && email.error ? <SettingsRow icon={null} label={E.error} /> : null}
@@ -290,7 +300,7 @@ function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: str
               icon={null}
               label={film.title}
               accessibilityLabel={S.unmuteLabel(film.title)}
-              trailing={<Text style={{ color: colors.accentText, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm }}>{S.unmute}</Text>}
+              trailing={<RowAction label={S.unmute} />}
               onPress={busy ? undefined : () => { void turnOn(film.tmdb_id); }}
             />
           ))}
@@ -301,7 +311,7 @@ function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: str
 }
 
 function PushAlertsSettings({ userId }: { userId: string | null }) {
-  const { colors } = useTheme();
+  const { confirm, notify, dialog } = useDialog();
   const push = usePushAlerts(userId);
   const [busy, setBusy] = useState(false);
   const [devices, setDevices] = useState(0);
@@ -313,30 +323,26 @@ function PushAlertsSettings({ userId }: { userId: string | null }) {
   }, [userId, push.enabled]);
 
   const enable = async () => {
-    Alert.alert(PUSH_ALERTS.permissionTitle, PUSH_ALERTS.permissionBody, [
-      { text: PUSH_ALERTS.permissionNo, style: 'cancel' },
-      { text: PUSH_ALERTS.permissionYes, onPress: () => { void (async () => {
-        setBusy(true);
-        try {
-          const registration = await registerPushToken(true);
-          if (registration !== 'ok') {
-            Alert.alert(registration === 'denied' ? PUSH_ALERTS.permissionDenied
-              : registration === 'in_use' ? PUSH_ALERTS.inUse : PUSH_ALERTS.permissionUnavailable);
-            return;
-          }
-          const result = await push.setEnabled(true);
-          if (result.error) Alert.alert(PUSH_ALERTS.error);
-          else setDevices(d => Math.max(d, 1));
-        } catch {
-          Alert.alert(PUSH_ALERTS.error);
-        } finally { setBusy(false); }
-      })(); } },
-    ]);
+    if (!(await confirm({ title: PUSH_ALERTS.permissionTitle, message: PUSH_ALERTS.permissionBody, confirmLabel: PUSH_ALERTS.permissionYes, cancelLabel: PUSH_ALERTS.permissionNo }))) return;
+    setBusy(true);
+    try {
+      const registration = await registerPushToken(true);
+      if (registration !== 'ok') {
+        notify(registration === 'denied' ? PUSH_ALERTS.permissionDenied
+          : registration === 'in_use' ? PUSH_ALERTS.inUse : PUSH_ALERTS.permissionUnavailable);
+        return;
+      }
+      const result = await push.setEnabled(true);
+      if (result.error) notify(PUSH_ALERTS.error);
+      else setDevices(d => Math.max(d, 1));
+    } catch {
+      notify(PUSH_ALERTS.error);
+    } finally { setBusy(false); }
   };
   const disable = async () => {
     setBusy(true);
     const result = await push.setEnabled(false);
-    if (result.error) Alert.alert(PUSH_ALERTS.error);
+    if (result.error) notify(PUSH_ALERTS.error);
     setBusy(false);
   };
   return (
@@ -346,10 +352,11 @@ function PushAlertsSettings({ userId }: { userId: string | null }) {
           icon={null}
           label={PUSH_ALERTS.settingsTitle}
           description={push.enabled ? PUSH_ALERTS.settingsDevices(devices) : PUSH_ALERTS.settingsHint}
-          trailing={<Switch value={push.enabled} onValueChange={() => { void (push.enabled ? disable() : enable()); }} disabled={busy || push.busy || push.loading} trackColor={{ true: colors.accent }} accessibilityLabel={PUSH_ALERTS.settingsTitle} />}
+          trailing={<Toggle value={push.enabled} onValueChange={() => { void (push.enabled ? disable() : enable()); }} disabled={busy || push.busy || push.loading} accessibilityLabel={PUSH_ALERTS.settingsTitle} />}
         />
         {push.error ? <SettingsRow icon={null} label={PUSH_ALERTS.error} /> : null}
       </SettingsGroup>
+      {dialog}
     </>
   );
 }
@@ -494,21 +501,14 @@ function WatchTogetherPrivacy({
                   <Text style={styles.rowLabel} numberOfLines={1}>{name}</Text>
                   {when ? <Text style={styles.wtNote}>{S.since(dateFmt.format(new Date(when)), person.overlap_count ?? 0)}</Text> : null}
                 </View>
-                <TouchableOpacity
-                  onPress={() => { void end(person.other_id); }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${S.stop} ${name}`}
-                >
-                  <Text style={styles.editAction}>{S.stop}</Text>
-                </TouchableOpacity>
+                <TextLink tone="accent" label={S.stop} onPress={() => { void end(person.other_id); }} accessibilityLabel={`${S.stop} ${name}`} />
               </View>
               {watchlistVisibility !== 'everyone' && (
                 <View style={styles.wtShare}>
                   <Text style={styles.rowLabel}>{S.shareFull}</Text>
-                  <Switch
+                  <Toggle
                     value={!!person.i_share_full}
                     onValueChange={(next) => { void setShareFull(person.other_id, next).then(() => onWatchlistChange()); }}
-                    trackColor={{ true: colors.accent }}
                     accessibilityLabel={`${S.shareFull}: ${name}`}
                   />
                 </View>
@@ -522,15 +522,12 @@ function WatchTogetherPrivacy({
         <Text style={styles.wtLabel}>{L.kicker}</Text>
         <View style={styles.wtPerson}>
           <Text style={[styles.wtNote, styles.wtPersonText]}>{L.resetNote}</Text>
-          <TouchableOpacity
+          <TextLink
+            tone="accent"
+            label={L.reset}
             disabled={!key || resetDone}
             onPress={() => { void reset().then(result => { if (result.ok) setResetDone(true); }); }}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !key || resetDone }}
-            accessibilityLabel={L.reset}
-          >
-            <Text style={[styles.editAction, (!key || resetDone) && styles.wtMuted]}>{L.reset}</Text>
-          </TouchableOpacity>
+          />
         </View>
       </View>
     </SettingsGroup>
@@ -566,14 +563,7 @@ function BlockedAccounts({ viewerId }: { viewerId?: string | null }) {
               {account.display_name || account.username}
               <Text style={styles.rowValue}>{`  @${account.username}`}</Text>
             </Text>
-            <TouchableOpacity
-              onPress={() => { void unblock(account.id); }}
-              disabled={busy}
-              accessibilityRole="button"
-              accessibilityLabel={`${MODERATION.unblockAction} ${account.username}`}
-            >
-              <Text style={[styles.rowValue, { color: colors.accent }]}>{MODERATION.unblockAction}</Text>
-            </TouchableOpacity>
+            <TextLink tone="accent" label={MODERATION.unblockAction} onPress={() => { void unblock(account.id); }} disabled={busy} accessibilityLabel={`${MODERATION.unblockAction} ${account.username}`} />
           </View>
         ))
       )}
@@ -712,7 +702,7 @@ function ProviderModal({
           <SearchField value={search} onChangeText={setSearch} placeholder="Search…" />
         </View>
         {loading ? (
-          <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
+          <Loader />
         ) : (
           <ScrollView contentContainerStyle={styles.providerGrid}>
             {visible.map((p: any) => {
@@ -833,7 +823,7 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
   return (
     <PageSheet title={SETTINGS_VIEW.integrations.genresLabel} onClose={onClose} onSave={save} canSave={!loading && !loadError} changed={dirty}>
         {loading ? (
-          <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
+          <Loader />
         ) : loadError ? (
           <View style={styles.genreErrorWrap}>
             <Text style={styles.genreErrorText}>{SETTINGS_VIEW.genres.loadError}</Text>
@@ -899,18 +889,11 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
             <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
               Found a bug or have an idea? We'd love to hear it.
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            <ChipRow>
               {FEEDBACK_TYPES.map(t => (
-                <TouchableOpacity
-                  key={t.id}
-                  style={[styles.feedbackChip, type === t.id && styles.feedbackChipActive]}
-                  onPress={() => setType(t.id)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.feedbackChipText, type === t.id && styles.feedbackChipTextActive]}>{t.label}</Text>
-                </TouchableOpacity>
+                <Chip key={t.id} size="sm" label={t.label} selected={type === t.id} onPress={() => setType(t.id)} accessibilityRole="radio" />
               ))}
-            </View>
+            </ChipRow>
             <TextInput
               style={styles.feedbackInput}
               multiline
@@ -948,6 +931,7 @@ export default function SettingsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { confirm, notify, choose, dialog } = useDialog();
   const { userId, user, profile, refreshProfile, watchlist, watching, broadcastPreferences } = useAppData();
 
   const [showProviders,  setShowProviders]  = useState(false);
@@ -1023,7 +1007,7 @@ export default function SettingsScreen() {
   const toggleVisibility = async () => {
     if (!userId) return;
     const { error } = await updateProfile({ userId, patch: { is_public: !isPublic } });
-    if (error) { Alert.alert(COMMON.genericError); return; }
+    if (error) { notify(COMMON.genericError); return; }
     track(EVENTS.PROFILE_VISIBILITY_CHANGED, { is_public: !isPublic });
     refreshProfile();
   };
@@ -1047,7 +1031,7 @@ export default function SettingsScreen() {
     setGeneratingCalToken(true);
     const token = generateCalendarToken();
     const { error } = await updateProfile({ userId, patch: { calendar_token: token } });
-    if (error) { Alert.alert('Something went wrong', 'Could not create your calendar link. Please try again.'); }
+    if (error) { notify('Something went wrong', 'Could not create your calendar link. Please try again.'); }
     else { track(EVENTS.CALENDAR_FEED_GENERATED, {}); setLocalCalToken(token); refreshProfile(); }
     setGeneratingCalToken(false);
   };
@@ -1067,56 +1051,57 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleRevokeCalToken = () => {
-    Alert.alert(
-      SETTINGS_VIEW.confirm.revokeCalendarLinkTitle,
-      SETTINGS_VIEW.confirm.revokeCalendarLinkMessage,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Revoke', style: 'destructive', onPress: async () => {
-          await updateProfile({ userId: userId!, patch: { calendar_token: null } });
-          setLocalCalToken(null);
-          refreshProfile();
-        }},
-      ],
-    );
+  const handleRevokeCalToken = async () => {
+    if (!(await confirm({
+      title: SETTINGS_VIEW.confirm.revokeCalendarLinkTitle,
+      message: SETTINGS_VIEW.confirm.revokeCalendarLinkMessage,
+      confirmLabel: 'Revoke',
+      cancelLabel: 'Cancel',
+      destructive: true,
+    }))) return;
+    await updateProfile({ userId: userId!, patch: { calendar_token: null } });
+    setLocalCalToken(null);
+    refreshProfile();
   };
 
-  const openCalendarMenu = () => {
-    Alert.alert(
-      'Your calendar feed',
-      SETTINGS_VIEW.calendarFeed.liveFeedPrivate,
-      [
-        { text: 'Add to Apple Calendar', onPress: handleAddToCalendar },
-        { text: 'Share / copy link', onPress: handleShareCalUrl },
-        { text: 'Revoke link', style: 'destructive', onPress: handleRevokeCalToken },
-        { text: 'Cancel', style: 'cancel' },
+  const openCalendarMenu = async () => {
+    const picked = await choose({
+      title: 'Your calendar feed',
+      message: SETTINGS_VIEW.calendarFeed.liveFeedPrivate,
+      options: [
+        { label: 'Add to Apple Calendar' },
+        { label: 'Share / copy link' },
+        { label: 'Revoke link', destructive: true },
       ],
-    );
+    });
+    if (picked === 0) handleAddToCalendar();
+    else if (picked === 1) handleShareCalUrl();
+    else if (picked === 2) void handleRevokeCalToken();
   };
 
   // Free accounts can see the row. The live URL stays on Premium, same gate
   // as Plex and Trakt. Explore Premium opens the in-app preview.
-  const openPremiumCalendarGate = () => {
-    Alert.alert(
-      SETTINGS_VIEW.calendarFeed.needsPremium,
-      SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
-      [
-        { text: SETTINGS_VIEW.premium.upgradeButton, onPress: () => setPremiumExpanded(true) },
-        ...(calendarToken ? [{ text: SETTINGS_VIEW.confirm.revoke, style: 'destructive' as const, onPress: handleRevokeCalToken }] : []),
-        { text: COMMON.cancel, style: 'cancel' as const },
+  const openPremiumCalendarGate = async () => {
+    const picked = await choose({
+      title: SETTINGS_VIEW.calendarFeed.needsPremium,
+      message: SETTINGS_VIEW.calendarFeed.needsPremiumMessage,
+      options: [
+        { label: SETTINGS_VIEW.premium.upgradeButton },
+        ...(calendarToken ? [{ label: SETTINGS_VIEW.confirm.revoke, destructive: true }] : []),
       ],
-    );
+    });
+    if (picked === 0) setPremiumExpanded(true);
+    else if (picked === 1) void handleRevokeCalToken();
   };
 
   const handleShareSnapshot = async () => {
     if (sharingIcs) return;
     if (watchlist.loading || watching.loading) {
-      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.loadingEvents);
+      notify(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.loadingEvents);
       return;
     }
     if (watchlist.error || watching.error) {
-      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
+      notify(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
       return;
     }
     setSharingIcs(true);
@@ -1129,12 +1114,12 @@ export default function SettingsScreen() {
         fetchSeason: (tmdbId: number, seasonNumber: number) => tmdb.getSeason(tmdbId, seasonNumber),
       });
       if (!events.length) {
-        Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.emptySnapshot);
+        notify(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.emptySnapshot);
         return;
       }
       await shareCalendarFile(generateICS(events));
     } catch {
-      Alert.alert(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
+      notify(SETTINGS_VIEW.calendarFeed.exportLabel, SETTINGS_VIEW.calendarFeed.shareFailed);
     } finally {
       setSharingIcs(false);
     }
@@ -1177,7 +1162,7 @@ export default function SettingsScreen() {
   const toggleMarketingEmails = async () => {
     if (!userId) return;
     const { error } = await updateProfile({ userId, patch: { marketing_emails: !marketingEmails } });
-    if (error) { Alert.alert(SETTINGS_VIEW.errors.failedToUpdateMarketingEmails); return; }
+    if (error) { notify(SETTINGS_VIEW.errors.failedToUpdateMarketingEmails); return; }
     refreshProfile();
   };
 
@@ -1185,37 +1170,29 @@ export default function SettingsScreen() {
     if (!setFamily(id)) setThemeUpgrade(id);
   };
 
-  const handleSignOut = () => {
-    Alert.alert(SETTINGS_VIEW.page.signOutTitle, SETTINGS_VIEW.page.signOutMessage, [
-      { text: COMMON.cancel, style: 'cancel' },
-      { text: SETTINGS_VIEW.signOut, style: 'destructive', onPress: async () => {
-        if (userId) {
-          try { await unregisterPushToken(userId); }
-          catch { Alert.alert(PUSH_ALERTS.error); return; }
-        }
-        // Capture before the reset, or the event lands on the fresh anonymous
-        // profile instead of the person who actually signed out.
-        track(EVENTS.USER_SIGNED_OUT, {});
-        await supabase.auth.signOut();
-        resetAnalytics();
-      } },
-    ]);
+  const handleSignOut = async () => {
+    if (!(await confirm({ title: SETTINGS_VIEW.page.signOutTitle, message: SETTINGS_VIEW.page.signOutMessage, confirmLabel: SETTINGS_VIEW.signOut, cancelLabel: COMMON.cancel, destructive: true }))) return;
+    if (userId) {
+      try { await unregisterPushToken(userId); }
+      catch { notify(PUSH_ALERTS.error); return; }
+    }
+    // Capture before the reset, or the event lands on the fresh anonymous
+    // profile instead of the person who actually signed out.
+    track(EVENTS.USER_SIGNED_OUT, {});
+    await supabase.auth.signOut();
+    resetAnalytics();
   };
 
-  const handleClearHistory = () => {
-    Alert.alert(SETTINGS_VIEW.confirm.clearWatchHistoryTitle, SETTINGS_VIEW.confirm.clearWatchHistoryMessage, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: SETTINGS_VIEW.confirm.clearHistory, style: 'destructive', onPress: async () => {
-        setClearingHist(true);
-        // Shared helper: signals the change so a mounted useHistory reloads.
-        // This used to be a bare delete whose error was discarded, so a failed
-        // clear looked exactly like a successful one.
-        const { error } = await clearWatchHistory({ userId: userId! });
-        setClearingHist(false);
-        if (error) Alert.alert('Could not clear', SETTINGS_VIEW.errors.failedToClearWatchHistory);
-        else track(EVENTS.HISTORY_CLEARED, {});
-      }},
-    ]);
+  const handleClearHistory = async () => {
+    if (!(await confirm({ title: SETTINGS_VIEW.confirm.clearWatchHistoryTitle, message: SETTINGS_VIEW.confirm.clearWatchHistoryMessage, confirmLabel: SETTINGS_VIEW.confirm.clearHistory, cancelLabel: 'Cancel', destructive: true }))) return;
+    setClearingHist(true);
+    // Shared helper: signals the change so a mounted useHistory reloads.
+    // This used to be a bare delete whose error was discarded, so a failed
+    // clear looked exactly like a successful one.
+    const { error } = await clearWatchHistory({ userId: userId! });
+    setClearingHist(false);
+    if (error) notify('Could not clear', SETTINGS_VIEW.errors.failedToClearWatchHistory);
+    else track(EVENTS.HISTORY_CLEARED, {});
   };
 
   // Shared helper, which reports a failure itself. This used to discard every
@@ -1224,16 +1201,21 @@ export default function SettingsScreen() {
     setClearingList(true);
     const { error } = await clearSavedAndWatching({ userId: userId!, saved: true, watching });
     setClearingList(false);
-    if (error) Alert.alert('Could not clear', SETTINGS_VIEW.errors.failedToClearLists);
+    if (error) notify('Could not clear', SETTINGS_VIEW.errors.failedToClearLists);
     else track(EVENTS.WATCHLIST_CLEARED, { saved: true, watching, customListCount: 0 });
   };
 
-  const handleClearWatchlist = () => {
-    Alert.alert('Clear watchlist?', 'This removes everything from your Saved list (want-to-watch). Items in your custom lists are not affected.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear Saved only', onPress: () => clearLists(false) },
-      { text: 'Clear Saved + Watching', style: 'destructive', onPress: () => clearLists(true) },
-    ]);
+  const handleClearWatchlist = async () => {
+    const picked = await choose({
+      title: 'Clear watchlist?',
+      message: 'This removes everything from your Saved list (want-to-watch). Items in your custom lists are not affected.',
+      options: [
+        { label: 'Clear Saved only' },
+        { label: 'Clear Saved + Watching', destructive: true },
+      ],
+    });
+    if (picked === 0) void clearLists(false);
+    else if (picked === 1) void clearLists(true);
   };
 
   /* Deletion goes through the shared core helper, which sends the
@@ -1264,7 +1246,7 @@ export default function SettingsScreen() {
     setAvatarBusy(true);
     const result = remove ? await removeAvatar(userId) : await pickAndUploadAvatar(userId);
     setAvatarBusy(false);
-    if (result.error) Alert.alert(SETTINGS_VIEW.avatar.profilePhoto, result.error);
+    if (result.error) notify(SETTINGS_VIEW.avatar.profilePhoto, result.error);
     else if (result.changed) refreshProfile();
   };
 
@@ -1279,13 +1261,13 @@ export default function SettingsScreen() {
         exportUrl: edgeFunctionUrl('export-user-data'),
       });
       if (!result.ok) {
-        Alert.alert(SETTINGS_VIEW.export.label, result.error);
+        notify(SETTINGS_VIEW.export.label, result.error);
         return;
       }
       // Only count it once the person actually sent it somewhere.
       if (await shareDataExport(result.payload, format)) track(EVENTS.DATA_EXPORTED, { format });
     } catch (err) {
-      Alert.alert(SETTINGS_VIEW.export.label, err instanceof Error && err.message ? err.message : SETTINGS_VIEW.errors.failedToExportData);
+      notify(SETTINGS_VIEW.export.label, err instanceof Error && err.message ? err.message : SETTINGS_VIEW.errors.failedToExportData);
     } finally {
       setExportingData(null);
     }
@@ -1322,9 +1304,7 @@ export default function SettingsScreen() {
           <View style={styles.accountFoot}>
             <Text style={styles.accountPlan}>{premium ? SETTINGS_VIEW.page.planPremium : SETTINGS_VIEW.page.planFree}</Text>
             {username ? (
-              <TouchableOpacity onPress={() => router.push(`/(app)/u/${username}` as Href)} accessibilityRole="button">
-                <Text style={styles.editAction}>{SETTINGS_VIEW.page.viewProfile}</Text>
-              </TouchableOpacity>
+              <TextLink tone="accent" label={SETTINGS_VIEW.page.viewProfile} onPress={() => router.push(`/(app)/u/${username}` as Href)} />
             ) : null}
           </View>
         </View>
@@ -1349,20 +1329,9 @@ export default function SettingsScreen() {
         ) : (
         <>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityLabel={SETTINGS_VIEW.page.navigation}>
-          {SETTINGS_SECTIONS.map(item => {
-            const selected = item.id === active.id;
-            return (
-              <TouchableOpacity
-                key={item.id}
-                style={[styles.chip, selected && styles.chipSelected]}
-                onPress={() => setSection(item.id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{item.title}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {SETTINGS_SECTIONS.map(item => (
+            <Chip key={item.id} label={item.title} selected={item.id === active.id} onPress={() => setSection(item.id)} />
+          ))}
         </ScrollView>
         <Text style={styles.sectionTitle} accessibilityRole="header">{active.title}</Text>
         <Text style={styles.sectionDescription}>{active.description}</Text>
@@ -1374,7 +1343,7 @@ export default function SettingsScreen() {
             label={SETTINGS_VIEW.avatar.profilePhoto}
             description={avatarBusy ? COMMON.saving : profile?.avatar_url ? SETTINGS_VIEW.avatar.shownOnProfile : SETTINGS_VIEW.avatar.sizeHint(AVATAR_MAX_MB)}
             onPress={avatarBusy ? undefined : () => handleAvatar(false)}
-            trailing={<Text style={{ color: avatarBusy ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{profile?.avatar_url ? SETTINGS_VIEW.avatar.change : SETTINGS_VIEW.avatar.addPhoto}</Text>}
+            trailing={<RowAction label={profile?.avatar_url ? SETTINGS_VIEW.avatar.change : SETTINGS_VIEW.avatar.addPhoto} muted={avatarBusy} />}
           />
           {profile?.avatar_url ? (
             <SettingsRow
@@ -1438,9 +1407,7 @@ export default function SettingsScreen() {
               })}
             </ScrollView>
             {premium && (
-              <TouchableOpacity onPress={() => router.push('/(app)/themes' as Href)} accessibilityRole="button" accessibilityLabel={A.previewLabel}>
-                <Text style={styles.editAction}>{A.preview}</Text>
-              </TouchableOpacity>
+              <TextLink tone="accent" label={A.preview} onPress={() => router.push('/(app)/themes' as Href)} accessibilityLabel={A.previewLabel} style={{ alignSelf: 'flex-start' }} />
             )}
           </View>
           <SettingsRow
@@ -1461,7 +1428,7 @@ export default function SettingsScreen() {
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x={2} y={4} width={20} height={16} rx={2}/><Path d="m2 7 10 6 10-6"/></Svg>}
             label={SETTINGS_VIEW.marketingEmails.label}
             description={marketingEmails ? SETTINGS_VIEW.marketingEmails.onHint : SETTINGS_VIEW.marketingEmails.offHint}
-            trailing={<Switch value={marketingEmails} onValueChange={toggleMarketingEmails} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.marketingEmails.label} />}
+            trailing={<Toggle value={marketingEmails} onValueChange={toggleMarketingEmails} accessibilityLabel={SETTINGS_VIEW.marketingEmails.label} />}
           />
         </SettingsGroup>
         </>}
@@ -1489,7 +1456,7 @@ export default function SettingsScreen() {
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
             label={isPublic ? PROFILE_PRIVACY.publicLabel : PROFILE_PRIVACY.privateLabel}
             description={`${isPublic ? PROFILE_PRIVACY.publicDescription(favoriteWords(region).pluralLower) : PROFILE_PRIVACY.privateDescription} ${PROFILE_PRIVACY.notesAlwaysPrivate}`}
-            trailing={<Switch value={isPublic} onValueChange={toggleVisibility} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.page.privacyLabel} />}
+            trailing={<Toggle value={isPublic} onValueChange={toggleVisibility} accessibilityLabel={SETTINGS_VIEW.page.privacyLabel} />}
           />
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></Svg>}
@@ -1527,7 +1494,7 @@ export default function SettingsScreen() {
               label={BROADCAST_GUIDE.region}
               description={BROADCAST_GUIDE.preferencesError}
               onPress={() => { void broadcastPreferences.retry(); }}
-              trailing={<Text style={{ color: colors.accentText, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{BROADCAST_GUIDE.retry}</Text>}
+              trailing={<RowAction label={BROADCAST_GUIDE.retry} />}
               accessibilityLabel={`${BROADCAST_GUIDE.region}. ${BROADCAST_GUIDE.retry}`}
             />
           ) : (
@@ -1536,7 +1503,7 @@ export default function SettingsScreen() {
               label={BROADCAST_GUIDE.region}
               value={broadcastRegionLabel(broadcastPreferences.value.market_id)}
               onPress={() => setShowBroadcast(true)}
-              trailing={<Text style={{ color: colors.accentText, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{COMMON.edit}</Text>}
+              trailing={<RowAction label={COMMON.edit} />}
               accessibilityLabel={SETTINGS_VIEW.page.editSetting(BROADCAST_GUIDE.region)}
             />
           )}
@@ -1567,7 +1534,7 @@ export default function SettingsScreen() {
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Circle cx={8.5} cy={10} r={1}/><Circle cx={15.5} cy={10} r={1}/><Path d="M8 15s1.5 2 4 2 4-2 4-2"/></Svg>}
             label={SETTINGS_VIEW.kidsContent.label}
             description={includeKidsContent ? SETTINGS_VIEW.kidsContent.onHint : SETTINGS_VIEW.kidsContent.offHint}
-            trailing={<Switch value={includeKidsContent} onValueChange={toggleKidsContent} trackColor={{ true: colors.accent }} accessibilityLabel={SETTINGS_VIEW.kidsContent.label} />}
+            trailing={<Toggle value={includeKidsContent} onValueChange={toggleKidsContent} accessibilityLabel={SETTINGS_VIEW.kidsContent.label} />}
           />
         </SettingsGroup>
         <StreamingAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
@@ -1586,9 +1553,7 @@ export default function SettingsScreen() {
               onPress={calendarToken ? openCalendarMenu : handleGenerateCalToken}
               trailing={calendarToken
                 ? undefined
-                : <Text style={{ color: generatingCalToken ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>
-                    {generatingCalToken ? SETTINGS_VIEW.calendarFeed.generating : SETTINGS_VIEW.calendarFeed.generateLink}
-                  </Text>}
+                : <RowAction label={generatingCalToken ? SETTINGS_VIEW.calendarFeed.generating : SETTINGS_VIEW.calendarFeed.generateLink} muted={generatingCalToken} />}
             />
           ) : (
             <SettingsRow
@@ -1596,7 +1561,7 @@ export default function SettingsScreen() {
               label={SETTINGS_VIEW.calendarFeed.subscribeLabel}
               description={SETTINGS_VIEW.calendarFeed.needsPremium}
               onPress={openPremiumCalendarGate}
-              trailing={<Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>{SETTINGS_VIEW.premium.upgradeButton}</Text>}
+              trailing={<RowAction label={SETTINGS_VIEW.premium.upgradeButton} />}
             />
           )}
           <SettingsRow
@@ -1604,9 +1569,7 @@ export default function SettingsScreen() {
             label={SETTINGS_VIEW.calendarFeed.exportLabel}
             description={SETTINGS_VIEW.calendarFeed.snapshotHint}
             onPress={handleShareSnapshot}
-            trailing={<Text style={{ color: sharingIcs ? colors.textMuted : colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>
-              {sharingIcs ? SETTINGS_VIEW.export.preparing : SETTINGS_VIEW.calendarFeed.shareIcs}
-            </Text>}
+            trailing={<RowAction label={sharingIcs ? SETTINGS_VIEW.export.preparing : SETTINGS_VIEW.calendarFeed.shareIcs} muted={sharingIcs} />}
           />
         </SettingsGroup>
 
@@ -1752,9 +1715,7 @@ export default function SettingsScreen() {
         </SettingsGroup>
         </>}
 
-        <TouchableOpacity style={styles.signOut} onPress={handleSignOut} accessibilityRole="button">
-          <Text style={styles.signOutText}>{SETTINGS_VIEW.signOut}</Text>
-        </TouchableOpacity>
+        <TextLink tone="danger" label={SETTINGS_VIEW.signOut} onPress={() => { void handleSignOut(); }} style={styles.signOut} />
         </>)}
 
       </ScrollView>
@@ -1824,6 +1785,7 @@ export default function SettingsScreen() {
           onClose={() => setShowDeleteAccount(false)}
         />
       )}
+      {dialog}
 
     </View>
   );
@@ -1879,13 +1841,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   searchHitTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
   chips: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, gap: spacing.sm },
-  chip: {
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 999,
-    backgroundColor: colors.surfaceSunken,
-  },
-  chipSelected: { backgroundColor: colors.accentFill },
-  chipText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
-  chipTextSelected: { color: colors.onAccentFill },
   sectionTitle: {
     fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6,
     color: colors.textPrimary, paddingHorizontal: spacing.xl,
@@ -1900,7 +1855,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   swatchName: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary },
   swatchNameSelected: { color: colors.accentText, fontFamily: fontFamily.sansBold },
   signOut: { marginHorizontal: spacing.xl, marginTop: spacing.xl, marginBottom: spacing.md, minHeight: 44, justifyContent: 'center' },
-  signOutText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.danger },
 
   credits: { paddingHorizontal: spacing.lg, paddingTop: 12, paddingBottom: 4 },
   creditsIntro: {
@@ -1934,7 +1888,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowIconDanger: { borderColor: colors.dangerBorder },
   rowLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
   rowValueBelow: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
-  editAction: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accentText },
   rowLabelDanger: { color: colors.danger },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowDescription: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
@@ -1957,7 +1910,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   wtPartner: { gap: spacing.sm, paddingTop: spacing.sm },
   wtPartnerBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   wtShare: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, minHeight: 44 },
-  wtMuted: { color: colors.textMuted },
 
   // Appearance segmented rail — mirrors web .settings-theme-tabs
   themeTabs: {
@@ -2026,14 +1978,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   feedbackDoneTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   feedbackDoneBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
 
-  feedbackChip: {
-    paddingHorizontal: spacing.md, paddingVertical: 6,
-    borderRadius: radii.pill, borderWidth: 1.5, borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  feedbackChipActive: { borderColor: colors.accent, backgroundColor: colors.accentDim },
-  feedbackChipText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textSecondary },
-  feedbackChipTextActive: { color: colors.accent },
   feedbackInput: {
     backgroundColor: colors.surface, borderRadius: radii.md,
     padding: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm,

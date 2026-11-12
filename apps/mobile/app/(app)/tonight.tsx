@@ -9,9 +9,11 @@
  */
 import BackBar from '../../components/BackBar';
 import Button, { TextLink } from '../../components/Button';
+import Chip, { Tag } from '../../components/Chip';
+import Toggle from '../../components/Toggle';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Animated, Easing, AccessibilityInfo, Switch,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Animated, Easing, AccessibilityInfo,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
@@ -229,7 +231,7 @@ function Filters({ picker, styles, colors }: { picker: Picker; styles: Styles; c
         <Text style={[styles.filterLabel, disabled && { color: colors.textMuted }]}>{label}</Text>
         {hint ? <Text style={styles.tileHint}>{hint}</Text> : null}
       </View>
-      <Switch value={value} onValueChange={onChange} disabled={disabled} trackColor={{ true: colors.accent }} accessibilityLabel={label} />
+      <Toggle value={value} onValueChange={onChange} disabled={disabled} accessibilityLabel={label} />
     </View>
   );
   return (
@@ -249,14 +251,9 @@ function Filters({ picker, styles, colors }: { picker: Picker; styles: Styles; c
           <View style={[styles.filterRow, { flexDirection: 'column', alignItems: 'stretch', gap: spacing.sm, paddingVertical: spacing.md }]}>
             <Text style={styles.filterLabel}>{T.languageLabel}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-              {PICKER_LANGUAGES.map(code => {
-                const on = options.language === code;
-                return (
-                  <TouchableOpacity key={String(code)} onPress={() => setOption('language', code)} style={[styles.langChip, on && styles.langChipOn]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
-                    <Text style={styles.langChipText}>{T.languages[(code ?? 'any') as keyof typeof T.languages]}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {PICKER_LANGUAGES.map(code => (
+                <Chip key={String(code)} label={T.languages[(code ?? 'any') as keyof typeof T.languages]} selected={options.language === code} onPress={() => setOption('language', code)} accessibilityRole="radio" />
+              ))}
             </ScrollView>
           </View>
         </View>
@@ -393,11 +390,9 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
       <View style={styles.resultsHead}>
         <Text style={styles.resultsTitle} accessibilityRole="header">{T.heading[pickerTimeOfDay()]}</Text>
         {picker.canSave && (
-          <TouchableOpacity onPress={picker.toggleSaveSearch} style={[styles.btn, styles.btnSecondary, { minHeight: 38 }]} accessibilityRole="button"
-            accessibilityLabel={picker.isSaved ? T.savedLabel : T.saveLabel} accessibilityState={{ selected: picker.isSaved }}>
-            <Pin color={colors.textPrimary} filled={picker.isSaved} />
-            <Text style={styles.btnText}>{picker.isSaved ? T.saved : T.save}</Text>
-          </TouchableOpacity>
+          <Chip label={picker.isSaved ? T.saved : T.save} selected={picker.isSaved} onPress={picker.toggleSaveSearch}
+            accessibilityLabel={picker.isSaved ? T.savedLabel : T.saveLabel}
+            icon={<Pin color={picker.isSaved ? colors.onAccentFill : colors.textSecondary} filled={picker.isSaved} />} />
         )}
       </View>
       <View style={{ gap: 12, marginTop: spacing.lg }}>
@@ -433,11 +428,7 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
                 <View style={{ flex: 1, gap: 6 }}>
                   <Text style={styles.cardTitle}>{item.title}</Text>
                   <Text style={styles.cardMeta}>{resultMeta(item)}</Text>
-                  {item.onWatchlist && (
-                    <View style={styles.chips}>
-                      <Text style={styles.chip}>{T.onYourWatchlist}</Text>
-                    </View>
-                  )}
+                  {item.onWatchlist && <Tag tone="sage" label={T.onYourWatchlist} />}
                 </View>
               </TouchableOpacity>
             </CardEntrance>
@@ -650,9 +641,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
   },
   filterLabel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
-  langChip: { paddingHorizontal: spacing.md, minHeight: 34, justifyContent: 'center', borderRadius: 999, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
-  langChipOn: { borderColor: colors.textPrimary },
-  langChipText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
 
   stepNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg },
   btn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 18, borderRadius: 999 },
@@ -685,11 +673,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   cardPoster: { width: 84, height: 126, borderRadius: 12, backgroundColor: colors.borderStrong },
   cardTitle: { fontFamily: fontFamily.display, fontSize: 19, color: colors.textPrimary },
   cardMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: {
-    overflow: 'hidden', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3,
-    backgroundColor: colors.accentSecondaryFill, color: colors.onAccentFill, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
-  },
 
   freeNote: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   locked: { position: 'relative', minHeight: 640 },

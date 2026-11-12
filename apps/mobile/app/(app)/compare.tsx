@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import SearchField from '../../components/SearchField';
 import Button from '../../components/Button';
+import { Tag } from '../../components/Chip';
 import { IconChevronLeft } from '../../components/icons';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -127,7 +128,7 @@ function PersonRow({
           style={styles.action}
         />
       ) : person.follow_status === 'pending' ? (
-        <View style={styles.pill}><Text style={styles.pillText}>{T.requestPending}</Text></View>
+        <Tag label={T.requestPending} style={styles.action} />
       ) : (
         <Button
           size="sm"
@@ -161,6 +162,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   detail: { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textMuted, marginTop: 2 },
   action: { alignSelf: 'center' },
   nameAction: { maxWidth: 120 },
-  pill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceSunken },
-  pillText: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.textSecondary },
 });

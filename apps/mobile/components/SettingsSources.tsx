@@ -7,8 +7,8 @@
  * same lanes as onboarding (ImportSourceLanes + ImportSourceSheet on
  * useImportStart). Mirrors apps/web/src/components/SettingsSources.jsx.
  */
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { IconChevronRight } from './icons';
 import { useTrackingJobs } from '@plot/core/useTrackingJobs.js';
 import { IMPORT_SOURCES, findImportSource, type ImportSource } from '@plot/core/onboardingSetup.js';
@@ -26,6 +26,8 @@ import ImportSourceIcon from './ImportSourceIcon';
 import ImportSourceLanes, { ImportPill } from './ImportSourceLanes';
 import Button, { TextLink } from './Button';
 import ImportSourceSheet, { ImportSheet, PlexPicker, SourceTitle } from './ImportSourceSheet';
+import Toggle from './Toggle';
+import { useDialog } from './Dialog';
 
 const T = SETTINGS_VIEW.sources;
 const C = IMPORT_JOBS.card;
@@ -138,10 +140,12 @@ function HistoryRow({ job, current, onFinish, onRetry, onCancel }: { job: Job; c
   );
 }
 
-function SourceDetail({ src, integration, jobs, current, connection, tracking, start, isPremium, onClose, onImport, onRemove, onFinish, onCancel, onPremium }: {
+function SourceDetail({ src, integration, jobs, current, connection, tracking, start, isPremium, onClose, onImport, onRemove, onFinish, onCancel, onPremium, dialog }: {
   src: ImportSource; integration: Integration | null; jobs: Job[]; current: Job | null; connection: Connection | null;
   tracking: ReturnType<typeof useTrackingJobs>; start: ImportStart; isPremium: boolean;
   onClose: () => void; onImport: () => void; onRemove: (importedTotal: number) => void; onFinish: (job: Job) => void; onCancel: (job: Job) => void; onPremium: () => void;
+  /** The parent's confirm pop-up, drawn inside this sheet so it opens on top of it. */
+  dialog: ReactNode;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -178,7 +182,7 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
                   <Text style={styles.rowLabel}>{T.automaticLabel}</Text>
                   <Text style={styles.rowHint}>{T.automaticHint(src.name)}</Text>
                 </View>
-                <Switch value={!!connection?.automatic_enabled} onValueChange={toggleAutomatic} disabled={tracking.busy} trackColor={{ true: colors.accent }} accessibilityLabel={T.automaticLabel} />
+                <Toggle value={!!connection?.automatic_enabled} onValueChange={toggleAutomatic} disabled={tracking.busy} accessibilityLabel={T.automaticLabel} />
               </View>
             )}
             {plexSource && plexLoaded && (
@@ -211,11 +215,12 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
         {tracking.error ? <Text style={styles.error}>{tracking.error}</Text> : null}
         {connectedAccount && (
           <>
-            <TouchableOpacity style={styles.removeLink} onPress={() => onRemove(importedTotal)} accessibilityRole="button"><Text style={styles.removeText}>{T.remove(src.name)}</Text></TouchableOpacity>
+            <TextLink tone="danger" label={T.remove(src.name)} onPress={() => onRemove(importedTotal)} style={styles.removeLink} />
             <Text style={[styles.hint, styles.hintCenter]}>{T.stays}</Text>
           </>
         )}
       </View>
+      {dialog}
     </ImportSheet>
   );
 }
@@ -243,6 +248,7 @@ export default function SettingsSources({ userId, isPremium, onPremium, onFinish
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const start = useImportStart({ userId, entry: IMPORT_ENTRY_POINTS.SETTINGS, history: true });
   const tracking = useTrackingJobs(userId);
+  const { confirm, dialog } = useDialog();
   const [adding, setAdding] = useState(false);
   const [open, setOpen] = useState<string | null>(initialOpen);
 
@@ -271,32 +277,23 @@ export default function SettingsSources({ userId, isPremium, onPremium, onFinish
   const refreshAll = () => { void start.refreshJobs(); void trakt.loadIntegration(); void plex.loadIntegration(); void simkl.loadIntegration(); if (tracking.enabled) void tracking.load(); };
   const cancelJob = (job: Job) => { void start.cancelJob(job.id); };
   const importFrom = (id: string) => { setOpen(null); setAdding(false); start.pick(id); };
-  const premiumGate = () => Alert.alert(
-    T.automaticNeedsPremium,
-    T.automaticNeedsPremiumMessage,
-    [
-      { text: SETTINGS_VIEW.premium.upgradeButton, onPress: onPremium },
-      { text: COMMON.cancel, style: 'cancel' },
-    ],
-  );
-  const removeSource = (src: ImportSource, importedTotal: number) => Alert.alert(
-    T.removeTitle(src.name),
-    T.removeMessage(src.name, importedTotal ? T.titles(importedTotal) : ''),
-    [
-      { text: COMMON.cancel, style: 'cancel' },
-      {
-        text: T.removeConfirm,
-        style: 'destructive',
-        onPress: async () => {
-          setOpen(null);
-          if (src.id === 'trakt') await trakt.disconnect();
-          else if (src.id === 'plex') await plex.disconnect();
-          else if (src.id === 'simkl') await simkl.disconnect();
-          refreshAll();
-        },
-      },
-    ],
-  );
+  const premiumGate = async () => {
+    if (await confirm({ title: T.automaticNeedsPremium, message: T.automaticNeedsPremiumMessage, confirmLabel: SETTINGS_VIEW.premium.upgradeButton, cancelLabel: COMMON.cancel })) onPremium();
+  };
+  const removeSource = async (src: ImportSource, importedTotal: number) => {
+    if (!(await confirm({
+      title: T.removeTitle(src.name),
+      message: T.removeMessage(src.name, importedTotal ? T.titles(importedTotal) : ''),
+      confirmLabel: T.removeConfirm,
+      cancelLabel: COMMON.cancel,
+      destructive: true,
+    }))) return;
+    setOpen(null);
+    if (src.id === 'trakt') await trakt.disconnect();
+    else if (src.id === 'plex') await plex.disconnect();
+    else if (src.id === 'simkl') await simkl.disconnect();
+    refreshAll();
+  };
 
   const current = start.current as Job | null;
   const openSrc = open ? findImportSource(open) : null;
@@ -375,10 +372,11 @@ export default function SettingsSources({ userId, isPremium, onPremium, onFinish
           isPremium={isPremium}
           onClose={() => setOpen(null)}
           onImport={() => importFrom(openSrc.id)}
-          onRemove={(importedTotal) => removeSource(openSrc, importedTotal)}
+          onRemove={(importedTotal) => { void removeSource(openSrc, importedTotal); }}
           onFinish={(job) => { setOpen(null); onFinish(job); }}
           onCancel={cancelJob}
-          onPremium={premiumGate}
+          onPremium={() => { void premiumGate(); }}
+          dialog={dialog}
         />
       )}
 
@@ -428,6 +426,5 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   histWhen: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   histLine: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, lineHeight: 16, color: colors.textSecondary },
   histActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
-  removeLink: { alignSelf: 'center', paddingVertical: spacing.xs },
-  removeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.danger },
+  removeLink: { alignSelf: 'center' },
 });
