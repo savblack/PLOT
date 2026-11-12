@@ -44,12 +44,14 @@ export default function EpisodeAlertsView({ title, on, ready, busy, error, next,
           <p className="ep-alerts-hint">{on ? T.hintOn : T.hintOff}</p>
           {error && <p className="ep-alerts-error" role="alert">{T.error}</p>}
         </div>
+        {/* No `saves`: the card's toggle already sends a notice ("alerts on
+            for …") through NoticeToast's live region, so a "Saved" note here
+            made screen readers announce one flip twice. */}
         <SettingsSwitch
           label={on ? T.turnOff(title) : T.turnOn(title)}
           checked={on}
           onChange={onToggle}
           disabled={busy}
-          saves
         />
       </div>
       {on && ready && (

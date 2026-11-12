@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import EpisodeAlertsView from '../components/EpisodeAlertsView.jsx';
 import NoticeToast from '../components/NoticeToast.jsx';
 import { emit, NOTICE_EVENT } from '@plot/core/events.js';
@@ -39,6 +40,20 @@ export default {
 export const On = { render: () => <Card /> };
 /** Off for this show: only the switch. Turning it on shows the toast. */
 export const Off = { render: () => <Card initialOn={false} /> };
+/**
+ * One flip, one announcement: the toast says what changed, and the switch
+ * adds no "Saved" note of its own for screen readers to read out as well.
+ */
+export const OneAnnouncementPerFlip = {
+  render: () => <Card initialOn={false} />,
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const page = within(canvasElement);
+    await userEvent.click(page.getByRole('switch'));
+    await waitFor(() => expect(page.getAllByRole('status')).toHaveLength(1));
+    await expect(page.getByRole('status')).toHaveTextContent(T.toastOn('Slow Lane'));
+  },
+};
 /** The Add to calendar menu, as a Free account sees it (Subscribe is Premium). */
 export const CalendarMenu = { render: () => <Card menu /> };
 /** Nothing dated yet. */
