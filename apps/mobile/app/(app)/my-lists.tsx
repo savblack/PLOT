@@ -93,8 +93,6 @@ const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collaps
 // whichever tab is active.
 const LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 const SMART_SECTION_ID = 'smart';
-// Height of the fixed header below the status bar: the title bar plus one row.
-const SUBHEADER_H = 96;
 // Which of web's My Lists sections (MY_LISTS_SECTION_IDS in uiPrefs.js) each
 // mobile section belongs to. Watchlist, Favorites and custom lists are one
 // Lists section there, so they move together here.
