@@ -242,10 +242,27 @@ disagrees with the one EAS is incrementing.
 - These flags are embedded at build time. iOS production build 6
   (`0e725475-cb9b-4ab6-a486-3161023f8ffe`) finished with both flags loaded;
   Android production build 2 (`ead7b161-e097-4128-98e1-d7618a93e6bf`)
-  also finished. Neither build has been submitted. The older iOS build 5
-  predates the flag change.
-- An interactive Apple and Google sign-in on an iPhone, including the return to
-  `plot://auth/callback`, remains to be verified before submission.
+  also finished. The older iOS build 5 predates the flag change.
+- **Verified on an iPhone through TestFlight.** Build 6 was submitted to
+  TestFlight (internal testing only) and Sign in with Apple worked. Google
+  finished on the theplot.tv website instead of returning to the app.
+- **Cause:** `Linking.createURL('/auth/callback')` returns
+  `plot:///auth/callback` (three slashes, empty host) in a store build, and
+  Supabase's Redirect URLs list has `plot://auth/callback`. Supabase compares
+  literally and, on a mismatch, silently falls back to the Site URL. Apple was
+  unaffected because it signs in with a native token and no redirect. The same
+  constant was the `emailRedirectTo` for mobile magic links and sign-up
+  confirmation.
+- **Fix:** `AUTH_APP_CALLBACK` in `app/(auth)/index.tsx` is now the literal
+  `'plot://auth/callback'`. No Supabase setting changed. Google sign-in worked
+  on build 7.
+- Build 8 also makes the charcoal wordmark the default app icon; the five-dot
+  mark is the `MarkCharcoal` alternate in the Premium picker.
+- **TestFlight setup:** EAS now holds an App Store Connect API key (created
+  interactively once; `eas submit --non-interactive` works from here). The
+  internal group "Plot team" has automatic distribution on, so each new build
+  reaches its testers without further setup. Nothing has been submitted for
+  App Store review.
 
 ## State on 2026-10-14
 
