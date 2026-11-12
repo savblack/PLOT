@@ -1,0 +1,71 @@
+name: Kill switch on
+
+# Lets the incident fixer (a cloud routine) hide a broken feature without ever
+# holding the PostHog key. It can only turn a switch ON, only one of the fixed
+# kill-switch flags, and only for an open issue labelled `incident`. Each run
+# comments on the issue and emails Savannah. Turning a switch back off is a
+# person's job, in PostHog. See docs/ops/kill-switches.md.
+#
+# Two ways in, same checks:
+#  - workflow_dispatch (REST: POST /repos/savblack/PLOT/actions/workflows/kill-switch.yml/dispatches)
+#  - adding the label `kill-switch:<flag key>` to the incident issue, for a
+#    caller whose token can label issues but not dispatch workflows.
+on:
+  workflow_dispatch:
+    inputs:
+      switch:
+        description: Which feature to hide
+        required: true
+        type: choice
+        options:
+          - kill-watch-together
+          - kill-pricing-page
+          - kill-apple-login
+          - kill-google-login
+          - kill-switch-drill
+      issue:
+        description: Open incident issue number (optional only for kill-switch-drill)
+        required: false
+        type: string
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: kill-switch
+  cancel-in-progress: false
+
+jobs:
+  flip:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.label.name, 'kill-switch:')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Turn the switch on
+        id: flip
+        env:
+          SWITCH: ${{ github.event_name == 'workflow_dispatch' && inputs.switch || github.event.label.name }}
+          ISSUE: ${{ github.event_name == 'workflow_dispatch' && inputs.issue || github.event.issue.number }}
+          POSTHOG_KEY: ${{ secrets.POSTHOG_KILL_SWITCH_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          SWITCH="${SWITCH#kill-switch:}" bash .github/scripts/kill-switch-on.sh
+      - name: Email Savannah
+        if: always() && steps.flip.outcome != 'skipped'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: kill-switch
+          ALERT_SUBJECT: ${{ steps.flip.outcome == 'success' && steps.flip.outputs.subject || 'Plot: a kill switch request FAILED, nothing was hidden' }}
+          ALERT_BODY: ${{ steps.flip.outcome == 'success' && steps.flip.outputs.body || 'Someone asked to turn on a kill switch and it did not happen. The feature is still showing. Open the run to see why.' }}
+        run: bash .github/scripts/marketing-alert.sh
