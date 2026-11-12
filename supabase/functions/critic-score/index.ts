@@ -13,7 +13,7 @@
  * extra quota. Rows cached before the `awards` column existed read as null
  * until their normal TTL expires; this deliberately does not refetch them early.
  */
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import { serviceKey } from '../_shared/serviceKey.ts'
 import { reportError } from '../_shared/posthogLog.ts'
 

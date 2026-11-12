@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import Stripe from 'npm:stripe@22.6.0'
 import { removeAvatarObjects, runAccountCleanup } from './cleanup.js'
 import { stopAccountBilling } from './billingCleanup.js'

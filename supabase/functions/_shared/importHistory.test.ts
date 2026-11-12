@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1'
-import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import type { Database } from './database.types.ts'
 import { insertMissingHistory, type ImportedHistoryRow } from './importHistory.ts'
 

@@ -2,7 +2,7 @@ import { encryptToken, decryptToken } from '../_shared/plexAuth.ts'
 import { plexResources, publicPlexResources, plexProfiles, selectedPlexServer, validatePlexHistory, type PlexSelection } from '../_shared/plexTracking.ts'
 import { trackingRequest, trackingUserAllowed } from '../_shared/trackingApi.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import type { Database, Json } from '../_shared/database.types.ts'
 
 type Db = SupabaseClient<Database>

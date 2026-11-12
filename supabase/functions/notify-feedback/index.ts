@@ -5,7 +5,7 @@
  * Required secrets: NOTION_CONNECTION (falls back to NOTION_TOKEN, then NOTION_API_KEY), NOTION_FEEDBACK_DATABASE_ID, SUPABASE_URL,
  * SUPABASE_SERVICE_ROLE_KEY. RESEND_API_KEY enables the email alert.
  */
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { createIntakePage, findIntakePage, resolveNotionToken } from '../_shared/notionIntake.js'
 import { attachmentPathsFrom, signedFeedbackUrl } from '../_shared/feedbackAttachments.ts'
 
