@@ -40,14 +40,20 @@ function useGoPremiumLink(profile, variant) {
  * }} props  onBeforeNavigate closes the menu or drawer the link sits in.
  *   The chip takes its host's nav-row classes (className: app-sidebar-item or
  *   nav-drawer-item, labelClassName: that row's label class), so it is exactly
- *   one nav row wide and tall, painted pink. `collapsed` (the folded desktop
+ *   one nav row wide and tall, in the selected-pill blush (GoPremiumLink.css). `collapsed` (the folded desktop
  *   rail) draws it as the spark alone.
  */
-export default function GoPremiumLink({ profile, placement, variant = 'line', collapsed = false, className, labelClassName, role, onBeforeNavigate }) {
+export default function GoPremiumLink({ profile, variant = 'line', ...props }) {
   const link = useGoPremiumLink(profile, variant);
+  // Router hooks only once there is a link to draw, so a host rendered outside
+  // a router (a Storybook rail) still works when the link is hidden.
+  if (!link) return null;
+  return <GoPremiumAnchor link={link} variant={variant} {...props} />;
+}
+
+function GoPremiumAnchor({ link, placement, variant, collapsed = false, className, labelClassName, role, onBeforeNavigate }) {
   const navigate = useNavigate();
   const location = useLocation();
-  if (!link) return null;
   const to = premiumPlansPath(`${location.pathname}${location.search}`);
   const go = (event) => {
     event.preventDefault();
