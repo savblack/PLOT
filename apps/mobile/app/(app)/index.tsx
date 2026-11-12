@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { IconChevronDown } from '../../components/icons';
+import SectionTitle from '../../components/SectionTitle';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
@@ -349,7 +350,7 @@ function SectionHeader({ kicker, title }: { kicker?: string; title: string }) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <SectionTitle>{title}</SectionTitle>
       {kicker ? <Text style={styles.sectionKicker}>{kicker}</Text> : null}
     </View>
   );
@@ -1200,13 +1201,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // ── Sections ──
   section: { marginTop: spacing.xl, marginBottom: 0 },
   sectionHeader: { paddingHorizontal: spacing.xl, marginBottom: spacing.md },
-  sectionTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    letterSpacing: -0.6,
-    lineHeight: 23,
-    color: colors.textPrimary,
-  },
   sectionKicker: {
     fontFamily: fontFamily.sans,
     fontSize: 12,

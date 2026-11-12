@@ -4,6 +4,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft, IconChevronRight } from '../icons';
+import SectionTitle from '../SectionTitle';
 import { personName } from '@plot/core/watchTogether.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -162,8 +163,7 @@ export function SectionLabel({ children }: { children: string }) {
 }
 
 export function PageTitle({ children }: { children: string }) {
-  const { colors } = useTheme();
-  return <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6, lineHeight: 23, color: colors.textPrimary }}>{children}</Text>;
+  return <SectionTitle>{children}</SectionTitle>;
 }
 
 export function Note({ children }: { children: string }) {

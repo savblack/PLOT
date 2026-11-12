@@ -15,6 +15,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Rect } from 'react-native-svg';
 import { IconSearch, IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
+import SectionTitle from '../../components/SectionTitle';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -840,7 +841,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
 
         {searching ? (
           <View>
-            <Text style={styles.searchHeading}>{CUSTOM_LISTS.searchResults}</Text>
+            <SectionTitle style={styles.searchHeading}>{CUSTOM_LISTS.searchResults}</SectionTitle>
             <Text accessibilityLiveRegion="polite" style={styles.searchStatus}>
               {searchResults.length ? CUSTOM_LISTS.searchCount(searchResults.length) : CUSTOM_LISTS.noSearchResults}
             </Text>
@@ -1623,11 +1624,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   listSearchClear: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
   searchHeading: {
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    letterSpacing: -0.6,
-    lineHeight: 23,
-    color: colors.textPrimary,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.sm,
   },

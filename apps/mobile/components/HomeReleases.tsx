@@ -18,6 +18,7 @@ import { posterUrl, backdropUrl, logoUrl, Palette, fontFamily, fontSize, spacing
 import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../contexts/ThemeContext';
+import SectionTitle from './SectionTitle';
 
 const SCREEN_W = Dimensions.get('window').width;
 const CARD_W   = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
@@ -244,7 +245,7 @@ function Rail({ kicker, title, items, providerLogos, wide }: {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
+        <SectionTitle>{title}</SectionTitle>
         {kicker ? <Text style={styles.sectionKicker}>{kicker}</Text> : null}
       </View>
       <FlatList
@@ -327,13 +328,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // Section chrome — same display title and subtitle as the home feed.
   section: { marginTop: spacing.xl, marginBottom: 0 },
   sectionHeader: { paddingHorizontal: spacing.xl, marginBottom: spacing.md },
-  sectionTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    letterSpacing: -0.6,
-    lineHeight: 23,
-    color: colors.textPrimary,
-  },
   sectionKicker: {
     fontFamily: fontFamily.sans,
     fontSize: 12,
