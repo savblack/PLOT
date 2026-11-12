@@ -23,6 +23,7 @@ import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
 import { favoriteWords } from '../../lib/spelling';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import CollapsibleSection from '../../components/CollapsibleSection';
+import HeaderRow, { HeaderRowLabel, SCREEN_HEADER_H } from '../../components/HeaderRow';
 import ListCover, { NewListCover, COVER_GAP } from '../../components/ListCover';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { titleCount } from '@plot/core/listCollections.js';
@@ -89,8 +90,6 @@ const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collaps
 // whichever tab is active.
 const LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 const SMART_SECTION_ID = 'smart';
-// Height of the fixed header below the status bar: the title bar plus one row.
-const SUBHEADER_H = 96;
 // Which of web's My Lists sections (MY_LISTS_SECTION_IDS in uiPrefs.js) each
 // mobile section belongs to. Watchlist, Favorites and custom lists are one
 // Lists section there, so they move together here.
@@ -829,7 +828,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const searchShown = searchOpen || listQuery.length > 0;
   // Title bar, one 40pt row of controls, and the search field only while open.
   // Calendar's header is the same height, so the three pages line up.
-  const HEADER_H = insets.top + (searchShown ? SUBHEADER_H + 44 : SUBHEADER_H);
+  const HEADER_H = insets.top + (searchShown ? SCREEN_HEADER_H + 44 : SCREEN_HEADER_H);
 
   return (
     <View style={styles.screen}>
@@ -1216,11 +1215,11 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         />
         {/* Tabs and the filter/collapse controls share one row, as on web —
             the old second row of All/Movies/TV chips is gone. */}
-        <View style={styles.tabsRow}>
-          {isHistory ? (
+        <HeaderRow
+          lead={isHistory ? (
             // History's title is already in the bar above, so this row leads
             // with the month switcher instead of repeating the page name.
-            <View style={styles.rowLead}>
+            <>
               {!searching && historyGroups.length > 0 && (
               <View style={styles.monthNav}>
                 <TouchableOpacity
@@ -1248,13 +1247,12 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 </TouchableOpacity>
               </View>
               )}
-            </View>
+            </>
           ) : (
-            <Text style={styles.viewLabel} numberOfLines={1} accessibilityRole="header">
-              {openList ? openList.name : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
-            </Text>
+            <HeaderRowLabel>{openList ? openList.name : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}</HeaderRowLabel>
           )}
-          <View style={styles.tabsRowActions}>
+          actions={
+            <>
             {/* Customize sits in the top row on the All view, as on web's
                 phone layout, so it is reachable without scrolling. */}
             {!isHistory && isAll && !openList && (
@@ -1278,8 +1276,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 <SectionToggleIcon collapse={sectionsOpenForView} />
               </TouchableOpacity>
             )}
-          </View>
-        </View>
+            </>
+          }
+        />
         {searchShown && (
         <View style={[styles.listSearch, searchFocused && { borderColor: colors.accent }]}>
           <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -1610,25 +1609,11 @@ function CustomListCard({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
-  // One row of controls under the title bar, the same height and gutters on
-  // My Lists, History and Calendar. No rule above it: the title bar and this
-  // row are one header, closed by the header's own bottom hairline.
-  tabsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 40,
-    paddingRight: spacing.xl,
-  },
-  rowLead: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingLeft: spacing.xl },
-  tabsRowActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   monthNav: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   monthNavLabel: {
     fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
     color: colors.textSecondary, minWidth: 54, textAlign: 'center',
   },
-  // 44 leaves room for the tab label plus its underline; the previous height
-  // clipped descenders on "Watching"/"Want to Watch".
-  viewLabel: { flex: 1, paddingHorizontal: spacing.xl, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
   subTabsScroll: { flex: 1, height: 44 },
   subTabsRow: { paddingHorizontal: spacing.xl, alignItems: 'center' },
   listSearch: {

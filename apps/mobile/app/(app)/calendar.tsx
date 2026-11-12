@@ -9,6 +9,7 @@ import Svg, { Polyline } from 'react-native-svg';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
+import HeaderRow, { SCREEN_HEADER_H } from '../../components/HeaderRow';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -258,8 +259,7 @@ export default function CalendarScreen() {
 
   const dayEvents = eventsForDate(selectedDate);
 
-  // The same header height as My Lists and History: title bar plus one row.
-  const HEADER_H = insets.top + 96;
+  const HEADER_H = insets.top + SCREEN_HEADER_H;
   const CELL_W   = (SCREEN_W - spacing.xl * 2) / 7;
 
   const isDataLoading = loading || watchlist.loading || watching.loading;
@@ -426,13 +426,15 @@ export default function CalendarScreen() {
         <ScreenHeaderBar title="Calendar" />
 
         {/* Row 2: the view switch, and the period arrows for Week and Month */}
-        <View style={styles.toolbarRow}>
+        <HeaderRow
+          lead={
           <View style={styles.tabsStrip} accessibilityRole="tablist">
             <SubTab label="Agenda" active={view === 'agenda'} onPress={() => switchView('agenda')} />
             <SubTab label="Week"   active={view === 'week'}   onPress={() => switchView('week')} />
             <SubTab label="Month"  active={view === 'month'}  onPress={() => switchView('month')} />
           </View>
-          {view !== 'agenda' && (
+          }
+          actions={view !== 'agenda' ? (
             <View style={styles.monthNav}>
               <TouchableOpacity onPress={prevPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Previous period" accessibilityRole="button">
                 <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -446,8 +448,8 @@ export default function CalendarScreen() {
                 </Svg>
               </TouchableOpacity>
             </View>
-          )}
-        </View>
+          ) : null}
+        />
       </BlurView>
     </View>
   );
@@ -463,17 +465,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     flexDirection: 'column',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-  },
-  // Toolbar row: the view switch on the left, the period arrows on the right
-  toolbarRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    // The page gutter, so the switch starts where My Lists' and History's
-    // row starts, under the header's search button.
-    paddingHorizontal: spacing.xl,
-    gap: spacing.sm,
   },
   // Web's .cal-scope: a sunken track holding the options.
   tabsStrip: {
