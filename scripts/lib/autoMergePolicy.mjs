@@ -59,13 +59,28 @@ const MANIFEST = /(^|\/)package\.json$|^pnpm-lock\.yaml$/;
 // A workflow fix may only change these kinds of line. Anything else (a new
 // step, a new `run:`, a secret, a trigger, token scope) waits for Savannah:
 // a deny-list cannot see an exfiltrating curl spelled some new way.
-const CI_SAFE_LINE = /^\s*(-\s*)?(runs-on|timeout-minutes|node-version|deno-version|python-version|cache|fetch-depth|continue-on-error):\s*[\w.'"/@-]+\s*(#.*)?$|^\s*(-\s*)?uses:\s*[\w.-]+\/[\w./-]+@[0-9a-f]{40}\s*(#.*)?$|^\s*-\s*cron:\s*'[0-9*\/, -]+'\s*(#.*)?$|^\s*(#.*)?$/;
+// `continue-on-error` is not on the list: it turns a safety check that should
+// go red into one that never does.
+const CI_SAFE_LINE = /^\s*(-\s*)?(runs-on|timeout-minutes|node-version|deno-version|python-version|cache|fetch-depth):\s*[\w.'"/@-]+\s*(#.*)?$|^\s*(-\s*)?uses:\s*[\w.-]+\/[\w./-]+@[0-9a-f]{40}\s*(#.*)?$|^\s*-\s*cron:\s*'[0-9*\/, -]+'\s*(#.*)?$|^\s*(#.*)?$/;
+// The action a `uses:` line runs (owner/repo, plus any sub-path), without its pin.
+const USES = /^\s*(?:-\s*)?uses:\s*([\w.-]+\/[\w./-]+)@/;
 
 /** Every changed line of a workflow patch is on the safe list. */
 export function isSafeWorkflowPatch(patch) {
   if (!patch) return false;
   const changed = patch.split('\n').filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)/.test(l));
-  return changed.length > 0 && changed.every((l) => CI_SAFE_LINE.test(l.slice(1)));
+  if (changed.length === 0 || !changed.every((l) => CI_SAFE_LINE.test(l.slice(1)))) return false;
+  // A pinned `uses:` line runs someone's code with the workflow's secrets, so
+  // a fix may only move an action the workflow already runs to a new pin: each
+  // added `uses:` replaces a removed one for the same action, in order. A new
+  // step, a swapped action, or a dropped step waits.
+  const actions = (sign) => changed
+    .filter((l) => l[0] === sign)
+    .map((l) => (l.slice(1).match(USES) || [])[1])
+    .filter(Boolean);
+  const removed = actions('-');
+  const added = actions('+');
+  return removed.length === added.length && removed.every((a, i) => a === added[i]);
 }
 const MAX_CHANGED_LINES = 400;
 

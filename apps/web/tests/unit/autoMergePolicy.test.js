@@ -95,6 +95,28 @@ test('a workflow fix may merge only when it changes versions, runners, timeouts 
   assert.equal(decide([f('.circleci/config.yml', { patch: '-    resource_class: small\n+    resource_class: medium' })]).allowed, false);
 });
 
+test('a workflow fix may only move an action it already uses to a new pin, never add or swap one', () => {
+  const sha = (c) => c.repeat(40);
+  // A brand-new step running an outside action gets the workflow's secrets.
+  assert.equal(isSafeWorkflowPatch(`+      - uses: someone/exfil@${sha('a')}`), false);
+  // Swapping one action for another owner's, pinned, is the same risk.
+  assert.equal(isSafeWorkflowPatch(`-      - uses: actions/checkout@${sha('a')}\n+      - uses: someone/checkout@${sha('b')}`), false);
+  assert.equal(isSafeWorkflowPatch(`-      - uses: actions/cache/restore@${sha('a')}\n+      - uses: actions/cache/save@${sha('b')}`), false);
+  // Dropping a step (the line that runs a check) is not a version change either.
+  assert.equal(isSafeWorkflowPatch(`-      - uses: actions/checkout@${sha('a')}`), false);
+  // Two pins moved in place, in order, is still fine.
+  assert.equal(isSafeWorkflowPatch(
+    `-      - uses: actions/checkout@${sha('a')}\n-      - uses: pnpm/action-setup@${sha('c')}\n` +
+    `+      - uses: actions/checkout@${sha('b')}\n+      - uses: pnpm/action-setup@${sha('d')}`), true);
+});
+
+test('a workflow fix may not tell a step to carry on when it fails', () => {
+  // continue-on-error turns a safety check that should go red into one that never does.
+  assert.equal(isSafeWorkflowPatch('+        continue-on-error: true'), false);
+  assert.equal(isSafeWorkflowPatch('-        continue-on-error: false\n+        continue-on-error: true'), false);
+  assert.equal(decide([f('.github/workflows/db-write-paths.yml', { patch: '+        continue-on-error: true' })]).allowed, false);
+});
+
 test('a rename is judged on both names, and renames or deletes of code wait', () => {
   assert.equal(decide([f('docs/notes.md', { status: 'renamed', previous_filename: 'supabase/migrations/20261111_x.sql' })]).allowed, false);
   assert.equal(decide([f('apps/web/src/b.js', { status: 'renamed', previous_filename: 'apps/web/src/a.js' }), f('apps/web/tests/unit/b.test.js')]).allowed, false);
