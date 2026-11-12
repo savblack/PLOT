@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity,
   StyleSheet, Dimensions,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft, IconChevronRight } from '../../components/icons';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -161,9 +161,10 @@ const VIEW_OPTIONS: readonly { value: CalView; label: string }[] = [
 
 // ── Main screen ───────────────────────────────────────────────────────
 export default function CalendarScreen() {
-  const { colors, resolved } = useTheme();
+  const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const glass = useGlassOnScroll();
   const { watchlist, watching } = useAppData();
   const { loading, events, eventsForDate } = useCalendarEvents(watchlist.items, watching.items);
 
@@ -264,6 +265,8 @@ export default function CalendarScreen() {
         style={styles.screen}
         contentContainerStyle={{ paddingTop: HEADER_H + 8, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={glass.onScroll}
       >
 
         {/* Week and Month open with the period they show, and arrows to move
@@ -420,11 +423,7 @@ export default function CalendarScreen() {
       </ScrollView>
 
       {/* Fixed blurred header */}
-      <BlurView
-        intensity={80}
-        tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
-        style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
-      >
+      <GlassHeader scrollY={glass.scrollY} height={HEADER_H}>
         {/* One title bar, as on every page. The view choice sits in the
             filter menu, where Home and My Lists keep theirs. */}
         <ScreenHeaderBar
@@ -443,7 +442,7 @@ export default function CalendarScreen() {
             />
           }
         />
-      </BlurView>
+      </GlassHeader>
     </View>
   );
 }
@@ -451,14 +450,6 @@ export default function CalendarScreen() {
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
-  fixedHeader: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0,
-    zIndex: 100,
-    flexDirection: 'column',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
   periodHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.xl, marginBottom: spacing.md },
   periodTitle: { flex: 1, minWidth: 0 },
   navBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },

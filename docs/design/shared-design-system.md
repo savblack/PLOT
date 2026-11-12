@@ -255,6 +255,10 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
     padding (approved by Savannah, 2 Oct 2026, for the shared list's people
     sheet: Add a person and Watch together). It is a row of two, not one
     stretched button, and it is for sheets only.
+- Customize, on every page that has one (Home, My Lists), is a quiet text
+  action centred at the foot of the page, at every width and on both apps
+  (Savannah, 12 Nov 2026). It is not in the title bar, a top toolbar or a
+  side card.
 - Pop-ups (dialogs, bottom sheets, full-page sheets) share one header on web
   and mobile: the title on the left, and the word Cancel on the right
   (Savannah, 12 Nov 2026; replaces the centred title and ✕ from the 10 Nov
