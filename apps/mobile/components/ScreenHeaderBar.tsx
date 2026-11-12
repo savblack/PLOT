@@ -28,7 +28,7 @@ export default function ScreenHeaderBar({
   searchLabel?: string;
   /** Screens that are themselves the notifications view hide the bell. */
   showNotifications?: boolean;
-  /** Sits after the bell (Home's filter). */
+  /** Sits after the bell, in its own icon slot: the page's filter on Home, My Lists and History. */
   rightExtra?: ReactNode;
 }) {
   const { colors } = useTheme();
@@ -81,7 +81,9 @@ export default function ScreenHeaderBar({
         </TouchableOpacity>
       ) : null}
 
-      {rightExtra ?? (showNotifications ? null : <View style={styles.iconBtn} />)}
+      {/* A screen's extra takes the same 36pt slot as the bell, so every page's
+          filter lands in the same place without styling its own wrapper. */}
+      {rightExtra ? <View style={styles.iconBtn}>{rightExtra}</View> : (showNotifications ? null : <View style={styles.iconBtn} />)}
       </View>
     </View>
   );

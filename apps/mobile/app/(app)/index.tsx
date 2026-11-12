@@ -1086,32 +1086,30 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         <ScreenHeaderBar
           title={mode === 'new' ? 'New Releases' : 'Home'}
           rightExtra={
-            <View style={styles.headerFilter}>
-              <GroupedFilterMenu
-                accessibilityLabel={mode === 'new' ? 'Filter new releases' : 'Filter home'}
-                groups={[
-                  {
-                    heading: MEDIA.typeHeading,
-                    options: [
-                      { id: 'tv',     label: MEDIA.tv     },
-                      { id: 'cinema', label: MEDIA.cinema },
-                      { id: 'movie',  label: MEDIA.movies },
-                    ],
-                    value: typeFilters,
-                    onChange: setTypeFilters,
-                    defaultValue: ALL_TYPES,
-                  },
-                  {
-                    heading: MEDIA.genreHeading,
-                    // The shared menu keys options by string; genre ids are
-                    // numbers everywhere else, so convert at the boundary.
-                    options: genres.map((g: { id: number; name: string }) => ({ id: String(g.id), label: g.name })),
-                    value: genreFilters.map(String),
-                    onChange: (next: string[]) => setGenreFilters(next.map(Number)),
-                  },
-                ]}
-              />
-            </View>
+            <GroupedFilterMenu
+              accessibilityLabel={mode === 'new' ? 'Filter new releases' : 'Filter home'}
+              groups={[
+                {
+                  heading: MEDIA.typeHeading,
+                  options: [
+                    { id: 'tv',     label: MEDIA.tv     },
+                    { id: 'cinema', label: MEDIA.cinema },
+                    { id: 'movie',  label: MEDIA.movies },
+                  ],
+                  value: typeFilters,
+                  onChange: setTypeFilters,
+                  defaultValue: ALL_TYPES,
+                },
+                {
+                  heading: MEDIA.genreHeading,
+                  // The shared menu keys options by string; genre ids are
+                  // numbers everywhere else, so convert at the boundary.
+                  options: genres.map((g: { id: number; name: string }) => ({ id: String(g.id), label: g.name })),
+                  value: genreFilters.map(String),
+                  onChange: (next: string[]) => setGenreFilters(next.map(Number)),
+                },
+              ]}
+            />
           }
         />
       </BlurView>
@@ -1136,7 +1134,6 @@ const PICKS_CARD_W = SCREEN_W - spacing.xl * 2;
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  headerFilter: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
 
   fixedHeader: {
     position: 'absolute',

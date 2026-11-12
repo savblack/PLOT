@@ -1186,6 +1186,33 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           title={mode === 'history' ? 'History' : 'My Lists'}
           searchLabel={searchPlaceholder}
           onSearchPress={() => { if (searchShown) { setListQuery(''); setSearchOpen(false); } else setSearchOpen(true); }}
+          // The filter sits in the title bar, after the bell, where Home has
+          // its filter: the same control in the same place on every page.
+          rightExtra={
+                <GroupedFilterMenu
+                  accessibilityLabel="Filter lists"
+                  groups={[
+                    ...(mode === 'history' ? [] : [{
+                      heading: 'Show',
+                      mode: 'single' as const,
+                      options: listTabs.map(t => ({ id: t.id, label: t.label })),
+                      value: [tab],
+                      defaultValue: ['all'],
+                      onChange: ([next]: string[]) => {
+                        if (!next) return;
+                        if (sharePreset) router.setParams({ share: '' });
+                        setTab(next);
+                      },
+                    }]),
+                    {
+                      heading: 'Type',
+                      options: TYPE_OPTIONS,
+                      value: typeFilters,
+                      onChange: setTypeFilters,
+                    },
+                  ]}
+                />
+          }
         />
         {/* Tabs and the filter/collapse controls share one row, as on web —
             the old second row of All/Movies/TV chips is gone. */}
@@ -1237,29 +1264,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             )}
             {/* ‹ Mar 2026 › — jumps to the adjacent month that actually has
                 entries, so empty months are never a dead step. */}
-            <GroupedFilterMenu
-              accessibilityLabel="Filter lists"
-              groups={[
-                ...(mode === 'history' ? [] : [{
-                  heading: 'Show',
-                  mode: 'single' as const,
-                  options: listTabs.map(t => ({ id: t.id, label: t.label })),
-                  value: [tab],
-                  defaultValue: ['all'],
-                  onChange: ([next]: string[]) => {
-                    if (!next) return;
-                    if (sharePreset) router.setParams({ share: '' });
-                    setTab(next);
-                  },
-                }]),
-                {
-                  heading: 'Type',
-                  options: TYPE_OPTIONS,
-                  value: typeFilters,
-                  onChange: setTypeFilters,
-                },
-              ]}
-            />
             {!searching && (relevantSectionIds.length > 0 || (isHistory && historyGroups.length > 0)) && (
               <TouchableOpacity
                 onPress={toggleSectionsForView}
