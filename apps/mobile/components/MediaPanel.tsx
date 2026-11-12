@@ -1807,17 +1807,19 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       <NoticeToast placement="panel" />
       <EpisodeAlertsPromptToast placement="panel" />
       {dialog}
+      {/* Sheets opened from the panel render inside its Modal. On iOS a Modal
+          mounted beside one that is already showing never presents, which is
+          how Add to list stopped opening. */}
+      {showListSheet && details && (
+        <AddToListSheet
+          item={{ id: itemId, media_type: itemType, title, poster_path: details?.poster_path ?? null }}
+          customLists={customLists}
+          topLists={topLists}
+          onClose={() => setShowListSheet(false)}
+        />
+      )}
+      {followPerson.sheet}
     </Modal>
-
-    {showListSheet && details && (
-      <AddToListSheet
-        item={{ id: itemId, media_type: itemType, title, poster_path: details?.poster_path ?? null }}
-        customLists={customLists}
-        topLists={topLists}
-        onClose={() => setShowListSheet(false)}
-      />
-    )}
-    {followPerson.sheet}
     </>
   );
 }
