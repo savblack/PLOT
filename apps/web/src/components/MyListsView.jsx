@@ -74,7 +74,7 @@ const ChevronUp   = () => <svg viewBox="0 0 24 24"><polyline points="18,15 12,9 
 
 /* The index. One row per collection, name and count, in the same row style as
    the filters under it. */
-function JumpToCard({ collections, counts, onOpen, onCustomize }) {
+function JumpToCard({ collections, counts, onOpen }) {
   const [expanded, setExpanded] = useState(false);
   // Folding one row away would cost a row to save a row.
   const folds = collections.length > JUMP_CAP + 1;
@@ -83,7 +83,6 @@ function JumpToCard({ collections, counts, onOpen, onCustomize }) {
     <div className="hist-card mylists-jump">
       <div className="hist-card-head">
         <span className="hist-card-title">{CUSTOM_LISTS.jumpTo}</span>
-        <button type="button" className="home-page-nav-customize" onClick={onCustomize}>{DISCOVER_VIEW.customize.action}</button>
       </div>
       <div>
         {shown.map(c => (
@@ -482,9 +481,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     <div className="hist-page mylists-page">
       <div className="hist-toolbar">
         <span className="hist-toolbar-sub">{CUSTOM_LISTS.summary(allCollections.length, titles)}</span>
-        {/* Below sidebar widths the Jump to card (and its Customize) is hidden,
-            so the top bar carries it. */}
-        <button type="button" className="home-page-nav-customize mylists-toolbar-customize" onClick={() => setCustomizing(true)}>{DISCOVER_VIEW.customize.action}</button>
         <div className="hist-toolbar-controls">
           {/* At sidebar widths the column carries the filters; below it, the
               pill and its sheet are how a phone reaches them. */}
@@ -507,7 +503,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
 
       <div className="cal-body">
         <aside className="cal-side mylists-side">
-          <JumpToCard collections={collections} counts={jumpCount} onOpen={jumpTo} onCustomize={() => setCustomizing(true)} />
+          <JumpToCard collections={collections} counts={jumpCount} onOpen={jumpTo} />
           <SmartJumpCard collections={smartCollections} newCounts={newCounts} onOpen={jumpTo} onNew={requestSmartCreate} />
           {SHOW_WATCH_TOGETHER && <SharedJumpCard collections={sharedCollections} onOpen={jumpTo} onNew={requestShared} />}
           <SideFilters
@@ -543,6 +539,9 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
                   {sectionNodes[id]}
                 </SectionFoldContext.Provider>
               ))}
+              {/* Customize sits at the foot of the page at every width, as on
+                  every page that has one (Savannah, 12 Nov 2026). */}
+              <div className="page-customize-foot"><button type="button" className="home-page-nav-customize" onClick={() => setCustomizing(true)}>{DISCOVER_VIEW.customize.action}</button></div>
             </div>
           )}
         </div>
