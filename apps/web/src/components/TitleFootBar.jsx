@@ -8,6 +8,7 @@ import { formatWatchedOn, localDateStr } from '@plot/core/date.js';
 import { COMMON } from '../copy/common.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import StarIcon from './StarIcon.jsx';
+import { Tag } from './Chip.jsx';
 import './TitleFootBar.css';
 
 const FOOT = MEDIA_PANEL.foot;
@@ -60,7 +61,7 @@ function TakeBox({ kind, label, icon, text, draft = false, empty, labelEmpty, la
       onClick={onOpen}
     >
       <span className="foot-bar-box-edit" aria-hidden="true">{filled ? <PencilIcon /> : <PlusIcon />}</span>
-      <span className="foot-bar-box-label">{icon}{label}{draft && <em className="foot-bar-box-draft">{FOOT.draft}</em>}</span>
+      <span className="foot-bar-box-label">{icon}{label}{draft && <Tag className="foot-bar-box-draft" tone={kind === 'private' ? 'neutral' : 'accent'} label={FOOT.draft} />}</span>
       <span className="foot-bar-box-text">{filled ? text : empty}</span>
     </button>
   );

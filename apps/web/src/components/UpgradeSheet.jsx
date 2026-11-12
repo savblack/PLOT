@@ -16,6 +16,7 @@ import { PLANS_PAGE } from '../copy/plansPage.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
 import PremiumPurchaseAction from './PremiumPurchaseAction.jsx';
 import { ThemeMiniaturePair } from './ThemeMiniature.jsx';
+import { Tag } from './Chip.jsx';
 import './UpgradeSheet.css';
 
 const S = PLANS_PAGE.upgradeSheet;
@@ -170,7 +171,7 @@ export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept
           <button type="button" className="upgrade-sheet-plan" aria-pressed={annual} disabled={premium.busy} onClick={() => setAnnual(true)}>
             <span>
               <span className="upgrade-sheet-plan-name">{PLANS_PAGE.billing.annual}</span>
-              <span className="upgrade-sheet-plan-badge">{PLANS_PAGE.billing.annualBadge}</span>
+              <Tag label={PLANS_PAGE.billing.annualBadge} tone="sage" className="upgrade-sheet-plan-badge" />
             </span>
             <span className="upgrade-sheet-plan-price">{S.yearlyPrice}</span>
           </button>

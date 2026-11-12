@@ -112,15 +112,7 @@
   text-transform: uppercase;
   color: var(--accent-text);
 }
-.foot-bar-box-draft {
-  margin-left: 0.25rem;
-  padding: 0 0.4rem;
-  border-radius: var(--radius-pill);
-  background: var(--accent-dim);
-  font-style: normal;
-  letter-spacing: 0.04em;
-}
-.foot-bar-box--private .foot-bar-box-draft { background: var(--border); }
+.foot-bar-box-label .foot-bar-box-draft { align-self: center; margin-left: 0.25rem; letter-spacing: 0.04em; }
 .foot-bar-box-text {
   font-size: 0.8rem;
   line-height: 1.5;

@@ -21,6 +21,7 @@ import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import { EVENTS, track } from '../lib/analytics.js';
 import PremiumMark from './PremiumMark.jsx';
+import Chip, { ChipRow, Tag } from './Chip.jsx';
 
 export function PersonAvatar({ person, size = 'md' }) {
   const name = personName(person);
@@ -132,8 +133,8 @@ export function WatchTogetherTile({ person, viewer, viewerProfile, onChange }) {
       <div className="wt-tile-head">
         <span className="wt-kicker">{T.tile.kicker}</span>
         {mode === 'free' && <PremiumMark />}
-        {mode === 'pending' && <span className="wt-chip">{T.tile.requestSent}</span>}
-        {mode === 'paired' && <span className="wt-chip wt-chip--ok">{T.tile.watchingTogether}</span>}
+        {mode === 'pending' && <Tag label={T.tile.requestSent} />}
+        {mode === 'paired' && <Tag label={T.tile.watchingTogether} tone="sage" />}
       </div>
       {showCount
         ? <p className="wt-tile-count"><strong>{status.overlap_count}</strong><span>{T.tile.onBoth}</span></p>
@@ -301,15 +302,15 @@ export function ShareListDialog({ partner, overlapCount, title, onClose }) {
         </fieldset>
         <div className="wt-settings-group">
           <span className="wt-accept-label">{L.whosOn}</span>
-          <div className="wt-chips">
-            <span className="wt-filter active">{personName(partner)}</span>
+          <ChipRow>
+            {/* The partner is always on the list, so their name is drawn as an
+                on chip but is not a control. */}
+            <span className="pick-chip pick-chip--md is-on"><span className="pick-chip-label">{personName(partner)}</span></span>
             {others.map(p => (
-              <button key={p.other_id} type="button" className={`wt-filter${extra.has(p.other_id) ? ' active' : ''}`} aria-pressed={extra.has(p.other_id)}
-                onClick={() => setExtra(prev => { const next = new Set(prev); if (next.has(p.other_id)) next.delete(p.other_id); else next.add(p.other_id); return next; })}>
-                {personName(p)}
-              </button>
+              <Chip key={p.other_id} label={personName(p)} selected={extra.has(p.other_id)}
+                onClick={() => setExtra(prev => { const next = new Set(prev); if (next.has(p.other_id)) next.delete(p.other_id); else next.add(p.other_id); return next; })} />
             ))}
-          </div>
+          </ChipRow>
           <span className="wt-note">{L.whosOnNote}</span>
         </div>
         {error && <p className="wt-error" role="alert">{error}</p>}
@@ -349,7 +350,7 @@ export function SharedListPeopleDialog({ list, locked = false, onAdd, onClose })
             <PersonAvatar person={p} />
             <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span></span>
             {added.has(p.other_id)
-              ? <span className="wt-chip wt-chip--ok">{L.shared}</span>
+              ? <Tag label={L.shared} tone="sage" />
               : <button type="button" className="btn btn-primary btn-sm" onClick={async () => { if (await onAdd(p.other_id)) setAdded(prev => new Set(prev).add(p.other_id)); }}>{L.add}</button>}
           </div>
         ))}

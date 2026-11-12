@@ -74,6 +74,7 @@ import { isSharedList } from '@plot/core/sharedLists.js';
 import { MemberStack } from './CollaborativeListParts.jsx';
 import { clearUndo } from '@plot/core/undo.js';
 import Icon from './Icon.jsx';
+import { Tag } from './Chip.jsx';
 
 /* ── Close icon ── */
 function CloseIcon() {
@@ -1788,20 +1789,20 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   <div className="panel-genres">
                     {chip && chip.cls !== 'chip-muted' && <span className={`chip ${chip.cls}`}>{chip.label}</span>}
                     {genreChips.map(g => onBrowse ? (
-                      <button type="button" className="panel-genre panel-genre--link" key={g.id} aria-label={BROWSE.genreLink(g.name)}
-                        onClick={() => browse('genre', g.id, g.name, `/home?${new URLSearchParams(genreBrowseParams({ mediaType: itemType, genreId: g.id }))}`)}>{g.name}</button>
-                    ) : <span className="panel-genre" key={g.id}>{g.name}</span>)}
+                      <button type="button" className="panel-tag-link" key={g.id} aria-label={BROWSE.genreLink(g.name)}
+                        onClick={() => browse('genre', g.id, g.name, `/home?${new URLSearchParams(genreBrowseParams({ mediaType: itemType, genreId: g.id }))}`)}><Tag tone="sage" label={g.name} /></button>
+                    ) : <Tag tone="sage" key={g.id} label={g.name} />)}
                   </div>
                 )}
                 {onBrowse && (keywordChips.length > 0) && (
                   <div className="panel-genres panel-keywords" role="group" aria-label={BROWSE.keywordsLabel}>
                     {keywordChips.map(k => (
-                      <button type="button" className="panel-keyword" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
-                        onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}>{k.name}</button>
+                      <button type="button" className="panel-tag-link" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
+                        onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}><Tag label={k.name} /></button>
                     ))}
                     {(hiddenKeywords > 0 || keywordsOpen) && (
-                      <button type="button" className="panel-keyword panel-keyword--toggle" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
-                        {keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)}
+                      <button type="button" className="panel-tag-link" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
+                        <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
                       </button>
                     )}
                   </div>

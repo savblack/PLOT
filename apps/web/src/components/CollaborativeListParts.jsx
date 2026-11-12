@@ -11,6 +11,7 @@ import DialogActions from './DialogActions.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
+import { Tag } from './Chip.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import { PersonAvatar, SharedListPeopleDialog } from './WatchTogetherParts.jsx';
 import { useApp } from '../hooks/useApp.js';
@@ -143,7 +144,7 @@ export function ListInviteDialog({ list, onClose }) {
                 <PersonAvatar person={p} />
                 <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span></span>
                 {added.has(p.other_id)
-                  ? <span className="wt-chip wt-chip--ok">{T.sharedList.shared}</span>
+                  ? <Tag tone="sage" label={T.sharedList.shared} />
                   : <button type="button" className="btn btn-primary btn-sm" onClick={() => add(p.other_id)}>{T.sharedList.add}</button>}
               </div>
             ))}
@@ -414,7 +415,7 @@ export function ListPeopleSheet({ members, onInvite, onWatchTogether, onClose })
               <span className="wt-person-name">{m.isYou ? P.you : personName(m)}</span>
               <span className="wt-note">{P.added(m.count)}</span>
             </span>
-            {m.isOwner && <span className="wt-chip">{P.owner}</span>}
+            {m.isOwner && <Tag label={P.owner} />}
           </div>
         ))}
       </div>

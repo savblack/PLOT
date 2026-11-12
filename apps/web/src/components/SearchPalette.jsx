@@ -17,6 +17,7 @@ import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { COMMON } from '../copy/common.js';
 import Spinner from './Spinner.jsx';
 import Icon from './Icon.jsx';
+import Chip, { ChipRow } from './Chip.jsx';
 import './SearchPalette.css';
 
 /* Web-only rendering: a command palette over whatever is on screen, opened by
@@ -308,18 +309,15 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
                 <span>{SEARCH_PALETTE.recent}</span>
                 <button type="button" onClick={forgetRecent}>{SEARCH_PALETTE.clearRecent}</button>
               </div>
-              <div className="search-palette-recent-chips">
+              <ChipRow>
                 {recent.map(termText => (
-                  <button
+                  <Chip
                     key={termText}
-                    type="button"
-                    className="search-palette-chip"
+                    label={termText}
                     onClick={() => { setQuery(termText); inputRef.current?.focus(); }}
-                  >
-                    {termText}
-                  </button>
+                  />
                 ))}
-              </div>
+              </ChipRow>
             </div>
           )}
 

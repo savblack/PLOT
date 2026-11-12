@@ -35,6 +35,7 @@ import ResponsiveDialog from './ResponsiveDialog.jsx';
 import FinishingTouchesCard from './FinishingTouchesCard.jsx';
 import { FollowPill } from './PeopleFollow.jsx';
 import ImportSourceIcon from './ImportSourceIcon.jsx';
+import { Tag } from './Chip.jsx';
 import './FinishingTouches.css';
 
 const wideScreen = () => typeof window !== 'undefined' && window.matchMedia?.('(min-width: 1024px)').matches;
@@ -243,8 +244,8 @@ function PeopleSheet({ watchlistItems, favourites, onClose }) {
       <div className="ft-preview" aria-label={T.peopleSheet.previewLabel}>
         <div className="ft-preview-head"><b>{T.peopleSheet.previewTitle}</b><span>{T.peopleSheet.previewLabel}</span></div>
         <div className="ft-preview-cards" aria-hidden="true">
-          <span className="ft-preview-card"><i /><span><b>{PEOPLE.chips.inCinemas}</b><span>{lead?.name || PEOPLE.director}</span></span></span>
-          <span className="ft-preview-card"><i /><span><b>{PEOPLE.chips.newSeason}</b><span>{suggestions[1]?.name || PEOPLE.creator}</span></span></span>
+          <span className="ft-preview-card"><i /><span><Tag label={PEOPLE.chips.inCinemas} tone="sage" /><span>{lead?.name || PEOPLE.director}</span></span></span>
+          <span className="ft-preview-card"><i /><span><Tag label={PEOPLE.chips.newSeason} tone="sage" /><span>{suggestions[1]?.name || PEOPLE.creator}</span></span></span>
         </div>
       </div>
       <h3 className="ft-sheet-h">{T.peopleSheet.fromWatchlist}</h3>

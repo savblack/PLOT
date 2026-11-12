@@ -7,6 +7,7 @@ import { shortDayMonth, localDateStr } from '@plot/core/date.js';
 import { comingUpFromCredits } from '@plot/core/peopleFeed.js';
 import './TalentCredits.css';
 import './PeopleFollow.css';
+import { Tag } from './Chip.jsx';
 
 export default function CreditsGrid({ credits, openPanel }) {
   const art = useUserArtwork();
@@ -53,7 +54,7 @@ export function ComingUpGrid({ items, openPanel }) {
             <span className="talent-credit-title">{item.title}</span>
             {item.role && <span className="talent-credit-role">{item.role}</span>}
             <span className="talent-credit-meta">
-              {item.today ? <span className="people-chip people-chip--today">{PEOPLE.chips.outToday}</span> : shortDayMonth(item.date)}
+              {item.today ? <Tag tone="accent" label={PEOPLE.chips.outToday} /> : shortDayMonth(item.date)}
             </span>
           </button>
         );

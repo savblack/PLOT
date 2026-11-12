@@ -203,26 +203,6 @@
   cursor: pointer;
 }
 .search-palette-recent-head button:hover { color: var(--text-primary); }
-.search-palette-recent-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.search-palette-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  font-family: var(--font-sans);
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  cursor: pointer;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.search-palette-chip:hover { background: var(--surface-sunken); }
 
 /* ── Empty states ── */
 .search-palette-empty {

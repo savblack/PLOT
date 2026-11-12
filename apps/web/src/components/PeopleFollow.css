@@ -113,10 +113,3 @@
 
 /* ── Chips on Your people and Coming up: Out today in the pink fill, the rest
    in the secondary fill, Dated and service names quiet. ── */
-.people-chip {
-  display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-badge);
-  background: var(--accent-secondary-fill); color: var(--on-accent-secondary-fill);
-  font-size: 0.68rem; font-weight: 600; line-height: 16px; white-space: nowrap;
-}
-.people-chip--today { background: var(--accent-fill); color: var(--on-accent-fill); }
-.people-chip--quiet { background: var(--surface-sunken); color: var(--text-secondary); }

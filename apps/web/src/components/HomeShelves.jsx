@@ -17,6 +17,7 @@ import { shortDayMonth } from '@plot/core/date.js';
 import { FollowPill } from './PeopleFollow.jsx';
 import './PeopleFollow.css';
 import './HomeShelves.css';
+import { Tag } from './Chip.jsx';
 
 /** Continue watching (board 4a): the poster, a thin progress line, what is next. */
 export function ContinueCard({ item, onOpen }) {
@@ -35,7 +36,8 @@ export function ContinueCard({ item, onOpen }) {
   );
 }
 
-const CHIP_CLASS = { outToday: 'people-chip people-chip--today', dated: 'people-chip people-chip--quiet' };
+// The same tones as Your people's feed (YourPeopleView.jsx).
+const CHIP_TONE = { outToday: 'accent', dated: 'neutral' };
 
 /** Who, and then the service or the date: "Florence Pugh · Netflix", "Pedro Pascal · 3 Dec". */
 function shelfMeta(item, today) {
@@ -54,7 +56,7 @@ export function PeopleShelfCard({ item, today, onOpen }) {
         <div className="media-card-img">{img ? <img src={img} alt="" loading="lazy" /> : <div className="media-card-img-placeholder" />}</div>
         <div className="media-card-title">{item.title}</div>
         <div className="media-card-meta">{shelfMeta(item, today)}</div>
-        {item.chip && <div className="people-card-chip"><span className={CHIP_CLASS[item.chip] ?? 'people-chip'}>{P.chips[item.chip]}</span></div>}
+        {item.chip && <div className="people-card-chip"><Tag tone={CHIP_TONE[item.chip] ?? 'sage'} label={P.chips[item.chip]} /></div>}
       </button>
     </div>
   );

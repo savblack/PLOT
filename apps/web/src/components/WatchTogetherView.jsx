@@ -25,6 +25,7 @@ import { EVENTS, track } from '../lib/analytics.js';
 import './WatchTogetherView.css';
 import PremiumGateButton from './PremiumGateButton.jsx';
 import BackLink from './BackLink.jsx';
+import Chip, { ChipRow, Tag } from './Chip.jsx';
 
 // The hub and start page open the upgrade sheet from a button; the overlap
 // page reports this itself when it loads locked.
@@ -201,13 +202,13 @@ function Hub({ wt, premium, profile }) {
                     <div key={p.other_id} className="wt-row">
                       <PersonAvatar person={p} />
                       <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{T.hub.bothSaved(p.overlap_count ?? 0)}</span></span>
-                      <span className="wt-chip">{T.hub.needsPremium}</span>
+                      <Tag label={T.hub.needsPremium} />
                     </div>
                   ) : (
                     <Link key={p.other_id} to={`/together/with/${encodeURIComponent(p.username)}`} className="wt-row wt-row--link interactive-surface">
                       <PersonAvatar person={p} />
                       <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">{T.hub.bothSaved(p.overlap_count ?? 0)}</span></span>
-                      {unlockedIds.has(p.other_id) && <span className="wt-chip wt-chip--ok">{T.hub.unlocked}</span>}
+                      {unlockedIds.has(p.other_id) && <Tag label={T.hub.unlocked} tone="sage" />}
                       <Chevron />
                     </Link>
                   ))}
@@ -354,7 +355,7 @@ function Invite({ wt }) {
           <PersonAvatar person={p} />
           <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">@{p.username}</span></span>
           {sent.has(p.id)
-            ? <span className="wt-chip">{T.invite.sent}</span>
+            ? <Tag label={T.invite.sent} />
             : <button type="button" className="btn btn-primary btn-sm" onClick={() => invite(p)}>{T.invite.invite}</button>}
         </div>
       ))}
@@ -444,11 +445,11 @@ function Together({ wt, usernames }) {
         </section>
       )}
 
-      <div className="wt-chips" role="group" aria-label={T.overlap.filter}>
+      <ChipRow role="group" aria-label={T.overlap.filter}>
         {[['all', T.overlap.all], ['movie', T.overlap.movies], ['tv', T.overlap.shows]].map(([k, label]) => (
-          <button key={k} type="button" className={`wt-filter${kind === k ? ' active' : ''}`} aria-pressed={kind === k} onClick={() => { setKind(k); setTopId(null); }}>{label}</button>
+          <Chip key={k} label={label} selected={kind === k} onClick={() => { setKind(k); setTopId(null); }} />
         ))}
-      </div>
+      </ChipRow>
 
       {error && !locked && <p className="wt-error" role="alert">{T.errors[error]}</p>}
       {loading ? <p className="wt-note" role="status">{COMMON.loading}</p>
@@ -465,7 +466,7 @@ function Together({ wt, usernames }) {
               <section className="wt-card wt-top">
                 <Poster title={top} size="lg" />
                 <div className="wt-top-text">
-                  <span className="wt-chip wt-chip--accent">{T.overlap.topMatch}</span>
+                  <Tag label={T.overlap.topMatch} tone="accent" />
                   <h2 className="wt-card-title">{top.title}</h2>
                   <span className="wt-note">{titleMeta(top)}</span>
                   <div className="wt-top-actions">
@@ -617,7 +618,7 @@ function SessionView({ wt, sessionId }) {
         <>
           {justMatched && (
             <div className="wt-card wt-match" role="status">
-              <span className="wt-chip wt-chip--accent">{T.session.bothIn}</span>
+              <Tag label={T.session.bothIn} tone="accent" />
               <span className="wt-person-name">{justMatched.title}</span>
               <div><button type="button" className="btn btn-primary btn-sm" onClick={() => openPanel(justMatched.tmdb_id, justMatched.media_type)}>{T.session.choose}</button></div>
             </div>
