@@ -5,7 +5,7 @@ Owner: Codex (Alix website copy, Kaia trial copy)
 Branch: agent/2026-11-12-trial-card-copy
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-11-12-trial-card-copy
 Updated: 2026-11-12 (Australia/Sydney)
-Latest pushed commit: pending checkpoint
+Latest pushed commit: 8fce03a20 (checkpoint, [skip ci])
 
 ## Goal
 Remove no-credit-card wording from the website and app so it does not imply that Premium's seven-day trial starts without a payment card.
@@ -18,7 +18,7 @@ Remove no-credit-card wording from the website and app so it does not imply that
 - `git diff --check` passed. No secrets or unrelated source edits found.
 
 ## Next
-Push the checkpoint, create a finished PR with a normal CI-running commit, and review the PR checks. Do not merge or deploy without Savannah's approval under AGENTS.md Decisions.
+Create a finished PR with a normal CI-running commit and review the PR checks. Remove this handoff in the last commit before merge. Do not merge or deploy without Savannah's approval under AGENTS.md Decisions.
 
 ## Approvals
 Savannah authorized this copy change in chat on 2026-11-12. Production publication or merge approval remains outstanding.
