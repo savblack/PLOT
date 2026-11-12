@@ -3,10 +3,9 @@
 // they tapped as the sentence under it; a returning subscriber sees the
 // feature first. Each plan is one row with its price, and a quiet link leads
 // to /plans for everything else. A bottom sheet on phones, a centred card
-// wider up. Mobile has its own RN counterpart, still on the older layout
+// wider up, in the shared pop-up. Mobile has its own RN counterpart, still on the older layout
 // (apps/mobile/components/UpgradeSheet.tsx); content comes from @plot/core.
-import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useId, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { upgradeSheetContent, upgradeSheetGateFeature } from '@plot/core/upgradeSheet.js';
 import { EVENTS, track } from '../lib/analytics.js';
@@ -17,6 +16,7 @@ import { premiumPlansPath } from '../utils/premiumExplore.js';
 import PremiumPurchaseAction from './PremiumPurchaseAction.jsx';
 import { ThemeMiniaturePair } from './ThemeMiniature.jsx';
 import { Tag } from './Chip.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
 import './UpgradeSheet.css';
 
 const S = PLANS_PAGE.upgradeSheet;
@@ -56,7 +56,6 @@ export default function UpgradeSheet(props) {
 export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept = false, premium, onAction }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const sheetRef = useRef(null);
   const titleId = useId();
   const content = upgradeSheetContent(reason, { family, kept });
   // Yearly first, as on the plans page. The sheet used to start a monthly
@@ -82,47 +81,10 @@ export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept
   const pending = premium.billingReady === false && !waited;
   // Callers pass inline handlers; reading them through refs keeps the setup
   // below to one run per open, so focus and scroll lock aren't reset on render.
-  const onCloseRef = useRef(onClose);
-  const returnRef = useRef(returnFocusRef);
-  useEffect(() => { onCloseRef.current = onClose; returnRef.current = returnFocusRef; });
   useEffect(() => {
     const feature = upgradeSheetGateFeature(reason);
     if (feature) track(EVENTS.PREMIUM_GATE_HIT, { feature });
   }, [reason]);
-
-  useEffect(() => {
-    const restore = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    // Focus the sheet itself so the first Tab reaches the buttons without
-    // painting a focus ring on Upgrade the moment the sheet opens.
-    sheetRef.current?.focus();
-
-    // Capture phase + stopPropagation: the sheet can open over another dialog
-    // (Add to list), whose own document listener must not also see Escape/Tab.
-    const onKeyDown = (event) => {
-      if (event.key !== 'Escape' && event.key !== 'Tab') return;
-      event.stopPropagation();
-      if (event.key === 'Escape') { event.preventDefault(); onCloseRef.current(); return; }
-      const focusables = [...(sheetRef.current?.querySelectorAll('button:not(:disabled), a.btn') ?? [])];
-      if (!focusables.length) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      // Focus starts on the sheet itself, which isn't in the list: wrap from there too.
-      const onButton = focusables.includes(document.activeElement);
-      if (event.shiftKey && (!onButton || document.activeElement === first)) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && (!onButton || document.activeElement === last)) { event.preventDefault(); first.focus(); }
-    };
-    document.addEventListener('keydown', onKeyDown, true);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown, true);
-      document.body.style.overflow = previousOverflow;
-      // The body means nothing held focus (the dialog the sheet replaced took it with it).
-      const usable = restore && restore !== document.body && restore.isConnected;
-      const target = usable ? restore : returnRef.current?.current;
-      target?.focus?.();
-    };
-  }, []);
 
   if (!content) return null;
 
@@ -132,11 +94,22 @@ export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept
     navigate(premiumPlansPath(`${location.pathname}${location.search}`));
   };
 
-  return createPortal(
-    <div className="upgrade-sheet-layer">
-      <div className="upgrade-sheet-scrim" onClick={onClose} aria-hidden="true" />
-      <section ref={sheetRef} className="upgrade-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
-        <span className="upgrade-sheet-grab" aria-hidden="true" />
+  // The shared pop-up (ResponsiveDialog): "Premium" on the left, Cancel on
+  // the right, as every pop-up in both apps (Savannah, 12 Nov 2026). It sits
+  // above other dialogs, since it opens over Add to list and the like, and
+  // only it answers Escape while it is open.
+  return (
+    <ResponsiveDialog
+      title={PLANS_PAGE.premium.name}
+      labelledBy={titleId}
+      onClose={onClose}
+      returnFocusRef={returnFocusRef}
+      size="compact"
+      tall
+      zIndex={2000}
+      surfaceClassName="upgrade-sheet-dialog"
+      contentClassName="upgrade-sheet"
+    >
         <p className="upgrade-sheet-context">
           {content.meter > 0 && <span className="upgrade-sheet-meter" aria-hidden="true">
             {Array.from({ length: content.meter }, (_, i) => <i key={i} />)}
@@ -185,10 +158,7 @@ export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept
           <button type="button" className="upgrade-sheet-link upgrade-sheet-link--quiet" onClick={compare}>
             {S.seeAll}
           </button>
-          <button type="button" className="upgrade-sheet-link upgrade-sheet-link--quiet" onClick={onClose}>{S.notNow}</button>
         </div>
-      </section>
-    </div>,
-    document.body,
+    </ResponsiveDialog>
   );
 }

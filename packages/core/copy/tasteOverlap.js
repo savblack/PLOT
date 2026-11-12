@@ -128,5 +128,4 @@ export const TASTE_OVERLAP = {
   shareMenuLabel: 'Share your match to Instagram, Threads or X',
   /** @param {string} colourLower regional "color"/"colour" */
   changeCard: (colourLower) => `Change ${colourLower} or name`,
-  close: 'Close',
 };

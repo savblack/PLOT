@@ -49,8 +49,6 @@ export const MEDIA = {
   yesterday: 'Yesterday',
   typeHeading: 'Type',
   genreHeading: 'Genre',
-  collapseAllSections: 'Collapse all sections',
-  expandAllSections: 'Expand all sections',
   fromTheArchive: 'From the archive',
   fromTheArchiveBadge: 'From the Archive',
   onThisDay: 'On This Day',

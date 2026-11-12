@@ -104,9 +104,7 @@ export const PLANS_PAGE = {
   // Premium feature that lifts that limit. `also` picks premiumCard rows by icon;
   // the mobile sheet lists them, the web sheet no longer does.
   upgradeSheet: {
-    close: 'Close',
     compare: 'Compare every feature',
-    notNow: 'Not now',
     alsoIn: 'Also in Premium',
     // The web sheet, redesigned 11 Nov 2026 (Savannah's pick "A2"): the free
     // trial is the headline and the button, the feature that was tapped is the

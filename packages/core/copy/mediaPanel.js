@@ -166,7 +166,6 @@ export const MEDIA_PANEL = {
   episodeRatingsSignIn: 'Sign in to see your episode ratings.',
   episodeRatingsLoadError: 'Could not load episode ratings. Try again.',
   episodeRatingsRetry: 'Try again',
-  episodeRatingsClose: 'Close',
   episodeRatingsEpisode: (episode) => `Episode ${episode}`,
   episodeRatingsHolds: (season, through, episode, score, yours) => (
     yours

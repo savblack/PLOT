@@ -206,3 +206,6 @@
   .responsive-dialog-overlay,
   .responsive-dialog { animation: none; }
 }
+
+/* It takes focus when it opens; the ring belongs on what is inside. */
+.responsive-dialog:focus { outline: none; }
