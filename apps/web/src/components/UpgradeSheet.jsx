@@ -29,9 +29,12 @@ const HOLD_MS = 700;
  *   returnFocusRef?: { current: HTMLElement | null },
  *   family?: string,
  *   kept?: boolean,
+ *   onAction?: (target: 'checkout' | 'plans', plan?: string) => void,
  * }} props  returnFocusRef: where focus goes on close when the element that had
  *   it is gone (e.g. the create-list dialog the sheet replaced). theme: for
  *   reason 'themes', the Premium family tapped, drawn light and dark (never applied).
+ *   onAction: told when the viewer presses the purchase button or See everything,
+ *   before the sheet acts (the trial prompt counts those as clicks, not dismissals).
  */
 export default function UpgradeSheet(props) {
   // Tolerates a missing app context: the sheet now opens from many surfaces,
@@ -49,7 +52,7 @@ export default function UpgradeSheet(props) {
  *
  * @param {Parameters<typeof UpgradeSheet>[0] & { premium: ReturnType<typeof usePremium> }} props
  */
-export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept = false, premium }) {
+export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept = false, premium, onAction }) {
   const navigate = useNavigate();
   const location = useLocation();
   const sheetRef = useRef(null);
@@ -123,6 +126,7 @@ export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept
   if (!content) return null;
 
   const compare = () => {
+    onAction?.('plans');
     onClose();
     navigate(premiumPlansPath(`${location.pathname}${location.search}`));
   };
@@ -152,7 +156,10 @@ export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept
         </p>
         {content.kept && <p className="upgrade-sheet-kept">{content.kept}</p>}
 
-        <PremiumPurchaseAction premium={premium} plan={plan} />
+        <PremiumPurchaseAction
+          premium={onAction ? { ...premium, startCheckout: (chosen) => { onAction('checkout', chosen); return premium.startCheckout(chosen); } } : premium}
+          plan={plan}
+        />
         {open && <p className="upgrade-sheet-terms">{(trial ? S.afterTrial : S.price)[plan]}</p>}
         </div>
         {!open && <p className="upgrade-sheet-note" role="status">{PLANS_PAGE.checkoutClosedDetail}</p>}

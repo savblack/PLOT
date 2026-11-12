@@ -63,6 +63,7 @@ import { visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
 import PremiumFirstWeek, { usePremiumFirstWeekState } from '../../components/PremiumFirstWeek';
+import PremiumTrialPrompt from '../../components/PremiumTrialPrompt';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 import ImportJobCard, { type ImportJobRow } from '../../components/ImportJobCard';
 import { markImportDone } from '../../lib/finishingTouches';
@@ -1044,6 +1045,8 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
             onClose={() => setImportSource(null)}
           />
         )}
+        {/* Once, after onboarding or a Trakt import: the 7-day trial offer. */}
+        <PremiumTrialPrompt userId={userId} profile={profile} />
 
         {/* ── Shelves, in the viewer's order (Customize Home). Fixed cards
             above are not part of the layout; a hidden shelf is skipped. The

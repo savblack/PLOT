@@ -30,6 +30,7 @@ import { readPendingSave } from '../utils/pendingSave.js';
 import { writeOnboardingStash, takeOnboardingStash } from '../utils/onboardingStash.js';
 import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { readStorage, writeStorage } from '../utils/storage.js';
+import { clearPremiumTrialPrompt, requestPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 import { cacheOnboardingComplete } from '../utils/sessionCache.js';
 import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import {
@@ -278,6 +279,8 @@ export default function OnboardingFlow() {
         import_source: importSource,
         skipped: seeds.length === 0,
       });
+      // The first of the trial prompt's two moments (shown by the app shell).
+      requestPremiumTrialPrompt('onboarding');
     }
     setSaving(false);
     return true;
@@ -286,6 +289,8 @@ export default function OnboardingFlow() {
   const exitPath = async () => {
     const plan = SHOW_PRICING_PAGE ? takePremiumCheckoutIntent() : null;
     if (plan) {
+      // Already on the way to Checkout: no trial prompt on top of it.
+      clearPremiumTrialPrompt();
       const started = await premium.startCheckout(plan, 'premium_signup');
       return started ? null : `/pricing?billing=${plan}`;
     }

@@ -5,6 +5,7 @@ import 'react-native-url-polyfill/auto';
 import { configure } from '@plot/core/config.js';
 import { notifyPendingWatchQueued } from '@plot/core/watchQueued.js';
 import { onUpgradeSheetGateHit } from '@plot/core/upgradeSheet.js';
+import { premiumTrialPromptTriggerForImport, requestPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 import { secureSessionStorage } from './secureStorage';
 import { initAnalytics, track, EVENTS } from './analytics';
 
@@ -118,6 +119,9 @@ configure({
       abandoned: EVENTS.LETTERBOXD_IMPORT_ABANDONED,
     }[stage];
     if (name) track(name, props);
+    // A Trakt import that saved titles is one of the trial prompt's two moments.
+    const trialTrigger = stage === 'completed' ? premiumTrialPromptTriggerForImport(props) : null;
+    if (trialTrigger) requestPremiumTrialPrompt(trialTrigger);
   },
   // The undo toast reversed a removal. Never a committed action.
   onUndo: (payload) => track(EVENTS.ACTION_UNDONE, payload),

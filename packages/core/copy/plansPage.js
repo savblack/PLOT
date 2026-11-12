@@ -113,6 +113,21 @@ export const PLANS_PAGE = {
     afterTrial: { yearly: 'Then US$24 a year, taxes included. Cancel anytime.', monthly: 'Then US$3 a month, taxes included. Cancel anytime.' },
     price: { yearly: 'US$24 a year, taxes included. Cancel anytime.', monthly: 'US$3 a month, taxes included. Cancel anytime.' },
     reasons: {
+      // Not a limit: the one-time trial prompt (packages/core/premiumTrialPrompt.js),
+      // shown once right after onboarding or a Trakt import. The web sheet leads
+      // with trialTitle and puts `title` in bold under it; mobile leads with `title`.
+      trialAfterOnboarding: {
+        context: () => 'You’re all set up',
+        title: 'Get even more out of Plot.',
+        body: 'Premium adds smart lists, every theme, people alerts and Watch together. Cancel before the 7 days are up and you pay nothing.',
+        also: ['lists', 'together'],
+      },
+      trialAfterTraktImport: {
+        context: () => 'Your Trakt history is in',
+        title: 'Now make the most of it.',
+        body: 'Premium adds smart lists, deeper viewing stats, every theme and Watch together. Cancel before the 7 days are up and you pay nothing.',
+        also: ['lists', 'stats'],
+      },
       lists: {
         context: (cap) => `You’ve used all ${cap} free lists`,
         title: 'Make a list for every kind of night.',

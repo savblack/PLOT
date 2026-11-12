@@ -4,6 +4,7 @@ import { readImportSelection } from '@plot/core/importArchive.js';
 import { getConfig } from '@plot/core/config.js';
 import { needsDuplicateReview, leftOutWatchSummary, alreadyImportedEvent, reviewPendingWatchSummaries } from '@plot/core/importEvents.js';
 import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
+import { holdPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
@@ -188,6 +189,8 @@ export default function ImportHistoryModal(props: Props) {
 
 function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, initialPlatform, reviewJob, onImported }: Props) {
   const importReport = useMemo(() => createImportReporter({ entry }), [entry]);
+  // The trial prompt waits until this sheet closes (iOS cannot stack it on top).
+  useEffect(() => holdPremiumTrialPrompt(), []);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);

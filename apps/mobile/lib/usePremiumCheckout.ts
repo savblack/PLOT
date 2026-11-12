@@ -34,13 +34,15 @@ export function usePremiumCheckout(active = true) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [storefront, setStorefront] = useState<string | null>(null);
+  // False until the storefront read answers (always true when browser checkout is off).
+  const [storefrontKnown, setStorefrontKnown] = useState(!BROWSER_CHECKOUT_ENABLED);
   const awaitingReturn = useRef(false);
   const allowed = BROWSER_CHECKOUT_ENABLED && canLinkOutToPurchase({ platform: Platform.OS, storefront });
 
   useEffect(() => {
     if (!active || !BROWSER_CHECKOUT_ENABLED) return;
     let on = true;
-    getStorefrontCountry().then(c => { if (on) setStorefront(c); });
+    getStorefrontCountry().then(c => { if (on) { setStorefront(c); setStorefrontKnown(true); } });
     return () => { on = false; };
   }, [active]);
 
@@ -121,5 +123,5 @@ export function usePremiumCheckout(active = true) {
   /** What the control says: Opening…, the waitlist, or Upgrade to Premium. */
   const label = busy ? PLANS_PAGE.premium.opening : closed ? PLANS_PAGE.waitlistAction : PLANS_PAGE.upgradeAction;
 
-  return { allowed, checkoutAvailable, closed, busy, error, label, start, openPortal, joinWaitlist };
+  return { allowed, storefrontKnown, checkoutAvailable, closed, busy, error, label, start, openPortal, joinWaitlist };
 }

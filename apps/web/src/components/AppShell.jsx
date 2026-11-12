@@ -12,6 +12,7 @@ import { TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import AppSidebar from './AppSidebar.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
+import PremiumTrialPrompt from './PremiumTrialPrompt.jsx';
 import { useApp } from '../hooks/useApp.js';
 import {
   IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
@@ -158,6 +159,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         onThemeLocked={setThemeUpgrade}
       />
       {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
+      {/* Once, after onboarding or a Trakt import: the 7-day trial offer. */}
+      {user && <PremiumTrialPrompt profile={profile} currentView={currentView} />}
 
       {feedbackOpen && user && (
         <Suspense fallback={null}>
