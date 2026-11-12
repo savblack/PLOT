@@ -44,7 +44,7 @@ export function alertLinks(appOrigin, token) {
 }
 
 /** Same sender identity as the digest footer (marketing/newsletter/send-digest.mjs). */
-export const REGISTERED_ADDRESS = 'SUSUMU HOUSE, Level 1, 63-73 Ann Street, Surry Hills, NSW 2010';
+export const REGISTERED_ADDRESS = 'Savannah Black, Level 1, 63-73 Ann Street, Surry Hills, NSW 2010';
 
 // The words. No em dashes (AGENTS.md); middots in the footer, as the digest has.
 export const ALERT_EMAIL_TEXT = Object.freeze({
