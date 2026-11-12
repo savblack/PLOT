@@ -32,7 +32,10 @@ No physical device is connected to this workspace, and the completed iOS product
 - The Apple ID used is `sav.black@outlook.com.au`; Apple's processing email goes there. `app.json` already sets `ITSAppUsesNonExemptEncryption: false`, so no export-compliance hold is expected.
 - Apple processed build 6. With Savannah's approval, created internal TestFlight group "Plot team" (automatic distribution on, Apple's default; it cannot be changed later) and added her as the only tester. App Store Connect lists her team login as `black.sav@icloud.com` (Account Holder), so the TestFlight invite went there, not to the .com.au Apple ID used for EAS. Group shows build 1.4.0 (6) "Ready to Test", tester status "Invited".
 - 2026-11-12: Savannah installed build 6 from TestFlight on her iPhone and reported Sign in with Apple worked (her report in chat; not independently checked).
-- Not yet confirmed: Google sign-in on her iPhone; Google sign-in on Android.
+- Google sign-in on her iPhone FAILED: Google succeeded, but the auth sheet landed on the theplot.tv homepage instead of returning to the app (her screenshot).
+- Diagnosis (code reading, not yet proven on device): `apps/mobile/app/(auth)/index.tsx:175` builds the return address with `Linking.createURL('/auth/callback')`. In a store build there is no hostUri, so expo-linking (`node_modules/expo-linking/build/createURL.js`) produces `plot:///auth/callback` (three slashes). Production Supabase's Redirect URLs list (read in the dashboard, unchanged) has `plot://auth/callback` (two slashes) but not the three-slash form, so Supabase falls back to the Site URL `https://app.theplot.tv`. Apple is unaffected because it signs in with a native token and never uses a redirect. The same constant is the `emailRedirectTo` for mobile magic links and signup confirmation, so those likely land on the web too.
+- Proposed fix, awaiting Savannah's yes (production auth setting): add `plot:///auth/callback` to production Redirect URLs. No new build needed; she can retest build 6 straight away. Then correct the comment at index.tsx:172.
+- Not yet confirmed: Google sign-in on her iPhone after the fix; Google sign-in on Android.
 
 ## Latest pushed commit
 fad05b75e (pushed; branch matches origin). Checks above still stand; no code changed since.
