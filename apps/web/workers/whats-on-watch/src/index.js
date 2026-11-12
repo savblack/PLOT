@@ -64,10 +64,13 @@ export async function probe(url, { attempts, waitMs }, read = attempt, wait = sl
  *
  * @param {{ state: 'healthy'|'broken', since?: number, lastAlertAt?: number, blockedSince?: number|null } | null} prev
  * @param {{ state: 'healthy'|'broken'|'blocked', reason: string }} verdict
- * @param {{ now: number, remindHours: number, blindHours: number }} opts
+ * @param {{ now: number, remindHours: number, blindHours: number, recoverAfter?: number }} opts
+ *   recoverAfter: healthy runs in a row needed before 'recovered' (default 1).
+ *   Going down already needs two failed reads, so without this a service that
+ *   fails on and off could send a down/recovered pair every other run.
  * @returns {{ next: object, email: null | { kind: 'down'|'reminder'|'recovered'|'blind', reason: string, since?: number } }}
  */
-export function decide(prev, verdict, { now, remindHours, blindHours }) {
+export function decide(prev, verdict, { now, remindHours, blindHours, recoverAfter = 1 }) {
   const base = prev || { state: 'healthy', since: now, lastAlertAt: null, blockedSince: null };
 
   if (verdict.state === 'blocked') {
@@ -86,23 +89,26 @@ export function decide(prev, verdict, { now, remindHours, blindHours }) {
   if (verdict.state === 'broken') {
     if (base.state !== 'broken') {
       return {
-        next: { ...seen, state: 'broken', since: now, lastAlertAt: now, reason: verdict.reason },
+        next: { ...seen, state: 'broken', since: now, lastAlertAt: now, reason: verdict.reason, healthyRuns: 0 },
         email: { kind: 'down', reason: verdict.reason, since: now },
       };
     }
     if (now - (base.lastAlertAt ?? base.since) >= remindHours * HOUR) {
       return {
-        next: { ...seen, lastAlertAt: now, reason: verdict.reason },
+        next: { ...seen, lastAlertAt: now, reason: verdict.reason, healthyRuns: 0 },
         email: { kind: 'reminder', reason: verdict.reason, since: base.since },
       };
     }
-    return { next: { ...seen, reason: verdict.reason }, email: null };
+    return { next: { ...seen, reason: verdict.reason, healthyRuns: 0 }, email: null };
   }
 
   // healthy
   if (base.state === 'broken') {
+    const healthyRuns = (base.healthyRuns ?? 0) + 1;
+    // Still counted as down until it has stayed up long enough.
+    if (healthyRuns < recoverAfter) return { next: { ...seen, healthyRuns }, email: null };
     return {
-      next: { ...seen, state: 'healthy', since: now, lastAlertAt: null, reason: verdict.reason },
+      next: { ...seen, state: 'healthy', since: now, lastAlertAt: null, reason: verdict.reason, healthyRuns: 0 },
       email: { kind: 'recovered', reason: verdict.reason, since: base.since },
     };
   }

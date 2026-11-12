@@ -85,8 +85,8 @@ export const classify = {
   tmdb(status, json) {
     if (status !== 200) return { ok: false, reason: `HTTP ${status}${json?.error ? ` (${json.error})` : ''}` };
     const n = Array.isArray(json?.results) ? json.results.length : 0;
-    if (n === 0) return { ok: false, reason: 'trending came back empty' };
-    return { ok: true, reason: `${n} trending titles` };
+    if (n === 0) return { ok: false, reason: 'search came back empty' };
+    return { ok: true, reason: `${n} search results` };
   },
   functions(status, json) {
     if (status !== 200) return { ok: false, reason: `HTTP ${status}` };
@@ -150,6 +150,24 @@ async function readJson(res) {
   try { return await res.json(); } catch { return null; }
 }
 
+/*
+ * The TMDB check searches for one of these words, a different one every five
+ * minutes. The proxy caches each answer (trending for an hour, a search for
+ * fifteen minutes), so a fixed request was mostly answered from cache: if the
+ * Supabase tmdb-proxy function or TMDB itself went down, the check stayed green
+ * for up to an hour. Twelve words at five minutes means a word comes round
+ * again only after an hour, well past the search TTL, so every check reaches
+ * TMDB. That is 288 small searches a day, and nothing about the proxy changes.
+ */
+const TMDB_PROBE_WORDS = ['love', 'night', 'home', 'house', 'war', 'star', 'dark', 'city', 'game', 'girl', 'king', 'life'];
+const PROBE_SLOT_MS = 5 * 60_000;
+
+/** The TMDB check's URL at time `now`. Exported for tests. */
+export function tmdbProbeUrl(proxyUrl, now) {
+  const word = TMDB_PROBE_WORDS[Math.floor(now / PROBE_SLOT_MS) % TMDB_PROBE_WORDS.length];
+  return `${trimSlashes(proxyUrl)}/?path=search/multi&query=${word}`;
+}
+
 /** The checks this deployment runs, built from its vars. Exported for tests. */
 export function checksFor(env) {
   const checks = [];
@@ -165,7 +183,6 @@ export function checksFor(env) {
     });
   }
   if (env.TMDB_PROXY_URL) {
-    const url = `${trimSlashes(env.TMDB_PROXY_URL)}/?path=trending/all/day`;
     checks.push({
       name: 'tmdb',
       label: 'TMDB proxy',
@@ -176,7 +193,7 @@ export function checksFor(env) {
         // refuses a Worker's fetch to another workers.dev Worker on the same
         // account (it comes back 404), so the public URL only works off-platform.
         const via = env.TMDB_PROXY ? (u, i) => env.TMDB_PROXY.fetch(u, i) : fetch;
-        const res = await get(url, { headers: { Origin: env.APP_ORIGIN || 'https://app.theplot.tv' } }, via);
+        const res = await get(tmdbProbeUrl(env.TMDB_PROXY_URL, Date.now()), { headers: { Origin: env.APP_ORIGIN || 'https://app.theplot.tv' } }, via);
         if (refused(res)) return { ok: false, blocked: true, reason: `Cloudflare refused (HTTP ${res.status})` };
         return classify.tmdb(res.status, await readJson(res));
       }),
@@ -544,6 +561,11 @@ async function runGroup(env, watch, group, checks, now, deps = {}) {
     now,
     remindHours: Number(env.REMIND_HOURS ?? 6),
     blindHours: Number(env.BLIND_HOURS ?? 12),
+    // The five-minute site checks need two healthy runs (ten minutes) before
+    // "back up", so a flapping service sends one down email and one recovered
+    // email, not a pair every run. Every other group runs hourly or reports a
+    // backlog, where a second healthy run would only delay the good news.
+    recoverAfter: group.key === STATE_KEYS.uptime ? Number(env.RECOVER_AFTER ?? 2) : 1,
   });
   // Which group this is, so the email can say what to look at.
   if (email) email.checks = group.names.filter((n) => checks.some((c) => c.name === n));
