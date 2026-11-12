@@ -102,10 +102,10 @@
         "expo-alternate-app-icons",
         [
           {
-            "name": "WordmarkCharcoal",
-            "ios": "./assets/alternate-icons/WordmarkCharcoal.png",
+            "name": "MarkCharcoal",
+            "ios": "./assets/alternate-icons/MarkCharcoal.png",
             "android": {
-              "foregroundImage": "./assets/alternate-icons/WordmarkCharcoal-foreground.png",
+              "foregroundImage": "./assets/alternate-icons/MarkCharcoal-foreground.png",
               "backgroundColor": "#292924"
             }
           },
