@@ -1,6 +1,6 @@
 # Mobile Google and Apple sign-in
 
-Status: active (build 6 ready in TestFlight; waiting on Savannah's on-device sign-in test)
+Status: active (build 7 with the Google fix processing in TestFlight; waiting on Savannah's Google retest)
 Owner: Jacob (mobile implementation), Hailey (signup flow)
 Branch: agent/2026-11-12-mobile-social-login
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-11-12-mobile-social-login
@@ -36,7 +36,7 @@ No physical device is connected to this workspace, and the completed iOS product
 - Diagnosis (code reading, not yet proven on device): `apps/mobile/app/(auth)/index.tsx:175` builds the return address with `Linking.createURL('/auth/callback')`. In a store build there is no hostUri, so expo-linking (`node_modules/expo-linking/build/createURL.js`) produces `plot:///auth/callback` (three slashes). Production Supabase's Redirect URLs list (read in the dashboard, unchanged) has `plot://auth/callback` (two slashes) but not the three-slash form, so Supabase falls back to the Site URL `https://app.theplot.tv`. Apple is unaffected because it signs in with a native token and never uses a redirect. The same constant is the `emailRedirectTo` for mobile magic links and signup confirmation, so those likely land on the web too.
 - Savannah chose to fix the app rather than allow-list the three-slash form. `AUTH_APP_CALLBACK` is now the literal `'plot://auth/callback'` (already on production's list), and the unused `expo-linking` import is removed. No production Supabase setting was changed. The deep-link handlers (`callback.tsx`, `lib/magicLink.ts`) already expect `plot://auth/callback`.
 - Checks on the fix: `pnpm --filter @plot/mobile run typecheck` and `pnpm run check` passed (exit 0), `git diff --check` passed; local Node 25.7.0, CI uses Node 22. Pushed as 8c068dcfd.
-- iOS build 7 started on EAS: https://expo.dev/accounts/savblack/projects/plot/builds/64c7415a-f3d9-4ef0-881d-1de7cf54b4b5. Submitting it to TestFlight is awaiting Savannah's yes. Build 6 still has the old address.
+- iOS build 7 started on EAS: https://expo.dev/accounts/savblack/projects/plot/builds/64c7415a-f3d9-4ef0-881d-1de7cf54b4b5. Savannah approved sending it to TestFlight ("Yes, send it"). Build 7 finished 19:27 AEDT and uploaded: https://expo.dev/accounts/savblack/projects/plot/submissions/29efa1b7-1353-4d92-b7a3-1ec635330c7e. App Store Connect showed 1.4.0 (7) "Processing" at last check; the Plot team group has automatic distribution, so it should reach her without further setup.
 - Not yet confirmed: Google sign-in on her iPhone after the fix; Google sign-in on Android.
 
 ## Latest pushed commit
