@@ -31,7 +31,8 @@ No physical device is connected to this workspace, and the completed iOS product
 - Savannah completed the prompt. EAS created App Store Connect API key `Z28R7F3636` (stored on EAS servers, ADMIN role) and uploaded build 6: https://expo.dev/accounts/savblack/projects/plot/submissions/2e767b45-7da0-496b-95a7-49ef405d681a ("successfully uploaded to App Store Connect", ~17:50 AEDT).
 - The Apple ID used is `sav.black@outlook.com.au`; Apple's processing email goes there. `app.json` already sets `ITSAppUsesNonExemptEncryption: false`, so no export-compliance hold is expected.
 - Apple processed build 6. With Savannah's approval, created internal TestFlight group "Plot team" (automatic distribution on, Apple's default; it cannot be changed later) and added her as the only tester. App Store Connect lists her team login as `black.sav@icloud.com` (Account Holder), so the TestFlight invite went there, not to the .com.au Apple ID used for EAS. Group shows build 1.4.0 (6) "Ready to Test", tester status "Invited".
-- Not yet confirmed: Apple and Google sign-in on her iPhone; Google sign-in on Android.
+- 2026-11-12: Savannah installed build 6 from TestFlight on her iPhone and reported Sign in with Apple worked (her report in chat; not independently checked).
+- Not yet confirmed: Google sign-in on her iPhone; Google sign-in on Android.
 
 ## Latest pushed commit
 fad05b75e (pushed; branch matches origin). Checks above still stand; no code changed since.
