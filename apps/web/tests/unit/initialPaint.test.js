@@ -37,3 +37,15 @@ test('route gates do not block their first render on the Supabase SDK', () => {
     assert.doesNotMatch(source, /import \{ supabase \} from ['"]@plot\/core\/supabase\.js['"]/);
   }
 });
+
+test('PostHog waits for the route graph instead of competing with it', () => {
+  // On a slow phone link, fetching posthog-js (the largest chunk) alongside the
+  // route chunks held the first paint of /signup back to 9.6 s (issue 1596).
+  const posthogImport = main.indexOf("import('posthog-js')");
+  const starter = main.indexOf('function startPostHog()');
+  assert.ok(posthogImport > starter && starter >= 0, 'posthog-js should only be imported inside startPostHog()');
+  const routeGraph = main.indexOf("import('./router.jsx')");
+  const afterMount = main.indexOf('startPostHog();', routeGraph);
+  assert.ok(routeGraph >= 0 && afterMount > routeGraph, 'startPostHog() should run once the route graph has loaded');
+  assert.equal(main.slice(0, routeGraph).match(/^\s*startPostHog\(\);/gm), null, 'nothing should start PostHog before the route graph');
+});
