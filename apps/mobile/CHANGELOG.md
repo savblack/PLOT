@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.4.0](https://github.com/savblack/PLOT/compare/mobile-v1.3.0...mobile-v1.4.0) (2026-11-12)
+
+
+### Features
+
+* **imports:** finish the import rollout on mobile, /import and in the docs ([#1584](https://github.com/savblack/PLOT/issues/1584)) ([7399b10](https://github.com/savblack/PLOT/commit/7399b103b340fd4961f8bf482c87393a6f85cfe0))
+* **mobile:** icon tab bar with menu button, search in the header, restyled Just Decide button, drag-to-close title panel ([#1594](https://github.com/savblack/PLOT/issues/1594)) ([ea71a1b](https://github.com/savblack/PLOT/commit/ea71a1b0fdcbd9d019ecb1d576fae0915a87962e))
+* **mobile:** My Lists folds are saved to the profile, and shared lists get their own section ([#1582](https://github.com/savblack/PLOT/issues/1582)) ([683f6f4](https://github.com/savblack/PLOT/commit/683f6f40ba06760c1b1725d4374a4e231c244307))
+* **mobile:** My Lists, Calendar and History closer to web's phone layout ([#1600](https://github.com/savblack/PLOT/issues/1600)) ([2bc0747](https://github.com/savblack/PLOT/commit/2bc0747ce6633f2c9b04edfb42fe5fba7f36a169))
+* **mobile:** show "Your first week of Premium" on Home ([#1583](https://github.com/savblack/PLOT/issues/1583)) ([bcbde41](https://github.com/savblack/PLOT/commit/bcbde41e2597c30017cdf65bcbbbba8e1e6e59f8))
+
+
+### Bug Fixes
+
+* **lists:** lists shared with you and public profile lists load again ([#1592](https://github.com/savblack/PLOT/issues/1592)) ([a61d7e5](https://github.com/savblack/PLOT/commit/a61d7e58c360194d32d8d066153dd29cc9058a21))
+* **mobile:** first-week card header stays on one line; record the simulator run ([#1588](https://github.com/savblack/PLOT/issues/1588)) ([6c16572](https://github.com/savblack/PLOT/commit/6c165724a55a6413f5bf5a46c16ff7d2f198bca8))
+
 ## [1.3.0](https://github.com/savblack/PLOT/compare/mobile-v1.2.1...mobile-v1.3.0) (2026-11-11)
 
 
