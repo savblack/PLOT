@@ -164,6 +164,10 @@ jobs:
           command: pnpm run build
 
       - run:
+          name: Bundle size budget
+          command: pnpm run bundle:check
+
+      - run:
           name: Build Storybooks
           command: |
             if [ "${PLOT_CI_TIER:-fast}" != full ]; then
