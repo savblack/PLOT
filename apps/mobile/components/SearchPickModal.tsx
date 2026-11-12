@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { TextInput } from './TextInput';
 import SubTab from './SubTab';
+import ModalHeader from './ModalHeader';
 import { tmdb } from '../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -59,12 +60,7 @@ export default function SearchPickModal({
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>{title}</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.md }}>Done</Text>
-          </TouchableOpacity>
-        </View>
+        <ModalHeader title={title} actionLabel="Done" onAction={onClose} accent />
 
         {/* Tabs */}
         <View style={styles.modalTabs}>
@@ -123,8 +119,6 @@ export default function SearchPickModal({
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   modalContainer: { flex: 1, backgroundColor: colors.bg, paddingTop: spacing.xl },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  modalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   modalTabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   modalSearch: { paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
   modalSearchInput: { backgroundColor: colors.surface, borderRadius: radii.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
