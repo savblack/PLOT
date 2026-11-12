@@ -98,8 +98,12 @@ jobs:
           # every subsequent deploy dead (that exact drift silently dropped 29
           # consecutive merges between 2026-08-09 and 08-13). It is two small
           # rows-per-migration, so there is no reason not to carry it.
+          # private holds the RLS helper functions (20261012150000). Policies
+          # in public call them, so a backup without it restores those tables
+          # with their policies silently dropped. Added 2026-11-12, when the
+          # first restore check of a real backup was written.
           pg_dump -Fc --no-owner --no-privileges \
-            -n public -n auth -n storage -n supabase_migrations \
+            -n public -n private -n auth -n storage -n supabase_migrations \
             -f "$FILE"
           # Passphrase on stdin, not argv: argv is readable by every process on the runner.
           gpg --batch --yes --symmetric --cipher-algo AES256 --pinentry-mode loopback \

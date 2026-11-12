@@ -22,6 +22,11 @@ GitHub-side watchers raise issues rather than email:
   if they fail again, and close it on the next success. The first failure also
   emails through `.github/scripts/marketing-alert.sh`. See
   `.github/scripts/job-incident.sh`.
+- `db-backup-restore-check.yml` restores the newest nightly backup from R2 on
+  the 1st of each month and compares it with Production: every table, the
+  number of security policies, and row counts. It opens an `incident` issue and
+  emails if the backup is stale, does not decrypt, or restores anything less.
+  See `scripts/db-backup-restore-check.sh`.
 - `staging-tests.yml` opens an `incident` issue when the nightly Staging SQL
   tests fail, and closes it on the next pass.
 - `cron-health.yml` checks the database's own scheduled jobs (pg_cron) every

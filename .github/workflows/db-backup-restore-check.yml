@@ -1,0 +1,110 @@
+name: Database — backup restore check (monthly)
+
+# Takes the newest nightly backup from R2, exactly as db-backup.yml stored it,
+# restores it into a throwaway Postgres on this runner, and compares it with
+# Production (scripts/db-backup-restore-check.sh). A backup that has never
+# been restored is a guess: until 2026-11-12 the only drill dumped Production
+# afresh and never opened a stored file, and the stored files were missing
+# the `private` schema, so a full restore would have lost 9 of 154 RLS
+# policies without any error.
+#
+# The decrypted backup is piped, never written to disk. The restored database
+# holds real personal data, lives only inside this job, and is torn down.
+#
+# Runs only from main (schedule and manual dispatch). A change to this file
+# goes through normal PR review; auto-merge never accepts workflow edits.
+on:
+  schedule:
+    - cron: '17 5 1 * *' # 05:17 UTC on the 1st, two hours after the nightly backup
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write # failure alerting opens and closes an `incident` issue
+
+concurrency:
+  group: db-backup-restore-check
+  cancel-in-progress: false
+
+jobs:
+  restore-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      AWS_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION:    auto
+      R2_ENDPOINT:           ${{ secrets.R2_ENDPOINT }}
+      R2_BUCKET:             ${{ secrets.R2_BUCKET }}
+      # Same R2 checksum workaround as db-backup.yml (aws/aws-cli#9214).
+      AWS_REQUEST_CHECKSUM_CALCULATION:  when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION:  when_required
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install PostgreSQL 17
+        run: |
+          set -euo pipefail
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-17 postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Download the newest backup
+        run: |
+          set -euo pipefail
+          aws configure set default.s3.addressing_style path
+          # Names are plot-<UTC stamp>.dump.gpg, so the last in sort order is the newest.
+          KEY=$(aws s3 ls "s3://${R2_BUCKET}/db-backups/" --endpoint-url "$R2_ENDPOINT" \
+            | awk '{print $4}' | grep -E '^plot-.*\.dump\.gpg$' | sort | tail -1)
+          if [ -z "$KEY" ]; then
+            echo "::error::no backups found in R2"
+            exit 1
+          fi
+          # The nightly backup runs daily. Older than 36 hours means it has
+          # stopped, which backup-heartbeat should also have reported.
+          STAMP=$(echo "$KEY" | sed -E 's/^plot-([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2})([0-9]{2})([0-9]{2})Z.*/\1 \2:\3:\4/')
+          AGE_HOURS=$(( ( $(date -u +%s) - $(date -u -d "$STAMP" +%s) ) / 3600 ))
+          echo "newest backup: $KEY ($AGE_HOURS hours old)"
+          if [ "$AGE_HOURS" -gt 36 ]; then
+            echo "::error::the newest backup is $AGE_HOURS hours old"
+            exit 1
+          fi
+          aws s3 cp "s3://${R2_BUCKET}/db-backups/${KEY}" "$RUNNER_TEMP/$KEY" \
+            --endpoint-url "$R2_ENDPOINT" --only-show-errors
+          echo "BACKUP_FILE=$RUNNER_TEMP/$KEY" >> "$GITHUB_ENV"
+
+      - name: Restore it and compare with Production
+        env:
+          BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: bash scripts/db-backup-restore-check.sh "$BACKUP_FILE"
+
+      - name: Open an incident issue
+        id: incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: db-backup-restore-check
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: 'The newest nightly backup did not restore cleanly, or is missing or stale. Until this is fixed, a database restore could lose data or security rules.'
+        run: bash .github/scripts/job-incident.sh open
+      - name: Email the admin about a new incident
+        if: failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: db-backup-restore-check
+          ALERT_SUBJECT: 'Plot: database backup did not restore'
+          FAILURE_NOTE: 'The newest nightly backup did not restore cleanly, or is missing or stale. Until this is fixed, a database restore could lose data or security rules.'
+        run: bash .github/scripts/marketing-alert.sh
+      - name: Close the incident issue on recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: db-backup-restore-check
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/job-incident.sh close
