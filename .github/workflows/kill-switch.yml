@@ -66,6 +66,6 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: kill-switch
-          ALERT_SUBJECT: ${{ steps.flip.outcome == 'success' && steps.flip.outputs.subject || 'Plot: a kill switch request FAILED, nothing was hidden' }}
-          ALERT_BODY: ${{ steps.flip.outcome == 'success' && steps.flip.outputs.body || 'Someone asked to turn on a kill switch and it did not happen. The feature is still showing. Open the run to see why.' }}
+          ALERT_SUBJECT: "${{ steps.flip.outcome == 'success' && steps.flip.outputs.subject || 'Plot: a kill switch request FAILED, nothing was hidden' }}"
+          ALERT_BODY: "${{ steps.flip.outcome == 'success' && steps.flip.outputs.body || 'Someone asked to turn on a kill switch and it did not happen. The feature is still showing. Open the run to see why.' }}"
         run: bash .github/scripts/marketing-alert.sh
