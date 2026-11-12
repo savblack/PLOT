@@ -11,7 +11,7 @@ import {
   Modal, StyleSheet, Dimensions, Alert,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
-import { BlurView } from 'expo-blur';
+import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Rect } from 'react-native-svg';
 import { IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
@@ -486,10 +486,11 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
 // ── Main screen ───────────────────────────────────────────────────────
 /** `history` is the History tab's own screen: the same body with the list tabs left out. */
 export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }) {
-  const { colors, resolved } = useTheme();
+  const { colors } = useTheme();
   const { confirm, dialog } = useDialog();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const glass = useGlassOnScroll();
   const { open: openPanel } = useMediaPanel();
   const { userId, watchlist, watching, favorites, customLists, topLists, history, profile, refreshProfile } = useAppData();
   const ui = useUiPrefs({ userId, saved: profile?.ui_prefs, onPersisted: refreshProfile });
@@ -765,6 +766,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         scrollEnabled={!topDragging}
+        scrollEventThrottle={16}
+        onScroll={glass.onScroll}
       >
 
         {searching ? (
@@ -1104,11 +1107,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
       </ScrollView>
 
       {/* Fixed blurred header */}
-      <BlurView
-        intensity={80}
-        tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
-        style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
-      >
+      <GlassHeader scrollY={glass.scrollY} height={HEADER_H}>
         <ScreenHeaderBar
           title={mode === 'history' ? 'History' : 'My Lists'}
           searchLabel={searchPlaceholder}
@@ -1150,7 +1149,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           autoFocus
         />
         )}
-      </BlurView>
+      </GlassHeader>
 
       {/* Modals */}
       {showAddFav && (
@@ -1463,14 +1462,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingTop: spacing.xs,
   },
 
-  fixedHeader: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0,
-    zIndex: 100,
-    flexDirection: 'column',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
   publicBadge: { marginLeft: spacing.sm, alignSelf: 'center' },
   subTab: {
     alignItems: 'center',
