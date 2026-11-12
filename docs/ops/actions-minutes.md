@@ -62,5 +62,8 @@ The weekly marketing batch stays on the GitHub macOS runner until a Saturday of 
   `dependabot-automerge.yml` or the tier rules (`scripts/ci-tier.mjs`,
   `scripts/agent/ciTier.mjs`) waiting for Savannah, so an agent fix cannot
   loosen the checks it is judged by.
+- Branch protection on `main` (since 2026-11-12) requires the `check` job from
+  GitHub Actions (app id 15368). Admins may bypass it; release-please PRs need
+  that, since they do not start CI. Force-pushes and deleting `main` are off.
 - Routine Actions minor/patch dependency upgrades share a Dependabot PR; major
   upgrades retain individual review.

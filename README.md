@@ -163,7 +163,7 @@ Never hardcode TMDB movie or TV IDs. Resolve titles through TMDB search at runti
 
 ## GitHub Hygiene
 
-Pull requests should pass CI before merging. The repository is private, so required branch protection may depend on the GitHub plan; keep CI, Dependabot, and security alerts enabled as the practical guardrails.
+Pull requests must pass CI before merging: branch protection on `main` requires the `check` job of `.github/workflows/ci.yml` (posted by GitHub Actions). Admins can still bypass it, which release-please PRs need because they do not start CI on their own. Force-pushes to `main` and deleting it are blocked. Keep Dependabot and security alerts enabled as well.
 
 ## Launch Docs
 
