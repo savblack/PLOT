@@ -14,7 +14,7 @@ import * as Crypto from 'expo-crypto';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { supabase } from '../../lib/supabase';
-import { tmdb } from '../../lib/tmdb';
+import { loadNewThisWeek } from '@plot/core/newThisWeek.js';
 // This screen is a fixed composition (dark poster wall + light glass panel,
 // mirroring the web AuthPage) — it deliberately doesn't follow the app theme.
 import { colors, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
@@ -47,45 +47,12 @@ const POSTER_W = 110;
 const POSTER_H = 165;
 const GAP = 10;
 
-// Fallback posters shown while trending loads
-const FALLBACK_PATHS = [
-  '/qNBAXBIQlnOThrVvA6mA2B5ggV6.jpg', // Interstellar
-  '/1E5baAaEse26fej7uHcjOgEE2t2.jpg', // Breaking Bad
-  '/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg', // Dune
-  '/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', // Stranger Things
-  '/xkGAAsn4c6NMqPLNTfV1jEF1tXG.jpg', // The Bear
-  '/9PqD3wSIjntyJDBzMNuxuKHcMKO.jpg', // Oppenheimer
-  '/9faGSFi5jam6pDWGNd0p8JcJgXQ.jpg', // Game of Thrones
-  '/pIkRyD18kl4FhoCId0O9CiIDBnA.jpg', // Barbie
-  '/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg', // Succession
-  '/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg', // The Last of Us
-  '/rktDFPbfHfUbArZ6OOOKsXcv0Bm.jpg', // Poor Things
-  '/d5NXSklpcvkCgnJQ3GCX9wBg5HU.jpg', // Killers of the Flower Moon
-  '/zIYROrkHJPYB3VTiW1L9QVgaAi.jpg',  // The Crown
-  '/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg', // Anatomy of a Fall
-  '/odJ4hx6g6vBt4lBWKFD1tI8WS4x.jpg', // Beef
-  '/jkJ2OmqRkGRPbzMZ3IaLQFEjqe0.jpg', // Maestro
-  '/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg', // Severance
-  '/gKkl37BQuKTanygYQG1pyYgLVgf.jpg', // The White Lotus
-  '/fgwFhOBMVfM0TRf7kXGIbOFbpEd.jpg', // Andor
-  '/AaAWKJhOlYnMFfmCb1YoGGUVGTF.jpg', // White Noise
-  '/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg', // Shogun
-  '/lqoMzCcZYEFK729d6qzt349fB4o.jpg', // True Detective S1
-  '/A0w2JFwXzJrKqDaBFXIQKifO9t1.jpg', // The Penguin
-  '/sRLC052ioneo2LuksGm8R5EBEwP.jpg', // Alien: Romulus
-  '/NpS5hCfKMtF8OepxAArFHyFRnJj.jpg', // Civil War
-  '/iXtL2v1tKbOgA1TCPuDIMtJHgHg.jpg', // Hit Man
-  '/9Gtg2DzBhmYamXBS1hKAhiwbBKS.jpg', // Inside Out 2
-  '/kdPMUlnzIxkdnVBcalKKWwFZVgu.jpg', // Longlegs
-  '/mBaXZ95R2OxueZhvQbcEWy2DqyO.jpg', // Challengers
-  '/ta5oblpMlEcIPIS2YGcq9XEkWK2.jpg', // Baby Reindeer
-  '/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg', // Parasite
-  '/oHlmBFMHcEzBz7pf8uAzLuOT6PH.jpg', // Everything Everywhere
-  '/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg', // The Substance
-  '/hm58nYGGGkjGKR1bV5b0iJP3p4x.jpg', // Conclave
-  '/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg', // Nosferatu
-  '/kHf9MCg3dFlCfQjZZxRzAiQWgXm.jpg', // Saturday Night
-];
+// Posters come from the shared "New this week" picker (@plot/core/newThisWeek.js),
+// the same titles and rules as the web sign-in pages. There is no hardcoded
+// fallback list: TMDB paths are never guessed, so the wall stays dark until
+// the titles arrive, and stays dark if they never do.
+const WALL_POSTER_COUNT = 18;
+const WALL_MIN_POSTERS = 9;
 
 function buildColumns(paths: string[], cols: number) {
   const columns: string[][] = Array.from({ length: cols }, () => []);
@@ -239,7 +206,7 @@ export default function AuthScreen() {
   const [appleLoading, setAppleLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
-  const [posterPaths, setPosterPaths] = useState<string[]>(FALLBACK_PATHS);
+  const [posterPaths, setPosterPaths] = useState<string[]>([]);
   const [captchaNonce, setCaptchaNonce] = useState(0); // bump to drop a used token
   const [captchaExecute, setCaptchaExecute] = useState(0); // bump to run the challenge
   const captchaTokenRef = useRef<string | null>(null);
@@ -426,12 +393,12 @@ export default function AuthScreen() {
   };
 
   useEffect(() => {
-    tmdb.getTrending('all', 'week').then((data) => {
-      const paths = data?.results
-        ?.filter((item: any) => item.poster_path)
-        .map((item: any) => item.poster_path as string) ?? [];
-      if (paths.length >= 9) setPosterPaths(paths);
+    let cancelled = false;
+    loadNewThisWeek({ count: WALL_POSTER_COUNT }).then((titles) => {
+      const paths = titles.map(t => t.posterPath);
+      if (!cancelled && paths.length >= WALL_MIN_POSTERS) setPosterPaths(paths);
     });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -882,7 +849,8 @@ export default function AuthScreen() {
       {/* ── Scrolling poster mosaic ── */}
       <View style={StyleSheet.absoluteFill}>
         <View style={styles.mosaic}>
-          {columns.map((col, ci) => (
+          {/* Mounted only once posters exist: each column starts its loop on mount. */}
+          {posterPaths.length > 0 && columns.map((col, ci) => (
             <View key={ci} style={{ width: POSTER_W, marginHorizontal: GAP / 2, overflow: 'hidden', flex: 1 }}>
               <ScrollingColumn
                 paths={col}
