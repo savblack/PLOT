@@ -7,10 +7,11 @@
  * Lists section and move as one row. Folding stays on each section's heading.
  */
 import { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import BackBar from '../../components/BackBar';
+import ReorderRows from '../../components/ReorderRows';
+import QuietButton from '../../components/QuietButton';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useUiPrefs } from '@plot/core/useUiPrefs.js';
@@ -23,7 +24,7 @@ import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { isSharedList } from '@plot/core/sharedLists.js';
 import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
 import { EVENTS, track } from '../../lib/analytics';
-import { Palette, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
+import { Palette, fontFamily, fontSize, spacing } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 
 const C = CUSTOM_LISTS.sections;
@@ -40,21 +41,12 @@ const LABELS: Record<string, string> = {
 // Mobile's default order of the shared sections, as my-lists.tsx draws them.
 const MOBILE_DEFAULT = ['watching', 'lists', 'top', 'shared', 'smart'];
 
-function Chevron({ up, color }: { up?: boolean; color: string }) {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d={up ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />
-    </Svg>
-  );
-}
-
 export default function MyListsLayoutScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { userId, profile, refreshProfile, customLists } = useAppData();
-  const hasShared = SHOW_WATCH_TOGETHER && (customLists?.lists ?? []).some((list: any) => isSharedList(list, userId));
+  const hasShared = SHOW_WATCH_TOGETHER && (customLists?.lists ?? []).some((list: Parameters<typeof isSharedList>[0]) => isSharedList(list, userId));
   const ui = useUiPrefs({ userId, saved: profile?.ui_prefs, onPersisted: refreshProfile });
   const saved: string[] = ui.prefs.myLists.order;
   // With nothing saved, My Lists draws mobile's own default (my-lists.tsx:
@@ -76,39 +68,16 @@ export default function MyListsLayoutScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.backBtn} accessibilityLabel="Go back" accessibilityRole="button">
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M15 18l-6-6 6-6" />
-          </Svg>
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>{C.title}</Text>
-      </View>
-
+      <BackBar title={C.title} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}>
         <Text style={styles.intro}>{C.bodyArrows}</Text>
         {ui.error ? <Text style={styles.error} accessibilityRole="alert">{C.saveError}</Text> : null}
-        <View style={styles.list}>
-          {shown.map((id, index) => {
-            const label = LABELS[id];
-            const first = index === 0;
-            const last = index === shown.length - 1;
-            return (
-              <View key={id} style={styles.row}>
-                <Text style={styles.label} numberOfLines={1}>{label}</Text>
-                <TouchableOpacity style={[styles.nudge, first && styles.nudgeOff]} disabled={first} onPress={() => nudge(id, -1)} accessibilityRole="button" accessibilityLabel={C.moveUp(label)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                  <Chevron up color={colors.textSecondary} />
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.nudge, last && styles.nudgeOff]} disabled={last} onPress={() => nudge(id, 1)} accessibilityRole="button" accessibilityLabel={C.moveDown(label)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                  <Chevron color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        </View>
-        <TouchableOpacity style={[styles.reset, isDefault && styles.resetOff]} disabled={isDefault} onPress={reset} accessibilityRole="button" accessibilityState={{ disabled: isDefault }}>
-          <Text style={styles.resetText}>{C.reset}</Text>
-        </TouchableOpacity>
+        <ReorderRows
+          rows={shown.map(id => ({ id, label: LABELS[id] }))}
+          onNudge={nudge}
+          labels={{ moveUp: C.moveUp, moveDown: C.moveDown }}
+        />
+        <QuietButton label={C.reset} onPress={reset} disabled={isDefault} />
       </ScrollView>
     </View>
   );
@@ -116,17 +85,6 @@ export default function MyListsLayoutScreen() {
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm },
-  backBtn: { padding: 4 },
-  topBarTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
   intro: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary, marginTop: spacing.md, marginBottom: spacing.lg },
   error: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger, marginBottom: spacing.md },
-  list: { gap: spacing.sm },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 52, paddingVertical: spacing.sm, paddingLeft: spacing.md, paddingRight: spacing.sm, borderWidth: 1, borderColor: colors.border, borderRadius: radii.md, backgroundColor: colors.surface },
-  label: { flex: 1, minWidth: 0, fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
-  nudge: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
-  nudgeOff: { opacity: 0.3 },
-  reset: { marginTop: spacing.lg, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radii.pill, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  resetOff: { opacity: 0.4 },
-  resetText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
 });
