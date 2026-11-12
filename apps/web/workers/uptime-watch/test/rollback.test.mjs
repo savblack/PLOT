@@ -120,7 +120,11 @@ test('worker: a fresh deploy that loses its main script is rolled back once, wit
     get: async (k, type) => (kv.has(k) ? (type === 'json' ? JSON.parse(kv.get(k)) : kv.get(k)) : null),
     put: async (k, v) => { kv.set(k, v); },
   };
-  const live = dep('c', 4);
+  // The worker reads the real clock, not the fixed `now` above, so this
+  // test's deploys are dated from the real time. Dated from `now`, the live
+  // deploy stopped being "fresh" once 12:30 UTC on 2026-11-12 had passed.
+  const realAt = (minsAgo) => new Date(Date.now() - minsAgo * MIN).toISOString();
+  const live = { ...dep('c', 4), created_on: realAt(4) };
   const calls = [];
   const saved = globalThis.fetch;
   globalThis.fetch = async (input, init = {}) => {
@@ -131,7 +135,7 @@ test('worker: a fresh deploy that loses its main script is rolled back once, wit
     // Pages' fallback: a missing file comes back as the shell.
     if (url === 'https://app.example/assets/gone.js') return new Response('<div id="root"></div>', { headers: { 'content-type': 'text/html' } });
     if (url.endsWith('/pages/projects/plot')) return Response.json({ success: true, result: { canonical_deployment: live } });
-    if (url.endsWith('/deployments?env=production')) return Response.json({ success: true, result: [live, dep('a', 90)] });
+    if (url.endsWith('/deployments?env=production')) return Response.json({ success: true, result: [live, { ...dep('a', 90), created_on: realAt(90) }] });
     if (url.endsWith('/deployments/a/rollback') && method === 'POST') return Response.json({ success: true, result: {} });
     if (url === 'https://api.resend.com/emails') return Response.json({});
     if (url === 'https://api.github.com/repos/o/r/issues' && method === 'POST') return Response.json({ number: 7 });
