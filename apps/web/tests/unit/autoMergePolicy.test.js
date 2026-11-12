@@ -98,6 +98,8 @@ test('a workflow fix may merge only when it changes versions, runners, timeouts 
   assert.equal(decide([f('scripts/agent/ciTier.mjs')]).allowed, false);
   assert.equal(decide([f('scripts/ci-tier.mjs')]).allowed, false);
   assert.equal(decide([f('.github/workflows/dependabot-automerge.yml', { patch: '-    runs-on: ubuntu-22.04\n+    runs-on: ubuntu-latest' })]).allowed, false);
+  // Holds the key that hides live features: even a runner bump waits.
+  assert.equal(decide([f('.github/workflows/kill-switch.yml', { patch: '-    runs-on: ubuntu-22.04\n+    runs-on: ubuntu-latest' })]).allowed, false);
 });
 
 test('a workflow fix may only move an action it already uses to a new pin, never add or swap one', () => {

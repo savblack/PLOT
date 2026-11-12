@@ -41,6 +41,8 @@ const ALWAYS_HUMAN = [
   [/^\.github\/scripts\//, 'a script workflows run with secrets'],
   [/^\.github\/workflows\/ci\.yml$/, 'the CI pipeline that gates merges'],
   [/^\.github\/workflows\/dependabot-automerge\.yml$/, 'the Dependabot auto-merge workflow'],
+  // Holds the key that hides live features; an agent PR must never widen it.
+  [/^\.github\/workflows\/kill-switch\.yml$/, 'the kill-switch workflow'],
   // Decides which CI steps run; a docs-only verdict skips them all and passes.
   [/^scripts\/(ci-tier\.mjs|agent\/ciTier\.mjs)$/, 'the rules for how much CI runs'],
   // Security-relevant code whose names the keyword rules above do not catch.
