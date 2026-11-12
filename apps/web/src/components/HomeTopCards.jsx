@@ -21,6 +21,8 @@ import { premiumFirstWeekVisible } from '@plot/core/premiumFirstWeek.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { readPremiumFirstWeek } from '../utils/premiumFirstWeekState.js';
 import WatchTogetherHomeCard from './WatchTogetherHomeCard.jsx';
+import ActivationNudge from './ActivationNudge.jsx';
+import { useActivationNudge } from '../hooks/useActivationNudge.js';
 
 export default function HomeTopCards() {
   const { user, profile } = useApp();
@@ -37,10 +39,18 @@ export default function HomeTopCards() {
   const [firstWeek, setFirstWeek] = useState(() => readPremiumFirstWeek(user?.id));
   const firstWeekShowing = premiumFirstWeekVisible(firstWeek, { isPremium: premium.isPremium });
 
+  // An account with no titles at all gets the empty-library nudge in the
+  // checklist's place (until the first title, or while an import is running,
+  // which is already the next step).
+  const nudge = useActivationNudge();
+  const nudgeShowing = nudge.show && !importShowing;
+
   return (
     <>
       <ImportJobCard imports={imports} />
-      {allowed.checklist && (firstWeekShowing ? <PremiumFirstWeek onChange={setFirstWeek} /> : <FinishingTouches />)}
+      {allowed.checklist && (nudgeShowing
+        ? <ActivationNudge surface="home" sources={nudge.sources} />
+        : firstWeekShowing ? <PremiumFirstWeek onChange={setFirstWeek} /> : <FinishingTouches />)}
       {allowed.watchTogether && <WatchTogetherHomeCard />}
     </>
   );

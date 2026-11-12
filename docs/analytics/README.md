@@ -190,6 +190,21 @@ allowed (US storefront).
 
 Read `premium_prompt_clicked` (target `checkout`) next to
 `premium_checkout_started` to see whether the prompt leads to checkouts.
+
+### The empty-library nudge
+
+An account with no titles in its watchlist, watching or history sees "Add
+your first show or movie" (any number counts; there is no target) with an
+import button for each source confirmed end to end in production
+(`ACTIVATION_NUDGE_SOURCE_IDS` in `packages/core/activationNudge.js`, Trakt and
+Simkl as of 12 Nov 2026). It sits in Home's checklist slot (web and mobile) and
+replaces History's empty state on web, and is gone at the first title.
+
+| Event | When | Properties |
+|---|---|---|
+| `activation_nudge_shown` | The nudge drew (once per mount) | `surface: 'home' \| 'history'` |
+| `activation_nudge_add_clicked` | Find a title (opens Search) | `surface` |
+| `activation_nudge_import_clicked` | An import source button | `surface`, `source` (import platform id, e.g. `trakt`) |
 All monetization dashboards keep PostHog's internal and test-account filter on.
 
 ## Bots

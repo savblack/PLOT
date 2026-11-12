@@ -1,0 +1,43 @@
+/* The empty-library nudge (ActivationNudge.jsx): one card, the add action
+   first, the confirmed import sources under a hairline. */
+.activation-nudge {
+  margin: 0 var(--gut) 28px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.activation-nudge h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: var(--font-display-tracking);
+  color: var(--text-primary);
+}
+.activation-nudge h3 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--text-primary); }
+.activation-nudge p { margin: 4px 0 12px; font-size: .88rem; line-height: 1.45; color: var(--text-secondary); max-width: 52ch; }
+.activation-nudge-import { padding-top: 16px; border-top: 1px solid var(--border); }
+.activation-nudge-import p { margin-bottom: 10px; }
+.activation-nudge-sources { display: flex; flex-wrap: wrap; gap: 8px; }
+.activation-nudge-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 14px 4px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.activation-nudge-source:hover { background: var(--surface-sunken); }
+.activation-nudge-source:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* On History it stands in for the empty state, so it sits in the page flow. */
+.hist-empty-nudge .activation-nudge { margin: 1rem 0 0; }
