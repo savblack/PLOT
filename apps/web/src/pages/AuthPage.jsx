@@ -5,7 +5,6 @@ import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { getAuthCallbackUrl } from '../utils/redirects.js';
 import { takeReturnPath } from '../utils/authReturn.js';
 import { SHOW_GOOGLE_LOGIN, SHOW_APPLE_LOGIN } from '../launchFeatures.js';
-import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Turnstile from '../components/Turnstile.jsx';
 import { getPremiumCheckoutIntent, rememberPremiumCheckoutIntent } from '../utils/premiumCheckoutIntent.js';
@@ -21,6 +20,7 @@ import { markSignupReferralPending } from '../utils/attribution.js';
 import { writePendingSearch } from '../utils/pendingSearch.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 import PlotLogo from '../components/PlotLogo.jsx';
+import AuthShelf from '../components/AuthShelf.jsx';
 import { loginNeedsConfirmation, shouldMagicLinkViaBypass, shouldResendViaBypass } from '../utils/authBypass.js';
 import { rememberPendingBypassSignup, rememberSignupTracked } from '../utils/authCallbackReport.js';
 import { watchForHumanView } from '../utils/signupFormView.js';
@@ -822,8 +822,6 @@ export default function AuthPage({ initialMode = 'signup' }) {
     }
   };
 
-  const scrollPosters = [...HERO_POSTERS, ...HERO_POSTERS];
-
   const headings = AUTH_PAGE.heading;
   const subheadings = AUTH_PAGE.subheading;
   const ctaLabels = AUTH_PAGE.submitLabel;
@@ -832,24 +830,13 @@ export default function AuthPage({ initialMode = 'signup' }) {
   return (
     <div className={`auth-page auth-page--${mode}`}>
 
-      {/* ── Left: living poster wall ── */}
-      <div className="auth-visual" aria-hidden="true">
-        <div className="poster-track">
-          {scrollPosters.map((src, i) => (
-            <div key={i} className="poster-cell" style={{ backgroundImage: `url('${src}')` }} />
-          ))}
-        </div>
-        <div className="auth-visual-gradient" />
-        <div className="auth-visual-brand">
-          <span className="auth-visual-logo"><PlotLogo inherit /></span>
-          <span className="auth-visual-tagline">Your movie &amp; TV companion</span>
-        </div>
-      </div>
+      {/* ── Left: new this week ── */}
+      <AuthShelf />
 
       {/* ── Right: form panel ── */}
       <div className="auth-panel">
         <Link to="/" className="auth-panel-logo" aria-label="plot">
-          plot
+          <PlotLogo inherit aria-hidden="true" />
         </Link>
 
         <div className="auth-panel-body">

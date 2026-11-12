@@ -14,79 +14,114 @@
   color: var(--text-primary);
 }
 
-/* ── Left: poster wall ───────────────────────────────────── */
+/* ── Left: new this week shelf (components/AuthShelf.jsx) ── */
+/* Six small TMDB posters, fixed in place. It replaced a scrolling wall of 21
+   local images (about 4 MB) that made /signup the slowest page in the app.
+   Tiles keep their size before the posters arrive, so nothing shifts. */
 .auth-visual {
-  position: relative;
+  --auth-visual-ink: var(--image-text-primary);
+  --auth-visual-tile: color-mix(in srgb, var(--image-text-primary) 8%, transparent);
   width: 45%;
   height: 100vh;
-  overflow: hidden;
-  background: #0a0a0a;
+  height: 100dvh;
   flex-shrink: 0;
-}
-
-.poster-track {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
-  animation: scrollUp 40s linear infinite;
-  will-change: transform;
-}
-
-@keyframes scrollUp {
-  from { transform: translateY(0); }
-  to   { transform: translateY(-50%); }
-}
-
-.poster-cell {
-  aspect-ratio: 2 / 3;
-  background-size: cover;
-  background-position: center;
-  background-color: #1a1a1a;
-}
-
-/* Gradient overlay: dark at top + bottom, poster colours in middle */
-.auth-visual-gradient {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(to bottom, #0a0a0a 0%, transparent 20%, transparent 75%, #0a0a0a 100%);
-  pointer-events: none;
-}
-
-/* Logout confirmation uses the current Plot charcoal between posters and at
-   the poster wall's top/bottom fade, instead of the legacy near-black. */
-.auth-page--logout .auth-visual,
-.auth-page--logout .poster-cell,
-.auth-page--login .auth-visual,
-.auth-page--login .poster-cell {
-  background-color: var(--text-primary);
-}
-.auth-page--logout .auth-visual-gradient,
-.auth-page--login .auth-visual-gradient {
-  background: linear-gradient(to bottom, var(--text-primary) 0%, transparent 20%, transparent 75%, var(--text-primary) 100%);
-}
-
-/* Plot brand mark on the poster wall */
-.auth-visual-brand {
-  position: absolute;
-  bottom: 2.5rem;
-  left: 0;
-  right: 0;
+  box-sizing: border-box;
+  padding: clamp(2rem, 6vh, 3.5rem) clamp(2rem, 4vw, 3.5rem) clamp(1.75rem, 5vh, 3rem);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: clamp(1rem, 3vh, 1.75rem);
+  overflow: hidden;
+  background: #0a0a0a;
+  color: var(--auth-visual-ink);
+}
+
+/* Log in and log out use Plot charcoal for the panel, with the page surface
+   as its ink so it stays readable in either theme. */
+.auth-page--logout .auth-visual,
+.auth-page--login .auth-visual {
+  --auth-visual-ink: var(--surface);
+  --auth-visual-tile: color-mix(in srgb, var(--surface) 8%, transparent);
+  background: var(--text-primary);
+}
+
+.auth-shelf-label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.auth-shelf {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 0.75rem;
+  /* Two rows of posters plus captions must fit above the brand on a short
+     window, so the grid narrows with the window height. */
+  width: 100%;
+  max-width: max(15rem, calc(100dvh - 25rem));
+}
+
+.auth-shelf-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.auth-shelf-poster {
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--auth-visual-tile);
+}
+
+.auth-shelf-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Two fixed lines, filled or not, so captions arriving never move anything. */
+.auth-shelf-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-height: 2.3rem;
+}
+
+.auth-shelf-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auth-shelf-kind {
+  font-size: 0.75rem;
+  line-height: 1.25;
+  opacity: 0.68;
+}
+
+/* Plot brand mark at the foot of the panel */
+.auth-visual-brand {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 0.4rem;
-  pointer-events: none;
 }
 
 .auth-visual-logo {
   display: block;
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.045em;
   font-size: 2.5rem;
   line-height: 1;
-  color: #fff;
   user-select: none;
 }
 
@@ -95,7 +130,7 @@
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  opacity: 0.68;
 }
 
 /* ── Right: form panel ───────────────────────────────────── */

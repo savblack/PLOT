@@ -24,6 +24,8 @@ export const AUTH_PAGE = {
     login: 'Welcome back',
     forgot: 'Reset your password',
   },
+  // Label over the poster shelf beside the sign-in, sign-up and sign-out forms.
+  newThisWeek: 'New this week',
   subheading: {
     signup: 'For people who think about what they watch.',
     login: 'Good to see you again.',
