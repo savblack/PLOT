@@ -348,6 +348,16 @@ Promise.all([
     if (document.getElementById('root')) mount();
     else document.addEventListener('DOMContentLoaded', mount, { once: true });
     startPostHog();
+    // Kill switches read PostHog flags with a fixed id, not the visitor's, so
+    // they run even when analytics is opted out (isDnt). Production hosts only:
+    // previews and localhost keep their launch settings.
+    if (analyticsAllowed()) {
+      import('./lib/killSwitches.js').then(({ startKillSwitches }) => startKillSwitches({
+        router,
+        host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://a.theplot.tv',
+        token: import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN,
+      })).catch(() => { /* a switch failing must never break start-up */ });
+    }
   })
   .catch((error) => {
     if (isChunkError(error) && !recentlyReloaded()) {
