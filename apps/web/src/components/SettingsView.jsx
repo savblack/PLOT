@@ -6,7 +6,6 @@ import { SHARING } from '@plot/core/copy/sharing.js';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { USERNAME_RE } from '@plot/core/profileFields.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { logoUrl } from '../utils/images.js';
@@ -14,7 +13,7 @@ import { tmdb, setTmdbRegion } from '@plot/core/tmdb.js';
 import { supabase } from '@plot/core/supabase.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { usePremium } from '../hooks/usePremium.js';
-import { useEscapeToClose } from '../hooks/useEscapeToClose.js';
+import { useStableClose } from '../hooks/useDialogClose.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
@@ -51,10 +50,10 @@ import SidebarOrderSheet from './SidebarOrderSheet.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
 import StreamingAlertsSettings from './StreamingAlertsSettings.jsx';
-import SheetHeader from './SheetHeader.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
+import DialogActions from './DialogActions.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
-import Spinner from './Spinner.jsx';
 import { WatchTogetherSettings } from './WatchTogetherParts.jsx';
 import WatchlistVisibilitySetting from './WatchlistVisibilitySetting.jsx';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
@@ -85,56 +84,43 @@ function RegionPicker({ current, onSave, onClose }) {
     }
   };
 
-  const panelRef = useRef(null);
-  useEscapeToClose(true, onClose, { rootRef: panelRef });
+  const close = useStableClose(onClose);
 
-  return createPortal(
-    <>
-      <div className="panel-overlay" onClick={onClose} />
-      <div className="panel" ref={panelRef}>
-        <SheetHeader title={SETTINGS_VIEW.page.regionLabel} onClose={onClose} />
-        <div style={{ padding: '1rem', overflow: 'auto', flex: 1 }}>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
-            {SETTINGS_VIEW.region.intro}
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            {REGIONS.map(r => (
-              <button
-                key={r.code}
-                style={{
-                  padding: '0.7rem 0.9rem',
-                  borderRadius: 'var(--radius-md)',
-                  border: chosen === r.code ? '2px solid var(--accent)' : '1.5px solid var(--border)',
-                  background: chosen === r.code ? 'var(--accent-dim)' : 'var(--surface)',
-                  color: chosen === r.code ? 'var(--accent)' : 'var(--text-primary)',
-                  fontWeight: chosen === r.code ? 700 : 500,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.15s ease',
-                }}
-                onClick={() => setChosen(r.code)}
-              >
-                {r.name}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="settings-picker-footer">
-          {error && <p className="settings-picker-error" role="alert">{error}</p>}
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={handleSave}
-            disabled={saving || chosen === current}
-            aria-busy={saving}
-            aria-label={saving ? SETTINGS_VIEW.region.savingRegion : SETTINGS_VIEW.region.saveRegion}
-          >
-            {saving ? <Spinner size="button" ariaHidden /> : COMMON.save}
-          </button>
+  return (
+    <ResponsiveDialog
+      title={SETTINGS_VIEW.page.regionLabel}
+      onClose={close}
+      footer={<DialogActions busy={saving} error={error}
+        primary={{ label: saving ? COMMON.saving : COMMON.save, onClick: handleSave, disabled: chosen === current }} />}
+    >
+      <div style={{ padding: '1rem' }}>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
+          {SETTINGS_VIEW.region.intro}
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+          {REGIONS.map(r => (
+            <button
+              key={r.code}
+              style={{
+                padding: '0.7rem 0.9rem',
+                borderRadius: 'var(--radius-md)',
+                border: chosen === r.code ? '2px solid var(--accent)' : '1.5px solid var(--border)',
+                background: chosen === r.code ? 'var(--accent-dim)' : 'var(--surface)',
+                color: chosen === r.code ? 'var(--accent)' : 'var(--text-primary)',
+                fontWeight: chosen === r.code ? 700 : 500,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s ease',
+              }}
+              onClick={() => setChosen(r.code)}
+            >
+              {r.name}
+            </button>
+          ))}
         </div>
       </div>
-    </>,
-    document.body
+    </ResponsiveDialog>
   );
 }
 
@@ -196,68 +182,54 @@ function ClearWatchlistModal({ savedCount, watchingCount, customLists = [], onCl
     onClear({ saved: selected.saved, watching: selected.watching, customListIds: [...selected.custom] });
   };
 
-  const panelRef = useRef(null);
-  useEscapeToClose(true, onClose, { rootRef: panelRef });
+  const close = useStableClose(onClose);
 
-  return createPortal(
-    <>
-      <div className="panel-overlay" onClick={onClose} />
-      <div className="panel" ref={panelRef}>
-        <SheetHeader title={SETTINGS_VIEW.dangerZone.clearListsLabel} onClose={onClose} />
-        <div style={{ padding: '1rem 1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 0.25rem' }}>
-            Select which lists to clear. This can't be undone.
-          </p>
+  // The main button is red once something is picked: clearing can't be undone.
+  return (
+    <ResponsiveDialog
+      title={SETTINGS_VIEW.dangerZone.clearListsLabel}
+      onClose={close}
+      surfaceClassName="settings-clear-lists"
+      footer={<DialogActions
+        primary={{ label: count ? SETTINGS_VIEW.clearSelected(count) : SETTINGS_VIEW.selectListsToClear, onClick: handleClear, disabled: !count }} />}
+    >
+      <div style={{ padding: '1rem 1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 0.25rem' }}>
+          Select which lists to clear. This can't be undone.
+        </p>
 
-          <ClearListRow
-            checked={selected.saved}
-            onToggle={toggleSaved}
-            label="Saved"
-            sublabel={`${savedCount} title${savedCount === 1 ? '' : 's'} · list stays, only the titles are cleared`}
-          />
-          <ClearListRow
-            checked={selected.watching}
-            onToggle={toggleWatching}
-            label="Watching"
-            sublabel={`${watchingCount} in progress · list stays, only the titles are cleared`}
-          />
+        <ClearListRow
+          checked={selected.saved}
+          onToggle={toggleSaved}
+          label="Saved"
+          sublabel={`${savedCount} title${savedCount === 1 ? '' : 's'} · list stays, only the titles are cleared`}
+        />
+        <ClearListRow
+          checked={selected.watching}
+          onToggle={toggleWatching}
+          label="Watching"
+          sublabel={`${watchingCount} in progress · list stays, only the titles are cleared`}
+        />
 
-          {customLists.length > 0 && (
-            <>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0.5rem 0 0.1rem' }}>
-                Custom lists
-              </div>
-              {customLists.map(list => (
-                <ClearListRow
-                  key={list.id}
-                  checked={selected.custom.has(list.id)}
-                  onToggle={() => toggleCustom(list.id)}
-                  label={list.name}
-                  sublabel={`${list.items?.length ?? 0} title${(list.items?.length ?? 0) === 1 ? '' : 's'} · list will be deleted`}
-                  danger
-                />
-              ))}
-            </>
-          )}
-
-          <button
-            className="btn btn-primary"
-            style={{
-              width: '100%', marginTop: '0.5rem',
-              background: count ? 'var(--danger)' : 'var(--surface-raised)',
-              borderColor: count ? 'var(--danger)' : 'var(--border)',
-              color: count ? undefined : 'var(--text-muted)',
-              cursor: count ? 'pointer' : 'default',
-            }}
-            onClick={handleClear}
-            disabled={!count}
-          >
-            {count ? SETTINGS_VIEW.clearSelected(count) : SETTINGS_VIEW.selectListsToClear}
-          </button>
-        </div>
+        {customLists.length > 0 && (
+          <>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0.5rem 0 0.1rem' }}>
+              Custom lists
+            </div>
+            {customLists.map(list => (
+              <ClearListRow
+                key={list.id}
+                checked={selected.custom.has(list.id)}
+                onToggle={() => toggleCustom(list.id)}
+                label={list.name}
+                sublabel={`${list.items?.length ?? 0} title${(list.items?.length ?? 0) === 1 ? '' : 's'} · list will be deleted`}
+                danger
+              />
+            ))}
+          </>
+        )}
       </div>
-    </>,
-    document.body
+    </ResponsiveDialog>
   );
 }
 
@@ -300,105 +272,91 @@ function TimezonePicker({ current, onSave, onClose }) {
     }
   };
 
-  const panelRef = useRef(null);
-  useEscapeToClose(true, onClose, { rootRef: panelRef });
+  const close = useStableClose(onClose);
 
-  return createPortal(
-    <>
-      <div className="panel-overlay" onClick={onClose} />
-      <div className="panel" ref={panelRef}>
-        <SheetHeader title={SETTINGS_VIEW.page.timezoneLabel} onClose={onClose} />
+  return (
+    <ResponsiveDialog
+      title={SETTINGS_VIEW.page.timezoneLabel}
+      onClose={close}
+      contentClassName="responsive-dialog-content--flush"
+      footer={<DialogActions busy={saving} error={error}
+        primary={{ label: saving ? COMMON.saving : COMMON.save, onClick: handleSave, disabled: !chosen }} />}
+    >
+      <div style={{ padding: '0.75rem 1rem 0', position: 'relative' }}>
+        <input
+          style={{
+            width: '100%',
+            padding: '0.6rem 2.25rem 0.6rem 1rem',
+            borderRadius: 'var(--radius-pill)',
+            border: '1px solid var(--border)',
+            background: 'var(--surface)',
+            fontSize: '0.86rem',
+            fontFamily: 'var(--font-sans)',
+            color: 'var(--text-primary)',
+            outline: 'none',
+          }}
+          placeholder={SETTINGS_VIEW.timezone.searchPlaceholder}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          autoFocus
+        />
+        {query && (
+          <button
+            type="button"
+            className="search-input-clear"
+            style={{ right: '1.75rem' }}
+            onClick={() => setQuery('')}
+            aria-label={COMMON.clearSearch}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        )}
+      </div>
 
-        <div style={{ padding: '0.75rem 1rem 0', position: 'relative' }}>
-          <input
+      <div style={{ overflow: 'auto', flex: 1, padding: '0.5rem 0', maxHeight: '55vh' }}>
+        {/* Device timezone shortcut when not searching */}
+        {!query && deviceTz && deviceTz !== chosen && (
+          <button
             style={{
               width: '100%',
-              padding: '0.6rem 2.25rem 0.6rem 1rem',
-              borderRadius: 'var(--radius-pill)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface)',
-              fontSize: '0.86rem',
-              fontFamily: 'var(--font-sans)',
-              color: 'var(--text-primary)',
-              outline: 'none',
+              textAlign: 'left',
+              padding: '0.7rem 1.1rem',
+              background: 'var(--accent-dim)',
+              border: 'none',
+              borderBottom: '1px solid var(--border)',
+              cursor: 'pointer',
+              fontSize: '0.84rem',
+              color: 'var(--accent)',
+              fontWeight: 600,
             }}
-            placeholder={SETTINGS_VIEW.timezone.searchPlaceholder}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            autoFocus
-          />
-          {query && (
-            <button
-              type="button"
-              className="search-input-clear"
-              style={{ right: '1.75rem' }}
-              onClick={() => setQuery('')}
-              aria-label={COMMON.clearSearch}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          )}
-        </div>
-
-        <div style={{ overflow: 'auto', flex: 1, padding: '0.5rem 0', maxHeight: '55vh' }}>
-          {/* Device timezone shortcut when not searching */}
-          {!query && deviceTz && deviceTz !== chosen && (
-            <button
-              style={{
-                width: '100%',
-                textAlign: 'left',
-                padding: '0.7rem 1.1rem',
-                background: 'var(--accent-dim)',
-                border: 'none',
-                borderBottom: '1px solid var(--border)',
-                cursor: 'pointer',
-                fontSize: '0.84rem',
-                color: 'var(--accent)',
-                fontWeight: 600,
-              }}
-              onClick={() => setChosen(deviceTz)}
-            >
-              {SETTINGS_VIEW.timezone.useDevice(fmtTz(deviceTz))}
-            </button>
-          )}
-
-          {filtered.map(tz => (
-            <button
-              key={tz}
-              style={{
-                width: '100%',
-                textAlign: 'left',
-                padding: '0.65rem 1.1rem',
-                background: chosen === tz ? 'var(--accent-dim)' : 'none',
-                border: 'none',
-                borderBottom: '1px solid var(--border)',
-                cursor: 'pointer',
-                fontSize: '0.84rem',
-                color: chosen === tz ? 'var(--accent)' : 'var(--text-primary)',
-                fontWeight: chosen === tz ? 700 : 400,
-              }}
-              onClick={() => setChosen(tz)}
-            >
-              {fmtTz(tz)}
-            </button>
-          ))}
-        </div>
-
-        <div className="settings-picker-footer">
-          {error && <p className="settings-picker-error" role="alert">{error}</p>}
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={handleSave}
-            disabled={!chosen || saving}
-            aria-busy={saving}
-            aria-label={saving ? SETTINGS_VIEW.timezone.savingTimezone : SETTINGS_VIEW.timezone.saveTimezone}
+            onClick={() => setChosen(deviceTz)}
           >
-            {saving ? <Spinner size="button" ariaHidden /> : COMMON.save}
+            {SETTINGS_VIEW.timezone.useDevice(fmtTz(deviceTz))}
           </button>
-        </div>
+        )}
+
+        {filtered.map(tz => (
+          <button
+            key={tz}
+            style={{
+              width: '100%',
+              textAlign: 'left',
+              padding: '0.65rem 1.1rem',
+              background: chosen === tz ? 'var(--accent-dim)' : 'none',
+              border: 'none',
+              borderBottom: '1px solid var(--border)',
+              cursor: 'pointer',
+              fontSize: '0.84rem',
+              color: chosen === tz ? 'var(--accent)' : 'var(--text-primary)',
+              fontWeight: chosen === tz ? 700 : 400,
+            }}
+            onClick={() => setChosen(tz)}
+          >
+            {fmtTz(tz)}
+          </button>
+        ))}
       </div>
-    </>,
-    document.body
+    </ResponsiveDialog>
   );
 }
 
@@ -439,72 +397,62 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
     ? all.filter(p => p.provider_name.toLowerCase().includes(search.trim().toLowerCase()))
     : all;
 
-  const panelRef = useRef(null);
-  useEscapeToClose(true, onClose, { rootRef: panelRef });
+  const close = useStableClose(onClose);
 
-  return createPortal(
-    <>
-      <div className="panel-overlay" onClick={onClose} />
-      <div className="panel" ref={panelRef}>
-        {/* Sticky header — title + Save always visible */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader title={title} onClose={onClose} />
-        </div>
-
-        {/* Scrollable content */}
-        {loading ? (
-          <div className="loading-state"><PlotLoader size="sm" /></div>
-        ) : (
-          <div style={{ padding: '1rem' }}>
-            {hint && (
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.4 }}>{hint}</p>
+  // Each tap saves, so the header's word is Done, not Cancel.
+  return (
+    <ResponsiveDialog title={title} onClose={close} closeLabel={COMMON.done} tall>
+      {loading ? (
+        <div className="loading-state"><PlotLoader size="sm" /></div>
+      ) : (
+        <div style={{ padding: '1rem' }}>
+          {hint && (
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.4 }}>{hint}</p>
+          )}
+          <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
+            <input
+              type="text"
+              placeholder="Search…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem',
+                background: 'var(--surface-raised)', border: '1px solid var(--border)',
+                borderRadius: 8, fontSize: '0.9rem', color: 'var(--text)',
+                fontFamily: 'inherit', outline: 'none',
+              }}
+            />
+            {search && (
+              <button
+                type="button"
+                className="search-input-clear"
+                onClick={() => setSearch('')}
+                aria-label={COMMON.clearSearch}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             )}
-            <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
-              <input
-                type="text"
-                placeholder="Search…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                style={{
-                  width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem',
-                  background: 'var(--surface-raised)', border: '1px solid var(--border)',
-                  borderRadius: 8, fontSize: '0.9rem', color: 'var(--text)',
-                  fontFamily: 'inherit', outline: 'none',
-                }}
-              />
-              {search && (
-                <button
-                  type="button"
-                  className="search-input-clear"
-                  onClick={() => setSearch('')}
-                  aria-label={COMMON.clearSearch}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              )}
-            </div>
-            <div className="providers-select-grid">
-              {visible.map(p => (
-                <div
-                  key={p.provider_id}
-                  className={`provider-select-card interactive-surface${chosen.includes(p.provider_id) ? ' selected' : ''}`}
-                  onClick={() => toggle(p.provider_id)}
-                  {...getButtonLikeProps({
-                    onPress: () => toggle(p.provider_id),
-                    label: `${chosen.includes(p.provider_id) ? COMMON.deselect : COMMON.select} ${p.provider_name}`,
-                    pressed: chosen.includes(p.provider_id),
-                  })}
-                >
-                  <img src={logoUrl(p.logo_path, 'w92')} alt={p.provider_name} />
-                  <span>{p.provider_name}</span>
-                </div>
-              ))}
-            </div>
           </div>
-        )}
-      </div>
-    </>,
-    document.body
+          <div className="providers-select-grid">
+            {visible.map(p => (
+              <div
+                key={p.provider_id}
+                className={`provider-select-card interactive-surface${chosen.includes(p.provider_id) ? ' selected' : ''}`}
+                onClick={() => toggle(p.provider_id)}
+                {...getButtonLikeProps({
+                  onPress: () => toggle(p.provider_id),
+                  label: `${chosen.includes(p.provider_id) ? COMMON.deselect : COMMON.select} ${p.provider_name}`,
+                  pressed: chosen.includes(p.provider_id),
+                })}
+              >
+                <img src={logoUrl(p.logo_path, 'w92')} alt={p.provider_name} />
+                <span>{p.provider_name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </ResponsiveDialog>
   );
 }
 
@@ -528,64 +476,57 @@ function GenrePicker({ selected, onSave, onClose }) {
     onSave(allGenres.filter(g => next.includes(g.id)).map(g => g.name));
   };
 
-  const panelRef = useRef(null);
-  useEscapeToClose(true, onClose, { rootRef: panelRef });
+  const close = useStableClose(onClose);
 
-  return createPortal(
-    <>
-      <div className="panel-overlay" onClick={onClose} />
-      <div className="panel" ref={panelRef}>
-        <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader title={SETTINGS_VIEW.integrations.genresLabel} onClose={onClose} />
+  // Each tap saves, so the header's word is Done, not Cancel.
+  return (
+    <ResponsiveDialog title={SETTINGS_VIEW.integrations.genresLabel} onClose={close} closeLabel={COMMON.done}>
+      {/* Keyed off `loading`, not `allGenres.length` — an empty list used to
+          be indistinguishable from "still fetching", so a failed load left
+          this sheet spinning forever with no way to recover. */}
+      {loading ? (
+        <div className="loading-state"><PlotLoader size="sm" /></div>
+      ) : error ? (
+        <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            {SETTINGS_VIEW.genres.loadError}
+          </p>
+          <button type="button" className="btn btn-secondary" onClick={retry}>
+            {SETTINGS_VIEW.genres.tryAgain}
+          </button>
         </div>
-        {/* Keyed off `loading`, not `allGenres.length` — an empty list used to
-            be indistinguishable from "still fetching", so a failed load left
-            this sheet spinning forever with no way to recover. */}
-        {loading ? (
-          <div className="loading-state"><PlotLoader size="sm" /></div>
-        ) : error ? (
-          <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
-            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              {SETTINGS_VIEW.genres.loadError}
-            </p>
-            <button type="button" className="btn btn-secondary" onClick={retry}>
-              {SETTINGS_VIEW.genres.tryAgain}
-            </button>
+      ) : (
+        <div style={{ padding: '1rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {allGenres.map(g => (
+              <div
+                key={g.id}
+                className={`interactive-surface${chosen.includes(g.id) ? ' selected' : ''}`}
+                onClick={() => toggle(g.id)}
+                style={{
+                  padding: '0.55rem 1rem',
+                  borderRadius: 'var(--radius-pill)',
+                  border: chosen.includes(g.id) ? '2px solid var(--accent)' : '1.5px solid var(--border)',
+                  background: chosen.includes(g.id) ? 'var(--accent-dim)' : 'var(--surface)',
+                  color: chosen.includes(g.id) ? 'var(--accent)' : 'var(--text-primary)',
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                {...getButtonLikeProps({
+                  onPress: () => toggle(g.id),
+                  label: `${chosen.includes(g.id) ? COMMON.deselect : COMMON.select} ${g.name}`,
+                  pressed: chosen.includes(g.id),
+                })}
+              >
+                {g.name}
+              </div>
+            ))}
           </div>
-        ) : (
-          <div style={{ padding: '1rem' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              {allGenres.map(g => (
-                <div
-                  key={g.id}
-                  className={`interactive-surface${chosen.includes(g.id) ? ' selected' : ''}`}
-                  onClick={() => toggle(g.id)}
-                  style={{
-                    padding: '0.55rem 1rem',
-                    borderRadius: 'var(--radius-pill)',
-                    border: chosen.includes(g.id) ? '2px solid var(--accent)' : '1.5px solid var(--border)',
-                    background: chosen.includes(g.id) ? 'var(--accent-dim)' : 'var(--surface)',
-                    color: chosen.includes(g.id) ? 'var(--accent)' : 'var(--text-primary)',
-                    fontWeight: 600,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                  {...getButtonLikeProps({
-                    onPress: () => toggle(g.id),
-                    label: `${chosen.includes(g.id) ? COMMON.deselect : COMMON.select} ${g.name}`,
-                    pressed: chosen.includes(g.id),
-                  })}
-                >
-                  {g.name}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </>,
-    document.body
+        </div>
+      )}
+    </ResponsiveDialog>
   );
 }
 
@@ -599,6 +540,8 @@ function clampNum(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
 /* Crop + zoom modal — pan by dragging, zoom with the slider, exported as a square JPEG. */
 function AvatarCropModal({ src, saving, onCancel, onSave }) {
+  // Cancel, Escape and a click outside do nothing while the photo uploads.
+  const close = useStableClose(onCancel, saving);
   const imgRef = useRef(null);
   const dragRef = useRef(null);
   const [nat, setNat] = useState(null); // natural { w, h }
@@ -664,23 +607,16 @@ function AvatarCropModal({ src, saving, onCancel, onSave }) {
     canvas.toBlob((blob) => { if (blob) onSave(blob); }, 'image/jpeg', 0.9);
   };
 
-  return createPortal(
-    <>
-      <div className="panel-overlay" onClick={saving ? undefined : onCancel} />
-      <div
-        role="dialog"
-        aria-label="Crop your photo"
-        style={{
-          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          width: 'min(360px, calc(100vw - 2rem))', zIndex: 1001,
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)', padding: '1.1rem',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
-        }}
-      >
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 500, marginBottom: '0.25rem' }}>
-          Crop photo
-        </h2>
+  return (
+    <ResponsiveDialog
+      title="Crop photo"
+      label="Crop your photo"
+      onClose={close}
+      size="compact"
+      footer={<DialogActions busy={saving}
+        primary={{ label: saving ? COMMON.saving : SETTINGS_VIEW.avatar.savePhoto, onClick: handleSave, disabled: !nat }} />}
+    >
+      <div style={{ padding: '1rem 1.1rem 1.1rem' }}>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
           Drag to reposition, use the slider to zoom.
         </p>
@@ -714,21 +650,8 @@ function AvatarCropModal({ src, saving, onCancel, onSave }) {
           aria-label="Zoom"
           style={{ width: '100%', marginTop: '0.9rem', accentColor: 'var(--accent)' }}
         />
-
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.9rem', justifyContent: 'flex-end' }}>
-          <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>{COMMON.cancel}</button>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={handleSave}
-            disabled={saving || !nat}
-            aria-busy={saving}
-          >
-            {saving ? <Spinner size="button" ariaHidden /> : SETTINGS_VIEW.avatar.savePhoto}
-          </button>
-        </div>
       </div>
-    </>,
-    document.body,
+    </ResponsiveDialog>
   );
 }
 
@@ -1009,140 +932,121 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
     track(EVENTS.FEEDBACK_SUBMITTED, { type, has_attachments: attachmentUrls.length > 0 });
   };
 
-  const panelRef = useRef(null);
-  useEscapeToClose(true, onClose, { rootRef: panelRef });
+  const close = useStableClose(onClose);
 
-  return createPortal(
-<>
-      <div className="panel-overlay" onClick={onClose} />
-      <div className="panel" ref={panelRef}>
-        <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--surface)' }}>
-          <SheetHeader title={SETTINGS_VIEW.feedback.panelTitle} onClose={onClose} />
+  // Send sits bottom right; once it is sent, Cancel in the header closes.
+  return (
+    <ResponsiveDialog
+      title={SETTINGS_VIEW.feedback.panelTitle}
+      onClose={close}
+      tall
+      footer={status === 'done' ? null : <DialogActions busy={status === 'submitting'}
+        primary={{ label: status === 'submitting' ? COMMON.sending : COMMON.send, onClick: handleSubmit, disabled: !message.trim() }} />}
+    >
+      {status === 'done' ? (
+        <div className="feedback-success">
+          <div className="feedback-success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div className="feedback-success-title">Feedback received</div>
+          <div className="feedback-success-body">
+            Thanks. This has been captured for the product backlog, and any attachments will stay linked to the report.
+          </div>
         </div>
-
-        {status === 'done' ? (
-          <div className="feedback-success">
-            <div className="feedback-success-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}>
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <div className="feedback-success-title">Feedback received</div>
-            <div className="feedback-success-body">
-              Thanks. This has been captured for the product backlog, and any attachments will stay linked to the report.
-            </div>
-            <button className="btn btn-primary btn-sm" style={{ marginTop: '0.5rem' }} onClick={onClose}>{COMMON.done}</button>
+      ) : (
+        <div className="feedback-panel-body">
+          <div className="feedback-panel-intro">
+            <p>
+              Found a bug, have a feature idea, or want to sharpen the product taste? Send it here.
+            </p>
           </div>
-        ) : (
-          <div className="feedback-panel-body">
-            <div className="feedback-panel-intro">
-              <p>
-                Found a bug, have a feature idea, or want to sharpen the product taste? Send it here.
-              </p>
-            </div>
 
-            <div className="feedback-type-grid">
-              {visibleTypes.map(entry => (
-                <button
-                  key={entry.id}
-                  onClick={() => setType(entry.id)}
-                  className={`feedback-type-card${type === entry.id ? ' is-active' : ''}`}
-                >
-                  <span className="feedback-type-icon" aria-hidden="true">{entry.icon}</span>
-                  <span className="feedback-type-label">{entry.label}</span>
-                  <span className="feedback-type-description">{entry.description}</span>
-                </button>
-              ))}
-            </div>
+          <div className="feedback-type-grid">
+            {visibleTypes.map(entry => (
+              <button
+                key={entry.id}
+                onClick={() => setType(entry.id)}
+                className={`feedback-type-card${type === entry.id ? ' is-active' : ''}`}
+              >
+                <span className="feedback-type-icon" aria-hidden="true">{entry.icon}</span>
+                <span className="feedback-type-label">{entry.label}</span>
+                <span className="feedback-type-description">{entry.description}</span>
+              </button>
+            ))}
+          </div>
 
-            <div className="feedback-composer">
-              <div className="feedback-composer-top">
-                <div>
-                  <div className="feedback-composer-label">{selectedType.label}</div>
-                  <div className="feedback-composer-hint">
-                    {type === 'bug'
-                      ? 'Tell us what happened, where it happened, and how to reproduce it.'
-                      : type === 'feature'
-                        ? 'Describe the capability you want and the job it would help you do.'
-                        : 'Share anything about the product, writing, pacing, or overall feel.'}
-                  </div>
-                </div>
-                <div className="feedback-count">{messageCount} / {FEEDBACK_MAX}</div>
-              </div>
-
-              <textarea
-                value={message}
-                onChange={e => setMessage(e.target.value.slice(0, FEEDBACK_MAX))}
-                maxLength={FEEDBACK_MAX}
-                className="feedback-textarea"
-                placeholder={
-                  type === 'bug'
-                    ? 'Describe what happened and what you expected instead…'
+          <div className="feedback-composer">
+            <div className="feedback-composer-top">
+              <div>
+                <div className="feedback-composer-label">{selectedType.label}</div>
+                <div className="feedback-composer-hint">
+                  {type === 'bug'
+                    ? 'Tell us what happened, where it happened, and how to reproduce it.'
                     : type === 'feature'
-                      ? 'Describe the idea, the flow, and why it matters…'
-                      : 'Share your thoughts on what feels strong, weak, missing, or unfinished…'
-                }
-                rows={7}
-              />
-            </div>
-
-            <div className="feedback-attachments">
-              {images.map((img, i) => (
-                <div key={i} className="feedback-attachment">
-                  <img src={img.preview} alt="" />
-                  <button
-                    onClick={() => removeImage(i)}
-                    aria-label="Remove image"
-                    className="feedback-attachment-remove"
-                  >✕</button>
+                      ? 'Describe the capability you want and the job it would help you do.'
+                      : 'Share anything about the product, writing, pacing, or overall feel.'}
                 </div>
-              ))}
-              {images.length < MAX_IMAGES && (
-                <label className="feedback-attach-btn" title="Attach image">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
-                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                  </svg>
-                  <span>Add screenshots</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    style={{ display: 'none' }}
-                    onChange={e => { addImages(e.target.files); e.target.value = ''; }}
-                  />
-                </label>
-              )}
-            </div>
-            <div className="feedback-helper">
-              Up to {MAX_IMAGES} images, {MAX_IMAGE_MB}MB each. Helpful for bugs, optional for everything else.
+              </div>
+              <div className="feedback-count">{messageCount} / {FEEDBACK_MAX}</div>
             </div>
 
-            {status === 'error' && (
-              <p className="feedback-error">
-                {errorMessage || COMMON.genericError}
-              </p>
-            )}
-
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{
-                width: '100%', marginTop: '0.25rem',
-                background: message.trim() ? undefined : 'var(--surface-raised)',
-                borderColor: message.trim() ? undefined : 'var(--border)',
-                color: message.trim() ? undefined : 'var(--text-muted)',
-                cursor: message.trim() ? 'pointer' : 'default',
-              }}
-              onClick={handleSubmit}
-              disabled={!message.trim() || status === 'submitting'}
-            >
-              {status === 'submitting' ? COMMON.sending : COMMON.send}
-            </button>
+            <textarea
+              value={message}
+              onChange={e => setMessage(e.target.value.slice(0, FEEDBACK_MAX))}
+              maxLength={FEEDBACK_MAX}
+              className="feedback-textarea"
+              placeholder={
+                type === 'bug'
+                  ? 'Describe what happened and what you expected instead…'
+                  : type === 'feature'
+                    ? 'Describe the idea, the flow, and why it matters…'
+                    : 'Share your thoughts on what feels strong, weak, missing, or unfinished…'
+              }
+              rows={7}
+            />
           </div>
-        )}
-      </div>
-    </>,
-    document.body,
+
+          <div className="feedback-attachments">
+            {images.map((img, i) => (
+              <div key={i} className="feedback-attachment">
+                <img src={img.preview} alt="" />
+                <button
+                  onClick={() => removeImage(i)}
+                  aria-label="Remove image"
+                  className="feedback-attachment-remove"
+                >✕</button>
+              </div>
+            ))}
+            {images.length < MAX_IMAGES && (
+              <label className="feedback-attach-btn" title="Attach image">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+                <span>Add screenshots</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={e => { addImages(e.target.files); e.target.value = ''; }}
+                />
+              </label>
+            )}
+          </div>
+          <div className="feedback-helper">
+            Up to {MAX_IMAGES} images, {MAX_IMAGE_MB}MB each. Helpful for bugs, optional for everything else.
+          </div>
+
+          {status === 'error' && (
+            <p className="feedback-error">
+              {errorMessage || COMMON.genericError}
+            </p>
+          )}
+        </div>
+      )}
+    </ResponsiveDialog>
   );
 }
 

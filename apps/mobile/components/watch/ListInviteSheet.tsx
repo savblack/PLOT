@@ -4,6 +4,7 @@ import { useListInvite, reportListInviteShared } from '@plot/core/useListInvites
 import { buildListInviteUrl, SHARE_ORIGIN } from '@plot/core/sharing.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { COLLABORATIVE_LISTS as C } from '@plot/core/copy/collaborativeLists.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { fontFamily, fontSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -59,7 +60,7 @@ export function ListInviteSheet({ listId, listName, people, onClose }: {
   };
 
   return (
-    <Sheet visible title={C.invite} onClose={onClose}>
+    <Sheet visible title={C.invite} onClose={onClose} closeLabel={COMMON.done}>
       <Note>{C.dialog.body}</Note>
       <SectionLabel>{T.link.kicker}</SectionLabel>
       {linkError ? <ErrorNote>{linkError}</ErrorNote> : (

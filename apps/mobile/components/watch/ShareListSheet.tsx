@@ -5,6 +5,7 @@ import { useRouter, type Href } from 'expo-router';
 import { personName } from '@plot/core/watchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -115,7 +116,7 @@ export function AddPeopleSheet({ listId, people, locked, onClose }: {
     );
   }
   return (
-    <Sheet visible title={L.addPeople} onClose={onClose}>
+    <Sheet visible title={L.addPeople} onClose={onClose} closeLabel={COMMON.done}>
       <Note>{L.addPeopleNote}</Note>
       {candidates.length === 0 && <Note>{L.noOneToAdd}</Note>}
       {candidates.map(p => (

@@ -92,6 +92,7 @@ export default function GroupedFilterMenu({
         visible={open}
         onClose={close}
         title={MOBILE_CONTROLS.filters}
+        closeLabel={null}
         maxHeight="75%"
         footer={(
           <SheetActions>

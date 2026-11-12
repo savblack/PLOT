@@ -105,8 +105,8 @@ export function ButtonRow({ children }: { children: ReactNode }) {
   return <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>{children}</View>;
 }
 
-export function Sheet({ visible, title, onClose, children, footer }: { visible: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
-  return <BottomSheet visible={visible} title={title} onClose={onClose} footer={footer}>{children}</BottomSheet>;
+export function Sheet({ visible, title, onClose, children, footer, closeLabel }: { visible: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; closeLabel?: string | null }) {
+  return <BottomSheet visible={visible} title={title} onClose={onClose} footer={footer} closeLabel={closeLabel}>{children}</BottomSheet>;
 }
 
 export function SectionLabel({ children }: { children: string }) {

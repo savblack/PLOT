@@ -1,27 +1,28 @@
 /**
  * The app's one bottom sheet: a dimmed backdrop that closes on tap, and a
  * panel that slides up with rounded top corners, a grab handle, an optional
- * title with a close button beside it, a scrolling body and an optional foot
+ * title with Cancel beside it (the same header as the full-page sheets and
+ * web's pop-ups), a scrolling body and an optional foot
  * for the action row. Every
  * transparent sheet uses it so the dim, the corners, the handle and the
  * padding are the same everywhere. The title panel (MediaPanel) keeps its
  * own drag-to-close sheet.
  */
 import { useMemo, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity, View, type DimensionValue } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, type DimensionValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COMMON } from '@plot/core/copy/common.js';
 import { useTheme } from '../contexts/ThemeContext';
-import { Palette, radii, spacing } from '../lib/tokens';
+import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 import SectionTitle from './SectionTitle';
-import { IconClose } from './icons';
 
 export const SHEET_DIM = 'rgba(0,0,0,0.45)';
 
-export default function BottomSheet({ visible, onClose, title, children, footer, scroll = true, maxHeight = '88%', flush = false }: {
+export default function BottomSheet({ visible, onClose, title, children, footer, scroll = true, maxHeight = '88%', flush = false, closeLabel = COMMON.cancel }: {
   visible: boolean;
   onClose: () => void;
-  title?: string;
+  /** Text, or a node such as a logo beside a name (the import sheets). */
+  title?: ReactNode;
   children: ReactNode;
   /** Pinned under the body: the sheet's action row. */
   footer?: ReactNode;
@@ -30,6 +31,10 @@ export default function BottomSheet({ visible, onClose, title, children, footer,
   maxHeight?: DimensionValue;
   /** Drops the side padding, for bodies that run edge to edge. */
   flush?: boolean;
+  /** The word beside the title that closes the sheet: Cancel by default,
+   *  Done for a picker that applies as you tap. Null hides it, for a sheet
+   *  whose foot already has its own Cancel (the confirm pop-up). */
+  closeLabel?: string | null;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -42,10 +47,14 @@ export default function BottomSheet({ visible, onClose, title, children, footer,
           <View style={styles.handle} />
           {title ? (
             <View style={[styles.head, flush && styles.flushTitle]}>
-              <SectionTitle style={styles.title} accessibilityRole="header">{title}</SectionTitle>
-              <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button" accessibilityLabel={COMMON.close}>
-                <IconClose size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
+              {typeof title === 'string'
+                ? <SectionTitle style={styles.title} accessibilityRole="header">{title}</SectionTitle>
+                : <View style={styles.title}>{title}</View>}
+              {closeLabel ? (
+                <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button">
+                  <Text style={styles.close}>{closeLabel}</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : null}
           {scroll ? (
@@ -74,6 +83,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   flush: { paddingHorizontal: 0 },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   title: { flex: 1, minWidth: 0 },
+  close: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
   flushTitle: { marginHorizontal: spacing.xl },
   handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong, marginBottom: spacing.xs },
   body: { gap: spacing.md },

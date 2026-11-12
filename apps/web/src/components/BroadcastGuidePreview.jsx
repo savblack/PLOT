@@ -2,8 +2,7 @@
 // Layout is the Calendar/History shell: a narrow sticky column of cards on the
 // left (week, my channels), the stream on the right. Option C from the 17 Sep
 // 2026 Guide canvas: what's on now first, then the evening grouped by hour.
-import { useEffect, useRef, useState } from 'react';
-import { IconClose } from './navIcons.jsx';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { readBroadcastRegion } from '../utils/broadcastPreviewStorage.js';
 import { GUIDE_REGIONS, guideDay, isOnNow, broadcastTime, broadcastDayLabel, groupByHour, programmeProgress } from '@plot/core/broadcastGuide.js';
@@ -12,6 +11,8 @@ import { BROADCAST_GUIDE as COPY } from '@plot/core/copy/broadcastGuide.js';
 import { FilterRow } from './SideFilters.jsx';
 import MobilePageControls from './MobilePageControls.jsx';
 import LoadingSpinner from './LoadingSpinner.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
+import { useStableClose } from '../hooks/useDialogClose.js';
 import './BroadcastGuidePreview.css';
 
 function readSelection(region) {
@@ -97,8 +98,7 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
   const [selected, setSelected] = useState(null);
   const [channelsOpen, setChannelsOpen] = useState(false);
   const [jumpTarget, setJumpTarget] = useState('');
-  const dialog = useRef(null);
-  useEffect(() => { if (selected) dialog.current?.showModal(); }, [selected]);
+  const closeDetails = useStableClose(() => setSelected(null));
   const channelById = new Map(channels.map(c => [c.id, c]));
   const time = stamp => broadcastTime(stamp, date, timezone);
   async function persist(next) {
@@ -255,8 +255,9 @@ export function BroadcastAgenda({ region, selection, onSave, saving = false, end
       </section>
     </div>
 
-    <dialog ref={dialog} className="broadcast-dialog" onClose={() => setSelected(null)}>
-      {selected && <><button type="button" className="icon-btn broadcast-dialog-close" onClick={() => dialog.current.close()} aria-label={COPY.close}><IconClose /></button><p className="hist-card-note"><ChannelMark channel={channelById.get(selected.channelId)} small /> {channelById.get(selected.channelId)?.name} · {time(selected.start)}–{time(selected.end)}</p><h2>{selected.title}</h2><p>{selected.description || COPY.noDescription}</p></>}
-    </dialog>
+    {selected && <ResponsiveDialog title={selected.title} onClose={closeDetails} size="compact" contentClassName="broadcast-dialog">
+      <p className="hist-card-note"><ChannelMark channel={channelById.get(selected.channelId)} small /> {channelById.get(selected.channelId)?.name} · {time(selected.start)}–{time(selected.end)}</p>
+      <p>{selected.description || COPY.noDescription}</p>
+    </ResponsiveDialog>}
   </div>;
 }

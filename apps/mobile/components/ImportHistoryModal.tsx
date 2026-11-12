@@ -15,7 +15,7 @@ import * as FileSystem from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePageSheetTop } from './PageSheet';
 import Svg, { Path, Polyline, Line } from 'react-native-svg';
-import { IconChevronRight, IconClose, IconCheck } from './icons';
+import { IconChevronRight, IconCheck } from './icons';
 import Button, { TextLink } from './Button';
 import Loader from './Loader';
 import { useDialog } from './Dialog';
@@ -29,6 +29,7 @@ import {
 import { readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { clearLetterboxdImport, rememberLetterboxdImport } from '../lib/letterboxdImportPrompt';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -496,12 +497,10 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
                 <Path d="M19 12H5M12 5l-7 7 7 7" />
               </Svg>
             </TouchableOpacity>
-          ) : (
-            <View style={styles.backBtn} />
-          )}
-          <Text style={styles.headerTitle}>Import Watch History</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
-            <IconClose color={colors.textSecondary} strokeWidth={2.5} />
+          ) : null}
+          <Text style={styles.headerTitle} accessibilityRole="header">Import Watch History</Text>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button">
+            <Text style={styles.cancel}>{COMMON.cancel}</Text>
           </TouchableOpacity>
         </View>
 
@@ -738,13 +737,13 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  headerTitle: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary },
+  headerTitle: { flex: 1, fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  closeBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  cancel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
 
   body: { flex: 1, padding: spacing.xl },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md },

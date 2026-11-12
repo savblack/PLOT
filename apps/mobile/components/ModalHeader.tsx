@@ -34,11 +34,11 @@ export default function ModalHeader({ title, actionLabel, onAction, accent = fal
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md,
     paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  title: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
+  title: { flex: 1, minWidth: 0, fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   action: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
   actionAccent: { color: colors.accent },
 });

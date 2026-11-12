@@ -3,6 +3,9 @@ import { createPortal } from 'react-dom';
 import SheetHeader from './SheetHeader.jsx';
 import './ResponsiveDialog.css';
 
+/** Dialogs open right now, oldest first. */
+const OPEN_DIALOGS = [];
+
 /**
  * One responsive modal surface for short, focused web workflows.
  * Pointer-sized screens get a contained dialog; phones get the same content
@@ -14,6 +17,9 @@ export default function ResponsiveDialog({
   label,
   onClose,
   onBack,
+  /** The header's close word: Cancel by default, Done for a picker that
+   *  applies as you tap. */
+  closeLabel,
   children,
   footer,
   size = 'default',
@@ -24,16 +30,28 @@ export default function ResponsiveDialog({
 }) {
   const surfaceRef = useRef(null);
   const restoreFocusRef = useRef(null);
+  // The latest onClose, so the open effect below runs once per opening. With
+  // onClose as its dependency, a parent re-rendering while the dialog was open
+  // (an inline handler, a list that reloads) re-ran it and pulled focus back
+  // to the opener.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
 
   useEffect(() => {
+    // Only the dialog on top answers Escape and traps Tab, so a dialog opened
+    // over another closes alone.
+    const entry = {};
+    OPEN_DIALOGS.push(entry);
     restoreFocusRef.current = document.activeElement;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event) => {
+      if (OPEN_DIALOGS[OPEN_DIALOGS.length - 1] !== entry) return;
       if (event.key === 'Escape') {
+        if (event.defaultPrevented) return;
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -55,11 +73,13 @@ export default function ResponsiveDialog({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => {
+      const at = OPEN_DIALOGS.indexOf(entry);
+      if (at !== -1) OPEN_DIALOGS.splice(at, 1);
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
       restoreFocusRef.current?.focus?.();
     };
-  }, [onClose]);
+  }, []);
 
   const sizeClass = size === 'compact'
     ? ' responsive-dialog--compact'
@@ -81,7 +101,7 @@ export default function ResponsiveDialog({
         aria-label={label || (typeof title === 'string' ? title : undefined)}
       >
         <div className="responsive-dialog-handle" aria-hidden="true" />
-        <SheetHeader title={title} onClose={onClose} onBack={onBack} />
+        <SheetHeader title={title} onClose={onClose} onBack={onBack} closeLabel={closeLabel} />
         <div className={`responsive-dialog-content${contentClassName ? ` ${contentClassName}` : ''}`}>
           {children}
         </div>
