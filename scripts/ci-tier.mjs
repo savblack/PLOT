@@ -3,10 +3,11 @@
 // feature branches compare their merge-base with origin/main.
 //
 //   node scripts/ci-tier.mjs
-//   node scripts/ci-tier.mjs --write-env "$BASH_ENV"
+//   node scripts/ci-tier.mjs --write-env "$GITHUB_ENV"
 //
 // --write-env appends PLOT_CI_TIER, PLOT_CI_WEBSITE_STORYBOOK,
-// and PLOT_CI_MOBILE_STORYBOOK so later CircleCI steps can read them.
+// and PLOT_CI_MOBILE_STORYBOOK as KEY=value lines, so later steps of
+// .github/workflows/ci.yml can read them.
 
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
@@ -18,7 +19,7 @@ const valueAfter = (flag) => {
   return index === -1 ? '' : (args[index + 1] || '');
 };
 
-const branch = valueAfter('--branch') || process.env.CIRCLE_BRANCH || '';
+const branch = valueAfter('--branch') || process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || '';
 const labels = (valueAfter('--labels') || '').split(',').map((label) => label.trim()).filter(Boolean);
 const commitMessage = valueAfter('--commit-message') || '';
 const writeEnv = valueAfter('--write-env');
@@ -49,9 +50,9 @@ const files = [...new Set([
 const result = classifyChanges(files, { branch, labels, commitMessage });
 const flag = (value) => (value ? '1' : '0');
 const exports = [
-  `export PLOT_CI_TIER=${result.tier}`,
-  `export PLOT_CI_WEBSITE_STORYBOOK=${flag(result.websiteStorybook)}`,
-  `export PLOT_CI_MOBILE_STORYBOOK=${flag(result.mobileStorybook)}`,
+  `PLOT_CI_TIER=${result.tier}`,
+  `PLOT_CI_WEBSITE_STORYBOOK=${flag(result.websiteStorybook)}`,
+  `PLOT_CI_MOBILE_STORYBOOK=${flag(result.mobileStorybook)}`,
 ].join('\n');
 console.log(JSON.stringify(result));
 

@@ -92,7 +92,10 @@ test('a workflow fix may merge only when it changes versions, runners, timeouts 
   assert.equal(isSafeWorkflowPatch(''), false);
   assert.equal(decide([f('.github/workflows/new.yml', { status: 'added', patch: '+    runs-on: ubuntu-latest' })]).allowed, false);
   assert.equal(decide([f('.github/scripts/job-incident.sh')]).allowed, false);
-  assert.equal(decide([f('.circleci/config.yml', { patch: '-    resource_class: small\n+    resource_class: medium' })]).allowed, false);
+  // The CI workflow gates both merge flows, so even a "safe" line waits:
+  // continue-on-error would let it pass without checking anything.
+  assert.equal(decide([f('.github/workflows/ci.yml', { patch: '+        continue-on-error: true' })]).allowed, false);
+  assert.equal(decide([f('.github/workflows/dependabot-automerge.yml', { patch: '-    runs-on: ubuntu-22.04\n+    runs-on: ubuntu-latest' })]).allowed, false);
 });
 
 test('a rename is judged on both names, and renames or deletes of code wait', () => {

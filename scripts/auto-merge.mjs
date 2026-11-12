@@ -7,7 +7,8 @@
  * branch. It merges (squash) only when ALL of these hold:
  *   - scripts/lib/autoMergePolicy.mjs allows every file it changes
  *   - every check and status on the head commit finished green, and the two
- *     that matter ran: the CircleCI check and GitHub's CodeQL security scan
+ *     that matter ran: the CI workflow (.github/workflows/ci.yml) and
+ *     GitHub's CodeQL security scan
  *     (Strix was the reviewer until its trial ended on 2026-11-12)
  *   - no review thread is left unresolved
  *   - GitHub reports it mergeable with no conflict
@@ -32,10 +33,14 @@ const REQUIRED = [
   // GitHub's own code scanning summary. Only GitHub posts under this app, so a
   // workflow job named "CodeQL" (app github-actions) does not count.
   { name: 'CodeQL', kind: 'check', app: 'github-advanced-security' },
-  // CircleCI's GitHub App. It also mirrors the status under Savannah's own
-  // account, which agents act as, so that copy is not trusted.
-  { name: 'ci/circleci: check', kind: 'status', creator: 'circleci-app[bot]' },
+  // The CI workflow, identified by its file rather than its name: any
+  // workflow can call itself "CI" or name a job "check". The policy keeps
+  // changes to this file waiting for Savannah, so a PR cannot weaken it.
+  { name: 'CI', kind: 'workflow', path: '.github/workflows/ci.yml' },
 ];
+// Events a CI run for the head commit may come from. workflow_dispatch and
+// the like are left out: anyone with write access could start those.
+const CI_EVENTS = new Set(['pull_request', 'push']);
 
 async function gh(path, { token = READ, method = 'GET', body } = {}) {
   const res = await fetch(path.startsWith('http') ? path : `${API}${path}`, {
@@ -58,7 +63,7 @@ async function all(path) {
   for (let page = 1; page < 20; page++) {
     const sep = path.includes('?') ? '&' : '?';
     const rows = await gh(`${path}${sep}per_page=100&page=${page}`);
-    const list = Array.isArray(rows) ? rows : rows.check_runs;
+    const list = Array.isArray(rows) ? rows : (rows.check_runs ?? rows.workflow_runs);
     out.push(...list);
     if (list.length < 100) break;
   }
@@ -68,9 +73,11 @@ async function all(path) {
 /**
  * Every check run and commit status on the head. Any entry with a required
  * name that is not green fails the PR, whoever posted it; a required check
- * passes only if its real source reported success.
+ * passes only if its real source reported success. `workflowRuns` are the
+ * Actions runs of the commit (newest first); a required workflow is judged by
+ * its latest run from that exact file, for that exact commit.
  */
-export function judgeChecks(runs, statuses) {
+export function judgeChecks(runs, statuses, workflowRuns = [], sha = null) {
   const pending = [];
   const failed = [];
   for (const r of runs) {
@@ -88,6 +95,15 @@ export function judgeChecks(runs, statuses) {
   }
   const missing = [];
   for (const req of REQUIRED) {
+    if (req.kind === 'workflow') {
+      const latest = workflowRuns.find((w) => w.path === req.path
+        && CI_EVENTS.has(w.event)
+        && (sha === null || w.head_sha === sha));
+      if (!latest) missing.push(req.name);
+      else if (latest.status !== 'completed') pending.push(req.name);
+      else if (latest.conclusion !== 'success') failed.push(`${req.name} (${latest.conclusion})`);
+      continue;
+    }
     const ok = req.kind === 'check'
       ? runs.some((r) => r.name === req.name && r.app?.slug === req.app && r.status === 'completed' && r.conclusion === 'success')
       : statuses.find((st) => st.context === req.name && (st.creator?.login ?? null) === req.creator)?.state === 'success';
@@ -133,7 +149,9 @@ async function codeqlBlockers(number, sha) {
 export async function checkState(sha) {
   const runs = await all(`/repos/${REPO}/commits/${sha}/check-runs?filter=all`);
   const statuses = await all(`/repos/${REPO}/commits/${sha}/statuses`);
-  return judgeChecks(runs, statuses);
+  const ci = REQUIRED.find((r) => r.kind === 'workflow');
+  const workflowRuns = await all(`/repos/${REPO}/actions/workflows/${ci.path.split('/').pop()}/runs?head_sha=${sha}`);
+  return judgeChecks(runs, statuses, workflowRuns, sha);
 }
 
 async function unresolvedThreads(number) {

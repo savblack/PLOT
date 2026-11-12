@@ -35,9 +35,12 @@ const ALWAYS_HUMAN = [
   [/(^|\/)(AGENTS|CLAUDE|GROK-HANDOFF)\.md$/i, 'agent instructions'],
   [/^\.(claude|agents|cursor)\//, 'agent configuration'],
   [/^skills-lock\.json$/, 'agent configuration'],
-  // Shell that runs with repo secrets, and CircleCI, which runs arbitrary code.
+  // Shell that runs with repo secrets, and the CI workflow both merge flows
+  // trust: even a "safe" line there (continue-on-error) could make it pass
+  // without checking anything.
   [/^\.github\/scripts\//, 'a script workflows run with secrets'],
-  [/^\.circleci\//, 'the CircleCI pipeline'],
+  [/^\.github\/workflows\/ci\.yml$/, 'the CI pipeline that gates merges'],
+  [/^\.github\/workflows\/dependabot-automerge\.yml$/, 'the Dependabot auto-merge workflow'],
   // Security-relevant code whose names the keyword rules above do not catch.
   [/(security|serviceKey|serviceBearer|supabaseAdmin|actingUser|internalWebhook|webhook|export-user|csp|_middleware|_lib\/)/i, 'security, service access or member data export'],
 ];
