@@ -816,7 +816,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
               >
                 <View style={{ flex: 1 }}>
                   <Text style={styles.lsName} numberOfLines={1}>{list.name}</Text>
-                  <Text style={styles.lsCount}>{(list.items || []).length} items</Text>
+                  <Text style={styles.lsCount}>{MEDIA.titleCount((list.items || []).length)}</Text>
                 </View>
                 <View style={[styles.lsCheck, checked && styles.lsCheckOn]}>
                   {checked && <IconCheck color="#fff" />}

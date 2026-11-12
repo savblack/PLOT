@@ -1,9 +1,11 @@
 // Shared copy for the lists Plot curates (the card in Home's "plot's Picks").
 // Used by the web app; mobile reads the same module when it ships the card.
+import { MEDIA } from './media.js';
+
 export const CURATED_LISTS = Object.freeze({
   cardBadge: 'plot list',
   cardMeta: (count, source) => `${count} titles · ${source}`,
-  titleCount: count => `${count} ${count === 1 ? 'title' : 'titles'}`,
+  titleCount: MEDIA.titleCount,
   source: name => `Source: ${name}`,
   viewSource: 'View the original list',
   save: 'Save to my lists',

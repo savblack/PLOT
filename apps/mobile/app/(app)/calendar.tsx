@@ -8,9 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft, IconChevronRight } from '../../components/icons';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
-import ScreenHeaderBar from '../../components/ScreenHeaderBar';
-import HeaderRow, { SCREEN_HEADER_H } from '../../components/HeaderRow';
-import Segmented from '../../components/Segmented';
+import ScreenHeaderBar, { SCREEN_HEADER_H } from '../../components/ScreenHeaderBar';
+import GroupedFilterMenu from '../../components/GroupedFilterMenu';
+import { MOBILE_CONTROLS } from '@plot/core/copy/mobileControls.js';
+import SectionTitle from '../../components/SectionTitle';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -150,9 +151,8 @@ function DayPanel({ events, label, ds }: { events: CalendarEvent[]; label: strin
 }
 
 // ── View switch ───────────────────────────────────────────────────────
-/* The Agenda / Week / Month switch. Web has no such switch on a phone (its
-   Calendar is the stream only), so this borrows the look of web's own
-   segmented control, .cal-scope: see components/Segmented.tsx. */
+/* The Agenda / Week / Month choice, in the title bar's filter menu. Web has
+   no such switch on a phone (its Calendar is the stream only). */
 const VIEW_OPTIONS: readonly { value: CalView; label: string }[] = [
   { value: 'agenda', label: 'Agenda' },
   { value: 'week', label: 'Week' },
@@ -265,6 +265,20 @@ export default function CalendarScreen() {
         contentContainerStyle={{ paddingTop: HEADER_H + 8, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
       >
+
+        {/* Week and Month open with the period they show, and arrows to move
+            it, laid out like History's month card heading. */}
+        {view !== 'agenda' && (
+          <View style={styles.periodHead}>
+            <SectionTitle style={styles.periodTitle} accessibilityRole="header" numberOfLines={1}>{navLabel}</SectionTitle>
+            <TouchableOpacity onPress={prevPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Previous period" accessibilityRole="button">
+              <IconChevronLeft size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={nextPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Next period" accessibilityRole="button">
+              <IconChevronRight size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* ════════ MONTH VIEW ════════ */}
         {view === 'month' && (
@@ -411,24 +425,23 @@ export default function CalendarScreen() {
         tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
       >
-        <ScreenHeaderBar title="Calendar" />
-
-        {/* Row 2: the view switch, and the period arrows for Week and Month */}
-        <HeaderRow
-          lead={
-          <Segmented options={VIEW_OPTIONS} value={view} onChange={switchView} />
+        {/* One title bar, as on every page. The view choice sits in the
+            filter menu, where Home and My Lists keep theirs. */}
+        <ScreenHeaderBar
+          title="Calendar"
+          rightExtra={
+            <GroupedFilterMenu
+              accessibilityLabel={MOBILE_CONTROLS.calendarView}
+              groups={[{
+                heading: 'View',
+                mode: 'single' as const,
+                options: VIEW_OPTIONS.map(o => ({ id: o.value, label: o.label })),
+                value: [view],
+                defaultValue: ['agenda'],
+                onChange: ([next]: string[]) => { if (next) switchView(next as CalView); },
+              }]}
+            />
           }
-          actions={view !== 'agenda' ? (
-            <View style={styles.monthNav}>
-              <TouchableOpacity onPress={prevPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Previous period" accessibilityRole="button">
-                <IconChevronLeft size={16} color={colors.textMuted} />
-              </TouchableOpacity>
-              <Text style={styles.monthNavLabel} numberOfLines={1}>{navLabel}</Text>
-              <TouchableOpacity onPress={nextPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Next period" accessibilityRole="button">
-                <IconChevronRight size={16} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-          ) : null}
         />
       </BlurView>
     </View>
@@ -446,18 +459,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  monthNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  navBtn: { width: 26, height: 32, alignItems: 'center', justifyContent: 'center' },
-  monthNavLabel: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    minWidth: 58,
-    textAlign: 'center',
-  },
+  periodHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.xl, marginBottom: spacing.md },
+  periodTitle: { flex: 1, minWidth: 0 },
+  navBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
 
   // Month grid
   gridRow: {

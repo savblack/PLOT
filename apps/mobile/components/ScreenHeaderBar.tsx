@@ -13,6 +13,10 @@ import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 // Search sits on the left, where the menu button used to be: the menu is now
 // the last button in the tab bar (app/(app)/_layout.tsx), on every screen. Screens keep their own BlurView/fixedHeader wrapper
 // (heights and extra content like tabs vary) and render just this row inside it.
+/** The title bar's height below the status bar. Every screen with a fixed
+ *  header is this one row, so the pages line up. */
+export const SCREEN_HEADER_H = 56;
+
 // The wordmark's font size on Home: a little larger than a screen title, so
 // the logo reads at the same weight as the words it replaces.
 const LOGO_SIZE = 28;
