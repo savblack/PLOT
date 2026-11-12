@@ -1,3 +1,4 @@
+import BackBar from '../../components/BackBar';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { TextInput } from '../../components/TextInput';
@@ -208,20 +209,7 @@ export default function YourPeopleScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm }}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-          style={{ padding: 4 }}
-        >
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-            <Path d="M15 18l-6-6 6-6" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
-        </TouchableOpacity>
-        <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary }}>{P.page.title}</Text>
-      </View>
+      <BackBar title={P.page.title} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}

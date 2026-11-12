@@ -4,9 +4,9 @@
  * can_view_watchlist in the database; the choices and people come from
  * @plot/core/watchlistVisibility.js, shared with web.
  */
+import BackBar from '../../components/BackBar';
 import { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -23,7 +23,6 @@ export default function WatchlistVisibilityScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { userId, profile } = useAppData();
   const isPublic = !!profile?.is_public;
   const { visibility, loaded, setVisibility } = useWatchlistVisibility(userId, isPublic);
@@ -31,14 +30,7 @@ export default function WatchlistVisibilityScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.backBtn} accessibilityLabel="Go back" accessibilityRole="button">
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M15 18l-6-6 6-6" />
-          </Svg>
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>{T.heading}</Text>
-      </View>
+      <BackBar title={T.heading} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -88,9 +80,6 @@ export default function WatchlistVisibilityScreen() {
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm },
-  backBtn: { padding: 4 },
-  topBarTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
   group: { marginTop: spacing.lg },
   heading: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary, marginBottom: spacing.sm },
   option: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, minHeight: 44, paddingVertical: spacing.sm },

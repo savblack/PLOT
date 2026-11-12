@@ -10,7 +10,8 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 
-export default function BackBar({ title, onBack }: { title: string; onBack?: () => void }) {
+/** `title` is optional: some screens carry their own large title under the bar. */
+export default function BackBar({ title, onBack }: { title?: string; onBack?: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function BackBar({ title, onBack }: { title: string; onBack?: () 
           <Path d="M15 18l-6-6 6-6" />
         </Svg>
       </TouchableOpacity>
-      <Text style={styles.title} accessibilityRole="header">{title}</Text>
+      {title ? <Text style={styles.title} accessibilityRole="header">{title}</Text> : null}
     </View>
   );
 }

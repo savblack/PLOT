@@ -2,11 +2,11 @@
  * Follow requests — /(app)/requests (mirrors web RequestsView).
  * Incoming requests to follow a private profile; approve or decline each.
  */
+import BackBar from '../../components/BackBar';
 import { useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -23,7 +23,6 @@ export default function RequestsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { userId } = useAppData();
   const { requests, loading, approve, decline } = useFollowRequests(userId);
   // A follow request is a surface Guideline 1.2 names explicitly: it is how an
@@ -32,14 +31,7 @@ export default function RequestsScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.backBtn} accessibilityLabel="Go back" accessibilityRole="button">
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M15 18l-6-6 6-6" />
-          </Svg>
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>Follow requests</Text>
-      </View>
+      <BackBar title="Follow requests" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -102,9 +94,6 @@ function RequestRow({
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm },
-  backBtn: { padding: 4 },
-  topBarTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
   intro: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 21, marginVertical: spacing.lg },
   empty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 22, paddingVertical: spacing.xxl },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },

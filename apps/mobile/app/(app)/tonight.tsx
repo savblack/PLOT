@@ -7,6 +7,7 @@
  * pop-up over blurred placeholder picks, and Upgrade goes to the in-app
  * Premium preview (Settings), never an external purchase link.
  */
+import BackBar from '../../components/BackBar';
 import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Animated, Easing, AccessibilityInfo, Switch,
@@ -552,11 +553,7 @@ export default function TonightScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.backBtn} accessibilityLabel="Go back" accessibilityRole="button">
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M15 18l-6-6 6-6" /></Svg>
-        </TouchableOpacity>
-      </View>
+      <BackBar />
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}>
         <Text style={styles.pageTitle}>{titleForView('tonight')}</Text>
@@ -620,8 +617,6 @@ export default function TonightScreen() {
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  backBtn: { padding: 4 },
   pageTitle: { fontFamily: fontFamily.display, fontSize: fontSize.hero, color: colors.textPrimary, marginBottom: spacing.lg },
 
   qTitle: { fontFamily: fontFamily.display, fontSize: 30, lineHeight: 33, color: colors.textPrimary },
