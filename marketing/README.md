@@ -39,11 +39,18 @@ week's shipped copy. That loop is gone: no workflow, no admin control, no
 A replacement eval loop is planned and not built. A rule changes only when
 someone edits those files.
 
-The production worker is the **Grok CLI** on this Mac. `marketing-weekly-batch.yml`
-runs on the self-hosted runner `plot-mac` and passes `--copy-runner=grok` when
-`grok` is on `PATH`. The job uses the login already stored for this user and
-does not set an API key. If `grok` is missing, that run installs Claude and
-passes `--copy-runner=claude`. A local `pnpm run weekly` uses Grok when `grok`
+The production worker is the **Grok CLI**. Since 2026-11-12
+`marketing-weekly-batch.yml` runs on a GitHub-hosted Mac (the copy worker needs
+macOS `sandbox-exec`), installs Grok, and passes `--copy-runner=grok`. It signs
+in with a Grok login made for GitHub alone, carried from week to week as an
+encrypted artifact because Grok replaces its refresh token on every refresh
+(`GROK_AUTH_PASSPHRASE`; `GROK_AUTH_JSON` seeds the first run). No API key is
+set. The uptime-watch Worker starts it at 5:30am Monday Sydney. If that login
+stops working, sign in again with
+`HOME=~/.grok-github ~/.grok/bin/grok login --device-auth`, store
+`~/.grok-github/.grok/auth.json` as `GROK_AUTH_JSON`, delete the newest
+`grok-auth` artifact, and delete the local copy. Run the workflow with
+`writer_check` to test the login without planning a week. A local `pnpm run weekly` uses Grok when `grok`
 is on `PATH`, and Codex otherwise. Codex and Claude remain available for a
 manual run.
 
@@ -93,7 +100,7 @@ was deleted reaches the database only because that run goes and asks.
   Linear article cards are off.
 - **Social posts:** Buffer (`https://publish.buffer.com`)
 - **Primary automation layer:** GitHub Actions
-- **Primary copy worker:** Grok CLI on this Mac. Claude only if `grok` is not on PATH. Codex remains available for a manual run.
+- **Primary copy worker:** Grok CLI on a GitHub-hosted Mac. Claude only if `grok` is not on PATH. Codex remains available for a manual run.
 - **Fallback/debug only:** local commands from `marketing/`
 - The old `admin.theplot.tv` desk is retired: `docs/ops/retire-admin-review.md`
 
@@ -119,7 +126,7 @@ Notes:
 - `pnpm run reconcile` reads Buffer back. It never writes to Buffer.
 - A local `pnpm run weekly` uses Grok when `grok` is on PATH, otherwise Codex.
   Pass `--copy-runner=claude` or `--copy-runner=codex` to force one. Production
-  on this Mac uses the same Grok default.
+  (a GitHub-hosted Mac) uses the same Grok default.
 - `--copy-command='...'` is still available for fallback/debug use.
 
 ## Review and publish
@@ -323,7 +330,7 @@ is no longer a co-equal operating path. See
 ## Copy contract
 
 The copy contract is model-agnostic. The production runner is the Grok CLI on
-this Mac. A local run uses Grok when `grok` is on PATH, and Codex otherwise:
+a GitHub-hosted Mac. A local run uses Grok when `grok` is on PATH, and Codex otherwise:
 
 - `marketing/copy/pull.mjs` writes one brief per pending post
 - the worker writes one `<post_id>.copy.json` response per brief
@@ -352,7 +359,7 @@ and `marketing-notion-sync` on copy edited from a Notion comment.
 3. The admin desk is gone. Do not set `ADMIN_PASSWORD` / `ADMIN_TOKEN` for a
    review UI. See `docs/ops/retire-admin-review.md` if an old secret is still
    hanging around to unset.
-4. The weekly job uses the Grok CLI already signed in on this Mac (`~/.grok`).
+4. The weekly job installs the Grok CLI on a GitHub-hosted Mac and signs in with its own carried login (see above).
    Claude is installed on the runner only for a week where `grok` is not on PATH.
 5. Brevo contact sync (optional): set `BREVO_API_KEY`, run
    `DRY_RUN=1 node --env-file=.env marketing/setup/brevo-sync.mjs` first, then

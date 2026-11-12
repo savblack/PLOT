@@ -45,7 +45,7 @@ workers_dev = true
 # the second entry exactly: it is how a firing knows which watch it is.
 # Cloudflare cron fires on time, unlike GitHub's schedule.
 [triggers]
-crons = ["*/5 * * * *", "23 * * * *"]
+crons = ["*/5 * * * *", "23 * * * *", "30 18,19 * * SUN"]
 
 # Last known state, so an outage sends one email rather than one per run.
 # Namespace "uptime-watch-state", created 2026-11-11.
@@ -119,6 +119,13 @@ CF_ACCOUNT_ID = "6143964fcde2d7c381f189ae2645e563"
 PAGES_PROJECT = "plot"
 ROLLBACK_WINDOW_MINUTES = "30"
 ROLLBACK_MAX_PER_DAY = "3"
+
+# Weekly marketing batch (src/weeklyBatch.js). The third cron above fires at
+# 18:30 and 19:30 UTC on Sunday; the one that is 5:30am Monday in Sydney
+# dispatches this workflow with GITHUB_DISPATCH_TOKEN. Must match that cron
+# exactly. Empty WEEKLY_BATCH_WORKFLOW turns it off.
+WEEKLY_BATCH_CRON = "30 18,19 * * SUN"
+WEEKLY_BATCH_WORKFLOW = "marketing-weekly-batch.yml"
 
 # Same destination and sender as backup-heartbeat and whats-on-watch.
 ALERT_EMAIL = "sav.black@outlook.com"

@@ -9,9 +9,11 @@ on:
     # that hour so a scheduled run still begins at 5:30.
     # GitHub cron is UTC and does not follow Sydney daylight time.
     # This repo's scheduler has been starting the job several hours after the
-    # cron line. A LaunchAgent on this Mac dispatches the same workflow at
-    # 5:30am Monday Sydney. When that run has already succeeded, the later
-    # scheduled start exits without planning another week.
+    # cron line. The uptime-watch Worker (Cloudflare cron, on time) dispatches
+    # the same workflow at 5:30am Monday Sydney (src/weeklyBatch.js). When that
+    # run has already succeeded, the later scheduled start exits without
+    # planning another week. Until 2026-11-12 a LaunchAgent on Savannah's Mac
+    # did the dispatch and the job ran on that Mac.
     #
     # Posts stay 9:00am America/New_York. 5:30am Monday Sydney is Sunday
     # afternoon in the US, so the seven-day plan starts the next US Monday
@@ -19,6 +21,11 @@ on:
     # 9:00am Eastern skips that Monday's post.
     - cron: '30 18 * * 0'
   workflow_dispatch:
+    inputs:
+      writer_check:
+        description: 'Only check that Grok can sign in and answer (plans nothing, touches no Buffer)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -30,10 +37,17 @@ concurrency:
 
 jobs:
   batch:
-    # This Mac, running as savannahblack. The copy worker needs sandbox-exec,
-    # and the Grok login lives in this user's ~/.grok. A GitHub-hosted runner
-    # cannot see that login. The macOS label keeps a Linux runner off this job.
-    runs-on: [self-hosted, macOS]
+    # A GitHub-hosted Mac: the copy worker needs macOS sandbox-exec
+    # (marketing/lib/cli-runner.mjs). macOS runners are free on a public repo.
+    #
+    # Grok writes the copy with its own login, separate from Savannah's Mac
+    # (created 2026-11-12 with `grok login --device-auth`). Grok replaces the
+    # refresh token every time it refreshes, so each run restores the newest
+    # saved login and saves the one Grok leaves behind for next week: an
+    # artifact encrypted with GROK_AUTH_PASSPHRASE, the same pattern as the
+    # scrubbed database snapshot. GROK_AUTH_JSON seeds the first run only.
+    # Never use this login anywhere else: a second user would rotate it away.
+    runs-on: macos-latest
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -48,6 +62,7 @@ jobs:
       # this Mac. Only the UTC cron bails out after a success in the last five
       # days, which is how the late GitHub start avoids booking the week twice.
       - name: Skip a scheduled rerun after this week already succeeded
+        if: inputs.writer_check != true
         id: week
         env:
           GH_TOKEN: ${{ github.token }}
@@ -122,19 +137,55 @@ jobs:
           EOF
 
       - name: Install dependencies
-        if: steps.week.outputs.skip != 'true'
+        if: steps.week.outputs.skip != 'true' && inputs.writer_check != true
         run: pnpm install --frozen-lockfile
 
-      # The runner's own PATH does not include ~/.grok/bin. GITHUB_PATH applies
-      # to the following steps. Do not reinstall the CLI over the logged-in copy.
-      - name: Put the logged-in Grok CLI on PATH
+      - name: Install the Grok CLI
         if: steps.week.outputs.skip != 'true'
         run: |
+          curl -fsSL https://x.ai/cli/install.sh | bash
           echo "$HOME/.grok/bin" >> "$GITHUB_PATH"
-          echo "HOME=$HOME"
+
+      # Newest saved login from an earlier run, else the seed secret.
+      - name: Restore the Grok login
+        id: grok_auth
+        if: steps.week.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          GROK_AUTH_PASSPHRASE: ${{ secrets.GROK_AUTH_PASSPHRASE }}
+          GROK_AUTH_JSON: ${{ secrets.GROK_AUTH_JSON }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$HOME/.grok"
+          id=$(gh api "repos/$REPO/actions/artifacts?name=grok-auth&per_page=1" --jq '.artifacts[0].id // empty')
+          if [ -n "$id" ]; then
+            gh api "repos/$REPO/actions/artifacts/$id/zip" > "$RUNNER_TEMP/grok-auth.zip"
+            unzip -q -o "$RUNNER_TEMP/grok-auth.zip" -d "$RUNNER_TEMP/grok-auth"
+            gpg --batch --quiet --decrypt --pinentry-mode loopback --passphrase-fd 0 \
+              -o "$HOME/.grok/auth.json" "$RUNNER_TEMP/grok-auth/auth.json.gpg" <<< "$GROK_AUTH_PASSPHRASE"
+            echo "Restored the login saved as artifact $id."
+          elif [ -n "$GROK_AUTH_JSON" ]; then
+            printf '%s' "$GROK_AUTH_JSON" > "$HOME/.grok/auth.json"
+            echo "No saved login yet. Seeded from GROK_AUTH_JSON."
+          else
+            echo "::error::No Grok login: neither a saved artifact nor GROK_AUTH_JSON."
+            exit 1
+          fi
+          rm -rf "$RUNNER_TEMP/grok-auth" "$RUNNER_TEMP/grok-auth.zip"
+          echo "restored=true" >> "$GITHUB_OUTPUT"
+
+      - name: Check that Grok answers
+        if: steps.week.outputs.skip != 'true'
+        working-directory: ${{ runner.temp }}
+        run: |
+          reply=$(grok -p "Reply with the single word ok." 2>&1 | tail -1)
+          echo "Grok said: $reply"
+          case "$reply" in *ok*|*Ok*|*OK*) ;; *) echo "::error::Grok did not answer as expected."; exit 1;; esac
 
       - name: Install a fallback writer when Grok is missing
-        if: steps.week.outputs.skip != 'true'
+        if: steps.week.outputs.skip != 'true' && inputs.writer_check != true
         run: |
           if command -v grok >/dev/null 2>&1; then
             echo "Using $(command -v grok)"
@@ -145,11 +196,11 @@ jobs:
           fi
 
       - name: Install Playwright browser
-        if: steps.week.outputs.skip != 'true'
+        if: steps.week.outputs.skip != 'true' && inputs.writer_check != true
         run: npx playwright install --with-deps chromium
 
       - name: Generate the week
-        if: steps.week.outputs.skip != 'true'
+        if: steps.week.outputs.skip != 'true' && inputs.writer_check != true
         run: |
           if command -v grok >/dev/null 2>&1; then
             node marketing/scripts/automation.mjs weekly --copy-runner=grok
@@ -175,11 +226,33 @@ jobs:
           # Repo variable; unset means draft (the safe default in schedule.mjs).
           BUFFER_PUSH_AS_DRAFT: ${{ vars.BUFFER_PUSH_AS_DRAFT }}
 
+      # Grok has replaced the refresh token by now, so the copy restored above
+      # no longer works. Save the current one for next week, even on failure.
+      - name: Save the Grok login for next week
+        if: always() && steps.grok_auth.outputs.restored == 'true'
+        env:
+          GROK_AUTH_PASSPHRASE: ${{ secrets.GROK_AUTH_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/grok-auth-out"
+          gpg --batch --yes --symmetric --cipher-algo AES256 --pinentry-mode loopback --passphrase-fd 0 \
+            -o "$RUNNER_TEMP/grok-auth-out/auth.json.gpg" "$HOME/.grok/auth.json" <<< "$GROK_AUTH_PASSPHRASE"
+          rm -f "$HOME/.grok/auth.json"
+      - name: Upload the saved Grok login
+        if: always() && steps.grok_auth.outputs.restored == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: grok-auth
+          path: ${{ runner.temp }}/grok-auth-out/auth.json.gpg
+          retention-days: 90
+          if-no-files-found: error
+
       # The runner deletes marketing/copy/jobs when the job ends. Keep the
       # briefs and the writer's JSON so another pass can be checked against the
       # same week without planning or pushing Buffer again.
       - name: Keep this week's briefs
-        if: always() && steps.week.outputs.skip != 'true'
+        if: always() && steps.week.outputs.skip != 'true' && inputs.writer_check != true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: weekly-copy-jobs
