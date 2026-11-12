@@ -40,11 +40,16 @@
  * delete it. Each has its own stored state and its own email wording, so a
  * Staging fault never reads as "the app is down", a production failure is
  * never mistaken for a Staging one, and an app outage never hides either.
+ *
+ * The same hourly firing starts GitHub's "pg_cron health (hourly)" workflow,
+ * whose own schedule GitHub runs only a few times a day, and alarms if no run
+ * of it has finished recently (dbChecks.js). It has its own state and emails.
  */
 import { decide, probe } from '../../whats-on-watch/src/index.js';
 import { productionReadWrite, signedInReadWrite, trimSlashes } from './signin.js';
+import { dbChecksEmail, dispatchToken, readDbChecks, startDbChecks } from './dbChecks.js';
 
-const STATE_KEYS = { uptime: 'state', signin: 'signin-state', signinProd: 'signin-prod-state' };
+const STATE_KEYS = { uptime: 'state', signin: 'signin-state', signinProd: 'signin-prod-state', dbChecks: 'dbchecks-state' };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** True when Cloudflare turned the checker away rather than the site failing. */
@@ -279,6 +284,24 @@ export function signinProdChecksFor(env, deps = {}) {
 }
 
 /**
+ * The database-check freshness check (dbChecks.js). Empty when
+ * DB_CHECKS_WORKFLOW is unset; "not configured" without GITHUB_TOKEN.
+ * `started` is this firing's start request. Exported for tests.
+ */
+export function dbChecksChecksFor(env, started, deps = {}) {
+  if (!env.DB_CHECKS_WORKFLOW) return [];
+  const label = 'hourly database checks';
+  if (!dispatchToken(env) || !env.GITHUB_REPO) {
+    return [{ name: 'dbchecks', label, read: async () => ({ ok: false, blocked: true, reason: 'not configured: GITHUB_DISPATCH_TOKEN or GITHUB_REPO unset' }) }];
+  }
+  return [{
+    name: 'dbchecks',
+    label,
+    read: guarded(() => readDbChecks(env, { started, now: deps.now?.() ?? Date.now(), http: deps.github || fetch })),
+  }];
+}
+
+/**
  * Run every check (each retried by `probe`) and fold them into one verdict
  * for `decide`: broken if any check is broken, blocked only if nothing was
  * broken and something could not be seen, otherwise healthy.
@@ -305,6 +328,7 @@ const escape = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': 
 /** Subject and body for each alert. Exported for tests (copy rules: no em dashes). */
 export function emailContent(email, { now, watch = 'uptime' }) {
   const reason = escape(email.reason || '');
+  if (watch === 'dbchecks') return dbChecksEmail(email, { now, reason, duration });
   if (watch === 'signin') {
     const prod = Array.isArray(email.checks) && email.checks.includes('signin-prod');
     return signinEmail(email, { now, reason, prod });
@@ -487,6 +511,13 @@ const UPTIME_GROUPS = [
  */
 export async function run(env, watch = 'uptime', deps = {}) {
   const now = Date.now();
+  if (watch === 'dbchecks') {
+    const started = env.DB_CHECKS_WORKFLOW && dispatchToken(env) && env.GITHUB_REPO
+      ? await startDbChecks(env, deps.github || fetch)
+      : null;
+    const result = await runGroup(env, watch, { key: STATE_KEYS.dbChecks, names: ['dbchecks'] }, dbChecksChecksFor(env, started, deps), now, deps);
+    return { ...result, started };
+  }
   if (watch === 'signin') {
     // Staging and production apart, for the same reason as the uptime groups.
     const [staging, production] = await Promise.all([
@@ -536,18 +567,25 @@ export function watchFor(cron, env) {
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(
-      run(env, watchFor(event?.cron, env)).then((r) => {
-        // Logged every run so `wrangler tail` shows the watcher is alive.
-        console.log('uptime watch:', JSON.stringify(r));
-      }),
-    );
+    const watch = watchFor(event?.cron, env);
+    // The hourly firing also starts and watches the database checks, as its
+    // own watch so neither can hide the other's alarm.
+    const watches = watch === 'signin' ? ['signin', 'dbchecks'] : [watch];
+    for (const w of watches) {
+      ctx.waitUntil(
+        run(env, w).then((r) => {
+          // Logged every run so `wrangler tail` shows the watcher is alive.
+          console.log(`uptime watch (${w}):`, JSON.stringify(r));
+        }),
+      );
+    }
   },
 
   /**
    * Manual endpoint, gated by WATCH_TOKEN (404 without it). GET runs every
    * uptime check now; ?check=signin runs the signed-in checks (Staging and
-   * production) instead;
+   * production) instead; ?check=dbchecks starts the database checks and
+   * reports whether they have run recently;
    * ?test-email=1 only sends a test email.
    */
   async fetch(request, env) {
@@ -556,7 +594,8 @@ export default {
       return new Response('Not found', { status: 404 });
     }
     const url = new URL(request.url);
-    const watch = url.searchParams.get('check') === 'signin' ? 'signin' : 'uptime';
+    const check = url.searchParams.get('check');
+    const watch = check === 'signin' || check === 'dbchecks' ? check : 'uptime';
     if (url.searchParams.get('test-email') === '1') {
       return Response.json(await sendEmail(env, { kind: 'test' }, Date.now(), watch));
     }
