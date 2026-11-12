@@ -56,7 +56,9 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-          cache: pnpm
+          # writer_check skips the install, and setup-node's post step fails
+          # the job when the pnpm store it was told to cache does not exist.
+          cache: ${{ inputs.writer_check != true && 'pnpm' || '' }}
 
       # workflow_dispatch always continues, including the 5:30am dispatch from
       # this Mac. Only the UTC cron bails out after a success in the last five
