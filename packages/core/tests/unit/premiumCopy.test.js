@@ -122,7 +122,7 @@ test('live calendar subscription is a Premium benefit that exists', () => {
 
 test('free stays free and does not inherit the premium trial', () => {
   assert.equal(PLANS_PAGE.free.price, '$0');
-  assert.equal(PLANS_PAGE.free.noCard, 'No card needed');
+  assert.equal(PLANS_PAGE.free.planNote, 'Free plan, always');
   const free = PLANS_PAGE.faqs.find(item => item.q === 'What happens to Free?');
   assert.match(free.a, /stay available/);
 });

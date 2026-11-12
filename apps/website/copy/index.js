@@ -15,7 +15,7 @@ export const HERO = {
   headline: 'Always know what to watch.',
   sub: 'All the movies and shows you’ve seen, saved and are counting down to. Finally in one place. That’s Plot.',
   cta: 'Start tracking',
-  note: 'Free forever. No credit card required.',
+  note: 'Free to start. Your watchlist starts here.',
   // "Up next": a fan of three posters with a notification over them. Titles
   // and dates come from /api/discover at runtime; these are the patterns.
   upNext: {
