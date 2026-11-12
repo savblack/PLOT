@@ -2,96 +2,77 @@ name: Dependabot auto-merge
 
 # Self-merges green Dependabot PRs for minor/patch updates, holds majors for review.
 #
-# Why `status` and not `on: pull_request`?
-#   - GitHub gives Dependabot-triggered `pull_request` runs a read-only token,
-#     so they can't merge. CircleCI reports a commit status after running the
-#     full suite; this workflow runs in the base-repo context with a writable
-#     token and acts only on that successful status.
-#   - This repo is private on GitHub Free -> no branch protection -> native
-#     `gh pr merge --auto` won't engage. So we do the merge ourselves, gated on
-#     CircleCI having already passed.
+# Why `workflow_run` and not `on: pull_request`?
+#   - The CI workflow (.github/workflows/ci.yml) runs the full suite on the
+#     pull request. `workflow_run` fires once it finishes and runs this file
+#     from main, in the base-repo context with a writable token, so it can
+#     merge. The PR's own copy of this file is never what runs.
+#   - There is no branch protection on main, so native `gh pr merge --auto`
+#     won't engage. So we do the merge ourselves, gated on CI having passed.
+#   - Until 2026-11-12 CI was CircleCI and this listened for its commit status.
 #
 # Safety:
 #   - Acts only on PRs authored by dependabot[bot].
-#   - Merges only when CircleCI ITSELF reported `success`: the latest
-#     `ci/circleci: check` status posted by the CircleCI GitHub App
-#     (`circleci-app[bot]`). A status with that name from anyone else is
-#     ignored, so the PR waits for a human. See the check below.
+#   - Merges only when the latest run of the CI workflow FILE
+#     (.github/workflows/ci.yml, not merely something named "CI") on the exact
+#     head commit succeeded. See the check below.
 #   - Merges only minor/patch bumps; majors get labelled + commented, never merged.
 #   - DRY RUN by default. Set repo variable DEPENDABOT_AUTOMERGE=true to arm it.
 
 on:
-  status:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
 
 permissions:
   contents: write
   pull-requests: write
-  statuses: read
+  actions: read
 
 concurrency:
-  group: dependabot-automerge-${{ github.event.sha }}
+  group: dependabot-automerge-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: false
 
 jobs:
   automerge:
     runs-on: ubuntu-latest
-    # Pending and failed CircleCI updates create no runner. Neither the status
-    # name nor its sender is trusted: who posted it, and the PR's authorship,
-    # are checked from the API below.
+    # Failed runs and runs of other workflows that call themselves "CI" create
+    # no runner. Nothing in the event is trusted on its own: the run, its file
+    # and the PR's authorship are re-read from the API below.
     if: >
-      github.event.context == 'ci/circleci: check' &&
-      github.event.state == 'success'
+      github.event.workflow_run.path == '.github/workflows/ci.yml' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Resolve PR, classify bump, and merge or hold
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.sha }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           ARMED: ${{ vars.DEPENDABOT_AUTOMERGE }}
         run: |
           set -euo pipefail
 
-          # --- Confirm CircleCI itself reported success ---
-          # Any account with push access can post a commit status named
-          # `ci/circleci: check`, and this workflow fires on every one of them
-          # (2026-11-11 security review on #1555). So the event is only a
-          # wake-up call. Read the commit's statuses from the API and require
-          # that the LATEST `ci/circleci: check` posted by the CircleCI GitHub
-          # App is `success`.
-          #
-          # Why the app's bot account and not the status sender or target_url:
-          #   - CircleCI posts this status twice per run. The GitHub App posts it
-          #     as `circleci-app[bot]` (type Bot). The older OAuth integration
-          #     posts it as the person who set the project up (`savblack`, type
-          #     User), which is indistinguishable from that person posting it by
-          #     hand, so it cannot be trusted.
-          #   - Only the app itself can act as `circleci-app[bot]`; no user,
-          #     token or other workflow can post as it.
-          #   - `target_url` is free text anyone can set, so its host is checked
-          #     only as a second guard, never on its own.
-          # Statuses come back newest first, so `first(...)` is the latest one.
-          # A pending or failed latest run from the app means "not green yet":
-          # the PR is left alone, and the app's own success event (if it comes)
-          # triggers this workflow again.
-          CIRCLECI_STATE=$(gh api --paginate "repos/$GH_REPO/commits/$HEAD_SHA/statuses?per_page=100" \
-            --jq '.[] | select(.context == "ci/circleci: check" and .creator.login == "circleci-app[bot]" and .creator.type == "Bot") | "\(.state) \(.target_url // "")"')
-          CIRCLECI_STATE=${CIRCLECI_STATE%%$'\n'*}
-          CIRCLECI_RESULT=${CIRCLECI_STATE%% *}
-          CIRCLECI_URL=${CIRCLECI_STATE#* }
-          if [ "$CIRCLECI_RESULT" != "success" ]; then
-            echo "No success from the CircleCI GitHub App for '$HEAD_SHA' (latest: '${CIRCLECI_RESULT:-none}'). Not merging; left for human review."
+          # --- Confirm CI itself passed on this exact commit ---
+          # Read the CI workflow's runs for HEAD_SHA from the API (newest
+          # first) and require that the latest pull_request run of that file,
+          # from this repo, against main, succeeded. A pull_request run uses
+          # the workflow file of its BASE branch, so a second PR with this head
+          # and a decoy base whose ci.yml just exits 0 would also be green on
+          # this SHA: runs against any other base are ignored, and the PR
+          # merged below must be one this run belongs to. A re-run that
+          # failed, or a newer run still going, means "not green yet".
+          CI_RUN=$(gh api "repos/$GH_REPO/actions/workflows/ci.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=50" \
+            --jq "[.workflow_runs[] | select(.path == \".github/workflows/ci.yml\" and .head_repository.full_name == \"$GH_REPO\" and any(.pull_requests[]?; .base.ref == \"main\"))][0] // empty" || true)
+          CI_STATE=$(echo "${CI_RUN:-null}" | jq -r 'if . == null then "none" else "\(.status) \(.conclusion // "")" end')
+          if [ "$CI_STATE" != "completed success" ]; then
+            echo "Latest CI run against main for '$HEAD_SHA' is '$CI_STATE', not a success. Not merging; left for human review."
             exit 0
           fi
-          case "$CIRCLECI_URL" in
-            https://app.circleci.com/*|https://circleci.com/*) ;;
-            *)
-              echo "CircleCI app status points at '$CIRCLECI_URL', not circleci.com. Not merging; left for human review."
-              exit 0
-              ;;
-          esac
-          echo "CircleCI GitHub App reported success: $CIRCLECI_URL"
+          CI_PRS=$(echo "$CI_RUN" | jq -r '[.pull_requests[] | select(.base.ref == "main") | .number] | join(" ")')
+          echo "CI passed on $HEAD_SHA for PR(s) $CI_PRS."
 
-          # --- Find the open PR whose head commit CircleCI just passed ---
+          # --- Find the open PR whose head commit CI just passed ---
           PR_NUM=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/pulls" \
             --jq '[.[] | select(.state == "open")][0].number // empty')
           if [ -z "$PR_NUM" ]; then
@@ -99,17 +80,29 @@ jobs:
             exit 0
           fi
 
-          PR_JSON=$(gh pr view "$PR_NUM" --json title,body,author,url,labels,headRefOid)
+          case " $CI_PRS " in
+            *" $PR_NUM "*) ;;
+            *)
+              echo "PR #$PR_NUM is not one the passing CI run was for ($CI_PRS). Not merging; left for human review."
+              exit 0
+              ;;
+          esac
 
-          # CircleCI was verified on HEAD_SHA, so only that exact commit may be
+          PR_JSON=$(gh pr view "$PR_NUM" --json title,body,author,url,labels,headRefOid,baseRefName)
+          if [ "$(echo "$PR_JSON" | jq -r '.baseRefName')" != "main" ]; then
+            echo "PR #$PR_NUM does not target main. Not merging; left for human review."
+            exit 0
+          fi
+
+          # CI was verified on HEAD_SHA, so only that exact commit may be
           # merged. `commits/{sha}/pulls` also returns PRs that merely CONTAIN
-          # the commit, and a PR can gain commits after CircleCI reported, so
+          # the commit, and a PR can gain commits after CI reported, so
           # without this an old pass could approve a newer, untested head
           # (2026-11-11 Strix review on #1561). The merge below also passes
           # --match-head-commit, so a push between here and the merge fails it.
           PR_HEAD=$(echo "$PR_JSON" | jq -r '.headRefOid')
           if [ "$PR_HEAD" != "$HEAD_SHA" ]; then
-            echo "PR #$PR_NUM head is '$PR_HEAD', not the commit CircleCI passed ('$HEAD_SHA'). Not merging; left for human review."
+            echo "PR #$PR_NUM head is '$PR_HEAD', not the commit CI passed ('$HEAD_SHA'). Not merging; left for human review."
             exit 0
           fi
           AUTHOR=$(echo "$PR_JSON" | jq -r '.author.login')

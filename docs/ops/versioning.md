@@ -27,8 +27,9 @@ reverse. See the checklist in [app-store-listing.md](app-store-listing.md).
 
 [`.github/workflows/release-please.yml`](../../.github/workflows/release-please.yml)
 runs on every push to `main`. It uses `googleapis/release-please-action` and
-the manifest files above. The default `GITHUB_TOKEN` is enough. CircleCI is a
-separate GitHub App, so it still tests the release PR.
+the manifest files above. The default `GITHUB_TOKEN` is enough. The release PR is
+opened with that token, so it does not start the `CI` workflow; push a commit to
+it, or close and reopen it, if you want CI on it before merging.
 
 A commit counts only when it touches `apps/mobile`. `feat` bumps the minor.
 `fix` bumps the patch. `bump-minor-pre-major` is on, so before `1.0.0` a

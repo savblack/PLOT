@@ -22,6 +22,7 @@ permissions:
   issues: write
   checks: read
   statuses: read
+  actions: read # runs of the CI workflow for the head commit
   security-events: read # CodeQL analyses and open code-scanning alerts
 
 concurrency:
