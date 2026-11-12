@@ -39,5 +39,11 @@ No physical device is connected to this workspace, and the completed iOS product
 - iOS build 7 started on EAS: https://expo.dev/accounts/savblack/projects/plot/builds/64c7415a-f3d9-4ef0-881d-1de7cf54b4b5. Savannah approved sending it to TestFlight ("Yes, send it"). Build 7 finished 19:27 AEDT and uploaded: https://expo.dev/accounts/savblack/projects/plot/submissions/29efa1b7-1353-4d92-b7a3-1ec635330c7e. App Store Connect showed 1.4.0 (7) "Processing" at last check; the Plot team group has automatic distribution, so it should reach her without further setup.
 - Not yet confirmed: Google sign-in on her iPhone after the fix; Google sign-in on Android.
 
+## App icon change (requested 2026-11-12, same branch so it ships in the next build)
+- Default launcher icon is now the charcoal wordmark (`assets/icon.png`, Android `android-icon-foreground.png`; `android-icon-monochrome.png` regenerated as a white silhouette of it).
+- The old five-dot charcoal mark moved to the Premium picker as alternate `MarkCharcoal` (`assets/alternate-icons/MarkCharcoal*.png`, `app.json`, `lib/appIcons.ts`). The `WordmarkCharcoal` alternate is gone because it is now the default. The mobile app is not released, so no one has that alternate selected.
+- Checks: mobile typecheck passed; eslint on the two touched files shows the same 7 pre-existing warnings as the branch base, 0 errors; app.json parses.
+- Needs build 8 to appear on the phone. Not yet built.
+
 ## Latest pushed commit
 fad05b75e (pushed; branch matches origin). Checks above still stand; no code changed since.

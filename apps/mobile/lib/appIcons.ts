@@ -6,8 +6,8 @@ import type { ImageSourcePropType } from 'react-native';
 type IconOption = { name: string | null; label: string; image: ImageSourcePropType };
 
 export const APP_ICON_OPTIONS: readonly IconOption[] = [
-  { name: null, label: 'Charcoal icon', image: require('../assets/icon.png') },
-  { name: 'WordmarkCharcoal', label: 'Charcoal wordmark', image: require('../assets/alternate-icons/WordmarkCharcoal.png') },
+  { name: null, label: 'Charcoal wordmark', image: require('../assets/icon.png') },
+  { name: 'MarkCharcoal', label: 'Charcoal icon', image: require('../assets/alternate-icons/MarkCharcoal.png') },
   { name: 'MarkCream', label: 'Cream icon', image: require('../assets/alternate-icons/MarkCream.png') },
   { name: 'WordmarkCream', label: 'Cream wordmark', image: require('../assets/alternate-icons/WordmarkCream.png') },
   { name: 'MarkPink', label: 'Pink icon', image: require('../assets/alternate-icons/MarkPink.png') },
