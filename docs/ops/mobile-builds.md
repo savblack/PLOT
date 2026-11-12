@@ -16,6 +16,22 @@ credentials worked once already, on an SDK that is now one major behind.
 This doc is about getting it to run. The checks to run once it does are in
 [docs/qa/mobile-device-smoke.md](../qa/mobile-device-smoke.md).
 
+## Automatic store builds (since 2026-11-12)
+
+Every mobile release builds itself. When release-please merges a release PR
+and tags `mobile-vX.Y.Z`, `.github/workflows/release-please.yml` calls
+`.github/workflows/mobile-build.yml`, which runs
+`eas build --platform ios --profile production` on Expo's servers from that
+tag and waits for it. The run summary links the build page. A failed build
+opens an `incident` issue and emails; the next good build closes it. Run it by
+hand for any branch or tag from Actions ▸ "Mobile — iOS store build".
+
+It builds only. Submitting stays a manual step for now, because App Store
+Connect must have an open version matching `expo.version` first (see
+[app-store-listing.md](app-store-listing.md)). Needs the `EXPO_TOKEN` repo
+secret (an expo.dev access token for `savblack`); without it the job exits
+green and says so. About six releases a month, well inside EAS's free tier.
+
 ## Account status: enrolled, as an individual
 
 Confirmed 2026-09-11. Plot is enrolled in the Apple Developer Program on an
