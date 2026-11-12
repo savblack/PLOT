@@ -239,8 +239,11 @@ disagrees with the one EAS is incrementing.
   `EXPO_PUBLIC_SHOW_GOOGLE_LOGIN=true`. Both providers are enabled in production
   Supabase. The production build key reached Auth settings, and authorization
   requests redirected to `appleid.apple.com` and `accounts.google.com`.
-- These flags are embedded at build time. The existing iOS production build 5
-  predates the flag change; a new build is needed before users see the buttons.
+- These flags are embedded at build time. iOS production build 6
+  (`0e725475-cb9b-4ab6-a486-3161023f8ffe`) finished with both flags loaded;
+  Android production build 2 (`ead7b161-e097-4128-98e1-d7618a93e6bf`)
+  also finished. Neither build has been submitted. The older iOS build 5
+  predates the flag change.
 - An interactive Apple and Google sign-in on an iPhone, including the return to
   `plot://auth/callback`, remains to be verified before submission.
 

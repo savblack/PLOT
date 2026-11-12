@@ -1,28 +1,29 @@
 # Mobile Google and Apple sign-in
 
-Status: active
+Status: paused
 Owner: Jacob (mobile implementation), Hailey (signup flow)
 Branch: agent/2026-11-12-mobile-social-login
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-11-12-mobile-social-login
-Updated: 2026-11-12 15:06 AEDT
+Updated: 2026-11-12 15:30 AEDT
 
 ## Goal
 Enable Google and Apple login in the mobile release configuration and verify the flows.
 
 ## Completed and evidence
-- Existing mobile auth screen already implements Google system-browser OAuth, Apple native token login, button UI, callback handling, and launch flags (`apps/mobile/app/(auth)/index.tsx`, `callback.tsx`, `lib/launchFeatures.ts`). No auth source changes were necessary.
-- Production Supabase `/auth/v1/settings` reports both Apple and Google enabled. The EAS production publishable key successfully accessed settings. Read-only authorize requests for `plot://auth/callback` returned HTTP 302 to `appleid.apple.com` and `accounts.google.com`.
-- Set production EAS variables `EXPO_PUBLIC_SHOW_APPLE_LOGIN=true` and `EXPO_PUBLIC_SHOW_GOOGLE_LOGIN=true`; an `eas env:pull production` read-back confirmed both. Existing build 5 predates these flags.
-- Staging has Apple enabled but Google disabled; staging cannot establish Google sign-in success.
-- `pnpm --filter @plot/mobile run typecheck` passed. `pnpm run lint` passed with 171 existing warnings and no errors. `pnpm run check` passed.
-- Started `eas build --platform all --profile production --non-interactive --no-wait` without auto-submit. EAS loaded both flags. Android keystore was created in EAS. Android build ead7b161-e097-4128-98e1-d7618a93e6bf and iOS build 0e725475-cb9b-4ab6-a486-3161023f8ffe were queued; final verdict pending.
-- Updated `docs/ops/mobile-builds.md` with current configuration and verification gap.
+- The existing mobile auth screen implements Google system-browser OAuth, Apple native token login, callback handling, and both buttons (`apps/mobile/app/(auth)/index.tsx`, `callback.tsx`, `lib/launchFeatures.ts`). No auth source changes were needed.
+- Production Supabase Auth settings report both providers enabled. The EAS production publishable key worked. Read-only authorize requests with `plot://auth/callback` returned HTTP 302 to `appleid.apple.com` and `accounts.google.com`.
+- Set production EAS variables `EXPO_PUBLIC_SHOW_APPLE_LOGIN=true` and `EXPO_PUBLIC_SHOW_GOOGLE_LOGIN=true`; `eas env:pull production` read-back confirmed both. Staging has Apple enabled but Google disabled, so staging cannot verify Google sign-in.
+- iOS production build 6 finished successfully: https://expo.dev/accounts/savblack/projects/plot/builds/0e725475-cb9b-4ab6-a486-3161023f8ffe
+- Android production build 2 finished successfully: https://expo.dev/accounts/savblack/projects/plot/builds/ead7b161-e097-4128-98e1-d7618a93e6bf
+- Neither build was submitted. EAS loaded both flags for both builds. The builds prove compilation, not a completed provider callback.
+- `pnpm --filter @plot/mobile run typecheck`, `pnpm run lint` (171 existing warnings, 0 errors), and `pnpm run check` all passed. These checks ran locally under Node 25.7.0; CI uses Node 22. `git diff --check` passed.
+- `docs/ops/mobile-builds.md` records the current state.
 
 ## Next
-Collect final EAS iOS and Android build results. Then run Apple and Google login in a new build on a physical iPhone, confirming callback and session. Test Google on Android too. Do not submit or publish a build before the interactive sign-in check.
+Install iOS build 6 on a physical iPhone. Complete Apple and Google sign-in, including return to `plot://auth/callback` and an authenticated session. Test Google sign-in on Android too. Do not submit or publish either build before those checks.
 
-## Approvals
-Savannah explicitly authorized turning on both logins and verification in this chat. No submission or publication has been authorized. No live user records were changed.
+## Blockers and approvals
+No physical device is connected to this workspace, so interactive sign-in could not be completed. Savannah explicitly authorized enabling both logins and verification in this chat. No submission or publication was authorized. No live user records were changed.
 
 ## Latest pushed commit
-None yet; checkpoint pending after checks and build metadata.
+fb374c820 (initial checkpoint); final checkpoint pending.
