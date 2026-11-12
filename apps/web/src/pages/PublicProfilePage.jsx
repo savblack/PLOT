@@ -29,6 +29,7 @@ import UserList from '../components/UserList.jsx';
 import ProfileBadges from '../components/ProfileBadges.jsx';
 import ResponsiveDialog from '../components/ResponsiveDialog.jsx';
 import { useStableClose } from '../hooks/useDialogClose.js';
+import { safeImageSrc } from '../utils/safeImageSrc.js';
 import ListCover from '../components/ListCover.jsx';
 import { SaveButton, FavoriteButton } from '../components/TitleActions.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -374,7 +375,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
     >
       <div className="pp-edit-body">
         <div className="pp-photo">
-          {avatar ? <img className="pp-avatar" src={avatar} alt="" /> : <div className="pp-avatar">{initial}</div>}
+          {safeImageSrc(avatar) ? <img className="pp-avatar" src={safeImageSrc(avatar)} alt="" /> : <div className="pp-avatar">{initial}</div>}
           <button type="button" className="pp-photo-btn" onClick={() => fileRef.current?.click()} disabled={saving}>
             Change photo
           </button>

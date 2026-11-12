@@ -14,6 +14,7 @@ import { supabase } from '@plot/core/supabase.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { usePremium } from '../hooks/usePremium.js';
 import { useStableClose } from '../hooks/useDialogClose.js';
+import { safeImageSrc } from '../utils/safeImageSrc.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useCalendar } from '../hooks/useCalendar.js';
@@ -1011,7 +1012,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
           <div className="feedback-attachments">
             {images.map((img, i) => (
               <div key={i} className="feedback-attachment">
-                <img src={img.preview} alt="" />
+                <img src={safeImageSrc(img.preview)} alt="" />
                 <button
                   onClick={() => removeImage(i)}
                   aria-label="Remove image"
