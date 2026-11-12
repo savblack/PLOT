@@ -77,9 +77,11 @@ jobs:
           python3 - "$RUNNER_TEMP/build.json" >> "$GITHUB_STEP_SUMMARY" <<'EOF'
           import json, sys
           builds = json.load(open(sys.argv[1]))
+          # `eas build --json` lists builds without a project block, so the
+          # page URL is built from the id (account savblack, project plot).
           for b in builds:
-              url = f"https://expo.dev/accounts/{b['project']['ownerAccount']['name']}/projects/{b['project']['slug']}/builds/{b['id']}"
-              print(f"iOS {b.get('appVersion')} ({b.get('appBuildVersion')}): {b['status']} [build page]({url})")
+              url = f"https://expo.dev/accounts/savblack/projects/plot/builds/{b.get('id')}"
+              print(f"iOS {b.get('appVersion')} ({b.get('appBuildVersion')}): {b.get('status')} [build page]({url})")
           EOF
           cat "$GITHUB_STEP_SUMMARY"
 
