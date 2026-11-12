@@ -57,3 +57,10 @@ test('loadNewThisWeek returns an empty shelf when the read fails or throws', asy
   assert.deepEqual(await loadNewThisWeek({ fetchTrending: async () => ({ ok: false, data: null }) }), []);
   assert.deepEqual(await loadNewThisWeek({ fetchTrending: async () => { throw new Error('offline'); } }), []);
 });
+
+test('loadNewThisWeek keeps more titles when a caller asks for them', async () => {
+  const results = Array.from({ length: 20 }, (_, i) => movie(100 + i));
+  const fetchTrending = async () => ({ ok: true, data: { results } });
+  assert.equal((await loadNewThisWeek({ fetchTrending })).length, NEW_THIS_WEEK_COUNT);
+  assert.equal((await loadNewThisWeek({ count: 18, fetchTrending })).length, 18);
+});

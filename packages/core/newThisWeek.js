@@ -55,15 +55,17 @@ export function pickNewThisWeek(results, count = NEW_THIS_WEEK_COUNT) {
  * sign-in page.
  *
  * @param {object} [opts]
+ * @param {number} [opts.count] How many to keep. Web's shelf shows six;
+ *   mobile's scrolling wall takes more from the same single page.
  * @param {typeof fetchFromTMDBResolved} [opts.fetchTrending] Test seam.
  * @returns {Promise<NewThisWeekTitle[]>}
  */
-export async function loadNewThisWeek({ fetchTrending = fetchFromTMDBResolved } = {}) {
+export async function loadNewThisWeek({ count = NEW_THIS_WEEK_COUNT, fetchTrending = fetchFromTMDBResolved } = {}) {
   try {
     // No retries: this is decoration on a page that must stay fast, and a
     // failed read just leaves the tiles plain.
     const result = await fetchTrending('/trending/all/week', {}, { retryDelays: [] });
-    return result?.ok ? pickNewThisWeek(result.data?.results) : [];
+    return result?.ok ? pickNewThisWeek(result.data?.results, count) : [];
   } catch {
     return [];
   }
