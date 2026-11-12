@@ -2,6 +2,7 @@
 import { APP_NAV_ITEMS, isActiveView, sidebarNavItems } from '../navigation.js';
 import PlotLogo from './PlotLogo.jsx';
 import AccountMenu from './AccountMenu.jsx';
+import GoPremiumLink from './GoPremiumLink.jsx';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { IconBell, NAV_ICONS } from './navIcons.jsx';
@@ -134,6 +135,10 @@ export default function AppSidebar({
       <div className="app-sidebar-foot">
         {/* The profile row opens the account menu: theme, account links,
             Help build Plot and Sign out all live there (issue 1133). */}
+        {/* Go Premium: a pink chip for a Free member, just above the profile. */}
+        {profile?.username && showPremiumPill && (
+          <GoPremiumLink profile={profile} placement="side_nav" variant="chip" collapsed={collapsed} className="app-sidebar-item" labelClassName="app-sidebar-label" />
+        )}
         {profile?.username && (
           <AccountMenu
             profile={profile}

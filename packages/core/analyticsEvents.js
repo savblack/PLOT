@@ -102,6 +102,10 @@ export const EVENTS = Object.freeze({
   PREMIUM_PROMPT_SHOWN: 'premium_prompt_shown',
   PREMIUM_PROMPT_CLICKED: 'premium_prompt_clicked',
   PREMIUM_PROMPT_DISMISSED: 'premium_prompt_dismissed',
+  // The signed-in "Go Premium" link (core/goPremiumLink.js) was tapped.
+  // Properties: placement ('side_nav' | 'settings'), trial (eligible for the
+  // 7 days free; the side-nav chip never shows that text).
+  PREMIUM_LINK_CLICKED: 'premium_link_clicked',
   // The Tonight picker, Plot's "what should I watch" surface. Fired from
   // useTonightPicker via the onTonightPicker seam. A draw with result_count 0
   // is an empty result; a failed draw is load_failed (resource tonight_picks).

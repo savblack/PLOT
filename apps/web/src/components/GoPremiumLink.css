@@ -1,0 +1,49 @@
+/* The Go Premium link (GoPremiumLink.jsx). The Settings line is laid out by
+   settings-go-premium; the side-nav chip (go-premium-chip) is a pink pill
+   that sits just above the profile row. */
+.go-premium-link { color: var(--accent-text); font-weight: 600; text-decoration: none; }
+.go-premium-link-mark { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.go-premium-link .premium-mark { margin-left: 0; }
+
+.settings-go-premium {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border);
+  font-size: .82rem;
+}
+.settings-go-premium:hover span:last-child { text-decoration: underline; }
+.settings-go-premium:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm, 8px); }
+/* The menu rows style their line icons; the spark stays a solid accent glyph. */
+.go-premium-link .premium-mark svg { width: 100%; height: 100%; fill: currentColor; stroke: none; color: inherit; }
+
+/* The side-nav chip: one full nav row (it carries the host row's class,
+   app-sidebar-item or nav-drawer-item, so width, height, padding and the icon
+   and label columns match the rows above). Coloured like the selected
+   "Profile & account" Settings pill (.settings-chip[aria-current]): the
+   --accent-dim blush with --accent-text type and star (Savannah, 12 Nov).
+   It sits just above the profile and says only "Go Premium". */
+/* Doubled class: the host row rules (transparent background, sunken hover,
+   accent hover text) load later and must not win. */
+.go-premium-chip.go-premium-chip {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  background: var(--accent-dim);
+  color: var(--accent-text);
+  text-decoration: none;
+}
+/* Hover and focus deepen the same tint (a second --accent-dim layer). */
+.go-premium-chip.go-premium-chip:hover,
+.go-premium-chip.go-premium-chip:focus-visible { background: var(--accent-dim); box-shadow: inset 0 0 0 999px var(--accent-dim); color: var(--accent-text); }
+.go-premium-chip.go-premium-chip :is(.app-sidebar-label, .nav-drawer-label) { color: inherit; font-weight: 600; }
+/* The spark fills the row's 18px icon column, so the label starts on the same
+   edge as every other row's label. */
+.go-premium-chip-mark { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex-shrink: 0; }
+.go-premium-chip .premium-mark { margin-left: 0; color: inherit; width: 16px; height: 16px; display: inline-flex; }
+.go-premium-chip .premium-mark svg { width: 16px; height: 16px; fill: currentColor; stroke: none; color: inherit; }
+/* The desktop rail's rows are rounded; the phone drawer's rows run edge to edge. */
+.app-sidebar-item.go-premium-chip { border-radius: var(--radius-md); }
+.nav-drawer-item.go-premium-chip.go-premium-chip { margin-bottom: 4px; }

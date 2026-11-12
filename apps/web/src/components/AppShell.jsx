@@ -11,6 +11,7 @@ import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import AppSidebar from './AppSidebar.jsx';
+import GoPremiumLink from './GoPremiumLink.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import PremiumTrialPrompt from './PremiumTrialPrompt.jsx';
 import { useApp } from '../hooks/useApp.js';
@@ -273,6 +274,11 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         </nav>
 
         <div className="nav-drawer-footer">
+          {/* Go Premium: the pink side-nav chip for a Free member, read only
+              while the drawer is open. */}
+          {user && drawerOpen && !isPremiumProfile(profile) && (
+            <GoPremiumLink profile={profile} placement="side_nav" variant="chip" className="nav-drawer-item" labelClassName="nav-drawer-label" onBeforeNavigate={closeDrawer} />
+          )}
           <button
             type="button"
             className={`nav-drawer-item${currentView === 'settings' ? ' active' : ''}`}

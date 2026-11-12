@@ -20,6 +20,14 @@ export const PLANS_PAGE = {
   pendingValidation: 'Pending validation',
   limited: 'Limited',
   previewAction: 'Explore Premium',
+  // The signed-in link in Settings and the side-nav chip (core/goPremiumLink.js).
+  // The trial line is only for someone who has never subscribed, and never on
+  // the chip: the side nav stays clean (Savannah, 12 Nov).
+  goPremium: {
+    trial: 'Go Premium · 7 days free',
+    plain: 'Go Premium',
+    chip: 'Go Premium',
+  },
   tryTasteOverlap: 'Try taste overlap',
   upgradeAction: 'Upgrade to Premium',
   // The same button for someone who has never subscribed, so the 7-day trial

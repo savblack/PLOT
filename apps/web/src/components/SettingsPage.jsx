@@ -127,7 +127,7 @@ export function SettingsSwitch({ label, checked, onChange, disabled = false, sav
 /* Who you are, at the top of the column: the one thing on this page that is a
    fact rather than a control, so it earns the card the way the Calendar's mini
    months do. */
-function AccountCard({ account }) {
+function AccountCard({ account, action = null }) {
   const { name = '', username = '', avatarUrl = null, isPremium = false } = account ?? {};
   const initial = (name || username || '?').trim().charAt(0).toUpperCase();
   return (
@@ -149,11 +149,12 @@ function AccountCard({ account }) {
           </Link>
         )}
       </div>
+      {action}
     </div>
   );
 }
 
-export default function SettingsPage({ section = 'account', onSection, onSignOut, account, children }) {
+export default function SettingsPage({ section = 'account', onSection, onSignOut, account, accountAction = null, children }) {
   const [query, setQuery] = useState('');
   const chipsRef = useRef(null);
   // The chip row scrolls on a phone, so keep the selected section in sight.
@@ -185,7 +186,7 @@ export default function SettingsPage({ section = 'account', onSection, onSignOut
 
       <div className="cal-body">
         <aside className="cal-side settings-side">
-          <AccountCard account={account} />
+          <AccountCard account={account} action={accountAction} />
           <nav className="hist-card settings-nav-card" aria-label={T.page.navigation}>
             {SETTINGS_SECTIONS.map(item => (
               <button key={item.id} type="button" className="cal-filter-row settings-nav-row" aria-current={current(item.id)} onClick={() => select(item.id)}>
@@ -201,7 +202,7 @@ export default function SettingsPage({ section = 'account', onSection, onSignOut
               account card and the sections sit here instead — the card full
               width, the sections as a scrolling chip row. */}
           <div className="settings-mobile-head">
-            <AccountCard account={account} />
+            <AccountCard account={account} action={accountAction} />
             <nav ref={chipsRef} className="settings-mobile-nav" aria-label={T.page.navigation}>
               {SETTINGS_SECTIONS.map(item => (
                 <button key={item.id} type="button" className="settings-chip" aria-current={current(item.id)} onClick={() => select(item.id)}>{item.title}</button>

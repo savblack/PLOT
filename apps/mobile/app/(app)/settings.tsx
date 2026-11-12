@@ -99,6 +99,7 @@ import ImportHistoryModal from '../../components/ImportHistoryModal';
 import ThemeChip from '../../components/ThemeChip';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import { usePremiumCheckout } from '../../lib/usePremiumCheckout';
+import { GoPremiumSpark, useGoPremiumLink } from '../../components/GoPremiumLink';
 import { useBillingStatus } from '@plot/core/useBillingStatus.js';
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
@@ -1275,6 +1276,7 @@ export default function SettingsScreen() {
 
   const HEADER_H = insets.top + 56;
   const premium = isPremiumProfile(profile);
+  const goPremium = useGoPremiumLink(userId, profile, !premium);
   const matches = searchSettingsSections(query);
   const searching = !!query.trim();
   const active = SETTINGS_SECTIONS.find(item => item.id === section) ?? SETTINGS_SECTIONS[0];
@@ -1307,6 +1309,17 @@ export default function SettingsScreen() {
               <TextLink tone="accent" label={SETTINGS_VIEW.page.viewProfile} onPress={() => router.push(`/(app)/u/${username}` as Href)} />
             ) : null}
           </View>
+          {goPremium && (
+            <TouchableOpacity
+              style={styles.goPremium}
+              onPress={() => { goPremium.tap('settings'); setPremiumExpanded(true); setSection('billing'); setQuery(''); }}
+              accessibilityRole="link"
+              accessibilityLabel={goPremium.label}
+            >
+              <GoPremiumSpark color={colors.accentText} size={16} />
+              <Text style={styles.goPremiumLabel}>{goPremium.label}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <SearchField
@@ -1832,6 +1845,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   accountHandle: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   accountFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   accountPlan: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  goPremium: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  // The values the removed editAction style had, so the line looks the same.
+  goPremiumLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accentText },
   searchWrap: { marginHorizontal: spacing.xl, marginTop: spacing.md },
   searchResults: { marginHorizontal: spacing.xl, marginTop: spacing.md, gap: spacing.sm },
   searchEmpty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
