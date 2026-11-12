@@ -6,8 +6,9 @@
  * rules, copy and stored state's shape live in @plot/core/finishingTouches.js
  * and copy/finishingTouches.js.
  *
- * Collapsed by default, same as web below 1024px. Hide stays in the header
- * either way: a phone that never expands the card can still dismiss it.
+ * Collapsed by default, same as web below 1024px. Dismiss sits at the foot
+ * of the open card, under the last step, so the header stays to the title,
+ * the count and the chevron (Savannah, 12 Nov 2026).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -189,16 +190,6 @@ export default function FinishingTouches({ state, onState }: {
       <View style={styles.head}>
         <Text style={styles.title} accessibilityRole="header">{T.title}</Text>
         <View style={{ flex: 1 }} />
-        <TouchableOpacity
-          onPress={async () => {
-            track(EVENTS.FINISHING_TOUCHES_HIDDEN, { done_count: doneCount });
-            onState(await hideFinishingTouchesFor(userId));
-          }}
-          accessibilityRole="button"
-          hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-        >
-          <Text style={styles.hide}>{COMMON.dismiss}</Text>
-        </TouchableOpacity>
         <Text style={styles.count}>{T.count(doneCount, total)}</Text>
         <TouchableOpacity
           onPress={() => setExpanded(open => !open)}
@@ -256,6 +247,17 @@ export default function FinishingTouches({ state, onState }: {
               )}
             </View>
           ))}
+          <TouchableOpacity
+            style={styles.hideRow}
+            onPress={async () => {
+              track(EVENTS.FINISHING_TOUCHES_HIDDEN, { done_count: doneCount });
+              onState(await hideFinishingTouchesFor(userId));
+            }}
+            accessibilityRole="button"
+            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+          >
+            <Text style={styles.hide}>{COMMON.dismiss}</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -556,6 +558,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   barSeg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: colors.surfaceSunken },
   barSegOn: { backgroundColor: colors.accentFill },
   count: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textSecondary },
+  hideRow: { alignSelf: 'flex-start', paddingTop: spacing.xs, paddingHorizontal: spacing.xs },
   hide: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
   tiles: { gap: spacing.sm },
   tile: { gap: spacing.xs, padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.surfaceSunken },

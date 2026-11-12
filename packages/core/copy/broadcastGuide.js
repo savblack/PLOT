@@ -12,7 +12,7 @@ export const BROADCAST_GUIDE = {
   unsupported: 'Your local guide is not available yet.',
   chooseArea: 'Change your TV market in Settings if a supported area matches where you watch.',
   providerLabel: 'Schedule source', missingChannels: n => `${n} selected channels have no listings for this date.`,
-  settings: 'Settings', saveRegion: 'Save region', regionSaved: 'Broadcast region saved.',
+  settings: 'Settings', saveRegion: 'Save region', pickMarket: 'Choose a TV market to save.', regionSaved: 'Broadcast region saved.',
   storageError: 'Your browser could not save this setting. Please enable site storage and try again.',
   changeRegion: 'Change', backToGuide: 'Back to Guide',
   title: 'Guide', subtitle: 'Free-to-air TV',

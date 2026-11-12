@@ -1002,15 +1002,15 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
 
         <Text style={styles.dateLine}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
-        {!history.loading && (
+        {!history.loading && weekNights > 0 && (
           <TouchableOpacity
             style={styles.weekLine}
             onPress={() => router.push('/(app)/history' as Href)}
             accessibilityRole="link"
             hitSlop={{ top: 6, bottom: 6 }}
           >
-            {weekNights > 0 && <View style={styles.weekDot} />}
-            <Text style={styles.weekText}>{weekNights > 0 ? DISCOVER_VIEW.weekLine(weekNights, bestStreak) : DISCOVER_VIEW.weekEmpty}</Text>
+            <View style={styles.weekDot} />
+            <Text style={styles.weekText}>{DISCOVER_VIEW.weekLine(weekNights, bestStreak)}</Text>
           </TouchableOpacity>
         )}
         {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}

@@ -16,6 +16,7 @@ import {
 import Button from './Button';
 import { TextInput } from './TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePageSheetTop } from './PageSheet';
 import { useTheme } from '../contexts/ThemeContext';
 import type { Palette } from '../lib/tokens';
 import { fontFamily, fontSize, spacing, radii } from '../lib/tokens';
@@ -39,6 +40,7 @@ export default function ReportSheet({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const sheetTop = usePageSheetTop();
 
   const { submit, busy, error, sent } = useReport(viewerId);
   const [reason, setReason] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export default function ReportSheet({
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { paddingTop: sheetTop }]}>
           <View style={styles.header}>
             <Text style={styles.title}>
               {sent ? MODERATION.reportSentTitle : MODERATION.reportTitle}

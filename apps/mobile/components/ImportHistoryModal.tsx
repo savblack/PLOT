@@ -12,6 +12,7 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePageSheetTop } from './PageSheet';
 import Svg, { Path, Polyline, Line } from 'react-native-svg';
 import { IconChevronRight, IconClose, IconCheck } from './icons';
 import Button, { TextLink } from './Button';
@@ -190,6 +191,7 @@ export default function ImportHistoryModal(props: Props) {
 function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE, initialPlatform, reviewJob, onImported }: Props) {
   const importReport = useMemo(() => createImportReporter({ entry }), [entry]);
   const insets = useSafeAreaInsets();
+  const sheetTop = usePageSheetTop();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const plex = useMediaSync(userId);
@@ -478,7 +480,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: sheetTop }]}>
 
         {/* Header */}
         <View style={styles.header}>

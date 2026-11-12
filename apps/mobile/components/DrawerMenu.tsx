@@ -6,6 +6,7 @@ import { useRef, useEffect, useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { APP_SHELL } from '@plot/core/copy/appShell.js';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { titleForView } from '@plot/core/navigation.js';
 import { useNotifications } from '@plot/core/useNotifications.js';
@@ -37,11 +38,6 @@ const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; p
   ...(SHOW_WATCH_TOGETHER ? [{ id: 'together', label: titleForView('together'), path: '/(app)/together', icon: 'together' as const, premium: true }] : []),
 ];
 
-const FEEDBACK_ITEMS = [
-  { type: 'bug',     label: SETTINGS_VIEW.feedback.bugReportLabel },
-  { type: 'feature', label: SETTINGS_VIEW.feedback.featureRequestLabel },
-  { type: 'general', label: SETTINGS_VIEW.feedback.generalFeedbackLabel },
-];
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 
@@ -183,7 +179,9 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                     {item.label}
                   </Text>
                   {item.premium && !profile?.is_premium && (
-                    <Text style={styles.premiumPill}>{APP_SHELL.premium}</Text>
+                    <View style={styles.premiumMark} accessibilityRole="image" accessibilityLabel={APP_SHELL.premium}>
+                      <Svg width={14} height={14} viewBox="0 0 24 24" fill={colors.accentText}><Path d={ICON_PATHS.spark} /></Svg>
+                    </View>
                   )}
                 </TouchableOpacity>
               );
@@ -215,7 +213,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 {BOTTOM_NAV_ITEMS.map(item => (menuRow({ key: item.id, label: item.label, icon: item.icon, active: isActive(item.id), onPress: () => navigate(item.path) })))}
                 <View style={styles.menuDivider} />
                 <Text style={styles.helpTitle}>{APP_SHELL.helpBuild}</Text>
-                {FEEDBACK_ITEMS.map(item => (menuRow({ key: item.type, label: item.label, icon: 'feedback', onPress: () => openFeedback(item.type) })))}
+                {menuRow({ label: APP_SHELL.giveFeedback, icon: 'feedback', onPress: () => openFeedback('general') })}
                 {menuRow({ label: SETTINGS_VIEW.support.supportPlot, icon: 'support', link: true, onPress: openSupport })}
               </View>
             )}
@@ -360,7 +358,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     fontSize: 11,
     color: colors.textSecondary,
   },
-  // Premium marker for Free viewers: the Beta pill's shape in the pink fill.
+  // Unread count on the Notifications row.
   badge: {
     marginLeft: 'auto',
     minWidth: 18,
@@ -374,20 +372,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
   },
-  // Premium marker for Free viewers: web's quiet pink tint with accent text.
-  premiumPill: {
-    marginLeft: 'auto',
-    overflow: 'hidden',
-    borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    backgroundColor: `${colors.accent}1A`,
-    color: colors.accentText,
-    fontFamily: fontFamily.sansBold,
-    fontSize: 9.6,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
+  // Premium marker for Free viewers: web's PremiumMark, a small solid spark.
+  premiumMark: { marginLeft: 'auto' },
   navItemActive: {
     backgroundColor: colors.surfaceSunken,
   },

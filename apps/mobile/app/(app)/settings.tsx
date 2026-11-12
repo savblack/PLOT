@@ -20,7 +20,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line } from 'react-native-svg';
 import { IconChevronRight, IconClose, IconCheck } from '../../components/icons';
-import ModalHeader from '../../components/ModalHeader';
+import PageSheet from '../../components/PageSheet';
 import Button, { TextLink } from '../../components/Button';
 import SearchField from '../../components/SearchField';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -587,11 +587,14 @@ function RegionModal({ current, onSave, onClose }: { current: string; onSave: (c
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [chosen, setChosen] = useState(current);
   const [saving, setSaving] = useState(false);
-  const insets = useSafeAreaInsets();
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <ModalHeader title={SETTINGS_VIEW.page.regionLabel} actionLabel="Cancel" onAction={onClose} />
+    <PageSheet
+      title={SETTINGS_VIEW.page.regionLabel}
+      onClose={onClose}
+      onSave={async () => { setSaving(true); await onSave(chosen); }}
+      changed={chosen !== current}
+      saving={saving}
+    >
         <ScrollView contentContainerStyle={styles.regionGrid}>
           {REGIONS.map(r => (
             <TouchableOpacity
@@ -604,16 +607,7 @@ function RegionModal({ current, onSave, onClose }: { current: string; onSave: (c
             </TouchableOpacity>
           ))}
         </ScrollView>
-        <View style={[styles.modalFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Button
-            variant="primary"
-            label={saving ? COMMON.saving : SETTINGS_VIEW.region.saveRegion}
-            onPress={async () => { setSaving(true); await onSave(chosen); }}
-            disabled={saving || chosen === current}
-          />
-        </View>
-      </View>
-    </Modal>
+    </PageSheet>
   );
 }
 
@@ -624,15 +618,19 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
   const [query,  setQuery]  = useState('');
   const [chosen, setChosen] = useState(current);
   const [saving, setSaving] = useState(false);
-  const insets = useSafeAreaInsets();
 
   const deviceTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; } })();
   const filtered = query.trim() ? IANA_TIMEZONES.filter(tz => tz.toLowerCase().includes(query.toLowerCase())) : IANA_TIMEZONES;
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <ModalHeader title={SETTINGS_VIEW.page.timezoneLabel} actionLabel="Cancel" onAction={onClose} />
+    <PageSheet
+      title={SETTINGS_VIEW.page.timezoneLabel}
+      onClose={onClose}
+      onSave={async () => { setSaving(true); await onSave(chosen); }}
+      canSave={!!chosen}
+      changed={chosen !== current}
+      saving={saving}
+    >
         <View style={styles.modalSearchWrap}>
           <SearchField value={query} onChangeText={setQuery} placeholder={SETTINGS_VIEW.timezone.searchPlaceholder} />
         </View>
@@ -653,16 +651,7 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
             </TouchableOpacity>
           ))}
         </ScrollView>
-        <View style={[styles.modalFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Button
-            variant="primary"
-            label={saving ? COMMON.saving : COMMON.save}
-            onPress={async () => { setSaving(true); await onSave(chosen); }}
-            disabled={!chosen || saving}
-          />
-        </View>
-      </View>
-    </Modal>
+    </PageSheet>
   );
 }
 
@@ -683,7 +672,6 @@ function ProviderModal({
   const [chosen,  setChosen]  = useState<number[]>(selected.map(p => p.id));
   const [search,  setSearch]  = useState('');
   const [loading, setLoading] = useState(true);
-  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fn = channelsOnly
@@ -699,10 +687,19 @@ function ProviderModal({
   const toggle = (id: number) => {
     const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
     setChosen(next);
-    const providers = all
-      .filter((p: any) => next.includes(p.provider_id))
+  };
+  // Nothing is kept until Save: the picks are a draft while the sheet is open.
+  // A pick that is not in the loaded list (another region's service) is kept
+  // as it was rather than dropped.
+  const initialIds = selected.map(p => p.id);
+  const dirty = chosen.length !== initialIds.length || chosen.some(id => !initialIds.includes(id));
+  const save = () => {
+    const loaded = all
+      .filter((p: any) => chosen.includes(p.provider_id))
       .map((p: any) => ({ id: p.provider_id, name: p.provider_name, logo_path: p.logo_path }));
-    onSave(providers);
+    const kept = selected.filter(p => chosen.includes(p.id) && !loaded.some(l => l.id === p.id));
+    onSave([...kept, ...loaded]);
+    onClose();
   };
 
   const visible = search.trim()
@@ -710,16 +707,7 @@ function ProviderModal({
     : all;
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <ModalHeader
-          title={title}
-          action={
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
-              <IconClose color={colors.textSecondary} />
-            </TouchableOpacity>
-          }
-        />
+    <PageSheet title={title} onClose={onClose} onSave={save} canSave={!loading} changed={dirty}>
         <View style={styles.modalSearchWrap}>
           <SearchField value={search} onChangeText={setSearch} placeholder="Search…" />
         </View>
@@ -747,8 +735,7 @@ function ProviderModal({
             })}
           </ScrollView>
         )}
-      </View>
-    </Modal>
+    </PageSheet>
   );
 }
 
@@ -756,7 +743,6 @@ function ProviderModal({
 function NameModal({ current, onSave, onClose }: { current: string; onSave: (name: string) => Promise<void>; onClose: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const insets = useSafeAreaInsets();
   const [value,  setValue]  = useState(current);
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
@@ -780,9 +766,7 @@ function NameModal({ current, onSave, onClose }: { current: string; onSave: (nam
   };
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <ModalHeader title="Name" actionLabel="Cancel" onAction={onClose} />
+    <PageSheet title="Name" onClose={onClose} onSave={handleSave} changed={dirty} saving={saving}>
         <View style={styles.modalSearchWrap}>
           <TextInput
             style={styles.modalSearchInput}
@@ -795,11 +779,7 @@ function NameModal({ current, onSave, onClose }: { current: string; onSave: (nam
           />
           {error && <Text style={{ color: '#e5484d', fontSize: fontSize.xs, marginTop: spacing.xs }}>{error}</Text>}
         </View>
-        <View style={[styles.modalFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Button variant="primary" label={saving ? 'Saving…' : 'Save'} onPress={handleSave} disabled={!dirty || saving} />
-        </View>
-      </View>
-    </Modal>
+    </PageSheet>
   );
 }
 
@@ -808,7 +788,6 @@ function NameModal({ current, onSave, onClose }: { current: string; onSave: (nam
 function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave: (names: string[]) => void; onClose: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const insets = useSafeAreaInsets();
   const [all,     setAll]     = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [chosen,  setChosen]  = useState<number[]>([]);
@@ -844,13 +823,15 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
   const toggle = (id: number) => {
     const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
     setChosen(next);
-    onSave(all.filter(g => next.includes(g.id)).map(g => g.name));
   };
+  // Nothing is kept until Save: the picks are a draft while the sheet is open.
+  const chosenNames = all.filter(g => chosen.includes(g.id)).map(g => g.name);
+  const knownInitial = initialSelected.filter(n => all.some(g => g.name === n));
+  const dirty = chosenNames.length !== knownInitial.length || chosenNames.some(n => !knownInitial.includes(n));
+  const save = () => { onSave(chosenNames); onClose(); };
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <ModalHeader title={SETTINGS_VIEW.integrations.genresLabel} actionLabel="Done" onAction={onClose} />
+    <PageSheet title={SETTINGS_VIEW.integrations.genresLabel} onClose={onClose} onSave={save} canSave={!loading && !loadError} changed={dirty}>
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
         ) : loadError ? (
@@ -880,8 +861,7 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
             })}
           </ScrollView>
         )}
-      </View>
-    </Modal>
+    </PageSheet>
   );
 }
 
@@ -891,7 +871,6 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
   const [type,    setType]    = useState(initialType);
   const [message, setMessage] = useState('');
   const [status,  setStatus]  = useState<'idle' | 'submitting' | 'done' | 'error'>('idle');
-  const insets = useSafeAreaInsets();
 
   const handleSubmit = async () => {
     if (!message.trim()) return;
@@ -905,9 +884,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
   };
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <ModalHeader title="Feedback" actionLabel="Close" onAction={onClose} />
+    <PageSheet title="Feedback" onClose={onClose}>
         {status === 'done' ? (
           <View style={styles.feedbackDone}>
             <View style={styles.feedbackDoneIcon}>
@@ -961,8 +938,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
             />
           </ScrollView>
         )}
-      </View>
-    </Modal>
+    </PageSheet>
   );
 }
 
@@ -1680,7 +1656,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={null}
             label={SETTINGS_VIEW.billing.supportAction}
-            description={`${SETTINGS_VIEW.billing.supportHint} ${SETTINGS_VIEW.billing.supportNote}`}
+            description={SETTINGS_VIEW.billing.supportNote}
             onPress={() => { void Linking.openURL(KOFI_URL).catch(() => {}); }}
           />
         </SettingsGroup>
