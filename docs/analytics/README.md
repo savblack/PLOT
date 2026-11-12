@@ -170,6 +170,26 @@ checkout return page, because a refresh would double-count a conversion.
 
 Currency values are normalised to uppercase ISO 4217 codes before capture, so a
 Ko-fi `AUD` tip and a Stripe `aud` payment land in the same dashboard series.
+
+### The 7-day trial prompt
+
+A signed-in Free member who can still have the trial is offered it once per
+account per device, right after onboarding completes or a Trakt import saves
+at least one title (`packages/core/premiumTrialPrompt.js`; web shows it from
+the app shell, the phone from Home once any import sheet has closed). It opens
+the existing upgrade sheet, so the button goes to the existing Checkout with
+the trial. Offering the trial is not a paywall, so it never fires
+`premium_gate_hit`. The phone only offers it where the browser checkout is
+allowed (US storefront).
+
+| Event | When | Properties |
+|---|---|---|
+| `premium_prompt_shown` | The prompt opened | `trigger: 'onboarding' \| 'trakt_import'` |
+| `premium_prompt_clicked` | Start free trial (or Upgrade), or See everything in Premium | `trigger`, `target: 'checkout' \| 'plans'`, `plan` for checkout |
+| `premium_prompt_dismissed` | Closed without a click: Not now, Escape, the scrim, Android back | `trigger` |
+
+Read `premium_prompt_clicked` (target `checkout`) next to
+`premium_checkout_started` to see whether the prompt leads to checkouts.
 All monetization dashboards keep PostHog's internal and test-account filter on.
 
 ## Bots

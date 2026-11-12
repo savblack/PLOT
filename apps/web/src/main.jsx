@@ -10,6 +10,7 @@ import { redactSensitiveUrl } from './utils/redactUrl.js';
 import { isOpaqueBrowserException } from './utils/opaqueException.js';
 import { track, EVENTS, _setPostHogClient } from './lib/analytics.js';
 import { startHumanWebVitalsCapture } from './lib/webVitals.js';
+import { premiumTrialPromptTriggerForImport, requestPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 
 // Inject web env into the shared core before anything renders or fetches.
 // Core modules read these via getConfig() — never import.meta.env directly.
@@ -143,6 +144,9 @@ configure({
       abandoned: EVENTS.LETTERBOXD_IMPORT_ABANDONED,
     }[stage];
     if (name) track(name, props);
+    // A Trakt import that saved titles is one of the trial prompt's two moments.
+    const trialTrigger = stage === 'completed' ? premiumTrialPromptTriggerForImport(props) : null;
+    if (trialTrigger) requestPremiumTrialPrompt(trialTrigger);
   },
   // The undo toast reversed a removal. Never a committed action.
   onUndo: (payload) => track(EVENTS.ACTION_UNDONE, payload),

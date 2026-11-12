@@ -22,6 +22,7 @@ import { notifyOnboardingCompleted } from '@plot/core/brevoLifecycleClient.js';
 import { useAppData } from './AppDataContext';
 import { useOnboardingRefresh } from './OnboardingContext';
 import { previousOnboardingComplete, shouldTrackOnboardingCompleted } from '@plot/core/onboardingGate.js';
+import { requestPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 
 // Web detects region against its own /api/region Pages Function; mobile has no
 // origin of its own, so it hits the deployed one.
@@ -187,6 +188,8 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
         import_source: importSource,
         skipped: chosen.length === 0,
       });
+      // The first of the trial prompt's two moments (shown on Home).
+      requestPremiumTrialPrompt('onboarding');
     }
     setSaving(false);
     // Await before anyone navigates: the root layout caches onboarding_complete

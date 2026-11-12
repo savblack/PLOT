@@ -20,7 +20,7 @@ import { usePremiumCheckout } from '../lib/usePremiumCheckout';
 const S = PLANS_PAGE.upgradeSheet;
 
 export default function UpgradeSheet({
-  visible, reason, family, onClose, onCompare,
+  visible, reason, family, onClose, onCompare, onAction,
 }: {
   visible: boolean;
   reason: UpgradeReason;
@@ -29,6 +29,9 @@ export default function UpgradeSheet({
   onClose: () => void;
   /** Opens the full comparison; the sheet closes itself first. */
   onCompare: () => void;
+  /** Told when the viewer presses Upgrade or Compare, before the sheet acts
+   * (the trial prompt counts those as clicks, not dismissals). */
+  onAction?: (target: 'checkout' | 'plans', plan?: string) => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -41,10 +44,11 @@ export default function UpgradeSheet({
   if (!content) return null;
 
   const close = onClose;
-  const compare = () => { close(); onCompare(); };
+  const compare = () => { onAction?.('plans'); close(); onCompare(); };
   // Checkout open: Stripe in the browser. Closed: the waitlist, as on web.
   const upgrade = async () => {
     if (checkout.closed) { checkout.joinWaitlist(); return; }
+    onAction?.('checkout', 'monthly');
     if ((await checkout.start('monthly')) === 'opened') close();
   };
 

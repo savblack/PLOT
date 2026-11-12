@@ -88,6 +88,13 @@ export const EVENTS = Object.freeze({
   // and a stray call site stays a loud reference (see ACTIVATED).
   PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
+  // The one-time 7-day trial prompt (premiumTrialPrompt.js), after onboarding
+  // or a Trakt import. All three carry { trigger: 'onboarding' | 'trakt_import' }.
+  // clicked also carries { target: 'checkout' | 'plans' } (and plan for
+  // checkout); dismissed is any close without a click (Not now, Escape, scrim).
+  PREMIUM_PROMPT_SHOWN: 'premium_prompt_shown',
+  PREMIUM_PROMPT_CLICKED: 'premium_prompt_clicked',
+  PREMIUM_PROMPT_DISMISSED: 'premium_prompt_dismissed',
   // The Tonight picker, Plot's "what should I watch" surface. Fired from
   // useTonightPicker via the onTonightPicker seam. A draw with result_count 0
   // is an empty result; a failed draw is load_failed (resource tonight_picks).
