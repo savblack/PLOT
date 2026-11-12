@@ -1,6 +1,6 @@
 # Mobile Google and Apple sign-in
 
-Status: active (waiting on Savannah's Apple sign-in for the TestFlight upload)
+Status: active (build 6 uploaded to App Store Connect; waiting on Apple processing)
 Owner: Jacob (mobile implementation), Hailey (signup flow)
 Branch: agent/2026-11-12-mobile-social-login
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-11-12-mobile-social-login
@@ -28,7 +28,9 @@ No physical device is connected to this workspace, and the completed iOS product
 ## TestFlight upload attempt (2026-11-12)
 - `eas submit --non-interactive` stopped: no App Store Connect API key is stored on EAS, and EAS cannot create one non-interactively.
 - The interactive `eas submit --platform ios --profile production --id 0e725475-cb9b-4ab6-a486-3161023f8ffe` was started in Savannah's terminal and is waiting for her to answer the key prompt and sign in to Apple. Once the key exists, later submits run unattended.
-- Not yet confirmed: Apple accepted the upload, build processed in TestFlight, testers invited.
+- Savannah completed the prompt. EAS created App Store Connect API key `Z28R7F3636` (stored on EAS servers, ADMIN role) and uploaded build 6: https://expo.dev/accounts/savblack/projects/plot/submissions/2e767b45-7da0-496b-95a7-49ef405d681a ("successfully uploaded to App Store Connect", ~17:50 AEDT).
+- The Apple ID used is `sav.black@outlook.com.au`; Apple's processing email goes there. `app.json` already sets `ITSAppUsesNonExemptEncryption: false`, so no export-compliance hold is expected.
+- Not yet confirmed: build processed in TestFlight, Savannah added as internal tester, sign-in tested on device.
 
 ## Latest pushed commit
 fad05b75e (pushed; branch matches origin). Checks above still stand; no code changed since.
