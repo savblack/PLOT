@@ -247,7 +247,18 @@ export default function AuthScreen() {
     setCaptchaNow(now);
   };
 
-  // The widget stays mounted and starts its check when the screen opens.
+  const [captchaStarted, setCaptchaStarted] = useState(false);
+  const startCaptcha = () => {
+    if (captchaStarted) return;
+    setCaptchaStarted(true);
+    markCaptchaWaiting();
+  };
+
+  // The widget starts its check at the first touch on this screen, not when
+  // it opens, so Cloudflare's "Verify you are human" box cannot appear before
+  // anyone has done anything. Any touch counts (a field, a button, the wall):
+  // iOS needs a tap to focus a field or fill a password, so the check is
+  // always under way before someone can submit.
   // When it never returns a token, signup, resend, and magic link go through
   // signup-bypass like web. Sign-in and password reset have no bypass and stop.
   const refreshCaptcha = () => {
@@ -810,6 +821,7 @@ export default function AuthScreen() {
     : mode;
   const captchaReady = !captchaMode || captchaSubmitEnabled({
     siteKey: TURNSTILE_SITE_KEY,
+    started: captchaStarted,
     token: captchaHasToken ? 'ready' : null,
     errored: captchaErrored,
     interactive: captchaInteractive,
@@ -847,7 +859,7 @@ export default function AuthScreen() {
   const social = mode === 'signin' || mode === 'signup';
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} onTouchStart={startCaptcha}>
       {/* ── Scrolling poster mosaic ── */}
       <View style={StyleSheet.absoluteFill}>
         <View style={styles.mosaic}>
@@ -1025,6 +1037,7 @@ export default function AuthScreen() {
                       onInteractive={handleCaptchaInteractive}
                       resetSignal={captchaNonce}
                       executeSignal={captchaExecute}
+                      start={captchaStarted}
                     />
                   </View>
                 ) : null}
