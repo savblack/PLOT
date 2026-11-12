@@ -28,8 +28,9 @@ import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import Icon from './Icon.jsx';
 import './PeopleFollow.css';
 import './YourPeopleView.css';
+import { Tag } from './Chip.jsx';
 
-const CHIP_CLASS = { outToday: 'people-chip people-chip--today', dated: 'people-chip people-chip--quiet' };
+const CHIP_TONE = { outToday: 'accent', dated: 'neutral' };
 
 /** The badge line above a title: who, and how, when it isn't acting. */
 function peopleLine(item) {
@@ -49,10 +50,10 @@ export function FeedRow({ item, today, saved, onSave, onOpen }) {
   const art = useUserArtwork();
   const poster = displayPosterPath(art.apply(feedDisplayItem(item)));
   const chips = [
-    item.chip && { key: 'chip', className: CHIP_CLASS[item.chip] ?? 'people-chip', label: P.chips[item.chip] },
-    item.chip !== 'newSeason' && item.kind === 'season' && { key: 'season', className: 'people-chip', label: P.chips.newSeason },
-    item.network && { key: 'net', className: 'people-chip people-chip--quiet', label: item.network },
-    item.mediaType === 'tv' && item.premiereDrop > 1 && { key: 'drop', className: 'people-chip people-chip--quiet', label: P.page.allEpisodes(item.premiereDrop) },
+    item.chip && { key: 'chip', tone: CHIP_TONE[item.chip] ?? 'sage', label: P.chips[item.chip] },
+    item.chip !== 'newSeason' && item.kind === 'season' && { key: 'season', tone: 'sage', label: P.chips.newSeason },
+    item.network && { key: 'net', tone: 'neutral', label: item.network },
+    item.mediaType === 'tv' && item.premiereDrop > 1 && { key: 'drop', tone: 'neutral', label: P.page.allEpisodes(item.premiereDrop) },
   ].filter(Boolean);
   return (
     <div className="people-row">
@@ -61,7 +62,7 @@ export function FeedRow({ item, today, saved, onSave, onOpen }) {
         <span className="people-row-text">
           <span className="people-row-who">{peopleLine(item)}</span>
           <span className="people-row-title">{item.title}{item.kind === 'season' ? ` · ${P.page.season(item.season)}` : ''}</span>
-          {chips.length > 0 && <span className="people-row-chips">{chips.map(c => <span key={c.key} className={c.className}>{c.label}</span>)}</span>}
+          {chips.length > 0 && <span className="people-row-chips">{chips.map(c => <Tag key={c.key} label={c.label} tone={c.tone} />)}</span>}
         </span>
       </button>
       <span className="people-row-when">{whenLine(item, today)}</span>

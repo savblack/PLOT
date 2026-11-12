@@ -14,6 +14,7 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import ListCover from './ListCover.jsx';
+import { Tag } from './Chip.jsx';
 import SideFilters from './SideFilters.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { EVENTS, track } from '../lib/analytics.js';
@@ -405,7 +406,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
         count={c.smart ? c.empty : coverCount(c.items, c.empty)}
         posters={posters(art, visible)}
         dim={narrowed && visible.length === 0 && c.items.length > 0}
-        badge={c.list && listVisibility(c.list) !== 'private' && <span className="mylists-public-badge">{PROFILE_PRIVACY.listVisibilityBadge[listVisibility(c.list)]}</span>}
+        badge={c.list && listVisibility(c.list) !== 'private' && <Tag className="mylists-public-badge" label={PROFILE_PRIVACY.listVisibilityBadge[listVisibility(c.list)]} />}
         byline={byline}
         menu={c.list && !c.smart ? <ListCoverMenu list={c.list} /> : null}
         onOpen={open(c.key)}

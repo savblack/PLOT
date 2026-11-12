@@ -2779,15 +2779,11 @@ svg { stroke-width: 1.5; }
 
 /* Blocks inside a section: one custom list, one Top 5 list. */
 .mylists-sub + .mylists-sub { margin-top: 1.25rem; }
-.mylists-public-badge {
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--accent-text);
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-  border-radius: var(--radius-pill);
-  padding: 0.1rem 0.4rem;
+/* The Tag sits beside the display-font list name: back to body type, centred on the name. */
+.list-cover-name .mylists-public-badge {
+  align-self: center;
+  font-family: var(--font-sans);
+  letter-spacing: 0;
 }
 .mylists-rename {
   display: flex;
@@ -4203,47 +4199,22 @@ svg { stroke-width: 1.5; }
   gap: 0.35rem;
   margin-top: 0.65rem;
 }
-.panel-genre {
-  padding: 0.15rem 0.55rem;
-  border-radius: var(--radius-badge);
-  background: var(--accent-secondary-fill);
-  color: var(--on-accent-secondary-fill);
-  font-size: 0.7rem;
-  font-weight: 600;
-}
 
-/* Genre and keyword chips that open Discover or the keyword page. Same size
-   as the plain label; only hover and focus change. */
-.panel-genre--link {
+/* Genre and keyword tags that open Discover or the keyword page. The button
+   is bare; the Tag inside is the pill, and only hover and focus change. */
+.panel-tag-link {
+  display: inline-flex;
+  padding: 0;
   border: 0;
-  font-family: inherit;
+  border-radius: var(--radius-badge);
+  background: none;
+  font: inherit;
   cursor: pointer;
 }
-.panel-genre--link:hover,
-.panel-keyword:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.panel-genre--link:focus-visible,
-.panel-keyword:focus-visible {
+.panel-tag-link:hover .tag { color: var(--accent-text); }
+.panel-tag-link:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-.panel-keyword {
-  padding: 0.15rem 0.55rem;
-  border-radius: var(--radius-badge);
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 0.7rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-/* Toggle reads as a link, not a keyword. */
-.panel-keyword--toggle {
-  border-style: dashed;
-  color: var(--text-muted);
 }
 
 .panel-overview {

@@ -423,15 +423,6 @@
   font-size: 1.2rem;
 }
 .tonight-card-meta { font-size: 0.8rem; color: var(--text-secondary); }
-.tonight-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.tonight-chip {
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-secondary-fill);
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--on-accent-secondary-fill);
-}
 @keyframes tonight-reveal {
   from { opacity: 0; transform: translateY(14px) scale(0.97); }
   to { opacity: 1; transform: none; }

@@ -22,6 +22,7 @@ import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
 import { SaveButton, FavoriteButton } from './TitleActions.jsx';
 import PremiumMark from './PremiumMark.jsx';
+import { Tag } from './Chip.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 
 /* Just Decide. Phone: one column, a Filters panel that folds away, and a
@@ -429,11 +430,7 @@ function resultMeta(item) {
 
 function Chips({ item }) {
   if (!item.onWatchlist) return null;
-  return (
-    <span className="tonight-chips">
-      <span className="tonight-chip">{T.onYourWatchlist}</span>
-    </span>
-  );
+  return <Tag tone="sage" label={T.onYourWatchlist} />;
 }
 
 /* Favourite and watchlist, the same buttons as on Home: on the Top pick the

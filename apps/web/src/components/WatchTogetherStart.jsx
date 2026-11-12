@@ -19,6 +19,7 @@ import { useInviteShare } from '../hooks/useInviteShare.js';
 import PlotLogo from './PlotLogo.jsx';
 import PremiumGateButton from './PremiumGateButton.jsx';
 import { EVENTS, track } from '../lib/analytics.js';
+import { Tag } from './Chip.jsx';
 
 // The hub and start page open the upgrade sheet from a button; the overlap
 // page reports this itself when it loads locked.
@@ -63,7 +64,7 @@ export function PersonRow({ person, note, sent, onInvite }) {
       </span>
       {note}
       {sent
-        ? <span className="wt-chip">{T.invite.sent}</span>
+        ? <Tag label={T.invite.sent} />
         : <button type="button" className="btn btn-secondary btn-sm" onClick={() => onInvite(person)}>{T.invite.invite}</button>}
     </div>
   );
@@ -261,7 +262,7 @@ function Demo({ premium, pool }) {
       <div className="wt-card wt-example wt-demo" role="status">
         {head}
         <DemoPoster title={match} />
-        <span className="wt-chip wt-chip--accent">{S.demoDoneTitle}</span>
+        <Tag tone="accent" label={S.demoDoneTitle} />
         <span className="wt-person-name">{match.title}</span>
         <p className="wt-card-body">{S.demoDoneBody}</p>
         <div className="wt-top-actions">

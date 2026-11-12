@@ -63,6 +63,7 @@ import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipe
 import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
 import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../utils/letterboxdImportPrompt.js';
 import PremiumMark from './PremiumMark.jsx';
+import Chip, { ChipRow } from './Chip.jsx';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -552,33 +553,17 @@ function GenrePicker({ selected, onSave, onClose }) {
         </div>
       ) : (
         <div style={{ padding: '1rem' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <ChipRow>
             {allGenres.map(g => (
-              <div
+              <Chip
                 key={g.id}
-                className={`interactive-surface${chosen.includes(g.id) ? ' selected' : ''}`}
+                label={g.name}
+                selected={chosen.includes(g.id)}
                 onClick={() => toggle(g.id)}
-                style={{
-                  padding: '0.55rem 1rem',
-                  borderRadius: 'var(--radius-pill)',
-                  border: chosen.includes(g.id) ? '2px solid var(--accent)' : '1.5px solid var(--border)',
-                  background: chosen.includes(g.id) ? 'var(--accent-dim)' : 'var(--surface)',
-                  color: chosen.includes(g.id) ? 'var(--accent)' : 'var(--text-primary)',
-                  fontWeight: 600,
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-                {...getButtonLikeProps({
-                  onPress: () => toggle(g.id),
-                  label: `${chosen.includes(g.id) ? COMMON.deselect : COMMON.select} ${g.name}`,
-                  pressed: chosen.includes(g.id),
-                })}
-              >
-                {g.name}
-              </div>
+                ariaLabel={`${chosen.includes(g.id) ? COMMON.deselect : COMMON.select} ${g.name}`}
+              />
             ))}
-          </div>
+          </ChipRow>
         </div>
       )}
     </ResponsiveDialog>
