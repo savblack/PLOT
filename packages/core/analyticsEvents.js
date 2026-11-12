@@ -88,6 +88,13 @@ export const EVENTS = Object.freeze({
   // and a stray call site stays a loud reference (see ACTIVATED).
   PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
+  // The empty-library nudge (activationNudge.js). All carry { surface:
+  // 'home' | 'history' }; import_clicked also carries { source } (an import
+  // page platform id such as 'trakt'). Shown once per mount while the account
+  // has no titles.
+  ACTIVATION_NUDGE_SHOWN: 'activation_nudge_shown',
+  ACTIVATION_NUDGE_ADD_CLICKED: 'activation_nudge_add_clicked',
+  ACTIVATION_NUDGE_IMPORT_CLICKED: 'activation_nudge_import_clicked',
   // The one-time 7-day trial prompt (premiumTrialPrompt.js), after onboarding
   // or a Trakt import. All three carry { trigger: 'onboarding' | 'trakt_import' }.
   // clicked also carries { target: 'checkout' | 'plans' } (and plan for

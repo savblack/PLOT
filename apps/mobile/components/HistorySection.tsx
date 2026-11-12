@@ -11,8 +11,9 @@
  * is labelled.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
+import Chip from './Chip';
 import CollapsibleSection from './CollapsibleSection';
 import HistoryInsights from './HistoryInsights';
 import HistoryRow from './HistoryRow';
@@ -113,9 +114,7 @@ export default function HistorySection({
       <HistoryInsights sharePreset={sharePreset} onSharePresetUsed={onSharePresetUsed} onDrilldown={onDrilldown} onUpgrade={onUpgrade} />
       <HistoryComparePrompt />
       {drilldown && drillLabel && (
-        <Pressable accessibilityRole="button" accessibilityLabel={T.drilldownRemove(drillLabel)} onPress={onClearDrilldown} style={styles.chip}>
-          <Text style={styles.chipText}>{drillLabel}  ×</Text>
-        </Pressable>
+        <Chip selected label={`${drillLabel}  ×`} accessibilityLabel={T.drilldownRemove(drillLabel)} onPress={() => onClearDrilldown?.()} style={styles.chip} />
       )}
       {groups.length === 0 ? (
         <View style={styles.empty}>
@@ -156,14 +155,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     alignSelf: 'flex-start',
     marginHorizontal: spacing.xl,
     marginBottom: spacing.md,
-    minHeight: 32,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.accent,
   },
-  chipText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
   prompt: {
     marginHorizontal: spacing.xl,
     marginTop: spacing.md,

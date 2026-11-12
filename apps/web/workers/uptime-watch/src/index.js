@@ -9,7 +9,11 @@
  * write outage ran two weeks for exactly that reason.
  *
  * Checks (each skipped when its URL var is empty, so Staging can run a subset):
- *   app       APP_URL serves the SPA shell (200, contains <div id="root">)
+ *   app       APP_URL serves the SPA shell (200, contains <div id="root">),
+ *             and the shell's main module script loads as JavaScript. Pages
+ *             answers a missing file with the shell itself (200, text/html),
+ *             so a deploy whose scripts are missing looked healthy without it.
+ *             A failure here right after a deploy rolls back (rollback.js).
  *   tmdb      TMDB_PROXY_URL returns trending titles (the Worker -> edge fn -> TMDB path)
  *   functions SUPABASE_URL's billing-availability answers with its boolean
  *   stripe    (only when STRIPE_READ_KEY is set) Stripe's endpoint for
@@ -48,8 +52,9 @@
 import { decide, probe } from '../../whats-on-watch/src/index.js';
 import { productionReadWrite, signedInReadWrite, trimSlashes } from './signin.js';
 import { dbChecksEmail, dispatchToken, readDbChecks, startDbChecks } from './dbChecks.js';
+import { maybeRollback, rollbackEmail } from './rollback.js';
 
-const STATE_KEYS = { uptime: 'state', signin: 'signin-state', signinProd: 'signin-prod-state', dbChecks: 'dbchecks-state' };
+const STATE_KEYS = { uptime: 'state', signin: 'signin-state', signinProd: 'signin-prod-state', dbChecks: 'dbchecks-state', rollback: 'rollback-state' };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** True when Cloudflare turned the checker away rather than the site failing. */
@@ -81,6 +86,14 @@ export const classify = {
     if (status !== 200) return { ok: false, reason: `HTTP ${status}` };
     if (!body.includes('<div id="root">')) return { ok: false, reason: 'page loaded without the app shell' };
     return { ok: true, reason: 'shell served' };
+  },
+  /** The main module script the shell loads. Pages' fallback serves HTML for a missing file. */
+  appScript(status, contentType, src) {
+    if (status !== 200) return { ok: false, reason: `main script ${src}: HTTP ${status}` };
+    if (!/javascript/i.test(contentType || '')) {
+      return { ok: false, reason: `main script ${src} is missing (served as ${contentType || 'no type'})` };
+    }
+    return { ok: true, reason: 'shell and main script served' };
   },
   tmdb(status, json) {
     if (status !== 200) return { ok: false, reason: `HTTP ${status}${json?.error ? ` (${json.error})` : ''}` };
@@ -137,6 +150,17 @@ export const classify = {
   },
 };
 
+/** The shell's same-origin module script(s), e.g. /assets/index-abc.js. Exported for tests. */
+export function entryScripts(html) {
+  const out = [];
+  for (const tag of html.match(/<script\b[^>]*>/gi) || []) {
+    if (!/\btype=["']?module\b/i.test(tag)) continue;
+    const src = tag.match(/\bsrc=["']([^"']+)["']/i)?.[1];
+    if (src && src.startsWith('/') && !src.startsWith('//')) out.push(src);
+  }
+  return out;
+}
+
 const STRIPE_API = 'https://api.stripe.com/v1';
 
 /** Where Stripe should be sending events: STRIPE_WEBHOOK_URL, else production's stripe-webhook. */
@@ -178,7 +202,15 @@ export function checksFor(env) {
       read: guarded(async () => {
         const res = await get(env.APP_URL);
         if (refused(res)) return { ok: false, blocked: true, reason: `Cloudflare refused (HTTP ${res.status})` };
-        return classify.app(res.status, await res.text());
+        const body = await res.text();
+        const shell = classify.app(res.status, body);
+        if (!shell.ok) return shell;
+        const src = entryScripts(body)[0];
+        if (!src) return { ok: false, reason: 'the app shell names no main script' };
+        const js = await get(new URL(src, env.APP_URL).href);
+        if (refused(js)) return { ok: false, blocked: true, reason: `Cloudflare refused (HTTP ${js.status})` };
+        await js.body?.cancel();
+        return classify.appScript(js.status, js.headers.get('content-type'), src);
       }),
     });
   }
@@ -547,7 +579,58 @@ export async function run(env, watch = 'uptime', deps = {}) {
   const [core, stripe] = await Promise.all(
     UPTIME_GROUPS.map((g) => runGroup(env, watch, g, all.filter((c) => g.names.includes(c.name)), now, deps)),
   );
-  return stripe.skipped ? core : { ...core, stripe };
+  const app = core.verdict?.results?.find((r) => r.name === 'app');
+  const rollback = app?.state === 'broken' ? await rollbackIfFresh(env, app.reason, now, deps) : null;
+  const out = stripe.skipped ? core : { ...core, stripe };
+  return rollback ? { ...out, rollback } : out;
+}
+
+/**
+ * The app check failed: if the live version is a fresh deploy, put the one
+ * before it back (rollback.js), then email and open an incident issue. The
+ * outage's own down/recovered emails are unchanged; this adds what was done.
+ */
+async function rollbackIfFresh(env, reason, now, deps = {}) {
+  const state = await env.STATE.get(STATE_KEYS.rollback, 'json');
+  const result = await maybeRollback(env, { now, state, http: deps.cloudflare || fetch });
+  const summary = { action: result.action, reason: result.reason, from: result.from?.id, to: result.to?.id };
+  if (result.action !== 'rollback' && result.action !== 'failed') return summary;
+  // Store first: a rollback that happened must never be repeated because an
+  // email failed. A failed attempt stores nothing, so the next run retries.
+  if (result.state) await env.STATE.put(STATE_KEYS.rollback, JSON.stringify(result.state));
+  const { subject, html } = rollbackEmail(result, { reason });
+  await sendRaw(env, subject, html);
+  await openIssue(env, subject, html);
+  return summary;
+}
+
+async function sendRaw(env, subject, html) {
+  if (!env.RESEND_API_KEY) return console.error('UPTIME WATCH wanted to email and RESEND_API_KEY is unset:', subject);
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: env.ALERT_FROM, to: [env.ALERT_EMAIL], subject, html }),
+  });
+  if (!res.ok) console.error('Resend rejected the email:', res.status, await res.text());
+}
+
+async function openIssue(env, title, html) {
+  if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) return;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/issues`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'plot-uptime-watch',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title, body: html.replace(/<[^>]+>/g, '\n').replace(/\n{2,}/g, '\n\n').trim(), labels: ['incident'] }),
+    });
+    if (!res.ok) throw new Error(`open ${res.status}`);
+  } catch (err) {
+    console.error('uptime watch: rollback issue failed:', err?.message || err);
+  }
 }
 
 async function runGroup(env, watch, group, checks, now, deps = {}) {

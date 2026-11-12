@@ -17,6 +17,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Dimensio
 import Svg, { Path, Polyline } from 'react-native-svg';
 import SearchPickModal from './SearchPickModal';
 import EmptyPrompt from './EmptyPrompt';
+import { TextLink } from './Button';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../lib/tokens';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
@@ -218,11 +219,7 @@ export function TopTenSection({ listType, title, showTitle = true, topLists, his
       <View style={styles.sectionHeader}>
         {showTitle ? <Text style={styles.sectionTypeLabel}>{title}</Text> : <View style={{ flex: 1 }} />}
         {items.length > 0 && (
-          <TouchableOpacity onPress={() => setEditMode(m => !m)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>
-              {editMode ? 'Done' : 'Edit'}
-            </Text>
-          </TouchableOpacity>
+          <TextLink tone="accent" label={editMode ? 'Done' : 'Edit'} onPress={() => setEditMode(m => !m)} />
         )}
       </View>
 

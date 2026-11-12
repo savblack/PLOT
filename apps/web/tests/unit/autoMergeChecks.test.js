@@ -2,40 +2,66 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { judgeChecks, judgeCodeql } from '../../../../scripts/auto-merge.mjs';
 
+const SHA = 'abc';
 const codeql = { name: 'CodeQL', status: 'completed', conclusion: 'success', app: { slug: 'github-advanced-security' } };
-const circle = { context: 'ci/circleci: check', state: 'success', creator: { login: 'circleci-app[bot]' } };
+const PR = 7;
+const ci = { path: '.github/workflows/ci.yml', event: 'pull_request', head_sha: SHA, status: 'completed', conclusion: 'success', pull_requests: [{ number: PR, base: { ref: 'main' } }] };
+const judge = (runs, statuses, wf) => judgeChecks(runs, statuses, wf, SHA, PR);
 
-test('real CodeQL and CircleCI results pass', () => {
-  assert.deepEqual(judgeChecks([codeql], [circle]), { pending: [], failed: [], missing: [] });
+test('real CodeQL and CI results pass', () => {
+  assert.deepEqual(judge([codeql], [], [ci]), { pending: [], failed: [], missing: [] });
 });
 
 test('a workflow job named "CodeQL" does not count as the real CodeQL scan', () => {
   const fake = { ...codeql, app: { slug: 'github-actions' } };
-  assert.deepEqual(judgeChecks([fake], [circle]).missing, ['CodeQL']);
+  assert.deepEqual(judge([fake], [], [ci]).missing, ['CodeQL']);
 });
 
-test('a CircleCI-named status from a workflow token neither counts nor hides a real failure', () => {
-  const spoof = { context: 'ci/circleci: check', state: 'success', creator: { login: 'github-actions[bot]' } };
-  const realFail = { ...circle, state: 'failure' };
-  const r = judgeChecks([codeql], [spoof, realFail]);
-  assert.deepEqual(r.failed, ['ci/circleci: check (failure)']);
-  assert.deepEqual(judgeChecks([codeql], [spoof]).missing, ['ci/circleci: check']);
+test('a run from another workflow file does not count as CI, whatever it is called', () => {
+  const other = { ...ci, path: '.github/workflows/ci-copy.yml' };
+  assert.deepEqual(judge([codeql], [], [other]).missing, ['CI']);
+});
+
+test('a CI run started by hand or for another commit does not count', () => {
+  assert.deepEqual(judge([codeql], [], [{ ...ci, event: 'workflow_dispatch' }]).missing, ['CI']);
+  assert.deepEqual(judge([codeql], [], [{ ...ci, head_sha: 'old' }]).missing, ['CI']);
+});
+
+test('a green run from a PR with the same head but a decoy base does not count', () => {
+  // A pull_request run uses its base branch's ci.yml, so a decoy base can make it exit 0.
+  const decoy = { ...ci, pull_requests: [{ number: 99, base: { ref: 'x' } }] };
+  assert.deepEqual(judge([codeql], [], [decoy]).missing, ['CI']);
+  // Newest first: the decoy pass must not hide this PR's real failure.
+  assert.deepEqual(judge([codeql], [], [decoy, { ...ci, conclusion: 'failure' }]).failed, ['CI (failure)']);
+  // Another PR's run against main does not vouch for this one either.
+  assert.deepEqual(judge([codeql], [], [{ ...ci, pull_requests: [{ number: 8, base: { ref: 'main' } }] }]).missing, ['CI']);
+});
+
+test('a push run counts only when it is a push to main', () => {
+  const push = { ...ci, event: 'push', pull_requests: [] };
+  assert.deepEqual(judge([codeql], [], [{ ...push, head_branch: 'main' }]).missing, []);
+  assert.deepEqual(judge([codeql], [], [{ ...push, head_branch: 'x' }]).missing, ['CI']);
+});
+
+test('the latest CI run decides: a newer failure beats an older pass', () => {
+  const r = judge([codeql], [], [{ ...ci, conclusion: 'failure' }, ci]);
+  assert.deepEqual(r.failed, ['CI (failure)']);
+});
+
+test('a status that merely borrows a name still fails the PR when red', () => {
+  const st = { context: 'CI', state: 'failure', creator: { login: 'savblack' } };
+  assert.deepEqual(judge([codeql], [st], [ci]).failed, ['CI (failure)']);
 });
 
 test('any failing run with a required name fails, even beside a passing one', () => {
   const failing = { ...codeql, conclusion: 'failure' };
-  assert.deepEqual(judgeChecks([codeql, failing], [circle]).failed, ['CodeQL (failure)']);
+  assert.deepEqual(judge([codeql, failing], [], [ci]).failed, ['CodeQL (failure)']);
 });
 
 test('pending checks are waited on, not treated as missing', () => {
-  const r = judgeChecks([{ ...codeql, status: 'in_progress', conclusion: null }], [{ ...circle, state: 'pending' }]);
+  const r = judge([{ ...codeql, status: 'in_progress', conclusion: null }], [], [{ ...ci, status: 'in_progress', conclusion: null }]);
   assert.deepEqual(r.missing, []);
-  assert.deepEqual(r.pending.sort(), ['CodeQL', 'ci/circleci: check']);
-});
-
-test('a CircleCI-named status under a person account does not count', () => {
-  const asUser = { ...circle, creator: { login: 'savblack' } };
-  assert.deepEqual(judgeChecks([codeql], [asUser]).missing, ['ci/circleci: check']);
+  assert.deepEqual(r.pending.sort(), ['CI', 'CodeQL']);
 });
 
 const KEY = 'dynamic/github-code-scanning/codeql:analyze';

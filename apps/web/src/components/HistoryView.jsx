@@ -36,6 +36,8 @@ import { premiumPlansPath } from '../utils/premiumExplore.js';
 import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
 import PremiumMark from './PremiumMark.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
+import ActivationNudge from './ActivationNudge.jsx';
+import { useActivationNudge } from '../hooks/useActivationNudge.js';
 
 /* History is its own page: the poster shelf, one month at a time, with a
    sticky column of small cards beside it that say something about the year
@@ -373,8 +375,9 @@ function MonthGroup({ group, allGroups, today, openPanel }) {
  * @param {number}  props.activeYear
  * @param {Function} props.onYear
  * @param {Date}    [props.today]
+ * @param {import('react').ReactNode} [props.emptyNudge]  Drawn in place of the empty state.
  */
-export function HistoryPage({ entries, details, detailsLoading, genreList, openPanel, activeYear, onYear, today = new Date(), topLists, profile, sharePreset = null, onSharePresetUsed, premium = false, drilldown = null, onDrilldown, onClearDrilldown }) {
+export function HistoryPage({ entries, details, detailsLoading, genreList, openPanel, activeYear, onYear, today = new Date(), topLists, profile, sharePreset = null, onSharePresetUsed, premium = false, drilldown = null, onDrilldown, onClearDrilldown, emptyNudge = null }) {
   const years = useMemo(() => yearsWithEntries(entries), [entries]);
   const yearEntries = useMemo(() => entriesInYear(entries, activeYear), [entries, activeYear]);
 
@@ -438,6 +441,9 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
     // eslint-disable-next-line react-hooks/exhaustive-deps -- genreName reads genreList
     [yearEntries, genreList],
   );
+
+  // An account with no titles at all gets the empty-library nudge instead.
+  if (!entries.length && emptyNudge) return <div className="hist-empty-nudge">{emptyNudge}</div>;
 
   if (!entries.length) {
     return (
@@ -608,11 +614,13 @@ export default function HistoryView() {
   const activeYear = year ?? (premium ? drilldown?.year : null) ?? years[0] ?? today.getFullYear();
   const yearEntries = useMemo(() => entriesInYear(entries, activeYear), [entries, activeYear]);
   const { details, loading: detailsLoading } = useHistoryDetails(yearEntries);
+  const nudge = useActivationNudge();
 
   if (!user) return null;
   if (loading) return <LoadingSpinner />;
   return (
     <HistoryPage
+      emptyNudge={nudge.show ? <ActivationNudge surface="history" sources={nudge.sources} /> : null}
       entries={entries}
       details={details}
       detailsLoading={detailsLoading}

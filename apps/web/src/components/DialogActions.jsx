@@ -5,9 +5,10 @@
 // new shared list had Create with no Cancel, and each drew its buttons at a
 // different size (design audit, 10 Nov 2026, picks 2.2 A and 4.2 B).
 //
-// There is no Cancel: every dialog closes with the X in its top right
-// corner, and a second button that does the same thing was one more thing to
-// read. A sheet that saves as you go has no foot at all.
+// There is no Cancel in the foot: every dialog closes with Cancel in its
+// header's top right corner (SheetHeader), and a second button that does the
+// same thing was one more thing to read. A sheet that saves as you go has no
+// foot at all.
 //
 // Web only: mobile has its own sheet footers.
 import './DialogActions.css';

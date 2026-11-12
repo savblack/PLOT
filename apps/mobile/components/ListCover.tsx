@@ -10,6 +10,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { IconPlus } from './icons';
+import { Tag } from './Chip';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, posterUrl } from '../lib/tokens';
 
@@ -55,7 +56,7 @@ export default function ListCover({ name, count, posters, badge, byline, trailin
       </View>
       <View style={styles.nameRow}>
         <Text style={styles.name} numberOfLines={2}>{name}</Text>
-        {badge ? <Text style={styles.badge}>{badge}</Text> : null}
+        {badge ? <Tag label={badge} style={styles.badge} /> : null}
       </View>
       <View style={styles.countRow}>
         <Text style={styles.count} numberOfLines={1}>{count}</Text>
@@ -97,10 +98,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   newSheet: { backgroundColor: 'transparent', borderStyle: 'dashed', borderWidth: 1.5, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   name: { flexShrink: 1, fontFamily: fontFamily.display, fontSize: fontSize.md, color: colors.textPrimary },
-  badge: {
-    fontFamily: fontFamily.sansBold, fontSize: 9, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.accentText,
-    borderWidth: 1, borderColor: colors.accentText, borderRadius: 999, paddingHorizontal: 6, paddingVertical: 1,
-  },
+  badge: { alignSelf: 'center' },
   countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   count: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
 });

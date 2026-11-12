@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CARD_FORMATS, presetIndex, shareCaption, cardFilename } from '@plot/core/shareCards.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 import { track } from '../lib/analytics.js';
 import { cardToPng, canCopyImages, copyImage, downloadBlob, xIntentUrl, threadsIntentUrl, openIntent } from '../utils/cardImage.js';
 import { SHARE_CARDS as T } from '../copy/shareCards.js';
-import { IconChevronLeft, IconChevronRight, IconClose } from './navIcons.jsx';
+import { IconChevronLeft, IconChevronRight } from './navIcons.jsx';
 import ShareCard from './ShareCard.jsx';
 import { useApp } from '../hooks/useApp.js';
 import Spinner from './Spinner.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
+import { useFocusCancel, useStableClose } from '../hooks/useDialogClose.js';
 import './ShareCardSheet.css';
 
 /* The share sheet: a modal over whatever page opened it, never a page of its
@@ -105,8 +106,8 @@ export default function ShareCardSheet({ cards, preset, profile, source, loading
   const [scale, setScale] = useState(0.3);
   const cardRef = useRef(null);
   const stageRef = useRef(null);
-  const closeRef = useRef(null);
-  const titleId = useId();
+  const bodyRef = useRef(null);
+  const close = useStableClose(onClose);
 
   const card = cards[Math.min(index, cards.length - 1)];
   const size = CARD_FORMATS[format];
@@ -133,19 +134,17 @@ export default function ShareCardSheet({ cards, preset, profile, source, loading
     return () => ro.disconnect();
   }, [format, size.width, size.height]);
 
-  // Escape closes; focus starts on Close; the page behind does not scroll.
+  // Focus starts on Cancel. ResponsiveDialog closes on Escape and keeps the
+  // page behind from scrolling; the arrow keys move between cards.
+  useFocusCancel(bodyRef);
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
     const onKey = (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
       if (e.key === 'ArrowLeft') setIndex(i => Math.max(0, i - 1));
       if (e.key === 'ArrowRight') setIndex(i => Math.min(cards.length - 1, i + 1));
     };
     document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; };
-  }, [onClose, cards.length]);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [cards.length]);
 
   const makePng = useCallback(async () => cardToPng(cardRef.current, size), [size]);
 
@@ -198,17 +197,10 @@ export default function ShareCardSheet({ cards, preset, profile, source, loading
 
   if (!card && !loading) return null;
 
-  const sheet = (
-    <div className="scs-overlay" onClick={onClose}>
-      <div
-        className="scs"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onClick={e => e.stopPropagation()}
-      >
+  return (
+    <ResponsiveDialog title={T.sheetTitle} onClose={close} size="wide" tall zIndex={2000}>
+      <div className="scs" ref={bodyRef}>
         <div className="scs-head">
-          <h2 id={titleId} className="scs-title">{T.sheetTitle}</h2>
           <div className="cal-scope" role="tablist" aria-label="Format">
             {['post', 'story'].map(f => (
               <button key={f} type="button" role="tab" className={`cal-scope-btn${format === f ? ' active' : ''}`} aria-selected={format === f} onClick={() => setFormat(f)}>
@@ -216,7 +208,6 @@ export default function ShareCardSheet({ cards, preset, profile, source, loading
               </button>
             ))}
           </div>
-          <button ref={closeRef} type="button" className="scs-close" aria-label={T.close} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="scs-stage" ref={stageRef}>
@@ -277,8 +268,6 @@ export default function ShareCardSheet({ cards, preset, profile, source, loading
           </p>
         )}
       </div>
-    </div>
+    </ResponsiveDialog>
   );
-
-  return createPortal(sheet, document.body);
 }

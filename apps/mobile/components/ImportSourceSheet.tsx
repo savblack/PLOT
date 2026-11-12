@@ -6,7 +6,7 @@
  * apps/web/src/components/ImportSourceDialog.jsx.
  */
 import { useMemo, type ReactNode } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
@@ -18,6 +18,8 @@ import type { ImportStart, PlexPickerState } from '../hooks/useImportStart';
 import BottomSheet from './BottomSheet';
 import Button, { TextLink } from './Button';
 import ImportSourceIcon from './ImportSourceIcon';
+import { Tag } from './Chip';
+import { Spinner } from './Loader';
 
 const S = ONBOARDING_FLOW.importSources;
 const I = IMPORT_JOBS.onboarding;
@@ -33,8 +35,7 @@ export function ImportSheet({ title, sub, onClose, children }: {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <BottomSheet visible onClose={onClose} title={typeof title === 'string' ? title : undefined}>
-      {typeof title === 'string' ? null : title}
+    <BottomSheet visible onClose={onClose} title={title}>
       {sub ? <Text style={styles.sheetSub}>{sub}</Text> : null}
       {children}
     </BottomSheet>
@@ -108,7 +109,7 @@ export function PlexPicker({ plex }: { plex: PlexPickerState }) {
       )}
       {plex.selected && plex.selection ? <Text style={styles.bodyText}>{I.plexSelected(plex.selection.name, plex.selection.profileName)}</Text> : null}
       {!plex.selected && !plex.busy && plex.servers.length === 0 ? <Text style={styles.bodyText}>{I.plexServerLater}</Text> : null}
-      {plex.busy ? <View style={styles.wait}><ActivityIndicator color={colors.accent} /><Text style={styles.bodyText}>{COMMON.loading}</Text></View> : null}
+      {plex.busy ? <View style={styles.wait}><Spinner /><Text style={styles.bodyText}>{COMMON.loading}</Text></View> : null}
       {plex.error ? <Text style={styles.error}>{plex.error}</Text> : null}
     </View>
   );
@@ -177,7 +178,7 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
           </View>
         ) : (
           <TouchableOpacity style={styles.drop} onPress={() => { void start.chooseFile(); }} disabled={uploading} accessibilityRole="button" accessibilityState={{ busy: uploading, disabled: uploading }}>
-            {uploading ? <ActivityIndicator color={colors.accent} /> : <UploadIcon color={colors.textSecondary} />}
+            {uploading ? <Spinner /> : <UploadIcon color={colors.textSecondary} />}
             <Text style={styles.dropTitle}>{uploading ? I.uploading : S.dropTitle}</Text>
             <Text style={styles.dropHint}>{S.dropFormats(src.formats)}</Text>
           </TouchableOpacity>
@@ -226,7 +227,7 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
   } else if (phase === 'connecting') {
     body = (
       <View style={styles.stack}>
-        <View style={styles.wait}><ActivityIndicator color={colors.accent} /><Text style={styles.bodyText}>{I.connecting}</Text></View>
+        <View style={styles.wait}><Spinner /><Text style={styles.bodyText}>{I.connecting}</Text></View>
         {link(S.openAgain, () => { void start.connect(); })}
       </View>
     );
@@ -237,7 +238,7 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
       <View style={styles.stack}>
         {start.error ? <Text style={styles.error}>{start.error}</Text> : null}
         <View style={styles.status}>
-          <View style={styles.statusChip}><CheckIcon color={colors.success} size={14} /><Text style={styles.statusChipText}>{S.tileConnected}</Text></View>
+          <Tag tone="sage" label={S.tileConnected} icon={<CheckIcon color={colors.onAccentSecondaryFill} size={14} />} style={styles.centered} />
           {start.connectedAs ? <Text style={styles.bodyText}>{I.connectedAs(start.connectedAs)}</Text> : null}
         </View>
         {plex ? <PlexPicker plex={plex} /> : null}
@@ -279,8 +280,6 @@ export const makeStyles = (colors: Palette) => StyleSheet.create({
   readsDash: { width: 18, textAlign: 'center', fontFamily: fontFamily.sans, fontSize: fontSize.md, lineHeight: 22, color: colors.textMuted },
   wait: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   status: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
-  statusChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, height: 26, borderRadius: radii.pill, backgroundColor: colors.successDim },
-  statusChipText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary },
   label: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textSecondary },
   radios: { gap: spacing.xs },
   radio: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },

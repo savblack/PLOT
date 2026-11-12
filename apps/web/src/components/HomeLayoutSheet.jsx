@@ -7,13 +7,12 @@
 // native drag and drop, and every row also has buttons for keyboard and touch.
 //
 // Mobile parity: app/(app)/home-layout.tsx draws the same sections.
-import { useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { CARD_STYLES, UI_DENSITIES } from '@plot/core/uiPrefs.js';
 import { MAX_HOME_PINS } from '@plot/core/homeLayout.js';
-import SheetHeader from './SheetHeader.jsx';
-import { useEscapeToClose } from '../hooks/useEscapeToClose.js';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
+import { useStableClose } from '../hooks/useDialogClose.js';
 import ReorderRows, { Chevron } from './ReorderRows.jsx';
 import './HomeLayoutSheet.css';
 
@@ -87,62 +86,54 @@ export default function HomeLayoutSheet({
   premium, pins, pinGroups, onPin, onUnpin, onNudgePin, onUpgrade,
 }) {
   const [picking, setPicking] = useState(false);
-  const sheetRef = useRef(null);
-  useEscapeToClose(true, onClose, { rootRef: sheetRef });
+  const close = useStableClose(onClose);
   const full = layout.pins.length >= MAX_HOME_PINS;
 
-  return createPortal(
-    <>
-      <div className="panel-overlay" onClick={onClose} />
-      <div className="panel home-layout-sheet" role="dialog" aria-label={C.title} ref={sheetRef}>
-        <div className="home-layout-sheet-head">
-          <SheetHeader title={C.title} onClose={onClose} />
-        </div>
-        <div className="home-layout-sheet-body">
-          <p className="home-layout-sheet-intro"><span className="home-layout-intro-drag">{C.body}</span><span className="home-layout-intro-arrows">{C.bodyArrows}</span></p>
-          {error && <p className="home-layout-sheet-error" role="alert">{C.saveError}</p>}
+  return (
+    <ResponsiveDialog title={C.title} onClose={close} tall surfaceClassName="home-layout-sheet">
+      <div className="home-layout-sheet-body">
+        <p className="home-layout-sheet-intro"><span className="home-layout-intro-drag">{C.body}</span><span className="home-layout-intro-arrows">{C.bodyArrows}</span></p>
+        {error && <p className="home-layout-sheet-error" role="alert">{C.saveError}</p>}
 
-          <h3 className="home-layout-heading">{C.lookTitle}</h3>
-          <Segmented label={C.densityLabel} value={prefs.density} options={UI_DENSITIES} names={C.density} onChange={onDensity} />
-          <Segmented label={C.cardStyleLabel} value={prefs.cardStyle} options={CARD_STYLES} names={C.cardStyle} onChange={onCardStyle} />
+        <h3 className="home-layout-heading">{C.lookTitle}</h3>
+        <Segmented label={C.densityLabel} value={prefs.density} options={UI_DENSITIES} names={C.density} onChange={onDensity} />
+        <Segmented label={C.cardStyleLabel} value={prefs.cardStyle} options={CARD_STYLES} names={C.cardStyle} onChange={onCardStyle} />
 
-          <h3 className="home-layout-heading">{C.pinsTitle}</h3>
-          <p className="home-layout-sheet-intro home-layout-sub">{premium ? C.pinsBody : C.pinsLocked}</p>
-          {premium && pins.length === 0 && <p className="home-layout-empty">{C.pinsEmpty}</p>}
-          {premium && pins.length > 0 && (
-            <ol className="home-layout-list">
-              {pins.map((entry, index) => (
-                <li key={entry.key} className="home-layout-row no-grip no-switch">
-                  <span className="home-layout-label"><span>{entry.label}</span></span>
-                  <span className="home-layout-nudge">
-                    <button type="button" className="home-layout-nudge-btn" aria-label={C.pinMoveUp(entry.label)} disabled={index === 0} onClick={() => onNudgePin(entry.pin, -1)}><Chevron up /></button>
-                    <button type="button" className="home-layout-nudge-btn" aria-label={C.pinMoveDown(entry.label)} disabled={index === pins.length - 1} onClick={() => onNudgePin(entry.pin, 1)}><Chevron /></button>
-                  </span>
-                  <button type="button" className="home-layout-unpin" aria-label={C.unpin(entry.label)} onClick={() => onUnpin(entry.pin)}>×</button>
-                </li>
-              ))}
-            </ol>
-          )}
-          {premium && !picking && (
-            <button type="button" className="btn btn-secondary home-layout-pin-add" disabled={full} onClick={() => setPicking(true)}>
-              {full ? C.pinLimit(MAX_HOME_PINS) : C.pinAction}
-            </button>
-          )}
-          {premium && picking && <PinPicker groups={pinGroups} onPick={(pin) => { onPin(pin); setPicking(false); }} onCancel={() => setPicking(false)} />}
-          {!premium && <button type="button" className="btn btn-secondary home-layout-pin-add" onClick={onUpgrade}>{C.pinsUpgrade}</button>}
+        <h3 className="home-layout-heading">{C.pinsTitle}</h3>
+        <p className="home-layout-sheet-intro home-layout-sub">{premium ? C.pinsBody : C.pinsLocked}</p>
+        {premium && pins.length === 0 && <p className="home-layout-empty">{C.pinsEmpty}</p>}
+        {premium && pins.length > 0 && (
+          <ol className="home-layout-list">
+            {pins.map((entry, index) => (
+              <li key={entry.key} className="home-layout-row no-grip no-switch">
+                <span className="home-layout-label"><span>{entry.label}</span></span>
+                <span className="home-layout-nudge">
+                  <button type="button" className="home-layout-nudge-btn" aria-label={C.pinMoveUp(entry.label)} disabled={index === 0} onClick={() => onNudgePin(entry.pin, -1)}><Chevron up /></button>
+                  <button type="button" className="home-layout-nudge-btn" aria-label={C.pinMoveDown(entry.label)} disabled={index === pins.length - 1} onClick={() => onNudgePin(entry.pin, 1)}><Chevron /></button>
+                </span>
+                <button type="button" className="home-layout-unpin" aria-label={C.unpin(entry.label)} onClick={() => onUnpin(entry.pin)}>×</button>
+              </li>
+            ))}
+          </ol>
+        )}
+        {premium && !picking && (
+          <button type="button" className="btn btn-secondary home-layout-pin-add" disabled={full} onClick={() => setPicking(true)}>
+            {full ? C.pinLimit(MAX_HOME_PINS) : C.pinAction}
+          </button>
+        )}
+        {premium && picking && <PinPicker groups={pinGroups} onPick={(pin) => { onPin(pin); setPicking(false); }} onCancel={() => setPicking(false)} />}
+        {!premium && <button type="button" className="btn btn-secondary home-layout-pin-add" onClick={onUpgrade}>{C.pinsUpgrade}</button>}
 
-          <h3 className="home-layout-heading">{C.shelvesTitle}</h3>
-          <ReorderRows
-            rows={sections.map(s => ({ id: s.id, label: s.label, hidden: layout.hidden.includes(s.id) }))}
-            onMove={onMove}
-            onNudge={onNudge}
-            onToggle={onToggle}
-            labels={{ moveUp: C.moveUp, moveDown: C.moveDown, drag: C.dragHandle, hiddenTag: C.hiddenTag, show: C.show, hide: C.hide }}
-          />
-          <button type="button" className="btn btn-secondary home-layout-reset" onClick={onReset} disabled={isDefault}>{C.reset}</button>
-        </div>
+        <h3 className="home-layout-heading">{C.shelvesTitle}</h3>
+        <ReorderRows
+          rows={sections.map(s => ({ id: s.id, label: s.label, hidden: layout.hidden.includes(s.id) }))}
+          onMove={onMove}
+          onNudge={onNudge}
+          onToggle={onToggle}
+          labels={{ moveUp: C.moveUp, moveDown: C.moveDown, drag: C.dragHandle, hiddenTag: C.hiddenTag, show: C.show, hide: C.hide }}
+        />
+        <button type="button" className="btn btn-secondary home-layout-reset" onClick={onReset} disabled={isDefault}>{C.reset}</button>
       </div>
-    </>,
-    document.body,
+    </ResponsiveDialog>
   );
 }

@@ -19,7 +19,7 @@ import { EVENTS } from '@plot/core/analyticsEvents.js';
 import UpgradeSheet from './UpgradeSheet';
 import BottomSheet from './BottomSheet';
 import Button from './Button';
-import SectionTitle from './SectionTitle';
+import { Tag } from './Chip';
 
 /** The poster wall: six across, three down, as on web. */
 const WALL_POSTERS = 18;
@@ -86,9 +86,7 @@ export function CuratedListCard({ curated, width, height, onPress }: {
         ))}
       </View>
       <View style={styles.content} pointerEvents="none">
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{COPY.cardBadge.toUpperCase()}</Text>
-        </View>
+        <Tag tone="accent" label={COPY.cardBadge.toUpperCase()} style={styles.badge} />
         <Text style={styles.title}>{curated.title}</Text>
         <Text style={styles.meta}>{COPY.cardMeta(curated.entries.length, curated.source.name)}</Text>
       </View>
@@ -165,6 +163,7 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
     <BottomSheet
       visible
       onClose={onClose}
+      title={curated.title}
       scroll={false}
       flush
       maxHeight="92%"
@@ -183,16 +182,6 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
         </View>
       )}
     >
-        <View style={styles.panelHead}>
-          <SectionTitle style={styles.panelTitle} numberOfLines={2}>{curated.title}</SectionTitle>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={COPY.closeLabel} accessibilityRole="button">
-            {/* Two bars rather than an Svg icon: react-native-svg does not load in the web Storybook. */}
-            <View style={styles.closeIcon}>
-              <View style={[styles.closeBar, { transform: [{ rotate: '45deg' }] }]} />
-              <View style={[styles.closeBar, { transform: [{ rotate: '-45deg' }] }]} />
-            </View>
-          </TouchableOpacity>
-        </View>
         <FlatList
           data={curated.entries}
           keyExtractor={entry => `${entry.media_type}-${entry.tmdb_id}`}
@@ -231,18 +220,10 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
 const makeStyles = (colors: Palette) => StyleSheet.create({
   card: { borderRadius: radii.lg, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   content: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg },
-  badge: {
-    alignSelf: 'flex-start', backgroundColor: colors.accentDim, borderWidth: 1, borderColor: colors.accent,
-    borderRadius: radii.badge, paddingHorizontal: 8, paddingVertical: 3, marginBottom: spacing.sm,
-  },
-  badgeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accent, letterSpacing: 0.8 },
+  badge: { marginBottom: spacing.sm },
   title: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: '#fff' },
   meta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: 'rgba(255,255,255,0.72)', marginTop: 2 },
 
-  panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingHorizontal: spacing.xl },
-  closeIcon: { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
-  closeBar: { position: 'absolute', width: 20, height: 2.5, borderRadius: 2, backgroundColor: colors.textSecondary },
-  panelTitle: { flex: 1 },
   intro: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
   blurb: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   source: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, textDecorationLine: 'underline', marginTop: spacing.xs },

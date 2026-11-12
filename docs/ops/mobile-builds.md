@@ -16,6 +16,22 @@ credentials worked once already, on an SDK that is now one major behind.
 This doc is about getting it to run. The checks to run once it does are in
 [docs/qa/mobile-device-smoke.md](../qa/mobile-device-smoke.md).
 
+## Automatic store builds (since 2026-11-12)
+
+Every mobile release builds itself. When release-please merges a release PR
+and tags `mobile-vX.Y.Z`, `.github/workflows/release-please.yml` calls
+`.github/workflows/mobile-build.yml`, which runs
+`eas build --platform ios --profile production` on Expo's servers from that
+tag and waits for it. The run summary links the build page. A failed build
+opens an `incident` issue and emails; the next good build closes it. Run it by
+hand for any branch or tag from Actions ▸ "Mobile — iOS store build".
+
+It builds only. Submitting stays a manual step for now, because App Store
+Connect must have an open version matching `expo.version` first (see
+[app-store-listing.md](app-store-listing.md)). Needs the `EXPO_TOKEN` repo
+secret (an expo.dev access token for `savblack`); without it the job exits
+green and says so. About six releases a month, well inside EAS's free tier.
+
 ## Account status: enrolled, as an individual
 
 Confirmed 2026-09-11. Plot is enrolled in the Apple Developer Program on an
@@ -232,6 +248,37 @@ disagrees with the one EAS is incrementing.
 4. Settle the seller (Individual, or register a Pty Ltd and convert) before
    the app record exists. See [app-store-listing.md](app-store-listing.md).
 5. Install Xcode when convenient, for the faster local loop.
+
+## Social sign-in status on 2026-11-12
+
+- The production EAS environment has `EXPO_PUBLIC_SHOW_APPLE_LOGIN=true` and
+  `EXPO_PUBLIC_SHOW_GOOGLE_LOGIN=true`. Both providers are enabled in production
+  Supabase. The production build key reached Auth settings, and authorization
+  requests redirected to `appleid.apple.com` and `accounts.google.com`.
+- These flags are embedded at build time. iOS production build 6
+  (`0e725475-cb9b-4ab6-a486-3161023f8ffe`) finished with both flags loaded;
+  Android production build 2 (`ead7b161-e097-4128-98e1-d7618a93e6bf`)
+  also finished. The older iOS build 5 predates the flag change.
+- **Verified on an iPhone through TestFlight.** Build 6 was submitted to
+  TestFlight (internal testing only) and Sign in with Apple worked. Google
+  finished on the theplot.tv website instead of returning to the app.
+- **Cause:** `Linking.createURL('/auth/callback')` returns
+  `plot:///auth/callback` (three slashes, empty host) in a store build, and
+  Supabase's Redirect URLs list has `plot://auth/callback`. Supabase compares
+  literally and, on a mismatch, silently falls back to the Site URL. Apple was
+  unaffected because it signs in with a native token and no redirect. The same
+  constant was the `emailRedirectTo` for mobile magic links and sign-up
+  confirmation.
+- **Fix:** `AUTH_APP_CALLBACK` in `app/(auth)/index.tsx` is now the literal
+  `'plot://auth/callback'`. No Supabase setting changed. Google sign-in worked
+  on build 7.
+- Build 8 also makes the charcoal wordmark the default app icon; the five-dot
+  mark is the `MarkCharcoal` alternate in the Premium picker.
+- **TestFlight setup:** EAS now holds an App Store Connect API key (created
+  interactively once; `eas submit --non-interactive` works from here). The
+  internal group "Plot team" has automatic distribution on, so each new build
+  reaches its testers without further setup. Nothing has been submitted for
+  App Store review.
 
 ## State on 2026-10-14
 

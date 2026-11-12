@@ -1,0 +1,180 @@
+name: CI
+
+# Pull-request and main validation: the secret scan, lint, the contract checks,
+# unit tests, the build, and (for app changes) Storybook and Playwright.
+# This ran on CircleCI until 2026-11-12, to save Actions minutes while the repo
+# was private. It is public now, so standard runners are free and CI lives here
+# with everything else. See docs/ops/actions-minutes.md.
+#
+# Two flows merge on this workflow's result, so its file is part of the merge
+# gate: scripts/auto-merge.mjs and dependabot-automerge.yml each require a
+# successful run of THIS file (.github/workflows/ci.yml) on the exact head
+# commit. scripts/lib/autoMergePolicy.mjs keeps any change to it waiting for
+# Savannah, so an agent fix cannot loosen the checks it is judged by.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A newer push to the same pull request stops the older run. Main is never
+# cancelled: each push there deploys, so each one is checked.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # CI only proves that the app builds and renders locally. These values are
+      # deliberately inert, so browser-safe production config need not be copied
+      # into CI.
+      VITE_SUPABASE_URL: https://placeholder.supabase.co
+      VITE_SUPABASE_ANON_KEY: placeholder-not-a-key
+      VITE_TMDB_PROXY_URL: https://placeholder.invalid
+      VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: placeholder
+      VITE_PUBLIC_POSTHOG_HOST: https://placeholder.invalid
+    steps:
+      # The pull request's own head commit, not GitHub's merge preview: that is
+      # the commit the merge flows judge, and its message carries [full-ci].
+      # Full history, because the secret scan and the tier both diff against
+      # the merge-base with main.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Scan changed lines for secret-shaped strings
+        env:
+          ON_MAIN: ${{ github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --quiet origin main
+          if [ "$ON_MAIN" = true ]; then
+            base_sha="$(git rev-parse HEAD^)"
+          else
+            base_sha="$(git merge-base origin/main HEAD)"
+          fi
+          ./scripts/scan-secrets.sh "$base_sha" HEAD
+
+      - name: Decide how much of the suite this diff needs
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+          node scripts/ci-tier.mjs \
+            --branch "$BRANCH" \
+            --labels "$LABELS" \
+            --commit-message "$(git log -1 --format=%B)" \
+            --write-env "$GITHUB_ENV"
+
+      # Every step below is skipped for a docs-only diff (tier "none").
+      - name: Set up pnpm
+        if: env.PLOT_CI_TIER != 'none'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - name: Set up Node
+        if: env.PLOT_CI_TIER != 'none'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.17.1
+          cache: pnpm
+
+      - name: Set up Deno 2
+        if: env.PLOT_CI_TIER != 'none'
+        run: |
+          set -euo pipefail
+          curl -fsSL https://deno.land/install.sh | sh -s v2.9.5
+          echo "$HOME/.deno/bin" >> "$GITHUB_PATH"
+          "$HOME/.deno/bin/deno" --version
+
+      - name: Typecheck edge functions
+        if: env.PLOT_CI_TIER != 'none'
+        run: pnpm run edge:check
+
+      - name: Install dependencies
+        if: env.PLOT_CI_TIER != 'none'
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        if: env.PLOT_CI_TIER != 'none'
+        run: pnpm run lint
+
+      - name: Check generated and shared sources
+        if: env.PLOT_CI_TIER != 'none'
+        run: |
+          set -euo pipefail
+          pnpm run footer:check
+          pnpm run csp:check
+          pnpm run changelog:check
+          pnpm run skills:check
+          pnpm run tokens:check
+          pnpm run colors:check
+          pnpm run tokens:marketing
+          pnpm run emails:check
+
+      - name: Check migrations and cross-platform contracts
+        if: env.PLOT_CI_TIER != 'none'
+        run: |
+          set -euo pipefail
+          pnpm run migrations:check
+          pnpm run db:block-clause
+          pnpm run copy:check
+          pnpm run core:check
+
+      - name: Broadcast importer tests
+        if: env.PLOT_CI_TIER != 'none'
+        run: python3 -m unittest discover -s scripts/guide -p 'test_*.py'
+
+      - name: JavaScript unit tests
+        if: env.PLOT_CI_TIER != 'none'
+        run: |
+          set -euo pipefail
+          pnpm run test:unit
+          pnpm run test:website
+          pnpm run test:workers
+          pnpm run test:marketing
+
+      - name: Build
+        if: env.PLOT_CI_TIER != 'none'
+        run: pnpm run build
+
+      - name: Bundle size budget
+        if: env.PLOT_CI_TIER != 'none'
+        run: pnpm run bundle:check
+
+      - name: Check mobile
+        if: env.PLOT_CI_TIER != 'none'
+        run: |
+          set -euo pipefail
+          pnpm run mobile:deps
+          pnpm --filter @plot/mobile run typecheck
+
+      # Storybook and Playwright run only for the "full" tier (app changes).
+      - name: Build Storybooks
+        if: env.PLOT_CI_TIER == 'full'
+        run: |
+          set -euo pipefail
+          pnpm --filter @plot/web run build-storybook
+          if [ "$PLOT_CI_WEBSITE_STORYBOOK" = 1 ]; then
+            pnpm --filter @plot/website-storybook run build-storybook
+          fi
+          if [ "$PLOT_CI_MOBILE_STORYBOOK" = 1 ]; then
+            pnpm --filter @plot/mobile run build-storybook
+          fi
+
+      - name: Install Playwright Chromium
+        if: env.PLOT_CI_TIER == 'full'
+        run: pnpm --filter @plot/web exec playwright install --with-deps chromium
+
+      - name: Storybook interaction and accessibility tests
+        if: env.PLOT_CI_TIER == 'full'
+        run: pnpm run test-storybook:web
+
+      - name: Smoke tests
+        if: env.PLOT_CI_TIER == 'full'
+        run: pnpm --filter @plot/web exec playwright test

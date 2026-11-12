@@ -1,7 +1,7 @@
 // Mobile customize sheet. The groups and save rules live in @plot/core.
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View,
+  Image, ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { loadArtworkCatalog } from '@plot/core/artwork.js';
@@ -15,6 +15,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { tmdb } from '../lib/tmdb';
 import BottomSheet from './BottomSheet';
 import { TextLink } from './Button';
+import { useDialog } from './Dialog';
+import Loader from './Loader';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import { backdropUrl, fontFamily, fontSize, logoUrl, Palette, posterUrl, profileUrl, radii, spacing } from '../lib/tokens';
 
@@ -75,6 +77,7 @@ export default function CustomizeArtwork({
   const { userId, profile } = useAppData();
   const art = useUserArtwork();
   const [open, setOpen] = useState(false);
+  const { confirm, dialog } = useDialog();
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -115,21 +118,21 @@ export default function CustomizeArtwork({
       <TextLink
         quiet
         label={ARTWORK.customize}
-        onPress={() => {
+        onPress={async () => {
           if (!isPremiumProfile(profile)) {
-            Alert.alert(ARTWORK.premiumTitle, ARTWORK.premiumBody, [
-              { text: SETTINGS_VIEW.premium.upgradeButton, onPress: () => { onLeave?.(); router.push(PREMIUM_SETTINGS_PATH as Href); } },
-              { text: COMMON.cancel, style: 'cancel' },
-            ]);
+            if (await confirm({ title: ARTWORK.premiumTitle, message: ARTWORK.premiumBody, confirmLabel: SETTINGS_VIEW.premium.upgradeButton, cancelLabel: COMMON.cancel })) {
+              onLeave?.();
+              router.push(PREMIUM_SETTINGS_PATH as Href);
+            }
             return;
           }
           setOpen(true);
         }}
         style={[styles.link, inline && styles.linkInline]}
       />
-      <BottomSheet visible={open} onClose={() => setOpen(false)} title={ARTWORK.customize} maxHeight="82%">
+      <BottomSheet visible={open} onClose={() => setOpen(false)} title={ARTWORK.customize} maxHeight="82%" closeLabel={COMMON.done}>
             {art.error ? <Text style={styles.note} accessibilityRole="alert">{art.error}</Text> : null}
-            {loading ? <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.lg }} /> : failed ? (
+            {loading ? <Loader /> : failed ? (
               <Text style={styles.note} accessibilityRole="alert">{ARTWORK.couldNotLoad}</Text>
             ) : (
               <>
@@ -172,6 +175,7 @@ export default function CustomizeArtwork({
               </>
             )}
       </BottomSheet>
+      {dialog}
     </>
   );
 }

@@ -105,8 +105,8 @@ export function ButtonRow({ children }: { children: ReactNode }) {
   return <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>{children}</View>;
 }
 
-export function Sheet({ visible, title, onClose, children, footer }: { visible: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
-  return <BottomSheet visible={visible} title={title} onClose={onClose} footer={footer}>{children}</BottomSheet>;
+export function Sheet({ visible, title, onClose, children, footer, closeLabel }: { visible: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; closeLabel?: string | null }) {
+  return <BottomSheet visible={visible} title={title} onClose={onClose} footer={footer} closeLabel={closeLabel}>{children}</BottomSheet>;
 }
 
 export function SectionLabel({ children }: { children: string }) {
@@ -184,15 +184,6 @@ export function ListCard({ children }: { children: ReactNode }) {
       {rows.map((row, i) => (
         <View key={i} style={i ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border } : undefined}>{row}</View>
       ))}
-    </View>
-  );
-}
-
-export function Chip({ label, tone = 'plain' }: { label: string; tone?: 'plain' | 'ok' }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radii.pill, backgroundColor: tone === 'ok' ? colors.accentSecondaryFill : colors.surfaceSunken }}>
-      <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: tone === 'ok' ? colors.onAccentSecondaryFill : colors.textPrimary }}>{label}</Text>
     </View>
   );
 }

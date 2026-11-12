@@ -4,11 +4,9 @@
 //
 // Mobile parity: app/(app)/my-lists-layout.tsx lists the same sections with
 // up/down and Reset, and reads the same saved order.
-import { useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
-import SheetHeader from './SheetHeader.jsx';
-import { useEscapeToClose } from '../hooks/useEscapeToClose.js';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
+import { useStableClose } from '../hooks/useDialogClose.js';
 import ReorderRows from './ReorderRows.jsx';
 import './HomeLayoutSheet.css';
 
@@ -26,28 +24,20 @@ const C = CUSTOM_LISTS.sections;
  * }} props
  */
 export default function MyListsLayoutSheet({ sections, isDefault, error, onNudge, onMove, onReset, onClose }) {
-  const sheetRef = useRef(null);
-  useEscapeToClose(true, onClose, { rootRef: sheetRef });
-  return createPortal(
-    <>
-      <div className="panel-overlay" onClick={onClose} />
-      <div className="panel home-layout-sheet" role="dialog" aria-label={C.title} ref={sheetRef}>
-        <div className="home-layout-sheet-head">
-          <SheetHeader title={C.title} onClose={onClose} />
-        </div>
-        <div className="home-layout-sheet-body">
-          <p className="home-layout-sheet-intro">{C.body}</p>
-          {error && <p className="home-layout-sheet-error" role="alert">{C.saveError}</p>}
-          <ReorderRows
-            rows={sections}
-            onNudge={onNudge}
-            onMove={onMove}
-            labels={{ moveUp: C.moveUp, moveDown: C.moveDown, drag: C.drag }}
-          />
-          <button type="button" className="btn btn-secondary home-layout-reset" onClick={onReset} disabled={isDefault}>{C.reset}</button>
-        </div>
+  const close = useStableClose(onClose);
+  return (
+    <ResponsiveDialog title={C.title} onClose={close} surfaceClassName="home-layout-sheet">
+      <div className="home-layout-sheet-body">
+        <p className="home-layout-sheet-intro">{C.body}</p>
+        {error && <p className="home-layout-sheet-error" role="alert">{C.saveError}</p>}
+        <ReorderRows
+          rows={sections}
+          onNudge={onNudge}
+          onMove={onMove}
+          labels={{ moveUp: C.moveUp, moveDown: C.moveDown, drag: C.drag }}
+        />
+        <button type="button" className="btn btn-secondary home-layout-reset" onClick={onReset} disabled={isDefault}>{C.reset}</button>
       </div>
-    </>,
-    document.body,
+    </ResponsiveDialog>
   );
 }

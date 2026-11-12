@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft } from '../../components/icons';
+import Loader from '../../components/Loader';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
@@ -67,7 +68,7 @@ export default function BrowseScreen() {
             <Text style={note}>{BROWSE.loadError}. {BROWSE.retry}</Text>
           </TouchableOpacity>
         )}
-        {browse && !error && items === null && <ActivityIndicator color={colors.textMuted} />}
+        {browse && !error && items === null && <Loader fill={false} />}
         {browse && !error && items?.length === 0 && <Text style={note}>{BROWSE.empty}</Text>}
         {!!items?.length && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>

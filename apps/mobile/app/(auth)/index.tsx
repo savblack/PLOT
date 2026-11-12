@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
   Dimensions, Image, Animated, Easing, FlatList,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Linking from 'expo-linking';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
@@ -31,6 +30,7 @@ import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
 import { hasSignedInBefore } from '../../lib/signedInBefore';
 import { rememberBypassSignup, reportBypassSignupConfirmed } from '../../lib/bypassSignupReport';
 import PlotWordmark from '../../components/PlotWordmark';
+import { useDialog } from '../../components/Dialog';
 
 // The panel's fixed palette (see the note on the tokens import): charcoal ink
 // and zinc greys picked against the dark poster wall, named once so the
@@ -136,10 +136,16 @@ const AUTH_WEB_CALLBACK = 'https://app.theplot.tv/auth/callback';
 // app/(auth)/callback.tsx listens for. A link opened on another device cannot
 // open this app, which is why the same email also carries a numeric code
 // (see the 'inbox' mode below).
-// PRODUCTION REQUIREMENT: this resolves to plot://auth/callback — add that
-// exact URL to Supabase Dashboard → Authentication → URL Configuration →
-// Redirect URLs, or signInWithOtp will reject it and fall back to erroring.
-const AUTH_APP_CALLBACK = Linking.createURL('/auth/callback');
+// PRODUCTION REQUIREMENT: this exact URL must be in Supabase Dashboard →
+// Authentication → URL Configuration → Redirect URLs. Supabase compares it
+// literally; on a mismatch it silently sends the person to the Site URL (the
+// web app) instead of back into this app.
+// Written out rather than built with Linking.createURL('/auth/callback'): in a
+// store build that returns plot:///auth/callback (three slashes, empty host),
+// which did not match the allow-listed plot://auth/callback, so Google sign-in
+// on TestFlight build 6 finished on theplot.tv instead of in the app.
+// The scheme is `expo.scheme` in app.json.
+const AUTH_APP_CALLBACK = 'plot://auth/callback';
 
 // Supabase's email OTP length setting allows 6 to 10 digits.
 const OTP_MIN_DIGITS = 6;
@@ -189,6 +195,7 @@ async function authRequest<R extends { error: { message: string } | null }>(
 
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
+  const { notify, dialog } = useDialog();
   // Sign up for a fresh install; Sign in once this device has held a session.
   const [mode, setMode] = useState<Mode>('signup');
   const [email, setEmail] = useState('');
@@ -436,7 +443,7 @@ export default function AuthScreen() {
     const captchaToken = await takeCaptchaToken('login');
     if (captchaToken === false) {
       setLoading(false);
-      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      notify(AUTH_PAGE.verificationUnavailable);
       return;
     }
     const { error } = await authRequest(supabase.auth.signInWithPassword({
@@ -452,7 +459,7 @@ export default function AuthScreen() {
       if (error.message.includes('Email not confirmed')) {
         openInbox('signup');
       } else {
-        Alert.alert(friendlyAuthError(error.message));
+        notify(friendlyAuthError(error.message));
       }
     }
   };
@@ -542,7 +549,7 @@ export default function AuthScreen() {
     const captchaToken = await takeCaptchaToken('forgot');
     if (captchaToken === false) {
       setLoading(false);
-      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      notify(AUTH_PAGE.verificationUnavailable);
       return;
     }
     const { error } = await authRequest(supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -551,10 +558,10 @@ export default function AuthScreen() {
     }));
     setLoading(false);
     refreshCaptcha();
-    if (error) Alert.alert(friendlyAuthError(error.message));
+    if (error) notify(friendlyAuthError(error.message));
     else {
       track(EVENTS.PASSWORD_RESET_REQUESTED);
-      Alert.alert('Check your email', 'We sent a link to reset your password.');
+      notify('Check your email', 'We sent a link to reset your password.');
     }
   };
 
@@ -588,7 +595,7 @@ export default function AuthScreen() {
     if (error) {
       track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: authErrorReason(error.message) });
       if (error.message.includes('User already registered')) setEmailError(AUTH_PAGE.accountAlreadyExists);
-      else Alert.alert(friendlyAuthError(error.message));
+      else notify(friendlyAuthError(error.message));
     }
     else {
       // Web fires this on the same step (account created, confirmation pending);
@@ -612,7 +619,7 @@ export default function AuthScreen() {
         ...(result.status ? { status: result.status } : {}),
       });
       if (result.reason === 'already_registered') setEmailError(result.message);
-      else Alert.alert(result.message);
+      else notify(result.message);
       return;
     }
     // created is false for the function's quiet { ok: true } (honeypot or a
@@ -652,7 +659,7 @@ export default function AuthScreen() {
       if (!shouldMagicLinkViaBypass({ captchaRequired, captchaToken, error })) {
         setLoading(false);
         track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'magic_link', reason: authErrorReason(error.message) });
-        Alert.alert(friendlyAuthError(error.message));
+        notify(friendlyAuthError(error.message));
         return;
       }
     }
@@ -674,7 +681,7 @@ export default function AuthScreen() {
       method: 'magic_link',
       reason: otpError ? authErrorReason(otpError.message) : sent.reason,
     });
-    Alert.alert(sent.message);
+    notify(sent.message);
   };
 
   // Google through the system browser: Supabase builds the provider URL, the
@@ -723,7 +730,7 @@ export default function AuthScreen() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '';
       track(failedEvent, { method: 'google', reason: authErrorReason(message) });
-      Alert.alert(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.googleSignInFailed);
+      notify(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.googleSignInFailed);
     } finally {
       googleStartingRef.current = false;
       setGoogleLoading(false);
@@ -792,7 +799,7 @@ export default function AuthScreen() {
       if (code !== 'ERR_REQUEST_CANCELED') {
         const message = error instanceof Error ? error.message : '';
         track(failedEvent, { method: 'apple', reason: authErrorReason(message) });
-        Alert.alert(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.appleSignInFailed);
+        notify(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.appleSignInFailed);
       }
     } finally {
       appleStartingRef.current = false;
@@ -1096,6 +1103,7 @@ export default function AuthScreen() {
           </BlurView>
         </View>
       </KeyboardAvoidingView>
+      {dialog}
     </View>
   );
 }

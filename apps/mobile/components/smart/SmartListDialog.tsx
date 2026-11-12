@@ -5,10 +5,9 @@
 // opens the upgrade sheet.
 import { useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, Image, Modal, Switch, StyleSheet,
+  View, Text, ScrollView, Image, StyleSheet,
 } from 'react-native';
 import { TextInput } from '../TextInput';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { isCustomListLimitError, isSmartListPremiumError } from '@plot/core/customListCreation.js';
 import { defaultSmartListRules } from '@plot/core/smartLists.js';
@@ -24,7 +23,8 @@ import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import SmartListRules from './SmartListRules';
-import Button, { TextLink } from '../Button';
+import PageSheet from '../PageSheet';
+import Toggle from '../Toggle';
 import {
   asCatalog, asMatches, asRules, suggestedName,
   type SmartListRow, type SmartRules,
@@ -48,7 +48,6 @@ export default function SmartListDialog({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const art = useUserArtwork();
-  const insets = useSafeAreaInsets();
   const { profile, watchlist, history } = useAppData();
   const catalogRaw = useGenreCatalog();
   const catalog = useMemo(() => asCatalog(catalogRaw), [catalogRaw]);
@@ -108,12 +107,14 @@ export default function SmartListDialog({
   const canSubmit = (editing || !!shownName.trim()) && !submitting;
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
-        <View style={styles.header}>
-          <Text style={styles.title} accessibilityRole="header">{title}</Text>
-          <TextLink quiet label={COMMON.cancel} onPress={onClose} disabled={submitting} />
-        </View>
+    <PageSheet
+      title={title}
+      onClose={onClose}
+      onSave={submit}
+      saveLabel={submitting ? busyLabel : action}
+      canSave={canSubmit}
+      error={error || null}
+    >
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {!editing && <Text style={styles.intro}>{SMART_LISTS.intro}</Text>}
           {!editing && (
@@ -138,10 +139,9 @@ export default function SmartListDialog({
             {rules.source !== 'history' && (
               <View style={styles.switchRow}>
                 <Text style={styles.switchLabel}>{SMART_LISTS.hideWatched}</Text>
-                <Switch
+                <Toggle
                   value={rules.hideWatched}
                   onValueChange={() => commitRules(asRules({ ...rules, hideWatched: !rules.hideWatched }) ?? rules)}
-                  trackColor={{ true: colors.accent }}
                   accessibilityLabel={SMART_LISTS.hideWatched}
                 />
               </View>
@@ -166,34 +166,11 @@ export default function SmartListDialog({
             )}
           </View>
         </ScrollView>
-        <View style={styles.footer}>
-          {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-          <Button
-            variant="primary"
-            label={submitting ? busyLabel : action}
-            disabled={!canSubmit}
-            onPress={submit}
-            style={styles.primary}
-          />
-        </View>
-      </View>
-    </Modal>
+    </PageSheet>
   );
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  sheet: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    gap: spacing.md,
-  },
-  title: { flex: 1, fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, letterSpacing: -0.6 },
   body: { padding: spacing.xl, gap: spacing.lg },
   intro: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   field: { gap: spacing.sm },
@@ -218,7 +195,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   postersStale: { opacity: 0.45 },
   poster: { width: 56, height: 84, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   posterImage: { width: '100%', height: '100%' },
-  footer: { paddingHorizontal: spacing.xl, paddingTop: spacing.sm, paddingBottom: spacing.lg, gap: spacing.sm },
-  error: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
-  primary: { alignSelf: 'flex-end' },
 });

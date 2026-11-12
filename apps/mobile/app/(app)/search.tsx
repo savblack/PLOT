@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path } from 'react-native-svg';
 import { IconSearch, IconChevronLeft, IconClose } from '../../components/icons';
+import Chip from '../../components/Chip';
 import { useUnifiedSearch } from '@plot/core/useUnifiedSearch.js';
 import { describeSearchResult, pushRecentSearch } from '@plot/core/search.js';
 import { useGenres } from '@plot/core/useGenres.js';
@@ -323,14 +324,7 @@ export default function SearchScreen() {
               </View>
               <View style={styles.chips}>
                 {recent.map(termText => (
-                  <Pressable
-                    key={termText}
-                    style={styles.chip}
-                    onPress={() => { setQuery(termText); inputRef.current?.focus(); }}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.chipText} numberOfLines={1}>{termText}</Text>
-                  </Pressable>
+                  <Chip key={termText} label={termText} onPress={() => { setQuery(termText); inputRef.current?.focus(); }} style={styles.chip} />
                 ))}
               </View>
             </View>
@@ -425,17 +419,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.textMuted,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: {
-    height: 32,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-    maxWidth: '100%',
-  },
-  chipText: { fontFamily: fontFamily.sansMedium, fontSize: 13, color: colors.textPrimary },
+  chip: { maxWidth: '100%' },
   empty: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: 40, paddingBottom: 44, gap: spacing.sm },
   emptyCompact: { paddingTop: 20, paddingBottom: 24, gap: 6 },
   emptyTitle: {

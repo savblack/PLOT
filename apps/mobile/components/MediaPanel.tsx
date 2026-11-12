@@ -20,7 +20,7 @@ import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaSta
 import { useEffect, useState, useRef, useMemo, type RefObject } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
-  StyleSheet, Dimensions, ActivityIndicator, Animated, Easing, PanResponder, Linking, Alert,
+  StyleSheet, Dimensions, Animated, Easing, PanResponder, Linking,
   Platform, KeyboardAvoidingView, Keyboard, type HostInstance,
 } from 'react-native';
 import { TextInput } from './TextInput';
@@ -29,7 +29,10 @@ import Svg, { Path, Line, Polyline, Circle, Polygon } from 'react-native-svg';
 import { IconChevronDown, IconChevronUp, IconClose, IconCheck as CheckGlyph, IconPlus as PlusGlyph } from './icons';
 import RetryButton from './RetryButton';
 import BottomSheet from './BottomSheet';
-import Button from './Button';
+import Button, { TextLink } from './Button';
+import { Tag } from './Chip';
+import { useDialog } from './Dialog';
+import Loader, { Spinner } from './Loader';
 import SearchField from './SearchField';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';
@@ -467,20 +470,16 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
           </View>
         )}
         {isTracking && episodes.length > 0 && (
-          <TouchableOpacity
+          <TextLink
+            tone="accent"
             onPress={handleToggleSeason}
             disabled={seasonPending || progressBlocked || toggling !== null}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: seasonPending || progressBlocked || toggling !== null }}
-          >
-            <Text style={styles.seasonBulkLink}>
-              {seasonPending
-                ? MEDIA_PANEL.updating
-                : seasonState.isComplete
-                  ? (guideSeason === 0 ? MEDIA_PANEL.unmarkSpecialsWatched : MEDIA_PANEL.unmarkSeasonWatched)
-                  : (guideSeason === 0 ? MEDIA_PANEL.markSpecialsWatched : MEDIA_PANEL.markSeasonWatched)}
-            </Text>
-          </TouchableOpacity>
+            label={seasonPending
+              ? MEDIA_PANEL.updating
+              : seasonState.isComplete
+                ? (guideSeason === 0 ? MEDIA_PANEL.unmarkSpecialsWatched : MEDIA_PANEL.unmarkSeasonWatched)
+                : (guideSeason === 0 ? MEDIA_PANEL.markSpecialsWatched : MEDIA_PANEL.markSeasonWatched)}
+          />
         )}
       </View>
 
@@ -494,7 +493,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
       {actionError ? <Text style={styles.epActionError}>{actionError}</Text> : null}
 
       {loading || sparse.loading || specials.loading ? (
-        <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.lg }} />
+        <Loader fill={false} />
       ) : (
         episodes.map(ep => {
           const { isWatched: watched, isCurrent: current } = episodeState(ep.episode_number);
@@ -515,7 +514,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
               </View>
               {isTracking && (
                 isToggling ? (
-                  <ActivityIndicator size="small" color={colors.chipEpisode} />
+                  <Spinner />
                 ) : (
                   <TouchableOpacity
                     onPress={() => handleToggle(ep)}
@@ -713,6 +712,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
   const { profile } = useAppData();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const router = useRouter();
+  const { choose, dialog: chooseDialog } = useDialog();
   const [creating, setCreating] = useState(false);
   const [name, setName]         = useState('');
   const [error, setError]       = useState('');
@@ -748,7 +748,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
   };
 
   return (
-    <BottomSheet visible onClose={onClose} title="Add to list" scroll={false}>
+    <BottomSheet visible onClose={onClose} title="Add to list" scroll={false} closeLabel={COMMON.done}>
       <UpgradeSheet visible={showUpgrade} reason="lists" onClose={() => setShowUpgrade(false)} onCompare={() => { onClose(); router.push(PREMIUM_SETTINGS_PATH as any); }} />
       <View style={styles.lsBody}>
 
@@ -776,15 +776,14 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
                       onPress={() => {
                         if (isThis) { topLists.removeSlot(topListType, item.id); return; }
                         if (occupant) {
-                          Alert.alert(
-                            `Replace #${rank}?`,
-                            `"${occupant.title}" is currently #${rank}. Replace it with "${item.title}"?`,
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              { text: 'Move to...', onPress: () => setMoveToPicker({ rank, occupant }) },
-                              { text: 'Replace', style: 'destructive', onPress: () => topLists.setSlot(topListType, rank, item) },
-                            ]
-                          );
+                          void choose({
+                            title: `Replace #${rank}?`,
+                            message: `"${occupant.title}" is currently #${rank}. Replace it with "${item.title}"?`,
+                            options: [{ label: 'Move to...' }, { label: 'Replace', destructive: true }],
+                          }).then(picked => {
+                            if (picked === 0) setMoveToPicker({ rank, occupant });
+                            else if (picked === 1) topLists.setSlot(topListType, rank, item);
+                          });
                           return;
                         }
                         topLists.setSlot(topListType, rank, item);
@@ -874,6 +873,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
       )}
       {/* The list sheet is its own Modal, over the panel's, so it needs its own toast. */}
       <UndoToast placement="panel" />
+      {chooseDialog}
     </BottomSheet>
   );
 }
@@ -893,6 +893,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const { open: openTitle } = useMediaPanel();
   const router = useRouter();
   const followPerson = useFollowPerson();
+  const { notify, dialog } = useDialog();
   const fw = favoriteWords(profile?.region);
 
   const [showListSheet, setShowListSheet] = useState(false);
@@ -1002,7 +1003,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       if (!result.ok) {
         const detail = history.getLastError();
         if (detail) captureException(new Error(detail), { surface: 'media_panel', action: 'watched_status' });
-        Alert.alert('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+        notify('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
       }
       return result;
     } finally {
@@ -1019,7 +1020,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         removeFromSaved: () => inList ? watchlist.removeFromList(itemId) : Promise.resolve(true),
         rollbackWatching: () => watching.stopWatching(itemId),
       });
-      if (!result.ok) Alert.alert('Could not update', result.error);
+      if (!result.ok) notify('Could not update', result.error);
     } finally {
       setFootBusy(false);
     }
@@ -1042,7 +1043,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     setStatusPending(MEDIA_PANEL.updating);
     try {
       const result = await action();
-      if (!result?.ok) Alert.alert('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
+      if (!result?.ok) notify('Could not update', result.error || MEDIA_PANEL.couldNotUpdateWatchStatus);
     } finally {
       setStatusPending('');
       setStatusMenuOpen(false);
@@ -1193,7 +1194,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       });
       Linking.openURL(link.url).catch((e) => {
         console.warn('[MediaPanel] failed to open watch link', e);
-        Alert.alert("Couldn't open link", 'Please try again in a moment.');
+        notify("Couldn't open link", 'Please try again in a moment.');
       });
     }
   };
@@ -1324,9 +1325,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
           <View style={styles.body}>
             {loading ? (
-              <View style={{ alignItems: 'center', paddingVertical: spacing.xxl }}>
-                <ActivityIndicator color={colors.accent} />
-              </View>
+              <Loader />
             ) : error ? (
               <View style={{ alignItems: 'center', paddingVertical: spacing.xxl }}>
                 <Text style={styles.errorText}>Couldn't load details. Check your connection.</Text>
@@ -1377,12 +1376,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         {genreChips.map(genre => (
                           <TouchableOpacity
                             key={genre.id}
-                            style={styles.genreChip}
                             accessibilityRole="link"
                             accessibilityLabel={BROWSE.genreLink(genre.name)}
                             onPress={() => browse('genre', genre.id, genre.name, { pathname: '/(app)', params: genreBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', genreId: genre.id }) })}
                           >
-                            <Text style={styles.genreChipText}>{genre.name}</Text>
+                            <Tag tone="sage" label={genre.name} />
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -1392,22 +1390,20 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         {keywordChips.map(k => (
                           <TouchableOpacity
                             key={k.id}
-                            style={styles.keywordChip}
                             accessibilityRole="link"
                             accessibilityLabel={BROWSE.keywordLink(k.name)}
                             onPress={() => browse('keyword', k.id, k.name, { pathname: '/(app)/browse', params: keywordBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', keywordId: k.id, name: k.name }) })}
                           >
-                            <Text style={styles.keywordChipText}>{k.name}</Text>
+                            <Tag label={k.name} />
                           </TouchableOpacity>
                         ))}
                         {(hiddenKeywords > 0 || keywordsOpen) && (
                           <TouchableOpacity
-                            style={[styles.keywordChip, { borderStyle: 'dashed' }]}
                             accessibilityRole="button"
                             accessibilityState={{ expanded: keywordsOpen }}
                             onPress={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}
                           >
-                            <Text style={styles.keywordChipText}>{keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)}</Text>
+                            <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -1810,17 +1806,20 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
       <UndoToast placement="panel" />
       <NoticeToast placement="panel" />
       <EpisodeAlertsPromptToast placement="panel" />
+      {dialog}
+      {/* Sheets opened from the panel render inside its Modal. On iOS a Modal
+          mounted beside one that is already showing never presents, which is
+          how Add to list stopped opening. */}
+      {showListSheet && details && (
+        <AddToListSheet
+          item={{ id: itemId, media_type: itemType, title, poster_path: details?.poster_path ?? null }}
+          customLists={customLists}
+          topLists={topLists}
+          onClose={() => setShowListSheet(false)}
+        />
+      )}
+      {followPerson.sheet}
     </Modal>
-
-    {showListSheet && details && (
-      <AddToListSheet
-        item={{ id: itemId, media_type: itemType, title, poster_path: details?.poster_path ?? null }}
-        customLists={customLists}
-        topLists={topLists}
-        onClose={() => setShowListSheet(false)}
-      />
-    )}
-    {followPerson.sheet}
     </>
   );
 }
@@ -1870,10 +1869,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
-  genreChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge, backgroundColor: colors.accentSecondaryFill },
-  keywordChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  keywordChipText: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textSecondary },
-  genreChipText: { fontFamily: fontFamily.sansBold, fontSize: 11, color: colors.onAccentSecondaryFill },
   scoresRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     paddingBottom: spacing.lg, marginBottom: spacing.lg,
@@ -2009,7 +2004,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   seasonMenuItem: { paddingVertical: 10, paddingHorizontal: spacing.md },
   seasonMenuText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
-  seasonBulkLink: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
 
   seasonBulk: {
     flexDirection: 'row',

@@ -67,11 +67,15 @@ export default function Button({ label, onPress, variant = 'secondary', size = '
   );
 }
 
-export function TextLink({ label, onPress, quiet = false, disabled = false, accessibilityRole = 'button', style }: {
+export function TextLink({ label, onPress, quiet = false, tone, disabled = false, accessibilityRole = 'button', accessibilityLabel, style }: {
   label: string;
   onPress: () => void;
   /** Muted instead of primary text: the "Not now" beside a real action. */
   quiet?: boolean;
+  /** `accent` for an in-row action (Edit, View profile); `danger` for
+   *  Sign out or Remove. Leave unset beside a button. */
+  tone?: 'accent' | 'danger';
+  accessibilityLabel?: string;
   disabled?: boolean;
   accessibilityRole?: 'button' | 'link';
   style?: StyleProp<ViewStyle>;
@@ -79,8 +83,8 @@ export function TextLink({ label, onPress, quiet = false, disabled = false, acce
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <TouchableOpacity onPress={onPress} disabled={disabled} accessibilityRole={accessibilityRole} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }} style={[styles.link, disabled && styles.off, style]}>
-      <Text style={[styles.linkText, quiet && styles.linkQuiet]} numberOfLines={1}>{label}</Text>
+    <TouchableOpacity onPress={onPress} disabled={disabled} accessibilityRole={accessibilityRole} accessibilityLabel={accessibilityLabel ?? label} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }} style={[styles.link, disabled && styles.off, style]}>
+      <Text style={[styles.linkText, quiet && styles.linkQuiet, tone === 'accent' && styles.linkAccent, tone === 'danger' && styles.linkDanger]} numberOfLines={1}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -101,4 +105,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   link: { minHeight: 32, justifyContent: 'center' },
   linkText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   linkQuiet: { color: colors.textMuted },
+  linkAccent: { color: colors.accentText },
+  linkDanger: { color: colors.danger },
 });
