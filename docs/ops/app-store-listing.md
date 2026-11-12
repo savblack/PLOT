@@ -44,7 +44,10 @@ seller name on the listing and the legal copy differ.
 
 On 2026-10-15 the existing app record was filled on this Individual
 membership. The seller name on the store is Savannah Black until a company
-conversion. Legal copy still says "a product of SUSUMU HOUSE".
+conversion. Decided 2026-11-12: publish as Individual (option 1). Legal copy
+(Terms, Privacy, Community, and the site's terms/privacy/community pages)
+now says Plot is operated by Savannah Black, a sole trader trading as SUSUMU
+HOUSE, instead of "a product of SUSUMU HOUSE".
 
 **EU trader status (DSA).** Required before the app can be sold in the EU.
 Done in App Store Connect ▸ Business ▸ Trader status. On an Individual
@@ -82,7 +85,7 @@ they are the ones to argue over. Everything else is read by humans.
 | Support URL | | <https://theplot.tv/support> |
 | Marketing URL | | <https://theplot.tv> |
 | Privacy Policy URL | | <https://theplot.tv/privacy> |
-| Copyright | | `2026 SUSUMU HOUSE` |
+| Copyright | | `2026 Savannah Black` |
 
 Keywords: no spaces after commas, no words already in the name or subtitle
 (Apple indexes those for free), competitor names are allowed as plain words.

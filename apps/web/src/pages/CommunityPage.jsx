@@ -27,7 +27,7 @@ export default function CommunityPage() {
 
         <p className="legal-label">Legal</p>
         <h1>Community Standards</h1>
-        <p className="legal-owner">A product of SUSUMU HOUSE</p>
+        <p className="legal-owner">Operated by Savannah Black</p>
         <p className="legal-meta">Last updated: September 2026</p>
 
         <p>Plot is a place to keep track of what you watch and what you thought of it. It is small, and it is meant to feel calm. These standards describe what is not welcome here, what happens when something crosses the line, and how to tell us.</p>
@@ -51,7 +51,7 @@ export default function CommunityPage() {
         <p>Depending on what we find, we may remove the content, ask you to change it, suspend the account, or remove the account permanently. Serious cases, and repeated ones, go straight to removal. Where someone is at risk we may act without warning.</p>
         <p>If you think we have got it wrong, write to us and we will look at it again.</p>
         <h2>Contact</h2>
-        <p>Plot is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. You can reach us at contact@susumuhouse.com, or through the feedback option in the app.</p>
+        <p>Plot is operated by Savannah Black, a sole trader trading as SUSUMU HOUSE, of Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. You can reach us at contact@susumuhouse.com, or through the feedback option in the app.</p>
         <h2>Changes</h2>
         <p>We may update these standards as Plot grows. The date above changes when we do.</p>
       </div>

@@ -9,7 +9,7 @@ export default function PrivacyPage() {
 
         <p className="legal-label">Legal</p>
         <h1>Privacy Policy</h1>
-        <p className="legal-owner">A product of SUSUMU HOUSE</p>
+        <p className="legal-owner">Operated by Savannah Black</p>
         <p className="legal-meta">Last updated: October 2026</p>
 
         <h2>1. Agreement to This Policy</h2>
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
         <p>We do not sell your personal data to third parties.</p>
 
         <h2>4. Third-Party Services &amp; Disclaimer</h2>
-        <p>The Service relies on third-party infrastructure and data providers. By using Plot, you acknowledge and accept that your data may be processed by these third parties under their own policies, over which SUSUMU HOUSE has no control:</p>
+        <p>The Service relies on third-party infrastructure and data providers. By using Plot, you acknowledge and accept that your data may be processed by these third parties under their own policies, over which Savannah Black has no control:</p>
         <ul>
           <li><strong>Supabase</strong>: authentication, database, storage, and edge functions</li>
           <li><strong>Stripe</strong>: payment processing for Plot Premium. When you subscribe, Stripe receives your email address, billing country and payment details and acts as the merchant of record for the purchase under its own privacy policy. Plot stores a Stripe customer reference and your subscription status, never your full card number.</li>
@@ -61,7 +61,7 @@ export default function PrivacyPage() {
         <ul>
           <li>No internet transmission or electronic storage method is 100% secure</li>
           <li>You provide your data at your own risk</li>
-          <li>SUSUMU HOUSE shall not be liable for any unauthorised access, data breach, loss, theft, or disclosure of your information that is beyond our reasonable control</li>
+          <li>Savannah Black shall not be liable for any unauthorised access, data breach, loss, theft, or disclosure of your information that is beyond our reasonable control</li>
           <li>In the event of a data breach, we will notify affected users as required by applicable law, but shall not be liable for any resulting damages</li>
         </ul>
 
@@ -81,7 +81,7 @@ export default function PrivacyPage() {
         <p>We reserve the right to update this Privacy Policy at any time. Changes will be posted to this page with an updated "last updated" date. Your continued use of the Service after any changes constitutes your acceptance of the revised policy.</p>
 
         <h2>11. Contact</h2>
-        <p>Plot is a product of SUSUMU HOUSE, registered office Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related inquiries, contact us at contact@susumuhouse.com or via the app.</p>
+        <p>Plot is operated by Savannah Black, a sole trader trading as SUSUMU HOUSE, of Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. This Privacy Policy is governed by the laws of New South Wales, Australia. Any disputes arising in connection with this policy are subject to the exclusive jurisdiction of the courts of New South Wales, Australia. For privacy-related inquiries, contact us at contact@susumuhouse.com or via the app.</p>
       </div>
     </div>
   );
