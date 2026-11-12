@@ -81,7 +81,7 @@ function safeCurrentUrl() {
  * page loaded on, captured here at startup. Before 2026-11-12 they used the URL
  * at send time, and LCP is only sent on the next click, which is often a click
  * that navigates. A slow /signup load was reported as /onboarding, and a /home
- * load sent half an hour later showed up as /my-lists or /settings (#1596).
+ * load sent half an hour later showed up as /my-lists or /settings (issue 1596).
  */
 export function startHumanWebVitalsCapture({ capture = track } = {}) {
   if (typeof window === 'undefined' || !isHumanWebVitalsHost()) return () => {};
