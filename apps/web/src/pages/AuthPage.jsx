@@ -23,6 +23,7 @@ import { loadSupabase } from '../utils/loadSupabase.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 import { loginNeedsConfirmation, shouldMagicLinkViaBypass, shouldResendViaBypass } from '../utils/authBypass.js';
 import { rememberPendingBypassSignup, rememberSignupTracked } from '../utils/authCallbackReport.js';
+import { watchForHumanView } from '../utils/signupFormView.js';
 
 // Off on localhost and *.plot-5wr.pages.dev previews, which sign in against
 // PLOT Staging (no captcha enforced there) and where the production site key
@@ -348,14 +349,26 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // in-app form" from "reached it but didn't finish." Gated on hasSession
   // === false so an already-logged-in visitor auto-redirecting away doesn't
   // count as having viewed the form.
+  //
+  // Once per visit to this page, and only after the first trusted interaction
+  // (see utils/signupFormView.js). Firing on mount counted a crawler as a
+  // viewer on every load, and switching to sign in and back counted the same
+  // person twice. `trigger` says which interaction it was.
+  const formViewTrackedRef = useRef(false);
   useEffect(() => {
-    if (mode === 'signup' && hasSession === false) {
-      track(EVENTS.SIGNUP_FORM_VIEWED);
-      // Fetched unconditionally (not just once Turnstile fails) so the token's
-      // age reflects real time-on-page even if bypass turns out to be needed
-      // later. No side effects server-side. Safe to call every visit.
-      bypassClient.loadFormToken();
-    }
+    if (mode !== 'signup' || hasSession !== false) return undefined;
+    // Fetched unconditionally (not just once Turnstile fails) so the token's
+    // age reflects real time-on-page even if bypass turns out to be needed
+    // later. No side effects server-side. Safe to call every visit.
+    bypassClient.loadFormToken();
+    if (formViewTrackedRef.current) return undefined;
+    return watchForHumanView({
+      onView: (trigger) => {
+        if (formViewTrackedRef.current) return;
+        formViewTrackedRef.current = true;
+        track(EVENTS.SIGNUP_FORM_VIEWED, { trigger });
+      },
+    });
   }, [mode, hasSession, bypassClient]);
 
   const handleSubmit = async (e) => {

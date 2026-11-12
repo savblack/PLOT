@@ -19,8 +19,13 @@ export function isSaveBotFingerprint({ hostname, pathname, userAgent, referrer, 
 // above because these are signals, not one incident's exact values.
 const AUTOMATION_UA = /HeadlessChrome|PhantomJS|Puppeteer|Playwright|Selenium|(?:bot|crawler|spider)\/[\d.]+|compatible;[^)]*(?:bot|crawler|spider)|curl\/|python-requests|Go-http-client/i;
 
+// /save redirects straight to /signup, so a crawler that opens /save lands on
+// the signup form too. Checking only /save let the same automated browser
+// count as a signup-form visitor one redirect later (November 2026).
+const AUTOMATION_CHECKED_PATHS = new Set(['/save', '/signup']);
+
 export function isAutomatedBrowser({ pathname, userAgent, webdriver, languageCount } = {}) {
-  if (pathname !== '/save') return false;
+  if (!AUTOMATION_CHECKED_PATHS.has(pathname)) return false;
   if (webdriver === true) return true;
   if (typeof userAgent === 'string' && AUTOMATION_UA.test(userAgent)) return true;
   return languageCount === 0;
