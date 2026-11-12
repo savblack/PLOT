@@ -20,8 +20,8 @@ GitHub-side watchers raise issues rather than email:
 - `db-write-paths`, `migration-drift`, `netflix-top10`, `streaming-top10` and
   `broadcast-guide` each open an `incident` issue when they fail, comment on it
   if they fail again, and close it on the next success. The first failure also
-  emails through `.github/scripts/marketing-alert.sh`. Their CircleCI twins
-  email only. See `.github/scripts/job-incident.sh`.
+  emails through `.github/scripts/marketing-alert.sh`. See
+  `.github/scripts/job-incident.sh`.
 - `staging-tests.yml` opens an `incident` issue when the nightly Staging SQL
   tests fail, and closes it on the next pass.
 - `cron-health.yml` checks the database's own scheduled jobs (pg_cron) every

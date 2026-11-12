@@ -1,10 +1,10 @@
 # CI minutes
 
-Required pull-request and `main` validation runs on CircleCI. Scheduled compute,
-including backups, publishing and data refreshes, is also defined there. GitHub
-Actions is reserved for deployment monitoring and automation that depends on
-GitHub events or `GITHUB_TOKEN`. The Claude-backed weekly marketing batch remains
-on GitHub Actions until a suitable Codex credential is available for CircleCI.
+Required pull-request and `main` validation runs on CircleCI. Scheduled jobs
+(backups, publishing, data refreshes, the write-path check) run on GitHub
+Actions in `.github/workflows`, which is also where their failure alerts live.
+GitHub Actions also runs deployment monitoring and automation that depends on
+GitHub events or `GITHUB_TOKEN`.
 
 ## Migration, 2026-09-19
 
@@ -14,42 +14,23 @@ removed once CircleCI was configured to run on PR opens and updates plus default
 branch pushes. The obsolete post-merge CircleCI trigger was disabled because it
 ran after automatic branch deletion and could not check out the PR head.
 
-The scheduled jobs use the `task` pipeline parameter in `.circleci/config.yml`.
-Create one CircleCI schedule trigger for each row below, targeting `main` and
-passing the listed value as `task`. CircleCI schedules are configured in its UI,
-not embedded in the config for this GitHub App project.
+## Scheduled jobs stay on GitHub, 2026-11-12
 
-| Schedule (UTC) | `task` |
-| --- | --- |
-| `0 2 * * *` | `marketing-reconcile` |
-| `30 12 * * 3` | `streaming-top10` |
-| `0 12 * * *` | `netflix-top10` |
-| `23 */6 * * *` | `broadcast-guide` |
-| `17 3 * * *` | `db-backup` |
-| `47 3 * * 0` | `storage-backup` |
-| `25 6 * * *` | `db-write-paths` |
+The September plan moved scheduled jobs to CircleCI behind a `task` pipeline
+parameter, but the CircleCI schedule triggers were never created: on
+2026-11-12 the project's only trigger was "All pushes on PLOT", and every
+`main` pipeline had been started by a push. The GitHub workflows were the only
+copies that ever ran. Before that was checked, the plan's instruction to
+"remove the GitHub schedule once CircleCI has succeeded" would have stopped the
+nightly backup.
 
-Before enabling those triggers, create the restricted CircleCI context
-`plot-production-schedules` and add these variables to it. Do not use project
-environment variables: those would also be injected into untrusted PR builds.
-Values come from the same-named GitHub Actions secret or variable;
-GitHub never reveals an existing secret value, so they must be copied from the
-original password-manager/provider record.
+So the unused CircleCI jobs, the `task` parameter, the `alert_on_failure`
+command and the `plot-production-schedules` context references were removed
+from `.circleci/config.yml`. Each scheduled job has one home, on GitHub, with
+the `incident` issue and email alerting. If GitHub Actions minutes ever become
+a problem, moving a job back means creating the CircleCI schedule and context
+first, and confirming a scheduled run succeeded, before touching the GitHub file.
 
-- Shared: `SUPABASE_URL` (GitHub's `VITE_SUPABASE_URL`),
-  `SUPABASE_SERVICE_ROLE_KEY`, `MARKETING_ADMIN_EMAIL`, `RESEND_API_KEY`.
-- Marketing: `BUFFER_API_KEY`, `TMDB_API_KEY`, `OMDB_API_KEY`.
-- Charts: `MOVIEOFTHENIGHT_API_KEY`, `RAPIDAPI_KEY`, `CHART_REGIONS`,
-  `CHART_MIN_USERS`.
-- Database and backups: `SUPABASE_DB_URL`, `BACKUP_GPG_PASSPHRASE`,
-  `R2_ENDPOINT`, `R2_BUCKET`, `AWS_ACCESS_KEY_ID` (GitHub's
-  `R2_ACCESS_KEY_ID`), `AWS_SECRET_ACCESS_KEY` (GitHub's
-  `R2_SECRET_ACCESS_KEY`).
-
-Keep each GitHub schedule enabled until its matching CircleCI task has completed
-successfully once. Then remove only the `schedule` stanza from the GitHub file;
-retain `workflow_dispatch` as a manual recovery path. This prevents a credential
-or scheduler mistake from creating a silent backup or publishing gap.
 
 GitHub billing reference:
 https://docs.github.com/en/billing/reference/actions-runner-pricing
@@ -72,7 +53,7 @@ CircleCI project settings, Advanced, "Auto-cancel redundant workflows" is on as 
 
 A Cursor Automation that only comments does not change the tier. One that pushes a commit starts a new CircleCI run, classified from that new diff. A trigger on "CI completed" still fires when a docs-only job halted after the secret scan.
 
-GitHub schedules that duplicate a CircleCI task are still in the workflow files. Remove a `schedule` stanza only after that CircleCI task has succeeded once. Leave `workflow_dispatch`. The weekly marketing batch stays on the GitHub macOS runner until a Saturday of copy from the coding Grok agent has been compared with it. That agent's assignment is `marketing/copy/GROK-HANDOFF.md`. It downloads the run's artifact and runs `node marketing/copy/check.mjs` once. It does not run the weekly command. Alix does not write this comparison. This schedule stays on.
+Scheduled jobs live only in `.github/workflows` (see above). The weekly marketing batch stays on the GitHub macOS runner until a Saturday of copy from the coding Grok agent has been compared with it. That agent's assignment is `marketing/copy/GROK-HANDOFF.md`. It downloads the run's artifact and runs `node marketing/copy/check.mjs` once. It does not run the weekly command. Alix does not write this comparison. This schedule stays on.
 
 ## Guardrails
 
