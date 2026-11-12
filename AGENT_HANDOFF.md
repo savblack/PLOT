@@ -20,7 +20,7 @@ Enable Google and Apple login in the mobile release configuration and verify the
 - `docs/ops/mobile-builds.md` records the current state.
 
 ## Next
-Savannah installs build 6 from TestFlight and completes Apple and Google sign-in on a physical iPhone, including return to `plot://auth/callback` and an authenticated session. Test Google sign-in on Android too. Do not publish either build before those checks.
+Sign-in is verified on iPhone (Apple on build 6, Google on build 7). Remaining: build 8 with the wordmark icon and TestFlight upload (awaiting Savannah's yes), then a pull request to `main` with full checks (remove this file in its last commit). No App Store release without her approval.
 
 ## Blockers and approvals
 No physical device is connected to this workspace, and the completed iOS production archive is store-distribution only, so interactive sign-in could not be completed. Savannah explicitly authorized enabling both logins and verification in this chat. On 2026-11-12 Savannah approved submitting iOS build 6 to TestFlight for internal testing only ("Yes, TestFlight"). App Store release and Android store submission are still not authorized. No live user records were changed.
