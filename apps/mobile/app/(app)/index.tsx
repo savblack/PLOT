@@ -65,6 +65,7 @@ import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
 import PremiumFirstWeek, { usePremiumFirstWeekState } from '../../components/PremiumFirstWeek';
 import PremiumTrialPrompt from '../../components/PremiumTrialPrompt';
+import ActivationNudge, { useActivationNudgeVisible } from '../../components/ActivationNudge';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 import ImportJobCard, { type ImportJobRow } from '../../components/ImportJobCard';
 import { markImportDone } from '../../lib/finishingTouches';
@@ -665,6 +666,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   const firstWeek = usePremiumFirstWeekState(userId, profile, user?.created_at);
   // Onboarding's "Switching apps?" pick: setup finished first, so the import opens now.
   const [importSource, setImportSource] = useState<string | null>(takePendingImportSource);
+  const nudgeVisible = useActivationNudgeVisible();
   // A finished background import left entries to match: the modal opens on them.
   const [reviewJob, setReviewJob] = useState<ImportJobRow | null>(null);
   const onImportFinished = useCallback(() => { ft.reload(); }, [ft]);
@@ -1015,9 +1017,12 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           </TouchableOpacity>
         )}
         {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
-        {firstWeek.visible
-          ? <PremiumFirstWeek onState={firstWeek.setState} />
-          : <FinishingTouches state={ft.state} onState={ft.setState} />}
+        {/* No titles at all: the empty-library nudge takes the checklist's place. */}
+        {nudgeVisible
+          ? <ActivationNudge onImport={setImportSource} />
+          : firstWeek.visible
+            ? <PremiumFirstWeek onState={firstWeek.setState} />
+            : <FinishingTouches state={ft.state} onState={ft.setState} />}
         {userId && <RateCard userId={userId} />}
         <WatchTogetherHomeCard />
 
