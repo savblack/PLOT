@@ -6,10 +6,6 @@
  * full: fast, plus the web Storybook build, its interaction tests, and
  * Playwright. Website and mobile Storybook builds run only when their own
  * story files change.
- *
- * Chromatic publishes snapshots on main when the tier is full, and on a
- * pull request only when the diff touches stories, web CSS, or packages/ui,
- * or the PR carries the visual label.
  */
 
 const NONE_OK = (file) => {
@@ -36,12 +32,6 @@ const isStorybookSide = (file, root) => (
   && (file.includes('.stories.') || file.includes('/.storybook'))
 );
 
-const wantsChromaticDiff = (file) => (
-  file.includes('.stories.')
-  || (file.startsWith('apps/web/') && file.endsWith('.css'))
-  || file.startsWith('packages/ui/')
-);
-
 /**
  * @param {string[]} files repo-relative paths
  * @param {{ branch?: string, labels?: string[], commitMessage?: string }} [opts]
@@ -51,22 +41,13 @@ export function classifyChanges(files, opts = {}) {
   const labels = new Set((opts.labels || []).map((label) => label.toLowerCase()));
   const message = opts.commitMessage || '';
   if (/\[full-ci\]/i.test(message)) labels.add('full-ci');
-  if (/\[visual\]/i.test(message)) labels.add('visual');
 
   let tier = 'fast';
   if (list.length === 0 || list.every(NONE_OK)) tier = 'none';
   if (list.some(isFullPath) || labels.has('full-ci')) tier = 'full';
 
-  const branch = opts.branch || '';
-  const chromatic = tier === 'full' && (
-    branch === 'main'
-    || labels.has('visual')
-    || list.some(wantsChromaticDiff)
-  );
-
   return {
     tier,
-    chromatic,
     websiteStorybook: tier === 'full' && list.some((file) => isStorybookSide(file, 'apps/website/')),
     mobileStorybook: tier === 'full' && list.some((file) => isStorybookSide(file, 'apps/mobile/')),
   };

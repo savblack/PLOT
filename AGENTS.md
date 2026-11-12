@@ -81,12 +81,6 @@ gitignored so a stray one cannot be committed, but delete it rather than leave i
 - `pnpm run test:unit` — `node --test` unit tests (`apps/web/tests/unit/`)
 - `pnpm run test:smoke` — Playwright smoke (`vite build` + chromium; run
   `npx playwright install chromium` once on a fresh machine)
-- `pnpm run chromatic` — Chromatic visual snapshots of the web Storybook. Needs
-  `CHROMATIC_PROJECT_TOKEN` (see the README's Local Setup); `check` runs it in CI and skips itself
-  when the token is absent. Visual diffs deliberately do **not** fail the build — approve
-  or reject them in Chromatic. Builds on `main` auto-accept, so `main` always records the
-  baseline and a PR shows only what that PR changed; review happens on the PR, not after
-  merge. Never put the token in a `package.json` script.
 - `pnpm --filter @plot/mobile` run typecheck — **required when touching mobile**; `pnpm run lint` covers it too
 - `pnpm run edge:check` — **required when touching `supabase/functions/`**; type-checks every
   edge function with `deno check` against the generated DB types. Nothing else type-checks
@@ -395,7 +389,8 @@ file, not the `--no-verify-jwt` flag.
   mobile changes.
 - Styling change to a shared shell class (`.cal-side`, `.hist-card`, `.cal-body`, anything
   in `app.css`)? Storybook's interaction tests assert behaviour and will not notice that a
-  different page's spacing moved. Chromatic will — check its diffs before merging.
+  different page's spacing moved. There is no visual-diff service, so check the affected pages in
+  the PR's Cloudflare preview before merging.
 - Mobile lint is ratcheted: `no-explicit-any` (~127) and `react-hooks/refs` (~34) are `warn`,
   not `error`, because of a pre-existing backlog. Don't add new ones, and don't "fix" a
   warning count by widening the rule — burn them down instead. Everything else is an error

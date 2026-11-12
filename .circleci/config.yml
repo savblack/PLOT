@@ -174,31 +174,13 @@ jobs:
               echo "Tier ${PLOT_CI_TIER:-fast}: skipping Storybook."
               exit 0
             fi
-            # The web build emits --stats-json so Chromatic can use TurboSnap.
-            pnpm --filter @plot/web run build-storybook:stats
+            pnpm --filter @plot/web run build-storybook
             if [ "${PLOT_CI_WEBSITE_STORYBOOK:-0}" = 1 ]; then
               pnpm --filter @plot/website-storybook run build-storybook
             fi
             if [ "${PLOT_CI_MOBILE_STORYBOOK:-0}" = 1 ]; then
               pnpm --filter @plot/mobile run build-storybook
             fi
-
-      - run:
-          name: Chromatic visual snapshots
-          command: |
-            # Visual diffs do not fail the build (--exit-zero-on-changes).
-            # A story that throws still does. main records the baseline.
-            # A pull request uploads only when the diff is visual, or the
-            # commit says [visual].
-            if [ "${PLOT_CI_CHROMATIC:-0}" != 1 ]; then
-              echo "This diff does not need Chromatic."
-              exit 0
-            fi
-            if [ -z "${CHROMATIC_PROJECT_TOKEN:-}" ]; then
-              echo "CHROMATIC_PROJECT_TOKEN is not set; skipping visual snapshots."
-              exit 0
-            fi
-            pnpm --filter @plot/web run chromatic
 
       - run:
           name: Check mobile

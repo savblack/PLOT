@@ -5,7 +5,7 @@
 //   node scripts/ci-tier.mjs
 //   node scripts/ci-tier.mjs --write-env "$BASH_ENV"
 //
-// --write-env appends PLOT_CI_TIER, PLOT_CI_CHROMATIC, PLOT_CI_WEBSITE_STORYBOOK,
+// --write-env appends PLOT_CI_TIER, PLOT_CI_WEBSITE_STORYBOOK,
 // and PLOT_CI_MOBILE_STORYBOOK so later CircleCI steps can read them.
 
 import { execFileSync } from 'node:child_process';
@@ -50,7 +50,6 @@ const result = classifyChanges(files, { branch, labels, commitMessage });
 const flag = (value) => (value ? '1' : '0');
 const exports = [
   `export PLOT_CI_TIER=${result.tier}`,
-  `export PLOT_CI_CHROMATIC=${flag(result.chromatic)}`,
   `export PLOT_CI_WEBSITE_STORYBOOK=${flag(result.websiteStorybook)}`,
   `export PLOT_CI_MOBILE_STORYBOOK=${flag(result.mobileStorybook)}`,
 ].join('\n');

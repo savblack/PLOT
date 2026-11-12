@@ -9,7 +9,6 @@ test('docs and marketing markdown skip the install', () => {
     'README.md',
   ]);
   assert.equal(result.tier, 'none');
-  assert.equal(result.chromatic, false);
 });
 
 test('a workflow file is not a docs-only diff', () => {
@@ -23,27 +22,19 @@ test('core logic stays on the fast tier', () => {
     'supabase/migrations/20261017000000_example.sql',
   ]);
   assert.equal(result.tier, 'fast');
-  assert.equal(result.chromatic, false);
   assert.equal(result.websiteStorybook, false);
 });
 
-test('an app change is full, and Chromatic waits for main or a visual diff', () => {
-  const files = ['apps/web/src/components/Save.jsx'];
-  assert.equal(classifyChanges(files, { branch: 'agent/x' }).chromatic, false);
-  assert.equal(classifyChanges(files, { branch: 'main' }).chromatic, true);
-  assert.equal(classifyChanges(['apps/web/src/styles/app.css'], { branch: 'agent/x' }).chromatic, true);
+test('an app change is full', () => {
+  assert.equal(classifyChanges(['apps/web/src/components/Save.jsx'], { branch: 'agent/x' }).tier, 'full');
+  assert.equal(classifyChanges(['apps/web/src/styles/app.css'], { branch: 'agent/x' }).tier, 'full');
 });
 
-test('full-ci and visual markers in the commit message raise the tier', () => {
+test('a full-ci marker in the commit message raises the tier', () => {
   const docs = classifyChanges(['docs/ops/agent-worktrees.md'], {
     commitMessage: 'docs: note the move\n\n[full-ci]',
   });
   assert.equal(docs.tier, 'full');
-  const visual = classifyChanges(['apps/web/src/components/Save.jsx'], {
-    branch: 'agent/x',
-    commitMessage: 'fix: save label [visual]',
-  });
-  assert.equal(visual.chromatic, true);
 });
 
 test('website and mobile Storybook builds follow their own story files', () => {

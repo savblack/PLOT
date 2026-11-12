@@ -45,7 +45,7 @@ https://docs.github.com/en/billing/reference/actions-runner-pricing
 | `fast` | Everything else that is not visual, including `packages/core`, Supabase, and scripts | Lint, tests, contract checks, build, mobile typecheck |
 | `full` | `apps/web`, `apps/website`, `apps/mobile`, `packages/ui`, token files, `*.stories.*`, a `full-ci` label, or `[full-ci]` in the commit message | Fast, plus web Storybook, interaction tests, and Playwright |
 
-Website and mobile Storybook builds run only when their own story files change. Chromatic runs on `main` when the tier is `full`, and on a pull request when the diff touches stories, web CSS, or `packages/ui`, or the commit contains `[visual]`, or the PR has the `visual` label. A label is read only when `gh` has a token. `[full-ci]` and `[visual]` in the commit message work without one.
+Website and mobile Storybook builds run only when their own story files change. Chromatic was removed on 2026-11-12. A `full-ci` PR label is read only when `gh` has a token. `[full-ci]` in the commit message works without one.
 
 A commit message containing `[skip ci]` still skips the CircleCI pipeline entirely. Use that for a work-in-progress push that exists only so a cloud agent can resume. Do not open a pull request for that push.
 
