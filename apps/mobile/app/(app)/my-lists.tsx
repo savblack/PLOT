@@ -13,7 +13,10 @@ import {
 import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path, Polyline, Line, Rect } from 'react-native-svg';
+import Svg, { Path, Polyline, Rect } from 'react-native-svg';
+import { IconSearch, IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
+import SectionTitle from '../../components/SectionTitle';
+import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -23,6 +26,7 @@ import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
 import { favoriteWords } from '../../lib/spelling';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import CollapsibleSection from '../../components/CollapsibleSection';
+import HeaderRow, { HeaderRowLabel, SCREEN_HEADER_H } from '../../components/HeaderRow';
 import ListCover, { NewListCover, COVER_GAP } from '../../components/ListCover';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { titleCount } from '@plot/core/listCollections.js';
@@ -89,8 +93,6 @@ const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collaps
 // whichever tab is active.
 const LIST_SECTION_IDS = ['watching', 'want', 'top10', 'favorites', 'lists'];
 const SMART_SECTION_ID = 'smart';
-// Height of the fixed header below the status bar: the title bar plus one row.
-const SUBHEADER_H = 96;
 // Which of web's My Lists sections (MY_LISTS_SECTION_IDS in uiPrefs.js) each
 // mobile section belongs to. Watchlist, Favorites and custom lists are one
 // Lists section there, so they move together here.
@@ -161,10 +163,7 @@ function SectionAddButton({ onPress, label }: { onPress: () => void; label: stri
       accessibilityLabel={label}
       accessibilityRole="button"
     >
-      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <Line x1={12} y1={5} x2={12} y2={19} />
-        <Line x1={5} y1={12} x2={19} y2={12} />
-      </Svg>
+      <IconPlus size={16} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }
@@ -338,22 +337,6 @@ function releaseCaption(item: { release_date?: string | null; streaming_date?: s
   if (strm) return `Streaming ${countdownPhrase(strm.label)}`;
   const rel = countdownChip(item.release_date, noPalette);
   return rel ? `Out ${countdownPhrase(rel.label)}` : null;
-}
-
-// One calm prompt for an empty section: says what belongs here and offers the
-// next step (NN/g: status, teach, direct path), instead of blank slots.
-function EmptyPrompt({ title, body, actionLabel, onPress }: { title: string; body: string; actionLabel: string; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  return (
-    <TouchableOpacity style={styles.emptyPrompt} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`${title}. ${actionLabel}`}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.emptyPromptTitle}>{title}</Text>
-        <Text style={styles.emptyPromptBody}>{body}</Text>
-      </View>
-      <Text style={styles.emptyPromptAction}>{actionLabel}</Text>
-    </TouchableOpacity>
-  );
 }
 
 // ── Poster grid ───────────────────────────────────────────────────────
@@ -829,7 +812,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const searchShown = searchOpen || listQuery.length > 0;
   // Title bar, one 40pt row of controls, and the search field only while open.
   // Calendar's header is the same height, so the three pages line up.
-  const HEADER_H = insets.top + (searchShown ? SUBHEADER_H + 44 : SUBHEADER_H);
+  const HEADER_H = insets.top + (searchShown ? SCREEN_HEADER_H + 44 : SCREEN_HEADER_H);
 
   return (
     <View style={styles.screen}>
@@ -843,7 +826,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
 
         {searching ? (
           <View>
-            <Text style={styles.searchHeading}>{CUSTOM_LISTS.searchResults}</Text>
+            <SectionTitle style={styles.searchHeading}>{CUSTOM_LISTS.searchResults}</SectionTitle>
             <Text accessibilityLiveRegion="polite" style={styles.searchStatus}>
               {searchResults.length ? CUSTOM_LISTS.searchCount(searchResults.length) : CUSTOM_LISTS.noSearchResults}
             </Text>
@@ -862,9 +845,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             as web's list page has. */}
         {!isHistory && (openList || !isAll) && (
           <TouchableOpacity style={styles.backRow} onPress={backToAll} hitSlop={{ top: 8, bottom: 8 }} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.backToMyLists}>
-            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-              <Polyline points="15,18 9,12 15,6" />
-            </Svg>
+            <IconChevronLeft size={14} color={colors.textSecondary} strokeWidth={2.2} />
             <Text style={styles.backRowText}>{CUSTOM_LISTS.backToMyLists}</Text>
           </TouchableOpacity>
         )}
@@ -1216,11 +1197,11 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         />
         {/* Tabs and the filter/collapse controls share one row, as on web —
             the old second row of All/Movies/TV chips is gone. */}
-        <View style={styles.tabsRow}>
-          {isHistory ? (
+        <HeaderRow
+          lead={isHistory ? (
             // History's title is already in the bar above, so this row leads
             // with the month switcher instead of repeating the page name.
-            <View style={styles.rowLead}>
+            <>
               {!searching && historyGroups.length > 0 && (
               <View style={styles.monthNav}>
                 <TouchableOpacity
@@ -1230,9 +1211,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                   accessibilityRole="button"
                   accessibilityLabel="Jump to an older month"
                 >
-                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={canGoOlder ? colors.textSecondary : colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <Polyline points="15,18 9,12 15,6" />
-                  </Svg>
+                  <IconChevronLeft size={16} color={canGoOlder ? colors.textSecondary : colors.borderStrong} />
                 </TouchableOpacity>
                 <Text style={styles.monthNavLabel}>{monthLabel(historyYear, historyMonth, 'short')}</Text>
                 <TouchableOpacity
@@ -1242,19 +1221,16 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                   accessibilityRole="button"
                   accessibilityLabel="Jump to a more recent month"
                 >
-                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={canGoNewer ? colors.textSecondary : colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <Polyline points="9,18 15,12 9,6" />
-                  </Svg>
+                  <IconChevronRight size={16} color={canGoNewer ? colors.textSecondary : colors.borderStrong} />
                 </TouchableOpacity>
               </View>
               )}
-            </View>
+            </>
           ) : (
-            <Text style={styles.viewLabel} numberOfLines={1} accessibilityRole="header">
-              {openList ? openList.name : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
-            </Text>
+            <HeaderRowLabel>{openList ? openList.name : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}</HeaderRowLabel>
           )}
-          <View style={styles.tabsRowActions}>
+          actions={
+            <>
             {/* Customize sits in the top row on the All view, as on web's
                 phone layout, so it is reachable without scrolling. */}
             {!isHistory && isAll && !openList && (
@@ -1278,14 +1254,12 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 <SectionToggleIcon collapse={sectionsOpenForView} />
               </TouchableOpacity>
             )}
-          </View>
-        </View>
+            </>
+          }
+        />
         {searchShown && (
         <View style={[styles.listSearch, searchFocused && { borderColor: colors.accent }]}>
-          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Circle cx={11} cy={11} r={7} />
-            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-          </Svg>
+          <IconSearch size={16} color={colors.textMuted} />
           <TextInput
             style={styles.listSearchInput}
             value={listQuery}
@@ -1450,11 +1424,7 @@ function CustomListCard({
   return (
     <View style={styles.customList}>
       <TouchableOpacity style={styles.customListHeader} onPress={() => setOpen(o => !o)} activeOpacity={0.7}>
-        <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }}
-        >
-          <Polyline points="9,18 15,12 9,6" />
-        </Svg>
+        <IconChevronRight size={14} color={colors.textMuted} style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }} />
         <View style={{ flex: 1, minWidth: 0 }}>
           {renaming ? (
             <TextInput
@@ -1610,25 +1580,11 @@ function CustomListCard({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
-  // One row of controls under the title bar, the same height and gutters on
-  // My Lists, History and Calendar. No rule above it: the title bar and this
-  // row are one header, closed by the header's own bottom hairline.
-  tabsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 40,
-    paddingRight: spacing.xl,
-  },
-  rowLead: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingLeft: spacing.xl },
-  tabsRowActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   monthNav: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   monthNavLabel: {
     fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
     color: colors.textSecondary, minWidth: 54, textAlign: 'center',
   },
-  // 44 leaves room for the tab label plus its underline; the previous height
-  // clipped descenders on "Watching"/"Want to Watch".
-  viewLabel: { flex: 1, paddingHorizontal: spacing.xl, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
   subTabsScroll: { flex: 1, height: 44 },
   subTabsRow: { paddingHorizontal: spacing.xl, alignItems: 'center' },
   listSearch: {
@@ -1653,11 +1609,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   listSearchClear: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
   searchHeading: {
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    letterSpacing: -0.6,
-    lineHeight: 23,
-    color: colors.textPrimary,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.sm,
   },
@@ -1760,14 +1711,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   posterCaption: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
   sharedLine: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
 
-  emptyPrompt: {
-    marginHorizontal: spacing.xl, marginVertical: spacing.sm, padding: spacing.lg,
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    borderRadius: radii.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.borderStrong,
-  },
-  emptyPromptTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
-  emptyPromptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
-  emptyPromptAction: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   empty: { padding: spacing.xl, alignItems: 'center' },
   covers: { flexDirection: 'row', flexWrap: 'wrap', gap: COVER_GAP, rowGap: spacing.xl, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
@@ -1802,8 +1745,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   // Modal styles
   modalContainer: { flex: 1, backgroundColor: colors.bg, paddingTop: spacing.xl },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  modalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   modalTabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
   modalSearch: { paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
   modalSearchInput: { backgroundColor: colors.surface, borderRadius: radii.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },

@@ -12,7 +12,8 @@ import { useNotifications } from '@plot/core/useNotifications.js';
 import { Palette, fontFamily, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
-import Svg, { Circle, Path, Polyline } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { IconChevronDown, IconChevronUp } from './icons';
 import { Avatar } from './Avatar';
 import NavGlyph, { NavIconName } from './NavIcons';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
@@ -239,9 +240,9 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                   </Text>
                   <Text style={styles.profileHandle} numberOfLines={1}>@{profile.username}</Text>
                 </View>
-                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <Polyline points={menuOpen ? '6 15 12 9 18 15' : '6 9 12 15 18 9'} />
-                </Svg>
+                {menuOpen
+                  ? <IconChevronUp size={16} color={colors.textSecondary} />
+                  : <IconChevronDown size={16} color={colors.textSecondary} />}
               </TouchableOpacity>
             )}
           </View>

@@ -25,7 +25,9 @@ import {
 } from 'react-native';
 import { TextInput } from './TextInput';
 import { shouldDismissSheet, sheetDismissDuration } from '@plot/core/sheetDrag.js';
-import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
+import Svg, { Path, Line, Polyline, Circle, Polygon } from 'react-native-svg';
+import { IconChevronDown, IconChevronUp, IconClose, IconCheck as CheckGlyph, IconPlus as PlusGlyph } from './icons';
+import RetryButton from './RetryButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';
 import { backdropUrl, posterUrl, logoUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
@@ -88,9 +90,7 @@ const PANEL_H  = SCREEN_H * 0.92;
 function IconX() {
   // Fixed ink — sits on the light close pill over the backdrop image in both themes
   return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#09090B" strokeWidth={2.5} strokeLinecap="round">
-      <Line x1={18} y1={6} x2={6} y2={18} /><Line x1={6} y1={6} x2={18} y2={18} />
-    </Svg>
+    <IconClose size={18} color="#09090B" strokeWidth={2.5} />
   );
 }
 function IconHeart({ filled }: { filled: boolean }) {
@@ -104,9 +104,7 @@ function IconHeart({ filled }: { filled: boolean }) {
 function IconCheck({ color }: { color?: string }) {
   const { colors } = useTheme();
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color ?? colors.textSecondary} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-      <Polyline points="20 6 9 17 4 12" />
-    </Svg>
+    <CheckGlyph size={14} color={color ?? colors.textSecondary} strokeWidth={2.4} />
   );
 }
 function IconPlayTrailer() {
@@ -119,19 +117,13 @@ function IconPlayTrailer() {
 function IconPlus() {
   const { colors } = useTheme();
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2.2} strokeLinecap="round">
-      <Line x1={12} y1={5} x2={12} y2={19} /><Line x1={5} y1={12} x2={19} y2={12} />
-    </Svg>
+    <PlusGlyph size={14} color={colors.textSecondary} strokeWidth={2.2} />
   );
 }
 function IconChevron({ dir = 'down' }: { dir?: 'down' | 'up' }) {
   const { colors } = useTheme();
-  const pts = dir === 'down' ? '6 9 12 15 18 9' : '6 15 12 9 18 15';
-  return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Polyline points={pts} />
-    </Svg>
-  );
+  const Icon = dir === 'down' ? IconChevronDown : IconChevronUp;
+  return <Icon size={16} color={colors.textMuted} />;
 }
 function IconCircleCheck({ filled }: { filled: boolean }) {
   const { colors } = useTheme();
@@ -1350,9 +1342,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
             ) : error ? (
               <View style={{ alignItems: 'center', paddingVertical: spacing.xxl }}>
                 <Text style={styles.errorText}>Couldn't load details. Check your connection.</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={() => setRetryKey(k => k + 1)}>
-                  <Text style={styles.retryText}>Retry</Text>
-                </TouchableOpacity>
+                <RetryButton onPress={() => setRetryKey(k => k + 1)} />
               </View>
             ) : (
               <>
@@ -2092,8 +2082,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   seasonBulkBtnTextPending: { color: colors.textMuted },
 
   errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md },
-  retryBtn:  { paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
-  retryText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
 
   // ── Add-to-list sheet ──
   lsOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.5)' },

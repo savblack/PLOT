@@ -1,3 +1,4 @@
+import BackBar from '../../../../components/BackBar';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../../../lib/share';
@@ -114,14 +115,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {/* Back bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.backBtn} accessibilityLabel="Go back" accessibilityRole="button">
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M15 18l-6-6 6-6" />
-          </Svg>
-        </TouchableOpacity>
-      </View>
+      <BackBar />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}>
         {!found ? (
@@ -398,8 +392,6 @@ function FollowListModal({
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm },
-  backBtn: { padding: 4 },
   body: { paddingHorizontal: spacing.xl },
   emptyWrap: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing.xxl * 2, gap: spacing.md },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, textAlign: 'center' },

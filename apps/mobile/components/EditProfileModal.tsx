@@ -19,7 +19,7 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { TextInput } from './TextInput';
-import Svg, { Polyline } from 'react-native-svg';
+import { IconCheck } from './icons';
 import { Avatar } from './Avatar';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
@@ -219,9 +219,7 @@ export default function EditProfileModal({
                   >
                     <View style={[styles.checkbox, on && styles.checkboxOn]}>
                       {on && (
-                        <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                          <Polyline points="20,6 9,17 4,12" />
-                        </Svg>
+                        <IconCheck size={12} color="#fff" strokeWidth={3} />
                       )}
                     </View>
                     <Text style={styles.sectionLabel}>{key === 'favourites' ? fw.plural : label}</Text>

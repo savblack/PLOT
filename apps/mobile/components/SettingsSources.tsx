@@ -9,7 +9,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
-import Svg, { Polyline } from 'react-native-svg';
+import { IconChevronRight } from './icons';
 import { useTrackingJobs } from '@plot/core/useTrackingJobs.js';
 import { IMPORT_SOURCES, findImportSource, type ImportSource } from '@plot/core/onboardingSetup.js';
 import { importJobActive, importJobFinished, importJobStatusLine, importSourceName } from '@plot/core/importJobs.js';
@@ -226,9 +226,7 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
 function Chevron() {
   const { colors } = useTheme();
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-      <Polyline points="9,18 15,12 9,6" />
-    </Svg>
+    <IconChevronRight size={14} color={colors.textMuted} strokeWidth={2.5} />
   );
 }
 

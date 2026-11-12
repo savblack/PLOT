@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { TextInput } from '../TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Line, Polyline } from 'react-native-svg';
+import { IconChevronLeft, IconChevronRight, IconClose } from '../icons';
 import { CARD_FORMATS, presetIndex, shareCaption } from '@plot/core/shareCards.js';
 import { SHARE_CARDS as T } from '@plot/core/copy/shareCards.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
@@ -31,12 +31,8 @@ function unlockLine(card: ShareCardModel) {
 }
 
 function Chevron({ dir, color }: { dir: 'left' | 'right'; color: string }) {
-  const points = dir === 'left' ? '15,18 9,12 15,6' : '9,18 15,12 9,6';
-  return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Polyline points={points} />
-    </Svg>
-  );
+  const Icon = dir === 'left' ? IconChevronLeft : IconChevronRight;
+  return <Icon size={16} color={color} />;
 }
 
 export default function ShareCardSheet({
@@ -125,10 +121,7 @@ export default function ShareCardSheet({
             })}
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel={T.close} onPress={onClose} hitSlop={8}>
-            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
-              <Line x1={6} y1={6} x2={18} y2={18} />
-              <Line x1={18} y1={6} x2={6} y2={18} />
-            </Svg>
+            <IconClose size={16} color={colors.textPrimary} />
           </Pressable>
         </View>
 

@@ -7,6 +7,7 @@
  * pop-up over blurred placeholder picks, and Upgrade goes to the in-app
  * Premium preview (Settings), never an external purchase link.
  */
+import BackBar from '../../components/BackBar';
 import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Animated, Easing, AccessibilityInfo, Switch,
@@ -17,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
+import { IconChevronLeft, IconChevronRight, IconChevronDown, IconChevronUp, IconClose, IconCheck } from '../../components/icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -76,8 +78,8 @@ function Sparkle({ color }: { color: string }) {
   );
 }
 function Chevron({ color, dir }: { color: string; dir: 'left' | 'right' | 'down' | 'up' }) {
-  const d = { left: 'm15 18-6-6 6-6', right: 'm9 18 6-6-6-6', down: 'm6 9 6 6 6-6', up: 'm6 15 6-6 6 6' }[dir];
-  return <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d={d} /></Svg>;
+  const Icon = { left: IconChevronLeft, right: IconChevronRight, down: IconChevronDown, up: IconChevronUp }[dir];
+  return <Icon size={16} color={color} />;
 }
 
 function Tile({ label, hint, selected, onPress, role = 'radio', compact = false, styles }: {
@@ -358,7 +360,7 @@ function SavedSearches({ picker, styles, colors }: { picker: Picker; styles: Sty
             <Text style={styles.savedMeta}>{T.savedMeta(item.results.length, savedSearchDate(item.savedAt))}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => picker.removeSavedSearch(item.id)} style={styles.savedRemove} accessibilityRole="button" accessibilityLabel={T.removeSaved(item.label)}>
-            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round"><Path d="M18 6 6 18M6 6l12 12" /></Svg>
+            <IconClose size={16} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       ))}
@@ -481,7 +483,7 @@ function Locked({ picker, onUpgrade, styles, colors, dark }: {
       <BlurView intensity={28} tint={dark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
       <View style={styles.unlock} accessibilityViewIsModal>
         <TouchableOpacity onPress={picker.closeLock} style={styles.unlockClose} accessibilityRole="button" accessibilityLabel={T.gate.close} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round"><Path d="M18 6 6 18M6 6l12 12" /></Svg>
+          <IconClose size={18} color={colors.textSecondary} />
         </TouchableOpacity>
         <View style={styles.unlockBadge} accessible accessibilityLabel={T.gate.label}>
           <PlotWordmark size={16} color={colors.onAccentFill} label={T.gate.brand} style={styles.unlockBrand} />
@@ -492,7 +494,7 @@ function Locked({ picker, onUpgrade, styles, colors, dark }: {
         <View style={{ gap: 12 }}>
           {T.gate.benefits.map(b => (
             <View key={b.title} style={{ flexDirection: 'row', gap: 10 }}>
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2 }}><Path d="M20 6 9 17l-5-5" /></Svg>
+              <IconCheck size={18} color={colors.textPrimary} strokeWidth={2.2} style={{ marginTop: 2 }} />
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={styles.unlockBenefitTitle}>{b.title}</Text>
                 <Text style={styles.unlockBenefitBody}>{b.body}</Text>
@@ -552,11 +554,7 @@ export default function TonightScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.backBtn} accessibilityLabel="Go back" accessibilityRole="button">
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M15 18l-6-6 6-6" /></Svg>
-        </TouchableOpacity>
-      </View>
+      <BackBar />
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}>
         <Text style={styles.pageTitle}>{titleForView('tonight')}</Text>
@@ -620,8 +618,6 @@ export default function TonightScreen() {
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  backBtn: { padding: 4 },
   pageTitle: { fontFamily: fontFamily.display, fontSize: fontSize.hero, color: colors.textPrimary, marginBottom: spacing.lg },
 
   qTitle: { fontFamily: fontFamily.display, fontSize: 30, lineHeight: 33, color: colors.textPrimary },

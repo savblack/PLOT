@@ -18,7 +18,9 @@ import {
 import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-svg';
+import Svg, { Path, Polyline, Circle, Rect, Line } from 'react-native-svg';
+import { IconChevronRight, IconClose, IconCheck } from '../../components/icons';
+import ModalHeader from '../../components/ModalHeader';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
@@ -120,9 +122,7 @@ function BroadcastIcon() {
 function Chevron() {
   const { colors } = useTheme();
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-      <Polyline points="9,18 15,12 9,6" />
-    </Svg>
+    <IconChevronRight size={14} color={colors.textMuted} strokeWidth={2.5} />
   );
 }
 
@@ -589,12 +589,7 @@ function RegionModal({ current, onSave, onClose }: { current: string; onSave: (c
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>{SETTINGS_VIEW.page.regionLabel}</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={styles.modalCancel}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
+        <ModalHeader title={SETTINGS_VIEW.page.regionLabel} actionLabel="Cancel" onAction={onClose} />
         <ScrollView contentContainerStyle={styles.regionGrid}>
           {REGIONS.map(r => (
             <TouchableOpacity
@@ -637,10 +632,7 @@ function TimezoneModal({ current, onSave, onClose }: { current: string; onSave: 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>{SETTINGS_VIEW.page.timezoneLabel}</Text>
-          <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Cancel</Text></TouchableOpacity>
-        </View>
+        <ModalHeader title={SETTINGS_VIEW.page.timezoneLabel} actionLabel="Cancel" onAction={onClose} />
         <View style={styles.modalSearchWrap}>
           <View style={styles.modalSearchInner}>
             <TextInput
@@ -736,15 +728,14 @@ function ProviderModal({
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>{title}</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Line x1="18" y1="6" x2="6" y2="18" />
-              <Line x1="6" y1="6" x2="18" y2="18" />
-            </Svg>
-          </TouchableOpacity>
-        </View>
+        <ModalHeader
+          title={title}
+          action={
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
+              <IconClose color={colors.textSecondary} />
+            </TouchableOpacity>
+          }
+        />
         <View style={styles.modalSearchWrap}>
           <View style={styles.modalSearchInner}>
             <TextInput
@@ -820,10 +811,7 @@ function NameModal({ current, onSave, onClose }: { current: string; onSave: (nam
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Name</Text>
-          <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Cancel</Text></TouchableOpacity>
-        </View>
+        <ModalHeader title="Name" actionLabel="Cancel" onAction={onClose} />
         <View style={styles.modalSearchWrap}>
           <TextInput
             style={styles.modalSearchInput}
@@ -898,10 +886,7 @@ function GenreModal({ selected, onSave, onClose }: { selected: string[]; onSave:
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>{SETTINGS_VIEW.integrations.genresLabel}</Text>
-          <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Done</Text></TouchableOpacity>
-        </View>
+        <ModalHeader title={SETTINGS_VIEW.integrations.genresLabel} actionLabel="Done" onAction={onClose} />
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
         ) : loadError ? (
@@ -959,16 +944,11 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Feedback</Text>
-          <TouchableOpacity onPress={onClose}><Text style={styles.modalCancel}>Close</Text></TouchableOpacity>
-        </View>
+        <ModalHeader title="Feedback" actionLabel="Close" onAction={onClose} />
         {status === 'done' ? (
           <View style={styles.feedbackDone}>
             <View style={styles.feedbackDoneIcon}>
-              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Polyline points="20,6 9,17 4,12" />
-              </Svg>
+              <IconCheck size={22} color={colors.accent} strokeWidth={2.5} />
             </View>
             <Text style={styles.feedbackDoneTitle}>Thanks for your feedback!</Text>
             <Text style={styles.feedbackDoneBody}>We read every submission and use it to improve plot.</Text>
@@ -2081,13 +2061,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   // Modal
   modalContainer: { flex: 1, backgroundColor: colors.bg },
-  modalHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-  },
-  modalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
-  modalCancel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
   modalSearchWrap: { padding: spacing.md, paddingHorizontal: spacing.xl },
   modalSearchInner: {
     flexDirection: 'row', alignItems: 'center',

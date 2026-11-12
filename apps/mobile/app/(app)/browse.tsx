@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { ActivityIndicator, Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { IconChevronLeft } from '../../components/icons';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
@@ -52,9 +52,7 @@ export default function BrowseScreen() {
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={{ marginLeft: spacing.md, marginVertical: spacing.sm, width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
       >
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke={colors.textPrimary} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
+        <IconChevronLeft size={18} color={colors.textPrimary} strokeWidth={2.5} />
       </TouchableOpacity>
       <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
         <Text style={{ fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted }}>{BROWSE.keywordEyebrow}</Text>

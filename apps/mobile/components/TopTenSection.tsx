@@ -16,6 +16,7 @@ import { useState, useMemo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Dimensions } from 'react-native';
 import Svg, { Path, Polyline } from 'react-native-svg';
 import SearchPickModal from './SearchPickModal';
+import EmptyPrompt from './EmptyPrompt';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../lib/tokens';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
@@ -226,13 +227,14 @@ export function TopTenSection({ listType, title, showTitle = true, topLists, his
       </View>
 
       {!editMode && items.length === 0 && (
-        <TouchableOpacity style={styles.topEmpty} onPress={() => setAddingRank(1)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`Start your Top 5 ${title}`}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.topEmptyTitle}>{CUSTOM_LISTS.emptyPrompts.topFive.title(title)}</Text>
-            <Text style={styles.topEmptyBody}>{CUSTOM_LISTS.emptyPrompts.topFive.body}</Text>
-          </View>
-          <Text style={styles.topEmptyAction}>{CUSTOM_LISTS.emptyPrompts.topFive.action}</Text>
-        </TouchableOpacity>
+        <EmptyPrompt
+          title={CUSTOM_LISTS.emptyPrompts.topFive.title(title)}
+          body={CUSTOM_LISTS.emptyPrompts.topFive.body}
+          actionLabel={CUSTOM_LISTS.emptyPrompts.topFive.action}
+          onPress={() => setAddingRank(1)}
+          accessibilityLabel={`Start your Top 5 ${title}`}
+          style={styles.topEmpty}
+        />
       )}
 
       {!editMode && items.length > 0 && (
@@ -364,12 +366,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     position: 'absolute', left: spacing.sm, bottom: spacing.xs, color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6,
   },
-  topEmpty: {
-    marginHorizontal: spacing.xl, marginBottom: spacing.md, padding: spacing.lg,
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    borderRadius: radii.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.borderStrong,
-  },
-  topEmptyTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
-  topEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
-  topEmptyAction: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
+  // The shared prompt has an 8pt margin above and below; here it sits flush
+  // under the shelf header with the shelf's own gap beneath.
+  topEmpty: { marginTop: 0, marginBottom: spacing.md },
 });

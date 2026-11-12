@@ -14,6 +14,7 @@
 import { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Pressable, ScrollView, StyleSheet, Modal, useWindowDimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { IconClose, IconCheck } from './icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COMMON } from '@plot/core/copy/common.js';
 import { MOBILE_CONTROLS } from '@plot/core/copy/mobileControls.js';
@@ -96,9 +97,7 @@ export default function GroupedFilterMenu({
             <View style={styles.headingRow}>
               <Text style={styles.heading} accessibilityRole="header">{MOBILE_CONTROLS.filters}</Text>
               <TouchableOpacity onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={COMMON.close}>
-                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round">
-                  <Path d="M6 6l12 12M18 6L6 18" />
-                </Svg>
+                <IconClose color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
@@ -120,9 +119,7 @@ export default function GroupedFilterMenu({
                         <Text style={[styles.rowText, chosen && styles.rowTextChosen]}>{opt.label}</Text>
                         <View style={styles.tick}>
                           {chosen && (
-                            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                              <Path d="M20 6L9 17l-5-5" />
-                            </Svg>
+                            <IconCheck size={16} color={colors.accent} strokeWidth={3} />
                           )}
                         </View>
                       </TouchableOpacity>

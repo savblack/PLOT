@@ -6,6 +6,7 @@ import {
   View, Text, Image, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import Svg, { Circle, Text as SvgText, Path } from 'react-native-svg';
+import { IconChevronLeft, IconChevronDown } from '../icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
@@ -186,9 +187,7 @@ function TasteOverlapBody({
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }]}>
         <View style={styles.top}>
           <TouchableOpacity style={styles.iconBtn} onPress={back} accessibilityRole="button" accessibilityLabel={T.back}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M15 18l-6-6 6-6" />
-            </Svg>
+            <IconChevronLeft color={colors.textPrimary} />
           </TouchableOpacity>
           {!premium && <View style={styles.chip}><Text style={styles.chipText}>{T.premiumChip}</Text></View>}
           {premium && overlap && target ? (
@@ -217,9 +216,7 @@ function TasteOverlapBody({
         >
           <Face url={target?.avatar_url} name={name} size={32} colors={colors} />
           <Text style={styles.personText}>{T.youAnd(name)}</Text>
-          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M6 9l6 6 6-6" />
-          </Svg>
+          <IconChevronDown size={14} color={colors.textPrimary} strokeWidth={2.2} />
         </TouchableOpacity>
 
         {body}

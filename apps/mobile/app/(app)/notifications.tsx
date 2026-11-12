@@ -4,6 +4,7 @@
  * new episodes of followed shows (title rows: a poster instead of an avatar,
  * and they open the title rather than a profile).
  */
+import BackBar from '../../components/BackBar';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
@@ -100,20 +101,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={styles.backBtn}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M15 18l-6-6 6-6" />
-          </Svg>
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>Notifications</Text>
-      </View>
+      <BackBar title="Notifications" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -294,9 +282,6 @@ export default function NotificationsScreen() {
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm },
-  backBtn: { padding: 4 },
-  topBarTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
   empty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 22, paddingVertical: spacing.xxl },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,

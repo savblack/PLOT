@@ -9,7 +9,7 @@ import {
 import { TextInput } from '../TextInput';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { IconChevronLeft } from '../icons';
 import PlotLoader from '@plot/ui/PlotLoader';
 import { useSmartList } from '@plot/core/useSmartList.js';
 import { useSmartListSeen } from '@plot/core/useSmartListSeen.js';
@@ -289,9 +289,7 @@ export default function SmartListView({ listId }: { listId: string }) {
 function BackBar({ onPress, color }: { onPress: () => void; color: string }) {
   return (
     <TouchableOpacity onPress={onPress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Go back" accessibilityRole="button">
-      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <Path d="M15 18l-6-6 6-6" />
-      </Svg>
+      <IconChevronLeft size={24} color={color} />
     </TouchableOpacity>
   );
 }

@@ -13,6 +13,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Line } from 'react-native-svg';
+import { IconChevronRight, IconClose, IconCheck } from './icons';
 import { tmdb } from '../lib/tmdb';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
@@ -491,9 +492,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
           )}
           <Text style={styles.headerTitle}>Import Watch History</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M18 6L6 18M6 6l12 12" />
-            </Svg>
+            <IconClose color={colors.textSecondary} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
@@ -518,9 +517,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
                   <Text style={styles.platformName}>{p.name}</Text>
                   <Text style={styles.platformHint} numberOfLines={2}>{p.hint}</Text>
                 </View>
-                <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                  <Polyline points="9,18 15,12 9,6" />
-                </Svg>
+                <IconChevronRight size={14} color={colors.textMuted} strokeWidth={2.5} />
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -711,9 +708,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
         {step === 'done' && (
           <View style={[styles.body, styles.center]}>
             <View style={styles.doneIcon}>
-              <Svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Polyline points="20,6 9,17 4,12" />
-              </Svg>
+              <IconCheck size={28} color={colors.accent} strokeWidth={2.5} />
             </View>
             <Text style={styles.resolvingTitle}>{importResult.failed ? IMPORT_VIEW.incomplete : IMPORT_VIEW.finished}</Text>
             {documentReport.length > 0 && <ScrollView style={{ maxHeight: 180 }}><Text style={styles.previewTitle}>{IMPORT_VIEW.reportHeading}</Text>{documentReport.map((message, index) => <Text key={index} style={styles.previewMeta}>{message}</Text>)}</ScrollView>}

@@ -16,7 +16,8 @@ import {
   ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { TextInput } from './TextInput';
-import Svg, { Line, Path, Polygon, Polyline, Rect } from 'react-native-svg';
+import Svg, { Path, Polygon, Rect } from 'react-native-svg';
+import { IconCheck, IconPlus } from './icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTitleFootBar, UNDO_MS, type FootBarField } from '@plot/core/useTitleFootBar.js';
@@ -42,13 +43,13 @@ function ymd(date: Date): string {
 }
 
 const TickIcon = ({ color }: { color: string }) => (
-  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><Polyline points="20 6 9 17 4 12" /></Svg>
+  <IconCheck size={14} color={color} strokeWidth={2.4} />
 );
 const PencilIcon = ({ color, size = 13 }: { color: string; size?: number }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 20h9" /><Path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" /></Svg>
 );
 const PlusIcon = ({ color }: { color: string }) => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round"><Line x1={12} y1={5} x2={12} y2={19} /><Line x1={5} y1={12} x2={19} y2={12} /></Svg>
+  <IconPlus size={13} color={color} strokeWidth={2.2} />
 );
 const LockIcon = ({ color }: { color: string }) => (
   <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2}><Rect x={3} y={11} width={18} height={11} rx={2} /><Path d="M7 11V7a5 5 0 0 1 10 0v4" /></Svg>

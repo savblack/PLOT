@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
+import { IconChevronDown } from './icons';
 import { usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { useWatchTogether } from '@plot/core/useWatchTogether.js';
 import {
@@ -159,9 +160,7 @@ export default function PremiumFirstWeek({ onState }: { onState: (next: PremiumF
           accessibilityLabel={expanded ? T.collapse : T.expand}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
-            <Path d="M6 9l6 6 6-6" />
-          </Svg>
+          <IconChevronDown size={18} color={colors.textSecondary} style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
         </View>
         <View style={styles.barFull} accessibilityRole="image" accessibilityLabel={T.progressLabel(doneCount, total)}>

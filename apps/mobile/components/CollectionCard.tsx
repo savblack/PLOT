@@ -6,7 +6,7 @@
 // lists take TV.
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { IconChevronDown } from './icons';
 import { tmdb } from '../lib/tmdb';
 import { collectionStubFromDetails, orderedCollectionParts } from '@plot/core/collections.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
@@ -61,9 +61,7 @@ export default function CollectionCard({ details, itemId }: { details: any; item
             </Text>
           </View>
           <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
-            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M6 9l6 6 6-6" />
-            </Svg>
+            <IconChevronDown size={16} color={colors.textSecondary} />
           </View>
         </TouchableOpacity>
         <CollectionRun items={items} watched={watched} total={total} compact />

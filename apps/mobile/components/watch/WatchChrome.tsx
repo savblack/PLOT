@@ -3,7 +3,8 @@ import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity
 import { useRouter, type Href } from 'expo-router';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Polyline } from 'react-native-svg';
+import { IconChevronLeft, IconChevronRight } from '../icons';
+import SectionTitle from '../SectionTitle';
 import { personName } from '@plot/core/watchTogether.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -101,9 +102,7 @@ export function BackRow({ label = COMMON.back, backTo }: { label?: string; backT
   };
   return (
     <TouchableOpacity onPress={goBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={label} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
-      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <Path d="M15 18l-6-6 6-6" />
-      </Svg>
+      <IconChevronLeft color={colors.textPrimary} />
       <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }}>{label}</Text>
     </TouchableOpacity>
   );
@@ -164,8 +163,7 @@ export function SectionLabel({ children }: { children: string }) {
 }
 
 export function PageTitle({ children }: { children: string }) {
-  const { colors } = useTheme();
-  return <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6, lineHeight: 23, color: colors.textPrimary }}>{children}</Text>;
+  return <SectionTitle>{children}</SectionTitle>;
 }
 
 export function Note({ children }: { children: string }) {
@@ -184,9 +182,7 @@ export function PersonRow({ person, note, onPress, trailing }: { person: WtPerso
       </View>
       {trailing}
       {onPress && (
-        <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <Polyline points="9,18 15,12 9,6" />
-        </Svg>
+        <IconChevronRight size={14} color={colors.textMuted} />
       )}
     </>
   );

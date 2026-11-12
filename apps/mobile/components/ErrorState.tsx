@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
-import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
+import RetryButton from './RetryButton';
 
 // Shared full-screen error state for screens whose bootstrap data load can
 // fail (network/Supabase/TMDB errors) — mirrors the inline error+retry
@@ -19,9 +20,7 @@ export default function ErrorState({
   return (
     <View style={styles.wrap}>
       <Text style={styles.text}>{message}</Text>
-      <TouchableOpacity style={styles.retryBtn} onPress={onRetry} accessibilityLabel="Retry" accessibilityRole="button">
-        <Text style={styles.retryText}>Retry</Text>
-      </TouchableOpacity>
+      <RetryButton onPress={onRetry} accessibilityLabel="Retry" accessibilityRole="button" />
     </View>
   );
 }
@@ -29,6 +28,4 @@ export default function ErrorState({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   text: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md },
-  retryBtn: { paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
-  retryText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
 });

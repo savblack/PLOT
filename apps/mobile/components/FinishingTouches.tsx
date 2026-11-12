@@ -14,6 +14,7 @@ import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { IconChevronDown } from './icons';
 import { followUser } from '@plot/core/useFollows.js';
 import { usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
 import { deriveFinishingTouches, finishingTouchesVisible, firstWatchlistShow, type FinishingTouchesState, type WatchlistShow } from '@plot/core/finishingTouches.js';
@@ -211,9 +212,7 @@ export default function FinishingTouches({ state, onState }: {
           accessibilityLabel={expanded ? T.collapse : T.expand}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
-            <Path d="M6 9l6 6 6-6" />
-          </Svg>
+          <IconChevronDown size={18} color={colors.textSecondary} style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }} />
         </TouchableOpacity>
         <View style={styles.barFull} accessibilityRole="image" accessibilityLabel={T.progressLabel(doneCount, total)}>
           {tiles.map((tile, i) => <View key={tile.id} style={[styles.barSeg, i < doneCount && styles.barSegOn]} />)}
