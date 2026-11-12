@@ -1,6 +1,6 @@
 # Mobile Google and Apple sign-in
 
-Status: active (Apple and Google sign-in verified on iPhone; icon change awaiting build 8)
+Status: active (sign-in and icon verified on iPhone build 8; pull request to main is next)
 Owner: Jacob (mobile implementation), Hailey (signup flow)
 Branch: agent/2026-11-12-mobile-social-login
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-11-12-mobile-social-login
@@ -20,7 +20,7 @@ Enable Google and Apple login in the mobile release configuration and verify the
 - `docs/ops/mobile-builds.md` records the current state.
 
 ## Next
-Sign-in is verified on iPhone (Apple on build 6, Google on build 7). Remaining: Savannah confirms the wordmark icon on build 8, then a pull request to `main` with full checks (remove this file in its last commit). No App Store release without her approval.
+Sign-in is verified on iPhone (Apple on build 6, Google on build 7). Remaining: a pull request to `main` with full checks (remove this file in its last commit). No App Store release without her approval.
 
 ## Blockers and approvals
 No physical device is connected to this workspace, and the completed iOS production archive is store-distribution only, so interactive sign-in could not be completed. Savannah explicitly authorized enabling both logins and verification in this chat. On 2026-11-12 Savannah approved submitting iOS build 6 to TestFlight for internal testing only ("Yes, TestFlight"). App Store release and Android store submission are still not authorized. No live user records were changed.
@@ -43,7 +43,7 @@ No physical device is connected to this workspace, and the completed iOS product
 - Default launcher icon is now the charcoal wordmark (`assets/icon.png`, Android `android-icon-foreground.png`; `android-icon-monochrome.png` regenerated as a white silhouette of it).
 - The old five-dot charcoal mark moved to the Premium picker as alternate `MarkCharcoal` (`assets/alternate-icons/MarkCharcoal*.png`, `app.json`, `lib/appIcons.ts`). The `WordmarkCharcoal` alternate is gone because it is now the default. The mobile app is not released, so no one has that alternate selected.
 - Checks: mobile typecheck passed; eslint on the two touched files shows the same 7 pre-existing warnings as the branch base, 0 errors; app.json parses.
-- Savannah approved build 8 ("Yes, build 8"). iOS build 8 https://expo.dev/accounts/savblack/projects/plot/builds/c5331dbf-1d69-4769-9dcb-dca2d9ebbe3f finished and was uploaded to App Store Connect (submission d480bdd0-1a97-4db9-85bd-a5d8f9fbc2f9). Icon on device not yet confirmed.
+- Savannah approved build 8 ("Yes, build 8"). iOS build 8 https://expo.dev/accounts/savblack/projects/plot/builds/c5331dbf-1d69-4769-9dcb-dca2d9ebbe3f finished and was uploaded to App Store Connect (submission d480bdd0-1a97-4db9-85bd-a5d8f9fbc2f9). Savannah confirmed the wordmark icon on her iPhone after updating to build 8 (her report).
 
 ## Latest pushed commit
 fad05b75e (pushed; branch matches origin). Checks above still stand; no code changed since.
