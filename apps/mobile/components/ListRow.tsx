@@ -1,6 +1,7 @@
 /**
  * One title as a row: a small poster, the title, a line or two of detail, an
- * optional progress line, and optional controls on the right. The List card
+ * optional progress line, and optional controls on the right. The one poster
+ * row for lists of titles (44 by 66 poster); the List card
  * style's version of a poster card (see PosterRail). Mirrors the rows web's
  * HomeLook.css makes out of its cards.
  */
@@ -11,10 +12,16 @@ import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 
 const POSTER_W = 44;
 
-export default function ListRow({ posterUri, title, meta, progress, onPress, label, trailing }: {
+export default function ListRow({ posterUri, title, meta, detail, progress, onPress, label, trailing, below, titleLines = 1 }: {
   posterUri?: string | null;
   title: string;
   meta?: string;
+  /** A second muted line under `meta` (who, when). */
+  detail?: string;
+  /** Lines the title may run to before it truncates. */
+  titleLines?: number;
+  /** Extra content under the text block, inside the press target. */
+  below?: ReactNode;
   /** 0 to 1: a thin progress line under the text. */
   progress?: number;
   onPress: () => void;
@@ -32,8 +39,10 @@ export default function ListRow({ posterUri, title, meta, progress, onPress, lab
           {posterUri ? <Image source={{ uri: posterUri }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
         </View>
         <View style={styles.text}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={styles.title} numberOfLines={titleLines}>{title}</Text>
           {meta ? <Text style={styles.meta} numberOfLines={1}>{meta}</Text> : null}
+          {detail ? <Text style={styles.meta} numberOfLines={1}>{detail}</Text> : null}
+          {below}
           {pct ? (
             <View style={styles.track}><View style={[styles.fill, { width: pct }]} /></View>
           ) : null}

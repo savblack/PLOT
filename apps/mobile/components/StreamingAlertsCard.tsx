@@ -19,6 +19,7 @@ import { STREAMING_ALERTS as A } from '@plot/core/copy/streamingAlerts.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
+import Button from './Button';
 
 // The same bell as web's BellIcon: filled when alerts are on, outline when off.
 function BellIcon({ on, color }: { on: boolean; color: string }) {
@@ -64,17 +65,15 @@ export default function StreamingAlertsCard({ movie }: { movie: { id: number; ti
   if (!all.on) {
     hint = A.card.switchedOff;
     action = (
-      <TouchableOpacity
+      <Button
+        size="sm"
+        label={A.card.turnOnAll}
         onPress={() => { void all.setOn(true); }}
         disabled={all.busy}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: all.busy }}
         accessibilityLabel={A.card.turnOnAllLabel}
-        style={[styles.pill, all.busy && styles.busy]}
-      >
-        <BellIcon on={false} color={colors.textPrimary} />
-        <Text style={styles.pillText}>{A.card.turnOnAll}</Text>
-      </TouchableOpacity>
+        icon={<BellIcon on={false} color={colors.textPrimary} />}
+        style={styles.turnOn}
+      />
     );
   } else {
     if (mute.muted) hint = A.card.muted;
@@ -119,6 +118,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   copy: { flex: 1, minWidth: 0, gap: 3 },
   title: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary },
   hint: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, lineHeight: 16, color: colors.textMuted },
+  turnOn: { alignSelf: 'center' },
   // The same pill as FollowPill (components/people/FollowControls.tsx).
   pill: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg },
   pillText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },

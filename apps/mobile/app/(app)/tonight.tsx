@@ -8,6 +8,7 @@
  * Premium preview (Settings), never an external purchase link.
  */
 import BackBar from '../../components/BackBar';
+import Button, { TextLink } from '../../components/Button';
 import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Animated, Easing, AccessibilityInfo, Switch,
@@ -193,9 +194,7 @@ function Question({ picker, styles, colors }: { picker: Picker; styles: Styles; 
             ))}
           </Grid>
           {genres.length > FEATURED_GENRE_COUNT && (
-            <TouchableOpacity onPress={() => setAllGenres(v => !v)} style={styles.link} accessibilityRole="button">
-              <Text style={styles.linkText}>{allGenres ? T.showFewerGenres : T.showAllGenres(genres.length)}</Text>
-            </TouchableOpacity>
+            <TextLink label={allGenres ? T.showFewerGenres : T.showAllGenres(genres.length)} onPress={() => setAllGenres(v => !v)} style={styles.link} />
           )}
         </>
       )}
@@ -502,9 +501,7 @@ function Locked({ picker, onUpgrade, styles, colors, dark }: {
             </View>
           ))}
         </View>
-        <TouchableOpacity onPress={onUpgrade} style={[styles.btn, styles.btnPrimary, styles.unlockCta]} accessibilityRole="button">
-          <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{PLANS_PAGE.upgradeAction}</Text>
-        </TouchableOpacity>
+        <Button variant="primary" label={PLANS_PAGE.upgradeAction} onPress={onUpgrade} style={styles.unlockCta} />
         <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.priceTerms}</Text>
         <Text style={styles.unlockPrice}>{PLANS_PAGE.premium.trialNote}</Text>
       </View>
@@ -546,10 +543,7 @@ export default function TonightScreen() {
   const last = picker.step === PICKER_STEPS.length - 1;
 
   const btn = (label: string, onPress: () => void, primary: boolean, icon?: React.ReactNode) => (
-    <TouchableOpacity onPress={onPress} style={[styles.btn, primary ? styles.btnPrimary : styles.btnSecondary]} accessibilityRole="button">
-      {icon}
-      <Text style={[styles.btnText, primary && styles.btnTextPrimary]}>{label}</Text>
-    </TouchableOpacity>
+    <Button label={label} onPress={onPress} variant={primary ? 'primary' : 'secondary'} icon={icon} />
   );
 
   return (
@@ -602,11 +596,13 @@ export default function TonightScreen() {
               {picker.freePickLeft && <Text style={styles.freeNote}>{T.freePickNote}</Text>}
               <View style={styles.barActions}>
                 {btn(T.surpriseMe, () => picker.go('surprise'), false, <Sparkle color={colors.textPrimary} />)}
-                <TouchableOpacity onPress={() => picker.go('five')} style={[styles.btn, styles.btnPrimary, { paddingHorizontal: 32 }]} accessibilityRole="button"
-                  accessibilityLabel={!premium && !picker.freePickLeft ? `${T.go}, ${T.gate.locked}` : picker.freePickLeft ? `${T.go}. ${T.freePickNote}` : undefined}>
-                  {!premium && !picker.freePickLeft && <Lock color={colors.onAccentFill} />}
-                  <Text style={[styles.btnText, styles.btnTextPrimary, { fontSize: fontSize.md }]}>{T.go}</Text>
-                </TouchableOpacity>
+                <Button
+                  variant="primary"
+                  label={T.go}
+                  onPress={() => picker.go('five')}
+                  icon={!premium && !picker.freePickLeft ? <Lock color={colors.onAccentFill} /> : undefined}
+                  accessibilityLabel={!premium && !picker.freePickLeft ? `${T.go}, ${T.gate.locked}` : picker.freePickLeft ? `${T.go}. ${T.freePickNote}` : undefined}
+                />
               </View>
             </>
           )}
@@ -642,8 +638,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.surfaceSunken, padding: 18, justifyContent: 'space-between',
   },
   typeLabel: { fontFamily: fontFamily.display, fontSize: 22, color: colors.textPrimary },
-  link: { paddingVertical: spacing.sm, alignSelf: 'flex-start' },
-  linkText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accentText },
+  link: { marginVertical: spacing.xs, alignSelf: 'flex-start' },
   hint: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.sm },
 
   filters: { marginTop: spacing.xl, backgroundColor: colors.surfaceSunken, borderRadius: 20, overflow: 'hidden' },
@@ -661,10 +656,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   stepNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg },
   btn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 18, borderRadius: 999 },
-  btnPrimary: { backgroundColor: colors.accentFill },
   btnSecondary: { backgroundColor: colors.surfaceSunken },
   btnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
-  btnTextPrimary: { color: colors.onAccentFill },
 
   sentence: { fontFamily: fontFamily.display, fontSize: 21, lineHeight: 30, color: colors.textPrimary },
   sentenceFilled: { color: colors.accentText, textDecorationLine: 'underline' },
@@ -718,7 +711,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   unlockBody: { fontFamily: fontFamily.sans, fontSize: 15, lineHeight: 23, color: colors.textSecondary },
   unlockBenefitTitle: { fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.textPrimary },
   unlockBenefitBody: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 21, color: colors.textSecondary },
-  unlockCta: { justifyContent: 'center', minHeight: 48, marginTop: 4 },
+  unlockCta: { marginTop: 4 },
   unlockPrice: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: -6 },
 
   resultsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },

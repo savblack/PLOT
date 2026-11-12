@@ -32,6 +32,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { fontFamily, fontSize, radii, spacing, type Palette } from '../lib/tokens';
 import { clearPendingRate, noteWatchedUnrated } from '../lib/ratePrompt';
 import Stars from './Stars';
+import Button, { TextLink } from './Button';
 
 const FOOT = MEDIA_PANEL.foot;
 
@@ -184,9 +185,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
           {watched && (
             <View style={styles.headEnd}>
               {fresh && (
-                <TouchableOpacity disabled={disabled} onPress={undo} accessibilityRole="button" style={styles.undo}>
-                  <Text style={styles.undoText}>{FOOT.undo}</Text>
-                </TouchableOpacity>
+                <TextLink label={FOOT.undo} onPress={undo} disabled={disabled} style={styles.undo} />
               )}
               <TouchableOpacity
                 disabled={disabled}
@@ -208,13 +207,9 @@ export default function TitleFootBar(props: TitleFootBarProps) {
           {!watched && (
             <View style={styles.actions}>
               {isTv && !isWatching && (
-                <TouchableOpacity disabled={disabled} onPress={() => { void onStartWatching(); }} accessibilityRole="button" style={styles.ghostBtn}>
-                  <Text style={styles.ghostText}>{FOOT.imWatching}</Text>
-                </TouchableOpacity>
+                <TextLink label={FOOT.imWatching} onPress={() => { void onStartWatching(); }} disabled={disabled} />
               )}
-              <TouchableOpacity disabled={disabled} onPress={() => { void markUnrated(); }} accessibilityRole="button" style={[styles.primaryBtn, disabled && { opacity: 0.55 }]}>
-                <Text style={styles.primaryText}>{FOOT.iveWatched}</Text>
-              </TouchableOpacity>
+              <Button variant="primary" size="sm" label={FOOT.iveWatched} onPress={() => { void markUnrated(); }} disabled={disabled} style={styles.inRow} />
             </View>
           )}
         </View>
@@ -296,9 +291,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
                     {noteTooLong && <Text accessibilityRole="alert" style={styles.error}>{noteLength(noteDraft)}/{PRIVATE_NOTE_LIMIT}</Text>}
                     {!!noteEditor.error && <Text accessibilityRole="alert" style={styles.error}>{noteEditor.error}</Text>}
                     {noteEditor.conflict && (
-                      <TouchableOpacity onPress={noteEditor.reload} accessibilityRole="button" style={styles.ghostBtn}>
-                        <Text style={styles.ghostText}>{PRIVATE_NOTES.reload}</Text>
-                      </TouchableOpacity>
+                      <TextLink label={PRIVATE_NOTES.reload} onPress={noteEditor.reload} />
                     )}
                   </View>
                 )}
@@ -326,9 +319,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
                       }}
                     />
                     {Platform.OS === 'ios' && (
-                      <TouchableOpacity style={styles.ghostBtn} onPress={() => setPickingDate(false)} accessibilityRole="button">
-                        <Text style={styles.ghostText}>{COMMON.done}</Text>
-                      </TouchableOpacity>
+                      <TextLink label={COMMON.done} onPress={() => setPickingDate(false)} />
                     )}
                   </View>
                 )}
@@ -336,23 +327,19 @@ export default function TitleFootBar(props: TitleFootBarProps) {
 
               <View style={styles.sheetActions}>
                 {(props.review || savedNote) ? (
-                  <TouchableOpacity disabled={saving || noteBusy} onPress={bar.remove} accessibilityRole="button" style={styles.ghostBtn}>
-                    <Text style={[styles.ghostText, { color: colors.danger }]}>{COMMON.delete}</Text>
-                  </TouchableOpacity>
+                  <Button variant="danger" size="sm" label={COMMON.delete} onPress={bar.remove} disabled={saving || noteBusy} style={styles.inRow} />
                 ) : <View />}
                 <View style={styles.actions}>
-                  <TouchableOpacity disabled={saving} onPress={bar.discardDrafts} accessibilityRole="button" style={styles.ghostBtn}>
-                    <Text style={styles.ghostText}>{COMMON.cancel}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    disabled={saving || noteBusy || noteTooLong || (!reviewDirty && !noteDirty)}
+                  <TextLink quiet label={COMMON.cancel} onPress={bar.discardDrafts} disabled={saving} />
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    label={saving ? COMMON.saving : COMMON.save}
                     onPress={bar.save}
-                    accessibilityRole="button"
-                    accessibilityState={{ busy: saving }}
-                    style={[styles.primaryBtn, (saving || noteBusy || noteTooLong || (!reviewDirty && !noteDirty)) && { opacity: 0.55 }]}
-                  >
-                    <Text style={styles.primaryText}>{saving ? COMMON.saving : COMMON.save}</Text>
-                  </TouchableOpacity>
+                    busy={saving}
+                    disabled={noteBusy || noteTooLong || (!reviewDirty && !noteDirty)}
+                    style={styles.inRow}
+                  />
                 </View>
               </View>
             </View>
@@ -380,17 +367,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderRadius: radii.pill, backgroundColor: colors.statusWatchedDim, flexShrink: 1,
   },
   chipText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.statusWatched, flexShrink: 1 },
-  undo: { height: 30, paddingHorizontal: 10, justifyContent: 'center' },
-  undoText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textSecondary },
+  undo: { marginHorizontal: 10 },
 
   main: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   score: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.rating },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginLeft: 'auto' },
-  primaryBtn: { minHeight: 36, paddingHorizontal: spacing.lg, borderRadius: radii.pill, backgroundColor: colors.accentFill, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.onAccentFill },
-  ghostBtn: { minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center' },
-  ghostText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
+  // Buttons hug the top of a row by default; these sit on its centre line.
+  inRow: { alignSelf: 'center' },
   error: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger, marginTop: 6 },
 
   boxes: { gap: spacing.sm, marginTop: spacing.md },

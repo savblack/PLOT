@@ -18,6 +18,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { IconChevronDown } from '../../components/icons';
 import SectionTitle from '../../components/SectionTitle';
+import { TextLink } from '../../components/Button';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
@@ -823,9 +824,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
             />
           ))}
         </View>
-        <TouchableOpacity onPress={() => router.push('/(app)/search' as Href)} accessibilityRole="link" hitSlop={{ top: 8, bottom: 8 }}>
-          <Text style={styles.upNextEmptyLink}>{DISCOVER_VIEW.emptyUpNext.searchLink}</Text>
-        </TouchableOpacity>
+        <TextLink label={DISCOVER_VIEW.emptyUpNext.searchLink} onPress={() => router.push('/(app)/search' as Href)} accessibilityRole="link" />
       </View>
     </View>
   ) : null;
@@ -1004,15 +1003,15 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
 
         <Text style={styles.dateLine}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
         <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
-        {!history.loading && (
+        {!history.loading && weekNights > 0 && (
           <TouchableOpacity
             style={styles.weekLine}
             onPress={() => router.push('/(app)/history' as Href)}
             accessibilityRole="link"
             hitSlop={{ top: 6, bottom: 6 }}
           >
-            {weekNights > 0 && <View style={styles.weekDot} />}
-            <Text style={styles.weekText}>{weekNights > 0 ? DISCOVER_VIEW.weekLine(weekNights, bestStreak) : DISCOVER_VIEW.weekEmpty}</Text>
+            <View style={styles.weekDot} />
+            <Text style={styles.weekText}>{DISCOVER_VIEW.weekLine(weekNights, bestStreak)}</Text>
           </TouchableOpacity>
         )}
         {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
@@ -1423,7 +1422,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   upNextEmpty: { marginHorizontal: spacing.xl, padding: spacing.md, gap: spacing.md, borderRadius: radii.md, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.borderStrong },
   upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
   upNextEmptyRow: { flexDirection: 'row', gap: spacing.md },
-  upNextEmptyLink: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   customize: { alignSelf: 'center', marginTop: spacing.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg },
   customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   emptyWatchlist: {

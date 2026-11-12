@@ -1,10 +1,9 @@
 // Mobile customize sheet. The groups and save rules live in @plot/core.
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View,
+  ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadArtworkCatalog } from '@plot/core/artwork.js';
 import { ARTWORK } from '@plot/core/copy/artwork.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -14,6 +13,8 @@ import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useAppData } from '../contexts/AppDataContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { tmdb } from '../lib/tmdb';
+import BottomSheet from './BottomSheet';
+import { TextLink } from './Button';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import { backdropUrl, fontFamily, fontSize, logoUrl, Palette, posterUrl, profileUrl, radii, spacing } from '../lib/tokens';
 
@@ -70,7 +71,6 @@ export default function CustomizeArtwork({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { userId, profile } = useAppData();
   const art = useUserArtwork();
@@ -112,7 +112,9 @@ export default function CustomizeArtwork({
 
   return (
     <>
-      <TouchableOpacity
+      <TextLink
+        quiet
+        label={ARTWORK.customize}
         onPress={() => {
           if (!isPremiumProfile(profile)) {
             Alert.alert(ARTWORK.premiumTitle, ARTWORK.premiumBody, [
@@ -123,25 +125,14 @@ export default function CustomizeArtwork({
           }
           setOpen(true);
         }}
-        accessibilityRole="button"
         style={[styles.link, inline && styles.linkInline]}
-      >
-        <Text style={styles.linkText}>{ARTWORK.customize}</Text>
-      </TouchableOpacity>
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={styles.overlay}>
-          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
-            <View style={styles.header}>
-              <Text style={styles.title}>{ARTWORK.customize}</Text>
-              <TouchableOpacity onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={COMMON.close}>
-                <Text style={styles.close}>{COMMON.close}</Text>
-              </TouchableOpacity>
-            </View>
+      />
+      <BottomSheet visible={open} onClose={() => setOpen(false)} title={ARTWORK.customize} maxHeight="82%">
             {art.error ? <Text style={styles.note} accessibilityRole="alert">{art.error}</Text> : null}
             {loading ? <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.lg }} /> : failed ? (
               <Text style={styles.note} accessibilityRole="alert">{ARTWORK.couldNotLoad}</Text>
             ) : (
-              <ScrollView showsVerticalScrollIndicator={false}>
+              <>
                 {sections.map(section => {
                   const saved = art.path(section.subjectType, section.tmdbId, section.kind, section.seasonNumber);
                   const fallback = fallbackPath(section, defaults);
@@ -178,11 +169,9 @@ export default function CustomizeArtwork({
                     </View>
                   );
                 })}
-              </ScrollView>
+              </>
             )}
-          </View>
-        </View>
-      </Modal>
+      </BottomSheet>
     </>
   );
 }
@@ -217,30 +206,10 @@ function Tile({
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  link: { alignSelf: 'flex-start', marginTop: spacing.sm, minHeight: 32, justifyContent: 'center' },
+  link: { alignSelf: 'flex-start', marginTop: spacing.sm },
   linkInline: { alignSelf: 'center', marginTop: 0, marginLeft: 'auto' },
-  linkText: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    textDecorationLine: 'underline',
-  },
-  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet: {
-    maxHeight: '82%',
-    backgroundColor: colors.bg,
-    borderTopLeftRadius: radii.lg,
-    borderTopRightRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
-  title: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary },
-  close: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
-  note: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger, marginBottom: spacing.sm },
-  section: { marginBottom: spacing.lg },
+  note: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.danger },
+  section: { marginBottom: spacing.xs },
   sectionTitle: {
     fontFamily: fontFamily.sansBold,
     fontSize: 11,

@@ -1,4 +1,6 @@
 import BackBar from '../../../../components/BackBar';
+import BottomSheet from '../../../../components/BottomSheet';
+import Button from '../../../../components/Button';
 import { buildProfileShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../../../lib/share';
@@ -14,7 +16,7 @@ import { EVENTS } from '../../../../lib/analytics';
 import { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Linking } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -150,35 +152,19 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
 
             <View style={styles.actions}>
               {isOwn ? (
-                <TouchableOpacity style={styles.btnSecondary} onPress={() => setEditing(true)} accessibilityRole="button">
-                  <Text style={styles.btnSecondaryText}>{PUBLIC_PROFILE_PAGE.editProfile}</Text>
-                </TouchableOpacity>
+                <Button size="sm" label={PUBLIC_PROFILE_PAGE.editProfile} onPress={() => setEditing(true)} />
               ) : canFollow && (
                 status === 'accepted' ? (
-                  <TouchableOpacity style={styles.btnSecondary} onPress={unfollow} disabled={busy} accessibilityRole="button">
-                    <Text style={styles.btnSecondaryText}>Following</Text>
-                  </TouchableOpacity>
+                  <Button size="sm" label="Following" onPress={unfollow} disabled={busy} />
                 ) : status === 'pending' ? (
-                  <TouchableOpacity style={styles.btnSecondary} onPress={unfollow} disabled={busy} accessibilityRole="button">
-                    <Text style={styles.btnSecondaryText}>Requested</Text>
-                  </TouchableOpacity>
+                  <Button size="sm" label="Requested" onPress={unfollow} disabled={busy} />
                 ) : (
-                  <TouchableOpacity style={styles.btnPrimary} onPress={follow} disabled={busy} accessibilityRole="button">
-                    <Text style={styles.btnPrimaryText}>{isPrivate ? PUBLIC_PROFILE_PAGE.requestToFollow : PUBLIC_PROFILE_PAGE.follow}</Text>
-                  </TouchableOpacity>
+                  <Button size="sm" variant="ink" label={isPrivate ? PUBLIC_PROFILE_PAGE.requestToFollow : PUBLIC_PROFILE_PAGE.follow} onPress={follow} disabled={busy} />
                 )
               )}
-              <TouchableOpacity style={styles.btnSecondary} accessibilityRole="button" onPress={share}>
-                <Text style={styles.btnSecondaryText}>{PUBLIC_PROFILE_PAGE.shareProfile}</Text>
-              </TouchableOpacity>
+              <Button size="sm" label={PUBLIC_PROFILE_PAGE.shareProfile} onPress={share} />
               {!!viewerId && !isOwn && !locked && (
-                <TouchableOpacity
-                  style={styles.btnSecondary}
-                  accessibilityRole="button"
-                  onPress={() => router.push(`/(app)/u/${profile!.username}/compare` as Href)}
-                >
-                  <Text style={styles.btnSecondaryText}>{TASTE_OVERLAP.compareTaste}</Text>
-                </TouchableOpacity>
+                <Button size="sm" label={TASTE_OVERLAP.compareTaste} onPress={() => router.push(`/(app)/u/${profile!.username}/compare` as Href)} />
               )}
               {/* Report / block. Guideline 1.2 wants both wherever another
                   account's content is rendered. Renders nothing for your own
@@ -316,7 +302,12 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
       </ScrollView>
 
       {/* Followers / Following sheet */}
-      <Modal visible={!!followList && !!profile} transparent animationType="slide" onRequestClose={() => setFollowList(null)}>
+      <BottomSheet
+        visible={!!followList && !!profile}
+        onClose={() => setFollowList(null)}
+        title={followList ? (followList === 'followers' ? 'Followers' : 'Following') : undefined}
+        maxHeight="75%"
+      >
         {followList && profile && (
           <FollowListModal
             kind={followList}
@@ -325,7 +316,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
             onClose={() => setFollowList(null)}
           />
         )}
-      </Modal>
+      </BottomSheet>
 
       {editing && isOwn && profile && (
         <EditProfileModal
@@ -359,8 +350,6 @@ function FollowListModal({
   kind, targetId, viewerId, onClose,
 }: { kind: 'followers' | 'following'; targetId: string; viewerId?: string | null; onClose: () => void }) {
   const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const insets = useSafeAreaInsets();
   const [users, setUsers] = useState<SocialUser[] | null>(null);
 
   useEffect(() => {
@@ -370,24 +359,9 @@ function FollowListModal({
     return () => { cancelled = true; };
   }, [kind, targetId]);
 
-  return (
-    <View style={styles.sheetOverlay}>
-      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xl }]}>
-        <View style={styles.sheetHead}>
-          <Text style={styles.sheetTitle}>{kind === 'followers' ? 'Followers' : 'Following'}</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
-            <Text style={styles.sheetClose}>×</Text>
-          </TouchableOpacity>
-        </View>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {users === null
-            ? <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xl }} />
-            : <UserList users={users} viewerId={viewerId} onNavigate={onClose} showCompare empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />}
-        </ScrollView>
-      </View>
-    </View>
-  );
+  return users === null
+    ? <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xl }} />
+    : <UserList users={users} viewerId={viewerId} onNavigate={onClose} showCompare empty={kind === 'followers' ? PUBLIC_PROFILE_PAGE.noFollowersYet : PUBLIC_PROFILE_PAGE.notFollowingAnyoneYet} />;
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
@@ -402,10 +376,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   name: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, flexShrink: 1 },
   handle: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
   actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg },
-  btnPrimary: { minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radii.pill, backgroundColor: colors.textPrimary },
-  btnPrimaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.bg },
-  btnSecondary: { minHeight: 36, justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radii.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.textPrimary },
-  btnSecondaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   bio: {
     fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 21,
     color: colors.textSecondary, marginTop: spacing.md,
@@ -430,9 +400,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   lockCard: { marginTop: spacing.xl, padding: spacing.lg, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceRaised },
   lockKicker: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 1, color: colors.accent },
   lockCopy: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 21, marginTop: spacing.sm },
-  sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheet: { backgroundColor: colors.surface, borderTopLeftRadius: radii.md, borderTopRightRadius: radii.md, maxHeight: '75%', paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
-  sheetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  sheetTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
-  sheetClose: { fontFamily: fontFamily.sans, fontSize: 28, color: colors.textMuted, lineHeight: 30 },
 });

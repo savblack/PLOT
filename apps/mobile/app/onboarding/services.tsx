@@ -4,7 +4,7 @@
  * profiles.streaming_providers by the one save behind the building moment.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
@@ -17,6 +17,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useOnboardingFlow, type PickedService } from '../../contexts/OnboardingFlowContext';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
+import BottomSheet from '../../components/BottomSheet';
 import { ImportPill } from '../../components/ImportSourceLanes';
 
 const F = ONBOARDING_FLOW;
@@ -113,26 +114,21 @@ export default function Services() {
         <Text style={styles.regionLink} onPress={() => setPicking(true)} accessibilityRole="button">{F.services.changeRegion}</Text>
       </Text>
 
-      <Modal visible={picking} transparent animationType="fade" onRequestClose={() => setPicking(false)} statusBarTranslucent>
-        <View style={styles.layer}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPicking(false)} accessibilityRole="button" accessibilityLabel={F.services.regionLabel} />
-          <View style={styles.sheet} accessibilityViewIsModal>
-            <ScrollView>
-              {REGIONS.map((r: { code: string; name: string }) => (
-                <TouchableOpacity
-                  key={r.code}
-                  style={styles.regionRow}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: r.code === region }}
-                  onPress={() => { flow.setRegion(r.code); setPicking(false); }}
-                >
-                  <Text style={[styles.regionName, r.code === region && styles.regionNameOn]}>{r.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <BottomSheet visible={picking} onClose={() => setPicking(false)} title={F.services.regionLabel} scroll={false} maxHeight="70%" flush>
+        <ScrollView>
+          {REGIONS.map((r: { code: string; name: string }) => (
+            <TouchableOpacity
+              key={r.code}
+              style={styles.regionRow}
+              accessibilityRole="button"
+              accessibilityState={{ selected: r.code === region }}
+              onPress={() => { flow.setRegion(r.code); setPicking(false); }}
+            >
+              <Text style={[styles.regionName, r.code === region && styles.regionNameOn]}>{r.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </BottomSheet>
     </OnboardingScaffold>
   );
 }
@@ -147,8 +143,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   check: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.accent },
   region: { marginTop: spacing.lg, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center' },
   regionLink: { fontFamily: fontFamily.sansBold, color: colors.accent },
-  layer: { flex: 1, justifyContent: 'center', padding: spacing.xl, backgroundColor: colors.imageScrim },
-  sheet: { maxHeight: '70%', borderRadius: radii.lg, backgroundColor: colors.surfaceRaised, overflow: 'hidden' },
   regionRow: { paddingVertical: spacing.md, paddingHorizontal: spacing.xl },
   regionName: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary },
   regionNameOn: { fontFamily: fontFamily.sansBold, color: colors.accent },

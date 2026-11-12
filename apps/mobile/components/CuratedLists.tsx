@@ -4,8 +4,7 @@
 // (useCustomLists.copyCuratedList) are shared in @plot/core. Not shipped on
 // mobile yet: rotation of the Picks row (issue 1190).
 import { useMemo, useState } from 'react';
-import { View, Text, Image, FlatList, Modal, Linking, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, Image, FlatList, Linking, TouchableOpacity, StyleSheet } from 'react-native';
 import { CURATED_LISTS as COPY } from '@plot/core/copy/curatedLists.js';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
@@ -18,6 +17,9 @@ import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 import UpgradeSheet from './UpgradeSheet';
+import BottomSheet from './BottomSheet';
+import Button from './Button';
+import SectionTitle from './SectionTitle';
 
 /** The poster wall: six across, three down, as on web. */
 const WALL_POSTERS = 18;
@@ -37,7 +39,6 @@ const SCRIM = Array.from({ length: 24 }, (_, i) => {
   const [t1, a1] = stops[j];
   return Math.round((a0 + ((a1 - a0) * (t - t0)) / (t1 - t0)) * 1000) / 1000;
 });
-const PANEL_H = Dimensions.get('window').height * 0.92;
 
 /**
  * The Picks card: the list's top posters as a tilted wall under the same dark
@@ -125,7 +126,6 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const art = useUserArtwork();
-  const insets = useSafeAreaInsets();
   const [state, setState] = useState<SaveState>({ status: 'idle', message: '', listId: null });
   const [showUpgrade, setShowUpgrade] = useState(false);
   const existingList = findDuplicateCustomList(customLists?.lists || [], curated.title);
@@ -162,11 +162,29 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
   };
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1} />
-      <View style={[styles.panel, { paddingBottom: insets.bottom }]}>
+    <BottomSheet
+      visible
+      onClose={onClose}
+      scroll={false}
+      flush
+      maxHeight="92%"
+      footer={(
+        <View style={styles.footer}>
+          {!!state.message && (
+            <Text style={[styles.status, state.status === 'error' && { color: colors.danger }]}>{state.message}</Text>
+          )}
+          {!user && <Text style={styles.status}>{COPY.signIn}</Text>}
+          {!!user && state.status === 'saved' && (
+            <Button variant="primary" label={COPY.openMine} onPress={openMine} style={styles.primaryBtn} />
+          )}
+          {!!user && state.status !== 'saved' && (
+            <Button variant="primary" label={saving ? COPY.saving : COPY.save} onPress={save} disabled={saving} style={styles.primaryBtn} />
+          )}
+        </View>
+      )}
+    >
         <View style={styles.panelHead}>
-          <Text style={styles.panelTitle} numberOfLines={2}>{curated.title}</Text>
+          <SectionTitle style={styles.panelTitle} numberOfLines={2}>{curated.title}</SectionTitle>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={COPY.closeLabel} accessibilityRole="button">
             {/* Two bars rather than an Svg icon: react-native-svg does not load in the web Storybook. */}
             <View style={styles.closeIcon}>
@@ -205,25 +223,8 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
           initialNumToRender={14}
           showsVerticalScrollIndicator={false}
         />
-        <View style={styles.footer}>
-          {!!state.message && (
-            <Text style={[styles.status, state.status === 'error' && { color: colors.danger }]}>{state.message}</Text>
-          )}
-          {!user && <Text style={styles.status}>{COPY.signIn}</Text>}
-          {!!user && state.status === 'saved' && (
-            <TouchableOpacity style={styles.primaryBtn} onPress={openMine} activeOpacity={0.8} accessibilityRole="button">
-              <Text style={styles.primaryBtnText}>{COPY.openMine}</Text>
-            </TouchableOpacity>
-          )}
-          {!!user && state.status !== 'saved' && (
-            <TouchableOpacity style={[styles.primaryBtn, saving && { opacity: 0.6 }]} onPress={save} disabled={saving} activeOpacity={0.8} accessibilityRole="button">
-              <Text style={styles.primaryBtnText}>{saving ? COPY.saving : COPY.save}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
       <UpgradeSheet visible={showUpgrade} reason="lists" onClose={() => setShowUpgrade(false)} onCompare={onCompare} />
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -238,15 +239,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   title: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: '#fff' },
   meta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: 'rgba(255,255,255,0.72)', marginTop: 2 },
 
-  overlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.5)' },
-  panel: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: PANEL_H, backgroundColor: colors.bg,
-    borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg, overflow: 'hidden',
-  },
-  panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, padding: spacing.xl, paddingBottom: spacing.md },
+  panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingHorizontal: spacing.xl },
   closeIcon: { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
   closeBar: { position: 'absolute', width: 20, height: 2.5, borderRadius: 2, backgroundColor: colors.textSecondary },
-  panelTitle: { flex: 1, fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
+  panelTitle: { flex: 1 },
   intro: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
   blurb: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   source: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, textDecorationLine: 'underline', marginTop: spacing.xs },
@@ -255,8 +251,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowPoster: { width: 32, height: 48, borderRadius: 3, overflow: 'hidden', backgroundColor: colors.surfaceSunken, alignItems: 'center', justifyContent: 'center' },
   rowPosterFallback: { fontFamily: fontFamily.sansBold, color: colors.textMuted },
   rowTitle: { flex: 1, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.md, padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.md },
   status: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
-  primaryBtn: { backgroundColor: colors.accentFill, borderRadius: radii.pill, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm },
-  primaryBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.onAccentFill },
+  primaryBtn: { alignSelf: 'center' },
 });

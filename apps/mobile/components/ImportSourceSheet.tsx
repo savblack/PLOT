@@ -6,8 +6,7 @@
  * apps/web/src/components/ImportSourceDialog.jsx.
  */
 import { useMemo, type ReactNode } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
@@ -16,40 +15,29 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import type { ImportStart, PlexPickerState } from '../hooks/useImportStart';
+import BottomSheet from './BottomSheet';
+import Button, { TextLink } from './Button';
 import ImportSourceIcon from './ImportSourceIcon';
 
 const S = ONBOARDING_FLOW.importSources;
 const I = IMPORT_JOBS.onboarding;
 
 /**
- * The bottom sheet the import surfaces share (source, add a source, source
- * detail): a scrim, a grabber, a title row with Close, and a scrolling body.
+ * The sheet the import surfaces share (source, add a source, source detail):
+ * the app's BottomSheet with a title (plain, or a source's logo and name),
+ * an optional line under it, and the body.
  */
-export function BottomSheet({ title, sub, onClose, closeLabel = COMMON.close, tall = false, children }: {
-  title: ReactNode; sub?: string; onClose: () => void; closeLabel?: string; tall?: boolean; children: ReactNode;
+export function ImportSheet({ title, sub, onClose, children }: {
+  title: ReactNode; sub?: string; onClose: () => void; children: ReactNode;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const insets = useSafeAreaInsets();
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.layer}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel={closeLabel} />
-        <View style={[styles.sheet, tall && styles.sheetTall, { paddingBottom: spacing.xl + insets.bottom }]} accessibilityViewIsModal>
-          <View style={styles.grab} />
-          <View style={styles.head}>
-            {typeof title === 'string' ? <Text style={styles.sheetTitle} accessibilityRole="header">{title}</Text> : title}
-            <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel={closeLabel} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={styles.close}>{closeLabel}</Text>
-            </TouchableOpacity>
-          </View>
-          {sub ? <Text style={styles.sheetSub}>{sub}</Text> : null}
-          <ScrollView contentContainerStyle={styles.body} bounces={false} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            {children}
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+    <BottomSheet visible onClose={onClose} title={typeof title === 'string' ? title : undefined}>
+      {typeof title === 'string' ? null : title}
+      {sub ? <Text style={styles.sheetSub}>{sub}</Text> : null}
+      {children}
+    </BottomSheet>
   );
 }
 
@@ -155,13 +143,11 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
   if (!src || start.phase === 'pick') return null;
   const name = src.name;
   const { phase, plex, pendingFiles } = start;
-  const cta = (label: string, onPress: () => void, disabled = false) => (
-    <TouchableOpacity style={[styles.cta, disabled && styles.ctaOff]} disabled={disabled} onPress={onPress} accessibilityRole="button" accessibilityState={{ disabled }}>
-      <Text style={styles.ctaText}>{label}</Text>
-    </TouchableOpacity>
+  const cta = (label: string, onPress: () => void, disabled = false, centered = false) => (
+    <Button variant="primary" label={label} onPress={onPress} disabled={disabled} style={centered ? styles.centered : undefined} />
   );
   const link = (label: string, onPress: () => void) => (
-    <TouchableOpacity onPress={onPress} accessibilityRole="button" style={styles.link}><Text style={styles.linkText}>{label}</Text></TouchableOpacity>
+    <TextLink quiet label={label} onPress={onPress} style={styles.centered} />
   );
 
   let body: ReactNode;
@@ -171,7 +157,7 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
         <View style={styles.doneCheck}><CheckIcon color={colors.bg} size={22} /></View>
         <Text style={styles.doneTitle}>{start.queuedBehind ? I.queuedBehind(name, start.queuedBehind) : I.queued(name)}</Text>
         <Text style={styles.bodyText}>{I.queuedBody}</Text>
-        {cta(continueLabel, onContinue)}
+        {cta(continueLabel, onContinue, false, true)}
         {onAddAnother ? link(I.addAnother, onAddAnother) : null}
       </View>
     );
@@ -261,23 +247,16 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
   }
 
   return (
-    <BottomSheet title={<SourceTitle id={src.id} name={name} />} onClose={start.busy ? () => {} : start.close} tall>
+    <ImportSheet title={<SourceTitle id={src.id} name={name} />} onClose={start.busy ? () => {} : start.close}>
       {body}
-    </BottomSheet>
+    </ImportSheet>
   );
 }
 
 export const makeStyles = (colors: Palette) => StyleSheet.create({
-  layer: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.imageScrim },
-  sheet: { maxHeight: '88%', backgroundColor: colors.surfaceRaised, borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg, paddingHorizontal: spacing.xl },
-  sheetTall: { minHeight: '60%' },
-  grab: { alignSelf: 'center', marginTop: spacing.md, width: 40, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.xs },
   sourceTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
   sheetTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.4, color: colors.textPrimary, flexShrink: 1 },
-  sheetSub: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary, marginBottom: spacing.sm },
-  close: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
-  body: { paddingTop: spacing.sm, paddingBottom: spacing.md },
+  sheetSub: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
   stack: { gap: spacing.md },
   lead: { fontFamily: fontFamily.sans, fontSize: fontSize.md, lineHeight: 22, color: colors.textPrimary },
   bodyText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 19, color: colors.textSecondary },
@@ -313,9 +292,5 @@ export const makeStyles = (colors: Palette) => StyleSheet.create({
   done: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   doneCheck: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center' },
   doneTitle: { fontFamily: fontFamily.display, fontSize: fontSize.lg, letterSpacing: -0.3, color: colors.textPrimary, textAlign: 'center' },
-  cta: { alignSelf: 'stretch', height: 48, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.textPrimary },
-  ctaOff: { opacity: 0.5 },
-  ctaText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.bg },
-  link: { alignSelf: 'center', paddingVertical: spacing.xs },
-  linkText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
+  centered: { alignSelf: 'center' },
 });

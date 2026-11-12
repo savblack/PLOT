@@ -1,11 +1,13 @@
 import BackBar from '../../components/BackBar';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { TextInput } from '../../components/TextInput';
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { IconSearch, IconCheck } from '../../components/icons';
+import { IconCheck } from '../../components/icons';
+import SearchField from '../../components/SearchField';
+import Button from '../../components/Button';
+import ListRow from '../../components/ListRow';
 import { usePeopleFeed, usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { feedItems, filterFeedByType, groupByDate, groupByPerson } from '@plot/core/peopleFeed.js';
 import { localDateStr, monthLongName, shortDayMonth, weekdayDayMonth } from '@plot/core/date.js';
@@ -77,35 +79,31 @@ function FeedRow({ item, today, saved, onSave, onOpen }: {
   if (item.mediaType === 'tv' && drop != null && drop > 1) chips.push({ key: 'drop', tone: 'quiet', label: P.page.allEpisodes(drop) });
   const title = `${item.title}${item.kind === 'season' ? ` · ${P.page.season(item.season)}` : ''}`;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm }}>
-      <TouchableOpacity onPress={onOpen} accessibilityRole="button" accessibilityLabel={title} style={{ flex: 1, flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
-        {poster
-          ? <Image source={{ uri: poster }} style={{ width: 40, height: 60, borderRadius: radii.sm, backgroundColor: colors.surfaceSunken }} />
-          : <View style={{ width: 40, height: 60, borderRadius: radii.sm, backgroundColor: colors.surfaceSunken }} />}
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>{peopleLine(item)}</Text>
-          <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }} numberOfLines={2}>{title}</Text>
-          {chips.length > 0 && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-              {chips.map(c => <PeopleChip key={c.key} label={c.label} tone={c.tone} />)}
-            </View>
-          )}
-          {!!whenLine(item, today) && (
-            <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted }}>{whenLine(item, today)}</Text>
-          )}
+    <ListRow
+      posterUri={poster}
+      title={title}
+      titleLines={2}
+      meta={peopleLine(item)}
+      detail={whenLine(item, today) || undefined}
+      onPress={onOpen}
+      below={chips.length > 0 ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+          {chips.map(c => <PeopleChip key={c.key} label={c.label} tone={c.tone} />)}
         </View>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={onSave}
-        accessibilityRole="button"
-        accessibilityState={{ selected: saved }}
-        accessibilityLabel={saved ? P.page.saved : P.page.save}
-        style={{ minHeight: 32, paddingHorizontal: spacing.sm, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 4 }}
-      >
-        <BookmarkIcon color={saved ? colors.accent : colors.textPrimary} />
-        <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: saved ? colors.accent : colors.textPrimary }}>{saved ? P.page.saved : P.page.save}</Text>
-      </TouchableOpacity>
-    </View>
+      ) : null}
+      trailing={(
+        <TouchableOpacity
+          onPress={onSave}
+          accessibilityRole="button"
+          accessibilityState={{ selected: saved }}
+          accessibilityLabel={saved ? P.page.saved : P.page.save}
+          style={{ minHeight: 32, paddingHorizontal: spacing.sm, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+        >
+          <BookmarkIcon color={saved ? colors.accent : colors.textPrimary} />
+          <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: saved ? colors.accent : colors.textPrimary }}>{saved ? P.page.saved : P.page.save}</Text>
+        </TouchableOpacity>
+      )}
+    />
   );
 }
 
@@ -130,19 +128,12 @@ function FollowSearch({ follow }: { follow: ReturnType<typeof useFollowPerson> }
   const shown = query.trim().length >= 2 ? results : null;
   return (
     <View style={{ marginTop: spacing.md }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg }}>
-        <IconSearch size={16} color={colors.textMuted} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder={P.page.searchPlaceholder}
-          placeholderTextColor={colors.textMuted}
-          accessibilityLabel={P.page.searchLabel}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={{ flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary, paddingVertical: spacing.sm }}
-        />
-      </View>
+      <SearchField
+        value={query}
+        onChangeText={setQuery}
+        placeholder={P.page.searchPlaceholder}
+        accessibilityLabel={P.page.searchLabel}
+      />
       {shown && (
         <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
           {shown.length === 0 && <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{P.page.noResults}</Text>}
@@ -252,14 +243,7 @@ export default function YourPeopleScreen() {
                     <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }}>{f.known_for === 'Directing' ? P.page.directingDept : P.page.acting}</Text>
                   </View>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => people.unfollow(f.tmdb_person_id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={P.unfollow}
-                  style={{ minHeight: 32, paddingHorizontal: spacing.sm, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, justifyContent: 'center' }}
-                >
-                  <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }}>{P.unfollow}</Text>
-                </TouchableOpacity>
+                <Button size="sm" label={P.unfollow} onPress={() => people.unfollow(f.tmdb_person_id)} style={{ alignSelf: 'center' }} />
               </View>
             ))}
           </View>

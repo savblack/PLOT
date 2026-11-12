@@ -13,6 +13,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { fontFamily, fontSize, spacing, radii, type Palette } from '../../lib/tokens';
 import { captureTasteCard, shareTasteImage, tasteCardText, tastePostText, TASTE_CARD_WIDTH, type TasteCardContent, type TasteOverlapModel } from '../../lib/tasteShare';
 import TasteShareCard, { type TasteTheme } from './TasteShareCard';
+import Button, { TextLink } from '../Button';
 
 const THEME_KEYS = ['cream', 'pink', 'charcoal'] as const;
 type ThemeKey = typeof THEME_KEYS[number];
@@ -64,9 +65,7 @@ export default function TasteShareSheet({
       <View style={[styles.screen, { paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.lg }]}>
         <View style={styles.top}>
           <Text style={styles.title} accessibilityRole="header">{T.shareTitle}</Text>
-          <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel={T.close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={styles.close}>{T.close}</Text>
-          </TouchableOpacity>
+          <TextLink quiet label={T.close} onPress={onClose} />
         </View>
 
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
@@ -112,9 +111,7 @@ export default function TasteShareSheet({
 
           {!!note && <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text>}
 
-          <TouchableOpacity style={[styles.share, busy && styles.shareBusy]} onPress={share} disabled={busy} accessibilityRole="button">
-            <Text style={styles.shareText}>{busy ? T.preparing : T.shareImage}</Text>
-          </TouchableOpacity>
+          <Button variant="primary" label={busy ? T.preparing : T.shareImage} onPress={share} disabled={busy} style={styles.share} />
         </ScrollView>
 
         <View
@@ -136,7 +133,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
   title: { fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6, color: colors.textPrimary },
-  close: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   body: { paddingHorizontal: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xl, alignItems: 'center' },
   label: { alignSelf: 'flex-start', fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   swatches: { alignSelf: 'stretch', flexDirection: 'row', gap: spacing.sm },
@@ -152,11 +148,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   nameTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   hint: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, lineHeight: 16, color: colors.textMuted },
   note: { alignSelf: 'stretch', fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
-  share: {
-    alignSelf: 'stretch', minHeight: 48, borderRadius: radii.pill,
-    backgroundColor: colors.accentFill, alignItems: 'center', justifyContent: 'center',
-  },
-  shareBusy: { opacity: 0.6 },
-  shareText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.onAccentFill },
+  share: { alignSelf: 'center' },
   shot: { position: 'absolute', left: -4000, top: 0 },
 });

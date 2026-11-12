@@ -6,14 +6,15 @@
  * section). Content comes from @plot/core.
  */
 import { useEffect, useMemo } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from 'react-native';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { familySwatch, type ThemeFamily } from '@plot/core/themes.js';
 import { reportUpgradeSheetGateHit, upgradeSheetContent, type UpgradeReason } from '@plot/core/upgradeSheet.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import BottomSheet from './BottomSheet';
+import Button, { TextLink } from './Button';
 import PremiumIcon from './PremiumIcon';
 import { usePremiumCheckout } from '../lib/usePremiumCheckout';
 
@@ -35,7 +36,6 @@ export default function UpgradeSheet({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const insets = useSafeAreaInsets();
   const checkout = usePremiumCheckout(visible);
   useEffect(() => {
     if (visible) reportUpgradeSheetGateHit(reason);
@@ -53,12 +53,7 @@ export default function UpgradeSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
-      <View style={styles.layer}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel={S.close} accessibilityRole="button" />
-        <View style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]} accessibilityViewIsModal>
-          <ScrollView contentContainerStyle={styles.content} bounces={false}>
-            <View style={styles.grab} />
+    <BottomSheet visible={visible} onClose={close} maxHeight="92%">
             <View style={styles.context}>
               <View style={styles.meter}>
                 {Array.from({ length: content.meter }, (_, i) => <View key={i} style={styles.meterSeg} />)}
@@ -84,9 +79,7 @@ export default function UpgradeSheet({
 
             {checkout.allowed && (
               <>
-                <TouchableOpacity style={[styles.primary, checkout.busy && { opacity: 0.6 }]} onPress={upgrade} disabled={checkout.busy} accessibilityRole="button">
-                  <Text style={styles.primaryText}>{checkout.label}</Text>
-                </TouchableOpacity>
+                <Button variant="primary" label={checkout.label} onPress={upgrade} disabled={checkout.busy} />
                 {!!checkout.error && <Text style={styles.note} accessibilityRole="alert">{checkout.error}</Text>}
               </>
             )}
@@ -103,17 +96,10 @@ export default function UpgradeSheet({
             ))}
 
             <View style={styles.foot}>
-              <TouchableOpacity onPress={compare} accessibilityRole="link" hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
-                <Text style={styles.link}>{S.compare} →</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={close} accessibilityRole="button" hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
-                <Text style={[styles.link, styles.linkQuiet]}>{S.notNow}</Text>
-              </TouchableOpacity>
+              <TextLink label={`${S.compare} →`} onPress={compare} accessibilityRole="link" />
+              <TextLink quiet label={S.notNow} onPress={close} />
             </View>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -140,10 +126,6 @@ function ThemePreview({ family, line }: { family: string; line: string }) {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  layer: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.imageScrim },
-  sheet: { maxHeight: '92%', backgroundColor: colors.surfaceRaised, borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg },
-  content: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.md },
-  grab: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong },
   context: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
   meter: { flexDirection: 'row', gap: 3 },
   meterSeg: { width: 14, height: 6, borderRadius: 3, backgroundColor: colors.accentFill },
@@ -158,8 +140,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   amount: { fontFamily: fontFamily.display, fontSize: 28, letterSpacing: -1.1, color: colors.textPrimary },
   alt: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   trial: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textPrimary },
-  primary: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl, borderRadius: 999, backgroundColor: colors.accentFill },
-  primaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.onAccentFill },
   note: { padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.surfaceSunken, fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textPrimary },
   also: { marginTop: spacing.xs, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, letterSpacing: 0.9, textTransform: 'uppercase', color: colors.textMuted },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
@@ -168,6 +148,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowLabel: { fontFamily: fontFamily.sansBold, fontSize: 14, color: colors.textPrimary },
   rowNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
   foot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xs, minHeight: 44 },
-  link: { fontFamily: fontFamily.sansBold, fontSize: 14, color: colors.textPrimary },
-  linkQuiet: { color: colors.textSecondary },
 });

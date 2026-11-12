@@ -1,8 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions,
+  ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   episodeAt,
   episodeRatingSeasonNumbers,
@@ -18,7 +17,10 @@ import { useEpisodeRatings } from '@plot/core/useEpisodeRatings.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { useAppData } from '../contexts/AppDataContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { fontFamily, fontSize, spacing, radii, type Palette } from '../lib/tokens';
+import { fontFamily, fontSize, spacing, type Palette } from '../lib/tokens';
+import BottomSheet from './BottomSheet';
+import Button, { TextLink } from './Button';
+import SectionTitle from './SectionTitle';
 
 const BANDS = [
   ['peak', MEDIA_PANEL.episodeRatingsBandPeak],
@@ -73,7 +75,6 @@ type RatingSeason = { seasonNumber: number; episodes: RatingEpisode[] };
 function EpisodeRatingsSheet({ tvId, details, onClose }: { tvId: number; details: RatingsDetails; onClose: () => void }) {
   const { colors } = useTheme();
   const { userId } = useAppData();
-  const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const tones = useMemo(() => bandColors(colors), [colors]);
@@ -100,15 +101,12 @@ function EpisodeRatingsSheet({ tvId, details, onClose }: { tvId: number; details
   }
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1} />
-      <View style={[styles.sheet, { height: height * 0.88, paddingBottom: insets.bottom + spacing.md }]}>
-        <View style={styles.handle} />
+    <BottomSheet visible onClose={onClose} scroll={false}>
+      {/* A fixed height that gives way to the sheet's own limit, so the grid has room to scroll. */}
+      <View style={[styles.sheet, { height: height * 0.88 }]}>
         <View style={styles.head}>
-          <Text style={styles.title}>{MEDIA_PANEL.episodeRatingsTitle}</Text>
-          <TouchableOpacity onPress={onClose} accessibilityRole="button" hitSlop={8}>
-            <Text style={styles.close}>{MEDIA_PANEL.episodeRatingsClose}</Text>
-          </TouchableOpacity>
+          <SectionTitle style={styles.title}>{MEDIA_PANEL.episodeRatingsTitle}</SectionTitle>
+          <TextLink label={MEDIA_PANEL.episodeRatingsClose} onPress={onClose} />
         </View>
 
         {data.status === 'loading' || data.status === 'idle' ? (
@@ -135,9 +133,7 @@ function EpisodeRatingsSheet({ tvId, details, onClose }: { tvId: number; details
               <View>
                 <Text style={styles.message}>{message}</Text>
                 {data.status === 'error' && (
-                  <TouchableOpacity onPress={data.reload} accessibilityRole="button">
-                    <Text style={styles.retry}>{MEDIA_PANEL.episodeRatingsRetry}</Text>
-                  </TouchableOpacity>
+                  <Button size="sm" label={MEDIA_PANEL.episodeRatingsRetry} onPress={data.reload} style={styles.retry} />
                 )}
               </View>
             )}
@@ -231,7 +227,7 @@ function EpisodeRatingsSheet({ tvId, details, onClose }: { tvId: number; details
           </>
         )}
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -255,26 +251,7 @@ function makeStyles(colors: Palette) {
   return StyleSheet.create({
     open: { alignSelf: 'flex-start', marginBottom: spacing.sm },
     openText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
-    overlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.5)' },
-    sheet: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: radii.lg,
-      borderTopRightRadius: radii.lg,
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.sm,
-    },
-    handle: {
-      alignSelf: 'center',
-      width: 36,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: colors.borderStrong,
-      marginBottom: spacing.md,
-    },
+    sheet: { flexShrink: 1 },
     head: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -282,8 +259,7 @@ function makeStyles(colors: Palette) {
       gap: spacing.md,
       marginBottom: spacing.md,
     },
-    title: { flex: 1, fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
-    close: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accentText },
+    title: { flex: 1 },
     loading: { marginTop: spacing.xxl },
     sources: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
     source: {
@@ -298,7 +274,7 @@ function makeStyles(colors: Palette) {
     sourceText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
     sourceTextOn: { color: colors.bg },
     message: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 22 },
-    retry: { marginTop: spacing.sm, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accentText },
+    retry: { marginTop: spacing.sm },
     story: {
       fontFamily: fontFamily.display,
       fontSize: fontSize.lg,

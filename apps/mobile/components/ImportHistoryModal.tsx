@@ -13,8 +13,10 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePageSheetTop } from './PageSheet';
 import Svg, { Path, Polyline, Line } from 'react-native-svg';
 import { IconChevronRight, IconClose, IconCheck } from './icons';
+import Button, { TextLink } from './Button';
 import { tmdb } from '../lib/tmdb';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
 import { planHistoryImport } from '@plot/core/importPlan.js';
@@ -192,6 +194,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   // The trial prompt waits until this sheet closes (iOS cannot stack it on top).
   useEffect(() => holdPremiumTrialPrompt(), []);
   const insets = useSafeAreaInsets();
+  const sheetTop = usePageSheetTop();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const plex = useMediaSync(userId);
@@ -480,7 +483,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: sheetTop }]}>
 
         {/* Header */}
         <View style={styles.header}>
@@ -548,28 +551,22 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
               {plexSource.selected && <Text>{TRACKING.sourceSelected}</Text>}
               {plexSource.error && <Text>{plexSource.error}</Text>}
             </View>}
-            <TouchableOpacity
-              style={[styles.importBtn, styles.connectionAction, (connection.syncing || ('polling' in connection && connection.polling)) && styles.importBtnDisabled]}
+            <Button
+              variant="primary"
+              label={'polling' in connection && connection.polling
+                ? TRACKING.authorizing
+                : connection.syncing
+                  ? IMPORT_VIEW.importingFrom(connectionName)
+                  : connection.isConnected
+                    ? platform === 'simkl' ? 'Sync now' : IMPORT_VIEW.importFrom(connectionName)
+                    : IMPORT_VIEW.connectToImport(connectionName)}
               onPress={connection.isConnected
                 ? handleConnectionImport
                 : platform === 'plex' ? plex.startPlexAuth : platform === 'trakt' ? trakt.connect : simkl.connect}
               disabled={connection.syncing || ('polling' in connection && connection.polling) || (platform === 'plex' && connection.isConnected && !plexSource.selected)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.importBtnText}>
-                {'polling' in connection && connection.polling
-                  ? TRACKING.authorizing
-                  : connection.syncing
-                    ? IMPORT_VIEW.importingFrom(connectionName)
-                    : connection.isConnected
-                      ? platform === 'simkl' ? 'Sync now' : IMPORT_VIEW.importFrom(connectionName)
-                      : IMPORT_VIEW.connectToImport(connectionName)}
-              </Text>
-            </TouchableOpacity>
+            />
             {platform === 'simkl' && connection.isConnected && (
-              <TouchableOpacity onPress={simkl.disconnect} accessibilityRole="button">
-                <Text style={styles.disconnectText}>Disconnect Simkl</Text>
-              </TouchableOpacity>
+              <TextLink quiet label="Disconnect Simkl" onPress={simkl.disconnect} style={styles.disconnect} />
             )}
           </View>
         )}
@@ -681,16 +678,12 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
               )}
             />
             <View style={[styles.previewFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-              <TouchableOpacity
-                style={[styles.importBtn, (getConfig().importEventsEnabled ? matched.length === 0 : newToImport === 0) && styles.importBtnDisabled]}
+              <Button
+                variant="primary"
+                label={getConfig().importEventsEnabled ? IMPORT_VIEW.confirmEntries(matched.length) : newToImport > 0 ? `Import ${newToImport} title${newToImport !== 1 ? 's' : ''}` : 'Nothing to import'}
                 onPress={handleImport}
                 disabled={(getConfig().importEventsEnabled ? matched.length === 0 : newToImport === 0) || resolved.some(needsDuplicateReview)}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.importBtnText}>
-                  {getConfig().importEventsEnabled ? IMPORT_VIEW.confirmEntries(matched.length) : newToImport > 0 ? `Import ${newToImport} title${newToImport !== 1 ? 's' : ''}` : 'Nothing to import'}
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
           </>
         )}
@@ -723,9 +716,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
                   ? IMPORT_VIEW.importedSummary(importedCount, alreadyCount)
                   : IMPORT_VIEW.resultSummary(importedCount, importResult.duplicates, importResult.failed, unmatched)}
             </Text>
-            <TouchableOpacity style={[styles.importBtn, { marginTop: spacing.lg }]} onPress={onClose} activeOpacity={0.85}>
-              <Text style={styles.importBtnText}>Done</Text>
-            </TouchableOpacity>
+            <Button variant="primary" label="Done" onPress={onClose} style={styles.doneButton} />
           </View>
         )}
 
@@ -773,13 +764,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     marginBottom: spacing.xl,
     lineHeight: 20,
   },
-  disconnectText: {
-    marginTop: spacing.lg,
-    color: colors.textMuted,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    textDecorationLine: 'underline',
-  },
+  disconnect: { alignSelf: 'flex-start', marginTop: spacing.lg },
 
   platformCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
@@ -863,13 +848,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.bg,
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
   },
-  importBtn: {
-    backgroundColor: colors.accent, borderRadius: radii.md,
-    paddingVertical: spacing.md, alignItems: 'center',
-  },
-  connectionAction: { alignSelf: 'flex-start', paddingHorizontal: spacing.xl },
-  importBtnDisabled: { backgroundColor: colors.surfaceSunken },
-  importBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: '#fff' },
+  doneButton: { alignSelf: 'center', marginTop: spacing.lg },
 
   doneIcon: {
     width: 64, height: 64, borderRadius: 32,

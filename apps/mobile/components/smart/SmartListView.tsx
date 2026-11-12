@@ -38,6 +38,7 @@ import UpgradeSheet from '../UpgradeSheet';
 import KebabMenu, { KebabMenuItem } from '../KebabMenu';
 import SmartListDialog from './SmartListDialog';
 import SmartListRules from './SmartListRules';
+import Button, { TextLink } from '../Button';
 import {
   asCatalog, asMatches, asRules, asSmartRow,
   type SmartMatch, type SmartRules,
@@ -204,12 +205,8 @@ export default function SmartListView({ listId }: { listId: string }) {
               onSubmitEditing={submitRename}
               accessibilityLabel={`Rename ${list.name}`}
             />
-            <TouchableOpacity onPress={submitRename} accessibilityRole="button">
-              <Text style={styles.link}>{COMMON.save}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setRenaming(false)} accessibilityRole="button">
-              <Text style={styles.muted}>{COMMON.cancel}</Text>
-            </TouchableOpacity>
+            <TextLink label={COMMON.save} onPress={submitRename} />
+            <TextLink quiet label={COMMON.cancel} onPress={() => setRenaming(false)} />
           </View>
         )}
 
@@ -316,9 +313,7 @@ function Matches({
       <View style={styles.locked}>
         <Text style={styles.lockedTitle}>{SMART_LISTS.lockedTitle}</Text>
         <Text style={styles.lockedBody}>{SMART_LISTS.lockedBody}</Text>
-        <TouchableOpacity style={styles.primary} onPress={onUpgrade} accessibilityRole="button">
-          <Text style={styles.primaryText}>{SMART_LISTS.lockedAction}</Text>
-        </TouchableOpacity>
+        <Button variant="primary" size="sm" label={SMART_LISTS.lockedAction} onPress={onUpgrade} />
       </View>
     );
   }
@@ -327,9 +322,7 @@ function Matches({
     return (
       <View style={styles.locked}>
         <Text style={styles.lockedBody}>{SMART_LISTS.loadFailed}</Text>
-        <TouchableOpacity onPress={smart.retry} accessibilityRole="button">
-          <Text style={styles.link}>{SMART_LISTS.retry}</Text>
-        </TouchableOpacity>
+        <Button size="sm" label={SMART_LISTS.retry} onPress={smart.retry} />
       </View>
     );
   }
@@ -378,11 +371,7 @@ function Matches({
         </>
       ) : grid(items)}
       {smart.hasMore && (
-        <TouchableOpacity style={styles.more} disabled={smart.loadingMore} onPress={smart.loadMore} accessibilityRole="button">
-          {smart.loadingMore
-            ? <ActivityIndicator color={colors.textPrimary} />
-            : <Text style={styles.moreText}>{SMART_LISTS.loadMore}</Text>}
-        </TouchableOpacity>
+        <Button size="sm" label={SMART_LISTS.loadMore} busy={smart.loadingMore} onPress={smart.loadMore} style={styles.more} />
       )}
       {smart.unchecked > 0 && <Text style={styles.note}>{SMART_LISTS.unchecked(smart.unchecked)}</Text>}
     </View>
@@ -440,24 +429,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   statusChipSlot: { position: 'absolute', top: 6, left: 6 },
   posterTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary, marginTop: spacing.xs },
   posterMeta: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
-  more: {
-    alignSelf: 'center',
-    marginTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  moreText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
+  more: { alignSelf: 'center', marginTop: spacing.lg },
   note: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.md },
   locked: { gap: spacing.sm, paddingVertical: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, marginTop: spacing.md },
   lockedTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
   lockedBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   missing: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, padding: spacing.xl },
-  primary: { alignSelf: 'flex-start', backgroundColor: colors.accentFill, borderRadius: radii.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  primaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.onAccentFill },
-  link: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accentText },
-  muted: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
 });

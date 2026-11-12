@@ -9,10 +9,11 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { supabase } from '@plot/core/supabase.js';
 import { EVENTS, track } from '../../lib/analytics';
-import { fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { fontFamily, fontSize, spacing, radii, posterUrl } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import UpgradeSheet from '../UpgradeSheet';
+import ListRow from '../ListRow';
 import { ShareListSheet } from './ShareListSheet';
 import { WatchTogetherTile } from './WatchTogetherTile';
 import {
@@ -170,19 +171,18 @@ function TitleSection({ label, titles, onOpen, who }: {
   onOpen: (title: WtTitle) => void;
   who?: (title: WtTitle) => string;
 }) {
-  const { colors } = useTheme();
   return (
     <View style={{ gap: spacing.sm }}>
       <SectionLabel>{label}</SectionLabel>
       {titles.map(title => (
-        <TouchableOpacity key={`${title.media_type}:${title.tmdb_id}`} onPress={() => onOpen(title)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <PosterThumb path={title.poster_path} width={44} height={66} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }} numberOfLines={1}>{title.title}</Text>
-            {!!titleMeta(title) && <Note>{titleMeta(title)}</Note>}
-            {!!who && <Note>{who(title)}</Note>}
-          </View>
-        </TouchableOpacity>
+        <ListRow
+          key={`${title.media_type}:${title.tmdb_id}`}
+          posterUri={posterUrl(title.poster_path, 'w185')}
+          title={title.title || ''}
+          meta={titleMeta(title) || undefined}
+          detail={who ? who(title) : undefined}
+          onPress={() => onOpen(title)}
+        />
       ))}
     </View>
   );

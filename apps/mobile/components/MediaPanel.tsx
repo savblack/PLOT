@@ -28,6 +28,9 @@ import { shouldDismissSheet, sheetDismissDuration } from '@plot/core/sheetDrag.j
 import Svg, { Path, Line, Polyline, Circle, Polygon } from 'react-native-svg';
 import { IconChevronDown, IconChevronUp, IconClose, IconCheck as CheckGlyph, IconPlus as PlusGlyph } from './icons';
 import RetryButton from './RetryButton';
+import BottomSheet from './BottomSheet';
+import Button from './Button';
+import SearchField from './SearchField';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';
 import { backdropUrl, posterUrl, logoUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
@@ -381,16 +384,12 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
     <View>
       <EpisodeRatingsEntry tvId={tvId} details={details} />
       {seasons.length > 1 && (
-        <TextInput
+        <SearchField
           style={styles.epSearchInput}
           value={episodeQuery}
           onChangeText={setEpisodeQuery}
           placeholder={MEDIA_PANEL.searchEpisodesPlaceholder}
-          placeholderTextColor={colors.textMuted}
           accessibilityLabel={MEDIA_PANEL.searchEpisodesLabel}
-          clearButtonMode="while-editing"
-          autoCorrect={false}
-          returnKeyType="search"
         />
       )}
       {search.active ? (
@@ -489,9 +488,7 @@ function EpisodeGuide({ tvId, progress, details, watching, onSeriesFinished, onS
       {(sparse.error || specials.error) && (
         <View>
           <Text style={styles.epActionError}>{MEDIA_PANEL.episodeProgressLoadError}</Text>
-          <TouchableOpacity onPress={() => { sparse.reload(); specials.reload(); }} accessibilityRole="button" style={styles.seasonBulkBtn}>
-            <Text style={styles.seasonBulkBtnText}>{MEDIA_PANEL.retryEpisodeProgress}</Text>
-          </TouchableOpacity>
+          <Button label={MEDIA_PANEL.retryEpisodeProgress} onPress={() => { sparse.reload(); specials.reload(); }} />
         </View>
       )}
       {actionError ? <Text style={styles.epActionError}>{actionError}</Text> : null}
@@ -620,10 +617,15 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }:
           <Text style={styles.upNextName} numberOfLines={2}>{episode?.name || MEDIA_PANEL.seasonEpisode(season, episodeNumber)}</Text>
           {!!where && <Text style={styles.upNextWhere} numberOfLines={1}>{where}</Text>}
         </View>
-        <TouchableOpacity style={styles.upNextBtn} onPress={markWatched} disabled={pending} accessibilityRole="button">
-          <IconCheck color={colors.onAccentFill} />
-          <Text style={styles.upNextBtnText}>{pending ? MEDIA_PANEL.updating : MEDIA.markWatched}</Text>
-        </TouchableOpacity>
+        <Button
+          variant="primary"
+          size="sm"
+          label={pending ? MEDIA_PANEL.updating : MEDIA.markWatched}
+          icon={<IconCheck color={colors.onAccentFill} />}
+          onPress={markWatched}
+          disabled={pending}
+          style={styles.btnInRow}
+        />
       </View>
       {seasonTotal > 0 && (
         <View
@@ -707,7 +709,6 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const insets = useSafeAreaInsets();
   const { lists, isInList, addItem, removeItem, createList } = customLists;
   const { profile } = useAppData();
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -747,12 +748,9 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
   };
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <BottomSheet visible onClose={onClose} title="Add to list" scroll={false}>
       <UpgradeSheet visible={showUpgrade} reason="lists" onClose={() => setShowUpgrade(false)} onCompare={() => { onClose(); router.push(PREMIUM_SETTINGS_PATH as any); }} />
-      <TouchableOpacity style={styles.lsOverlay} onPress={onClose} activeOpacity={1} />
-      <View style={[styles.lsSheet, { paddingBottom: insets.bottom + spacing.lg }]}>
-        <View style={styles.lsHandle} />
-        <Text style={styles.lsTitle}>Add to list</Text>
+      <View style={styles.lsBody}>
 
         {!!topLists && (
           <View style={styles.lsTopSection}>
@@ -841,25 +839,16 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
               returnKeyType="done"
               onSubmitEditing={handleCreate}
             />
-            <TouchableOpacity style={styles.lsCreateBtn} onPress={handleCreate} disabled={busy} activeOpacity={0.8}>
-              <Text style={styles.lsCreateBtnText}>{busy ? '…' : 'Create'}</Text>
-            </TouchableOpacity>
+            <Button variant="primary" size="sm" label={busy ? '…' : 'Create'} onPress={handleCreate} disabled={busy} style={styles.btnInRow} />
           </View>
         ) : (
-          <TouchableOpacity style={styles.lsNewBtn} onPress={() => setCreating(true)} activeOpacity={0.7}>
-            <IconPlus />
-            <Text style={styles.lsNewBtnText}>Create new list</Text>
-          </TouchableOpacity>
+          <Button size="sm" label="Create new list" icon={<IconPlus />} onPress={() => setCreating(true)} style={styles.lsNewBtn} />
         )}
         {error ? <Text style={styles.lsError}>{error}</Text> : null}
       </View>
 
       {moveToPicker && (
-        <Modal visible transparent animationType="fade" onRequestClose={() => setMoveToPicker(null)}>
-          <TouchableOpacity style={styles.lsOverlay} onPress={() => setMoveToPicker(null)} activeOpacity={1} />
-          <View style={[styles.lsSheet, { paddingBottom: insets.bottom + spacing.lg }]}>
-            <View style={styles.lsHandle} />
-            <Text style={styles.lsTitle}>Move "{moveToPicker.occupant.title}" to...</Text>
+        <BottomSheet visible onClose={() => setMoveToPicker(null)} title={`Move "${moveToPicker.occupant.title}" to...`}>
             <View style={styles.lsTopGrid}>
               {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1)
                 .filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r))
@@ -881,12 +870,11 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
             {Array.from({ length: TOP_LIST_SIZE }, (_, i) => i + 1).filter(r => r !== moveToPicker.rank && !topItems.find((t: any) => t.rank === r)).length === 0 && (
               <Text style={styles.lsEmpty}>No open spots — every other rank is taken.</Text>
             )}
-          </View>
-        </Modal>
+        </BottomSheet>
       )}
       {/* The list sheet is its own Modal, over the panel's, so it needs its own toast. */}
       <UndoToast placement="panel" />
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -1940,11 +1928,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   upNextKicker: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginBottom: 2 },
   upNextName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   upNextWhere: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  upNextBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    minHeight: 34, paddingHorizontal: spacing.md, borderRadius: radii.pill, backgroundColor: colors.accentFill,
-  },
-  upNextBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.onAccentFill },
+  // Buttons hug the top of a row by default; this sits one on its centre line.
+  btnInRow: { alignSelf: 'center' },
   upNextTrack: { height: 5, borderRadius: radii.pill, backgroundColor: colors.border, marginTop: spacing.md, overflow: 'hidden' },
   upNextLeft: { marginTop: spacing.sm, fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted },
   upNextFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.statusWatching },
@@ -1964,28 +1949,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   watchRegion: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginBottom: spacing.sm },
   networkRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   networkLogo: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surfaceRaised },
-  // btnSecondary is flex:1 for row use; btnPrimary is not, so it needs this to
-  // share a row evenly. btnStandalone undoes the flex when one sits alone in a
-  // column, where flex:1 would stretch it to the container's height.
-  btnHalf: { flex: 1 },
-  btnStandalone: { flex: 0, marginBottom: spacing.sm },
-
-  btnPrimary: {
-    backgroundColor: colors.accent, borderRadius: radii.md,
-    paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-  },
-  btnSaved:    { backgroundColor: colors.statusWatchedDim, borderWidth: 1.5, borderColor: `${colors.statusWatched}33` },
-  btnPrimaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: '#fff' },
-
-  btnSecondary: {
-    // 10.5 + 1.5 border = 12 per side, so secondary rows match btnPrimary's height exactly
-    flex: 1, borderWidth: 1.5, borderColor: colors.border, borderRadius: radii.md,
-    paddingVertical: 10.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-  },
-  btnSecondaryActive: { borderColor: `${colors.accent}66`, backgroundColor: colors.accentDim },
-  btnWatching:        { borderColor: `${colors.statusWatching}73`, backgroundColor: colors.statusWatchingDim },
-  btnSecondaryText:   { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
-
   similarCard: { width: 76 },
   similarPoster: { width: 76, aspectRatio: 2 / 3, borderRadius: radii.md, backgroundColor: colors.surfaceRaised },
   similarName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary, marginTop: 6 },
@@ -2021,12 +1984,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   epRowWatched: { opacity: 0.45 },
   // The episode a search result opened, until the highlight fades.
   epRowFound: { backgroundColor: colors.accentDim, opacity: 1 },
-  epSearchInput: {
-    backgroundColor: colors.surfaceSunken, borderRadius: radii.pill,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md,
-    fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
-  },
+  epSearchInput: { marginBottom: spacing.md },
   epSearchNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.sm },
   epSearchCode: { minWidth: 52 },
   epActionError: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger, marginBottom: spacing.sm },
@@ -2069,30 +2027,13 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   seasonBulkInfo: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexShrink: 1 },
   seasonBulkTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary },
   seasonBulkCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
-  seasonBulkBtn: {
-    minHeight: 44, // keeps the bulk action a comfortable touch target
-    justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.badge,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  seasonBulkBtnText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary },
   seasonBulkBtnTextPending: { color: colors.textMuted },
 
   errorText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md },
 
   // ── Add-to-list sheet ──
-  lsOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.5)' },
-  lsSheet: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg,
-    paddingHorizontal: spacing.xl, paddingTop: spacing.sm,
-  },
-  lsHandle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong, marginBottom: spacing.md },
-  lsTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.md },
+  // Gives way when the keyboard squeezes the sheet, so the list scrolls instead of overflowing.
+  lsBody: { flexShrink: 1 },
   lsEmpty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, paddingVertical: spacing.md },
   lsRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
@@ -2119,8 +2060,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   lsTopSlotNum: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   lsTopSlotNumOn: { color: '#fff' },
   lsTopSlotTitle: { fontFamily: fontFamily.sans, fontSize: 8, color: colors.textMuted, marginTop: 2, textAlign: 'center' },
-  lsNewBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md, marginTop: spacing.xs },
-  lsNewBtnText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
+  lsNewBtn: { marginTop: spacing.md },
   lsCreateRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center', marginTop: spacing.sm },
   lsInput: {
     flex: 1, backgroundColor: colors.surfaceSunken, borderRadius: radii.md,
@@ -2128,7 +2068,5 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary,
     borderWidth: 1, borderColor: colors.border,
   },
-  lsCreateBtn: { backgroundColor: colors.accent, borderRadius: radii.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  lsCreateBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: '#fff' },
   lsError: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger, marginTop: spacing.sm },
 });

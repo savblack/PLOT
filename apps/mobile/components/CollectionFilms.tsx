@@ -17,6 +17,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { track, EVENTS } from '../lib/analytics';
 import UpgradeSheet from './UpgradeSheet';
+import Button from './Button';
 import { useRouter } from 'expo-router';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 
@@ -156,10 +157,14 @@ export default function CollectionFilms({ stub, parts, items }: { stub: { id: nu
             <Text style={[styles.status, saveState.status === 'error' && { color: colors.danger }]}>{saveState.message}</Text>
           )}
           {saveState.status !== 'saved' && (
-            <TouchableOpacity style={[styles.saveBtn, saveState.status === 'saving' && { opacity: 0.6 }]} onPress={saveAsList} disabled={saveState.status === 'saving'} activeOpacity={0.7} accessibilityRole="button">
-              <IconPlus size={13} color={colors.textSecondary} />
-              <Text style={styles.saveBtnText}>{saveState.status === 'saving' ? MEDIA_PANEL.savingCollection : MEDIA_PANEL.saveCollectionAsList}</Text>
-            </TouchableOpacity>
+            <Button
+              size="sm"
+              label={saveState.status === 'saving' ? MEDIA_PANEL.savingCollection : MEDIA_PANEL.saveCollectionAsList}
+              icon={<IconPlus size={13} color={colors.textPrimary} />}
+              onPress={saveAsList}
+              disabled={saveState.status === 'saving'}
+              style={styles.saveBtn}
+            />
           )}
         </View>
       )}
@@ -187,6 +192,5 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.md, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md },
   status: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
-  saveBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.borderStrong },
-  saveBtnText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textSecondary },
+  saveBtn: { alignSelf: 'center' },
 });

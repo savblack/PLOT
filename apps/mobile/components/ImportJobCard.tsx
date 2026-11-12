@@ -7,7 +7,7 @@
  * core hook.
  */
 import { useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useImportJobs, importJobTitle, importJobStatusLine, importJobActive, importJobFinished, importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
@@ -15,6 +15,7 @@ import { createImportReporter, IMPORT_FAILURE_REASONS } from '@plot/core/importP
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { markImportDone } from '../lib/finishingTouches';
+import Button, { TextLink } from './Button';
 import ImportSourceIcon from './ImportSourceIcon';
 
 const C = IMPORT_JOBS.card;
@@ -90,17 +91,17 @@ function JobCard({ userId, job, queued, onReview, onFinished, cancel, dismiss }:
         </View>
       )}
       <View style={styles.actions}>
-        {active && <TouchableOpacity onPress={cancel} accessibilityRole="button"><Text style={styles.link}>{C.cancel}</Text></TouchableOpacity>}
+        {active && <TextLink quiet label={C.cancel} onPress={cancel} />}
         {done && job.review_count > 0 && (
-          <TouchableOpacity style={styles.button} onPress={() => onReview(job)} accessibilityRole="button"><Text style={styles.buttonText}>{C.reviewCta}</Text></TouchableOpacity>
+          <Button variant="primary" size="sm" label={C.reviewCta} onPress={() => onReview(job)} style={styles.button} />
         )}
         {done && job.imported > 0 && job.review_count === 0 && (
-          <TouchableOpacity style={styles.buttonSecondary} onPress={() => { dismiss(); router.push('/(app)/history' as Href); }} accessibilityRole="button"><Text style={styles.buttonSecondaryText}>{C.historyCta}</Text></TouchableOpacity>
+          <Button size="sm" label={C.historyCta} onPress={() => { dismiss(); router.push('/(app)/history' as Href); }} style={styles.button} />
         )}
         {job.status === 'failed' && (
-          <TouchableOpacity style={styles.buttonSecondary} onPress={() => { dismiss(); router.push(`/(app)/settings?section=connections&source=${sourceId}` as Href); }} accessibilityRole="button"><Text style={styles.buttonSecondaryText}>{C.retryCta}</Text></TouchableOpacity>
+          <Button size="sm" label={C.retryCta} onPress={() => { dismiss(); router.push(`/(app)/settings?section=connections&source=${sourceId}` as Href); }} style={styles.button} />
         )}
-        {!active && <TouchableOpacity onPress={dismiss} accessibilityRole="button"><Text style={styles.link}>{C.dismiss}</Text></TouchableOpacity>}
+        {!active && <TextLink quiet label={C.dismiss} onPress={dismiss} />}
       </View>
     </View>
   );
@@ -116,9 +117,5 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   bar: { height: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceSunken, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.accent },
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.md, flexWrap: 'wrap' },
-  link: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary, paddingVertical: 4 },
-  button: { height: 36, paddingHorizontal: 14, borderRadius: radii.pill, backgroundColor: colors.textPrimary, alignItems: 'center', justifyContent: 'center' },
-  buttonText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.bg },
-  buttonSecondary: { height: 36, paddingHorizontal: 14, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
-  buttonSecondaryText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
+  button: { alignSelf: 'center' },
 });

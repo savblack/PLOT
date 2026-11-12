@@ -14,7 +14,10 @@ import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Rect } from 'react-native-svg';
-import { IconSearch, IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
+import { IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
+import SearchField, { SEARCH_FIELD_H } from '../../components/SearchField';
+import Button from '../../components/Button';
+import { SheetActions } from '../../components/BottomSheet';
 import SectionTitle from '../../components/SectionTitle';
 import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -243,7 +246,10 @@ function SectionSelectActions({
 const watchingSortLabel = (sort: WatchingSort) => (sort === 'title' ? CUSTOM_LISTS.titleAscending : CUSTOM_LISTS.watchingSort[sort]);
 
 // ── List row ──────────────────────────────────────────────────────────
-function ListRow({ item, trailing, onPress, sel, status }: {
+// Not the shared components/ListRow: this one draws the selection circle over
+// the poster in edit mode and greys a finished title's art, which the shared
+// row has no slot for.
+function SelectableListRow({ item, trailing, onPress, sel, status }: {
   item: any;
   /** Where the viewer stands with the title; finished ones grey out. */
   status?: ListWatchStatus | null;
@@ -468,18 +474,10 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
           onSubmitEditing={submit}
         />
         {!!error && <Text accessibilityRole="alert" style={{ color: colors.textSecondary, marginBottom: spacing.sm }}>{error}</Text>}
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <TouchableOpacity
-            disabled={busy || !name.trim()}
-            style={[styles.createModalBtn, { flex: 1, backgroundColor: name.trim() ? colors.accent : colors.surfaceSunken }]}
-            onPress={submit}
-          >
-            <Text style={{ color: name.trim() ? '#fff' : colors.textMuted, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Create</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.createModalBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} onPress={onClose}>
-            <Text style={{ color: colors.textSecondary, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
+        <SheetActions>
+          <Button variant="primary" flex label="Create" onPress={submit} disabled={busy || !name.trim()} />
+          <Button flex label={COMMON.cancel} onPress={onClose} />
+        </SheetActions>
       </View>
     </Modal>
   );
@@ -595,7 +593,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     setShowCreateList(true);
   };
   const [listQuery, setListQuery] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
   // The page's own search field stays out of the header until asked for: the
   // header's search button opens it here, and closing it clears the query.
   const [searchOpen, setSearchOpen] = useState(false);
@@ -812,7 +809,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const searchShown = searchOpen || listQuery.length > 0;
   // Title bar, one 40pt row of controls, and the search field only while open.
   // Calendar's header is the same height, so the three pages line up.
-  const HEADER_H = insets.top + (searchShown ? SCREEN_HEADER_H + 44 : SCREEN_HEADER_H);
+  const HEADER_H = insets.top + (searchShown ? SCREEN_HEADER_H + SEARCH_FIELD_H + spacing.sm : SCREEN_HEADER_H);
 
   return (
     <View style={styles.screen}>
@@ -1258,33 +1255,13 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           }
         />
         {searchShown && (
-        <View style={[styles.listSearch, searchFocused && { borderColor: colors.accent }]}>
-          <IconSearch size={16} color={colors.textMuted} />
-          <TextInput
-            style={styles.listSearchInput}
-            value={listQuery}
-            onChangeText={setListQuery}
-            placeholder={searchPlaceholder}
-            autoFocus
-            placeholderTextColor={colors.textMuted}
-            accessibilityLabel={searchPlaceholder}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-          />
-          {listQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setListQuery('')}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel={COMMON.clearSearch}
-            >
-              <Text style={styles.listSearchClear}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        <SearchField
+          style={styles.listSearch}
+          value={listQuery}
+          onChangeText={setListQuery}
+          placeholder={searchPlaceholder}
+          autoFocus
+        />
         )}
       </BlurView>
 
@@ -1540,7 +1517,7 @@ function CustomListCard({
         ) : view === 'rows' ? (
           <View>
             {items.map(item => (
-              <ListRow
+              <SelectableListRow
                 key={`${item.media_type || 'movie'}:${item.tmdb_id ?? item.id}`}
                 item={item}
                 sel={sel}
@@ -1587,27 +1564,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   subTabsScroll: { flex: 1, height: 44 },
   subTabsRow: { paddingHorizontal: spacing.xl, alignItems: 'center' },
-  listSearch: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    height: 36,
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-  },
-  listSearchInput: {
-    flex: 1,
-    paddingVertical: 0,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    color: colors.textPrimary,
-  },
-  listSearchClear: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  listSearch: { marginHorizontal: spacing.xl, marginBottom: spacing.sm },
   searchHeading: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.sm,
@@ -1743,21 +1700,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   customListCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   renameInput: { flex: 1, fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary, borderBottomWidth: 1, borderBottomColor: colors.accent, paddingVertical: 2 },
 
-  // Modal styles
-  modalContainer: { flex: 1, backgroundColor: colors.bg, paddingTop: spacing.xl },
-  modalTabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
-  modalSearch: { paddingHorizontal: spacing.xl, paddingBottom: spacing.sm },
-  modalSearchInput: { backgroundColor: colors.surface, borderRadius: radii.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
-  modalRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.md },
-  modalRowPoster: { width: 40, height: 60, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, flexShrink: 0 },
-  modalRowTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary, marginBottom: 3 },
-  modalRowMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
-  modalEmpty: { padding: spacing.xl, textAlign: 'center', color: colors.textMuted, fontFamily: fontFamily.sans, fontSize: fontSize.sm },
-
   createModal: { flex: 1, backgroundColor: colors.bg, padding: spacing.xl, gap: spacing.lg },
   createModalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   createModalInput: { backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
-  createModalBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radii.md, alignItems: 'center' },
 });
 
 export default function MyListsRoute() {

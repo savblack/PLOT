@@ -13,6 +13,8 @@ import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, LayoutChan
 import { useTheme } from '../contexts/ThemeContext';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { MEDIA } from '@plot/core/copy/media.js';
+import Button from './Button';
+import ListRow from './ListRow';
 
 export interface ShelfItem {
   id?: string | number;
@@ -164,18 +166,19 @@ export function HistoryRows({ items, onOpen }: { items: ShelfItem[]; onOpen: OnO
   return (
     <View>
       {items.map((it, i) => {
-        const img = posterUrl(it.poster_path, 'w185');
         const date = it.watched_at
           ? new Date(it.watched_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
           : null;
         return (
-          <TouchableOpacity key={String(it.id ?? `${it.tmdb_id}-${i}`)} style={styles.historyRow} activeOpacity={0.7} onPress={() => onOpen(it)} accessibilityRole="button">
-            {img ? <Image source={{ uri: img }} style={styles.historyPoster} /> : <View style={styles.historyPoster} />}
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.historyTitle} numberOfLines={2}>{it.title}</Text>
-              <Text style={styles.historyMeta}>{MEDIA.watched}{date ? ` · ${date}` : ''}</Text>
-            </View>
-          </TouchableOpacity>
+          <View key={String(it.id ?? `${it.tmdb_id}-${i}`)} style={styles.historyRow}>
+            <ListRow
+              posterUri={posterUrl(it.poster_path, 'w185')}
+              title={it.title ?? ''}
+              titleLines={2}
+              meta={`${MEDIA.watched}${date ? ` · ${date}` : ''}`}
+              onPress={() => onOpen(it)}
+            />
+          </View>
         );
       })}
     </View>
@@ -196,13 +199,8 @@ export function ShelfHeading({ title, right }: { title: string; right?: React.Re
 
 /** Compact secondary button: "View all", "Show less". Never full-width. */
 export function ShelfButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  return (
-    <TouchableOpacity style={styles.shelfBtn} onPress={onPress} accessibilityRole="button" hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-      <Text style={styles.shelfBtnText}>{label}</Text>
-    </TouchableOpacity>
-  );
+  // alignSelf auto: the caller's row or column places it, as before.
+  return <Button size="sm" label={label} onPress={onPress} style={{ alignSelf: 'auto' }} />;
 }
 
 /** Two-way switch (Top 5: Movies / TV). The active side carries the accent. */
@@ -239,14 +237,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   coverPosterEmpty: { backgroundColor: colors.surfaceSunken, borderStyle: 'dashed', borderColor: colors.borderStrong },
   coverName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary, marginTop: spacing.sm },
   coverCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
-  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  historyPoster: { width: 44, height: 66, borderRadius: radii.sm, backgroundColor: colors.surfaceSunken },
-  historyTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
-  historyMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 4 },
+  historyRow: { paddingVertical: spacing.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, marginBottom: spacing.md },
   headingText: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, flexShrink: 1 },
-  shelfBtn: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong },
-  shelfBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary },
   switch: { flexDirection: 'row', borderRadius: radii.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong, padding: 2 },
   switchBtn: { paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radii.pill },
   switchBtnOn: { backgroundColor: colors.surfaceRaised },

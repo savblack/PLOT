@@ -86,7 +86,6 @@ export const DISCOVER_VIEW = {
     const n = `${nights} ${nights === 1 ? 'night' : 'nights'} this week`;
     return best > 1 ? `${n} · best streak ${best}` : n;
   },
-  weekEmpty: 'Nothing logged this week yet',
   // Up next with nothing saved: three trending posters stand in for the shelf,
   // each with its bookmark, so the first saves happen in place.
   emptyUpNext: {
