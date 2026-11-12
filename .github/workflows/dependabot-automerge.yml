@@ -7,8 +7,9 @@ name: Dependabot auto-merge
 #     pull request. `workflow_run` fires once it finishes and runs this file
 #     from main, in the base-repo context with a writable token, so it can
 #     merge. The PR's own copy of this file is never what runs.
-#   - There is no branch protection on main, so native `gh pr merge --auto`
-#     won't engage. So we do the merge ourselves, gated on CI having passed.
+#   - Since 2026-11-12 main requires the CI `check` job to pass (branch
+#     protection). We still merge here rather than with `gh pr merge --auto`,
+#     because a bump must be classified first: majors are held, never merged.
 #   - Until 2026-11-12 CI was CircleCI and this listened for its commit status.
 #
 # Safety:
