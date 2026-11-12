@@ -10,6 +10,7 @@ import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import HeaderRow, { SCREEN_HEADER_H } from '../../components/HeaderRow';
+import Segmented from '../../components/Segmented';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -149,25 +150,14 @@ function DayPanel({ events, label, ds }: { events: CalendarEvent[]; label: strin
 }
 
 // ── View switch ───────────────────────────────────────────────────────
-/* One option of the Agenda / Week / Month switch. Web has no such switch on
-   a phone (its Calendar is the stream only), so this borrows the look of
-   web's own segmented control, .cal-scope: a sunken track, the chosen option
-   on a plain surface, no accent. */
-function SubTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  return (
-    <TouchableOpacity
-      style={[styles.subTab, active && styles.subTabActive]}
-      onPress={onPress}
-      activeOpacity={0.7}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-    >
-      <Text style={[styles.subTabText, active && styles.subTabTextActive]} numberOfLines={1}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
+/* The Agenda / Week / Month switch. Web has no such switch on a phone (its
+   Calendar is the stream only), so this borrows the look of web's own
+   segmented control, .cal-scope: see components/Segmented.tsx. */
+const VIEW_OPTIONS: readonly { value: CalView; label: string }[] = [
+  { value: 'agenda', label: 'Agenda' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+];
 
 // ── Main screen ───────────────────────────────────────────────────────
 export default function CalendarScreen() {
@@ -426,11 +416,7 @@ export default function CalendarScreen() {
         {/* Row 2: the view switch, and the period arrows for Week and Month */}
         <HeaderRow
           lead={
-          <View style={styles.tabsStrip} accessibilityRole="tablist">
-            <SubTab label="Agenda" active={view === 'agenda'} onPress={() => switchView('agenda')} />
-            <SubTab label="Week"   active={view === 'week'}   onPress={() => switchView('week')} />
-            <SubTab label="Month"  active={view === 'month'}  onPress={() => switchView('month')} />
-          </View>
+          <Segmented options={VIEW_OPTIONS} value={view} onChange={switchView} />
           }
           actions={view !== 'agenda' ? (
             <View style={styles.monthNav}>
@@ -460,15 +446,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  // Web's .cal-scope: a sunken track holding the options.
-  tabsStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    padding: 3,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceSunken,
-  },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -480,23 +457,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.textSecondary,
     minWidth: 58,
     textAlign: 'center',
-  },
-
-  // Web's .cal-scope-btn, and .active
-  subTab: {
-    paddingVertical: 4,
-    paddingHorizontal: spacing.md,
-    borderRadius: 10,
-  },
-  subTabActive: { backgroundColor: colors.surface },
-  subTabText: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  subTabTextActive: {
-    fontFamily: fontFamily.sansBold,
-    color: colors.textPrimary,
   },
 
   // Month grid
