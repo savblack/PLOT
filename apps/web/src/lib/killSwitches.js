@@ -1,6 +1,6 @@
 // Web side of @plot/core/killSwitches.js. DOM-specific (localStorage, the
 // router, document visibility), so it stays in the web app; mobile parity is
-// tracked in savblack/PLOT#1631.
+// tracked in GitHub issue 1631 (savblack/PLOT).
 //
 // launchFeatures.js reads the stored kill list once, at load. This refreshes
 // it in the background: shortly after start-up, then whenever the tab comes
