@@ -19,7 +19,7 @@ import Svg, { Path } from 'react-native-svg';
 import { IconChevronDown } from '../../components/icons';
 import SectionTitle from '../../components/SectionTitle';
 import { TextLink } from '../../components/Button';
-import { BlurView } from 'expo-blur';
+import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
@@ -589,8 +589,9 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
 // ── Main screen ───────────────────────────────────────────────────────
 function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   const insets = useSafeAreaInsets();
+  const glass = useGlassOnScroll();
   const { open: openPanel } = useMediaPanel();
-  const { colors, resolved } = useTheme();
+  const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [trending,     setTrending]     = useState<MediaItem[]>([]);
@@ -972,6 +973,8 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           style={styles.screen}
           contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={glass.onScroll}
         >
           <NewReleasesContent
             hideKids={hideKids}
@@ -989,8 +992,9 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         style={styles.screen}
         contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
-          scrollEventThrottle={100}
+          scrollEventThrottle={16}
           onScroll={e => {
+            glass.onScroll(e);
             const inView = e.nativeEvent.contentOffset.y < picksBottom.current;
             setPicksInView(prev => (prev === inView ? prev : inView));
           }}
@@ -1074,11 +1078,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       )}
 
       {/* ── Fixed blurred header ── */}
-      <BlurView
-        intensity={80}
-        tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
-        style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
-      >
+      <GlassHeader scrollY={glass.scrollY} height={HEADER_H}>
         <ScreenHeaderBar
           title={mode === 'new' ? 'New Releases' : 'Home'}
           logo={mode !== 'new'}
@@ -1109,7 +1109,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
             />
           }
         />
-      </BlurView>
+      </GlassHeader>
 
     </View>
   );
@@ -1132,15 +1132,6 @@ const PICKS_CARD_W = SCREEN_W - spacing.xl * 2;
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
-  fixedHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
 
   dateLine: { paddingHorizontal: spacing.xl, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 

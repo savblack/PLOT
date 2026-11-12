@@ -16,7 +16,7 @@ import {
   Modal, StyleSheet, Platform, Linking,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
-import { BlurView } from 'expo-blur';
+import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line } from 'react-native-svg';
 import { IconChevronRight, IconClose, IconCheck } from '../../components/icons';
@@ -928,9 +928,10 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
 
 // ── Main screen ───────────────────────────────────────────────────────
 export default function SettingsScreen() {
-  const { colors, resolved, mode, family, setMode, setFamily } = useTheme();
+  const { colors, mode, family, setMode, setFamily } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const glass = useGlassOnScroll();
   const router = useRouter();
   const { confirm, notify, choose, dialog } = useDialog();
   const { userId, user, profile, refreshProfile, watchlist, watching, broadcastPreferences } = useAppData();
@@ -1289,6 +1290,8 @@ export default function SettingsScreen() {
         style={styles.screen}
         contentContainerStyle={{ paddingTop: HEADER_H + 8, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={glass.onScroll}
       >
 
         <View style={styles.accountCard}>
@@ -1742,13 +1745,9 @@ export default function SettingsScreen() {
       />
 
       {/* Fixed blurred header */}
-      <BlurView
-        intensity={80}
-        tint={resolved === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
-        style={[styles.fixedHeader, { height: HEADER_H, paddingTop: insets.top }]}
-      >
+      <GlassHeader scrollY={glass.scrollY} height={HEADER_H}>
         <ScreenHeaderBar title="Settings" showSearch={false} />
-      </BlurView>
+      </GlassHeader>
 
       {/* Modals */}
       {showProviders && userId && (
@@ -1807,10 +1806,6 @@ export default function SettingsScreen() {
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
-  fixedHeader: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-  },
 
   group: { marginTop: spacing.lg },
   groupTitle: {
