@@ -147,7 +147,7 @@ export default function PlansPage() {
                 <span className="plan-amount">{PLANS_PAGE.free.price}</span>
                 <span className="plan-per">{PLANS_PAGE.free.perpetual}</span>
               </div>
-              <p className="plan-billed">{PLANS_PAGE.free.noCard}</p>
+              <p className="plan-billed">{PLANS_PAGE.free.planNote}</p>
             </div>
             {authState === 'signed-in' ? (
               <span className="plan-current">{isPremium ? PLANS_PAGE.free.includedWithPremium : PLANS_PAGE.free.yourCurrentPlan}</span>

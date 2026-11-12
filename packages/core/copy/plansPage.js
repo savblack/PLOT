@@ -40,7 +40,7 @@ export const PLANS_PAGE = {
     name: 'Free',
     price: '$0',
     perpetual: 'forever',
-    noCard: 'No card needed',
+    planNote: 'Free plan, always',
     status: 'Available now',
     tagline: 'Your everyday watching, all in one place.',
     yourCurrentPlan: 'Your current plan',
