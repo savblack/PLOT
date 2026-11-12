@@ -1,5 +1,6 @@
 import { ReactNode, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import PlotWordmark from './PlotWordmark';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { IconSearch } from './icons';
@@ -12,8 +13,13 @@ import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 // Search sits on the left, where the menu button used to be: the menu is now
 // the last button in the tab bar (app/(app)/_layout.tsx), on every screen. Screens keep their own BlurView/fixedHeader wrapper
 // (heights and extra content like tabs vary) and render just this row inside it.
+// The wordmark's font size on Home: a little larger than a screen title, so
+// the logo reads at the same weight as the words it replaces.
+const LOGO_SIZE = 28;
+
 export default function ScreenHeaderBar({
   title,
+  logo = false,
   center,
   showSearch = true,
   onSearchPress,
@@ -22,6 +28,9 @@ export default function ScreenHeaderBar({
   rightExtra,
 }: {
   title?: string;
+  /** Draws the plot wordmark in the title's place; `title` stays as its
+   *  spoken name (Home). */
+  logo?: boolean;
   center?: ReactNode;
   showSearch?: boolean;
   onSearchPress?: () => void;
@@ -56,7 +65,11 @@ export default function ScreenHeaderBar({
         <View style={styles.iconBtn} />
       )}
 
-      {center ?? (title ? <Text style={styles.title} pointerEvents="none">{title}</Text> : null)}
+      {center ?? (logo ? (
+        <View style={styles.logo} pointerEvents="none" accessible accessibilityRole="header" accessibilityLabel={title}>
+          <PlotWordmark size={LOGO_SIZE} color={colors.textPrimary} label={null} />
+        </View>
+      ) : title ? <Text style={styles.title} pointerEvents="none">{title}</Text> : null)}
 
       <View style={styles.rightGroup}>
       {showNotifications ? (
@@ -106,6 +119,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
   },
   badgeText: { fontFamily: fontFamily.sansBold, fontSize: 10, lineHeight: 13, color: '#fff' },
+  logo: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   title: {
     position: 'absolute',
     left: 0, right: 0,

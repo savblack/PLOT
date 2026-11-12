@@ -1088,6 +1088,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       >
         <ScreenHeaderBar
           title={mode === 'new' ? 'New Releases' : 'Home'}
+          logo={mode !== 'new'}
           rightExtra={
             <GroupedFilterMenu
               accessibilityLabel={mode === 'new' ? 'Filter new releases' : 'Filter home'}
