@@ -161,12 +161,15 @@ jobs:
           set -euo pipefail
           umask 077
           mkdir -p "$HOME/.grok"
+          # Newest by date: artifact ids are not in creation order (on
+          # 2026-11-12 a later run's artifact had the lower id), and only the
+          # newest login is sure to hold the current refresh token.
           # Only a login this workflow saved on main counts. A pull request,
           # including one from a fork, can upload an artifact with the same
           # name; it could not decrypt, but taking it would break the week.
           id=""
           for cand in $(gh api "repos/$REPO/actions/artifacts?name=grok-auth&per_page=20" \
-              --jq '.artifacts[] | select(.expired | not)
+              --jq '.artifacts | sort_by(.created_at) | reverse | .[] | select(.expired | not)
                     | select(.workflow_run.head_branch == "main")
                     | select(.workflow_run.head_repository_id == .workflow_run.repository_id)
                     | "\(.id):\(.workflow_run.id)"'); do
