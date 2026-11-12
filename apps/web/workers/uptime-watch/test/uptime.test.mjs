@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checksFor, classify, emailContent, verdictFor } from '../src/index.js';
+import { checksFor, classify, emailContent, tmdbProbeUrl, verdictFor } from '../src/index.js';
 
 const noWait = async () => {};
 const opts = { attempts: 2, waitMs: 0 };
@@ -12,7 +12,20 @@ const ok = { ok: true, reason: 'fine' };
 const bad = { ok: false, reason: 'HTTP 500' };
 const refused = { ok: false, blocked: true, reason: 'Cloudflare refused (HTTP 403)' };
 
-test('classify: app shell, trending results, functions boolean', () => {
+test('tmdbProbeUrl: a fresh search every 5 minutes, never repeated within the 15-minute cache', () => {
+  const T = Date.parse('2026-11-12T00:00:00Z');
+  const url = tmdbProbeUrl('https://proxy.example/', T);
+  assert.match(url, /^https:\/\/proxy\.example\/\?path=search\/multi&query=[a-z]+$/);
+  // Same five-minute slot (the two reads 30 seconds apart in one run): same URL.
+  assert.equal(tmdbProbeUrl('https://proxy.example', T + 30_000), url);
+  // Twelve slots in an hour, all different, so no word comes back inside the
+  // proxy's 15-minute search cache; the hour after repeats the cycle.
+  const slots = Array.from({ length: 12 }, (_, i) => tmdbProbeUrl('https://proxy.example', T + i * 5 * 60_000));
+  assert.equal(new Set(slots).size, 12);
+  assert.equal(tmdbProbeUrl('https://proxy.example', T + 60 * 60_000), url);
+});
+
+test('classify: app shell, search results, functions boolean', () => {
   assert.equal(classify.app(200, '<html><div id="root"></div>').ok, true);
   assert.equal(classify.app(200, '<html>maintenance</html>').ok, false);
   assert.equal(classify.app(502, '').reason, 'HTTP 502');

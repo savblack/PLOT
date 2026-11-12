@@ -32,6 +32,25 @@ test('an outage sends one down email and one recovered email, not one per run', 
   assert.equal(state.state, 'healthy');
 });
 
+test('recoverAfter: a flapping service sends one down and one recovered, not a pair each time', () => {
+  // Down needs two failed reads, so a service failing every other run used to
+  // email down, recovered, down, recovered...
+  const flapping = [healthy, broken, healthy, broken, healthy, broken, healthy, healthy];
+  let state = null;
+  const emails = [];
+  flapping.forEach((v, i) => {
+    const { next, email } = decide(state, v, { ...OPTS(T0 + i * H / 12), recoverAfter: 2 });
+    if (email) emails.push(email.kind);
+    state = next;
+  });
+  assert.deepEqual(emails, ['down', 'recovered']);
+  assert.equal(state.state, 'healthy');
+});
+
+test('recoverAfter defaults to 1, so the recovered email still comes on the first healthy run', () => {
+  assert.deepEqual(replay([healthy, broken, healthy]).emails, ['down', 'recovered']);
+});
+
 test('a long outage reminds every 6 hours', () => {
   const run = [healthy, ...Array(26).fill(broken)]; // 13 hours broken at 30-minute steps
   assert.deepEqual(replay(run).emails, ['down', 'reminder', 'reminder']);
