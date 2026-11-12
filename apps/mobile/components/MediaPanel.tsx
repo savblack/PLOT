@@ -20,10 +20,11 @@ import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaSta
 import { useEffect, useState, useRef, useMemo, type RefObject } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, Modal,
-  StyleSheet, Dimensions, ActivityIndicator, Animated, Linking, Alert,
+  StyleSheet, Dimensions, ActivityIndicator, Animated, Easing, PanResponder, Linking, Alert,
   Platform, KeyboardAvoidingView, Keyboard, type HostInstance,
 } from 'react-native';
 import { TextInput } from './TextInput';
+import { shouldDismissSheet, sheetDismissDuration } from '@plot/core/sheetDrag.js';
 import Svg, { Path, Line, Polyline, Circle, Polygon, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb, getTmdbRegion } from '../lib/tmdb';
@@ -939,7 +940,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     setPickedSeason(null);
   }
 
-  const slideY = useRef(new Animated.Value(PANEL_H)).current;
+  const [slideY] = useState(() => new Animated.Value(PANEL_H));
   const scrollRef = useRef<ScrollView>(null);
 
   const isMovie    = itemType === 'movie';
@@ -1088,8 +1089,50 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   }, []);
 
   const close = () => {
-    Animated.timing(slideY, { toValue: PANEL_H, duration: 260, useNativeDriver: true }).start(onClose);
+    Animated.timing(slideY, { toValue: PANEL_H, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(onClose);
   };
+
+  // Drag down to close. The panel follows the finger one to one, and on
+  // release either carries on off screen at the finger's speed or springs
+  // back (rules in @plot/core/sheetDrag.js). Two ways in:
+  //   the handle  always, wherever the content is scrolled to
+  //   the content only while it is scrolled to its top, and only for a drag
+  //               that is clearly downward, so the cast rails still scroll
+  //               sideways and the content still scrolls up
+  // What the gesture reads while it runs. Refs, so the handlers are created
+  // once and a re-render in the middle of a drag cannot swap them out from
+  // under the finger.
+  const scrollTop = useRef(0);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+  const drag = useMemo(() => {
+    const release = (_event: unknown, g: { dy: number; vy: number }) => {
+      const at = { dy: g.dy, vy: g.vy, height: PANEL_H };
+      if (shouldDismissSheet(at)) {
+        Animated.timing(slideY, { toValue: PANEL_H, duration: sheetDismissDuration(at), easing: Easing.out(Easing.quad), useNativeDriver: true })
+          .start(() => onCloseRef.current());
+      } else {
+        Animated.spring(slideY, { toValue: 0, velocity: g.vy, useNativeDriver: true, damping: 26, stiffness: 260 }).start();
+      }
+    };
+    const follow = {
+      onPanResponderGrant: () => { slideY.stopAnimation(); },
+      onPanResponderMove: (_event: unknown, g: { dy: number }) => { slideY.setValue(Math.max(0, g.dy)); },
+      onPanResponderRelease: release,
+      onPanResponderTerminate: release,
+      onPanResponderTerminationRequest: () => false,
+    };
+    return {
+      handle: PanResponder.create({ onStartShouldSetPanResponder: () => true, onMoveShouldSetPanResponder: () => true, ...follow }),
+      content: PanResponder.create({
+        onMoveShouldSetPanResponderCapture: (_event, g) => scrollTop.current <= 0 && g.dy > 6 && g.dy > Math.abs(g.dx) * 1.5,
+        ...follow,
+      }),
+    };
+  }, [slideY]);
+  // The dimmed backdrop fades with the panel, so a drag lets the page show
+  // through as the panel leaves instead of the dim cutting out at the end.
+  const dim = slideY.interpolate({ inputRange: [0, PANEL_H], outputRange: [1, 0], extrapolate: 'clamp' });
 
   // Load details
   useEffect(() => {
@@ -1258,12 +1301,18 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     <>
     <Modal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent>
       {/* Backdrop */}
-      <TouchableOpacity style={styles.overlay} onPress={close} activeOpacity={1} />
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: dim }]}>
+        <TouchableOpacity style={styles.overlay} onPress={close} activeOpacity={1} />
+      </Animated.View>
 
-      <Animated.View style={[styles.panel, { transform: [{ translateY: slideY }], paddingBottom: insets.bottom }]}>
-        {/* Drag handle — floats over the backdrop so the image is flush to the top */}
-        <View style={styles.handleOverlay} pointerEvents="none">
-          <View style={styles.handle} />
+      <Animated.View style={[styles.panel, { transform: [{ translateY: slideY }], paddingBottom: insets.bottom }]} {...drag.content.panHandlers}>
+        {/* Drag handle — floats over the backdrop so the image is flush to the
+            top. Its touch area is wider and taller than the bar, and stops
+            short of the close button. */}
+        <View style={styles.handleOverlay} pointerEvents="box-none">
+          <View style={styles.handleHit} {...drag.handle.panHandlers} accessibilityRole="adjustable" accessibilityLabel="Drag down to close">
+            <View style={styles.handle} />
+          </View>
         </View>
 
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -1273,6 +1322,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           showsVerticalScrollIndicator={false}
           bounces={false}
           keyboardShouldPersistTaps="handled"
+          onScroll={(event) => { scrollTop.current = event.nativeEvent.contentOffset.y; }}
+          scrollEventThrottle={16}
         >
           {/* Backdrop image */}
           <View style={styles.backdropWrap}>
@@ -1810,7 +1861,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 24,
   },
-  handleOverlay: { position: 'absolute', top: spacing.md, left: 0, right: 0, alignItems: 'center', zIndex: 20 },
+  handleOverlay: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center', zIndex: 20 },
+  handleHit: { width: 140, height: 44, paddingTop: spacing.md, alignItems: 'center' },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)' },
 
   backdropWrap: { height: 148, position: 'relative' },

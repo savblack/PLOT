@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import Svg, { Path, Rect, Line, Polyline, Circle } from 'react-native-svg';
@@ -7,6 +7,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { spacing } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 import AppIconEntitlement from '../../components/AppIconEntitlement';
+import { useDrawer } from '../../contexts/DrawerContext';
+import { APP_SHELL } from '@plot/core/copy/appShell.js';
 
 function IconHome({ color }: { color: string | any }) {
   return (
@@ -54,6 +56,16 @@ function IconHistory({ color }: { color: any }) {
   );
 }
 
+function IconMenu({ color }: { color: any }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Line x1={3} y1={6} x2={21} y2={6} />
+      <Line x1={3} y1={12} x2={21} y2={12} />
+      <Line x1={3} y1={18} x2={21} y2={18} />
+    </Svg>
+  );
+}
+
 function TabBarBackground() {
   const { colors, resolved } = useTheme();
   return (
@@ -74,6 +86,7 @@ function TabBarBackground() {
 function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const drawer = useDrawer();
 
   return (
     <>
@@ -81,8 +94,9 @@ function TabsLayout() {
       <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: true,
-        tabBarLabelStyle: { fontSize: 10, marginTop: 2 },
+        // Icons only, as on web's phone tab bar. Each tab keeps its title as
+        // its accessibility label, so a screen reader still names it.
+        tabBarShowLabel: false,
         // Floating glass pill — detached from the edges, content scrolls
         // behind it (screens clear it via TAB_BAR_CLEARANCE).
         tabBarStyle: {
@@ -101,8 +115,9 @@ function TabsLayout() {
         },
         tabBarItemStyle: {
           height: TAB_BAR_HEIGHT,
-          paddingTop: 8,
-          paddingBottom: 6,
+          // With no label under it, the navigator still seats the icon near
+          // the top of the item. This drops it to the middle of the pill.
+          paddingTop: 12,
         },
         tabBarBackground: () => <TabBarBackground />,
         tabBarActiveTintColor: colors.accent,
@@ -128,6 +143,20 @@ function TabsLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color }) => <IconHistory color={color} />,
+        }}
+      />
+      {/* More: the menu, last in the bar as on web. It opens the drawer and
+          never navigates, so it is a button in a tab's place. */}
+      <Tabs.Screen
+        name="menu"
+        options={{
+          title: APP_SHELL.more,
+          tabBarIcon: ({ color }) => <IconMenu color={color} />,
+          tabBarButton: ({ children, style }) => (
+            <TouchableOpacity style={style} onPress={drawer.open} accessibilityRole="button" accessibilityLabel={APP_SHELL.more} accessibilityState={{ expanded: drawer.isOpen }}>
+              {children}
+            </TouchableOpacity>
+          ),
         }}
       />
       <Tabs.Screen name="profile" options={{ href: null }} />

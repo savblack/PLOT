@@ -63,15 +63,17 @@ export default function CollapsibleSection({
           accessibilityState={{ expanded: isOpen }}
           accessibilityLabel={label}
         >
+          <Text style={styles.label}>{label}</Text>
+          {count !== undefined && <Text style={styles.count}>{count}</Text>}
+          {/* After the title, down while open and right while folded, as
+              web's section headings on My Lists. */}
           <Svg
             width={14} height={14} viewBox="0 0 24 24" fill="none"
-            stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-            style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
+            stroke={colors.textMuted} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"
+            style={{ alignSelf: 'center', transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
           >
             <Polyline points="9,18 15,12 9,6" />
           </Svg>
-          <Text style={styles.label}>{label}</Text>
-          {count !== undefined && <Text style={styles.count}>{count}</Text>}
         </TouchableOpacity>
         {headerRight ? <View style={styles.headActions}>{headerRight}</View> : null}
       </View>
@@ -85,10 +87,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl },
   headToggle: { flex: 1, flexDirection: 'row', alignItems: 'baseline', paddingVertical: spacing.md, gap: spacing.sm },
   headActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  // Display type on the page, like Home's shelf headings (was small grey capitals).
+  // Display type, a step smaller than Home's shelf headings: a page of
+  // sections has many of them, and web's My Lists sets them at this size so
+  // the posters lead.
   label: {
     fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
+    fontSize: fontSize.lg,
     color: colors.textPrimary,
   },
   count: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },

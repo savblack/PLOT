@@ -774,6 +774,14 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     normalizeUiPrefs(profile?.ui_prefs).myLists.order, [...LIST_SECTION_IDS, SHARED_SECTION_ID, SMART_SECTION_ID], sharedSectionOf)];
   const inOrder = (nodes: Record<string, ReactNode>) => sectionOrder.map(id => <Fragment key={id}>{nodes[id]}</Fragment>);
 
+  // "6 lists · 24 titles", the line web's My Lists leads with: Watchlist,
+  // Favorites, every custom and shared list, and smart lists, with the titles
+  // on them (a smart list holds none until it is opened).
+  const listsSummary = CUSTOM_LISTS.summary(
+    1 + (FAVOURITES_ENABLED ? 1 : 0) + allManualLists.length + smartRows.length,
+    sortedSaved.length + (FAVOURITES_ENABLED ? favList.length : 0)
+      + allManualLists.reduce((n: number, list: { items?: unknown[] }) => n + (list.items?.length ?? 0), 0),
+  );
   const listTabs = TABS.filter(t => t.id !== 'history').map(t => ({ id: t.id, label: t.label ?? fw.plural }));
   const searchPlaceholder = isHistory ? HISTORY_VIEW.searchPlaceholder : CUSTOM_LISTS.searchPlaceholder;
   const HEADER_H = insets.top + 136;
@@ -1084,11 +1092,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         )}
           </>),
         })}
-        {isAll && (
-          <TouchableOpacity style={styles.customize} onPress={() => router.push('/(app)/my-lists-layout' as Href)} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.sections.title}>
-            <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
-          </TouchableOpacity>
-        )}
         </>
         )}
       </ScrollView>
@@ -1104,9 +1107,16 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             the old second row of All/Movies/TV chips is gone. */}
         <View style={styles.tabsRow}>
           <Text style={styles.viewLabel} numberOfLines={1} accessibilityRole="header">
-            {isHistory ? HISTORY_VIEW.title : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
+            {isHistory ? HISTORY_VIEW.title : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}
           </Text>
           <View style={styles.tabsRowActions}>
+            {/* Customize sits in the top row on the All view, as on web's
+                phone layout, so it is reachable without scrolling. */}
+            {!isHistory && isAll && (
+              <TouchableOpacity onPress={() => router.push('/(app)/my-lists-layout' as Href)} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.sections.title}>
+                <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
+              </TouchableOpacity>
+            )}
             {/* ‹ Mar 2026 › — jumps to the adjacent month that actually has
                 entries, so empty months are never a dead step. */}
             {isHistory && !searching && historyGroups.length > 0 && (
@@ -1667,7 +1677,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   emptyPromptAction: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent },
   empty: { padding: spacing.xl, alignItems: 'center' },
   sharedGroupLabel: { marginHorizontal: spacing.xl, marginTop: spacing.md, marginBottom: spacing.sm, fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.9, textTransform: 'uppercase', color: colors.textMuted },
-  customize: { alignSelf: 'center', marginTop: spacing.xl, minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg },
   customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
