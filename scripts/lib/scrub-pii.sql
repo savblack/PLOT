@@ -96,7 +96,13 @@ declare
     'public.platform_charts.title', 'public.title_availability.title', 'public.people_feed.title',
     'public.people_feed.person_name', 'public.marketing_tracked_titles.title',
     'public.marketing_tracked_titles.tmdb_title', 'public.history.title', 'public.list_items.title',
-    'public.watch_events.title', 'public.feed_posts.title', 'public.watching_progress.title'
+    'public.watch_events.title', 'public.feed_posts.title', 'public.watching_progress.title',
+    -- Constrained values whose rewrite emptied the table on the first
+    -- production run (2026-11-12): an availability bucket (a category), the
+    -- marketing review actor (CHECK: web_desk, marketing_week_skill, linear),
+    -- and the TMDB image path a member picked (catalog, never an upload).
+    'public.availability_events.bucket', 'public.marketing_review_events.actor',
+    'public.user_artwork.file_path'
   ];
   r record;
   rel text;

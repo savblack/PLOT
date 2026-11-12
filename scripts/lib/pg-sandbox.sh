@@ -81,7 +81,8 @@ sandbox_down() {
   pkill -f "$SANDBOX_PGDATA" >/dev/null 2>&1 || true
   sleep 1
   rm -rf "$SANDBOX_WORK" "$SANDBOX_SOCK"
-  echo "sandbox torn down (it held real PII — deliberately not kept)"
+  # A production restore holds real PII; a scrubbed snapshot does not. Either way it is not kept.
+  echo "sandbox torn down (deliberately not kept)"
 }
 
 sandbox_up() {
