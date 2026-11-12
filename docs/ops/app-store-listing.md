@@ -8,46 +8,19 @@ the app half-remembered.
 Written 2026-10-14. Bundle ID `tv.theplot.app`, marketing version in
 `apps/mobile/app.json`, build number owned by EAS (`appVersionSource: remote`).
 
-## Seller: not settled (updated 2026-10-15)
+## Seller: Individual, Savannah Black (decided 2026-11-12)
 
 The Apple Developer account is an **Individual** membership (team
-`FXZRAA8927`, "Savannah Black"). Every legal surface Plot ships says "a
-product of SUSUMU HOUSE", and the preference on 2026-10-14 was for the
-listing to say the same.
+`FXZRAA8927`, "Savannah Black"), and the App Store seller is Savannah Black.
+An Organization membership would need a legal entity with a D-U-N-S number,
+which Plot does not have. If a company is registered later, Apple Developer
+Support can convert the membership and keep the team ID; the seller name on
+the listing changes when it goes through.
 
-**That needs a company, and SUSUMU HOUSE is a business name.** Apple's
-Organization membership requires a legal entity with a D-U-N-S number, and
-Apple's own D-U-N-S page says trade names, DBAs and branches are not
-accepted. A registered business name on a personal ABN is a trade name;
-Dun & Bradstreet records it as a sole proprietorship and Apple's enrolment
-check fails on that status.
-
-The three ways through, in order of speed:
-
-1. **Publish as Individual.** No wait. The seller shows "Savannah Black".
-   Change the legal copy (Terms, Privacy, the six auth email templates, the
-   newsletter footer, `terms.html` and `privacy.html` on the site) from
-   "a product of SUSUMU HOUSE" to "SUSUMU HOUSE is the trading name of
-   Savannah Black, ABN <number>", which is the accurate statement for a sole
-   trader. EU trader details under the DSA will be the personal name and
-   address.
-2. **Register a Pty Ltd, then convert.** ASIC registration (about a week),
-   D-U-N-S for the company (up to 5 business days), then Apple Developer
-   Support converts the membership keeping the team ID. Three to four weeks
-   before the app record can exist, plus the wider job of moving Stripe,
-   banking and the domain to the company over time.
-3. **Publish as Individual now, convert later** once a company exists. Apple
-   permits it; the seller name on the listing changes when it goes through.
-
-Whichever is chosen, the rest of this document is unchanged. Only the
-seller name on the listing and the legal copy differ.
-
-On 2026-10-15 the existing app record was filled on this Individual
-membership. The seller name on the store is Savannah Black until a company
-conversion. Decided 2026-11-12: publish as Individual (option 1). Legal copy
-(Terms, Privacy, Community, and the site's terms/privacy/community pages)
-now says Plot is operated by Savannah Black, a sole trader trading as SUSUMU
-HOUSE, instead of "a product of SUSUMU HOUSE".
+The legal copy matches the seller: Terms, Privacy and Community (web app and
+the site's terms/privacy/community pages) say Plot is operated by Savannah
+Black, with no trading name. EU trader details under the DSA are the personal
+name and address.
 
 **EU trader status (DSA).** Required before the app can be sold in the EU.
 Done in App Store Connect ▸ Business ▸ Trader status. On an Individual

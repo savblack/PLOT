@@ -14,7 +14,7 @@ export default function TermsPage() {
 
         <h2>1. Acceptance of Terms</h2>
         <p><strong>By creating an account, accessing, or using Plot in any way, you agree to be legally bound by these Terms of Service in their entirety. Your use of the Service constitutes your full and unconditional acceptance of these Terms and all risk associated with that use. If you do not agree to every provision of these Terms, you must immediately stop using the Service and delete your account.</strong></p>
-        <p>These Terms form a binding legal agreement between you and Savannah Black, a sole trader trading as SUSUMU HOUSE ("we", "us", "our"). We reserve the right to update these Terms at any time. Continued use of the Service following any update constitutes acceptance of the revised Terms.</p>
+        <p>These Terms form a binding legal agreement between you and Savannah Black ("we", "us", "our"). We reserve the right to update these Terms at any time. Continued use of the Service following any update constitutes acceptance of the revised Terms.</p>
 
         <h2>2. Account Registration &amp; Eligibility</h2>
         <p>You must be at least 13 years old to use the Service. By registering, you represent and warrant that all information you provide is accurate and that you meet this eligibility requirement. You are solely responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account, whether or not authorised by you. We are not liable for any loss or damage arising from your failure to safeguard your account.</p>
@@ -75,7 +75,7 @@ export default function TermsPage() {
         <p>We may revise these Terms at any time by posting updated Terms to this page. Your continued use of the Service after any such changes constitutes your binding acceptance of the new Terms.</p>
 
         <h2>14. Contact &amp; Governing Law</h2>
-        <p>Plot is operated by Savannah Black, a sole trader trading as SUSUMU HOUSE, of Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. These Terms are governed by and construed in accordance with the laws of New South Wales, Australia, without regard to its conflict of law principles. You irrevocably submit to the exclusive jurisdiction of the courts of New South Wales, Australia for the resolution of any dispute arising out of or in connection with these Terms. For questions, contact us at contact@susumuhouse.com or via the app.</p>
+        <p>Plot is operated by Savannah Black, Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. These Terms are governed by and construed in accordance with the laws of New South Wales, Australia, without regard to its conflict of law principles. You irrevocably submit to the exclusive jurisdiction of the courts of New South Wales, Australia for the resolution of any dispute arising out of or in connection with these Terms. For questions, contact us at contact@theplot.tv or via the app.</p>
       </div>
     </div>
   );
