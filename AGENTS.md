@@ -304,6 +304,15 @@ So:
   migration you remember. `select pg_get_functiondef(oid) from pg_proc where proname = '…'`.
 - `pnpm run migrations:check` fails the build if a redefinition changes the `ON CONFLICT`
   target. If the change is deliberate, add `-- redefines: <fn> (…why…)` to the migration.
+- **Expand, then contract.** `pnpm run migrations:contract` (CI) fails a new or changed
+  migration that drops, renames or retypes a table, column, view, function, type or enum
+  value while the code on `main` (`apps/`, `packages/`, `supabase/functions/`), a SQL
+  function body or a cron job still names it. It also stops a new `not null` column with
+  no default, or `set not null`, on an existing table. Add the new thing and move the code
+  first; remove the old thing in a later migration, after that code has shipped (and, for
+  anything mobile read, after old iPhone builds stop mattering). When you have done that,
+  acknowledge each name: `-- contracts: <name> (why nothing deployed still uses it)`.
+  See `docs/ops/migration-contract.md`.
 - `pnpm run db:write-paths` checks the live database: every trigger function's upsert key
   must resolve against a real constraint, and every table it references must exist. Runs
   daily via `.github/workflows/db-write-paths.yml` and on any PR touching migrations.

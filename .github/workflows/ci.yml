@@ -122,6 +122,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm run migrations:check
+          pnpm run migrations:contract
           pnpm run db:block-clause
           pnpm run copy:check
           pnpm run core:check
