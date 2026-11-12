@@ -1,3 +1,4 @@
+/* global process */
 import { test, expect } from '@playwright/test';
 
 // Set ACTIVATION_NUDGE_SHOTS to a folder to also save the review screenshots.

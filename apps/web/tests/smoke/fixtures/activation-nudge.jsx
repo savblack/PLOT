@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- a smoke fixture page, never hot-reloaded */
 // The real AppShell and Home top cards (and History's empty page) for a new
 // account, for the empty-library nudge smoke test. No live accounts: an
 // in-memory Supabase with no history and no import jobs. ?titles=1 gives the
