@@ -1157,7 +1157,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
                 <span className="add-list-cover" aria-hidden="true"><i /><i /><i /></span>
                 <span className="add-list-copy">
                   <strong>{list.name}</strong>
-                  <small>{(list.items || []).length} items</small>
+                  <small>{MEDIA.titleCount((list.items || []).length)}</small>
                 </span>
                 {/* Shared lists sit among yours, marked by who is on them (canvas A6). */}
                 {SHOW_WATCH_TOGETHER && isSharedList(list, user?.id) && (

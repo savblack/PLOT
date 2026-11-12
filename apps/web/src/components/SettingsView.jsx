@@ -366,10 +366,14 @@ function TimezonePicker({ current, onSave, onClose }) {
 // channelsOnly: when true, fetches only free/ad-supported broadcast channels (not subscription streaming)
 // limit: max providers shown when channelsOnly is false (30 for streaming, null = all)
 function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit = 30, channelsOnly = false }) {
+  // Snapshot the saved picks at open: the parent re-renders while this is open.
+  const [initial] = useState(selected);
   const [all,    setAll]    = useState([]);
   const [chosen, setChosen] = useState(selected.map(p => p.id));
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState(null);
 
   useEffect(() => {
     if (channelsOnly) {
@@ -387,23 +391,46 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
   }, [region, limit, channelsOnly]);
 
   const toggle = (id) => {
-    const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
-    setChosen(next);
-    const providers = all
-      .filter(p => next.includes(p.provider_id))
+    setChosen(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  // Nothing is kept until Save: the picks are a draft while the sheet is open,
+  // and Cancel leaves them as they were. A pick that is not in the loaded list
+  // (another region's service) is kept as it was rather than dropped.
+  const initialIds = initial.map(p => p.id);
+  const dirty = chosen.length !== initialIds.length || chosen.some(id => !initialIds.includes(id));
+
+  const handleSave = async () => {
+    if (saving || loading) return;
+    if (!dirty) { onClose(); return; }
+    const loaded = all
+      .filter(p => chosen.includes(p.provider_id))
       .map(p => ({ id: p.provider_id, name: p.provider_name, logo_path: p.logo_path }));
-    onSave(providers);
+    const kept = initial.filter(p => chosen.includes(p.id) && !loaded.some(l => l.id === p.id));
+    setSaving(true);
+    setError(null);
+    // onSave resolves true or false. On failure the sheet stays open and says
+    // so here, because the page's own error banner is hidden behind it.
+    const ok = await onSave([...kept, ...loaded]).catch(() => false);
+    if (ok) { onClose(); return; }
+    setError(SETTINGS_VIEW.errors.failedToSaveStreamingPlatforms);
+    setSaving(false);
   };
 
   const visible = search.trim()
     ? all.filter(p => p.provider_name.toLowerCase().includes(search.trim().toLowerCase()))
     : all;
 
-  const close = useStableClose(onClose);
+  const close = useStableClose(onClose, saving);
 
-  // Each tap saves, so the header's word is Done, not Cancel.
   return (
-    <ResponsiveDialog title={title} onClose={close} closeLabel={COMMON.done} tall>
+    <ResponsiveDialog
+      title={title}
+      onClose={close}
+      tall
+      footer={<DialogActions busy={saving} error={error}
+        primary={{ label: saving ? COMMON.saving : COMMON.save, onClick: handleSave, disabled: loading }} />}
+    >
       {loading ? (
         <div className="loading-state"><PlotLoader size="sm" /></div>
       ) : (
@@ -461,28 +488,54 @@ function ProviderPicker({ title, hint, region, selected, onSave, onClose, limit 
 /* ── Genre picker modal ── */
 function GenrePicker({ selected, onSave, onClose }) {
   const { genres: allGenres, loading, error, retry } = useGenres();
+  // Snapshot the saved genre names at open: the parent re-renders while this is open.
+  const [initial] = useState(selected);
   const [chosen, setChosen] = useState(
-    allGenres.filter(g => selected.includes(g.name)).map(g => g.id)
+    allGenres.filter(g => initial.includes(g.name)).map(g => g.id)
   );
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   useEffect(() => {
     if (allGenres.length === 0) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- seed local selection once genres load
-    setChosen(allGenres.filter(g => selected.includes(g.name)).map(g => g.id));
+    setChosen(allGenres.filter(g => initial.includes(g.name)).map(g => g.id));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-seed when the genre list itself loads
   }, [allGenres.length]);
 
   const toggle = (id) => {
-    const next = chosen.includes(id) ? chosen.filter(i => i !== id) : [...chosen, id];
-    setChosen(next);
-    onSave(allGenres.filter(g => next.includes(g.id)).map(g => g.name));
+    setChosen(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  const close = useStableClose(onClose);
+  // Nothing is kept until Save: the picks are a draft while the sheet is open,
+  // and Cancel leaves them as they were.
+  const chosenNames = allGenres.filter(g => chosen.includes(g.id)).map(g => g.name);
+  const knownInitial = initial.filter(n => allGenres.some(g => g.name === n));
+  const dirty = chosenNames.length !== knownInitial.length || chosenNames.some(n => !knownInitial.includes(n));
+  const canSave = !loading && !error;
 
-  // Each tap saves, so the header's word is Done, not Cancel.
+  // Same contract as ProviderPicker: onSave resolves true or false, and the
+  // sheet stays open and says so on failure.
+  const handleSave = async () => {
+    if (saving || !canSave) return;
+    if (!dirty) { onClose(); return; }
+    setSaving(true);
+    setSaveError(null);
+    const ok = await onSave(chosenNames).catch(() => false);
+    if (ok) { onClose(); return; }
+    setSaveError(SETTINGS_VIEW.errors.failedToSaveGenres);
+    setSaving(false);
+  };
+
+  const close = useStableClose(onClose, saving);
+
   return (
-    <ResponsiveDialog title={SETTINGS_VIEW.integrations.genresLabel} onClose={close} closeLabel={COMMON.done}>
+    <ResponsiveDialog
+      title={SETTINGS_VIEW.integrations.genresLabel}
+      onClose={close}
+      footer={<DialogActions busy={saving} error={saveError}
+        primary={{ label: saving ? COMMON.saving : COMMON.save, onClick: handleSave, disabled: !canSave }} />}
+    >
       {/* Keyed off `loading`, not `allGenres.length` — an empty list used to
           be indistinguishable from "still fetching", so a failed load left
           this sheet spinning forever with no way to recover. */}
@@ -1200,6 +1253,7 @@ export default function SettingsView() {
     setSavingProviders(false);
 
     if (error) {
+      setProviderDraft(null);
       setActionError(error.message || SETTINGS_VIEW.errors.failedToSaveStreamingPlatforms);
       return false;
     }
@@ -1219,6 +1273,7 @@ export default function SettingsView() {
     setSavingGenres(false);
 
     if (error) {
+      setGenreDraft(null);
       setActionError(error.message || SETTINGS_VIEW.errors.failedToSaveGenres);
       return false;
     }
@@ -2235,10 +2290,7 @@ export default function SettingsView() {
           region={region}
           selected={providers}
           onSave={saveProviders}
-          onClose={() => {
-            setShowProviders(false);
-            if (!savingProviders) setProviderDraft(null);
-          }}
+          onClose={() => setShowProviders(false)}
         />
       )}
 
@@ -2247,10 +2299,7 @@ export default function SettingsView() {
         <GenrePicker
           selected={genres}
           onSave={saveGenres}
-          onClose={() => {
-            setShowGenres(false);
-            if (!savingGenres) setGenreDraft(null);
-          }}
+          onClose={() => setShowGenres(false)}
         />
       )}
 

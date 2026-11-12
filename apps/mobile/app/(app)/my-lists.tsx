@@ -8,7 +8,7 @@ import { arrangeByMyListsOrder, normalizeUiPrefs } from '@plot/core/uiPrefs.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity,
-  Modal, StyleSheet, Dimensions, Alert, LayoutAnimation,
+  Modal, StyleSheet, Dimensions, Alert,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
@@ -31,11 +31,10 @@ import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
 import { favoriteWords } from '../../lib/spelling';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import CollapsibleSection from '../../components/CollapsibleSection';
-import HeaderRow, { HeaderRowLabel, SCREEN_HEADER_H } from '../../components/HeaderRow';
+import { SCREEN_HEADER_H } from '../../components/ScreenHeaderBar';
 import ListCover, { NewListCover, COVER_GAP } from '../../components/ListCover';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { titleCount } from '@plot/core/listCollections.js';
-import SectionToggleIcon from '../../components/SectionToggleIcon';
 import SelectCircle from '../../components/SelectCircle';
 import KebabMenu, { KebabMenuItem } from '../../components/KebabMenu';
 import SearchPickModal from '../../components/SearchPickModal';
@@ -54,10 +53,10 @@ import { useLocalSearchParams, usePathname, useRouter, type Href } from 'expo-ro
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import HistorySection from '../../components/HistorySection';
-import { groupEntriesByMonth, monthLabel } from '@plot/core/history.js';
+import { groupEntriesByMonth } from '@plot/core/history.js';
 import { filterEntries } from '@plot/core/historyStats.js';
 import { drilldownParams, parseDrilldown, drilldownFilter, drilldownEventProps, type Drilldown } from '@plot/core/historyDrilldown.js';
-import { getSectionOpen, setSectionOpen } from '../../lib/sectionOpenState';
+import { getSectionOpen } from '../../lib/sectionOpenState';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { displayPosterPath } from '@plot/core/artwork.js';
@@ -136,7 +135,6 @@ type ListedTitle = {
 // diverge on which tabs exist or their order. Favourites is region-spelled
 // at the call site — it carries a null label here for exactly that reason.
 const TABS = MY_LISTS_TABS;
-const MY_LISTS_ALL_LABEL = 'All';
 
 // Release / streaming countdown chip — ports web countdownChip(); maps onto
 // the shared status-colour tokens (today / tomorrow / soon / muted).
@@ -524,13 +522,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   // History until the sheet closes, so a cold link does not land on All.
   const viewTab = sharePreset ? 'history' : tab;
   const [typeFilters,  setTypeFilters]  = useState<string[]>([]);
-  const today = useMemo(() => new Date(), []);
-  const [historyYear,  setHistoryYear]  = useState(today.getFullYear());
-  const [historyMonth, setHistoryMonth] = useState(today.getMonth());
-  // Month groups come and go with the data, so they can't be driven by the
-  // static sectionsOpen map — the bulk control signals them instead.
-  const [historyExpand, setHistoryExpand] = useState<{ token: number; open: boolean } | null>(null);
-  const [historyOpen,   setHistoryOpen]   = useState(true);
   // core's filterByType passes null/undefined straight through, which is the
   // right contract for it but not worth threading through every call site here.
   const byType = (items: any[]): any[] => (filterByType(items, typeFilters) ?? []) as any[];
@@ -698,25 +689,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   // same way, since a full watch history would bury every other section.
   const isHistory     = viewTab === 'history';
 
-  const historyIndex = historyGroups.findIndex(
-    (g: any) => g.year === historyYear && g.month === historyMonth);
-  const canGoOlder = historyIndex === -1 ? historyGroups.length > 0 : historyIndex < historyGroups.length - 1;
-  const canGoNewer = historyIndex > 0;
-
-  const jumpTo = (g: any) => {
-    if (!g) return;
-    setHistoryYear(g.year);
-    setHistoryMonth(g.month);
-  };
-
-  // Expand/collapse-all scopes itself to the active tab, exactly as web does:
-  // every section on "All", or just the one section the current tab shows
-  // (tab ids match section ids 1:1). Web: MyListsView's relevantSectionIds.
-  const relevantSectionIds = isAll
-    ? [...LIST_SECTION_IDS, SMART_SECTION_ID, SHARED_SECTION_ID]
-    : tab === 'lists'
-      ? ['lists', SMART_SECTION_ID, SHARED_SECTION_ID]
-      : LIST_SECTION_IDS.filter(id => id === tab);
   const allManualLists = customLists.lists.filter((list: { rules?: unknown }) => !isSmartList(list));
   // Shared lists get their own section, split by who started them, as on web.
   // Off with Watch together, when every list is simply one of yours.
@@ -768,27 +740,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     />
   );
   const keptNote = rulesKept ? upgradeSheetContent('smartLists', { kept: true })?.kept ?? null : null;
-  const sectionsOpenForView = isHistory
-    ? historyOpen
-    : relevantSectionIds.length > 0 && relevantSectionIds.every(id => isSectionOpen(id));
-  const toggleSectionsForView = () => {
-    // History's sections are the month groups, which own their own state —
-    // bump a token so they re-apply even when the value hasn't changed.
-    if (isHistory) {
-      const next = !historyOpen;
-      setHistoryOpen(next);
-      setHistoryExpand({ token: Date.now(), open: next });
-      return;
-    }
-    const next = !sectionsOpenForView;
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setSectionsOpen(prev => ({ ...prev, ...Object.fromEntries(relevantSectionIds.map(id => [id, next])) }));
-    const synced = relevantSectionIds.map(id => FOLD_SYNCED[id]).filter(Boolean);
-    if (synced.length) ui.foldMyLists(synced, !next);
-    // CollapsibleSection persists on its own toggle, but a bulk change never
-    // goes through it — write these directly or the choice is forgotten.
-    relevantSectionIds.forEach(id => setSectionOpen(id, next));
-  };
 
   // The Show choices: every list tab except History, which has its own screen. The
   // favourites tab carries a null label in the shared list (region-spelled).
@@ -798,19 +749,12 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     normalizeUiPrefs(profile?.ui_prefs).myLists.order, [...LIST_SECTION_IDS, SHARED_SECTION_ID, SMART_SECTION_ID], sharedSectionOf)];
   const inOrder = (nodes: Record<string, ReactNode>) => sectionOrder.map(id => <Fragment key={id}>{nodes[id]}</Fragment>);
 
-  // "6 lists · 24 titles", the line web's My Lists leads with: Watchlist,
-  // Favorites, every custom and shared list, and smart lists, with the titles
-  // on them (a smart list holds none until it is opened).
-  const listsSummary = CUSTOM_LISTS.summary(
-    1 + (FAVOURITES_ENABLED ? 1 : 0) + allManualLists.length + smartRows.length,
-    sortedSaved.length + (FAVOURITES_ENABLED ? favList.length : 0)
-      + allManualLists.reduce((n: number, list: { items?: unknown[] }) => n + (list.items?.length ?? 0), 0),
-  );
   const listTabs = TABS.filter(t => t.id !== 'history').map(t => ({ id: t.id, label: t.label ?? fw.plural }));
   const searchPlaceholder = isHistory ? HISTORY_VIEW.searchPlaceholder : CUSTOM_LISTS.searchPlaceholder;
   const searchShown = searchOpen || listQuery.length > 0;
-  // Title bar, one 40pt row of controls, and the search field only while open.
-  // Calendar's header is the same height, so the three pages line up.
+  // The title bar alone, as on Home, Calendar and Settings, plus the search
+  // field while it is open. The page's other controls live in the page: the
+  // filter in the bar, Customize at the foot of the All view.
   const HEADER_H = insets.top + (searchShown ? SCREEN_HEADER_H + SEARCH_FIELD_H + spacing.sm : SCREEN_HEADER_H);
 
   return (
@@ -1032,7 +976,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
           <HistorySection
             groups={historyGroups}
             hasAnyEntries={(history.entries || []).length > 0}
-            expandSignal={historyExpand}
+            expandSignal={null}
             sharePreset={sharePreset}
             drilldown={drilldown}
             onDrilldown={premium ? setDrilldown : undefined}
@@ -1152,6 +1096,11 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         }) : null}
         </>
         )}
+
+        {/* Customize sits at the foot of the page, where Home has it. */}
+        {!isHistory && isAll && !openList && !searching && (
+          <TextLink quiet label={DISCOVER_VIEW.customize.action} accessibilityLabel={CUSTOM_LISTS.sections.title} onPress={() => router.push('/(app)/my-lists-layout' as Href)} style={styles.customize} />
+        )}
       </ScrollView>
 
       {/* Fixed blurred header */}
@@ -1190,68 +1139,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                     },
                   ]}
                 />
-          }
-        />
-        {/* Tabs and the filter/collapse controls share one row, as on web —
-            the old second row of All/Movies/TV chips is gone. */}
-        <HeaderRow
-          lead={isHistory ? (
-            // History's title is already in the bar above, so this row leads
-            // with the month switcher instead of repeating the page name.
-            <>
-              {!searching && historyGroups.length > 0 && (
-              <View style={styles.monthNav}>
-                <TouchableOpacity
-                  onPress={() => jumpTo(historyIndex === -1 ? historyGroups[0] : historyGroups[historyIndex + 1])}
-                  disabled={!canGoOlder}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Jump to an older month"
-                >
-                  <IconChevronLeft size={16} color={canGoOlder ? colors.textSecondary : colors.borderStrong} />
-                </TouchableOpacity>
-                <Text style={styles.monthNavLabel}>{monthLabel(historyYear, historyMonth, 'short')}</Text>
-                <TouchableOpacity
-                  onPress={() => jumpTo(historyGroups[historyIndex - 1])}
-                  disabled={!canGoNewer}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Jump to a more recent month"
-                >
-                  <IconChevronRight size={16} color={canGoNewer ? colors.textSecondary : colors.borderStrong} />
-                </TouchableOpacity>
-              </View>
-              )}
-            </>
-          ) : (
-            <HeaderRowLabel>{openList ? openList.name : isAll ? listsSummary : (listTabs.find(t => t.id === tab)?.label ?? MY_LISTS_ALL_LABEL)}</HeaderRowLabel>
-          )}
-          actions={
-            <>
-            {/* Customize sits in the top row on the All view, as on web's
-                phone layout, so it is reachable without scrolling. */}
-            {!isHistory && isAll && !openList && (
-              <TouchableOpacity onPress={() => router.push('/(app)/my-lists-layout' as Href)} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.sections.title}>
-                <Text style={styles.customizeText}>{DISCOVER_VIEW.customize.action}</Text>
-              </TouchableOpacity>
-            )}
-            {/* ‹ Mar 2026 › — jumps to the adjacent month that actually has
-                entries, so empty months are never a dead step. */}
-            {!searching && (relevantSectionIds.length > 0 || (isHistory && historyGroups.length > 0)) && (
-              <TouchableOpacity
-                onPress={toggleSectionsForView}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isAll
-                    ? (sectionsOpenForView ? MEDIA.collapseAllSections : MEDIA.expandAllSections)
-                    : (sectionsOpenForView ? 'Collapse section' : 'Expand section')
-                }
-              >
-                <SectionToggleIcon collapse={sectionsOpenForView} />
-              </TouchableOpacity>
-            )}
-            </>
           }
         />
         {searchShown && (
@@ -1668,7 +1555,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   topSwitchText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textMuted },
   topSwitchTextOn: { color: colors.textPrimary },
   sharedGroupLabel: { marginHorizontal: spacing.xl, marginTop: spacing.md, marginBottom: spacing.sm, fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.9, textTransform: 'uppercase', color: colors.textMuted },
-  customizeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textMuted },
+  customize: { alignSelf: 'center', marginTop: spacing.xl },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   emptyAddBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },

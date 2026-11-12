@@ -8,6 +8,8 @@
 // repeat identically across those views.
 
 export const MEDIA = {
+  /** How many titles a list holds: "1 title", "6 titles". */
+  titleCount: (n) => `${n} ${n === 1 ? 'title' : 'titles'}`,
   movie: 'Movie',
   movies: 'Movies',
   seeAll: 'See all',
