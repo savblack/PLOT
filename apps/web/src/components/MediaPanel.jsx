@@ -1,6 +1,7 @@
 import { useEpisodeWatches, useSpecialEpisodeWatches } from '@plot/core/useEpisodeWatches.js';
 import { EPISODE_SEARCH_LIMIT, useEpisodeSearch } from '@plot/core/episodeSearch.js';
-import { IconSearch } from './navIcons.jsx';
+import SearchField from './SearchField.jsx';
+import EmptyState from './EmptyState.jsx';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet.jsx';
@@ -43,6 +44,7 @@ import { showStreamingArrivalAsk } from '@plot/core/useStreamingAlerts.js';
 import { CastFollowCard, CrewFollowRow, PersonFollow } from './PeopleFollow.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { PEOPLE } from '@plot/core/copy/people.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
@@ -546,17 +548,14 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
     <div>
       <EpisodeRatingsEntry tvId={tvId} details={details} />
       {seasons.length > 1 && (
-        <label className="hist-search ep-search">
-          <IconSearch />
-          <input
-            type="search"
-            value={episodeQuery}
-            onChange={e => setEpisodeQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Escape' && episodeQuery) { e.stopPropagation(); setEpisodeQuery(''); } }}
-            placeholder={MEDIA_PANEL.searchEpisodesPlaceholder}
-            aria-label={MEDIA_PANEL.searchEpisodesLabel}
-          />
-        </label>
+        <SearchField
+          className="hist-search ep-search"
+          value={episodeQuery}
+          onChange={setEpisodeQuery}
+          onKeyDown={e => { if (e.key === 'Escape' && episodeQuery) { e.stopPropagation(); setEpisodeQuery(''); } }}
+          placeholder={MEDIA_PANEL.searchEpisodesPlaceholder}
+          ariaLabel={MEDIA_PANEL.searchEpisodesLabel}
+        />
       )}
       {search.active ? (
         <EpisodeSearchResults search={search} onOpen={openSearchResult} />
@@ -1143,9 +1142,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
         <div className="responsive-dialog-scroll add-list-rows">
           <div className="add-list-section-label">Your lists</div>
           {lists.length === 0 && (
-            <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              No lists yet
-            </div>
+            <EmptyState body={CUSTOM_LISTS.emptyPrompts.lists.title} />
           )}
           {lists.map(list => {
             const checked = isInList(list.id, itemId);

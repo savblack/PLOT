@@ -20,6 +20,7 @@ import PlotLogo from './PlotLogo.jsx';
 import PremiumGateButton from './PremiumGateButton.jsx';
 import { EVENTS, track } from '../lib/analytics.js';
 import { Tag } from './Chip.jsx';
+import SearchField from './SearchField.jsx';
 
 // The hub and start page open the upgrade sheet from a button; the overlap
 // page reports this itself when it loads locked.
@@ -101,8 +102,7 @@ export function FriendSearch({ sent, onInvite, onDark = false }) {
 
   return (
     <div className={`wt-find${onDark ? ' wt-find--dark' : ''}`}>
-      <label className="wt-sr" htmlFor="wt-find-search">{S.findLabel}</label>
-      <input id="wt-find-search" type="search" className="wt-search" placeholder={T.invite.search} value={query} onChange={e => setQuery(e.target.value)} autoComplete="off" />
+      <SearchField id="wt-find-search" className="wt-search-field" placeholder={T.invite.search} ariaLabel={S.findLabel} value={query} onChange={setQuery} />
       {failed && <p className="wt-error" role="alert">{T.errors.generic}</p>}
       {searching && results && (
         <div className="wt-find-results">

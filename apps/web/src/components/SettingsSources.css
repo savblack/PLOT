@@ -79,10 +79,8 @@
 @media (prefers-reduced-motion: reduce) { .ss-chip--run i { animation: none; border-top-color: var(--accent); } }
 
 /* Empty state. */
-.ss-empty { text-align: center; padding: 26px 16px 22px; }
-.ss-empty-logos { display: flex; justify-content: center; gap: 4px; margin-bottom: 12px; }
-.ss-empty-title { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
-.ss-empty-body { margin: 6px auto 14px; max-width: 420px; font-size: 13.5px; line-height: 1.45; color: var(--text-secondary); }
+.ss-empty { padding: 26px 16px 22px; }
+.ss-empty-logos { display: flex; justify-content: center; gap: 4px; }
 
 /* Add a source dialog. */
 .ss-add-sub { margin: 0 0 4px; font-size: 13.5px; color: var(--text-secondary); }

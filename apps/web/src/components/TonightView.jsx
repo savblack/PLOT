@@ -23,6 +23,7 @@ import './TonightView.css';
 import { SaveButton, FavoriteButton } from './TitleActions.jsx';
 import PremiumMark from './PremiumMark.jsx';
 import { Tag } from './Chip.jsx';
+import EmptyState from './EmptyState.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 
 /* Just Decide. Phone: one column, a Filters panel that folds away, and a
@@ -498,10 +499,7 @@ function PickCard({ item, index, onOpen, reveal, actions }) {
 function Results({ picker, onOpen, reveal, actions, onKeepFinding }) {
   if (picker.phase !== 'results') {
     return (
-      <div className="empty-state tonight-empty">
-        <div className="empty-title">{picker.phase === 'error' ? T.loadError : T.emptyTitle}</div>
-        {picker.phase === 'empty' && <div className="empty-body">{T.emptyBody}</div>}
-      </div>
+      <EmptyState className="tonight-empty" title={picker.phase === 'error' ? T.loadError : T.emptyTitle} body={picker.phase === 'empty' ? T.emptyBody : undefined} />
     );
   }
   const [top, ...rest] = picker.results;

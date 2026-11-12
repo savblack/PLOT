@@ -8,6 +8,7 @@ import { IconChevronLeft, IconChevronRight } from './navIcons.jsx';
 import ShareCard from './ShareCard.jsx';
 import { useApp } from '../hooks/useApp.js';
 import Spinner from './Spinner.jsx';
+import Segmented from './Segmented.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { useFocusCancel, useStableClose } from '../hooks/useDialogClose.js';
 import './ShareCardSheet.css';
@@ -201,13 +202,12 @@ export default function ShareCardSheet({ cards, preset, profile, source, loading
     <ResponsiveDialog title={T.sheetTitle} onClose={close} size="wide" tall zIndex={2000}>
       <div className="scs" ref={bodyRef}>
         <div className="scs-head">
-          <div className="cal-scope" role="tablist" aria-label="Format">
-            {['post', 'story'].map(f => (
-              <button key={f} type="button" role="tab" className={`cal-scope-btn${format === f ? ' active' : ''}`} aria-selected={format === f} onClick={() => setFormat(f)}>
-                {f === 'post' ? T.post : T.story}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            options={[{ value: 'post', label: T.post }, { value: 'story', label: T.story }]}
+            value={format}
+            onChange={setFormat}
+            ariaLabel="Format"
+          />
         </div>
 
         <div className="scs-stage" ref={stageRef}>

@@ -9,6 +9,7 @@ import { useNotifications } from '../hooks/useNotifications.js';
 import { useFollowRequests } from '../hooks/useFollowRequests.js';
 import { useWatchTogether } from '@plot/core/useWatchTogether.js';
 import { AcceptDialog } from './WatchTogetherParts.jsx';
+import EmptyState from './EmptyState.jsx';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { COMMON } from '../copy/common.js';
 import { notificationPhrase, alertPhrase, alertBadge, ALERT_NOTIFICATIONS, NOTIFICATIONS_EMPTY, NOTIFICATIONS_PAGE as T, titleBadge, titleFallback, titlePhrase, SMART_LIST_DIGEST } from '@plot/core/copy/notifications.js';
@@ -95,7 +96,7 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
         </span>
       </div>}
     {loading ? <p className="hist-card-note notif-status" role="status">{COMMON.loading}</p>
-      : empty ? <div className="empty-state"><div className="empty-title">{NOTIFICATIONS_EMPTY.title}</div><div className="empty-body">{NOTIFICATIONS_EMPTY.body}</div></div>
+      : empty ? <EmptyState title={NOTIFICATIONS_EMPTY.title} body={NOTIFICATIONS_EMPTY.body} />
       : <div className="notif-body">
         {moment && <section className="hist-card notif-moment" aria-label={SHARE_CARDS.monthWrapTitle(moment.monthName)}>
           <div className="notif-moment-text">

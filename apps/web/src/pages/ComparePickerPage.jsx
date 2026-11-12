@@ -2,6 +2,8 @@ import './TasteOverlapPage.css';
 import { useId, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import LoginRedirect from '../components/LoginRedirect.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import SearchField from '../components/SearchField.jsx';
 import { useApp } from '../hooks/useApp.js';
 import { useCompareCandidates } from '@plot/core/useTasteOverlap.js';
 import { canCompare } from '@plot/core/tasteOverlap.js';
@@ -61,17 +63,13 @@ export default function ComparePickerPage() {
         <p className="to-intro">{T.pickerIntro}</p>
       </header>
 
-      <label htmlFor={searchId} className="to-visually-hidden">{T.searchLabel}</label>
-      <div className="to-search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-        <input id={searchId} type="search" autoComplete="off" placeholder={T.searchPlaceholder} value={query} onChange={e => setQuery(e.target.value)} />
-      </div>
+      <SearchField id={searchId} placeholder={T.searchPlaceholder} ariaLabel={T.searchLabel} value={query} onChange={setQuery} />
 
       <h2 className="to-group-label">{isSearching ? T.searchResults : T.peopleYouFollow}</h2>
       {busy ? (
         <div className="to-loading"><PlotLoader /></div>
       ) : list.length === 0 ? (
-        <p className="to-empty">{isSearching ? T.noResults : T.followNobody}</p>
+        <EmptyState body={isSearching ? T.noResults : T.followNobody} />
       ) : (
         <ul className="to-picks">
           {list.map(p => <PersonRow key={p.id} person={p} />)}

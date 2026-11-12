@@ -14,28 +14,16 @@ import { MAX_HOME_PINS } from '@plot/core/homeLayout.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { useStableClose } from '../hooks/useDialogClose.js';
 import ReorderRows, { Chevron } from './ReorderRows.jsx';
+import Segmented from './Segmented.jsx';
 import './HomeLayoutSheet.css';
 
 const C = DISCOVER_VIEW.customize;
 
-function Segmented({ label, value, options, names, onChange }) {
+function SegmentedRow({ label, value, options, names, onChange }) {
   return (
     <div className="home-layout-seg-row">
       <span className="home-layout-seg-label">{label}</span>
-      <div className="home-layout-seg" role="radiogroup" aria-label={label}>
-        {options.map(option => (
-          <button
-            key={option}
-            type="button"
-            role="radio"
-            aria-checked={value === option}
-            className={`home-layout-seg-btn${value === option ? ' is-active' : ''}`}
-            onClick={() => onChange(option)}
-          >
-            {names[option]}
-          </button>
-        ))}
-      </div>
+      <Segmented options={options.map(option => ({ value: option, label: names[option] }))} value={value} onChange={onChange} ariaLabel={label} />
     </div>
   );
 }
@@ -96,8 +84,8 @@ export default function HomeLayoutSheet({
         {error && <p className="home-layout-sheet-error" role="alert">{C.saveError}</p>}
 
         <h3 className="home-layout-heading">{C.lookTitle}</h3>
-        <Segmented label={C.densityLabel} value={prefs.density} options={UI_DENSITIES} names={C.density} onChange={onDensity} />
-        <Segmented label={C.cardStyleLabel} value={prefs.cardStyle} options={CARD_STYLES} names={C.cardStyle} onChange={onCardStyle} />
+        <SegmentedRow label={C.densityLabel} value={prefs.density} options={UI_DENSITIES} names={C.density} onChange={onDensity} />
+        <SegmentedRow label={C.cardStyleLabel} value={prefs.cardStyle} options={CARD_STYLES} names={C.cardStyle} onChange={onCardStyle} />
 
         <h3 className="home-layout-heading">{C.pinsTitle}</h3>
         <p className="home-layout-sheet-intro home-layout-sub">{premium ? C.pinsBody : C.pinsLocked}</p>

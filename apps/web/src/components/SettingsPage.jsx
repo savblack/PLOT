@@ -12,7 +12,8 @@ import { Link } from 'react-router-dom';
 import { SETTINGS_SECTIONS, searchSettingsSections } from '@plot/core/settings.js';
 import { SETTINGS_VIEW as T } from '../copy/settingsView.js';
 import { COMMON } from '../copy/common.js';
-import { IconSearch } from './navIcons.jsx';
+import EmptyState from './EmptyState.jsx';
+import SearchField from './SearchField.jsx';
 import './SettingsPage.css';
 
 export function SettingsTextAction({ children, onClick, disabled = false, tone = 'default', label }) {
@@ -178,10 +179,7 @@ export default function SettingsPage({ section = 'account', onSection, onSignOut
   return (
     <div className="hist-page settings-page">
       <div className="hist-toolbar settings-toolbar">
-        <label className="hist-search settings-search">
-          <IconSearch />
-          <input type="search" aria-label={T.page.search} placeholder={T.page.search} value={query} onChange={event => setQuery(event.target.value)} />
-        </label>
+        <SearchField className="hist-search settings-search" value={query} onChange={setQuery} placeholder={T.page.search} ariaLabel={T.page.search} />
       </div>
 
       <div className="cal-body">
@@ -212,7 +210,7 @@ export default function SettingsPage({ section = 'account', onSection, onSignOut
 
           {searching ? (
             <div className="settings-search-results">
-              {!matches.length && <p role="status">{T.page.noResults}</p>}
+              {!matches.length && <EmptyState role="status" body={T.page.noResults} />}
               {matches.map(item => (
                 <button type="button" key={item.id} onClick={() => select(item.id)}><strong>{item.title}</strong><span>{item.description}</span></button>
               ))}

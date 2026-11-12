@@ -24,6 +24,7 @@ import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { SaveButton, FavoriteButton } from './TitleActions.jsx';
 import Icon from './Icon.jsx';
+import EmptyState from './EmptyState.jsx';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { clampToSentences } from '@plot/core/sentences.js';
@@ -789,10 +790,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
 
   if (!hasContent) {
     return (
-      <div className="empty-state" style={{ marginTop: '1rem' }}>
-        <div className="empty-title">Discovery unavailable</div>
-        <div className="empty-body">Trending and platform picks could not load right now. Try again shortly.</div>
-      </div>
+      <EmptyState className="empty-state--below" title="Discovery unavailable" body="Trending and platform picks could not load right now. Try again shortly." />
     );
   }
 

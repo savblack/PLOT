@@ -22,7 +22,9 @@ import { displayPosterPath, feedDisplayItem } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import SideFilters from './SideFilters.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
-import { IconSearch } from './navIcons.jsx';
+import EmptyState from './EmptyState.jsx';
+import Segmented from './Segmented.jsx';
+import SearchField from './SearchField.jsx';
 import { FollowPill } from './PeopleFollow.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import Icon from './Icon.jsx';
@@ -93,10 +95,7 @@ function FollowSearch({ follow }) {
   const shown = query.trim().length >= 2 ? results : null;
   return (
     <div className="people-search">
-      <label className="hist-search people-search-field">
-        <IconSearch />
-        <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder={P.page.searchPlaceholder} aria-label={P.page.searchLabel} />
-      </label>
+      <SearchField className="hist-search people-search-field" value={query} onChange={setQuery} placeholder={P.page.searchPlaceholder} ariaLabel={P.page.searchLabel} />
       {shown && (
         <div className="people-search-results">
           {shown.length === 0 && <p className="people-muted">{P.page.noResults}</p>}
@@ -134,10 +133,15 @@ export function YourPeoplePage({ follows, items, today, loading, view, setView, 
     <div className="hist-page people-page">
       <div className="hist-toolbar people-toolbar">
         <span className="hist-toolbar-sub">{P.page.subtitle}</span>
-        <div className="cal-scope" role="group" aria-label={P.page.title}>
-          <button type="button" className={`cal-scope-btn${view === 'date' ? ' active' : ''}`} aria-pressed={view === 'date'} onClick={() => setView('date')}>{P.page.byDate}</button>
-          <button type="button" className={`cal-scope-btn${view === 'person' ? ' active' : ''}`} aria-pressed={view === 'person'} onClick={() => setView('person')}>{P.page.byPerson}</button>
-        </div>
+        <Segmented
+          options={[
+            { value: 'date', label: P.page.byDate },
+            { value: 'person', label: P.page.byPerson },
+          ]}
+          value={view}
+          onChange={setView}
+          ariaLabel={P.page.title}
+        />
       </div>
       <div className="cal-body">
         <aside className="cal-side people-side">
@@ -164,7 +168,7 @@ export function YourPeoplePage({ follows, items, today, loading, view, setView, 
           </section>
         </aside>
         <div className="cal-stream people-stream">
-          {!loading && follows.length === 0 && <div className="empty-state"><div className="empty-body">{P.page.empty}</div></div>}
+          {!loading && follows.length === 0 && <EmptyState body={P.page.empty} />}
           {!loading && follows.length > 0 && sections.length === 0 && <p className="people-muted">{P.page.nothing}</p>}
           {sections.map(section => (
             <section key={section.key} className="cal-stream-group">

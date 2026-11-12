@@ -19,6 +19,8 @@ import ConfirmModal from './ConfirmModal.jsx';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import DialogActions from './DialogActions.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
+import EmptyState from './EmptyState.jsx';
+import SearchField from './SearchField.jsx';
 import { DiscoverSectionHeader } from './DiscoverView.jsx';
 import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { CardGrid, ListCard, SelectCircle, WatchStatusChip } from './ListCards.jsx';
@@ -141,19 +143,11 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
               Search all
             </button>
           </div>
-          <input
-            className="search-input"
-            type="text"
+          <SearchField
             placeholder={tab === 'history' ? 'Filter your history…' : `Search ${listType === 'movies' ? 'movies' : 'TV shows'}…`}
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={setQuery}
             autoFocus
-            style={{
-              width: '100%', padding: '0.5rem 0.75rem',
-              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-              background: 'var(--bg)', color: 'var(--text-primary)',
-              fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
-            }}
           />
         </div>
 
@@ -165,22 +159,16 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
             <ModalResultRow key={entry.id} item={entry} onSelect={handleSelect} />
           ))}
           {tab === 'history' && !historyFiltered.length && !searching && (
-            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              No {listType === 'movies' ? 'movies' : 'TV shows'} in your history yet
-            </div>
+            <EmptyState body={`No ${listType === 'movies' ? 'movies' : 'TV shows'} in your history yet`} />
           )}
           {tab === 'search' && results.map(item => (
             <ModalResultRow key={item.id} item={item} onSelect={handleSelect} />
           ))}
           {tab === 'search' && !results.length && !searching && query.trim() && (
-            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              No results found
-            </div>
+            <EmptyState body="No results found" />
           )}
           {tab === 'search' && !query.trim() && (
-            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              Start typing to search
-            </div>
+            <EmptyState body="Start typing to search" />
           )}
         </div>
       </div>
@@ -265,18 +253,11 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
             <button className={`sub-tab-btn${tab === 'history' ? ' active' : ''}`} onClick={() => { setTab('history'); setQuery(''); }}>From history</button>
             <button className={`sub-tab-btn${tab === 'search' ? ' active' : ''}`} onClick={() => setTab('search')}>Search all</button>
           </div>
-          <input
-            type="text"
+          <SearchField
             placeholder={tab === 'history' ? 'Filter your history…' : 'Search movies & TV…'}
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={setQuery}
             autoFocus
-            style={{
-              width: '100%', padding: '0.5rem 0.75rem',
-              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-              background: 'var(--bg)', color: 'var(--text-primary)',
-              fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
-            }}
           />
         </div>
         <div className="responsive-dialog-scroll">
@@ -285,16 +266,16 @@ export function AddToFavoritesModal({ title = 'Add to Favorites', onAdd, onClose
             <ModalResultRow key={entry.id} item={entry} onSelect={handleSelect} />
           ))}
           {tab === 'history' && !historyFiltered.length && !searching && (
-            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Nothing in your history yet</div>
+            <EmptyState body="Nothing in your history yet" />
           )}
           {tab === 'search' && results.map(item => (
             <ModalResultRow key={item.id} item={item} onSelect={handleSelect} />
           ))}
           {tab === 'search' && !results.length && !searching && query.trim() && (
-            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No results found</div>
+            <EmptyState body="No results found" />
           )}
           {tab === 'search' && !query.trim() && (
-            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Start typing to search</div>
+            <EmptyState body="Start typing to search" />
           )}
         </div>
       </div>

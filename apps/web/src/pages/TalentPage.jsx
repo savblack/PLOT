@@ -8,6 +8,7 @@ import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from '../components/ArtworkSheet.jsx';
 import { tmdb } from '@plot/core/tmdb.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { TalentWork } from '../components/TalentCredits.jsx';
 import { PersonFollow } from '../components/PeopleFollow.jsx';
 import { dedupedActingCredits, shortBiography } from '../utils/talentCredits.js';
@@ -42,10 +43,8 @@ function TalentPageContent({ personId }) {
 
   if (!person && !error) return <div className="talent-page talent-page--loading"><LoadingSpinner /></div>;
   if (error) return (
-    <div className="talent-page talent-page--empty">
-      <h1>Couldn’t load talent</h1>
-      <p>Check your connection and try again.</p>
-      <button className="btn btn-ghost btn-sm" type="button" onClick={() => navigate(-1)}>Go back</button>
+    <div className="talent-page">
+      <EmptyState title="Couldn’t load talent" body="Check your connection and try again." action={<button className="btn btn-ghost btn-sm" type="button" onClick={() => navigate(-1)}>Go back</button>} />
     </div>
   );
 

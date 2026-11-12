@@ -34,6 +34,8 @@ const LIST_TYPE_ROWS = TYPE_ROWS.filter(r => r.id !== 'cinema');
 const ALL_LIST_TYPES = LIST_TYPE_ROWS.map(r => r.id);
 const STATUS_OPTIONS = LIST_STATUS_FILTER_IDS.map(id => ({ id, label: MEDIA.watchStatus[id] }));
 import KebabMenu from './KebabMenu.jsx';
+import EmptyState from './EmptyState.jsx';
+import SearchField from './SearchField.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 
 const GridIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>;
@@ -85,7 +87,7 @@ function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, 
           )}
           {/* Controls sit left of the search, as on Calendar and History. */}
           {headerActions && <div className="list-page-head-buttons">{headerActions}</div>}
-          <label className="hist-search list-page-search"><IconSearch /><input type="search" value={query} onChange={event => onQuery(event.target.value)} placeholder={CUSTOM_LISTS.searchThisList} aria-label={CUSTOM_LISTS.searchThisList} ref={searchRef} /></label>
+          <SearchField className="hist-search list-page-search" value={query} onChange={onQuery} placeholder={CUSTOM_LISTS.searchThisList} ariaLabel={CUSTOM_LISTS.searchThisList} inputRef={searchRef} />
         </div>
       </header>
       {lead && <div className="list-page-lead">{lead}</div>}
@@ -293,11 +295,12 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
     );
   } else {
     body = (
-      <div className="empty-state" style={{ marginTop: '1rem' }}>
-        <div className="empty-title">List not found</div>
-        <div className="empty-body">{FAVOURITES_ENABLED ? `${fw.plural}, ` : ''}Watchlist, your Top 5s and your own lists live on My Lists.</div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/my-lists')}>Back to My Lists</button>
-      </div>
+      <EmptyState
+        className="empty-state--below"
+        title="List not found"
+        body={`${FAVOURITES_ENABLED ? `${fw.plural}, ` : ''}Watchlist, your Top 5s and your own lists live on My Lists.`}
+        action={<button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/my-lists')}>Back to My Lists</button>}
+      />
     );
   }
 
