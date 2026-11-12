@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { HERO_POSTERS } from '../constants/heroPosters.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { track, resetAnalytics, EVENTS } from '../lib/analytics.js';
 import { _resetHistoryCache } from '@plot/core/useHistory.js';
@@ -8,6 +7,7 @@ import { clearCachedSession } from '../utils/sessionCache.js';
 import './AuthPage.css';
 import { loadSupabase } from '../utils/loadSupabase.js';
 import PlotLogo from '../components/PlotLogo.jsx';
+import AuthShelf from '../components/AuthShelf.jsx';
 
 // The marketing site doubles as the logged-out home.
 const MARKETING_URL = 'https://theplot.tv';
@@ -44,29 +44,16 @@ export default function LogoutPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const scrollPosters = [...HERO_POSTERS, ...HERO_POSTERS];
-
   return (
     <div className="auth-page auth-page--logout">
 
-      {/* ── Left: living poster wall ── */}
-      <div className="auth-visual" aria-hidden="true">
-        <div className="poster-track">
-          {scrollPosters.map((src, i) => (
-            <div key={i} className="poster-cell" style={{ backgroundImage: `url('${src}')` }} />
-          ))}
-        </div>
-        <div className="auth-visual-gradient" />
-        <div className="auth-visual-brand">
-          <span className="auth-visual-logo"><PlotLogo inherit /></span>
-          <span className="auth-visual-tagline">Your movie &amp; TV companion</span>
-        </div>
-      </div>
+      {/* ── Left: new this week ── */}
+      <AuthShelf />
 
       {/* ── Right: confirmation panel ── */}
       <div className="auth-panel">
         <Link to="/login" className="auth-panel-logo" aria-label="plot">
-          plot
+          <PlotLogo inherit aria-hidden="true" />
         </Link>
 
         <div className="auth-panel-body">
