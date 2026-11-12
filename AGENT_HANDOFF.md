@@ -20,10 +20,10 @@ Enable Google and Apple login in the mobile release configuration and verify the
 - `docs/ops/mobile-builds.md` records the current state.
 
 ## Next
-Install iOS build 6 on a physical iPhone. Complete Apple and Google sign-in, including return to `plot://auth/callback` and an authenticated session. Test Google sign-in on Android too. Do not submit or publish either build before those checks.
+Arrange an installable internal iOS build with the production provider settings, or obtain approval to submit build 6 to TestFlight. Complete Apple and Google sign-in on a physical iPhone, including return to `plot://auth/callback` and an authenticated session. Test Google sign-in on Android too. Do not publish either build before those checks.
 
 ## Blockers and approvals
-No physical device is connected to this workspace, so interactive sign-in could not be completed. Savannah explicitly authorized enabling both logins and verification in this chat. No submission or publication was authorized. No live user records were changed.
+No physical device is connected to this workspace, and the completed iOS production archive is store-distribution only, so interactive sign-in could not be completed. Savannah explicitly authorized enabling both logins and verification in this chat. No submission or publication was authorized. No live user records were changed.
 
 ## Latest pushed commit
 fb374c820 (initial checkpoint); final checkpoint pending.
