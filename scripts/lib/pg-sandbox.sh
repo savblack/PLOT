@@ -182,6 +182,23 @@ end $$;
 SQL
 }
 
+# Restore a pg_dump -Fc file (the scrubbed snapshot) instead of production.
+# Same guard as sandbox_restore_prod: an empty restore must not read as a pass.
+sandbox_restore_file() {
+  local file="$1"
+  if [ ! -s "$file" ]; then
+    echo "✗ restore file $file is missing or empty" >&2
+    return 1
+  fi
+  pg_restore --no-owner --no-privileges -d "$SANDBOX_URL" "$file" 2>"$SANDBOX_WORK/restore.err"
+  echo "restored from $(basename "$file") (restore stderr: $(wc -l < "$SANDBOX_WORK/restore.err") lines)"
+  if ! psql "$SANDBOX_URL" -At -c "select 1 from pg_namespace where nspname = 'auth'" 2>/dev/null | grep -q 1; then
+    echo "✗ the restore produced no 'auth' schema; the snapshot file is not a usable dump." >&2
+    sed 's/^/    /' "$SANDBOX_WORK/restore.err" >&2
+    return 1
+  fi
+}
+
 sandbox_restore_prod() {
   local prod_url="$1"
   PLOT_DB_CONNINFO="$prod_url" node scripts/write-pg-service.mjs \
