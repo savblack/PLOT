@@ -58,9 +58,16 @@ test('flags browsers that report themselves as automated on /save', () => {
 test('real visitors and other routes are never flagged as automated', () => {
   assert.equal(isAutomatedBrowser(human), false);
   assert.equal(isAutomatedBrowser({ ...human, webdriver: undefined, languageCount: undefined }), false);
-  assert.equal(isAutomatedBrowser({ ...human, webdriver: true, pathname: '/signup' }), false);
+  assert.equal(isAutomatedBrowser({ ...human, webdriver: true, pathname: '/login' }), false);
+  assert.equal(isAutomatedBrowser({ ...human, webdriver: true, pathname: '/app' }), false);
+  assert.equal(isAutomatedBrowser({ ...human, pathname: '/signup' }), false);
   assert.equal(isAutomatedBrowser({ ...human, userAgent: 'Mozilla/5.0 Robotics Safari/605.1.15' }), false);
   assert.equal(isAutomatedBrowser(), false);
+});
+
+test('automated browsers redirected from /save to /signup are flagged there too', () => {
+  assert.equal(isAutomatedBrowser({ ...human, pathname: '/signup', webdriver: true }), true);
+  assert.equal(isAutomatedBrowser({ ...human, pathname: '/signup', userAgent: 'Mozilla/5.0 HeadlessChrome/150.0.0.0 Safari/537.36' }), true);
 });
 
 test('a phone brand with "bot" in its name is not flagged', () => {

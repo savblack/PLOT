@@ -214,6 +214,28 @@ would have quietly emptied the tile that studies them.
 If you add an event that signals human intent from a surface Tier 1 does not
 cover, negate it here too.
 
+**`signup_form_viewed` is a human signal only when it carries `trigger`.**
+From 7 to 12 November 2026 a crawler opened `/save` links from title pages and
+was redirected to `/signup`, where the form fired `signup_form_viewed` on mount:
+about 2,250 views from 2,120 "people" in six days against roughly 45 real
+viewers, all desktop Chrome 148 to 151 with no referrer, and none of them ever
+clicked, typed or fired `$pageleave`. Because the event was on the list above,
+every one of those crawlers escaped this cohort. Two changes fixed it:
+
+- The web form now fires the event once per visit, and only after the first
+  trusted, visible pointer, touch, wheel or key event
+  (`apps/web/src/utils/signupFormView.js`). It carries `trigger`, the event
+  type that counted (`pointermove`, `pointerdown`, `touchstart`, `wheel` or
+  `keydown`). Mobile still fires on display; it has no crawler traffic.
+- In this cohort, the `signup_form_viewed` negation now requires `trigger` to
+  be set, so the older mount-time views stop counting as intent. Real people
+  who reached the form are still protected by `$pageleave`,
+  `signup_form_started` and the rest of the list.
+
+`isAutomatedBrowser` (the `before_send` check for `navigator.webdriver`,
+headless user agents and empty `navigator.languages`) now covers `/signup` as
+well as `/save`, because `/save` redirects there.
+
 ## Dev and preview traffic
 
 Analytics runs only on `theplot.tv`, `www.theplot.tv` and `app.theplot.tv`. This

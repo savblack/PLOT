@@ -249,7 +249,8 @@ if (posthogToken) {
           screenHeight: window.screen?.height,
         })) return null;
         // Browsers that report themselves as automated never count as a /save
-        // visit either. Same per-event route check as above.
+        // visit, or as a signup-form visit after /save redirects them there.
+        // Same per-event route check as above.
         if (isAutomatedBrowser({
           pathname: props?.$pathname || window.location.pathname,
           userAgent: navigator.userAgent,
