@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { track, resetAnalytics, EVENTS } from '../lib/analytics.js';
-import { _resetHistoryCache } from '@plot/core/useHistory.js';
 import { clearCachedSession } from '../utils/sessionCache.js';
 import './AuthPage.css';
 import { loadSupabase } from '../utils/loadSupabase.js';
@@ -27,7 +26,12 @@ export default function LogoutPage() {
       // unmounted. Clear the cached profile, including calendar_token, before
       // any network operation or redirect can fail.
       clearCachedSession();
-      _resetHistoryCache();
+      // The watch-history cache only exists if the signed-in app loaded
+      // useHistory in this tab. A static import here pulled useHistory, and
+      // with it Supabase, into every public page (this page is bundled with
+      // /signup and /login), so load it on demand. Never loaded means nothing
+      // to reset, and a failed fetch must not hold up signing out.
+      import('@plot/core/useHistory.js').then(m => m._resetHistoryCache()).catch(() => {});
       // Capture before the reset, or the event lands on the fresh anonymous
       // profile instead of the person who actually signed out.
       track(EVENTS.USER_SIGNED_OUT, {});
