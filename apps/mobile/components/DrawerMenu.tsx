@@ -229,7 +229,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 accessibilityRole="link"
                 accessibilityLabel={goPremium.label}
               >
-                <GoPremiumSpark color={colors.onAccentFill} size={18} />
+                <GoPremiumSpark color={colors.accentText} size={18} />
                 <Text style={[styles.navLabel, styles.goPremiumChipLabel]} numberOfLines={1}>{goPremium.label}</Text>
               </TouchableOpacity>
             )}
@@ -402,7 +402,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.textSecondary,
   },
   // One full nav row (navItem's width, height, padding and icon column),
-  // painted with the app's pink fill. Says only "Go Premium".
-  goPremiumChip: { backgroundColor: colors.accentFill, marginBottom: 6 },
-  goPremiumChipLabel: { fontFamily: fontFamily.sansBold, color: colors.onAccentFill },
+  // coloured like web's selected "Profile & account" Settings pill: the
+  // accentDim blush with accentText type and star. Says only "Go Premium".
+  goPremiumChip: { backgroundColor: colors.accentDim, marginBottom: 6 },
+  goPremiumChipLabel: { fontFamily: fontFamily.sansBold, color: colors.accentText },
 });

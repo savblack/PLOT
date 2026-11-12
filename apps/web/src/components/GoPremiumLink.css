@@ -21,7 +21,9 @@
 
 /* The side-nav chip: one full nav row (it carries the host row's class,
    app-sidebar-item or nav-drawer-item, so width, height, padding and the icon
-   and label columns match the rows above), painted with the app's pink fill.
+   and label columns match the rows above). Coloured like the selected
+   "Profile & account" Settings pill (.settings-chip[aria-current]): the
+   --accent-dim blush with --accent-text type and star (Savannah, 12 Nov).
    It sits just above the profile and says only "Go Premium". */
 /* Doubled class: the host row rules (transparent background, sunken hover,
    accent hover text) load later and must not win. */
@@ -29,13 +31,14 @@
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 8px;
-  background: var(--accent-fill);
-  color: var(--on-accent-fill);
+  background: var(--accent-dim);
+  color: var(--accent-text);
   text-decoration: none;
 }
+/* Hover and focus deepen the same tint (a second --accent-dim layer). */
 .go-premium-chip.go-premium-chip:hover,
-.go-premium-chip.go-premium-chip:focus-visible { background: var(--accent-fill-hover); color: var(--on-accent-fill); }
-.go-premium-chip.go-premium-chip :is(.app-sidebar-label, .nav-drawer-label) { color: inherit; font-weight: 700; }
+.go-premium-chip.go-premium-chip:focus-visible { background: var(--accent-dim); box-shadow: inset 0 0 0 999px var(--accent-dim); color: var(--accent-text); }
+.go-premium-chip.go-premium-chip :is(.app-sidebar-label, .nav-drawer-label) { color: inherit; font-weight: 600; }
 /* The spark fills the row's 18px icon column, so the label starts on the same
    edge as every other row's label. */
 .go-premium-chip-mark { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex-shrink: 0; }

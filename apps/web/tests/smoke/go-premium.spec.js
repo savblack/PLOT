@@ -38,7 +38,18 @@ test('desktop: a clean pink Go Premium chip sits just above the profile, and the
   const chipLabel = await chip.locator('.app-sidebar-label').boundingBox();
   const rowLabel = await page.locator('.app-sidebar-nav > .app-sidebar-item .app-sidebar-label').nth(1).boundingBox();
   expect(Math.abs(chipLabel.x - rowLabel.x)).toBeLessThanOrEqual(1);
-  await shot(page, 'card2-web-desktop-settings-v3');
+  // Same colours as the selected "Profile & account" Settings pill.
+  const colours = await page.evaluate(() => {
+    const pick = sel => { const cs = getComputedStyle(document.querySelector(sel)); return [cs.backgroundColor, cs.color]; };
+    return { chip: pick('.app-sidebar-foot .go-premium-chip'), pill: pick('.settings-chip[aria-current="page"]') };
+  });
+  expect(colours.chip).toEqual(colours.pill);
+  await shot(page, 'card2-web-desktop-settings-v4');
+  if (SHOTS) {
+    await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
+    await shot(page, 'card2-web-desktop-dark-v4');
+    await page.evaluate(() => { delete document.documentElement.dataset.theme; });
+  }
 
   // The account menu no longer repeats it.
   await page.locator('.app-sidebar-profile').click();
@@ -54,7 +65,7 @@ test('phone web: the menu drawer leads its footer with the clean chip; the Setti
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(url);
   await expect(page.locator('.settings-mobile-head').getByRole('link', { name: 'Go Premium · 7 days free' })).toBeVisible();
-  await shot(page, 'card2-web-phone-settings-v3');
+  await shot(page, 'card2-web-phone-settings-v4');
   await page.getByRole('button', { name: 'More' }).click();
   const drawer = page.locator('#app-nav-drawer');
   const chip = drawer.locator('.go-premium-chip');
@@ -68,7 +79,7 @@ test('phone web: the menu drawer leads its footer with the clean chip; the Setti
   ].map(n => { const r = n.getBoundingClientRect(); return { x: r.x, width: r.width }; }));
   expect(Math.abs(chipBox.x - rowBox.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(chipBox.width - rowBox.width)).toBeLessThanOrEqual(1);
-  await shot(page, 'card2-web-phone-menu-v3');
+  await shot(page, 'card2-web-phone-menu-v4');
 });
 
 test('someone who has subscribed before gets Go Premium with no trial line', async ({ page }) => {
