@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": [
+    "/assets/*",
+    "/fonts/*",
+    "/boot/*",
+    "/ds/*",
+    "/email/*",
+    "/import-logos/*",
+    "/website-images/*",
+    "/favicon.svg",
+    "/icons.svg",
+    "/plot-loading-inverse.svg",
+    "/manifest.json",
+    "/apple-touch-icon.png",
+    "/icon-192.png",
+    "/icon-512.png",
+    "/og-image.png",
+    "/logo-email.png",
+    "/L.png",
+    "/L-white.png",
+    "/O.png",
+    "/O-white.png",
+    "/P.png",
+    "/P-white.png",
+    "/T.png",
+    "/T-white.png"
+  ]
+}

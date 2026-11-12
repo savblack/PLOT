@@ -2,7 +2,8 @@
 # apps/web/vercel.json. Vite copies this file verbatim into dist/, where Pages
 # reads it. Keep the CSP in sync with any new external hosts the app talks to.
 #
-# Content-Security-Policy is NOT set here — it's set in functions/_middleware.js
+# Content-Security-Policy is NOT set here (except the lock-down on the asset
+# folders at the bottom) — it's set in functions/_middleware.js
 # so it also covers the server-rendered Function routes, which _headers does not
 # reach. Update the allow-list there, not here.
 /*
@@ -55,3 +56,34 @@
 /email/icon-x.png
   Content-Type: image/png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# These folders skip the Pages Functions (see _routes.json next to this file),
+# because every Function call counts toward the account's daily Workers
+# request allowance, and running the middleware on every image, font and
+# script ran that allowance out on 2026-11-11. The middleware only touches
+# HTML, so real files here lose nothing. But this app has no 404.html, so
+# Pages answers a MISSING path here with index.html, and without the
+# middleware that page would arrive with no Content-Security-Policy. A
+# lock-down policy on these folders makes such a page inert instead. It does
+# not affect the real files: a browser ignores a CSP header on an image,
+# font, stylesheet or (non-worker) script it loads into a page.
+/assets/*
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox
+
+/fonts/*
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox
+
+/boot/*
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox
+
+/ds/*
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox
+
+/email/*
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox
+
+/import-logos/*
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox
+
+/website-images/*
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox
