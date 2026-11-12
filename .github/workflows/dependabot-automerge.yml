@@ -55,17 +55,22 @@ jobs:
 
           # --- Confirm CI itself passed on this exact commit ---
           # Read the CI workflow's runs for HEAD_SHA from the API (newest
-          # first) and require that the latest pull_request run of that file
-          # succeeded. A re-run that failed, or a newer run still going, means
-          # "not green yet": the PR is left alone, and the next successful run
-          # triggers this workflow again.
-          CI_STATE=$(gh api "repos/$GH_REPO/actions/workflows/ci.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=20" \
-            --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")][0] | "\(.status) \(.conclusion // "")"' || true)
+          # first) and require that the latest pull_request run of that file,
+          # from this repo, against main, succeeded. A pull_request run uses
+          # the workflow file of its BASE branch, so a second PR with this head
+          # and a decoy base whose ci.yml just exits 0 would also be green on
+          # this SHA: runs against any other base are ignored, and the PR
+          # merged below must be one this run belongs to. A re-run that
+          # failed, or a newer run still going, means "not green yet".
+          CI_RUN=$(gh api "repos/$GH_REPO/actions/workflows/ci.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=50" \
+            --jq "[.workflow_runs[] | select(.path == \".github/workflows/ci.yml\" and .head_repository.full_name == \"$GH_REPO\" and any(.pull_requests[]?; .base.ref == \"main\"))][0] // empty" || true)
+          CI_STATE=$(echo "${CI_RUN:-null}" | jq -r 'if . == null then "none" else "\(.status) \(.conclusion // "")" end')
           if [ "$CI_STATE" != "completed success" ]; then
-            echo "Latest CI run for '$HEAD_SHA' is '${CI_STATE:-none}', not a success. Not merging; left for human review."
+            echo "Latest CI run against main for '$HEAD_SHA' is '$CI_STATE', not a success. Not merging; left for human review."
             exit 0
           fi
-          echo "CI passed on $HEAD_SHA."
+          CI_PRS=$(echo "$CI_RUN" | jq -r '[.pull_requests[] | select(.base.ref == "main") | .number] | join(" ")')
+          echo "CI passed on $HEAD_SHA for PR(s) $CI_PRS."
 
           # --- Find the open PR whose head commit CI just passed ---
           PR_NUM=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/pulls" \
@@ -75,7 +80,19 @@ jobs:
             exit 0
           fi
 
-          PR_JSON=$(gh pr view "$PR_NUM" --json title,body,author,url,labels,headRefOid)
+          case " $CI_PRS " in
+            *" $PR_NUM "*) ;;
+            *)
+              echo "PR #$PR_NUM is not one the passing CI run was for ($CI_PRS). Not merging; left for human review."
+              exit 0
+              ;;
+          esac
+
+          PR_JSON=$(gh pr view "$PR_NUM" --json title,body,author,url,labels,headRefOid,baseRefName)
+          if [ "$(echo "$PR_JSON" | jq -r '.baseRefName')" != "main" ]; then
+            echo "PR #$PR_NUM does not target main. Not merging; left for human review."
+            exit 0
+          fi
 
           # CI was verified on HEAD_SHA, so only that exact commit may be
           # merged. `commits/{sha}/pulls` also returns PRs that merely CONTAIN

@@ -41,6 +41,8 @@ const ALWAYS_HUMAN = [
   [/^\.github\/scripts\//, 'a script workflows run with secrets'],
   [/^\.github\/workflows\/ci\.yml$/, 'the CI pipeline that gates merges'],
   [/^\.github\/workflows\/dependabot-automerge\.yml$/, 'the Dependabot auto-merge workflow'],
+  // Decides which CI steps run; a docs-only verdict skips them all and passes.
+  [/^scripts\/(ci-tier\.mjs|agent\/ciTier\.mjs)$/, 'the rules for how much CI runs'],
   // Security-relevant code whose names the keyword rules above do not catch.
   [/(security|serviceKey|serviceBearer|supabaseAdmin|actingUser|internalWebhook|webhook|export-user|csp|_middleware|_lib\/)/i, 'security, service access or member data export'],
 ];

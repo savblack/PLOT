@@ -49,13 +49,18 @@ The weekly marketing batch stays on the GitHub macOS runner until a Saturday of 
 - Two flows merge on CI's result, and both identify it by its file,
   `.github/workflows/ci.yml`, never by the name "CI" or "check", which any
   workflow can borrow:
-  - `scripts/auto-merge.mjs` requires the latest `pull_request` or `push` run
-    of that file on the exact head commit to have succeeded.
+  - `scripts/auto-merge.mjs` requires the latest run of that file on the exact
+    head commit, for that PR against `main` (or a push to `main`), to have
+    succeeded.
   - `dependabot-automerge.yml` wakes on `workflow_run` of `CI`, then re-reads
-    the latest `pull_request` run of that file for the commit from the API and
-    re-resolves the exact open PR by that SHA before merging.
-- `scripts/lib/autoMergePolicy.mjs` keeps any change to `ci.yml` or
-  `dependabot-automerge.yml` waiting for Savannah, so an agent fix cannot
+    the latest `pull_request` run of that file against `main` for the commit
+    from the API, and merges only a PR that run belongs to.
+  - Why "against `main`": a `pull_request` run uses its base branch's copy of
+    `ci.yml`. A second PR with the same head and a decoy base could otherwise
+    report a green run for the same commit.
+- `scripts/lib/autoMergePolicy.mjs` keeps any change to `ci.yml`,
+  `dependabot-automerge.yml` or the tier rules (`scripts/ci-tier.mjs`,
+  `scripts/agent/ciTier.mjs`) waiting for Savannah, so an agent fix cannot
   loosen the checks it is judged by.
 - Routine Actions minor/patch dependency upgrades share a Dependabot PR; major
   upgrades retain individual review.

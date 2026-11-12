@@ -95,6 +95,8 @@ test('a workflow fix may merge only when it changes versions, runners, timeouts 
   // The CI workflow gates both merge flows, so even a "safe" line waits:
   // continue-on-error would let it pass without checking anything.
   assert.equal(decide([f('.github/workflows/ci.yml', { patch: '+        continue-on-error: true' })]).allowed, false);
+  assert.equal(decide([f('scripts/agent/ciTier.mjs')]).allowed, false);
+  assert.equal(decide([f('scripts/ci-tier.mjs')]).allowed, false);
   assert.equal(decide([f('.github/workflows/dependabot-automerge.yml', { patch: '-    runs-on: ubuntu-22.04\n+    runs-on: ubuntu-latest' })]).allowed, false);
 });
 

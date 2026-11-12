@@ -38,9 +38,24 @@ const REQUIRED = [
   // changes to this file waiting for Savannah, so a PR cannot weaken it.
   { name: 'CI', kind: 'workflow', path: '.github/workflows/ci.yml' },
 ];
-// Events a CI run for the head commit may come from. workflow_dispatch and
-// the like are left out: anyone with write access could start those.
-const CI_EVENTS = new Set(['pull_request', 'push']);
+
+/**
+ * Whether one Actions run of the CI file vouches for this PR. A pull_request
+ * run uses the workflow file of its BASE branch, so a second PR with the same
+ * head and a decoy base (whose ci.yml just exits 0) would produce a green run
+ * for the same commit. So a pull_request run counts only when it belongs to
+ * this PR against main, and a push run only when it is a push to main.
+ * workflow_dispatch and the like never count: anyone with write access can
+ * start those.
+ */
+function ciRunCounts(w, prNumber) {
+  if (w.head_repository?.full_name && REPO && w.head_repository.full_name !== REPO) return false;
+  if (w.event === 'push') return w.head_branch === 'main';
+  if (w.event === 'pull_request') {
+    return (w.pull_requests || []).some((p) => p.number === prNumber && p.base?.ref === 'main');
+  }
+  return false;
+}
 
 async function gh(path, { token = READ, method = 'GET', body } = {}) {
   const res = await fetch(path.startsWith('http') ? path : `${API}${path}`, {
@@ -77,7 +92,7 @@ async function all(path) {
  * Actions runs of the commit (newest first); a required workflow is judged by
  * its latest run from that exact file, for that exact commit.
  */
-export function judgeChecks(runs, statuses, workflowRuns = [], sha = null) {
+export function judgeChecks(runs, statuses, workflowRuns = [], sha = null, prNumber = null) {
   const pending = [];
   const failed = [];
   for (const r of runs) {
@@ -97,7 +112,7 @@ export function judgeChecks(runs, statuses, workflowRuns = [], sha = null) {
   for (const req of REQUIRED) {
     if (req.kind === 'workflow') {
       const latest = workflowRuns.find((w) => w.path === req.path
-        && CI_EVENTS.has(w.event)
+        && ciRunCounts(w, prNumber)
         && (sha === null || w.head_sha === sha));
       if (!latest) missing.push(req.name);
       else if (latest.status !== 'completed') pending.push(req.name);
@@ -146,12 +161,12 @@ async function codeqlBlockers(number, sha) {
   return judgeCodeql(analyses, sha, alerts.length);
 }
 
-export async function checkState(sha) {
+export async function checkState(sha, prNumber) {
   const runs = await all(`/repos/${REPO}/commits/${sha}/check-runs?filter=all`);
   const statuses = await all(`/repos/${REPO}/commits/${sha}/statuses`);
   const ci = REQUIRED.find((r) => r.kind === 'workflow');
   const workflowRuns = await all(`/repos/${REPO}/actions/workflows/${ci.path.split('/').pop()}/runs?head_sha=${sha}`);
-  return judgeChecks(runs, statuses, workflowRuns, sha);
+  return judgeChecks(runs, statuses, workflowRuns, sha, prNumber);
 }
 
 async function unresolvedThreads(number) {
@@ -208,7 +223,7 @@ async function consider(pr) {
     return;
   }
 
-  const checks = await checkState(sha);
+  const checks = await checkState(sha, n);
   const scan = await codeqlBlockers(n, sha);
   const threads = await unresolvedThreads(n);
   const again = await gh(`/repos/${REPO}/pulls/${n}`);
