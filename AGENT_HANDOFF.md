@@ -1,6 +1,6 @@
 # Mobile Google and Apple sign-in
 
-Status: paused
+Status: active (waiting on Savannah's Apple sign-in for the TestFlight upload)
 Owner: Jacob (mobile implementation), Hailey (signup flow)
 Branch: agent/2026-11-12-mobile-social-login
 Worktree: /Users/savannahblack/Developer/PLOT-worktrees/2026-11-12-mobile-social-login
@@ -23,7 +23,12 @@ Enable Google and Apple login in the mobile release configuration and verify the
 Arrange an installable internal iOS build with the production provider settings, or obtain approval to submit build 6 to TestFlight. Complete Apple and Google sign-in on a physical iPhone, including return to `plot://auth/callback` and an authenticated session. Test Google sign-in on Android too. Do not publish either build before those checks.
 
 ## Blockers and approvals
-No physical device is connected to this workspace, and the completed iOS production archive is store-distribution only, so interactive sign-in could not be completed. Savannah explicitly authorized enabling both logins and verification in this chat. No submission or publication was authorized. No live user records were changed.
+No physical device is connected to this workspace, and the completed iOS production archive is store-distribution only, so interactive sign-in could not be completed. Savannah explicitly authorized enabling both logins and verification in this chat. On 2026-11-12 Savannah approved submitting iOS build 6 to TestFlight for internal testing only ("Yes, TestFlight"). App Store release and Android store submission are still not authorized. No live user records were changed.
+
+## TestFlight upload attempt (2026-11-12)
+- `eas submit --non-interactive` stopped: no App Store Connect API key is stored on EAS, and EAS cannot create one non-interactively.
+- The interactive `eas submit --platform ios --profile production --id 0e725475-cb9b-4ab6-a486-3161023f8ffe` was started in Savannah's terminal and is waiting for her to answer the key prompt and sign in to Apple. Once the key exists, later submits run unattended.
+- Not yet confirmed: Apple accepted the upload, build processed in TestFlight, testers invited.
 
 ## Latest pushed commit
 fad05b75e (pushed; branch matches origin). Checks above still stand; no code changed since.
