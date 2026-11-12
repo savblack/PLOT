@@ -1317,7 +1317,7 @@ export default function SettingsScreen() {
               accessibilityLabel={goPremium.label}
             >
               <GoPremiumSpark color={colors.accentText} size={16} />
-              <Text style={styles.editAction}>{goPremium.label}</Text>
+              <Text style={styles.goPremiumLabel}>{goPremium.label}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1846,6 +1846,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   accountFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   accountPlan: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   goPremium: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  // The values the removed editAction style had, so the line looks the same.
+  goPremiumLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.accentText },
   searchWrap: { marginHorizontal: spacing.xl, marginTop: spacing.md },
   searchResults: { marginHorizontal: spacing.xl, marginTop: spacing.md, gap: spacing.sm },
   searchEmpty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
