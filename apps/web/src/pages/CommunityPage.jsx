@@ -51,7 +51,7 @@ export default function CommunityPage() {
         <p>Depending on what we find, we may remove the content, ask you to change it, suspend the account, or remove the account permanently. Serious cases, and repeated ones, go straight to removal. Where someone is at risk we may act without warning.</p>
         <p>If you think we have got it wrong, write to us and we will look at it again.</p>
         <h2>Contact</h2>
-        <p>Plot is operated by Savannah Black, a sole trader trading as SUSUMU HOUSE, of Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. You can reach us at contact@susumuhouse.com, or through the feedback option in the app.</p>
+        <p>Plot is operated by Savannah Black, Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. You can reach us at contact@theplot.tv, or through the feedback option in the app.</p>
         <h2>Changes</h2>
         <p>We may update these standards as Plot grows. The date above changes when we do.</p>
       </div>

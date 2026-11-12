@@ -27,16 +27,13 @@ available now, gated only on setup rather than on waiting for Apple.
 `docs/research/expo-push-notifications.md` and `apps/web/src/launchFeatures.js`
 over whether enrolment existed. The research doc was right.)
 
-### Seller: SUSUMU HOUSE was the preference, but it is a trade name
+### Seller: Individual, Savannah Black
 
-Preferred 2026-10-14; found on 2026-10-15 that Apple only converts to Organization for a legal entity, which SUSUMU HOUSE is not. Options and the open decision are in [app-store-listing.md](app-store-listing.md). An Individual membership publishes under the account
-holder's own legal name, and every legal surface Plot ships (`TermsPage.jsx`,
-`PrivacyPage.jsx`, the marketing site's `terms.html` and `privacy.html`, the
-six Supabase auth email templates, the newsletter footer) says "a product of
-SUSUMU HOUSE". The listing should agree with them, and EU trader details under
-the DSA should be the company's, not a person's. So: convert the existing
-membership (keeps team `FXZRAA8927` and the EAS credentials) rather than
-enrolling again. The steps, the D-U-N-S lookup and what Apple checks are in
+Decided 2026-11-12. An Individual membership publishes under the account
+holder's own legal name, so the seller is Savannah Black, and every legal
+surface Plot ships (`TermsPage.jsx`, `PrivacyPage.jsx`, `CommunityPage.jsx`,
+the marketing site's `terms.html`, `privacy.html` and `community.html`) says
+Plot is operated by Savannah Black. Details are in
 [app-store-listing.md](app-store-listing.md), along with the whole listing.
 
 The app record already exists and was filled on 2026-10-15 under the
