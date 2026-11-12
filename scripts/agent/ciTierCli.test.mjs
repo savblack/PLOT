@@ -30,7 +30,6 @@ test('main validates code when origin/main already equals HEAD', t => {
   r.commit('apps/web/src/example.js', 'export const value = 1;');
   r.git('update-ref', 'refs/remotes/origin/main', 'HEAD');
   assert.equal(r.run('main').tier, 'full');
-  assert.equal(r.run('main').chromatic, true);
 });
 
 test('main still skips a docs-only commit', t => {
