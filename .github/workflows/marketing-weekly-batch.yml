@@ -159,10 +159,23 @@ jobs:
           set -euo pipefail
           umask 077
           mkdir -p "$HOME/.grok"
-          id=$(gh api "repos/$REPO/actions/artifacts?name=grok-auth&per_page=1" --jq '.artifacts[0].id // empty')
+          # Only a login this workflow saved on main counts. A pull request,
+          # including one from a fork, can upload an artifact with the same
+          # name; it could not decrypt, but taking it would break the week.
+          id=""
+          for cand in $(gh api "repos/$REPO/actions/artifacts?name=grok-auth&per_page=20" \
+              --jq '.artifacts[] | select(.expired | not)
+                    | select(.workflow_run.head_branch == "main")
+                    | select(.workflow_run.head_repository_id == .workflow_run.repository_id)
+                    | "\(.id):\(.workflow_run.id)"'); do
+            run_id=${cand#*:}
+            path=$(gh api "repos/$REPO/actions/runs/$run_id" --jq '.path')
+            if [ "$path" = ".github/workflows/marketing-weekly-batch.yml" ]; then id=${cand%%:*}; break; fi
+          done
           if [ -n "$id" ]; then
             gh api "repos/$REPO/actions/artifacts/$id/zip" > "$RUNNER_TEMP/grok-auth.zip"
             unzip -q -o "$RUNNER_TEMP/grok-auth.zip" -d "$RUNNER_TEMP/grok-auth"
+            # gpg refuses a file whose integrity check (MDC) fails.
             gpg --batch --quiet --decrypt --pinentry-mode loopback --passphrase-fd 0 \
               -o "$HOME/.grok/auth.json" "$RUNNER_TEMP/grok-auth/auth.json.gpg" <<< "$GROK_AUTH_PASSPHRASE"
             echo "Restored the login saved as artifact $id."
