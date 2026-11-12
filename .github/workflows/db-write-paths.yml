@@ -89,6 +89,14 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The job has `issues: write` for the incident steps, and on a
+          # pull_request run it executes that PR's own `pnpm run db:write-paths`.
+          # Left at the default, checkout writes the job token into .git/config,
+          # where the PR's code could read it and write issues. Nothing here
+          # pushes or fetches after checkout; the incident steps get the token
+          # through GH_TOKEN, which the check step never sees.
+          persist-credentials: false
       - name: Set up pnpm
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - name: Set up Node
