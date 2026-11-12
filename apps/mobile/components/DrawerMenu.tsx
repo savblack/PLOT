@@ -19,6 +19,8 @@ import { Avatar } from './Avatar';
 import NavGlyph, { NavIconName } from './NavIcons';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 import PlotWordmark from './PlotWordmark';
+import { GoPremiumSpark, useGoPremiumLink } from './GoPremiumLink';
+import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 
 // Web's drawer is min(300px, 85vw). The old 58% width was sized for bare labels.
 const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
@@ -60,6 +62,8 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  // The pink Go Premium chip above the profile; read only while the drawer is open.
+  const goPremium = useGoPremiumLink(userId, profile, visible, 'chip');
   const slideX   = useRef(new Animated.Value(-DRAWER_W)).current;
   const overlayO = useRef(new Animated.Value(0)).current;
 
@@ -216,6 +220,18 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 {menuRow({ label: APP_SHELL.giveFeedback, icon: 'feedback', onPress: () => openFeedback('general') })}
                 {menuRow({ label: SETTINGS_VIEW.support.supportPlot, icon: 'support', link: true, onPress: openSupport })}
               </View>
+            )}
+            {goPremium && (
+              <TouchableOpacity
+                style={[styles.navItem, styles.goPremiumChip]}
+                onPress={() => { goPremium.tap('side_nav'); navigate(PREMIUM_SETTINGS_PATH); }}
+                activeOpacity={0.8}
+                accessibilityRole="link"
+                accessibilityLabel={goPremium.label}
+              >
+                <GoPremiumSpark color={colors.onAccentFill} size={18} />
+                <Text style={[styles.navLabel, styles.goPremiumChipLabel]} numberOfLines={1}>{goPremium.label}</Text>
+              </TouchableOpacity>
             )}
             {profile?.username && (
               <TouchableOpacity
@@ -385,4 +401,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     fontSize: 14.4,
     color: colors.textSecondary,
   },
+  // One full nav row (navItem's width, height, padding and icon column),
+  // painted with the app's pink fill. Says only "Go Premium".
+  goPremiumChip: { backgroundColor: colors.accentFill, marginBottom: 6 },
+  goPremiumChipLabel: { fontFamily: fontFamily.sansBold, color: colors.onAccentFill },
 });

@@ -46,6 +46,7 @@ import { beginPremiumFirstWeek } from '../utils/premiumFirstWeekState.js';
 import { SETTINGS_SECTIONS, settingsSelectionSummary } from '@plot/core/settings.js';
 import SettingsPage, { SettingsPreferenceRow, SettingsSwitch, SettingsTextAction } from './SettingsPage.jsx';
 import SettingsBilling from './SettingsBilling.jsx';
+import GoPremiumLink from './GoPremiumLink.jsx';
 import SettingsThemeRows from './SettingsThemeRows.jsx';
 import SidebarOrderSheet from './SidebarOrderSheet.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
@@ -1656,6 +1657,7 @@ export default function SettingsView() {
           avatarUrl: profile?.avatar_url || null,
           isPremium: premium.isPremium,
         }}
+        accountAction={premium.isPremium ? null : <GoPremiumLink profile={profile} placement="settings" className="settings-go-premium" />}
       >
         {actionError && <p className="settings-error" role="alert">{actionError}</p>}
         {activeSection === 'account' && <>

@@ -190,6 +190,20 @@ allowed (US storefront).
 
 Read `premium_prompt_clicked` (target `checkout`) next to
 `premium_checkout_started` to see whether the prompt leads to checkouts.
+
+### The Go Premium link
+
+Signed-in Free members see a pink "Go Premium" chip in the side nav, just
+above the profile (desktop rail, the phone nav drawer, the app drawer), and
+"Go Premium · 7 days free" ("Go Premium" if they have subscribed before) in
+the Settings account card (`packages/core/goPremiumLink.js`). The chip never
+shows the trial text. It opens the existing Premium page (web
+`/pricing`, the app's Settings › Premium), where the existing Checkout lives.
+The app shows it only where it may link out to Checkout (US storefront).
+
+| Event | When | Properties |
+|---|---|---|
+| `premium_link_clicked` | The link was tapped | `placement: 'side_nav' \| 'settings'`, `trial` (boolean: the person is eligible for 7 days free; the side-nav chip never shows that text) |
 All monetization dashboards keep PostHog's internal and test-account filter on.
 
 ## Bots
