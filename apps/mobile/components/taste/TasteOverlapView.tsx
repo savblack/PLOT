@@ -28,6 +28,7 @@ import { captureTasteCard, shareTasteImage, tasteCardText, tastePostText, TASTE_
 import TasteShareCard, { type TasteTheme } from './TasteShareCard';
 import TasteShareSheet from './TasteShareSheet';
 import Button from '../Button';
+import { Tag } from '../Chip';
 
 type TasteModel = TasteOverlapModel;
 
@@ -188,7 +189,7 @@ function TasteOverlapBody({
           <TouchableOpacity style={styles.iconBtn} onPress={back} accessibilityRole="button" accessibilityLabel={T.back}>
             <IconChevronLeft color={colors.textPrimary} />
           </TouchableOpacity>
-          {!premium && <View style={styles.chip}><Text style={styles.chipText}>{T.premiumChip}</Text></View>}
+          {!premium && <Tag label={T.premiumChip} style={styles.chip} />}
           {premium && overlap && target ? (
             <TouchableOpacity
               style={styles.iconBtn}
@@ -539,8 +540,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface,
   },
   iconSpacer: { width: 44 },
-  chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: radii.badge, backgroundColor: colors.surfaceSunken },
-  chipText: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.textSecondary },
+  chip: { alignSelf: 'center' },
   h1: { fontFamily: fontFamily.display, fontSize: 32, lineHeight: 34, letterSpacing: -0.96, color: colors.textPrimary },
   person: {
     alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: spacing.sm,

@@ -9,7 +9,7 @@
 // copy/streamingAlerts.js). Detection and delivery happen server-side in the
 // streaming-arrival-alerts Edge Function.
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useStreamingAlertMute, useStreamingAlertsSwitch } from '@plot/core/useStreamingAlerts.js';
 import { usePushAlerts } from '@plot/core/usePushAlerts.js';
@@ -20,6 +20,7 @@ import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
 import Button from './Button';
+import { useDialog } from './Dialog';
 
 // The same bell as web's BellIcon: filled when alerts are on, outline when off.
 function BellIcon({ on, color }: { on: boolean; color: string }) {
@@ -39,21 +40,20 @@ export default function StreamingAlertsCard({ movie }: { movie: { id: number; ti
   const mute = useStreamingAlertMute(userId, movie);
   const all = useStreamingAlertsSwitch(userId);
   const push = usePushAlerts(userId);
+  const { confirm, notify, dialog } = useDialog();
 
-  const enablePush = () => Alert.alert(PUSH_ALERTS.permissionTitle, PUSH_ALERTS.permissionBody, [
-    { text: PUSH_ALERTS.permissionNo, style: 'cancel' },
-    { text: PUSH_ALERTS.permissionYes, onPress: () => { void (async () => {
-      try {
-        const result = await registerPushToken(true);
-        if (result !== 'ok') {
-          Alert.alert(result === 'denied' ? PUSH_ALERTS.permissionDenied
-            : result === 'in_use' ? PUSH_ALERTS.inUse : PUSH_ALERTS.permissionUnavailable);
-          return;
-        }
-        if ((await push.setEnabled(true)).error) Alert.alert(PUSH_ALERTS.error);
-      } catch { Alert.alert(PUSH_ALERTS.error); }
-    })(); } },
-  ]);
+  const enablePush = async () => {
+    if (!(await confirm({ title: PUSH_ALERTS.permissionTitle, message: PUSH_ALERTS.permissionBody, confirmLabel: PUSH_ALERTS.permissionYes, cancelLabel: PUSH_ALERTS.permissionNo }))) return;
+    try {
+      const result = await registerPushToken(true);
+      if (result !== 'ok') {
+        notify(result === 'denied' ? PUSH_ALERTS.permissionDenied
+          : result === 'in_use' ? PUSH_ALERTS.inUse : PUSH_ALERTS.permissionUnavailable);
+        return;
+      }
+      if ((await push.setEnabled(true)).error) notify(PUSH_ALERTS.error);
+    } catch { notify(PUSH_ALERTS.error); }
+  };
 
   // Nothing until both reads land, so the card never flashes the wrong state.
   if (!userId || !movie?.id || !movie?.title || mute.loading || all.loading) return null;
@@ -104,10 +104,11 @@ export default function StreamingAlertsCard({ movie }: { movie: { id: number; ti
       </View>
       {failed ? <Text style={styles.error} accessibilityRole="alert">{A.error}</Text> : null}
       {profile?.is_premium && !push.loading && !push.enabled && all.on && !mute.muted ? (
-        <TouchableOpacity onPress={enablePush} accessibilityRole="button" accessibilityLabel={PUSH_ALERTS.enable} style={{ marginTop: spacing.sm }}>
+        <TouchableOpacity onPress={() => { void enablePush(); }} accessibilityRole="button" accessibilityLabel={PUSH_ALERTS.enable} style={{ marginTop: spacing.sm }}>
           <Text style={styles.hint}>{PUSH_ALERTS.enable}</Text>
         </TouchableOpacity>
       ) : null}
+      {dialog}
     </View>
   );
 }

@@ -4,11 +4,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, Pressable, Modal, ScrollView, StyleSheet,
-  ActivityIndicator, useWindowDimensions, type View as RNView,
+  useWindowDimensions, type View as RNView,
 } from 'react-native';
 import { TextInput } from '../TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconChevronLeft, IconChevronRight, IconClose } from '../icons';
+import { IconChevronLeft, IconChevronRight } from '../icons';
 import { CARD_FORMATS, presetIndex, shareCaption } from '@plot/core/shareCards.js';
 import { SHARE_CARDS as T } from '@plot/core/copy/shareCards.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
@@ -17,7 +17,10 @@ import { captureShareCard, saveCardToPhotos, shareCardFile } from '../../lib/sha
 import { useTheme } from '../../contexts/ThemeContext';
 import { fontFamily, fontSize, spacing, radii, type Palette } from '../../lib/tokens';
 import ShareCardView, { type ShareCardModel } from './ShareCardView';
-import Button from '../Button';
+import Button, { TextLink } from '../Button';
+import ModalHeader from '../ModalHeader';
+import { usePageSheetTop } from '../PageSheet';
+import Loader from '../Loader';
 import { SheetActions } from '../BottomSheet';
 
 function unlockLine(card: ShareCardModel) {
@@ -50,6 +53,7 @@ export default function ShareCardSheet({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const sheetTop = usePageSheetTop();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [index, setIndex] = useState(() => presetIndex(cards, preset || undefined));
   const [format, setFormat] = useState<'post' | 'story'>('post');
@@ -103,9 +107,9 @@ export default function ShareCardSheet({
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.sheet, { paddingTop: spacing.lg, paddingBottom: insets.bottom + spacing.lg }]}>
-        <View style={styles.head}>
-          <Text style={styles.title}>{T.sheetTitle}</Text>
+      <View style={[styles.sheet, { paddingTop: sheetTop, paddingBottom: insets.bottom + spacing.lg }]}>
+        <ModalHeader title={T.sheetTitle} action={(
+          <View style={styles.headActions}>
           <View style={styles.formats}>
             {(['post', 'story'] as const).map(id => {
               const on = format === id;
@@ -122,15 +126,14 @@ export default function ShareCardSheet({
               );
             })}
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel={T.close} onPress={onClose} hitSlop={8}>
-            <IconClose size={16} color={colors.textPrimary} />
-          </Pressable>
-        </View>
+          <TextLink quiet label={T.close} onPress={onClose} />
+          </View>
+        )} />
 
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {!card && (
             <View style={styles.loading} accessibilityRole="progressbar" accessibilityLabel={T.loadingCards}>
-              <ActivityIndicator color={colors.textMuted} />
+              <Loader fill={false} style={styles.loader} />
               <Text style={styles.loadingText}>{loading ? T.loadingCards : T.failed}</Text>
             </View>
           )}
@@ -257,22 +260,7 @@ function CaptionBridge({ text }: { text: string }) {
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   sheet: { flex: 1, backgroundColor: colors.surface },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    flex: 1,
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    letterSpacing: -0.4,
-    color: colors.textPrimary,
-  },
+  headActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   formats: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceSunken,
@@ -285,6 +273,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   formatTextOn: { color: colors.textPrimary },
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, gap: spacing.lg },
   loading: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl * 2 },
+  loader: { paddingVertical: 0 },
   loadingText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   stage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   arrow: {

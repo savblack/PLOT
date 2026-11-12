@@ -188,15 +188,6 @@ export function ListCard({ children }: { children: ReactNode }) {
   );
 }
 
-export function Chip({ label, tone = 'plain' }: { label: string; tone?: 'plain' | 'ok' }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radii.pill, backgroundColor: tone === 'ok' ? colors.accentSecondaryFill : colors.surfaceSunken }}>
-      <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: tone === 'ok' ? colors.onAccentSecondaryFill : colors.textPrimary }}>{label}</Text>
-    </View>
-  );
-}
-
 /** A partner toggle on the ink card. */
 export function WhoChip({ person, on, onPress }: { person: WtPerson; on: boolean; onPress: () => void }) {
   const { colors } = useTheme();

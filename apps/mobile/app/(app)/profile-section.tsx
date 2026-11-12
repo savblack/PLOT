@@ -9,10 +9,11 @@
  * pagination is profileHistoryPage / profileFavouritesPage from @plot/core.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft } from '../../components/icons';
+import Loader from '../../components/Loader';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -83,7 +84,7 @@ export default function ProfileSectionScreen() {
   const empty = hidden || (section === 'lists' ? lists.length === 0 : result.items.length === 0);
 
   let body: React.ReactNode;
-  if (busy) body = <ActivityIndicator color={colors.accent} style={{ paddingVertical: spacing.xl }} />;
+  if (busy) body = <Loader fill={false} />;
   else if (locked) body = <Text style={styles.sparse}>{PROFILE_PRIVACY.lockedSubPage}</Text>;
   else if (!profile || empty) body = <Text style={styles.sparse}>{PUBLIC_PROFILE_PAGE.noPublicTitles}</Text>;
   else if (result.error && paged) body = (

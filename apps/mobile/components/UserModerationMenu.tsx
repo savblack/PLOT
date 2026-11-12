@@ -6,14 +6,14 @@
  * list of search results would otherwise mount one hook per row and fire one
  * RPC per result. One owner per screen, many menus.
  *
- * Block confirmation uses Alert rather than ConfirmPhraseModal. A typed phrase
+ * Block confirmation uses a plain confirm rather than ConfirmPhraseModal. A typed phrase
  * is the bar for account deletion, which is irreversible; blocking is undone
  * from Settings in two taps, and making it feel heavier than it is would
  * discourage exactly the users Guideline 1.2 exists to protect.
  */
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import KebabMenu from './KebabMenu';
+import { useDialog } from './Dialog';
 import ReportSheet from './ReportSheet';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -35,6 +35,7 @@ export default function UserModerationMenu({
   onChanged?: () => void;
 }) {
   const [reporting, setReporting] = useState(false);
+  const { confirm, dialog } = useDialog();
 
   if (!viewerId || !targetId || viewerId === targetId) return null;
 
@@ -48,15 +49,14 @@ export default function UserModerationMenu({
     onChanged?.();
   };
 
-  const confirmBlock = () => {
-    Alert.alert(
-      MODERATION.blockTitle(displayName),
-      MODERATION.blockBody,
-      [
-        { text: COMMON.cancel, style: 'cancel' },
-        { text: MODERATION.blockConfirm, style: 'destructive', onPress: () => { void doBlock(); } },
-      ],
-    );
+  const confirmBlock = async () => {
+    if (await confirm({
+      title: MODERATION.blockTitle(displayName),
+      message: MODERATION.blockBody,
+      confirmLabel: MODERATION.blockConfirm,
+      cancelLabel: COMMON.cancel,
+      destructive: true,
+    })) void doBlock();
   };
 
   const items = [
@@ -82,6 +82,7 @@ export default function UserModerationMenu({
           onBlockToo={blocked ? null : doBlock}
         />
       ) : null}
+      {dialog}
     </>
   );
 }

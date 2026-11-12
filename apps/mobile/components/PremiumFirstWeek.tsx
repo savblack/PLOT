@@ -31,6 +31,7 @@ import { closePremiumFirstWeek, hidePremiumFirstWeekFor, notePremiumPlan } from 
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { ChecklistTick, makeChecklistStyles } from './FinishingTouches';
+import { TextLink } from './Button';
 
 /** Where each step's button leads: mobile's own screen for each of core's PREMIUM_FIRST_WEEK_PATHS. */
 const ROUTES: Record<PremiumFirstWeekId, string> = {
@@ -178,17 +179,15 @@ export default function PremiumFirstWeek({ onState }: { onState: (next: PremiumF
               </View>
               <Text style={styles.tileSub}>{tile.sub}</Text>
               {!tile.done && (
-                <TouchableOpacity
+                <TextLink
+                  tone="accent"
+                  label={`${tile.cta} →`}
                   style={styles.tileCta}
                   onPress={() => {
                     track(EVENTS.PREMIUM_FIRST_WEEK_OPENED, { step: tile.id });
                     router.push(ROUTES[tile.id] as Href);
                   }}
-                  accessibilityRole="button"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.tileCtaText}>{tile.cta} →</Text>
-                </TouchableOpacity>
+                />
               )}
             </View>
           ))}

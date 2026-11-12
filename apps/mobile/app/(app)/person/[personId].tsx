@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft } from '../../../components/icons';
+import Loader from '../../../components/Loader';
+import { TextLink } from '../../../components/Button';
 import { tmdb } from '../../../lib/tmdb';
 import { posterUrl, profileUrl, fontFamily, fontSize, spacing, radii } from '../../../lib/tokens';
 import { displayPosterPath } from '@plot/core/artwork.js';
@@ -57,9 +59,7 @@ function PersonFollow({ person }: { person: PersonDetails }) {
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm }}>
         <FollowPill following={following} busy={f.busyId === person.id} name={person.name} onPress={() => f.toggle(person)} />
         {following ? (
-          <TouchableOpacity onPress={() => router.push('/(app)/your-people' as Href)} accessibilityRole="button">
-            <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent }}>{P.page.title}</Text>
-          </TouchableOpacity>
+          <TextLink tone="accent" label={P.page.title} onPress={() => router.push('/(app)/your-people' as Href)} />
         ) : (
           <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }}>{P.explainer}</Text>
         )}
@@ -133,17 +133,15 @@ function PersonBody({ personId }: { personId: string }) {
       <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top, paddingHorizontal: spacing.xl, justifyContent: 'center' }}>
         <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary }}>Couldn’t load talent</Text>
         <Text style={{ marginTop: spacing.sm, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }}>Check your connection and try again.</Text>
-        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" style={{ marginTop: spacing.lg, alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center' }}>
-          <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.accent }}>Go back</Text>
-        </TouchableOpacity>
+        <TextLink tone="accent" label="Go back" onPress={() => router.back()} style={{ marginTop: spacing.lg, alignSelf: 'flex-start' }} />
       </View>
     );
   }
 
   if (!person) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={colors.accent} />
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <Loader />
       </View>
     );
   }

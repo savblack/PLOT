@@ -2,7 +2,7 @@
 // with the PNG. The friend's name stays off unless their profile is public.
 import { useMemo, useRef, useState } from 'react';
 import {
-  View, Text, Modal, ScrollView, TouchableOpacity, Switch, StyleSheet, useWindowDimensions,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SHARE_CARD_THEMES, canNameOnShareCard, shareCardContent } from '@plot/core/tasteOverlap.js';
@@ -13,7 +13,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { fontFamily, fontSize, spacing, radii, type Palette } from '../../lib/tokens';
 import { captureTasteCard, shareTasteImage, tasteCardText, tastePostText, TASTE_CARD_WIDTH, type TasteCardContent, type TasteOverlapModel } from '../../lib/tasteShare';
 import TasteShareCard, { type TasteTheme } from './TasteShareCard';
-import Button, { TextLink } from '../Button';
+import Button from '../Button';
+import PageSheet from '../PageSheet';
+import Toggle from '../Toggle';
 
 const THEME_KEYS = ['cream', 'pink', 'charcoal'] as const;
 type ThemeKey = typeof THEME_KEYS[number];
@@ -61,14 +63,8 @@ export default function TasteShareSheet({
   };
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.screen, { paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.lg }]}>
-        <View style={styles.top}>
-          <Text style={styles.title} accessibilityRole="header">{T.shareTitle}</Text>
-          <TextLink quiet label={T.close} onPress={onClose} />
-        </View>
-
-        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+    <PageSheet title={T.shareTitle} onClose={onClose} closeLabel={T.close}>
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]} showsVerticalScrollIndicator={false}>
           <View accessibilityLabel={`${text.pairLine}. ${T.matchKicker}: ${text.headline}. ${text.subline}.`}>
             <TasteShareCard width={previewWidth} theme={SHARE_CARD_THEMES[theme] as TasteTheme} content={content} text={text} />
           </View>
@@ -98,11 +94,10 @@ export default function TasteShareSheet({
               <Text style={styles.nameTitle}>{T.showName(name)}</Text>
               <Text style={styles.hint}>{nameAllowed ? T.nameAllowed : T.nameNeedsPublic}</Text>
             </View>
-            <Switch
+            <Toggle
               value={showName && nameAllowed}
               disabled={!nameAllowed}
               onValueChange={setShowName}
-              trackColor={{ true: colors.accentFill, false: colors.surfaceSunken }}
               accessibilityRole="switch"
               accessibilityLabel={T.showName(name)}
               accessibilityHint={nameAllowed ? T.nameAllowed : T.nameNeedsPublic}
@@ -124,16 +119,12 @@ export default function TasteShareSheet({
         >
           <TasteShareCard width={TASTE_CARD_WIDTH} theme={SHARE_CARD_THEMES[theme] as TasteTheme} content={content} text={text} />
         </View>
-      </View>
-    </Modal>
+    </PageSheet>
   );
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
-  title: { fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6, color: colors.textPrimary },
-  body: { paddingHorizontal: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xl, alignItems: 'center' },
+  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, gap: spacing.lg, alignItems: 'center' },
   label: { alignSelf: 'flex-start', fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   swatches: { alignSelf: 'stretch', flexDirection: 'row', gap: spacing.sm },
   swatch: {

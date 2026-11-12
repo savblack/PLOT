@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
   Dimensions, Image, Animated, Easing, FlatList,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
@@ -31,6 +31,7 @@ import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
 import { hasSignedInBefore } from '../../lib/signedInBefore';
 import { rememberBypassSignup, reportBypassSignupConfirmed } from '../../lib/bypassSignupReport';
 import PlotWordmark from '../../components/PlotWordmark';
+import { useDialog } from '../../components/Dialog';
 
 // The panel's fixed palette (see the note on the tokens import): charcoal ink
 // and zinc greys picked against the dark poster wall, named once so the
@@ -189,6 +190,7 @@ async function authRequest<R extends { error: { message: string } | null }>(
 
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
+  const { notify, dialog } = useDialog();
   // Sign up for a fresh install; Sign in once this device has held a session.
   const [mode, setMode] = useState<Mode>('signup');
   const [email, setEmail] = useState('');
@@ -436,7 +438,7 @@ export default function AuthScreen() {
     const captchaToken = await takeCaptchaToken('login');
     if (captchaToken === false) {
       setLoading(false);
-      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      notify(AUTH_PAGE.verificationUnavailable);
       return;
     }
     const { error } = await authRequest(supabase.auth.signInWithPassword({
@@ -452,7 +454,7 @@ export default function AuthScreen() {
       if (error.message.includes('Email not confirmed')) {
         openInbox('signup');
       } else {
-        Alert.alert(friendlyAuthError(error.message));
+        notify(friendlyAuthError(error.message));
       }
     }
   };
@@ -542,7 +544,7 @@ export default function AuthScreen() {
     const captchaToken = await takeCaptchaToken('forgot');
     if (captchaToken === false) {
       setLoading(false);
-      Alert.alert(AUTH_PAGE.verificationUnavailable);
+      notify(AUTH_PAGE.verificationUnavailable);
       return;
     }
     const { error } = await authRequest(supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -551,10 +553,10 @@ export default function AuthScreen() {
     }));
     setLoading(false);
     refreshCaptcha();
-    if (error) Alert.alert(friendlyAuthError(error.message));
+    if (error) notify(friendlyAuthError(error.message));
     else {
       track(EVENTS.PASSWORD_RESET_REQUESTED);
-      Alert.alert('Check your email', 'We sent a link to reset your password.');
+      notify('Check your email', 'We sent a link to reset your password.');
     }
   };
 
@@ -588,7 +590,7 @@ export default function AuthScreen() {
     if (error) {
       track(EVENTS.SIGNUP_SUBMIT_FAILED, { reason: authErrorReason(error.message) });
       if (error.message.includes('User already registered')) setEmailError(AUTH_PAGE.accountAlreadyExists);
-      else Alert.alert(friendlyAuthError(error.message));
+      else notify(friendlyAuthError(error.message));
     }
     else {
       // Web fires this on the same step (account created, confirmation pending);
@@ -612,7 +614,7 @@ export default function AuthScreen() {
         ...(result.status ? { status: result.status } : {}),
       });
       if (result.reason === 'already_registered') setEmailError(result.message);
-      else Alert.alert(result.message);
+      else notify(result.message);
       return;
     }
     // created is false for the function's quiet { ok: true } (honeypot or a
@@ -652,7 +654,7 @@ export default function AuthScreen() {
       if (!shouldMagicLinkViaBypass({ captchaRequired, captchaToken, error })) {
         setLoading(false);
         track(EVENTS.LOGIN_SUBMIT_FAILED, { method: 'magic_link', reason: authErrorReason(error.message) });
-        Alert.alert(friendlyAuthError(error.message));
+        notify(friendlyAuthError(error.message));
         return;
       }
     }
@@ -674,7 +676,7 @@ export default function AuthScreen() {
       method: 'magic_link',
       reason: otpError ? authErrorReason(otpError.message) : sent.reason,
     });
-    Alert.alert(sent.message);
+    notify(sent.message);
   };
 
   // Google through the system browser: Supabase builds the provider URL, the
@@ -723,7 +725,7 @@ export default function AuthScreen() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '';
       track(failedEvent, { method: 'google', reason: authErrorReason(message) });
-      Alert.alert(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.googleSignInFailed);
+      notify(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.googleSignInFailed);
     } finally {
       googleStartingRef.current = false;
       setGoogleLoading(false);
@@ -792,7 +794,7 @@ export default function AuthScreen() {
       if (code !== 'ERR_REQUEST_CANCELED') {
         const message = error instanceof Error ? error.message : '';
         track(failedEvent, { method: 'apple', reason: authErrorReason(message) });
-        Alert.alert(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.appleSignInFailed);
+        notify(isConnectionFailure(message) ? AUTH_PAGE.connectionFailed : AUTH_PAGE.appleSignInFailed);
       }
     } finally {
       appleStartingRef.current = false;
@@ -1096,6 +1098,7 @@ export default function AuthScreen() {
           </BlurView>
         </View>
       </KeyboardAvoidingView>
+      {dialog}
     </View>
   );
 }

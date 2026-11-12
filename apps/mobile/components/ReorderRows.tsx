@@ -6,7 +6,9 @@
  * Customize My Lists; the rules and saving live with their callers.
  */
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Tag } from './Chip';
+import Toggle from './Toggle';
 import { IconChevronDown, IconChevronUp } from './icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
@@ -41,7 +43,7 @@ export default function ReorderRows({ rows, onNudge, labels, onToggle, onRemove 
           <View key={row.id} style={styles.row}>
             <View style={styles.labelWrap}>
               <Text style={[styles.label, row.hidden && styles.labelHidden]} numberOfLines={1}>{row.label}</Text>
-              {row.hidden && labels.hiddenTag ? <Text style={styles.tag}>{labels.hiddenTag}</Text> : null}
+              {row.hidden && labels.hiddenTag ? <Tag label={labels.hiddenTag} style={styles.tag} /> : null}
             </View>
             <TouchableOpacity style={[styles.nudge, first && styles.nudgeOff]} disabled={first} onPress={() => onNudge(row.id, -1)} accessibilityRole="button" accessibilityLabel={labels.moveUp(row.label)} hitSlop={SLOP}>
               <Chevron up color={colors.textSecondary} />
@@ -50,7 +52,7 @@ export default function ReorderRows({ rows, onNudge, labels, onToggle, onRemove 
               <Chevron color={colors.textSecondary} />
             </TouchableOpacity>
             {onToggle ? (
-              <Switch value={!row.hidden} onValueChange={on => onToggle(row.id, on)} trackColor={{ true: colors.accent }} accessibilityLabel={(row.hidden ? labels.show : labels.hide)?.(row.label)} />
+              <Toggle value={!row.hidden} onValueChange={on => onToggle(row.id, on)} accessibilityLabel={(row.hidden ? labels.show : labels.hide)?.(row.label)} />
             ) : null}
             {onRemove ? (
               <TouchableOpacity style={styles.nudge} onPress={() => onRemove(row.id)} accessibilityRole="button" accessibilityLabel={labels.remove?.(row.label)} hitSlop={SLOP}>
@@ -70,7 +72,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   labelWrap: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   label: { flexShrink: 1, fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
   labelHidden: { color: colors.textMuted },
-  tag: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase', color: colors.textMuted, borderWidth: 1, borderColor: colors.border, borderRadius: radii.pill, paddingHorizontal: 6, paddingVertical: 1 },
+  tag: { alignSelf: 'center' },
   nudge: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
   nudgeOff: { opacity: 0.3 },
   remove: { fontSize: 22, lineHeight: 24, color: colors.textSecondary },

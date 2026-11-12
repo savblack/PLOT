@@ -2,7 +2,7 @@
 // MediaPanel, with the franchise's films as the body. Mirrors
 // apps/web/src/components/CollectionPanel.jsx.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, Modal, StyleSheet, Dimensions, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, Modal, StyleSheet, Dimensions, Animated } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb } from '../lib/tmdb';
@@ -11,6 +11,7 @@ import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { backdropUrl, posterUrl, palettes, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import RetryButton from './RetryButton';
+import Loader from './Loader';
 import CollectionFilms, { CollectionRun, useCollectionProgress } from './CollectionFilms';
 
 const PANEL_H = Dimensions.get('window').height * 0.92;
@@ -76,7 +77,7 @@ export default function CollectionPanel({ collectionId, onClose }: { collectionI
 
           <View style={styles.body}>
             {loading ? (
-              <View style={{ alignItems: 'center', paddingVertical: spacing.xxl }}><ActivityIndicator color={colors.accent} /></View>
+              <Loader />
             ) : error || !stub ? (
               <View style={{ alignItems: 'center', paddingVertical: spacing.xxl }}>
                 <Text style={styles.errorText}>{MEDIA_PANEL.couldNotLoadCollection}</Text>

@@ -92,13 +92,13 @@ A local model is the wrong tool for this cleanup. The script already knows the r
 
 CI tiers are in [actions-minutes.md](actions-minutes.md). A work-in-progress push that only exists so a cloud agent can resume should say `[skip ci]` in the commit message. Open one pull request when the task is ready.
 
-Greptile is turned off. Do not ask it to review a pull request, and do not mention @greptile. Do not run a reviewer inside GitHub Actions or CircleCI.
+Greptile is turned off. Do not ask it to review a pull request, and do not mention @greptile. Do not run a reviewer inside GitHub Actions.
 
 ## Cursor Automations
 
-Cursor Automations are cloud agents. They do not see `~/Developer`. They see the git branch, the same way any other cloud agent does. A draft pull request can start one on "draft opened". A later push can start it again. If the automation then pushes its own commit, CircleCI runs again. A docs-only halt still counts as CI finished, so a "CI completed" trigger will fire even when the suite stopped early.
+Cursor Automations are cloud agents. They do not see `~/Developer`. They see the git branch, the same way any other cloud agent does. A draft pull request can start one on "draft opened". A later push can start it again. If the automation then pushes its own commit, CI runs again. A docs-only halt still counts as CI finished, so a "CI completed" trigger will fire even when the suite stopped early.
 
-Keep an automation that reviews this repo as comments only. Do not let it approve, merge, or open a second pull request for a task that already has one. Do not trigger it on every push and on CI completed for the same pull request. That pair spends a cloud-agent run twice, and a fix commit spends a third CircleCI run.
+Keep an automation that reviews this repo as comments only. Do not let it approve, merge, or open a second pull request for a task that already has one. Do not trigger it on every push and on CI completed for the same pull request. That pair spends a cloud-agent run twice, and a fix commit spends a third CI run.
 
 Bugbot and the security reviewer on the Automations page are billed as cloud-agent usage. Leave them off unless you meant to pay for that review. If one is already on, it should not push fixes onto the same branch.
 
@@ -108,4 +108,4 @@ For a permission change, a billing change, or a migration, the agent who wrote i
 
 ## Not in this change
 
-GitHub schedules that duplicate CircleCI are still on. Remove one only after the CircleCI run of that job has succeeded. The weekly marketing batch stays on the GitHub Mac runner until a Saturday of copy from the coding Grok agent has been compared with it. That agent's assignment is `marketing/copy/GROK-HANDOFF.md`. It does not run the weekly command. Alix does not write this comparison. A second run of the weekly command would book the same week twice.
+The weekly marketing batch stays on the GitHub Mac runner until a Saturday of copy from the coding Grok agent has been compared with it. That agent's assignment is `marketing/copy/GROK-HANDOFF.md`. It does not run the weekly command. Alix does not write this comparison. A second run of the weekly command would book the same week twice.

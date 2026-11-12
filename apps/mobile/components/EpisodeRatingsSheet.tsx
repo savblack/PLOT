@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions,
+  ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions,
 } from 'react-native';
 import {
   episodeAt,
@@ -20,6 +20,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { fontFamily, fontSize, spacing, type Palette } from '../lib/tokens';
 import BottomSheet from './BottomSheet';
 import Button, { TextLink } from './Button';
+import Chip from './Chip';
+import Loader from './Loader';
 import SectionTitle from './SectionTitle';
 
 const BANDS = [
@@ -110,23 +112,13 @@ function EpisodeRatingsSheet({ tvId, details, onClose }: { tvId: number; details
         </View>
 
         {data.status === 'loading' || data.status === 'idle' ? (
-          <ActivityIndicator color={colors.accent} style={styles.loading} />
+          <Loader />
         ) : (
           <>
             <View style={styles.sources}>
               {([['tmdb', MEDIA_PANEL.episodeRatingsTmdb], ['yours', MEDIA_PANEL.episodeRatingsYours]] as const).map(([id, label]) => {
                 const on = source === id;
-                return (
-                  <TouchableOpacity
-                    key={id}
-                    style={[styles.source, on && styles.sourceOn]}
-                    onPress={() => setSource(id)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                  >
-                    <Text style={[styles.sourceText, on && styles.sourceTextOn]}>{label}</Text>
-                  </TouchableOpacity>
-                );
+                return <Chip key={id} label={label} selected={on} onPress={() => setSource(id)} />;
               })}
             </View>
             {message && (
@@ -239,9 +231,7 @@ export function EpisodeRatingsEntry({ tvId, details }: { tvId: number; details: 
   if (episodeRatingSeasonNumbers(details).length === 0) return null;
   return (
     <>
-      <TouchableOpacity onPress={() => setOpen(true)} accessibilityRole="button" style={styles.open}>
-        <Text style={styles.openText}>{MEDIA_PANEL.episodeRatingsTitle}</Text>
-      </TouchableOpacity>
+      <TextLink tone="accent" label={MEDIA_PANEL.episodeRatingsTitle} onPress={() => setOpen(true)} style={styles.open} />
       {open && <EpisodeRatingsSheet tvId={tvId} details={details} onClose={close} />}
     </>
   );
@@ -250,7 +240,6 @@ export function EpisodeRatingsEntry({ tvId, details }: { tvId: number; details: 
 function makeStyles(colors: Palette) {
   return StyleSheet.create({
     open: { alignSelf: 'flex-start', marginBottom: spacing.sm },
-    openText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
     sheet: { flexShrink: 1 },
     head: {
       flexDirection: 'row',
@@ -260,19 +249,7 @@ function makeStyles(colors: Palette) {
       marginBottom: spacing.md,
     },
     title: { flex: 1 },
-    loading: { marginTop: spacing.xxl },
     sources: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-    source: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceRaised,
-      borderRadius: 999,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 6,
-    },
-    sourceOn: { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
-    sourceText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
-    sourceTextOn: { color: colors.bg },
     message: { fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 22 },
     retry: { marginTop: spacing.sm },
     story: {

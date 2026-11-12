@@ -3,8 +3,8 @@
 // Finding matches is @plot/core/useSmartList.js.
 import { useMemo, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, Image, Switch,
-  StyleSheet, ActivityIndicator, Alert, useWindowDimensions,
+  View, Text, TouchableOpacity, ScrollView, Image,
+  StyleSheet, useWindowDimensions,
 } from 'react-native';
 import { TextInput } from '../TextInput';
 import { useRouter, type Href } from 'expo-router';
@@ -39,6 +39,9 @@ import KebabMenu, { KebabMenuItem } from '../KebabMenu';
 import SmartListDialog from './SmartListDialog';
 import SmartListRules from './SmartListRules';
 import Button, { TextLink } from '../Button';
+import Toggle from '../Toggle';
+import Loader from '../Loader';
+import { useDialog } from '../Dialog';
 import {
   asCatalog, asMatches, asRules, asSmartRow,
   type SmartMatch, type SmartRules,
@@ -67,6 +70,7 @@ const dayLabel = (iso: string | null) => {
 export default function SmartListView({ listId }: { listId: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { confirm, dialog } = useDialog();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -165,17 +169,11 @@ export default function SmartListView({ listId }: { listId: string }) {
   const menuItems: KebabMenuItem[] = [
     { label: 'Rename', onPress: () => { setRenameValue(list.name); setRenaming(true); } },
     { label: SMART_LISTS.editRules, onPress: () => (premium ? setEditing(true) : openUpgrade()) },
-    { label: 'Delete list', danger: true, onPress: () => Alert.alert(
-      `Delete "${list.name}"?`,
-      "This can't be undone.",
-      [
-        { text: COMMON.cancel, style: 'cancel' },
-        { text: 'Delete list', style: 'destructive', onPress: async () => {
-          const deleted = await customLists.deleteList(list.id);
-          if (deleted) goBack();
-        } },
-      ],
-    ) },
+    { label: 'Delete list', danger: true, onPress: async () => {
+      if (!(await confirm({ title: `Delete "${list.name}"?`, message: "This can't be undone.", confirmLabel: 'Delete list', destructive: true }))) return;
+      const deleted = await customLists.deleteList(list.id);
+      if (deleted) goBack();
+    } },
   ];
 
   return (
@@ -228,11 +226,10 @@ export default function SmartListView({ listId }: { listId: string }) {
                 {rollUpError ? SMART_LISTS.rollUpFailed : inRollUp ? SMART_LISTS.rollUpOn : SMART_LISTS.rollUpOff}
               </Text>
             </View>
-            <Switch
+            <Toggle
               value={inRollUp}
               disabled={rollUpDraft !== null}
               onValueChange={toggleRollUp}
-              trackColor={{ true: colors.accent }}
               accessibilityLabel={SMART_LISTS.rollUp}
             />
           </View>
@@ -247,7 +244,6 @@ export default function SmartListView({ listId }: { listId: string }) {
           since={since}
           posterW={posterW}
           styles={styles}
-          colors={colors}
           statusOf={(item) => listWatchStatus(item, history?.entries ?? NONE, watching?.items ?? NONE)}
           onOpen={(item) => open(item.tmdb_id, item.media_type)}
           onUpgrade={openUpgrade}
@@ -279,6 +275,7 @@ export default function SmartListView({ listId }: { listId: string }) {
         onClose={() => setUpgrade(false)}
         onCompare={() => router.push(PREMIUM_SETTINGS_PATH as Href)}
       />
+      {dialog}
     </View>
   );
 }
@@ -292,7 +289,7 @@ function BackBar({ onPress, color }: { onPress: () => void; color: string }) {
 }
 
 function Matches({
-  premium, smart, items, fresh, rest, since, posterW, styles, colors, statusOf, onOpen, onUpgrade,
+  premium, smart, items, fresh, rest, since, posterW, styles, statusOf, onOpen, onUpgrade,
 }: {
   premium: boolean;
   smart: SmartQuery;
@@ -302,7 +299,6 @@ function Matches({
   since: string | null;
   posterW: number;
   styles: ReturnType<typeof makeStyles>;
-  colors: Palette;
   statusOf: (item: SmartMatch) => ReturnType<typeof listWatchStatus>;
   onOpen: (item: SmartMatch) => void;
   onUpgrade: () => void;
@@ -317,7 +313,7 @@ function Matches({
       </View>
     );
   }
-  if (smart.loading) return <ActivityIndicator color={colors.textPrimary} style={{ marginTop: spacing.xl }} />;
+  if (smart.loading) return <Loader fill={false} />;
   if (smart.error) {
     return (
       <View style={styles.locked}>

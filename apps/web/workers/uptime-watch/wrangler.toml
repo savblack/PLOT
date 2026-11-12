@@ -107,6 +107,19 @@ SIGNIN_EMAIL = "plot-signin-watch@example.invalid"
 SIGNIN_PROD_SUPABASE_URL = "https://mkegtssedjyqldysvzga.supabase.co"
 SIGNIN_PROD_EMAIL = "plot-signin-watch@example.invalid"
 
+# Automatic rollback (src/rollback.js). When the app check fails and the live
+# version of the web app went out less than ROLLBACK_WINDOW_MINUTES ago, put
+# the previous working version back, email, and open an incident issue.
+# Inert until the CF_PAGES_TOKEN secret is set:
+#   npx wrangler secret put CF_PAGES_TOKEN   # account API token, one permission:
+#                                            # Account, Cloudflare Pages, Edit
+# "off" turns it off without a redeploy of anything else.
+ROLLBACK = "on"
+CF_ACCOUNT_ID = "6143964fcde2d7c381f189ae2645e563"
+PAGES_PROJECT = "plot"
+ROLLBACK_WINDOW_MINUTES = "30"
+ROLLBACK_MAX_PER_DAY = "3"
+
 # Same destination and sender as backup-heartbeat and whats-on-watch.
 ALERT_EMAIL = "sav.black@outlook.com"
 ALERT_FROM = "Plot <hello@theplot.tv>"

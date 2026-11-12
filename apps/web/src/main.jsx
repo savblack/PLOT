@@ -173,18 +173,27 @@ const currentArticle = currentArticleAttribution();
 // the URL. Session scope only, so an older first-touch source stays on first_*.
 const currentCampaign = currentCampaignAttribution();
 
-// posthog-js is the single largest chunk in the app —
-// bigger than React itself — so it's dynamically imported after the app has
-// already started rendering instead of sitting on the initial critical path.
-// Nothing breaks in the gap: every analytics call in lib/analytics.js queues
-// until _setPostHogClient() hands it the real client below.
-if (posthogToken) {
-  // Project-level automatic Web Vitals capture stays off because the marketing
-  // site receives mostly scraper traffic. The app opts in only after a trusted
-  // human interaction, so real app performance remains measurable without
-  // reopening that ingestion problem.
-  startHumanWebVitalsCapture();
+// posthog-js is the single largest chunk in the app (113 KB gzip, bigger than
+// React), so it waits until the route graph below has arrived. Until 2026-11-12
+// it was imported here at startup, in parallel with the route chunks, and on a
+// slow phone connection the two shared the bandwidth: production /signup at
+// 0.8 Mbps had PostHog done at 1.9 s while 1 KB route chunks dragged to 7.5 s
+// and nothing painted until 9.6 s (issue 1596). Nothing breaks in the gap:
+// every analytics call in lib/analytics.js queues until _setPostHogClient()
+// hands it the real client below. The cost is a visitor who leaves before the
+// first page even renders is not recorded at all.
+//
+// Project-level automatic Web Vitals capture stays off because the marketing
+// site receives mostly scraper traffic. The app opts in only after a trusted
+// human interaction, so real app performance remains measurable without
+// reopening that ingestion problem. Started now, not with PostHog: it only
+// listens for the first interaction, and its events queue like any other.
+if (posthogToken) startHumanWebVitalsCapture();
 
+let posthogStarted = false;
+function startPostHog() {
+  if (!posthogToken || posthogStarted) return;
+  posthogStarted = true;
   import('posthog-js').then(({ default: posthog }) => {
     posthog.init(posthogToken, {
       // Default to the managed reverse proxy rather than to posthog-js's own
@@ -338,6 +347,17 @@ Promise.all([
     );
     if (document.getElementById('root')) mount();
     else document.addEventListener('DOMContentLoaded', mount, { once: true });
+    startPostHog();
+    // Kill switches read PostHog flags with a fixed id, not the visitor's, so
+    // they run even when analytics is opted out (isDnt). Production hosts only:
+    // previews and localhost keep their launch settings.
+    if (analyticsAllowed()) {
+      import('./lib/killSwitches.js').then(({ startKillSwitches }) => startKillSwitches({
+        router,
+        host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://a.theplot.tv',
+        token: import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN,
+      })).catch(() => { /* a switch failing must never break start-up */ });
+    }
   })
   .catch((error) => {
     if (isChunkError(error) && !recentlyReloaded()) {
@@ -347,4 +367,6 @@ Promise.all([
     }
     console.error('Plot startup error:', error);
     window.__plotShowStartupFallback?.();
+    // A broken start is exactly what Error Tracking should see.
+    startPostHog();
   });

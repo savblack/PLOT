@@ -19,6 +19,7 @@ import { EVENTS } from '@plot/core/analyticsEvents.js';
 import UpgradeSheet from './UpgradeSheet';
 import BottomSheet from './BottomSheet';
 import Button from './Button';
+import { Tag } from './Chip';
 import SectionTitle from './SectionTitle';
 
 /** The poster wall: six across, three down, as on web. */
@@ -86,9 +87,7 @@ export function CuratedListCard({ curated, width, height, onPress }: {
         ))}
       </View>
       <View style={styles.content} pointerEvents="none">
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{COPY.cardBadge.toUpperCase()}</Text>
-        </View>
+        <Tag tone="accent" label={COPY.cardBadge.toUpperCase()} style={styles.badge} />
         <Text style={styles.title}>{curated.title}</Text>
         <Text style={styles.meta}>{COPY.cardMeta(curated.entries.length, curated.source.name)}</Text>
       </View>
@@ -231,11 +230,7 @@ export function CuratedListPanel({ curated, user, profile, customLists, track, o
 const makeStyles = (colors: Palette) => StyleSheet.create({
   card: { borderRadius: radii.lg, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   content: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg },
-  badge: {
-    alignSelf: 'flex-start', backgroundColor: colors.accentDim, borderWidth: 1, borderColor: colors.accent,
-    borderRadius: radii.badge, paddingHorizontal: 8, paddingVertical: 3, marginBottom: spacing.sm,
-  },
-  badgeText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accent, letterSpacing: 0.8 },
+  badge: { marginBottom: spacing.sm },
   title: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: '#fff' },
   meta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: 'rgba(255,255,255,0.72)', marginTop: 2 },
 

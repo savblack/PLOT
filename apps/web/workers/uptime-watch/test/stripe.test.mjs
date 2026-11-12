@@ -159,7 +159,10 @@ test('worker: a standing Stripe alarm does not swallow a new app outage', async 
     if (url.startsWith('https://api.stripe.com/v1/events')) {
       return Response.json({ data: [{ id: 'evt_x', type: 'invoice.paid', created: Math.floor(Date.now() / 1000) - 3600 }] });
     }
-    if (url === 'https://app.example/') return new Response(appUp ? '<div id="root">' : 'down', { status: appUp ? 200 : 502 });
+    if (url === 'https://app.example/') {
+      return new Response(appUp ? '<div id="root"></div><script type="module" src="/assets/index.js"></script>' : 'down', { status: appUp ? 200 : 502 });
+    }
+    if (url === 'https://app.example/assets/index.js') return new Response('export {}', { headers: { 'content-type': 'application/javascript' } });
     if (url === 'https://api.resend.com/emails') { sent.push(JSON.parse(init.body).subject); return Response.json({}); }
     throw new Error(`unexpected fetch ${url}`);
   };
