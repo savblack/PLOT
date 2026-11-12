@@ -3,6 +3,7 @@ import { posterUrl } from '../utils/images.js';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { tmdb } from '@plot/core/tmdb.js';
+import { describeCalendarEvent, calendarEventMeta, calendarEventBehind } from '@plot/core/calendar.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { MEDIA } from '../copy/media.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
@@ -19,28 +20,6 @@ const BellIcon = () => (
     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
   </svg>
 );
-
-/* Line 2 of a row: what this date actually is. Episodes read as their code
-   and name ("S05E03 · Blindsided"); a first episode with no name yet is the
-   season premiere; releases say which kind. */
-function describeEvent(ev) {
-  switch (ev.type) {
-    case 'episode': {
-      const ep   = ev.item?.episode;
-      const name = ep?.name || (ep?.episode_number === 1 ? CALENDAR_VIEW.seasonPremiere : null);
-      return name ? `${ev.label} · ${name}` : ev.label;
-    }
-    case 'cinema':    return CALENDAR_VIEW.inCinemas;
-    case 'streaming': return CALENDAR_VIEW.eventLabel.streaming;
-    case 'reminder':  return CALENDAR_VIEW.eventLabel.reminder;
-    default:          return ev.label;
-  }
-}
-
-/* Line 3: network and air time, whichever we know. Nothing when we know neither. */
-function eventMeta(ev) {
-  return [ev.item?.network_name, ev.item?.air_time].filter(Boolean).join(' · ');
-}
 
 export default function CalendarEventRows({ day, openPanel }) {
   const art = useUserArtwork();
@@ -68,8 +47,8 @@ export default function CalendarEventRows({ day, openPanel }) {
           const title      = item?.title || item?.name || MEDIA.unknown;
           const isReminder = ev.type === 'reminder';
           const isLoading  = isReminder && resolving === item?.id;
-          const meta       = eventMeta(ev);
-          const behind     = ev.type === 'episode' && ev.behind > 0 ? ev.behind : 0;
+          const meta       = calendarEventMeta(ev);
+          const behind     = calendarEventBehind(ev);
 
           const handleClick = isReminder
             ? () => openReminder(title, item?.id)
@@ -88,7 +67,7 @@ export default function CalendarEventRows({ day, openPanel }) {
               </div>
               <div className="cal-stream-info">
                 <div className="cal-stream-title">{title}</div>
-                <div className="cal-stream-sub">{describeEvent(ev)}</div>
+                <div className="cal-stream-sub">{describeCalendarEvent(ev)}</div>
                 {meta && <div className="cal-stream-meta">{meta}</div>}
               </div>
               {behind > 0 && (

@@ -11,11 +11,15 @@ export interface CalendarEvent {
   date: string;
   type: 'cinema' | 'streaming' | 'episode' | 'reminder';
   label: string;
+  /** In-progress shows only: aired episodes between where you are and this one. */
+  behind?: number;
   item: {
     tmdb_id?: number | null;
     title?: string;
     poster_path?: string | null;
     media_type?: string;
+    network_name?: string | null;
+    air_time?: string | null;
     episode?: { name?: string; episode_number?: number; season_number?: number } | null;
   };
 }

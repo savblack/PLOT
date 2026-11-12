@@ -395,7 +395,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   monthBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   monthChevron: { fontSize: 18, color: colors.textSecondary },
   monthChevronOff: { opacity: 0.35 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  // Capped, as web caps it on a phone (.hist-mini-grid, 240px): poster-shaped
+  // day cells at full width made a very tall card, where a day should be a
+  // thumbnail.
+  grid: { flexDirection: 'row', flexWrap: 'wrap', maxWidth: 240 },
   weekday: { width: `${100 / 7}%`, textAlign: 'center', fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textMuted, paddingBottom: 2 },
   cell: { width: `${100 / 7}%`, aspectRatio: 2 / 3, padding: 1.5 },
   dayEmpty: { flex: 1, borderRadius: 5, backgroundColor: colors.surfaceSunken, alignItems: 'center', justifyContent: 'center' },

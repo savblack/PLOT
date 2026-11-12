@@ -13,8 +13,14 @@ import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useCalendarEvents, CalendarEvent } from '../../hooks/useCalendarEvents';
-import { dateToLocalStr, localDateStr } from '@plot/core/date.js';
-import { getCalendarRelativeLabel, msUntilNextLocalMidnight } from '@plot/core/calendar.js';
+import { dateToLocalStr, localDateStr, monthLongName } from '@plot/core/date.js';
+import {
+  getCalendarRelativeLabel, msUntilNextLocalMidnight,
+  groupCalendarEventsByDay, groupCalendarDaysByMonth,
+  describeCalendarEvent, calendarEventMeta, calendarEventBehind,
+} from '@plot/core/calendar.js';
+import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
+import { MEDIA } from '@plot/core/copy/media.js';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
@@ -60,67 +66,94 @@ function buildMonthDays(year: number, month: number) {
 }
 
 // ── Event type colours ────────────────────────────────────────────────
+// The dots under a day in the Week and Month grids.
 const EVENT_COLORS = (colors: Palette): Record<string, string> => ({
   episode:   colors.chipEpisode,
   cinema:    colors.chipCinema,
   streaming: colors.chipStreaming,
 });
-const EVENT_LABELS: Record<string, string> = {
-  episode:   'Episode',
-  cinema:    'Cinema',
-  streaming: 'Streaming',
-};
 
-// ── Event row ─────────────────────────────────────────────────────────
-function EventRow({ event, onPress }: { event: CalendarEvent; onPress?: () => void }) {
+/* Web draws the "behind" pill's border as the accent mixed 34% into the
+   hairline (color-mix). React Native has no color-mix, so a hex accent gets
+   that alpha and anything else falls back to the strong hairline. */
+function behindPillBorder(colors: Palette) {
+  return /^#[0-9a-f]{6}$/i.test(colors.accent) ? `${colors.accent}57` : colors.borderStrong;
+}
+
+const countEvents = (day: { events: CalendarEvent[] }) => day.events.length;
+
+// ── Stream row ────────────────────────────────────────────────────────
+/* One title on one date, drawn like web's .cal-stream-row at phone width:
+   poster, then title / what the date is / where and when, and a chevron.
+   No card: the caller separates rows with hairlines.
+
+   Web's phone layout lets the "behind" pill wrap to its own line, 60px in,
+   which is the text column's left edge. Here it sits in the text column under
+   the last line, which lands in the same place and keeps the chevron at the
+   right edge instead of trailing the pill. */
+function StreamRow({ event, ds, last }: { event: CalendarEvent; ds: string; last: boolean }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { open: openPanel } = useMediaPanel();
   const art = useUserArtwork();
-  const img    = posterUrl(displayPosterPath(art.apply(event.item)), 'w92');
-  const title  = event.item.title || 'Unknown';
-  const chip   = event.label || EVENT_LABELS[event.type] || event.type;
-  const chipBg = EVENT_COLORS(colors)[event.type] || colors.textMuted;
-  const ep     = event.item.episode;
-  const epCode = ep
-    ? `S${String(ep.season_number).padStart(2,'0')}E${String(ep.episode_number).padStart(2,'0')}`
-    : null;
+  const item   = event.item;
+  const img    = posterUrl(displayPosterPath(art.apply(item)), 'w92');
+  const title  = item.title || MEDIA.unknown;
+  const sub    = describeCalendarEvent(event);
+  const meta   = calendarEventMeta(event);
+  const behind = calendarEventBehind(event);
+  const tmdbId = item.tmdb_id;
+  const dateLabel = parseDateStr(ds).toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
-    <TouchableOpacity style={styles.eventRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
-      <View style={styles.eventPoster}>
-        {img
-          ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
-        }
+    <TouchableOpacity
+      style={[styles.streamRow, last && styles.streamRowLast]}
+      onPress={() => { if (tmdbId) openPanel(tmdbId, item.media_type === 'tv' ? 'tv' : 'movie'); }}
+      disabled={!tmdbId}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={[title, sub, dateLabel].filter(Boolean).join(', ')}
+    >
+      <View style={styles.streamPoster}>
+        {img ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
       </View>
-      <View style={styles.eventInfo}>
-        <Text style={styles.eventTitle} numberOfLines={2}>{title}</Text>
-        {ep?.name ? <Text style={styles.eventSub} numberOfLines={1}>{ep.name}</Text> : null}
+      <View style={styles.streamInfo}>
+        <Text style={styles.streamTitle}>{title}</Text>
+        {sub ? <Text style={styles.streamSub}>{sub}</Text> : null}
+        {meta ? <Text style={styles.streamMeta}>{meta}</Text> : null}
+        {behind > 0 && (
+          <View style={[styles.streamBehind, { borderColor: behindPillBorder(colors) }]}>
+            <Text style={styles.streamBehindText}>{CALENDAR_VIEW.episodesBehind(behind)}</Text>
+          </View>
+        )}
       </View>
-      <View style={[styles.eventChip, { backgroundColor: chipBg + '22', borderColor: chipBg + '55', borderWidth: 1 }]}>
-        <Text style={[styles.eventChipText, { color: chipBg }]}>{epCode || chip}</Text>
-      </View>
+      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <Polyline points="9,18 15,12 9,6" />
+      </Svg>
     </TouchableOpacity>
   );
 }
 
 // ── Day panel (events for selected day) ───────────────────────────────
-function DayPanel({ events, label }: { events: CalendarEvent[]; label: string }) {
+function DayPanel({ events, label, ds }: { events: CalendarEvent[]; label: string; ds: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { open: openPanel } = useMediaPanel();
   return (
     <View style={styles.dayPanel}>
-      <Text style={styles.dayPanelHeader}>{label}</Text>
+      <Text style={styles.dayPanelHeader} accessibilityRole="header">{label}</Text>
       {events.length === 0
         ? <Text style={styles.dayPanelEmpty}>Nothing on this day</Text>
-        : events.map((ev, i) => <EventRow key={i} event={ev} onPress={() => ev.item.tmdb_id && openPanel(ev.item.tmdb_id, ev.item.media_type === 'tv' ? 'tv' : 'movie')} />)
+        : events.map((ev, i) => <StreamRow key={i} event={ev} ds={ds} last={i === events.length - 1} />)
       }
     </View>
   );
 }
 
-// ── Sub-tab button ────────────────────────────────────────────────────
+// ── View switch ───────────────────────────────────────────────────────
+/* One option of the Agenda / Week / Month switch. Web has no such switch on
+   a phone (its Calendar is the stream only), so this borrows the look of
+   web's own segmented control, .cal-scope: a sunken track, the chosen option
+   on a plain surface, no accent. */
 function SubTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -129,9 +162,10 @@ function SubTab({ label, active, onPress }: { label: string; active: boolean; on
       style={[styles.subTab, active && styles.subTabActive]}
       onPress={onPress}
       activeOpacity={0.7}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
     >
-      <Text style={[styles.subTabText, active && styles.subTabTextActive]}>{label}</Text>
-      <View style={[styles.subTabUnderline, active && styles.subTabUnderlineActive]} />
+      <Text style={[styles.subTabText, active && styles.subTabTextActive]} numberOfLines={1}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -141,9 +175,8 @@ export default function CalendarScreen() {
   const { colors, resolved } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const { open: openPanel } = useMediaPanel();
   const { watchlist, watching } = useAppData();
-  const { loading, eventsForDate } = useCalendarEvents(watchlist.items, watching.items);
+  const { loading, events, eventsForDate } = useCalendarEvents(watchlist.items, watching.items);
 
   /* "Today" has to survive the app being left open across midnight — it was
      frozen at mount, so a backgrounded app kept highlighting yesterday and
@@ -214,19 +247,19 @@ export default function CalendarScreen() {
   // version had no "Yesterday" branch, so yesterday read as a bare weekday.
   const selectedLabel = getCalendarRelativeLabel(selectedDate, todayStr);
 
-  // Agenda: upcoming days this month that have events
-  const agendaDays = useMemo(() => {
-    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
-    return days
-      .filter(d => d.current)
-      .filter(d => !isCurrentMonth || dateToLocalStr(d.date) >= todayStr)
-      .map(d => { const ds = dateToLocalStr(d.date); return { date: d.date, ds, events: eventsForDate(ds) }; })
-      .filter(d => d.events.length > 0);
-  }, [days, eventsForDate, year, month, today, todayStr]);
+  /* Agenda: web's "My dates" stream. Every upcoming date from today forward,
+     one entry per day, grouped under month headings. It is not paged by
+     month, so the period arrows only show for Week and Month. */
+  const agendaMonths = useMemo(
+    () => groupCalendarDaysByMonth(groupCalendarEventsByDay(events, todayStr), countEvents),
+    [events, todayStr],
+  );
+  const todayYear = today.getFullYear();
 
   const dayEvents = eventsForDate(selectedDate);
 
-  const HEADER_H = insets.top + 92;
+  // The same header height as My Lists and History: title bar plus one row.
+  const HEADER_H = insets.top + 96;
   const CELL_W   = (SCREEN_W - spacing.xl * 2) / 7;
 
   const isDataLoading = loading || watchlist.loading || watching.loading;
@@ -281,7 +314,7 @@ export default function CalendarScreen() {
                       </View>
                       {cellEvents.length > 0 && (
                         <View style={styles.pillRow}>
-                          {cellEvents.slice(0, 2).map((ev: any, j: number) => (
+                          {cellEvents.slice(0, 2).map((ev, j) => (
                             <View key={j} style={[styles.dot, { backgroundColor: EVENT_COLORS(colors)[ev.type] || colors.textMuted }]} />
                           ))}
                           {cellEvents.length > 2 && (
@@ -295,7 +328,7 @@ export default function CalendarScreen() {
               </View>
             ))}
 
-            <DayPanel events={dayEvents} label={selectedLabel} />
+            <DayPanel events={dayEvents} label={selectedLabel} ds={selectedDate} />
           </>
         )}
 
@@ -322,7 +355,7 @@ export default function CalendarScreen() {
                     </View>
                     {cellEvents.length > 0 && (
                       <View style={styles.pillRow}>
-                        {cellEvents.slice(0, 3).map((ev: any, j: number) => (
+                        {cellEvents.slice(0, 3).map((ev, j) => (
                           <View key={j} style={[styles.dot, { backgroundColor: EVENT_COLORS(colors)[ev.type] || colors.textMuted }]} />
                         ))}
                       </View>
@@ -332,32 +365,53 @@ export default function CalendarScreen() {
               })}
             </View>
 
-            <DayPanel events={dayEvents} label={selectedLabel} />
+            <DayPanel events={dayEvents} label={selectedLabel} ds={selectedDate} />
           </>
         )}
 
         {/* ════════ AGENDA VIEW ════════ */}
         {view === 'agenda' && (
-          agendaDays.length === 0 ? (
+          agendaMonths.length === 0 ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>Nothing scheduled</Text>
-              <Text style={styles.emptyBody}>No upcoming releases or episodes this month.</Text>
+              <Text style={styles.emptyTitle}>{CALENDAR_VIEW.empty.title}</Text>
+              <Text style={styles.emptyBody}>{CALENDAR_VIEW.empty.body}</Text>
             </View>
           ) : (
-            agendaDays.map(({ date, ds, events: dayEvs }) => {
-              const isToday  = ds === todayStr;
-              const dayName  = date.toLocaleDateString('en', { weekday: 'short' }).toUpperCase();
-              return (
-                <View key={ds} style={styles.agendaGroup}>
-                  <View style={styles.agendaDateRow}>
-                    <Text style={styles.agendaDayNum}>{date.getDate()}</Text>
-                    <Text style={styles.agendaDayName}>{dayName}</Text>
-                    {isToday && <View style={styles.todayPill}><Text style={styles.todayPillText}>Today</Text></View>}
+            <View style={styles.stream}>
+              {agendaMonths.map(m => {
+                const monthName = monthLongName(m.year, m.month, todayYear);
+                const count = CALENDAR_VIEW.dateCount(m.count);
+                return (
+                  <View key={m.key} style={styles.streamGroup}>
+                    <View
+                      style={styles.streamMonth}
+                      accessible
+                      accessibilityRole="header"
+                      accessibilityLabel={`${monthName}, ${count}`}
+                    >
+                      <Text style={styles.streamMonthName}>{monthName}</Text>
+                      <Text style={styles.streamMonthCount}>{count}</Text>
+                    </View>
+                    {m.days.map(day => {
+                      const date = parseDateStr(day.ds);
+                      return (
+                        <View key={day.ds} style={styles.streamDay}>
+                          <View style={styles.streamGutter}>
+                            <Text style={styles.streamNum}>{date.getDate()}</Text>
+                            <Text style={styles.streamWd}>{date.toLocaleDateString('en', { weekday: 'short' })}</Text>
+                          </View>
+                          <View style={styles.streamRows}>
+                            {day.events.map((ev, i) => (
+                              <StreamRow key={i} event={ev} ds={day.ds} last={i === day.events.length - 1} />
+                            ))}
+                          </View>
+                        </View>
+                      );
+                    })}
                   </View>
-                  {dayEvs.map((ev: any, i: number) => <EventRow key={i} event={ev} onPress={() => ev.item.tmdb_id && openPanel(ev.item.tmdb_id, ev.item.media_type === 'tv' ? 'tv' : 'movie')} />)}
-                </View>
-              );
-            })
+                );
+              })}
+            </View>
           )
         )}
 
@@ -371,30 +425,28 @@ export default function CalendarScreen() {
       >
         <ScreenHeaderBar title="Calendar" />
 
-        {/* Row 2: underline tabs (left flex) + divider + date nav (right) */}
+        {/* Row 2: the view switch, and the period arrows for Week and Month */}
         <View style={styles.toolbarRow}>
-          {/* Three equal underline tabs */}
-          <View style={styles.tabsStrip}>
+          <View style={styles.tabsStrip} accessibilityRole="tablist">
             <SubTab label="Agenda" active={view === 'agenda'} onPress={() => switchView('agenda')} />
             <SubTab label="Week"   active={view === 'week'}   onPress={() => switchView('week')} />
             <SubTab label="Month"  active={view === 'month'}  onPress={() => switchView('month')} />
           </View>
-          {/* Vertical divider */}
-          <View style={styles.toolbarDivider} />
-          {/* Date nav */}
-          <View style={styles.monthNav}>
-            <TouchableOpacity onPress={prevPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Previous period" accessibilityRole="button">
-              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Polyline points="15,18 9,12 15,6" />
-              </Svg>
-            </TouchableOpacity>
-            <Text style={styles.monthNavLabel}>{navLabel}</Text>
-            <TouchableOpacity onPress={nextPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Next period" accessibilityRole="button">
-              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Polyline points="9,18 15,12 9,6" />
-              </Svg>
-            </TouchableOpacity>
-          </View>
+          {view !== 'agenda' && (
+            <View style={styles.monthNav}>
+              <TouchableOpacity onPress={prevPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Previous period" accessibilityRole="button">
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Polyline points="15,18 9,12 15,6" />
+                </Svg>
+              </TouchableOpacity>
+              <Text style={styles.monthNavLabel} numberOfLines={1}>{navLabel}</Text>
+              <TouchableOpacity onPress={nextPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Next period" accessibilityRole="button">
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Polyline points="9,18 15,12 9,6" />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </BlurView>
     </View>
@@ -412,28 +464,31 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  // Toolbar row — underline tab strip + divider + date nav
+  // Toolbar row: the view switch on the left, the period arrows on the right
   toolbarRow: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'stretch',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    // The page gutter, so the switch starts where My Lists' and History's
+    // row starts, under the header's search button.
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
   },
+  // Web's .cal-scope: a sunken track holding the options.
   tabsStrip: {
-    flex: 1,
     flexDirection: 'row',
-  },
-  toolbarDivider: {
-    width: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+    alignItems: 'center',
+    gap: 2,
+    padding: 3,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceSunken,
   },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
   },
-  navBtn: { width: 26, height: '100%' as any, alignItems: 'center', justifyContent: 'center' },
+  navBtn: { width: 26, height: 32, alignItems: 'center', justifyContent: 'center' },
   monthNavLabel: {
     fontFamily: fontFamily.sansMedium,
     fontSize: fontSize.xs,
@@ -442,30 +497,21 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     textAlign: 'center',
   },
 
+  // Web's .cal-scope-btn, and .active
   subTab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: spacing.md,
+    borderRadius: 10,
   },
-  subTabActive: {},
-  subTabUnderline: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: 'transparent',
-  },
-  subTabUnderlineActive: {
-    backgroundColor: colors.accent,
-  },
+  subTabActive: { backgroundColor: colors.surface },
   subTabText: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
   subTabTextActive: {
-    color: colors.accent,
+    fontFamily: fontFamily.sansBold,
+    color: colors.textPrimary,
   },
 
   // Month grid
@@ -506,24 +552,20 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   weekCell: { alignItems: 'center', gap: spacing.xs },
   weekCellDayName: { fontFamily: fontFamily.sansBold, fontSize: 9, color: colors.textMuted, letterSpacing: 0.4 },
 
-  // Day panel
+  // Day panel: the chosen day's rows under the Week strip or Month grid.
+  // Flat like the stream: a small heading, a hairline, then rows.
   dayPanel: {
-    marginHorizontal: spacing.xl,
+    marginHorizontal: spacing.lg,
     marginTop: spacing.md,
     marginBottom: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
   },
   dayPanelHeader: {
     fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.xs,
-    letterSpacing: 0.6,
+    fontSize: 10,
+    letterSpacing: 0.9,
     textTransform: 'uppercase',
     color: colors.textMuted,
-    padding: spacing.md,
+    paddingBottom: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
@@ -531,56 +573,75 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    padding: spacing.md,
-    textAlign: 'center',
+    paddingVertical: spacing.lg,
   },
 
-  // Event row
-  eventRow: {
+  /* Agenda stream. Sizes are web's .cal-stream-* rules as they resolve at
+     phone width (apps/web/src/styles/app.css, the max-width: 600px block). */
+  stream: { paddingHorizontal: spacing.lg, gap: 14 },
+  streamGroup: { gap: 14 },
+  streamMonth: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 10,
+    paddingTop: 4,
+    paddingHorizontal: 4,
+  },
+  streamMonthName: { fontFamily: fontFamily.display, fontSize: 24, lineHeight: 28, color: colors.textPrimary },
+  streamMonthCount: { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textMuted },
+  streamDay: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+  },
+  streamGutter: { width: 36, flexShrink: 0, gap: 4, paddingTop: 6 },
+  streamNum: { fontFamily: fontFamily.display, fontSize: 28, lineHeight: 30, letterSpacing: -1.1, color: colors.textPrimary },
+  streamWd: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 10,
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
+  streamRows: { flex: 1, minWidth: 0 },
+  streamRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-    gap: spacing.md,
   },
-  eventPoster: {
-    width: 36, height: 54,
+  streamRowLast: { borderBottomWidth: 0 },
+  streamPoster: {
+    width: 48, height: 72,
     borderRadius: radii.sm,
     overflow: 'hidden',
-    backgroundColor: colors.surfaceSunken,
+    backgroundColor: colors.surfaceRaised,
     flexShrink: 0,
   },
-  eventInfo: { flex: 1 },
-  eventTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary, marginBottom: 3 },
-  eventSub:   { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
-  eventChip: {
-    borderRadius: radii.badge,
-    paddingHorizontal: 7,
+  streamInfo: { flex: 1, minWidth: 0, gap: 4 },
+  streamTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
+  streamSub:   { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  streamMeta:  { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textMuted },
+  streamBehind: {
+    alignSelf: 'flex-start',
     paddingVertical: 3,
-    flexShrink: 0,
-  },
-  eventChipText: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.3 },
-
-  // Agenda
-  agendaGroup: { marginBottom: spacing.sm },
-  agendaDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  agendaDayNum: { fontFamily: fontFamily.display, fontSize: 26, color: colors.textPrimary, width: 34 },
-  agendaDayName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textMuted, letterSpacing: 0.6, textTransform: 'uppercase' },
-  todayPill: {
-    backgroundColor: colors.accentDim,
-    borderRadius: radii.badge,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    backgroundColor: colors.accentDim,
   },
-  todayPillText: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.accent },
+  streamBehindText: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: colors.accentText,
+  },
 
   empty: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl * 2 },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },

@@ -178,9 +178,11 @@ function PodiumTile({ rank, item, width, height, onOpen, onAdd }: {
   );
 }
 
-export function TopTenSection({ listType, title, topLists, history, onDraggingChange }: {
+export function TopTenSection({ listType, title, showTitle = true, topLists, history, onDraggingChange }: {
   listType: ListType;
   title: string;
+  /** False where a Movies / TV switch above already names the type (My Lists). */
+  showTitle?: boolean;
   topLists: any;
   history: any[];
   onDraggingChange?: (dragging: boolean) => void;
@@ -213,7 +215,7 @@ export function TopTenSection({ listType, title, topLists, history, onDraggingCh
   return (
     <View>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTypeLabel}>{title}</Text>
+        {showTitle ? <Text style={styles.sectionTypeLabel}>{title}</Text> : <View style={{ flex: 1 }} />}
         {items.length > 0 && (
           <TouchableOpacity onPress={() => setEditMode(m => !m)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Text style={{ color: colors.accent, fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm }}>

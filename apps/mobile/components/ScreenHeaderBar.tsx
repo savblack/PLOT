@@ -16,6 +16,7 @@ export default function ScreenHeaderBar({
   center,
   showSearch = true,
   onSearchPress,
+  searchLabel = 'Open search',
   showNotifications = true,
   rightExtra,
 }: {
@@ -23,9 +24,11 @@ export default function ScreenHeaderBar({
   center?: ReactNode;
   showSearch?: boolean;
   onSearchPress?: () => void;
+  /** Names the search button where a screen points it at its own search (My Lists, History). */
+  searchLabel?: string;
   /** Screens that are themselves the notifications view hide the bell. */
   showNotifications?: boolean;
-  /** Sits after the bell (Home's filter). */
+  /** Sits after the bell, in its own icon slot: the page's filter on Home, My Lists and History. */
   rightExtra?: ReactNode;
 }) {
   const { colors } = useTheme();
@@ -42,7 +45,7 @@ export default function ScreenHeaderBar({
           style={styles.iconBtn}
           onPress={onSearchPress ?? (() => router.push('/(app)/search'))}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Open search"
+          accessibilityLabel={searchLabel}
           accessibilityRole="button"
         >
           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -78,7 +81,9 @@ export default function ScreenHeaderBar({
         </TouchableOpacity>
       ) : null}
 
-      {rightExtra ?? (showNotifications ? null : <View style={styles.iconBtn} />)}
+      {/* A screen's extra takes the same 36pt slot as the bell, so every page's
+          filter lands in the same place without styling its own wrapper. */}
+      {rightExtra ? <View style={styles.iconBtn}>{rightExtra}</View> : (showNotifications ? null : <View style={styles.iconBtn} />)}
       </View>
     </View>
   );
