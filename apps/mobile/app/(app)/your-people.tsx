@@ -4,7 +4,8 @@ import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } fr
 import { TextInput } from '../../components/TextInput';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import { IconSearch, IconCheck } from '../../components/icons';
 import { usePeopleFeed, usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { feedItems, filterFeedByType, groupByDate, groupByPerson } from '@plot/core/peopleFeed.js';
 import { localDateStr, monthLongName, shortDayMonth, weekdayDayMonth } from '@plot/core/date.js';
@@ -130,10 +131,7 @@ function FollowSearch({ follow }: { follow: ReturnType<typeof useFollowPerson> }
   return (
     <View style={{ marginTop: spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg }}>
-        <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-          <Circle cx={11} cy={11} r={7} stroke={colors.textMuted} strokeWidth={2} />
-          <Line x1={16.5} y1={16.5} x2={21} y2={21} stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" />
-        </Svg>
+        <IconSearch size={16} color={colors.textMuted} />
         <TextInput
           value={query}
           onChangeText={setQuery}
@@ -282,9 +280,7 @@ export default function YourPeopleScreen() {
               >
                 <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: on ? colors.textPrimary : colors.textMuted }}>{row.label}</Text>
                 {on && (
-                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                    <Polyline points="20 6 9 17 4 12" stroke={colors.accent} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-                  </Svg>
+                  <IconCheck size={16} color={colors.accent} strokeWidth={2.4} />
                 )}
               </TouchableOpacity>
             );

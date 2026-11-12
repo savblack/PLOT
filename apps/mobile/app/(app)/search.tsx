@@ -9,7 +9,8 @@ import { TextInput } from '../../components/TextInput';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import { IconSearch, IconChevronLeft, IconClose } from '../../components/icons';
 import { useUnifiedSearch } from '@plot/core/useUnifiedSearch.js';
 import { describeSearchResult, pushRecentSearch } from '@plot/core/search.js';
 import { useGenres } from '@plot/core/useGenres.js';
@@ -233,14 +234,9 @@ export default function SearchScreen() {
           accessibilityLabel="Go back"
           accessibilityRole="button"
         >
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M15 18l-6-6 6-6" />
-          </Svg>
+          <IconChevronLeft size={24} color={colors.textPrimary} />
         </Pressable>
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <Circle cx={11} cy={11} r={7} />
-          <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-        </Svg>
+        <IconSearch size={18} color={colors.textMuted} />
         <TextInput
           ref={inputRef}
           style={styles.input}
@@ -267,10 +263,7 @@ export default function SearchScreen() {
             accessibilityRole="button"
             accessibilityLabel={COMMON.clearSearch}
           >
-            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
-              <Line x1={18} y1={6} x2={6} y2={18} />
-              <Line x1={6} y1={6} x2={18} y2={18} />
-            </Svg>
+            <IconClose size={16} color={colors.textMuted} />
           </Pressable>
         ) : null}
       </View>

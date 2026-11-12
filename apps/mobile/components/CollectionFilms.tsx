@@ -4,7 +4,8 @@ import { customListCreationError, isCustomListLimitError } from '@plot/core/cust
 // panel opened from search. Mirrors apps/web/src/components/CollectionFilms.jsx.
 import { useMemo, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import Svg, { Circle, Path, Polyline } from 'react-native-svg';
+import Svg, { Circle, Polyline } from 'react-native-svg';
+import { IconPlus } from './icons';
 import { collectionPartYear, collectionProgress } from '@plot/core/collections.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
 import { canCreateCustomList } from '@plot/core/premium.js';
@@ -156,9 +157,7 @@ export default function CollectionFilms({ stub, parts, items }: { stub: { id: nu
           )}
           {saveState.status !== 'saved' && (
             <TouchableOpacity style={[styles.saveBtn, saveState.status === 'saving' && { opacity: 0.6 }]} onPress={saveAsList} disabled={saveState.status === 'saving'} activeOpacity={0.7} accessibilityRole="button">
-              <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <Path d="M12 5v14M5 12h14" />
-              </Svg>
+              <IconPlus size={13} color={colors.textSecondary} />
               <Text style={styles.saveBtnText}>{saveState.status === 'saving' ? MEDIA_PANEL.savingCollection : MEDIA_PANEL.saveCollectionAsList}</Text>
             </TouchableOpacity>
           )}

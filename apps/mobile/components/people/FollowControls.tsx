@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import Svg, { Line, Path, Polyline } from 'react-native-svg';
+import { IconCheck, IconClose, IconPlus } from '../icons';
 import { on, PERSON_FOLLOWED_EVENT } from '@plot/core/events.js';
 import { PEOPLE as P } from '@plot/core/copy/people.js';
 import { fontFamily, fontSize, profileUrl, radii, spacing } from '../../lib/tokens';
@@ -12,18 +12,13 @@ import type { FollowTarget } from './useFollowPerson';
 
 function PlusIcon({ color }: { color: string }) {
   return (
-    <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round">
-      <Line x1="12" y1="5" x2="12" y2="19" />
-      <Line x1="5" y1="12" x2="19" y2="12" />
-    </Svg>
+    <IconPlus size={12} color={color} strokeWidth={2.4} />
   );
 }
 
 function TickIcon({ color }: { color: string }) {
   return (
-    <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-      <Polyline points="20 6 9 17 4 12" />
-    </Svg>
+    <IconCheck size={12} color={color} strokeWidth={2.4} />
   );
 }
 
@@ -208,9 +203,7 @@ export function FollowToastHost() {
           <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary }}>{P.toast.view}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setToast(null)} accessibilityRole="button" accessibilityLabel={P.toast.dismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
-            <Path d="M18 6 6 18M6 6l12 12" />
-          </Svg>
+          <IconClose size={14} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
     </View>

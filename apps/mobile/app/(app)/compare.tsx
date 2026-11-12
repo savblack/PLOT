@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { IconChevronLeft } from '../../components/icons';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -64,9 +65,7 @@ export default function ComparePickerScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }]}
       >
         <TouchableOpacity style={styles.iconBtn} onPress={back} accessibilityRole="button" accessibilityLabel={T.back}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M15 18l-6-6 6-6" />
-          </Svg>
+          <IconChevronLeft color={colors.textPrimary} />
         </TouchableOpacity>
 
         <Text style={styles.h1} accessibilityRole="header">{T.pickerTitle}</Text>

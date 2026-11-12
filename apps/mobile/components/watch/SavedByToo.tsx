@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { IconChevronRight } from '../icons';
 import { useRouter, type Href } from 'expo-router';
 import { personName } from '@plot/core/watchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
@@ -46,9 +46,7 @@ export function SavedByToo({ tmdbId, mediaType }: { tmdbId: number; mediaType: s
           </View>
         ))}
       </View>
-      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <Path d="M9 18l6-6-6-6" />
-      </Svg>
+      <IconChevronRight size={14} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }

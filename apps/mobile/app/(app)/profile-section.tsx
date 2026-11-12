@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { IconChevronLeft } from '../../components/icons';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -120,9 +120,7 @@ export default function ProfileSectionScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Go back" accessibilityRole="button" style={styles.back}>
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M15 18l-6-6 6-6" />
-          </Svg>
+          <IconChevronLeft size={24} color={colors.textPrimary} />
           <Text style={styles.backText} numberOfLines={1}>{name || `@${username}`}</Text>
         </TouchableOpacity>
       </View>

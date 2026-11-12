@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TextInput } from '../TextInput';
 import Svg, { Path } from 'react-native-svg';
+import { IconClose } from '../icons';
 import { pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
 import { useWatchTogetherExampleTitles } from '@plot/core/useWatchTogether.js';
 import { supabase } from '@plot/core/supabase.js';
@@ -95,7 +96,7 @@ function Welcome() {
         <Text style={{ fontFamily: fontFamily.sansBold }}>{`${S.welcomeTitle} `}</Text>{S.welcomeBody}
       </Text>
       <TouchableOpacity accessibilityRole="button" accessibilityLabel={T.hub.dismiss} onPress={() => { void writeStorage(WELCOME_KEY, '1'); setHidden(true); }} hitSlop={12}>
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.onAccentSecondaryFill} strokeWidth={2} strokeLinecap="round"><Path d="M6 6l12 12M18 6L6 18" /></Svg>
+        <IconClose size={18} color={colors.onAccentSecondaryFill} />
       </TouchableOpacity>
     </View>
   );

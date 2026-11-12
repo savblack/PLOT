@@ -1,7 +1,8 @@
 import { ReactNode, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import { IconSearch } from './icons';
 import { useAppData } from '../contexts/AppDataContext';
 import { useNotifications } from '@plot/core/useNotifications.js';
 import { useTheme } from '../contexts/ThemeContext';
@@ -48,10 +49,7 @@ export default function ScreenHeaderBar({
           accessibilityLabel={searchLabel}
           accessibilityRole="button"
         >
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Circle cx={11} cy={11} r={7} />
-            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-          </Svg>
+          <IconSearch color={colors.textPrimary} />
         </TouchableOpacity>
       ) : (
         // Keeps the row's two ends in place on a screen with no search.

@@ -6,7 +6,7 @@
 import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import Svg, { Path } from 'react-native-svg';
+import { IconChevronLeft } from './icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 
@@ -18,9 +18,7 @@ export default function BackBar({ title, onBack }: { title?: string; onBack?: ()
   return (
     <View style={styles.bar}>
       <TouchableOpacity onPress={onBack ?? (() => router.back())} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.back} accessibilityLabel="Go back" accessibilityRole="button">
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <Path d="M15 18l-6-6 6-6" />
-        </Svg>
+        <IconChevronLeft size={24} color={colors.textPrimary} />
       </TouchableOpacity>
       {title ? <Text style={styles.title} accessibilityRole="header">{title}</Text> : null}
     </View>

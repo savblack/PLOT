@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { IconClose } from './icons';
 import { ratingToStars } from '@plot/core/ratings.js';
 import { RATE_PROMPT } from '@plot/core/copy/ratePrompt.js';
 import { UNDO } from '@plot/core/copy/undo.js';
@@ -93,9 +93,7 @@ export default function RateToast() {
           accessibilityLabel={UNDO.dismiss}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
-            <Path d="M18 6 6 18M6 6l12 12" />
-          </Svg>
+          <IconClose size={14} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
     </View>

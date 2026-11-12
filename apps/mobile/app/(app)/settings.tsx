@@ -18,7 +18,8 @@ import {
 import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-svg';
+import Svg, { Path, Polyline, Circle, Rect, Line } from 'react-native-svg';
+import { IconChevronRight, IconClose, IconCheck } from '../../components/icons';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
@@ -120,9 +121,7 @@ function BroadcastIcon() {
 function Chevron() {
   const { colors } = useTheme();
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-      <Polyline points="9,18 15,12 9,6" />
-    </Svg>
+    <IconChevronRight size={14} color={colors.textMuted} strokeWidth={2.5} />
   );
 }
 
@@ -739,10 +738,7 @@ function ProviderModal({
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>{title}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Close" accessibilityRole="button">
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Line x1="18" y1="6" x2="6" y2="18" />
-              <Line x1="6" y1="6" x2="18" y2="18" />
-            </Svg>
+            <IconClose color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
         <View style={styles.modalSearchWrap}>
@@ -966,9 +962,7 @@ function FeedbackModal({ userId, userEmail, initialType, onClose }: { userId: st
         {status === 'done' ? (
           <View style={styles.feedbackDone}>
             <View style={styles.feedbackDoneIcon}>
-              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Polyline points="20,6 9,17 4,12" />
-              </Svg>
+              <IconCheck size={22} color={colors.accent} strokeWidth={2.5} />
             </View>
             <Text style={styles.feedbackDoneTitle}>Thanks for your feedback!</Text>
             <Text style={styles.feedbackDoneBody}>We read every submission and use it to improve plot.</Text>

@@ -7,16 +7,13 @@
  */
 import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { IconChevronDown, IconChevronUp } from './icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 
 function Chevron({ up, color }: { up?: boolean; color: string }) {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d={up ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />
-    </Svg>
-  );
+  const Icon = up ? IconChevronUp : IconChevronDown;
+  return <Icon size={18} color={color} strokeWidth={2.2} />;
 }
 
 const SLOP = { top: 6, bottom: 6, left: 6, right: 6 };

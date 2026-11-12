@@ -9,7 +9,7 @@
  */
 import { useMemo } from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
-import Svg, { Polyline } from 'react-native-svg';
+import { IconCheck } from './icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette } from '../lib/tokens';
 
@@ -35,12 +35,7 @@ export default function SelectCircle({
       accessibilityLabel={label}
     >
       {selected && (
-        <Svg
-          width={size * 0.6} height={size * 0.6} viewBox="0 0 24 24" fill="none"
-          stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
-        >
-          <Polyline points="20,6 9,17 4,12" />
-        </Svg>
+        <IconCheck size={size * 0.6} color="#fff" strokeWidth={3} />
       )}
     </TouchableOpacity>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Switch, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { IconClose, IconCheck } from '../icons';
 import { personName } from '@plot/core/watchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { useWatchlistVisibility } from '@plot/core/watchlistVisibility.js';
@@ -70,9 +70,7 @@ function Line({ ok, text }: { ok?: boolean; text: string }) {
   const { colors } = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={ok ? colors.accent : colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        {ok ? <Path d="M20 6L9 17l-5-5" /> : <Path d="M18 6L6 18M6 6l12 12" />}
-      </Svg>
+      {ok ? <IconCheck size={16} color={colors.accent} /> : <IconClose size={16} color={colors.textMuted} />}
       <Text style={{ flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary }}>{text}</Text>
     </View>
   );

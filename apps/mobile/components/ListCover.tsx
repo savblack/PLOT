@@ -9,7 +9,7 @@
  */
 import { useMemo, type ReactNode } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { IconPlus } from './icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, posterUrl } from '../lib/tokens';
 
@@ -73,9 +73,7 @@ export function NewListCover({ label, note, onPress }: { label: string; note?: s
     <TouchableOpacity style={styles.cover} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={label}>
       <View style={styles.art}>
         <View style={[styles.sheet, styles.front, styles.newSheet]}>
-          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
-            <Path d="M12 5v14M5 12h14" />
-          </Svg>
+          <IconPlus size={22} color={colors.textMuted} />
         </View>
       </View>
       <Text style={[styles.name, { color: colors.textMuted }]} numberOfLines={1}>{label}</Text>

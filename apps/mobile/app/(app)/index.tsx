@@ -15,7 +15,8 @@ import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity, LayoutAnimation,
   UIManager, Platform, StyleSheet, Dimensions,
 } from 'react-native';
-import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import { IconChevronDown } from '../../components/icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
@@ -397,11 +398,7 @@ function PlatformSection({ platform, saved, onSave, isFav, onFavorite, onOpen }:
           }
           <Text style={styles.platName}>{platform.name}</Text>
         </View>
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}
-        >
-          <Polyline points="6 9 12 15 18 9" />
-        </Svg>
+        <IconChevronDown size={18} color={colors.textMuted} style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }} />
       </TouchableOpacity>
 
       {open && (

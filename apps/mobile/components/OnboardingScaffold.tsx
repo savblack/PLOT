@@ -10,7 +10,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { IconChevronLeft } from './icons';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -64,9 +64,7 @@ export default function OnboardingScaffold({
             accessibilityLabel={ONBOARDING_FLOW.goBack}
             accessibilityRole="button"
           >
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M15 18l-6-6 6-6" />
-            </Svg>
+            <IconChevronLeft color={colors.textPrimary} />
           </TouchableOpacity>
         ) : <View style={styles.backBtn} />}
 

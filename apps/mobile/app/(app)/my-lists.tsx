@@ -13,7 +13,8 @@ import {
 import { TextInput } from '../../components/TextInput';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path, Polyline, Line, Rect } from 'react-native-svg';
+import Svg, { Path, Polyline, Rect } from 'react-native-svg';
+import { IconSearch, IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
@@ -160,10 +161,7 @@ function SectionAddButton({ onPress, label }: { onPress: () => void; label: stri
       accessibilityLabel={label}
       accessibilityRole="button"
     >
-      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <Line x1={12} y1={5} x2={12} y2={19} />
-        <Line x1={5} y1={12} x2={19} y2={12} />
-      </Svg>
+      <IconPlus size={16} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }
@@ -861,9 +859,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             as web's list page has. */}
         {!isHistory && (openList || !isAll) && (
           <TouchableOpacity style={styles.backRow} onPress={backToAll} hitSlop={{ top: 8, bottom: 8 }} accessibilityRole="button" accessibilityLabel={CUSTOM_LISTS.backToMyLists}>
-            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-              <Polyline points="15,18 9,12 15,6" />
-            </Svg>
+            <IconChevronLeft size={14} color={colors.textSecondary} strokeWidth={2.2} />
             <Text style={styles.backRowText}>{CUSTOM_LISTS.backToMyLists}</Text>
           </TouchableOpacity>
         )}
@@ -1229,9 +1225,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                   accessibilityRole="button"
                   accessibilityLabel="Jump to an older month"
                 >
-                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={canGoOlder ? colors.textSecondary : colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <Polyline points="15,18 9,12 15,6" />
-                  </Svg>
+                  <IconChevronLeft size={16} color={canGoOlder ? colors.textSecondary : colors.borderStrong} />
                 </TouchableOpacity>
                 <Text style={styles.monthNavLabel}>{monthLabel(historyYear, historyMonth, 'short')}</Text>
                 <TouchableOpacity
@@ -1241,9 +1235,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                   accessibilityRole="button"
                   accessibilityLabel="Jump to a more recent month"
                 >
-                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={canGoNewer ? colors.textSecondary : colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <Polyline points="9,18 15,12 9,6" />
-                  </Svg>
+                  <IconChevronRight size={16} color={canGoNewer ? colors.textSecondary : colors.borderStrong} />
                 </TouchableOpacity>
               </View>
               )}
@@ -1281,10 +1273,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         />
         {searchShown && (
         <View style={[styles.listSearch, searchFocused && { borderColor: colors.accent }]}>
-          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <Circle cx={11} cy={11} r={7} />
-            <Line x1={16.5} y1={16.5} x2={21} y2={21} />
-          </Svg>
+          <IconSearch size={16} color={colors.textMuted} />
           <TextInput
             style={styles.listSearchInput}
             value={listQuery}
@@ -1449,11 +1438,7 @@ function CustomListCard({
   return (
     <View style={styles.customList}>
       <TouchableOpacity style={styles.customListHeader} onPress={() => setOpen(o => !o)} activeOpacity={0.7}>
-        <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }}
-        >
-          <Polyline points="9,18 15,12 9,6" />
-        </Svg>
+        <IconChevronRight size={14} color={colors.textMuted} style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }} />
         <View style={{ flex: 1, minWidth: 0 }}>
           {renaming ? (
             <TextInput

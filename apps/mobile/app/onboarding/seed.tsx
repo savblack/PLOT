@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import { useRouter } from 'expo-router';
-import Svg, { Line } from 'react-native-svg';
+import { IconClose } from '../../components/icons';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { tmdb } from '../../lib/tmdb';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
@@ -256,10 +256,7 @@ export default function Seed() {
                   accessibilityRole="button"
                   accessibilityLabel={F.clearSearch}
                 >
-                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
-                    <Line x1="18" y1="6" x2="6" y2="18" />
-                    <Line x1="6" y1="6" x2="18" y2="18" />
-                  </Svg>
+                  <IconClose size={14} color={colors.textMuted} />
                 </TouchableOpacity>
               )
             }

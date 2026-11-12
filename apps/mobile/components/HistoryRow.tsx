@@ -8,7 +8,7 @@
  */
 import { useState, useMemo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, LayoutAnimation } from 'react-native';
-import Svg, { Polyline } from 'react-native-svg';
+import { IconChevronDown } from './icons';
 import { HistoryEntry } from '../hooks/useHistory';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -74,13 +74,7 @@ export default function HistoryRow({ entry }: { entry: HistoryEntry }) {
             accessibilityLabel={expanded ? `Hide review for ${entry.title}` : `Show review for ${entry.title}`}
             accessibilityState={{ expanded }}
           >
-            <Svg
-              width={iconButtonSize.sm * 0.5} height={iconButtonSize.sm * 0.5} viewBox="0 0 24 24"
-              fill="none" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-              style={{ transform: [{ rotate: expanded ? '0deg' : '-90deg' }] }}
-            >
-              <Polyline points="6 9 12 15 18 9" />
-            </Svg>
+            <IconChevronDown size={iconButtonSize.sm * 0.5} color={colors.textMuted} strokeWidth={2.5} style={{ transform: [{ rotate: expanded ? '0deg' : '-90deg' }] }} />
           </TouchableOpacity>
         )}
       </View>

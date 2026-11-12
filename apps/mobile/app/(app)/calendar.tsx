@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Polyline } from 'react-native-svg';
+import { IconChevronLeft, IconChevronRight } from '../../components/icons';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
@@ -128,9 +128,7 @@ function StreamRow({ event, ds, last }: { event: CalendarEvent; ds: string; last
           </View>
         )}
       </View>
-      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <Polyline points="9,18 15,12 9,6" />
-      </Svg>
+      <IconChevronRight size={16} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }
@@ -437,15 +435,11 @@ export default function CalendarScreen() {
           actions={view !== 'agenda' ? (
             <View style={styles.monthNav}>
               <TouchableOpacity onPress={prevPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Previous period" accessibilityRole="button">
-                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <Polyline points="15,18 9,12 15,6" />
-                </Svg>
+                <IconChevronLeft size={16} color={colors.textMuted} />
               </TouchableOpacity>
               <Text style={styles.monthNavLabel} numberOfLines={1}>{navLabel}</Text>
               <TouchableOpacity onPress={nextPeriod} style={styles.navBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Next period" accessibilityRole="button">
-                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <Polyline points="9,18 15,12 9,6" />
-                </Svg>
+                <IconChevronRight size={16} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
           ) : null}

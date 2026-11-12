@@ -6,7 +6,7 @@
  */
 import { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { IconClose } from './icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EPISODE_ALERTS as T } from '@plot/core/copy/episodeAlerts.js';
@@ -81,9 +81,7 @@ export function EpisodeAlertsPromptToast({ placement = 'tabs' }: { placement?: '
           accessibilityLabel={UNDO.dismiss}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round">
-            <Path d="M18 6 6 18M6 6l12 12" />
-          </Svg>
+          <IconClose size={14} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
     </View>

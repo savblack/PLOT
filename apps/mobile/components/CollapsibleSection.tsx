@@ -15,7 +15,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
-import Svg, { Polyline } from 'react-native-svg';
+import { IconChevronRight } from './icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 import { getSectionOpen, setSectionOpen } from '../lib/sectionOpenState';
@@ -67,13 +67,7 @@ export default function CollapsibleSection({
           {count !== undefined && <Text style={styles.count}>{count}</Text>}
           {/* After the title, down while open and right while folded, as
               web's section headings on My Lists. */}
-          <Svg
-            width={14} height={14} viewBox="0 0 24 24" fill="none"
-            stroke={colors.textMuted} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"
-            style={{ alignSelf: 'center', transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
-          >
-            <Polyline points="9,18 15,12 9,6" />
-          </Svg>
+          <IconChevronRight size={14} color={colors.textMuted} strokeWidth={2.2} style={{ alignSelf: 'center', transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }} />
         </TouchableOpacity>
         {headerRight ? <View style={styles.headActions}>{headerRight}</View> : null}
       </View>
