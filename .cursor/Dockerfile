@@ -1,7 +1,7 @@
 # Cloud Agent base image. Cursor checks out the requested revision separately,
 # so this file installs only OS packages and pinned toolchains — not the repo.
 #
-# Pins Node to the same 22.17.1 CI uses (.circleci/config.yml). Playwright OS
+# Pins Node to the same 22.17.1 CI uses (.github/workflows/ci.yml). Playwright OS
 # libraries are installed later by `playwright install --with-deps` in
 # scripts/cloud-agent-install.sh so they track @playwright/test.
 
@@ -35,7 +35,7 @@ RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d \
         postgresql-client-17 \
     && rm -rf /var/lib/apt/lists/*
 
-# Deno 2.9.5 matches CircleCI's edge:check pin. install.sh unpacks a zip,
+# Deno 2.9.5 matches CI's edge:check pin. install.sh unpacks a zip,
 # and bookworm-slim ships neither unzip nor 7z.
 RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s v2.9.5
 

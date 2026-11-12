@@ -495,7 +495,7 @@ than shipping a guess.
 
 Repo-managed: `.cursor/environment.json` wins over any personal or team dashboard
 environment for this repository. The Dockerfile pins Node **22.17.1** (same as
-CircleCI), Deno 2.9.5, pnpm 10.6.3, and PostgreSQL 17. `install` runs
+`.github/workflows/ci.yml`), Deno 2.9.5, pnpm 10.6.3, and PostgreSQL 17. `install` runs
 `scripts/cloud-agent-install.sh` (frozen lockfile + Playwright Chromium).
 `start` rewrites the repo-root `.env` from injected secrets so both Vite and
 `node --env-file=.env` scripts see the same values. The web dev server is the

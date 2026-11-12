@@ -23,7 +23,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
-import { useNewReleases } from '@plot/core/useNewReleases.js';
+import { useNewReleases, prepareNewReleaseGenreRails } from '@plot/core/useNewReleases.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '@plot/core/mediaFilters.js';
 import { parseGenreBrowse } from '@plot/core/browse.js';
@@ -538,18 +538,11 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
 
   if (loading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
 
-  const applyFilters = (items: MediaItem[]) => filterByGenre(filterByType(items, typeFilters), genreFilters) ?? [];
-
-  const rails: Array<{ key: string; kicker: string; title: string; items: MediaItem[] }> = [
-    ...(applyFilters(data.recent).length ? [{ key: 'recent', kicker: 'Last 30 days', title: 'Recently Released', items: applyFilters(data.recent) }] : []),
-    ...data.genreRails
-      .map((rail: { key: string; label: string; items: MediaItem[] }) => ({ ...rail, items: applyFilters(rail.items) }))
-      .filter((rail: { items: MediaItem[] }) => rail.items.length > 0)
-      // Rail labels already include the genre; the kicker carries the section context.
-      .map((rail: { key: string; label: string; items: MediaItem[] }) => ({
-        key: rail.key, kicker: 'New releases', title: rail.label, items: rail.items,
-      })),
-  ];
+  // The same rails web's New Releases page shows (prepareNewReleaseGenreRails):
+  // one per category, titled by the genre alone, since the screen title
+  // already says "New Releases".
+  const rails: Array<{ key: string; title: string; items: MediaItem[] }> =
+    prepareNewReleaseGenreRails(data.genreRails, typeFilters, genreFilters);
 
   if (!rails.length) {
     return (
@@ -568,7 +561,7 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
     <>
       {rails.map(rail => (
         <View key={rail.key} style={styles.section}>
-          <SectionHeader kicker={rail.kicker} title={rail.title} />
+          <SectionHeader title={rail.title} />
           <FlatList
             horizontal
             data={rail.items}
