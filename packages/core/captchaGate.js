@@ -177,7 +177,10 @@ export function captchaSiteKeyForHost({ siteKey, hostname, forceOnPreview = fals
 /**
  * Whether the auth form's submit button can be pressed yet.
  *
- * The widget starts its check as soon as the form is on screen, so the
+ * The widget starts its check at the person's first interaction with the
+ * page (so Cloudflare's checkbox cannot show before they have done anything).
+ * Until then the button stays on: pressing it is itself that interaction, and
+ * the submit path waits for the token. Once the check has started, the
  * button waits for the token instead of starting the check on click. It
  * does not wait forever: once captchaWaitOver says this wait is over (the
  * widget errored, or the wait limit for this mode passed), the button
@@ -192,9 +195,10 @@ export function captchaSiteKeyForHost({ siteKey, hostname, forceOnPreview = fals
  * @param {boolean} [opts.interactive] Cloudflare is showing its checkbox.
  * @param {'signup'|'login'|'forgot'|'magic'} opts.mode
  * @param {number} opts.elapsedMs Time since the page started waiting for this token.
+ * @param {boolean} [opts.started] Whether the check has started. Defaults to true.
  * @returns {boolean}
  */
-export function captchaSubmitEnabled({ siteKey, token, errored = false, interactive = false, mode, elapsedMs }) {
-  if (!siteKey) return true;
+export function captchaSubmitEnabled({ siteKey, token, errored = false, interactive = false, mode, elapsedMs, started = true }) {
+  if (!siteKey || !started) return true;
   return captchaWaitOver({ token, errored, interactive, mode, elapsedMs });
 }

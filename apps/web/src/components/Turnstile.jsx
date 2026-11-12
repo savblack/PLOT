@@ -57,6 +57,8 @@ const PERSISTENT_FAILURE_THRESHOLD = 1;
  * @param {string}   [props.failureMessage] First-failure line. Neutral unless the caller
  *                                      passes signup copy. Login, reset, and magic link have no bypass.
  * @param {string}   [props.blockedMessage] Persistent-failure line. Same rule as failureMessage.
+ * @param {Function} [props.onStart]    Called once, when the first real interaction starts the
+ *                                      check, so the caller can start its own wait from then.
  */
 export default function Turnstile({
   siteKey,
@@ -68,6 +70,7 @@ export default function Turnstile({
   onPersistentlyBlocked,
   failureMessage = AUTH_PAGE.verificationFailed,
   blockedMessage = AUTH_PAGE.verificationBlocked,
+  onStart,
 }) {
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
@@ -80,6 +83,28 @@ export default function Turnstile({
   const executeSignalRef = useRef(0);
   const lastExecutedRef = useRef(0);
   const runExecuteRef = useRef(() => {});
+  const onStartRef = useRef(onStart);
+  useEffect(() => { onStartRef.current = onStart; }, [onStart]);
+  // The check waits for the person to do something on the page. Run on load,
+  // Cloudflare's "Verify you are human" box could appear before anyone had
+  // touched the form. Any trusted tap, click, key or focus counts, not just the
+  // form fields: the submit button stays off until a token arrives, and a
+  // password manager can fill the fields without focusing them, so waiting for
+  // a field alone could leave the button off for good. Typing an email and
+  // password is usually long enough for the check to finish unseen.
+  const [started, setStarted] = useState(false);
+  useEffect(() => {
+    if (!siteKey || started || typeof window === 'undefined') return undefined;
+    const events = ['pointerdown', 'touchstart', 'keydown', 'focusin', 'input'];
+    const onFirst = (event) => {
+      if (!event.isTrusted) return;
+      events.forEach(name => window.removeEventListener(name, onFirst, true));
+      setStarted(true);
+      onStartRef.current?.();
+    };
+    events.forEach(name => window.addEventListener(name, onFirst, { capture: true, passive: true }));
+    return () => events.forEach(name => window.removeEventListener(name, onFirst, true));
+  }, [siteKey, started]);
 
   // Keep the latest callbacks without re-running the render effect below.
   useEffect(() => { onTokenRef.current = onToken; }, [onToken]);
@@ -103,7 +128,7 @@ export default function Turnstile({
 
   // Render once per site key (and again on manual retry).
   useEffect(() => {
-    if (!siteKey) return undefined;
+    if (!siteKey || !started) return undefined;
     let cancelled = false;
     const reportFailure = () => {
       if (cancelled) return;
@@ -120,7 +145,7 @@ export default function Turnstile({
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
           // Hidden unless a challenge genuinely needs interaction. The
-          // challenge starts as soon as the form is on screen, so a token is
+          // challenge starts on the first interaction (above), so a token is
           // usually ready before anyone presses the button. (Until 2026-11 it
           // waited for execute() on submit, which made people verify, fail,
           // and go round again.) Tokens last five minutes. When one expires,
@@ -152,7 +177,7 @@ export default function Turnstile({
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, retryNonce]);
+  }, [siteKey, started, retryNonce]);
 
   // Reset to a fresh token when asked (tokens are single-use). With
   // execution "render", reset also starts the next challenge, so the next

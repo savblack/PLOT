@@ -166,3 +166,12 @@ test('submit waits for the token, then gives up waiting rather than staying grey
   assert.equal(captchaSubmitEnabled({ ...base, token: null, interactive: true, elapsedMs: CAPTCHA_NO_FALLBACK_WAIT_MS }), false);
   assert.equal(captchaSubmitEnabled({ ...base, token: null, interactive: true, elapsedMs: CAPTCHA_INTERACTIVE_WAIT_MS }), true);
 });
+
+test('the submit button stays on until the check has started', () => {
+  // The check waits for the first interaction, and pressing the button is one.
+  // A grey button there could never be pressed to start it.
+  const base = { siteKey: 'site-key', token: null, mode: 'signup', elapsedMs: 0 };
+  assert.equal(captchaSubmitEnabled({ ...base, started: false }), true);
+  assert.equal(captchaSubmitEnabled({ ...base, started: true }), false);
+  assert.equal(captchaSubmitEnabled(base), false, 'started defaults to true for older callers');
+});

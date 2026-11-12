@@ -149,8 +149,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const captchaErroredRef = useRef(false);
   // Cloudflare is showing its "Verify you are human" checkbox and waits for a tap.
   const captchaInteractiveRef = useRef(false);
-  // The same facts as state, for the submit button. The widget starts as soon
-  // as the form shows, and the button waits for its token (see
+  // The same facts as state, for the submit button. The widget starts on the
+  // first interaction with the page, and the button waits for its token (see
   // captchaSubmitEnabled) instead of starting the check on click.
   const [captchaHasToken, setCaptchaHasToken] = useState(false);
   const [captchaErrored, setCaptchaErrored] = useState(false);
@@ -203,6 +203,14 @@ export default function AuthPage({ initialMode = 'signup' }) {
     setCaptchaInteractive(false);
     setCaptchaWaitStart(now);
     setCaptchaNow(now);
+  };
+
+  // The widget waits for the first interaction (Turnstile.jsx). Until then
+  // the button stays on and no "security check" line shows.
+  const [captchaStarted, setCaptchaStarted] = useState(false);
+  const startCaptchaWait = () => {
+    setCaptchaStarted(true);
+    markCaptchaWaiting();
   };
 
   const handleCaptchaToken = (token) => {
@@ -274,7 +282,8 @@ export default function AuthPage({ initialMode = 'signup' }) {
     // A challenge may finish after the previous submit stopped waiting.
     if (captchaTokenRef.current) return 'ready';
     let plan = 'wait';
-    // The widget runs on load, so a challenge is usually already in flight.
+    // The widget starts on first interaction, and reaching the button takes
+    // one, so a challenge is usually already in flight.
     // Only an error from that run earns a fresh one on the first attempt.
     let widgetErrored = captchaErroredRef.current;
     for (let attempt = 1; attempt <= CAPTCHA_SUBMIT_ATTEMPTS; attempt += 1) {
@@ -309,6 +318,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // the wait is over, so a check that never finishes cannot leave it grey.
   const captchaReady = captchaSubmitEnabled({
     siteKey: TURNSTILE_SITE_KEY,
+    started: captchaStarted,
     token: captchaHasToken ? 'ready' : null,
     errored: captchaErrored,
     interactive: captchaInteractive,
@@ -988,6 +998,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                   onInteractive={handleCaptchaInteractive}
                   resetSignal={captchaNonce}
                   executeSignal={captchaExecute}
+                  onStart={startCaptchaWait}
                   failureMessage={captchaCopy.failed}
                   blockedMessage={captchaCopy.blocked}
                   onBlocked={(attempt) => {

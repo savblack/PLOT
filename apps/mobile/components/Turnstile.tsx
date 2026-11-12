@@ -27,6 +27,13 @@ export interface TurnstileProps {
   executeSignal?: number;
   /** Origin the challenge runs under — must be in the widget's allowed hostnames. */
   baseUrl?: string;
+  /**
+   * False keeps the WebView unmounted, so no check runs and Cloudflare's
+   * "Verify you are human" box cannot appear yet. The auth screen turns it
+   * on at the first touch. The space the widget needs stays reserved either
+   * way, so starting it does not move the form.
+   */
+  start?: boolean;
 }
 
 const html = (siteKey: string) => `<!DOCTYPE html><html><head>
@@ -106,6 +113,7 @@ export default function Turnstile({
   resetSignal = 0,
   executeSignal = 0,
   baseUrl = 'https://app.theplot.tv',
+  start = true,
 }: TurnstileProps) {
   const ref = useRef<WebView>(null);
   const executeSignalRef = useRef(executeSignal);
@@ -137,6 +145,7 @@ export default function Turnstile({
   }, [executeSignal]);
 
   if (!siteKey) return null;
+  if (!start) return <View style={styles.wrap} pointerEvents="none" />;
 
   return (
     <View style={styles.wrap} pointerEvents={visible ? 'auto' : 'none'}>
