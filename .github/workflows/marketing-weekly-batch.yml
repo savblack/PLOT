@@ -1,4 +1,6 @@
 name: Marketing — weekly batch
+# Label writer checks in the Actions list so they are not mistaken for a week.
+run-name: ${{ inputs.writer_check && 'Marketing — weekly batch (writer check)' || 'Marketing — weekly batch' }}
 
 # Generates the coming week from the voice/spec rules as they stand in the repo.
 on:
@@ -95,11 +97,34 @@ jobs:
           }
           const data = await res.json();
           const cutoff = Date.now() - 5 * 24 * 60 * 60 * 1000;
-          const prior = (data.workflow_runs || []).find((run) => {
+          const candidates = (data.workflow_runs || []).filter((run) => {
             if (String(run.id) === String(process.env.THIS_RUN)) return false;
             if (run.conclusion !== 'success') return false;
             return Date.parse(run.created_at) >= cutoff;
           });
+          // Only a run whose "Generate the week" step succeeded planned a week.
+          // A writer check also ends in success but skips that step (the
+          // 2026-11-12 runs 43212517545 and 43213629146), and counting it
+          // made the next scheduled start skip a week nobody had planned.
+          const plannedWeek = async (run) => {
+            const jobs = await fetch(`https://api.github.com/repos/${process.env.REPO}/actions/runs/${run.id}/jobs`, {
+              headers: {
+                Authorization: `Bearer ${process.env.GH_TOKEN}`,
+                Accept: 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'User-Agent': 'plot-marketing-weekly',
+              },
+            });
+            if (!jobs.ok) return false;
+            const body = await jobs.json();
+            return (body.jobs || []).some((job) => (job.steps || []).some(
+              (step) => step.name === 'Generate the week' && step.conclusion === 'success'));
+          };
+          let prior = null;
+          for (const run of candidates) {
+            if (await plannedWeek(run)) { prior = run; break; }
+            console.log(`Run ${run.id} succeeded but did not generate a week (writer check). Not counting it.`);
+          }
           if (prior) {
             console.log(`Run ${prior.id} already succeeded at ${prior.created_at}. Skipping.`);
             write('true');
