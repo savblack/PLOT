@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.5.0](https://github.com/savblack/PLOT/compare/mobile-v1.4.0...mobile-v1.5.0) (2026-11-13)
+
+
+### Features
+
+* **activation:** nudge accounts with no titles to add one or import their history ([#1620](https://github.com/savblack/PLOT/issues/1620)) ([79db430](https://github.com/savblack/PLOT/commit/79db43001486268d311b603b3fa46ecc7f201056))
+* **mobile,web:** one title bar on My Lists, History and Calendar; pickers wait for Save; 1 title not 1 items ([#1645](https://github.com/savblack/PLOT/issues/1645)) ([160f419](https://github.com/savblack/PLOT/commit/160f419c19404e31d3880bbeda6c165449eee88d))
+* **mobile:** the phone paywall matches web's, with the free trial first and a choice of plan ([#1658](https://github.com/savblack/PLOT/issues/1658)) ([962a56c](https://github.com/savblack/PLOT/commit/962a56cfa4f4c9689d7b2838170db38c5a783096))
+* **mobile:** the plot logo in place of the Home title ([#1632](https://github.com/savblack/PLOT/issues/1632)) ([77d4a31](https://github.com/savblack/PLOT/commit/77d4a31813db3b482d38555c4dd16bcffc07ee1e))
+* **mobile:** the top bar matches the page and turns to glass on scroll ([#1650](https://github.com/savblack/PLOT/issues/1650)) ([f7ccc1b](https://github.com/savblack/PLOT/commit/f7ccc1b862a3cc8451172cea688047b6c4676fc3))
+* **premium:** add a signed-in Go Premium · 7 days free link ([#1629](https://github.com/savblack/PLOT/issues/1629)) ([07dfde3](https://github.com/savblack/PLOT/commit/07dfde33398845778eb00a6cbb17d839db68c2a0))
+* **premium:** offer the 7-day trial once after onboarding or a Trakt import ([#1618](https://github.com/savblack/PLOT/issues/1618)) ([ee216b6](https://github.com/savblack/PLOT/commit/ee216b6763e42efb3ab3498a3296803b21e4e8a7))
+* **settings:** drop the explainer under the profile privacy toggle ([#1664](https://github.com/savblack/PLOT/issues/1664)) ([71be34b](https://github.com/savblack/PLOT/commit/71be34b413e758550600bacf512c03ad5b15b33b))
+
+
+### Bug Fixes
+
+* **auth:** start the captcha at the first interaction, not on page load ([#1640](https://github.com/savblack/PLOT/issues/1640)) ([0078a56](https://github.com/savblack/PLOT/commit/0078a56e960d7f2d04b7d72af99aea542e17bce8))
+* **mobile:** Add to list opens from the title panel again ([#1643](https://github.com/savblack/PLOT/issues/1643)) ([a475747](https://github.com/savblack/PLOT/commit/a47574740bc058998a8215558c217981bf9da65f))
+* **mobile:** auth poster wall uses the shared new-this-week picker ([#1624](https://github.com/savblack/PLOT/issues/1624)) ([4272e34](https://github.com/savblack/PLOT/commit/4272e347137c90dbdd0c8876957df50fa4eb5946))
+* **mobile:** New Releases shows one rail per category, titled by the genre alone ([#1636](https://github.com/savblack/PLOT/issues/1636)) ([2d2f09c](https://github.com/savblack/PLOT/commit/2d2f09cabbc166dca6605387580581c45758a44b))
+* **mobile:** pre-release pass fixes for empty screens, title panel and settings ([#1660](https://github.com/savblack/PLOT/issues/1660)) ([cc6e6cb](https://github.com/savblack/PLOT/commit/cc6e6cb4fa30ee4756bede0fd191bdc7c6f1cd5e))
+* **mobile:** return Google sign-in to the app and make the wordmark the app icon ([#1641](https://github.com/savblack/PLOT/issues/1641)) ([d6b4209](https://github.com/savblack/PLOT/commit/d6b42094a7cdf72bb1318f5f4e0dd587668b661f))
+
 ## [1.4.0](https://github.com/savblack/PLOT/compare/mobile-v1.3.0...mobile-v1.4.0) (2026-11-12)
 
 
