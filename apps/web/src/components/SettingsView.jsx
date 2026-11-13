@@ -35,7 +35,6 @@ import { COMMON } from '../copy/common.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { IMPORT_VIEW } from '../copy/importView.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
-import { favoriteWords } from '../utils/spelling.js';
 import { MODERATION } from '../copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { IANA_TIMEZONES } from '../utils/timezones.js';
@@ -1991,15 +1990,7 @@ export default function SettingsView() {
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
               </svg>
             </div>
-            <div>
-              <div className="settings-row-label">{isPublic ? PROFILE_PRIVACY.publicLabel : PROFILE_PRIVACY.privateLabel}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {isPublic
-                  ? PROFILE_PRIVACY.publicDescription(favoriteWords(region).pluralLower)
-                  : PROFILE_PRIVACY.privateDescription}
-                {' '}{PROFILE_PRIVACY.notesAlwaysPrivate}
-              </div>
-            </div>
+            <div className="settings-row-label">{isPublic ? PROFILE_PRIVACY.publicLabel : PROFILE_PRIVACY.privateLabel}</div>
           </div>
           <div className="settings-inline-actions" style={{ flexShrink: 0 }}>
             <SettingsSwitch label={SETTINGS_VIEW.page.privacyLabel} checked={isPublic} disabled={savingVisibility} onChange={handleTogglePublic} saves />

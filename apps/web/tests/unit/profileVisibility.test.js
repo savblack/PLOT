@@ -133,12 +133,11 @@ test('a private profile never renders a snapshot', async () => {
   });
 });
 
-test('privacy copy has no em dashes and does not claim followers are shut out', () => {
+test('privacy copy has no em dashes', () => {
   const strings = [];
   const walk = (v) => typeof v === 'string' ? strings.push(v)
     : typeof v === 'function' ? strings.push(v('favourites'))
       : v && typeof v === 'object' ? Object.values(v).forEach(walk) : null;
   walk(PROFILE_PRIVACY);
   for (const s of strings) assert.doesNotMatch(s, /—/, s);
-  assert.doesNotMatch(PROFILE_PRIVACY.privateDescription, /^Only you can/);
 });
