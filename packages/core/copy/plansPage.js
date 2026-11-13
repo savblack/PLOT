@@ -110,7 +110,7 @@ export const PLANS_PAGE = {
     // trial is the headline and the button, the feature that was tapped is the
     // supporting sentence, and each plan is one row with its real price. A
     // returning subscriber gets no trial, so their sheet leads with the feature
-    // and the price line drops the "Then". Mobile still shows the older sheet.
+    // and the price line drops the "Then". Mobile shows the same sheet since 13 Nov.
     trialTitle: 'Try Premium free for 7 days.',
     seeAll: 'See everything in Premium',
     planLabel: 'Plan',
@@ -121,7 +121,7 @@ export const PLANS_PAGE = {
     reasons: {
       // Not a limit: the one-time trial prompt (packages/core/premiumTrialPrompt.js),
       // shown once right after onboarding or a Trakt import. The web sheet leads
-      // with trialTitle and puts `title` in bold under it; mobile leads with `title`.
+      // with trialTitle and puts `title` in bold under it, on web and mobile.
       trialAfterOnboarding: {
         context: () => 'You’re all set up',
         title: 'Get even more out of Plot.',
