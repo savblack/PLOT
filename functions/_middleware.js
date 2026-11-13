@@ -1,5 +1,9 @@
-// Runs for every request to app.theplot.tv (Cloudflare Pages Functions
-// middleware). Two jobs:
+// Runs for every request apps/web/public/_routes.json sends to Functions
+// (Cloudflare Pages Functions middleware). That is only the Function routes:
+// each call spends the account's 100,000-a-day Workers allowance, so static
+// pages skip this and get the same policy from apps/web/public/_headers,
+// which scripts/build-app-headers.mjs writes from CSP and PREVIEW_CSP below.
+// After editing either, run that script; lint fails until you do. Two jobs:
 //  1. noindex any deployment that isn't app.theplot.tv — the per-branch
 //     *.pages.dev previews. They also sit behind Cloudflare Access, so this
 //     is defence in depth rather than the only guard.
