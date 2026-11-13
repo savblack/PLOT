@@ -1,6 +1,14 @@
 import { FREE_CUSTOM_LIST_CAP } from '../premium.js';
 
 export const CUSTOM_LISTS = Object.freeze({
+  // Mobile's My Lists empties (one list open, the Watching tab, Favorites).
+  notWatchingTitle: 'Not watching anything',
+  notWatchingBody: 'Start a series from your watchlist or Search.',
+  listEmptyTap: 'No titles yet. Tap + to add one.',
+  favoritesEmptyTap: 'Heart any title to add it here.',
+  noMatchingTitles: 'No matching titles',
+  // Add to list sheet, when the person has no lists of their own (Top 5 can still show above).
+  addToListEmpty: 'No lists of your own yet. Create one below.',
   // The built-in watchlist's name: its My Lists section and Home's pinned shelf.
   wantToWatch: 'Watchlist',
   // One calm prompt per empty My Lists section: what belongs here and the next step.

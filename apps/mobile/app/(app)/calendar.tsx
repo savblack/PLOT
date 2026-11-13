@@ -28,6 +28,7 @@ import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { useTheme } from '../../contexts/ThemeContext';
+import EmptyState from '../../components/EmptyState';
 
 const SCREEN_W = Dimensions.get('window').width;
 
@@ -377,10 +378,7 @@ export default function CalendarScreen() {
         {/* ════════ AGENDA VIEW ════════ */}
         {view === 'agenda' && (
           agendaMonths.length === 0 ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>{CALENDAR_VIEW.empty.title}</Text>
-              <Text style={styles.emptyBody}>{CALENDAR_VIEW.empty.body}</Text>
-            </View>
+            <EmptyState title={CALENDAR_VIEW.empty.title} body={CALENDAR_VIEW.empty.body} />
           ) : (
             <View style={styles.stream}>
               {agendaMonths.map(m => {
@@ -583,7 +581,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.accentText,
   },
 
-  empty: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl * 2 },
-  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
-  emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
 });

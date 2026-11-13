@@ -19,7 +19,7 @@ import { localDateStr } from '@plot/core/date.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaStatus.js';
 import { useEffect, useState, useRef, useMemo, type RefObject } from 'react';
 import {
-  View, Text, Image, ScrollView, TouchableOpacity, Modal,
+  View, Text, Image, ScrollView, TouchableOpacity, Modal, Pressable,
   StyleSheet, Dimensions, Animated, Easing, PanResponder, Linking,
   Platform, KeyboardAvoidingView, Keyboard, type HostInstance,
 } from 'react-native';
@@ -62,6 +62,7 @@ import ParentalGuide, { type ParentalGuideDetails } from './ParentalGuide';
 import { EpisodeRatingsEntry } from './EpisodeRatingsSheet';
 import { updateProfile } from '@plot/core/profile.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import { BROWSE } from '@plot/core/copy/browse.js';
 import { browseTapProps, collapseKeywords, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
@@ -803,7 +804,7 @@ function AddToListSheet({ item, customLists, topLists, onClose }: {
 
         <ScrollView style={{ maxHeight: SCREEN_H * 0.45 }} keyboardShouldPersistTaps="handled">
           {lists.length === 0 && !creating && (
-            <Text style={styles.lsEmpty}>No lists yet — create one below.</Text>
+            <Text style={styles.lsEmpty}>{CUSTOM_LISTS.addToListEmpty}</Text>
           )}
           {lists.map((list: any) => {
             const checked = isInList(list.id, item.id);
@@ -1439,6 +1440,16 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       </Text>
                     </TouchableOpacity>
                     {statusMenuOpen && (
+                      // Catches a tap anywhere else on the panel so the menu closes,
+                      // instead of staying open behind the next sheet.
+                      <Pressable
+                        style={styles.statusMenuScrim}
+                        onPress={() => setStatusMenuOpen(false)}
+                        accessibilityRole="button"
+                        accessibilityLabel={COMMON.close}
+                      />
+                    )}
+                    {statusMenuOpen && (
                       <View style={styles.statusMenu}>
                         {!isMovie && (
                           <TouchableOpacity
@@ -1497,7 +1508,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     )}
                     <TouchableOpacity
                       style={[styles.iconBtn, isInAnyList && styles.iconBtnOn]}
-                      onPress={() => setShowListSheet(true)}
+                      onPress={() => { setStatusMenuOpen(false); setShowListSheet(true); }}
                       accessibilityRole="button"
                       accessibilityLabel={isInAnyList ? MEDIA_PANEL.onList : MEDIA_PANEL.list}
                     >
@@ -1914,6 +1925,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radii.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 8,
   },
+  statusMenuScrim: { position: 'absolute', top: -2000, bottom: -2000, left: -1000, right: -1000, zIndex: 4 },
   statusOption: { paddingVertical: 12, paddingHorizontal: spacing.lg },
   statusOptionText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   upNextCard: { backgroundColor: colors.surfaceSunken, borderRadius: radii.lg, padding: spacing.lg, marginBottom: spacing.lg },

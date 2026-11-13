@@ -33,6 +33,7 @@ import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
 import { AcceptSheet } from '../../components/watch/AcceptSheet';
 import { PrimaryButton, SecondaryButton } from '../../components/watch/WatchChrome';
 import { useTogether, type WtPerson } from '../../components/watch/watchModel';
+import EmptyState from '../../components/EmptyState';
 
 interface NotificationRow {
   id: string;
@@ -142,7 +143,7 @@ export default function NotificationsScreen() {
         {loading ? (
           <Loader fill={false} />
         ) : list.length === 0 && together.incoming.length === 0 ? (
-          <Text style={styles.empty}>{NOTIFICATIONS_EMPTY.title}{'\n'}{NOTIFICATIONS_EMPTY.body}</Text>
+          <EmptyState title={NOTIFICATIONS_EMPTY.title} body={NOTIFICATIONS_EMPTY.body} />
         ) : (
           <>
           {list.map((n: NotificationRow) => {
@@ -283,7 +284,6 @@ export default function NotificationsScreen() {
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  empty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 22, paddingVertical: spacing.xxl },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     paddingVertical: spacing.md, paddingHorizontal: spacing.sm,

@@ -971,7 +971,9 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       {tab === 'new' ? (
         <ScrollView
           style={styles.screen}
-          contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+          // Each genre row already carries its own top margin, so the first one
+          // sits a single gap below the header instead of two.
+          contentContainerStyle={{ paddingTop: HEADER_H, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
           onScroll={glass.onScroll}

@@ -25,6 +25,7 @@ import { useGenres } from '@plot/core/useGenres.js';
 import { DRILLDOWN_STATS, type Drilldown } from '@plot/core/historyDrilldown.js';
 import { HISTORY_VIEW as T } from '@plot/core/copy/historyView.js';
 import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
+import EmptyState from './EmptyState';
 
 export interface MonthGroup {
   key: string;
@@ -100,12 +101,7 @@ export default function HistorySection({
   // from "your filters excluded everything".
   if (!hasAnyEntries) {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>Nothing watched yet</Text>
-        <Text style={styles.emptyBody}>
-          Your watch history will appear here. Search for a title and mark it as watched to get started.
-        </Text>
-      </View>
+      <EmptyState title={T.emptyTitle} body={T.emptyBody} />
     );
   }
 
@@ -117,10 +113,7 @@ export default function HistorySection({
         <Chip selected label={`${drillLabel}  ×`} accessibilityLabel={T.drilldownRemove(drillLabel)} onPress={() => onClearDrilldown?.()} style={styles.chip} />
       )}
       {groups.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No matches</Text>
-          <Text style={styles.emptyBody}>No history matches the current filters.</Text>
-        </View>
+        <EmptyState title={T.noMatchesTitle} body={T.noMatchesBody} />
       ) : groups.map(g => (
         <HistoryMonthGroup key={g.key} group={g} expandSignal={expandSignal} />
       ))}
@@ -148,9 +141,6 @@ function HistoryComparePrompt() {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  empty: { paddingVertical: spacing.xl * 2, paddingHorizontal: spacing.xl, alignItems: 'center' },
-  emptyTitle: { fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary, marginBottom: spacing.sm },
-  emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
   chip: {
     alignSelf: 'flex-start',
     marginHorizontal: spacing.xl,

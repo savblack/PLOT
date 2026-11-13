@@ -51,6 +51,8 @@ const ALLOWED_PATHS = [
   /^(movie|tv)\/\d+\/images$/,
   // Regional age ratings for series on the title panel (ParentalGuide).
   /^tv\/\d+\/content_ratings$/,
+  // What each rating means, for the same panel (parentalGuide.loadCertificationMeaning).
+  /^certification\/(movie|tv)\/list$/,
   // Franchise sets ("Part of a collection" on the movie panel, and search).
   /^collection\/\d+$/,
   /^search\/collection$/,

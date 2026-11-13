@@ -85,6 +85,7 @@ import { openPremium } from '../../components/watch/WatchChrome';
 import { createUndoBatch, UNDO_ACTIONS, type UndoOption } from '@plot/core/undo.js';
 import { WATCHING_SORTS, parseWatchingSort, watchingSortKey, type WatchingSort } from '@plot/core/watchingOrder.js';
 import { useWatchingSort } from '@plot/core/useWatchingSort.js';
+import EmptyState from '../../components/EmptyState';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -801,14 +802,14 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         {!openList || isHistory ? inOrder({
           watching: (<>
         {/* ── Watching ── */}
-        {showWatching && watchingList.length > 0 && (
+        {showWatching && (watchingList.length > 0 || (isAll && !searching)) && (
           <CollapsibleSection
             id="watching"
             label="Watching"
             count={watchingList.length}
             open={isSectionOpen('watching')}
             onOpenChange={(next) => setSectionOpenFor('watching', next)}
-            headerRight={
+            headerRight={watchingList.length === 0 ? undefined :
               <SectionSelectActions
                 sel={watchingSel}
                 count={watchingList.length}
@@ -830,20 +831,25 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
               />
             }
           >
-            <PosterGrid
-              horizontal
-              items={watchingList.map(item => ({ ...item, media_type: 'tv' }))}
-              sel={watchingSel}
-              caption={(item) => episodeCode(item)}
-              onPress={(item) => openPanel(item.tmdb_id, 'tv')}
-            />
+            {watchingList.length === 0 ? (
+              // Nothing on yet: the same dashed tile web shows, asking what
+              // they are watching now (Savannah, 11 Nov 2026).
+              <View style={styles.covers}>
+                <NewListCover label={CUSTOM_LISTS.watchingEmptyTile} note={CUSTOM_LISTS.watchingEmptyNote} onPress={() => router.push('/(app)/search' as Href)} />
+              </View>
+            ) : (
+              <PosterGrid
+                horizontal
+                items={watchingList.map(item => ({ ...item, media_type: 'tv' }))}
+                sel={watchingSel}
+                caption={(item) => episodeCode(item)}
+                onPress={(item) => openPanel(item.tmdb_id, 'tv')}
+              />
+            )}
           </CollapsibleSection>
         )}
         {viewTab === 'watching' && watching.items.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Not watching anything</Text>
-            <Text style={styles.emptyBody}>Start a series from your watchlist or Search.</Text>
-          </View>
+          <EmptyState title={CUSTOM_LISTS.notWatchingTitle} body={CUSTOM_LISTS.notWatchingBody} />
         )}
 
           </>),
@@ -949,7 +955,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             {(
               favList.length === 0 ? (
                 <View style={styles.empty}>
-                  <Text style={styles.emptyBody}>{favorites.favorites.length === 0 ? 'Heart any title to add it here.' : 'No matching titles'}</Text>
+                  <Text style={styles.emptyBody}>{favorites.favorites.length === 0 ? CUSTOM_LISTS.favoritesEmptyTap : CUSTOM_LISTS.noMatchingTitles}</Text>
                   <TouchableOpacity style={styles.emptyAddBtn} onPress={() => setShowAddFav(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={`Add to ${fw.pluralLower}`} accessibilityRole="button">
                     <Text style={{ color: colors.textMuted, fontSize: 20 }}>+</Text>
                   </TouchableOpacity>
@@ -1396,7 +1402,7 @@ function CustomListCard({
       {open && (
         items.length === 0 ? (
           <TouchableOpacity style={styles.empty} onPress={onAddItem}>
-            <Text style={styles.emptyBody}>{(list.items?.length || 0) === 0 ? 'No items yet — tap + to add' : 'No matching titles'}</Text>
+            <Text style={styles.emptyBody}>{(list.items?.length || 0) === 0 ? CUSTOM_LISTS.listEmptyTap : CUSTOM_LISTS.noMatchingTitles}</Text>
           </TouchableOpacity>
         ) : view === 'rows' ? (
           <View>
