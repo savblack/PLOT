@@ -77,7 +77,6 @@ import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 import { REQUESTS_FROM_OPTIONS, personName } from '@plot/core/watchTogether.js';
 import { useWatchTogether, useWatchTogetherLink } from '@plot/core/useWatchTogether.js';
 import { Avatar } from '../../components/Avatar';
-import { favoriteWords } from '../../lib/spelling';
 import { buildCalendarEvents } from '@plot/core/calendar.js';
 import { generateICS } from '@plot/core/ics.js';
 import { shareCalendarFile } from '../../lib/shareCalendarFile';
@@ -1472,7 +1471,6 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={10}/><Line x1={2} y1={12} x2={22} y2={12}/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>}
             label={isPublic ? PROFILE_PRIVACY.publicLabel : PROFILE_PRIVACY.privateLabel}
-            description={`${isPublic ? PROFILE_PRIVACY.publicDescription(favoriteWords(region).pluralLower) : PROFILE_PRIVACY.privateDescription} ${PROFILE_PRIVACY.notesAlwaysPrivate}`}
             trailing={<Toggle value={isPublic} onValueChange={toggleVisibility} accessibilityLabel={SETTINGS_VIEW.page.privacyLabel} />}
           />
           <SettingsRow

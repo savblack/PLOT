@@ -37,6 +37,7 @@ on `main` are not re-checked.
 | `alter type … rename value 'a' to 'b'` | `a` is still used |
 | `add column … not null` with no default, on an existing table | always, until acknowledged |
 | `alter column … set not null` | always, until acknowledged |
+| a SQL function or cron job that names something an earlier migration removed | always, until it stops naming it |
 
 "Still used" means any of:
 
@@ -46,12 +47,36 @@ on `main` are not re-checked.
 - the latest body of any SQL function, as of this migration. plpgsql resolves column and
   table names only when a line runs, so Postgres accepts a function that names a dropped
   column and it fails later in production (`20261004100000` did exactly this);
-- the command of any cron job still scheduled as of this migration.
+- the command of any cron job still scheduled as of this migration;
+- mobile or shared core code (`apps/mobile/`, `packages/core/`) in the last 90 days, even
+  if `main` no longer names it. iPhones keep running the build they installed, so a name the
+  app stopped using last week can still be called. Plot has no "oldest supported build"
+  gate yet; until it does, 90 days is the stand-in (`MIGRATION_CONTRACT_MOBILE_DAYS`
+  changes it). This is only looked up when nothing on `main` names it.
 
 Not removals, so not flagged: a table or view dropped and recreated with the same name in
 the same migration (including a view replaced by a table), a function dropped and recreated
 with a new signature, temporary tables, DDL inside a function body, and `drop trigger`,
 `drop policy`, `drop index`, `drop constraint`.
+
+### A later migration naming something already removed
+
+The reverse case: a new function or cron job names a column, table or function that an
+earlier migration dropped or renamed, and nothing has brought back. Postgres accepts the
+function and it fails the first time that line runs. This is exactly the outage of
+`20261004100000`, which set `watch_together.requester_shares_full` five days after
+`20260927160000` dropped it. The check tracks what every migration creates and drops, so it
+knows which names are gone. A name that is still a live column on some other table is not
+counted, to avoid false alarms on common names.
+
+If the match really is a different thing with the same name (a jsonb key, a local
+variable), acknowledge it:
+
+```sql
+-- dead-name-ok: requester_shares_full (a key in the notification payload, not the column)
+```
+
+### Not-null columns
 
 A not-null column is always flagged because "does any deployed code insert into this table
 without setting it" is not something a text search can prove.
@@ -70,8 +95,11 @@ alter table public.history drop column legacy_note;
 A bare name or `table.column` both work. A line with no reason fails.
 
 The match is a whole word, so a common column name (`note`, `rating`) will hit unrelated
-code. That is deliberate: the check errs toward a person reading the hits. Read them, and
-if none are this column, acknowledge it.
+code. That is deliberate: the check errs toward a person reading the hits. To make that
+reading short, hits for a column come sorted: lines in files that read the table by name
+(`.from('history')`, `'history'`, `/rest/v1/history`) come first and are marked `code*`,
+with a count. For `history.note` that is 109 of 690 lines. Read the marked ones; if none
+are this column, acknowledge it.
 
 ## Running it
 
@@ -83,7 +111,7 @@ Options: `--base <rev>` compares with a different commit; `--files a.sql b.sql` 
 named migrations; `--report` prints without failing. `MIGRATION_CONTRACT_BASE` sets the
 base from the environment.
 
-## Replayed against history (2026-11-12)
+## Replayed against history (2026-11-12, again 2026-11-13 with every rule)
 
 Each migration was checked against the code as it was just before it merged
 (`--base <commit that added it>^`).
@@ -94,9 +122,13 @@ Of the 30 most recent migrations (`20261014090200` to `20261111190000`), one was
   `claim_marketing_linear_mirror` and `release_marketing_linear_mirror` while
   `supabase/functions/marketing-linear-mirror/index.ts` still called both. A genuine catch.
 
-The other 29 passed, including `20261016140000` (dropped `enforce_push_premium`, unused)
+Every rule, including the mobile history and the dead-name rule, was on for the second run;
+the result was the same. The other 29 passed, including `20261016140000` (dropped `enforce_push_premium`, unused)
 and `20261111090000` (dropped and recreated `enqueue_file_import_job` with a new
 signature).
+
+The dead-name rule, run over all 188 migrations, flags exactly one:
+`20261004100000_watch_together_mutual_follow_share.sql`, the outage described above.
 
 Older removals it would also have stopped, each one a real use at the time:
 `20260621120000` (AI features, edge functions still called them), `20260726010000` (the
@@ -107,10 +139,11 @@ everywhere, so it needs an acknowledgement).
 
 ## Limits
 
-- It cannot see iPhone builds already installed. If mobile used the name, the
-  acknowledgement should say why old builds no longer matter.
+- It cannot see which iPhone builds are installed. The 90-day history window is a stand-in;
+  an acknowledgement for a name mobile used should say why old builds no longer matter.
 - A function dropped and recreated with a different signature is treated as a redefinition.
   Callers that pass the old arguments can still break; `db:function-diff` and review cover
   that.
-- It does not catch a *later* migration that names a column an *earlier* one dropped. The
-  `staging:test` suite and `db:write-paths` are the guards for that.
+- The dead-name rule only knows what migrations created. A column added by hand in the
+  dashboard, or created by `create table … as select`, is invisible to it; it can only
+  under-report in that case, not raise a false alarm.

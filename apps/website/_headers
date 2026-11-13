@@ -21,7 +21,7 @@ https://admin.theplot.tv/*
   X-Robots-Tag: noindex, nofollow
 
 /
-  Link: </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"
+  Link: </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </index.md>; rel="alternate"; type="text/markdown"
 
 # The API catalog (RFC 9727) and the two documents it points at. Content type
 # is the whole point of these three rules: the catalog URI has no extension, so
@@ -44,6 +44,12 @@ https://admin.theplot.tv/*
 # to download rather than a document to parse. index.json needs no rule: the
 # extension already gets it application/json.
 /auth.md
+  Content-Type: text/markdown; charset=utf-8
+
+# The homepage for agents. It used to be served from / on Accept: text/markdown,
+# which meant running a Pages Function on every homepage visit (each one spends
+# the daily Workers allowance). The / Link header above points agents here.
+/index.md
   Content-Type: text/markdown; charset=utf-8
 
 /.well-known/agent-skills/:skill/SKILL.md
