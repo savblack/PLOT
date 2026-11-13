@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';
 import { buildBrief, buildConversationBrief, buildGuideBrief } from './brief.mjs';
 import { enrichPost } from './enrich.mjs';
+import { resolveTrailerUrl } from './trailer.mjs';
+import { tmdb } from '../lib/tmdb.mjs';
 import { JOBS_DIR } from './paths.mjs';
 
 const main = async () => {
@@ -38,6 +40,10 @@ const main = async () => {
   const manifest = [];
   for (const post of todo) {
     const briefPath = path.join(JOBS_DIR, `${post.id}.brief.md`);
+    // Social posts only: the official YouTube trailer a caption must link if it
+    // mentions a trailer, from TMDB. null means none is known.
+    const social = post.post_type !== 'question' && post.post_type !== 'guide';
+    const trailerUrl = social ? await resolveTrailerUrl(post, tmdb.getTrailers) : null;
     if (post.post_type === 'question') {
       // Text-only question: no research pack, its own short brief.
       await writeFile(briefPath, await buildConversationBrief(post));
@@ -49,7 +55,7 @@ const main = async () => {
       // Enrich from free sources (extended TMDB + Wikipedia). Best-effort: a
       // failed lookup still yields a brief, just without the research pack.
       const research = await enrichPost(post).catch(() => []);
-      await writeFile(briefPath, await buildBrief(post, research));
+      await writeFile(briefPath, await buildBrief(post, research, { trailerUrl }));
     }
     manifest.push({
       post_id: post.id,
@@ -65,6 +71,9 @@ const main = async () => {
         : {}),
       // Lets save.mjs reject social copy that calls a rental "streaming".
       ...(post.payload?.home_kind ? { home_kind: post.payload.home_kind } : {}),
+      // Lets save.mjs require (and only allow) this exact trailer link, or
+      // reject a trailer mention when none is known (null).
+      ...(social ? { trailer_url: trailerUrl } : {}),
       brief: `marketing/copy/jobs/${post.id}.brief.md`,
       output: `marketing/copy/jobs/${post.id}.copy.json`,
     });

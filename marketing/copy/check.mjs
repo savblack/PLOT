@@ -46,6 +46,7 @@ export const checkDir = async (dir) => {
           when_label: entry?.when_label,
           post_type: postType,
           home_kind: entry?.home_kind,
+          trailer_url: entry?.trailer_url,
         });
     results.push({ file: name, ok: checked.valid, errors: checked.errors });
   }
