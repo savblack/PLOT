@@ -40,7 +40,7 @@ Three things keep it honest, and all three are easy to break by hand:
   rules still match the types the catalog advertises.
 - Scope. The catalog describes what Plot offers publicly, and the three
   `llms.txt`-style statements about that (`llms.txt` here, `apps/web/public/llms.txt`,
-  and the homepage markdown in `functions/_lib/markdown.js`) have to keep
+  and the homepage markdown in `index.md`) have to keep
   agreeing with it. Adding an endpoint to the catalog means editing those too.
 
 ## What /api/discover is guarded by
