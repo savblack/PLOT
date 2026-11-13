@@ -17,9 +17,10 @@ import ListRow from '../ListRow';
 import Chip from '../Chip';
 import { ShareListSheet } from './ShareListSheet';
 import { WatchTogetherTile } from './WatchTogetherTile';
-import {
-  ButtonRow, ErrorNote, Note, PageTitle, PersonFace, PosterThumb, PrimaryButton, SecondaryButton, SectionLabel, WatchPage, openPremium, useOpenTitle,
-} from './WatchChrome';
+import Button from '../Button';
+import SectionTitle from '../SectionTitle';
+import { Avatar } from '../Avatar';
+import { ButtonRow, ErrorNote, Note, PosterThumb, SectionLabel, WatchPage, openPremium, useOpenTitle } from './WatchChrome';
 import { WtPerson, WtTitle, asPerson, asResult, errorText, sessionIdFrom, titleMeta, useTogether, useTogetherTitles } from './watchModel';
 
 export function WatchOverlap({ usernames }: { usernames: string[] }) {
@@ -78,18 +79,18 @@ export function WatchOverlap({ usernames }: { usernames: string[] }) {
   return (
     <WatchPage>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        {people.slice(0, 3).map(person => <PersonFace key={person.id} person={person} size={28} />)}
+        {people.slice(0, 3).map(person => <Avatar key={person.id} url={person.avatar_url} name={personName(person)} size={28} colors={colors} />)}
         <Note>{group ? T.overlap.group(people.map(personName)) : T.overlap.pair(personName(partner || {}))}</Note>
       </View>
-      <PageTitle>{group ? T.overlap.groupHeading : T.overlap.heading(titles.length)}</PageTitle>
-      {!group && titles.length > 0 && <PrimaryButton label={T.session.start} onPress={decide} />}
+      <SectionTitle>{group ? T.overlap.groupHeading : T.overlap.heading(titles.length)}</SectionTitle>
+      {!group && titles.length > 0 && <Button variant="primary" label={T.session.start} onPress={decide} />}
       {!!actionError && <ErrorNote>{actionError}</ErrorNote>}
       {locked && (
         <View style={{ gap: spacing.sm }}>
-          <PageTitle>{T.locked.title}</PageTitle>
+          <SectionTitle>{T.locked.title}</SectionTitle>
           <Note>{T.locked.body(group ? T.overlap.everyone : personName(partner || {}))}</Note>
           <ButtonRow>
-            <PrimaryButton label={T.start.getPremium} onPress={() => openPremium(router)} />
+            <Button variant="primary" label={T.start.getPremium} onPress={() => openPremium(router)} />
           </ButtonRow>
           <Note>{PLANS_PAGE.premium.priceSummary}</Note>
         </View>
@@ -125,8 +126,8 @@ export function WatchOverlap({ usernames }: { usernames: string[] }) {
                   <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary }}>{top.title}</Text>
                   {!!titleMeta(top) && <Note>{titleMeta(top)}</Note>}
                   <ButtonRow>
-                    <PrimaryButton label={T.overlap.choose} onPress={() => openTitle(top)} />
-                    <SecondaryButton label={T.overlap.shuffle} onPress={() => setTopId(shufflePick(shown, top.tmdb_id)?.tmdb_id ?? null)} />
+                    <Button variant="primary" label={T.overlap.choose} onPress={() => openTitle(top)} />
+                    <Button label={T.overlap.shuffle} onPress={() => setTopId(shufflePick(shown, top.tmdb_id)?.tmdb_id ?? null)} />
                   </ButtonRow>
                 </View>
               </View>
@@ -138,8 +139,8 @@ export function WatchOverlap({ usernames }: { usernames: string[] }) {
         <View style={{ gap: spacing.sm }}>
           <Note>{existing ? T.sharedList.summary(existing.name, existing.items?.length ?? 0) : T.sharedList.want(personName(partner))}</Note>
           {existing
-            ? <SecondaryButton label={T.sharedList.open} onPress={() => router.push('/(app)/my-lists' as Href)} />
-            : <SecondaryButton label={T.sharedList.make} onPress={makeList} />}
+            ? <Button label={T.sharedList.open} onPress={() => router.push('/(app)/my-lists' as Href)} />
+            : <Button label={T.sharedList.make} onPress={makeList} />}
         </View>
       )}
       {sharing && partner && (

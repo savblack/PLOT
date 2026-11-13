@@ -8,7 +8,9 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { fontFamily, fontSize } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
-import { ButtonRow, ErrorNote, Note, PersonRow, PrimaryButton, SecondaryButton, SectionLabel, Sheet } from './WatchChrome';
+import Button from '../Button';
+import BottomSheet from '../BottomSheet';
+import { ButtonRow, ErrorNote, Note, PersonRow, SectionLabel } from './WatchChrome';
 import { useTogether } from './watchModel';
 
 function inviteError(code: string | null | undefined): string | null {
@@ -60,18 +62,18 @@ export function ListInviteSheet({ listId, listName, people, onClose }: {
   };
 
   return (
-    <Sheet visible title={C.invite} onClose={onClose} closeLabel={COMMON.done}>
+    <BottomSheet visible title={C.invite} onClose={onClose} closeLabel={COMMON.done}>
       <Note>{C.dialog.body}</Note>
       <SectionLabel>{T.link.kicker}</SectionLabel>
       {linkError ? <ErrorNote>{linkError}</ErrorNote> : (
         <>
           {!!display && <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{display}</Text>}
           <ButtonRow>
-            <SecondaryButton label={T.link.copy} onPress={() => send('copy')} disabled={!url} />
-            <PrimaryButton label={T.link.share} onPress={() => send('share')} disabled={!url} />
+            <Button label={T.link.copy} onPress={() => send('copy')} disabled={!url} />
+            <Button variant="primary" label={T.link.share} onPress={() => send('share')} disabled={!url} />
           </ButtonRow>
           <Note>{C.dialog.resetNote}</Note>
-          <SecondaryButton label={T.link.reset} onPress={resetLink} disabled={!key || resetDone} />
+          <Button label={T.link.reset} onPress={resetLink} disabled={!key || resetDone} />
         </>
       )}
       {candidates.length > 0 && (
@@ -85,12 +87,12 @@ export function ListInviteSheet({ listId, listName, people, onClose }: {
               note={person.username ? `@${person.username}` : undefined}
               trailing={added.includes(person.id)
                 ? <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary }}>{T.sharedList.shared}</Text>
-                : <PrimaryButton label={T.sharedList.add} onPress={() => add(person.id)} />}
+                : <Button variant="primary" label={T.sharedList.add} onPress={() => add(person.id)} />}
             />
           ))}
         </>
       )}
       {!!error && <ErrorNote>{error}</ErrorNote>}
-    </Sheet>
+    </BottomSheet>
   );
 }

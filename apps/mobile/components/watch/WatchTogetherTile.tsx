@@ -14,7 +14,8 @@ import { EVENTS, track } from '../../lib/analytics';
 import UpgradeSheet from '../UpgradeSheet';
 import { AcceptSheet } from './AcceptSheet';
 import { ShareListSheet } from './ShareListSheet';
-import { ErrorNote, Note, PrimaryButton, SecondaryButton, SectionLabel, openPremium } from './WatchChrome';
+import Button from '../Button';
+import { ErrorNote, Note, SectionLabel, openPremium } from './WatchChrome';
 import { WtPerson, asResult, errorText } from './watchModel';
 
 export function WatchTogetherTile({ person, onChange }: {
@@ -95,13 +96,13 @@ export function WatchTogetherTile({ person, onChange }: {
       {!!error && <ErrorNote>{error}</ErrorNote>}
       <View style={{ gap: spacing.sm }}>
         {(mode === 'free' || mode === 'public' || mode === 'private') && (
-          <PrimaryButton label={T.tile.inviteAction(name)} onPress={() => run(() => watch.send(person.id))} disabled={busy} />
+          <Button variant="primary" label={T.tile.inviteAction(name)} onPress={() => run(() => watch.send(person.id))} disabled={busy} />
         )}
-        {mode === 'pending' && <SecondaryButton label={T.requests.cancel} onPress={() => run(() => watch.cancel(person.id))} disabled={busy} />}
-        {mode === 'incoming' && <PrimaryButton label={T.tile.incomingAction} onPress={() => setReviewing(true)} />}
-        {mode === 'paired' && <PrimaryButton label={T.tile.pairedAction} onPress={() => router.push(`/(app)/together/with/${encodeURIComponent(person.username)}` as Href)} />}
+        {mode === 'pending' && <Button label={T.requests.cancel} onPress={() => run(() => watch.cancel(person.id))} disabled={busy} />}
+        {mode === 'incoming' && <Button variant="primary" label={T.tile.incomingAction} onPress={() => setReviewing(true)} />}
+        {mode === 'paired' && <Button variant="primary" label={T.tile.pairedAction} onPress={() => router.push(`/(app)/together/with/${encodeURIComponent(person.username)}` as Href)} />}
         {mode === 'paired' && (
-          <SecondaryButton
+          <Button
             label={COLLABORATIVE_LISTS.startWith.action(name)}
             onPress={() => {
               if (!isPremiumProfile(profile)) {

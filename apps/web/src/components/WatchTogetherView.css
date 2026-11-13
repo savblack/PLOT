@@ -10,7 +10,6 @@
   gap: 1.25rem;
 }
 
-.wt-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .wt-title {
   margin: 0;
   font-family: var(--font-display);
@@ -44,7 +43,7 @@
 /* Cards and sections */
 .wt-card {
   padding: 1.1rem;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--surface);
   border: 1px solid var(--border);
   display: flex;
@@ -56,7 +55,7 @@
 .wt-card-body { margin: 0; font-size: 0.875rem; line-height: 1.45; color: var(--text-secondary); }
 
 .wt-section { display: flex; flex-direction: column; }
-.wt-section-head { display: flex; align-items: baseline; justify-content: space-between; }
+
 .wt-section-label { margin: 0 0 0.4rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
 
 .wt-row {
@@ -85,7 +84,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 1rem 1rem 1.2rem;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--surface-sunken);
   color: var(--text-primary);
   text-decoration: none;
@@ -148,7 +147,7 @@
 .wt-tile {
   margin-top: 1.25rem;
   padding: 1.1rem;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--surface);
   border: 1px solid var(--border);
   display: flex;
@@ -248,25 +247,12 @@
 .wt-page--wide { max-width: 1040px; }
 .wt-avatar--lg { width: 72px; height: 72px; font-size: 1.75rem; }
 .wt-wordmark { font-family: var(--font-display); font-weight: 700; letter-spacing: var(--font-display-tracking); }
-.wt-count { font-size: 0.8125rem; font-weight: 700; white-space: nowrap; }
+
 .wt-find { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem; }
 .wt-find .wt-row:first-of-type { border-top: 0; }
 .wt-premium-prompt { display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; margin-top: 0.25rem; }
-.wt-banner--plain { background: var(--surface-sunken); }
-.wt-banner--plain .wt-banner-title { font-family: inherit; font-size: 0.9375rem; font-weight: 600; }
 
 .wt-start { display: flex; flex-direction: column; gap: 2rem; }
-.wt-start-seeit { display: flex; flex-direction: column; gap: 0.75rem; }
-.wt-find-preview { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 0.5rem 0; }
-.wt-find-posters { display: flex; padding: 0.25rem 0; }
-.wt-find-poster { width: 64px; height: 92px; border-radius: 10px; object-fit: cover; box-shadow: 0 0 0 3px var(--ink-bg, var(--surface)); }
-.wt-find-poster + .wt-find-poster { margin-left: -14px; }
-.wt-find-poster:nth-child(1) { transform: rotate(-6deg); }
-.wt-find-poster:nth-child(2) { transform: rotate(-3deg); }
-.wt-find-poster:nth-child(4) { transform: rotate(3deg); }
-.wt-find-poster:nth-child(5) { transform: rotate(6deg); }
-.wt-find-match { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 0.5rem; padding: 0.55rem 1rem; border-radius: var(--radius-pill); background: var(--ink-raised); font-size: 0.875rem; font-weight: 600; color: var(--ink-text); }
-.wt-find-match .wt-example-badge { background: transparent; border: 1px solid var(--ink-line); color: var(--ink-note); }
 
 .wt-example { border-style: dashed; border-color: var(--border-strong, var(--border)); }
 .wt-example-badge {
@@ -278,18 +264,6 @@
   font-size: 0.6875rem;
   font-weight: 700;
 }
-.wt-example-posters {
-  list-style: none; margin: 0; padding: 0;
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem;
-}
-.wt-example-title { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
-.wt-example-poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 8px; background: var(--surface-sunken); }
-.wt-example-caption {
-  font-size: 0.75rem; line-height: 1.25; font-weight: 600; color: var(--text-primary);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-.wt-example-match { padding-top: 0.6rem; border-top: 1px solid var(--border); }
-.wt-heart { width: 20px; height: 20px; flex-shrink: 0; fill: var(--accent); stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
 
 .wt-demo { align-items: center; text-align: center; }
 .wt-demo-head { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
@@ -314,41 +288,6 @@
 /* Invite link landing */
 .wt-landing { align-items: flex-start; }
 .wt-landing .wt-top-actions { margin-top: 0; }
-/* Placeholder poster tones for the example and link preview. */
-.wt-ph-1 { background: color-mix(in srgb, var(--text-primary) 78%, var(--surface-sunken)); }
-.wt-ph-2 { background: color-mix(in srgb, var(--text-primary) 58%, var(--surface-sunken)); }
-.wt-ph-3 { background: color-mix(in srgb, var(--text-primary) 68%, var(--surface-sunken)); }
-.wt-ph-4 { background: color-mix(in srgb, var(--text-primary) 40%, var(--surface-sunken)); }
-.wt-ph-5 { background: color-mix(in srgb, var(--text-primary) 50%, var(--surface-sunken)); }
-
-/* "You're on Premium" (start page) and "just upgraded" news (hub). Tinted
-   with the brand green so it reads as the Premium moment, not a section;
-   stays until dismissed. */
-.wt-welcome {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem 2.75rem 1rem 1.1rem;
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--accent-secondary) 12%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--accent-secondary) 30%, transparent);
-  color: var(--text-primary);
-}
-.wt-welcome--stack { flex-direction: column; padding-right: 1.1rem; }
-.wt-welcome .wt-banner-title { font-size: 1.125rem; }
-.wt-welcome-body { font-size: 0.8125rem; line-height: 1.45; color: var(--text-secondary); }
-.wt-welcome .wt-top-actions { margin-top: 0; }
-.wt-welcome-icon { width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px; fill: none; stroke: var(--accent-secondary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.wt-welcome-close {
-  position: absolute; top: 0.6rem; right: 0.6rem;
-  width: 32px; height: 32px; border: 0; border-radius: var(--radius-pill);
-  background: transparent; color: var(--text-secondary);
-  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
-}
-.wt-welcome-close:hover { background: color-mix(in srgb, var(--accent-secondary) 16%, transparent); color: var(--text-primary); }
-.wt-welcome-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.wt-welcome-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 
 /* What you and Sam said about the last card in the demo. */
 .wt-demo-response { align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
@@ -356,39 +295,7 @@
 .wt-demo-answer { padding: 3px 10px; border-radius: var(--radius-pill); background: var(--surface-sunken); font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); }
 .wt-demo-answer.yes { background: var(--accent-fill); color: var(--on-accent-fill); }
 
-/* Example panel: title and chip pinned to the top like the demo's, the
-   posters and match centred in the space below. */
-.wt-example-head { align-items: flex-start; }
-.wt-example-head .wt-example-badge { align-self: flex-start; }
-.wt-example-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.75rem; }
 .wt-demo .wt-person-name { white-space: normal; text-align: center; }
-
-/* ── Oct 2026 redesign: dark top card, grouped lists, hub with a side column ──
-   The ink card is the one dark surface per screen and holds the one primary
-   action. It stays dark in both themes; buttons on it keep the themed fill. */
-.wt-ink {
-  --ink-bg: #292924;
-  --ink-raised: #3a3a34;
-  --ink-line: #55554d;
-  --ink-text: #f8f2ea;
-  --ink-muted: #d9d2c4;
-  --ink-note: #b9b2a4;
-  background: var(--ink-bg);
-  color: var(--ink-text);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-[data-theme="dark"] .wt-ink { --ink-bg: #1d1d1a; --ink-raised: #2b2b27; --ink-line: #46463f; }
-.wt-hero-title { margin: 0; font-family: var(--font-display); font-weight: 700; letter-spacing: var(--font-display-tracking); font-size: 2.125rem; line-height: 1.04; text-wrap: balance; }
-.wt-hero-body { margin: 0; font-size: 0.9375rem; line-height: 1.5; color: var(--ink-muted); max-width: 30rem; }
-.wt-ink-note { font-size: 0.8125rem; color: var(--ink-note); }
-.wt-hero { gap: 1.5rem; }
-.wt-hero-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
-.wt-heading { margin: 0; font-family: var(--font-display); font-weight: 700; letter-spacing: var(--font-display-tracking); font-size: 1.375rem; line-height: 1.1; color: var(--text-primary); }
-.wt-card-title--sm { font-size: 1.125rem; }
 
 .wt-find--dark { margin-top: 0; }
 .wt-find--dark .wt-search-field:not(:focus-within) { border-color: transparent; }
@@ -396,58 +303,11 @@
 .wt-find-results .wt-row:first-child { border-top: 0; }
 .wt-find-results .wt-note { color: var(--text-secondary); }
 
-.wt-invite-pill { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; font-size: 0.875rem; color: var(--ink-note); }
-.wt-invite-pill-link { display: flex; align-items: center; gap: 0.4rem; max-width: 100%; padding: 0.3rem 0.3rem 0.3rem 0.9rem; border-radius: var(--radius-pill); background: var(--ink-raised); color: var(--ink-text); }
-.wt-invite-pill-url { min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wt-invite-pill-btn { background: var(--ink-text); color: var(--ink-bg); flex-shrink: 0; }
-.wt-invite-pill-btn:hover { background: var(--ink-muted); }
-.wt-invite-pill-share { display: none; }
-
-.wt-list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.wt-list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
 .wt-list .wt-row { padding: 0.75rem 1rem; }
 .wt-list .wt-row:first-child { border-top: 0; }
-.wt-premium-card { gap: 0.75rem; justify-content: center; }
-.wt-premium-prompt--row { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
-.wt-start-bottom { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; align-items: stretch; }
-.wt-start-bottom--solo .wt-start-seeit { max-width: 26rem; }
-.wt-welcome .wt-banner-text { gap: 0; }
-
-.wt-decide { gap: 1.1rem; }
-.wt-decide-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; }
-.wt-decide-actions .btn { min-height: 48px; padding-inline: 1.5rem; }
-.wt-pickwho { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.wt-pickwho-chip { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 4px 1rem 4px 4px; border-radius: var(--radius-pill); border: 1.5px solid var(--ink-line); background: transparent; color: var(--ink-text); font: inherit; font-weight: 600; cursor: pointer; }
-.wt-pickwho-chip[aria-pressed="true"] { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent-fill); }
-.wt-pickwho-chip .wt-avatar { width: 34px; height: 34px; background: var(--ink-raised); color: var(--ink-text); }
-.wt-pickwho-chip[aria-pressed="true"] .wt-avatar { background: var(--on-accent-fill); color: var(--accent-fill); }
-.wt-pickwho-chip:focus-visible { outline: 2px solid var(--ink-text); outline-offset: 2px; }
-
-.wt-hub { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
-.wt-hub-main, .wt-hub-rail { display: flex; flex-direction: column; gap: 1.75rem; min-width: 0; }
-.wt-rail-invite { gap: 0.75rem; }
-.wt-rail-link { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.3rem 0.3rem 1rem; border-radius: var(--radius-pill); background: var(--surface-sunken); }
-.wt-rail-url { flex: 1; min-width: 0; font-size: 0.8125rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 899px) {
-  .wt-invite-pill-share { display: inline-flex; }
-}
-@media (min-width: 900px) {
-  .wt-ink { padding: 2.5rem; }
-  .wt-hero { padding: 3rem; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: 3rem; }
-  .wt-hero-title { font-size: 3.25rem; }
-  .wt-hero-body { font-size: 1.0625rem; }
-  .wt-decide .wt-hero-title { font-size: 2.75rem; }
-  .wt-invite-pill { flex-direction: row; align-items: center; gap: 0.75rem; }
-  .wt-find-poster { width: 96px; height: 138px; }
-  .wt-find-poster + .wt-find-poster { margin-left: -24px; }
-  .wt-start-bottom { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .wt-start-bottom--solo { grid-template-columns: minmax(0, 1fr); }
-  .wt-hub { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+  .wt-list .wt-row > .wt-note { max-width: 6.5rem; text-align: right; white-space: normal; }
 }
 
-@media (max-width: 899px) {
-  .wt-section-head { flex-wrap: wrap; gap: 0.15rem 1rem; margin-bottom: 0.5rem; }
-  .wt-list .wt-row > .wt-note, .wt-list .wt-row > .wt-count { max-width: 6.5rem; text-align: right; white-space: normal; }
-  .wt-list .wt-row > .wt-count { white-space: nowrap; }
-}
-.wt-section-head { margin-bottom: 0.6rem; }

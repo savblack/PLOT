@@ -12,9 +12,10 @@ import { fontFamily, fontSize, spacing } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { rememberWatchTogetherReturn } from '../../lib/watchTogetherReturn';
-import {
-  ButtonRow, ErrorNote, Note, PageTitle, PersonFace, PosterThumb, PrimaryButton, SecondaryButton, WatchPage, Wordmark,
-} from './WatchChrome';
+import Button from '../Button';
+import SectionTitle from '../SectionTitle';
+import { Avatar } from '../Avatar';
+import { ButtonRow, ErrorNote, Note, PosterThumb, WatchPage, Wordmark } from './WatchChrome';
 
 const L = C.landing;
 
@@ -93,11 +94,12 @@ function joinError(code: string | null | undefined): string {
 }
 
 function FaceStack({ people }: { people: PeekPerson[] }) {
+  const { colors } = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
       {people.slice(0, 4).map((person, index) => (
         <View key={`${person.username || person.display_name || 'person'}:${index}`} style={{ marginLeft: index === 0 ? 0 : -8 }}>
-          <PersonFace person={person} size={28} />
+          <Avatar url={person.avatar_url} name={personName(person)} size={28} colors={colors} />
         </View>
       ))}
     </View>
@@ -120,7 +122,7 @@ function ListHead({ info, peek, name }: { info: InvitePreview; peek: InvitePeek;
         </View>
       )}
       <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary }}>{L.invitedToJoin(name)}</Text>
-      <PageTitle>{info.list_name}</PageTitle>
+      <SectionTitle>{info.list_name}</SectionTitle>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <FaceStack people={people} />
         <Text style={{ flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }}>{summary}</Text>
@@ -168,7 +170,7 @@ export function ListInviteLanding({ linkKey }: { linkKey: string }) {
   if (screen === 'invalid' || !info) {
     return (
       <WatchPage hideBack>
-        <PageTitle>{T.landing.invalidTitle}</PageTitle>
+        <SectionTitle>{T.landing.invalidTitle}</SectionTitle>
         <Note>{T.landing.invalidBody}</Note>
       </WatchPage>
     );
@@ -181,8 +183,8 @@ export function ListInviteLanding({ linkKey }: { linkKey: string }) {
     ? <ListHead info={info} peek={loaded.peek} name={name} />
     : (
       <View style={{ gap: spacing.sm }}>
-        <PersonFace person={info} size={72} />
-        <PageTitle>{L.title(name)}</PageTitle>
+        <Avatar url={info.avatar_url} name={personName(info)} size={72} colors={colors} />
+        <SectionTitle>{L.title(name)}</SectionTitle>
         <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textSecondary }}>{summary}</Text>
       </View>
     );
@@ -193,8 +195,8 @@ export function ListInviteLanding({ linkKey }: { linkKey: string }) {
         {head}
         <Note>{listLed ? L.listBody : L.bodyNew(name)}</Note>
         <ButtonRow>
-          <PrimaryButton label={`${T.landing.joinLead} plot ${T.landing.joinTail}`} onPress={signIn} />
-          <SecondaryButton label={T.landing.haveAccount} onPress={signIn} />
+          <Button variant="primary" label={`${T.landing.joinLead} plot ${T.landing.joinTail}`} onPress={signIn} />
+          <Button label={T.landing.haveAccount} onPress={signIn} />
         </ButtonRow>
         <Note>{T.landing.newNote(name)}</Note>
       </WatchPage>
@@ -204,10 +206,10 @@ export function ListInviteLanding({ linkKey }: { linkKey: string }) {
   if (screen === 'owner' || screen === 'member') {
     return (
       <WatchPage hideBack>
-        <PageTitle>{screen === 'owner' ? L.ownerTitle : L.memberTitle}</PageTitle>
+        <SectionTitle>{screen === 'owner' ? L.ownerTitle : L.memberTitle}</SectionTitle>
         <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textSecondary }}>{summary}</Text>
         {screen === 'owner' && <Note>{L.ownerBody}</Note>}
-        <PrimaryButton label={L.open} onPress={openList} />
+        <Button variant="primary" label={L.open} onPress={openList} />
       </WatchPage>
     );
   }
@@ -215,8 +217,8 @@ export function ListInviteLanding({ linkKey }: { linkKey: string }) {
   if (screen === 'inactive') {
     return (
       <WatchPage hideBack>
-        <PersonFace person={info} size={72} />
-        <PageTitle>{L.inactiveTitle}</PageTitle>
+        <Avatar url={info.avatar_url} name={personName(info)} size={72} colors={colors} />
+        <SectionTitle>{L.inactiveTitle}</SectionTitle>
         <Note>{L.inactiveBody(name)}</Note>
       </WatchPage>
     );
@@ -241,8 +243,8 @@ export function ListInviteLanding({ linkKey }: { linkKey: string }) {
       <Note>{listLed ? L.listBody : L.body}</Note>
       {!!error && <ErrorNote>{error}</ErrorNote>}
       <ButtonRow>
-        <PrimaryButton label={L.join} onPress={join} disabled={busy} />
-        <SecondaryButton label={T.landing.notNow} onPress={() => router.replace('/(app)/my-lists' as Href)} />
+        <Button variant="primary" label={L.join} onPress={join} disabled={busy} />
+        <Button label={T.landing.notNow} onPress={() => router.replace('/(app)/my-lists' as Href)} />
       </ButtonRow>
       <Note>{listLed ? L.whereNote(name) : L.joinNote(name)}</Note>
     </WatchPage>

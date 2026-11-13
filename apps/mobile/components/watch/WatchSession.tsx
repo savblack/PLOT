@@ -9,9 +9,10 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
-import {
-  BackRow, ButtonRow, Note, PageTitle, PosterThumb, PrimaryButton, SecondaryButton, SectionLabel, WatchPage, useOpenTitle,
-} from './WatchChrome';
+import Button from '../Button';
+import SectionTitle from '../SectionTitle';
+import BackBar from '../BackBar';
+import { ButtonRow, Note, PosterThumb, SectionLabel, WatchPage, useOpenTitle } from './WatchChrome';
 import { asResult, errorText, sessionIdFrom, titleMeta, useTogether } from './watchModel';
 import { useAppData } from '../../contexts/AppDataContext';
 
@@ -60,7 +61,7 @@ export function WatchSession({ sessionId }: { sessionId: string }) {
             <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }}>{title.title}</Text>
             {!!titleMeta(title) && <Note>{titleMeta(title)}</Note>}
           </View>
-          <SecondaryButton label={T.session.choose} onPress={() => openTitle(title)} />
+          <Button label={T.session.choose} onPress={() => openTitle(title)} />
         </View>
       ))}
     </View>
@@ -69,7 +70,7 @@ export function WatchSession({ sessionId }: { sessionId: string }) {
   const body = !session.live ? (
     <View style={{ gap: spacing.md }}>
       <Note>{T.session.ended}</Note>
-      <PrimaryButton label={T.session.startAgain} onPress={restart} />
+      <Button variant="primary" label={T.session.startAgain} onPress={restart} />
       {matchList}
     </View>
   ) : progress.total === 0 ? (
@@ -77,11 +78,11 @@ export function WatchSession({ sessionId }: { sessionId: string }) {
   ) : showMatches ? (
     <View style={{ gap: spacing.md }}>
       {matchList}
-      <SecondaryButton label={T.session.hideMatches} onPress={() => setShowMatches(false)} />
+      <Button label={T.session.hideMatches} onPress={() => setShowMatches(false)} />
     </View>
   ) : progress.done ? (
     <View style={{ gap: spacing.md }}>
-      <PageTitle>{T.session.doneTitle}</PageTitle>
+      <SectionTitle>{T.session.doneTitle}</SectionTitle>
       <Note>{T.session.doneBody(name)}</Note>
       {matchList}
     </View>
@@ -91,7 +92,7 @@ export function WatchSession({ sessionId }: { sessionId: string }) {
         <View style={{ gap: spacing.xs }}>
           <SectionLabel>{T.session.bothIn}</SectionLabel>
           <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary }}>{justMatched.title}</Text>
-          <PrimaryButton label={T.session.choose} onPress={() => openTitle(justMatched)} />
+          <Button variant="primary" label={T.session.choose} onPress={() => openTitle(justMatched)} />
         </View>
       )}
       {progress.card && (
@@ -104,21 +105,21 @@ export function WatchSession({ sessionId }: { sessionId: string }) {
       )}
       <Note>{T.session.swipeHint}</Note>
       <ButtonRow>
-        <SecondaryButton label={T.session.no} onPress={() => decide(false)} flex />
-        <PrimaryButton label={T.session.yes} onPress={() => decide(true)} flex />
+        <Button label={T.session.no} onPress={() => decide(false)} flex />
+        <Button variant="primary" label={T.session.yes} onPress={() => decide(true)} flex />
       </ButtonRow>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
         <Note>{T.session.matchesSoFar(progress.matches.length)}</Note>
-        <SecondaryButton label={T.session.seeMatches} onPress={() => setShowMatches(true)} />
+        <Button label={T.session.seeMatches} onPress={() => setShowMatches(true)} />
       </View>
     </View>
   );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
-      <BackRow label={T.session.leave} backTo="/(app)/together" />
+      <BackBar label={T.session.leave} onBack={() => router.replace('/(app)/together' as Href)} />
       <View style={{ paddingHorizontal: spacing.xl, paddingBottom: spacing.sm, gap: spacing.xs }}>
-        <PageTitle>{T.session.heading(name)}</PageTitle>
+        <SectionTitle>{T.session.heading(name)}</SectionTitle>
         <Note>{T.session.fromBoth}</Note>
         <Note>{`${personName(other || {})}: ${T.session.theyAnswered(Math.min(session.other_answered + 1, progress.total))}`}</Note>
       </View>
@@ -207,7 +208,7 @@ export function WatchJoin({ username }: { username: string }) {
   return (
     <WatchPage>
       <Note>{T.session.ended}</Note>
-      <PrimaryButton label={T.tile.pairedAction} onPress={() => router.push(`/(app)/together/with/${encodeURIComponent(username)}` as Href)} />
+      <Button variant="primary" label={T.tile.pairedAction} onPress={() => router.push(`/(app)/together/with/${encodeURIComponent(username)}` as Href)} />
     </WatchPage>
   );
 }

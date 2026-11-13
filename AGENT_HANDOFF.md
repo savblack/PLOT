@@ -1,59 +1,65 @@
 # ui-unify
 
-Status: paused (waiting on Savannah's pick of redesign options)
+Status: paused (built and checked; waiting on Savannah to look at it)
 Branch: agent/2026-11-13-ui-unify
 Worktree: ~/Developer/PLOT-worktrees/2026-11-13-ui-unify
-Owner: Jacob (CTO) for the cleanup, Hailey (CPO) for the redesign choice
+Owner: Jacob (CTO) for the build, Hailey (CPO) for the design sign-off
 Updated: 2026-11-13
 
 ## In plain words
 
-Plot's Watch Together and Just Decide pages look like a different app from Home,
-My Lists and History. Mockups with three options for each page are here:
-https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH (private to Savannah).
-Savannah needs to pick one option per page. This branch already holds a first,
-invisible cleanup: small pieces of code that several pages each typed for
-themselves now come from one place. Nothing looks or behaves differently.
+Watch Together and Just Decide now use the same layout as History and My Lists
+on web: a narrow column of cards on the left and the wide content on the right
+(stacked on phones). Watch Together leads with sending your invite link,
+since most people invite someone not on Plot. Just Decide opens on rows of
+titles that fit tonight instead of four question screens. The iPhone app got
+the same changes. Nothing is merged or on a pull request yet. Savannah should
+look at it before a pull request opens. Mockups (private):
+https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH
 
-## Done (this branch, commit bfa289272)
+## Done
 
-- One global `.sr-only` in `apps/web/src/styles/base.css`; removed `.wt-sr`,
-  `.foot-bar-sr`, `.ob-sr`, `.plans-sr`.
-- `border-radius: 999px/9999px` → `var(--radius-pill)` in web CSS;
-  `borderRadius: 999` → `radii.pill` in mobile tonight, DrawerMenu, ParentalGuide,
-  TasteOverlapView.
-- `apps/web/src/hooks/useWide.js` (`WIDE_QUERY`, `isWide`, `onWideChange`,
-  `useWide`) replaces five hand-typed 1024px matchMedia copies.
-- `titleMeta` → `@plot/core/watchTogether.js`; `pickResultMeta` →
-  `@plot/core/tonightPicker.js`. Web and mobile copies removed. Unit tests added.
+- Checkpoint bfa289272: shared `.sr-only`, pill radius token, `useWide.js`,
+  `titleMeta`/`pickResultMeta` in core.
+- Watch Together (web): `WatchTogetherHub.jsx/.css` replaces the hub and the dark
+  start page. Left column: who's watching (pick a person or "All of you"),
+  requests, invite link. Right: shelves of shared titles, or with nobody yet your
+  watchlist preview and the Sam demo. Core: `hubStage`, `joinNames`,
+  `sharedOnDate`, `INVITE_SHARED_KEY`; copy `WATCH_TOGETHER.hub.*`.
+  `useInviteShare` records when the link was shared (localStorage).
+  ~145 lines of dead `wt-*` CSS removed.
+- Just Decide (web): `TonightShelves.jsx` + core `tonightShelves.js` (chips map to
+  picker options; shelves From your watchlist / Under 2 hours / Something light /
+  Something gripping / On your services). Left column: chips, Pick one for me,
+  Surprise me, Filters, saved searches. Question screens and their CSS removed.
+  Free: watchlist shelves free; the services shelf is Premium; Pick keeps the
+  one-free-pick-a-day rule.
+- iPhone: `components/watch/WatchHub.tsx` (people-card row + shelves + invite-first
+  empty state), `WatchChrome` aliases replaced by shared components, `BackBar` gets
+  an optional label. `app/(app)/tonight.tsx` opens on chips and shelves.
 
 ## Checks
 
-- `pnpm run check`: pass
-- `pnpm --filter @plot/core run test:unit`: 1389 pass
+- `pnpm run check`: pass (lint 0 errors; 168 warnings, none in touched files)
+- `pnpm --filter @plot/core run test:unit`: 1394 pass (new `tonightShelves.test.js`)
 - `pnpm --filter @plot/web run test:unit`: 633 pass
 - `pnpm --filter @plot/mobile run typecheck`: pass
-- Not done: visual look in a Cloudflare preview (values are identical, but the
-  pill swap touches app.css).
+- Storybook (worktree, port 6047): desktop and 390px checked by eye for both pages.
+- Not done: iPhone simulator; Cloudflare preview; the `SearchAndInvite` story's
+  in-browser check doesn't register typing (search works by hand; story isn't in
+  the CI interaction-test set).
 
 ## Next
 
-1. Round 2 (same mockup link): Savannah liked all three Watch Together layouts and
-   none of round 1's Just Decide. Recommended Watch Together = C's people-card row on
-   top + A's shared shelves below + B's "nights together" later. Empty state leads
-   with the off-platform invite link (share sheet), not username search. New Just
-   Decide ideas D (shelves, no questions), E (solo swipe, same parts as Watch
-   Together), F (one-tap moods). Waiting on her confirmation of the Watch Together
-   combination and a Just Decide pick.
-2. Build the pick on web in this branch, reusing `.cal-body`/`.cal-side`,
-   `.hist-card`, `.discover-section-header`, `Chip`. Then the iPhone screens
-   (`apps/mobile/components/watch/*`, `apps/mobile/app/(app)/tonight.tsx`),
-   swapping `WatchChrome` aliases for `BackBar`/`Button`/`BottomSheet`/`Avatar`.
-3. Deferred cleanup from the audit: merge `.cal-mini-card` + `.hist-card`, one
-   tablet breakpoint (760/767/768), a shared web Avatar, dark-card colors (gone if
-   the redesign drops the card), shared people-search hook in core.
+1. Savannah reviews in Storybook or a preview. Then open a PR (needs
+   `/unslop`, `/before-and-after`).
+2. iPhone Watch Together still uses a sideways row of people cards; web uses a
+   stacked "Who's watching" card. Decide whether iPhone should match.
+3. Deferred: merge `.cal-mini-card` + `.hist-card`, one tablet breakpoint, shared
+   web Avatar, shared people-search hook in core, iPhone clipboard for Copy.
 
 ## Approvals
 
-- Given: the request to review, unify and mock up.
-- Needed: Savannah's design pick; merge.
+- Given: review, unify, mock up; build Watch Together C+A and Just Decide D; same
+  left-column layout as Home, My Lists and History.
+- Needed: design sign-off, PR, merge.
