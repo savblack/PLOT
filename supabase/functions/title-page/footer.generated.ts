@@ -2,6 +2,7 @@
 // Do not edit by hand — run `npm run footer` to regenerate.
 export const FOOTER_HTML = `
   <footer class="site-footer">
+    <div class="footer-panel">
     <div class="footer-inner">
       <div class="footer-top">
         <div class="footer-intro">
@@ -59,8 +60,9 @@ export const FOOTER_HTML = `
          <use> filled with #footer-foil) fades in over the glyphs; js/footer.js tilts
          it with the pointer. Version stamp added by scripts/build-footer.mjs. -->
     <a class="footer-wordmark" href="/" aria-label="plot home" data-cta="footer">
-      <svg viewBox="52 -681 1403 871" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-foil" x1="-0.6" x2="1.6" gradientTransform="rotate(100 0.5 0.5)"><stop offset="0" stop-color="#f1e9dc"/><stop offset="0.18" stop-color="#ffd1e8"/><stop offset="0.34" stop-color="#fff2b8"/><stop offset="0.5" stop-color="#c9f2d9"/><stop offset="0.66" stop-color="#c6e4ff"/><stop offset="0.82" stop-color="#e0cfff"/><stop offset="1" stop-color="#f1e9dc"/></linearGradient></defs><g id="footer-wordmark-glyphs"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-55,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5Z"/><path transform="translate(-110,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-165,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></g><use class="footer-foil" href="#footer-wordmark-glyphs"/></svg>
+      <svg viewBox="52 -681 1403 871" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-foil" x1="-0.6" x2="1.6" gradientTransform="rotate(100 0.5 0.5)"><stop offset="0" stop-color="#ffbcdf"/><stop offset="0.18" stop-color="#ffd1e8"/><stop offset="0.34" stop-color="#fff2b8"/><stop offset="0.5" stop-color="#c9f2d9"/><stop offset="0.66" stop-color="#c6e4ff"/><stop offset="0.82" stop-color="#e0cfff"/><stop offset="1" stop-color="#ffbcdf"/></linearGradient></defs><g id="footer-wordmark-glyphs"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-55,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5Z"/><path transform="translate(-110,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-165,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></g><use class="footer-foil" href="#footer-wordmark-glyphs"/></svg>
     </a>
+    </div>
     <script defer src="/js/footer.js?v=e1e00473"></script>
   </footer>
 `;
@@ -75,26 +77,34 @@ export const FOOTER_CSS = `
    footer renders the same on pages that define the tokens under other names.
    The link list is a div with role="navigation", not a <nav>: nav.css styles
    every <nav> as the fixed top bar. Type rules are set in full because pages
-   style bare h2 and p. */
+   style bare h2 and p.
+
+   Layout: a pink rounded panel inset from the page edge, like the home
+   page's section boxes, with the big wordmark sinking off its bottom. */
 .site-footer {
-  /* An inline-size container has no intrinsic width, so it must be told to
-     fill the row: some pages lay out body as a centred flex column. */
-  container-type: inline-size;
   width: 100%;
   box-sizing: border-box;
   position: relative;
   z-index: 3;
-  margin-top: -1px;
-  overflow: hidden;
-  background: var(--bg, #f8f2ea);
+  padding: 0 clamp(12px, 1.8vw, 24px) clamp(12px, 1.8vw, 24px);
   color: var(--ink, #292924);
-  border-top: 1px solid rgba(41, 41, 36, 0.12);
   font-family: var(--sans, 'DM Sans', system-ui, sans-serif);
 }
+.footer-panel {
+  /* An inline-size container has no intrinsic width, so it must be told to
+     fill the row: some pages lay out body as a centred flex column. The
+     wordmark below is sized in this panel's container units. */
+  container-type: inline-size;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 28px;
+  background: #ffd3ea;
+}
 .footer-inner {
-  max-width: 1200px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 6rem 2.5rem 0;
+  padding: 4rem 2.5rem 0;
 }
 .footer-top {
   display: flex;
@@ -107,7 +117,7 @@ export const FOOTER_CSS = `
   color: inherit;
   text-align: left;
   font-family: var(--display, 'Gabarito', 'DM Sans', system-ui, sans-serif);
-  font-size: clamp(1.55rem, 2.8vw, 2.5rem);
+  font-size: clamp(1.4rem, 2.2vw, 1.9rem);
   font-weight: 600;
   line-height: 1.08;
   letter-spacing: -0.03em;
@@ -117,46 +127,49 @@ export const FOOTER_CSS = `
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem 1.25rem;
-  margin-top: 1.75rem;
+  margin-top: 1.5rem;
 }
 .footer-cta {
   display: inline-flex;
   align-items: center;
-  min-height: 48px;
-  padding: 0 1.5rem;
+  min-height: 44px;
+  padding: 0 1.4rem;
   border-radius: 9999px;
-  background: var(--fill, #ff88c8);
-  color: var(--ink, #292924);
-  font-size: 0.95rem;
+  background: var(--ink, #292924);
+  color: #ffd3ea;
+  font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
   transition: background 0.25s var(--ease, ease), transform 0.25s var(--ease, ease);
 }
-.footer-cta:hover { background: var(--fill-hover, #ff9fd3); transform: translateY(-1px); }
+.footer-cta:hover { background: var(--ink-hover, #3a3a33); transform: translateY(-1px); }
 .footer-login {
   display: inline-flex;
   align-items: center;
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 0.25rem;
   color: var(--ink, #292924);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
 .footer-cols {
   display: grid;
   grid-template-columns: repeat(3, auto);
-  column-gap: 5rem;
+  column-gap: 3.5rem;
 }
+/* The column headings stay for screen readers; the panel reads cleaner
+   without them on screen. */
 .footer-heading {
-  margin: 0 0 1rem;
-  font-family: var(--sans, 'DM Sans', system-ui, sans-serif);
-  font-size: 0.69rem;
-  line-height: 1.3;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-secondary, #5f5a52);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 .footer-col ul {
   list-style: none;
@@ -164,7 +177,7 @@ export const FOOTER_CSS = `
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 .footer-col a {
   color: var(--ink, #292924);
@@ -185,16 +198,18 @@ export const FOOTER_CSS = `
 .footer-col a:hover,
 .footer-col a:focus-visible,
 .footer-login:hover,
-.footer-login:focus-visible { text-decoration-color: var(--fill, #ff88c8); }
+.footer-login:focus-visible { text-decoration-color: var(--ink, #292924); }
 
 .footer-bottom {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  margin-top: 3rem;
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(41, 41, 36, 0.12);
 }
-.footer-copy { font-size: 0.8rem; color: var(--text-secondary, #5f5a52); }
+.footer-copy { font-size: 0.8rem; color: rgba(41, 41, 36, 0.7); }
 .footer-social { display: flex; align-items: center; margin-right: -12px; }
 .footer-social a {
   display: inline-flex;
@@ -205,8 +220,8 @@ export const FOOTER_CSS = `
   color: var(--ink, #292924);
   transition: color 0.2s;
 }
-.footer-social a:hover { color: var(--text-secondary, #5f5a52); }
-.footer-social svg { width: 19px; height: 19px; display: block; }
+.footer-social a:hover { color: rgba(41, 41, 36, 0.6); }
+.footer-social svg { width: 18px; height: 18px; display: block; }
 
 /* The wordmark bleeds off both sides and sinks below the bottom edge. The
    SVG is 108% of the footer's width, pulled 4% left; the strip is cropped
@@ -215,7 +230,7 @@ export const FOOTER_CSS = `
    without container units. */
 .footer-wordmark {
   display: block;
-  margin-top: 4rem;
+  margin-top: 2.5rem;
   overflow: hidden;
   height: calc(108vw * 681 / 1403 - 14.9vw);
   height: calc(108cqw * 681 / 1403 - 14.9cqw);
@@ -228,7 +243,8 @@ export const FOOTER_CSS = `
   aspect-ratio: 1403 / 871;
   margin-left: -4vw;
   margin-left: -4cqw;
-  fill: var(--surface, #f1e9dc);
+  /* A half step deeper than the panel, so the mark reads as texture. */
+  fill: #ffbcdf;
   transition: fill 0.3s var(--ease, ease);
 }
 /* The foil: a pastel holographic sheen over the glyphs that fades in on hover
@@ -266,11 +282,13 @@ export const FOOTER_CSS = `
   .footer-cols { column-gap: 3.5rem; }
 }
 @media (max-width: 600px) {
-  .footer-inner { padding: 3.5rem 1.25rem 0; }
-  .footer-lede { font-size: 1.55rem; line-height: 1.12; }
-  .footer-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem 0.75rem; }
-  .footer-bottom { margin-top: 2.25rem; }
-  .footer-wordmark { margin-top: 2rem; }
+  .site-footer { padding: 0 10px 10px; }
+  .footer-panel { border-radius: 22px; }
+  .footer-inner { padding: 2.75rem 1.25rem 0; }
+  .footer-lede { font-size: 1.4rem; line-height: 1.12; }
+  .footer-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem 0.75rem; }
+  .footer-bottom { margin-top: 2rem; }
+  .footer-wordmark { margin-top: 1.5rem; }
 }
 @media (pointer: coarse) {
   .footer-col a { display: inline-flex; align-items: center; min-height: 44px; }
