@@ -386,7 +386,7 @@
       max-width: 1180px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: minmax(0, 580px) 500px;
+      grid-template-columns: minmax(0, 580px) 440px;
       grid-template-rows: 1fr auto 1fr;
       grid-template-areas: ". diary" "copy diary" ". diary";
       justify-content: space-between;
@@ -420,7 +420,7 @@
       aspect-ratio: 100 / 104;
       container-type: inline-size;
     }
-    /* Sizes are in cqw of the 500px desktop diary (1cqw = 5px there). */
+    /* Sizes are in cqw of the 440px desktop diary (1cqw = 4.4px there). */
     .mem-card {
       position: absolute;
       margin: 0;
@@ -694,7 +694,7 @@
         row-gap: 2.5rem;
       }
       .mem-sub { margin-bottom: 0; }
-      .mem-diary { max-width: 500px; justify-self: center; }
+      .mem-diary { max-width: 440px; justify-self: center; }
     }
 
     @media (max-width: 600px) {
@@ -715,9 +715,9 @@
       .mem-inner { row-gap: 2rem; }
       /* Card text would drop to ~9px at phone width; keep it readable. */
       /* Narrower than the column so the tilted side cards keep clear of the screen edge. */
-      .mem-diary { width: 82%; aspect-ratio: 100 / 116; }
-      .mem-card { font-size: 3.6cqw; }
-      .mem-card--b { font-size: 3.8cqw; }
+      .mem-diary { width: 74%; aspect-ratio: 100 / 116; }
+      .mem-card { font-size: 4cqw; }
+      .mem-card--b { font-size: 4.2cqw; }
       .hero-search { height: 60px; padding: 0 6px 0 18px; gap: 10px; }
       .hero-search input { font-size: 1rem; }
       .hero-search .btn { height: 48px; padding: 0 1rem; }
