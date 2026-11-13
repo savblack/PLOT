@@ -163,6 +163,28 @@ test('allows series content ratings through both proxies', async () => {
   assert.ok(source.includes('/^tv\\/\\d+\\/content_ratings$/,'));
 });
 
+test('allows the rating meaning lists through both proxies', async () => {
+  const originalFetch = globalThis.fetch;
+  const fetched = [];
+  globalThis.fetch = async (url) => {
+    fetched.push(new URL(url).pathname);
+    return Response.json({ certifications: {} });
+  };
+  try {
+    for (const type of ['movie', 'tv']) {
+      const response = await fetchTMDB(new URL(
+        `https://proxy.example/?path=${encodeURIComponent(`certification/${type}/list`)}`,
+      ), 'server-key', null);
+      assert.equal(response.status, 200);
+    }
+    assert.deepEqual(fetched, ['/3/certification/movie/list', '/3/certification/tv/list']);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  const source = readFileSync(new URL('../../../../../supabase/functions/tmdb-proxy/index.ts', import.meta.url), 'utf8');
+  assert.ok(source.includes('/^certification\\/(movie|tv)\\/list$/,'));
+});
+
 test('forwards only allow-listed parameters to TMDB', async () => {
   const originalFetch = globalThis.fetch;
   let fetchedUrl;

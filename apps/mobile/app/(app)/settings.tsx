@@ -383,9 +383,10 @@ function ManageSubscription({ userId }: { userId: string | null }) {
   );
 }
 
-function PremiumPreview({ initialExpanded = false }: { initialExpanded?: boolean }) {
+// Open state lives in the screen, so Go Premium and the Compare links can open
+// it while Billing is already showing (it used to read the flag only on mount).
+function PremiumPreview({ expanded, setExpanded }: { expanded: boolean; setExpanded: (open: boolean) => void }) {
   const { colors } = useTheme();
-  const [expanded, setExpanded] = useState(initialExpanded);
   const checkout = usePremiumCheckout(expanded);
   return (
     <SettingsGroup title={SETTINGS_VIEW.premium.groupTitle}>
@@ -1630,7 +1631,7 @@ export default function SettingsScreen() {
           </SettingsGroup>
         )}
         <ManageSubscription userId={userId} />
-        {!profile?.is_premium && <PremiumPreview initialExpanded={premiumExpanded} />}
+        {!profile?.is_premium && <PremiumPreview expanded={premiumExpanded} setExpanded={setPremiumExpanded} />}
         <SettingsGroup title={SETTINGS_VIEW.billing.supportTitle}>
           <SettingsRow
             icon={null}

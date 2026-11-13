@@ -16,6 +16,8 @@ const ALLOWED_PATHS = [
   /^(movie|tv)\/\d+\/images$/,
   // Regional age ratings for series on the title panel (ParentalGuide).
   /^tv\/\d+\/content_ratings$/,
+  // What each rating means, for the same panel (parentalGuide.loadCertificationMeaning).
+  /^certification\/(movie|tv)\/list$/,
   /^collection\/\d+$/,
   /^person\/\d+(\/combined_credits)?$/,
   /^person\/\d+\/images$/,

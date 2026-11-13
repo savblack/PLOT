@@ -143,7 +143,7 @@ export const PLANS_PAGE = {
       // Opened from the Settings theme picker. A picture of the family, never applied.
       themes: {
         context: () => 'Themes are part of Premium',
-        title: 'Give plot a new look.',
+        title: 'Give Plot a new look.',
         body: 'Premium adds themes, each in light and dark with its own accent. The default look stays free in light, dark and system.',
         also: ['pick', 'together'],
       },

@@ -11,12 +11,19 @@
  * the attributes every time. A caller's own letterSpacing still wins.
  *
  * iOS-native in cause, but harmless on Android and web.
+ *
+ * It also matches the keyboard to Plot's theme (see below).
  */
 import { forwardRef } from 'react';
 import { TextInput as RNTextInput, type TextInputProps } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const TextInput = forwardRef<RNTextInput, TextInputProps>(function TextInput({ style, ...props }, ref) {
-  return <RNTextInput ref={ref} style={[BASE, style]} {...props} />;
+  // The iOS keyboard follows the system setting, not Plot's own Light/Dark
+  // choice, so a light keyboard opened over the dark theme. A caller's own
+  // keyboardAppearance still wins.
+  const { resolved } = useTheme();
+  return <RNTextInput ref={ref} keyboardAppearance={resolved} style={[BASE, style]} {...props} />;
 });
 
 // Lets `useRef<TextInput>(null)` keep working where callers already wrote it.
