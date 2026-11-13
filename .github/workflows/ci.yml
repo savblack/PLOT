@@ -61,6 +61,24 @@ jobs:
           fi
           ./scripts/scan-secrets.sh "$base_sha" HEAD
 
+      # GitHub only reads a workflow file once it is on main, and a file it
+      # cannot read fails silently there (kill-switch.yml, #1655: an unquoted
+      # colon). actionlint catches that here. Runs for every tier, before the
+      # tier decision, because a workflow-only diff is exactly the case.
+      # Shellcheck and pyflakes are off: this is a syntax and expression check.
+      - name: Check workflow files
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          set -euo pipefail
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -sSfL -o "$RUNNER_TEMP/$tarball" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${tarball}"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -color -shellcheck= -pyflakes=
+
       - name: Decide how much of the suite this diff needs
         env:
           BRANCH: ${{ github.head_ref || github.ref_name }}
