@@ -155,14 +155,17 @@
 .add-list-error { margin: -0.65rem 0 1rem; color: var(--danger); font-size: 0.75rem; }
 .add-list-create-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
+/* Motion only, never opacity on the dialog: it is readable from its first
+   frame (the paywall's rule since 10 Nov 2026, now every pop-up's). Only the
+   dim behind it fades in, by its colour, so the dialog inside is not faded
+   with it. */
 @keyframes responsiveDialogOverlayIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { background-color: transparent; }
 }
 
 @keyframes responsiveDialogIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { transform: translateY(10px) scale(0.985); }
+  to { transform: translateY(0) scale(1); }
 }
 
 @media (max-width: 767px) {
@@ -197,8 +200,8 @@
   .responsive-dialog-footer { padding-bottom: 0.9rem; }
 
   @keyframes responsiveSheetIn {
-    from { opacity: 0; transform: translateY(28px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { transform: translateY(28px); }
+    to { transform: translateY(0); }
   }
 }
 
