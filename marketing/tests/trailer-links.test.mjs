@@ -97,7 +97,7 @@ test('resolveTrailerUrl uses real data only', async () => {
 test('the brief gives the exact trailer link, or says not to mention a trailer', async () => {
   const post = { id: 'p1', post_type: 'countdown', payload: { title: { title: 'A film' } } };
   const withLink = await buildBrief(post, [], { trailerUrl: link });
-  assert.match(withLink, new RegExp(`official YouTube trailer for this title is ${link.replace(/[?.]/g, '\\$&')}`));
+  assert.ok(withLink.includes(`The official YouTube trailer for this title is ${link}.`));
   const without = await buildBrief(post, []);
   assert.match(without, /No official YouTube trailer is known for this post\. Do not mention a trailer or teaser/);
   assert.match(await buildConversationBrief({ id: 'q1', payload: {} }), /Do not mention a trailer or teaser/);
