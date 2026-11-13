@@ -102,3 +102,16 @@ test('the brief gives the exact trailer link, or says not to mention a trailer',
   assert.match(without, /No official YouTube trailer is known for this post\. Do not mention a trailer or teaser/);
   assert.match(await buildConversationBrief({ id: 'q1', payload: {} }), /Do not mention a trailer or teaser/);
 });
+
+test('any post type whose copy mentions a trailer fails without the YouTube link', () => {
+  const result = validateCopy(copy('The trailer is out. Seven days to go.'), { post_type: 'countdown' });
+  assert.deepEqual(result.errors.filter(e => /YouTube/.test(e)), [
+    'x needs the official YouTube trailer link',
+    'instagram needs the official YouTube trailer link',
+    'threads needs the official YouTube trailer link',
+  ]);
+});
+
+test('a youtu.be short link satisfies the trailer rule', () => {
+  assert.deepEqual(linkErrors('The trailer is out. https://youtu.be/fixture_vid', { post_type: 'countdown' }), []);
+});
