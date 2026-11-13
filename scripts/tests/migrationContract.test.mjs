@@ -4,7 +4,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
+  buildSchemaState,
   buildSqlUsers,
+  findDeadReferences,
+  rankByTable,
   checkMigration,
   findChanges,
   parseAcknowledgements,
@@ -18,8 +21,8 @@ const labels = changes => changes.map(c => `${c.kind} ${c.table ? `${c.table}.` 
 const noCode = () => [];
 const codeUses = names => name => (names.includes(name) ? [`apps/web/src/x.js:1: ${name}`] : []);
 
-function check(file, sql, { prior = [], codeSearch = noCode } = {}) {
-  return checkMigration({ file, sql, priorAndSelf: [...prior, { file, sql }], codeSearch });
+function check(file, sql, { prior = [], codeSearch = noCode, filesNaming, mobileHistory } = {}) {
+  return checkMigration({ file, sql, priorAndSelf: [...prior, { file, sql }], codeSearch, filesNaming, mobileHistory });
 }
 
 test('finds every destructive kind, including DDL inside a do block', () => {
@@ -142,4 +145,90 @@ test('sqlReferences matches whole words only', () => {
   const users = buildSqlUsers([{ file: 'f.sql', sql: 'create function public.f() returns int language sql as $$ select ratings_count from t $$;' }]);
   assert.deepEqual(sqlReferences('rating', users), []);
   assert.equal(sqlReferences('ratings_count', users).length, 1);
+});
+
+// ── A later migration naming something an earlier one removed ───────────────
+
+const dropShares = {
+  file: '20980101000000_drop.sql',
+  sql: `create table public.watch_together (id uuid primary key, requester_shares_full boolean, status text);
+alter table public.watch_together drop column requester_shares_full;`,
+};
+
+test('a function naming a column an earlier migration dropped fails', () => {
+  const sql = fixture('names-dropped-column.sql');
+  const { problems } = check('20990101000000_a.sql', sql, { prior: [dropShares] });
+  assert.deepEqual(problems.map(p => `${p.kind} ${p.name}`), ['names a removed object requester_shares_full']);
+  assert.match(problems[0].why, /drop column watch_together\.requester_shares_full in 20980101000000_drop\.sql/);
+});
+
+test('the same function passes when nothing dropped the column', () => {
+  const created = { file: '20980101000000_create.sql', sql: 'create table public.watch_together (id uuid primary key, requester_shares_full boolean);' };
+  assert.deepEqual(check('20990101000000_a.sql', fixture('names-dropped-column.sql'), { prior: [created] }).problems, []);
+});
+
+test('a dropped name that a later migration brings back is live again', () => {
+  const readd = { file: '20980201000000_readd.sql', sql: 'alter table public.watch_together add column requester_shares_full boolean;' };
+  assert.deepEqual(check('20990101000000_a.sql', fixture('names-dropped-column.sql'), { prior: [dropShares, readd] }).problems, []);
+});
+
+test('a dropped column name still live on another table is not dead', () => {
+  const other = { file: '20980201000000_other.sql', sql: 'create table public.lists (id uuid, requester_shares_full boolean);' };
+  assert.deepEqual(check('20990101000000_a.sql', fixture('names-dropped-column.sql'), { prior: [dropShares, other] }).problems, []);
+});
+
+test('dead-name-ok acknowledges a same-named thing, and needs a reason', () => {
+  const sql = `-- dead-name-ok: requester_shares_full (a jsonb key in the payload, not the column)\n${fixture('names-dropped-column.sql')}`;
+  assert.deepEqual(check('20990101000000_a.sql', sql, { prior: [dropShares] }).problems, []);
+  const bare = `-- dead-name-ok: requester_shares_full\n${fixture('names-dropped-column.sql')}`;
+  assert.deepEqual(check('20990101000000_a.sql', bare, { prior: [dropShares] }).problems.map(p => p.kind), ['names a removed object', 'acknowledgement']);
+});
+
+test('schema state follows renames and dropped functions', () => {
+  const { live, dropped } = buildSchemaState([
+    { file: 'a.sql', sql: 'create table public.journal (id uuid, seen_on date); create function public.old_rpc() returns int language sql as $$ select 1 $$;' },
+    { file: 'b.sql', sql: 'alter table public.journal rename to history; alter table public.history rename column seen_on to watched_on; drop function public.old_rpc();' },
+  ]);
+  assert.ok(live.has('history') && live.has('watched_on'));
+  assert.ok(!live.has('journal') && !live.has('seen_on') && !live.has('old_rpc'));
+  assert.deepEqual([...dropped.keys()].sort(), ['journal', 'old_rpc', 'seen_on']);
+});
+
+test('findDeadReferences ignores bodies from earlier migrations', () => {
+  const old = { file: '20970101000000_old.sql', sql: fixture('names-dropped-column.sql') };
+  const sql = 'select 1;';
+  assert.deepEqual(findDeadReferences({ file: '20990101000000_a.sql', sql, priorAndSelf: [old, dropShares, { file: '20990101000000_a.sql', sql }] }), []);
+});
+
+// ── Reading common-name hits ────────────────────────────────────────────────
+
+test('hits in files that read the table by name come first, marked', () => {
+  const lines = ['a.js:1: styles.note', 'b.js:9: row.note', 'c.js:3: note'];
+  const ranked = rankByTable(lines, new Set(['b.js']));
+  assert.equal(ranked.likely, 1);
+  assert.deepEqual(ranked.lines, ['code* b.js:9: row.note', 'code  a.js:1: styles.note', 'code  c.js:3: note']);
+  const { problems } = check('20990101000000_a.sql', 'alter table public.history drop column note;', {
+    codeSearch: () => lines,
+    filesNaming: () => new Set(['b.js']),
+  });
+  assert.equal(problems[0].refs[0], 'code* b.js:9: row.note');
+  assert.match(problems[0].summary, /3 code line\(s\) in 3 file\(s\), 1 in files that read history by name/);
+});
+
+// ── iPhone builds that are already installed ────────────────────────────────
+
+test('a name gone from main but used by mobile recently still fails', () => {
+  const { problems } = check('20990101000000_a.sql', 'drop function public.old_rpc();', {
+    mobileHistory: name => (name === 'old_rpc' ? 'abc1234 2026-11-01 feat(mobile): stop calling old_rpc' : null),
+  });
+  assert.equal(problems.length, 1);
+  assert.match(problems[0].why, /mobile or shared core code did recently \(abc1234/);
+  const acked = check('20990101000000_a.sql', '-- contracts: old_rpc (no installed build calls it: TestFlight only, all testers updated)\ndrop function public.old_rpc();', {
+    mobileHistory: () => 'abc1234 2026-11-01 x',
+  });
+  assert.deepEqual(acked.problems, []);
+});
+
+test('a name mobile never used passes', () => {
+  assert.deepEqual(check('20990101000000_a.sql', 'drop function public.old_rpc();', { mobileHistory: () => null }).problems, []);
 });

@@ -31,8 +31,16 @@
 //      of this migration. plpgsql resolves names only when a line runs, so a
 //      function that still names a dropped column is accepted silently and
 //      fails later in production (20261004100000 did exactly that).
+//   c) mobile and shared core code in the last MOBILE_DAYS (90) of history,
+//      only when (a) and (b) are clean: installed iPhone builds lag main.
 // Any hit fails the check. A not-null column always needs an acknowledgement,
 // because "does old code insert into this table without it" is not greppable.
+// Hits for a column list lines in files that read its table by name first.
+//
+// It also fails the reverse: a function or cron job defined in this migration
+// that names something an earlier migration removed (findDeadReferences).
+// Acknowledge a same-named but different thing with
+//   -- dead-name-ok: <name> (a jsonb key, not the dropped column)
 //
 // ACKNOWLEDGING
 // When you have done the expand step and are sure, say so in the migration:
@@ -291,13 +299,14 @@ export function findChanges(sql) {
 }
 
 /**
- * `-- contracts: <name> (reason)` lines. Returns name -> reason, and the lines
- * that name something without a reason.
+ * `-- contracts: <name> (reason)` lines (or another keyword). Returns
+ * name -> reason, and the names given without a reason.
  */
-export function parseAcknowledgements(sql) {
+export function parseAcknowledgements(sql, keyword = 'contracts') {
   const acks = new Map();
   const missingReason = [];
-  for (const m of sql.matchAll(/--\s*contracts:\s*([a-z0-9_."]+)\s*(\(([^)]*)\))?/gi)) {
+  const re = new RegExp(`--\\s*${keyword}:\\s*([a-z0-9_."]+)\\s*(\\(([^)]*)\\))?`, 'gi');
+  for (const m of sql.matchAll(re)) {
     const name = unq(m[1]);
     const reason = (m[3] || '').trim();
     if (!reason) { missingReason.push(name); continue; }
@@ -364,14 +373,127 @@ export function codeReferences(name, rev) {
   }
 }
 
+// ── Names an earlier migration already removed ──────────────────────────────
+
+/**
+ * Track which tables, columns, views, functions and types exist after each
+ * migration, and which names were removed along the way. Only what the
+ * migrations themselves create and drop is known; that is enough, because a
+ * name only becomes "dead" by being dropped here.
+ * @param {{ file: string, sql: string }[]} migrations sorted oldest first
+ */
+export function buildSchemaState(migrations) {
+  /** @type {Map<string, Set<string>>} */
+  const columns = new Map();
+  const objects = new Set(); // tables, views, functions, types
+  /** @type {Map<string, string>} name -> "drop column history.x in 2026….sql" */
+  const dropped = new Map();
+  const drop = (name, what, file) => dropped.set(name, `${what} in ${file}`);
+
+  for (const { file, sql } of migrations) {
+    for (const stmt of splitStatements(sql)) {
+      const isDo = /^do\b/i.test(stmt.text);
+      const pieces = isDo
+        ? splitStatements(stmt.bodies.join(';\n')).map(p => stripControlFlow(p.text.toLowerCase().replace(/\s+/g, ' ')))
+        : [stmt.text.toLowerCase().replace(/\s+/g, ' ')];
+      for (const s of pieces) {
+        let m;
+        if ((m = new RegExp(`^create (?:(?:global|local) )?(?:temp(?:orary)? |unlogged )?table (?:if not exists )?${ID} ?\\((.*)\\)`).exec(s))) {
+          const table = unq(m[1]);
+          objects.add(table);
+          const cols = columns.get(table) ?? new Set();
+          for (const part of splitTopLevel(m[2])) {
+            const c = new RegExp(`^${ID}`).exec(part);
+            if (c && !/^(constraint|primary|unique|foreign|check|exclude|like)\b/.test(part)) cols.add(unq(c[1]));
+          }
+          columns.set(table, cols);
+          continue;
+        }
+        if ((m = new RegExp(`^create (?:or replace )?(?:materialized )?(?:view|function|procedure|type|domain) (?:if not exists )?${ID}`).exec(s))) {
+          objects.add(unq(m[1]));
+          continue;
+        }
+        if ((m = /^drop (table|view|materialized view|function|procedure|type|domain) (?:if exists )?(.+)$/.exec(s))) {
+          for (const name of dropTargets(m[2])) {
+            objects.delete(name);
+            if (m[1] === 'table') columns.delete(name);
+            drop(name, `drop ${m[1]} ${name}`, file);
+          }
+          continue;
+        }
+        if ((m = new RegExp(`^alter table (?:if exists )?(?:only )?${ID} (.+)$`).exec(s))) {
+          const table = unq(m[1]);
+          const cols = columns.get(table) ?? new Set();
+          columns.set(table, cols);
+          let r;
+          if ((r = new RegExp(`^rename to ${ID}`).exec(m[2]))) {
+            objects.delete(table); objects.add(unq(r[1]));
+            columns.set(unq(r[1]), cols); columns.delete(table);
+            drop(table, `rename table ${table}`, file);
+            continue;
+          }
+          if ((r = new RegExp(`^rename (?:column )?${ID} to ${ID}`).exec(m[2]))) {
+            cols.delete(unq(r[1])); cols.add(unq(r[2]));
+            drop(unq(r[1]), `rename column ${table}.${unq(r[1])}`, file);
+            continue;
+          }
+          for (const clause of splitTopLevel(m[2])) {
+            let c;
+            if ((c = new RegExp(`^drop (?:column )?(?:if exists )?${ID}`).exec(clause)) && !/^drop (constraint|default|not null|identity|expression)\b/.test(clause)) {
+              cols.delete(unq(c[1]));
+              drop(unq(c[1]), `drop column ${table}.${unq(c[1])}`, file);
+            } else if ((c = new RegExp(`^add (?:column )?(?:if not exists )?${ID}`).exec(clause)) && !/^add (constraint|primary|unique|foreign|check|exclude)\b/.test(clause)) {
+              cols.add(unq(c[1]));
+            }
+          }
+          continue;
+        }
+        if ((m = new RegExp(`^alter (?:function|procedure|(?:materialized )?view|type) ${ID}\\s*(?:\\([^)]*\\))? rename to ${ID}`).exec(s))) {
+          objects.delete(unq(m[1])); objects.add(unq(m[2]));
+          drop(unq(m[1]), `rename ${unq(m[1])}`, file);
+        }
+      }
+    }
+  }
+
+  const live = new Set(objects);
+  for (const cols of columns.values()) for (const c of cols) live.add(c);
+  return { live, dropped };
+}
+
+/**
+ * SQL that this migration defines (function bodies, cron commands) naming
+ * something an earlier migration removed and nothing has brought back.
+ * plpgsql accepts this when the function is created and fails when the line
+ * runs: 20261004100000 set watch_together.requester_shares_full, which
+ * 20260927160000 had dropped, and every mutual-follow acceptance then failed.
+ */
+export function findDeadReferences({ file, sql, priorAndSelf }) {
+  const before = buildSchemaState(priorAndSelf.filter(m => m.file < file));
+  const after = buildSchemaState(priorAndSelf);
+  const own = buildSqlUsers([{ file, sql }]);
+  const hits = [];
+  for (const [name, where] of before.dropped) {
+    if (after.live.has(name)) continue;
+    for (const ref of sqlReferences(name, own)) hits.push({ name, where, ref });
+  }
+  return hits;
+}
+
 // ── Checking ────────────────────────────────────────────────────────────────
 
 /**
  * Check one migration.
  * @param {{ file: string, sql: string, priorAndSelf: { file: string, sql: string }[],
- *   codeSearch: (name: string) => string[] }} input
+ *   codeSearch: (name: string) => string[],
+ *   filesNaming?: (name: string) => Set<string>,
+ *   mobileHistory?: (name: string) => string | null }} input
+ *   filesNaming: code files that mention a name (used to put the hits for a
+ *     column in files that also name its table first).
+ *   mobileHistory: the last recent commit that changed a line naming `name`
+ *     in mobile or shared core code, or null.
  */
-export function checkMigration({ file, sql, priorAndSelf, codeSearch }) {
+export function checkMigration({ file, sql, priorAndSelf, codeSearch, filesNaming, mobileHistory }) {
   const { acks, missingReason } = parseAcknowledgements(sql);
   const users = buildSqlUsers(priorAndSelf);
   const problems = [];
@@ -384,16 +506,86 @@ export function checkMigration({ file, sql, priorAndSelf, codeSearch }) {
     }
     // A dropped function's own (now removed) body is not a user of itself.
     const except = change.kind === 'drop function' || change.kind === 'rename function' ? `function ${change.name}` : undefined;
-    const refs = [
-      ...codeSearch(change.name).map(r => `code  ${r}`),
-      ...sqlReferences(change.name, users, { except }).map(r => `sql   ${r}`),
-    ];
-    if (refs.length) problems.push({ ...change, file, why: 'still referenced', refs });
+    const code = rankByTable(codeSearch(change.name), change.table && filesNaming ? filesNaming(change.table) : null);
+    const sqlRefs = sqlReferences(change.name, users, { except });
+    const refs = [...code.lines, ...sqlRefs.map(r => `sql   ${r}`)];
+    if (refs.length) {
+      const files = new Set(code.lines.map(l => l.replace(/^code\*? +/, '').split(':')[0]));
+      const summary = code.lines.length
+        ? `${code.lines.length} code line(s) in ${files.size} file(s)` +
+          (change.table && filesNaming ? `, ${code.likely} in files that read ${change.table} by name (marked *, read these first)` : '')
+        : '';
+      problems.push({ ...change, file, why: 'still referenced', summary, refs });
+      continue;
+    }
+    const recent = mobileHistory?.(change.name);
+    if (recent) {
+      problems.push({ ...change, file, why: `no code on main names it, but mobile or shared core code did recently (${recent}); iPhones keep running older builds`, refs: [] });
+    }
   }
+
+  const { acks: deadAcks, missingReason: deadMissing } = parseAcknowledgements(sql, 'dead-name-ok');
+  for (const hit of findDeadReferences({ file, sql, priorAndSelf })) {
+    if (deadAcks.has(hit.name)) continue;
+    problems.push({
+      kind: 'names a removed object', name: hit.name, file,
+      why: `removed earlier (${hit.where}); plpgsql only fails when the line runs`,
+      refs: [`sql   ${hit.ref}`], detail: '',
+    });
+  }
+
   for (const name of missingReason) {
     problems.push({ kind: 'acknowledgement', name, file, why: '`-- contracts:` needs a reason in parentheses', refs: [], detail: '' });
   }
+  for (const name of deadMissing) {
+    problems.push({ kind: 'acknowledgement', name, file, why: '`-- dead-name-ok:` needs a reason in parentheses', refs: [], detail: '' });
+  }
   return { problems, acknowledged };
+}
+
+/**
+ * Order code hits so lines in files that also name the table come first,
+ * marked `code*`. A column called `note` matches every `styles.note`; the
+ * files that mention `history` too are the ones worth reading first.
+ */
+export function rankByTable(lines, tableFiles) {
+  if (!tableFiles) return { lines: lines.map(l => `code  ${l}`), likely: 0 };
+  const inTable = [];
+  const rest = [];
+  for (const l of lines) (tableFiles.has(l.split(':')[0]) ? inTable : rest).push(l);
+  return { lines: [...inTable.map(l => `code* ${l}`), ...rest.map(l => `code  ${l}`)], likely: inTable.length };
+}
+
+/**
+ * Files under the code paths on `rev` that name a table the way code reads
+ * it: quoted, as in `.from('history')` or a REST path `/rest/v1/history`.
+ */
+export function filesNamingOnRev(name, rev) {
+  const pattern = `(['"\`]|/rest/v1/)${name}(['"\`?]|$)`;
+  try {
+    const out = execFileSync('git', ['grep', '-l', '-I', '-E', '-e', pattern, rev, '--', ...CODE_PATHS, ...CODE_EXCLUDES], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    return new Set(out.split('\n').filter(Boolean).map(l => l.replace(`${rev}:`, '')));
+  } catch (e) {
+    if (e.status === 1) return new Set();
+    throw e;
+  }
+}
+
+// iPhones run the build they installed, not main. How far back a removal from
+// mobile code still counts. Plot has no minimum-supported-version gate yet; if
+// one is added, this should become "older than the oldest allowed build".
+export const MOBILE_PATHS = ['apps/mobile', 'packages/core'];
+export const MOBILE_DAYS = Number(process.env.MIGRATION_CONTRACT_MOBILE_DAYS || 90);
+
+/** The newest commit in the last MOBILE_DAYS on `rev` that added or removed a line naming `name` in mobile code. */
+export function mobileHistoryOnRev(name, rev) {
+  const pattern = `(^|[^A-Za-z0-9_])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^A-Za-z0-9_]|$)`;
+  try {
+    const out = execFileSync('git', ['log', '-1', `--since=${MOBILE_DAYS}.days`, '--format=%h %cs %s', '-G', pattern, rev, '--', ...MOBILE_PATHS], { encoding: 'utf8' }).trim();
+    return out || null;
+  } catch {
+    return null;
+  }
 }
 
 function git(args) {
@@ -438,17 +630,21 @@ function main(argv) {
   const all = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql')).sort()
     .map(f => ({ file: f, sql: readFileSync(join(MIGRATIONS_DIR, f), 'utf8') }));
   const cache = new Map();
-  const codeSearch = name => {
-    if (!cache.has(name)) cache.set(name, codeReferences(name, base));
-    return cache.get(name);
+  const memo = fn => name => {
+    const key = `${fn.name}:${name}`;
+    if (!cache.has(key)) cache.set(key, fn(name, base));
+    return cache.get(key);
   };
+  const codeSearch = memo(codeReferences);
+  const filesNaming = memo(filesNamingOnRev);
+  const mobileHistory = memo(mobileHistoryOnRev);
 
   let failed = 0;
   for (const file of targets) {
     if (!existsSync(join(MIGRATIONS_DIR, file))) continue;
     const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
     const priorAndSelf = all.filter(m => m.file <= file);
-    const { problems, acknowledged } = checkMigration({ file, sql, priorAndSelf, codeSearch });
+    const { problems, acknowledged } = checkMigration({ file, sql, priorAndSelf, codeSearch, filesNaming, mobileHistory });
     for (const a of acknowledged) console.log(`  ${file}: ${a.kind} ${a.table ? `${a.table}.` : ''}${a.name} acknowledged`);
     if (!problems.length) continue;
     failed += problems.length;
@@ -456,6 +652,7 @@ function main(argv) {
     for (const p of problems) {
       console.error(`  ${p.kind}  ${p.table ? `${p.table}.` : ''}${p.name}: ${p.why}`);
       if (p.detail) console.error(`    ${p.detail}`);
+      if (p.summary) console.error(`    ${p.summary}`);
       for (const r of p.refs.slice(0, 8)) console.error(`      ${r}`);
       if (p.refs.length > 8) console.error(`      … and ${p.refs.length - 8} more`);
     }
@@ -474,6 +671,12 @@ If you have done that and are sure, acknowledge it in the migration, one line
 per name, with the reason:
 
   -- contracts: <name> (why nothing deployed still uses it)
+
+A function that names something an earlier migration removed should stop
+naming it. If the match is a different thing with the same name (a jsonb key,
+a local variable), say so:
+
+  -- dead-name-ok: <name> (what it is instead)
 
 See docs/ops/migration-contract.md.`);
   return opts.report ? 0 : 1;

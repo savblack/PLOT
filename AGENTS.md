@@ -312,6 +312,10 @@ So:
   first; remove the old thing in a later migration, after that code has shipped (and, for
   anything mobile read, after old iPhone builds stop mattering). When you have done that,
   acknowledge each name: `-- contracts: <name> (why nothing deployed still uses it)`.
+  A name mobile or `packages/core` used in the last 90 days counts as used, because
+  installed iPhone builds lag `main`. It also fails a new function or cron job that names
+  a column, table or function an earlier migration removed (the `20261004100000` outage);
+  `-- dead-name-ok: <name> (what it is instead)` covers a same-named jsonb key or variable.
   See `docs/ops/migration-contract.md`.
 - `pnpm run db:write-paths` checks the live database: every trigger function's upsert key
   must resolve against a real constraint, and every table it references must exist. Runs
