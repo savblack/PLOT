@@ -15,5 +15,4 @@ export const CURATED_LISTS = Object.freeze({
   openMine: 'Open my list',
   signIn: 'Sign in to save this list',
   couldNotSave: 'Could not save this list. Try again.',
-  closeLabel: 'Close',
 });

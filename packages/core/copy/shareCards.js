@@ -5,7 +5,6 @@
 export const SHARE_CARDS = {
   // The sheet
   sheetTitle: 'Share a card',
-  close: 'Close',
   post: 'Post',
   story: 'Story',
   previousCard: 'Previous card',

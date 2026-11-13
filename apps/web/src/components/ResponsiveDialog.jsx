@@ -27,6 +27,12 @@ export default function ResponsiveDialog({
   contentClassName = '',
   surfaceClassName = '',
   zIndex = 1000,
+  /** Where focus goes on close when the element that had it is gone (the
+   *  dialog this one replaced took it with it). */
+  returnFocusRef,
+  /** Who to name the dialog by: `title` (default) or an element inside it
+   *  (aria-labelledby), when the dialog's real headline is in its body. */
+  labelledBy,
 }) {
   const surfaceRef = useRef(null);
   const restoreFocusRef = useRef(null);
@@ -35,7 +41,8 @@ export default function ResponsiveDialog({
   // (an inline handler, a list that reloads) re-ran it and pulled focus back
   // to the opener.
   const onCloseRef = useRef(onClose);
-  useEffect(() => { onCloseRef.current = onClose; });
+  const returnRef = useRef(returnFocusRef);
+  useEffect(() => { onCloseRef.current = onClose; returnRef.current = returnFocusRef; });
 
   useEffect(() => {
     // Only the dialog on top answers Escape and traps Tab, so a dialog opened
@@ -45,11 +52,18 @@ export default function ResponsiveDialog({
     restoreFocusRef.current = document.activeElement;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // Focus moves into the dialog: onto the dialog itself, unless something
+    // inside already took it (an autofocused field). The surface is not a
+    // tab stop, so no focus ring lands on a button the moment it opens.
+    if (!surfaceRef.current?.contains(document.activeElement)) surfaceRef.current?.focus();
 
     const handleKeyDown = (event) => {
       if (OPEN_DIALOGS[OPEN_DIALOGS.length - 1] !== entry) return;
       if (event.key === 'Escape') {
         if (event.defaultPrevented) return;
+        // Listened for first (capture) and stopped here, so a panel or page
+        // underneath with its own Escape (the title panel) stays open.
+        event.stopPropagation();
         event.preventDefault();
         onCloseRef.current();
         return;
@@ -62,22 +76,28 @@ export default function ResponsiveDialog({
       if (!focusable?.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      // Focus can be on the dialog itself (it opens there), which is not in
+      // the list: wrap from there too.
+      const inList = [...focusable].includes(document.activeElement);
+      if (event.shiftKey && (!inList || document.activeElement === first)) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && (!inList || document.activeElement === last)) {
         event.preventDefault();
         first.focus();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown, true);
     return () => {
       const at = OPEN_DIALOGS.indexOf(entry);
       if (at !== -1) OPEN_DIALOGS.splice(at, 1);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', handleKeyDown, true);
       document.body.style.overflow = previousOverflow;
-      restoreFocusRef.current?.focus?.();
+      // The body means nothing held focus when it opened.
+      const restore = restoreFocusRef.current;
+      const usable = restore && restore !== document.body && restore.isConnected;
+      (usable ? restore : returnRef.current?.current)?.focus?.();
     };
   }, []);
 
@@ -98,7 +118,9 @@ export default function ResponsiveDialog({
         className={`responsive-dialog${sizeClass}${tall ? ' responsive-dialog--tall' : ''}${surfaceClassName ? ` ${surfaceClassName}` : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label={label || (typeof title === 'string' ? title : undefined)}
+        tabIndex={-1}
+        aria-label={labelledBy ? undefined : label || (typeof title === 'string' ? title : undefined)}
+        aria-labelledby={labelledBy}
       >
         <div className="responsive-dialog-handle" aria-hidden="true" />
         <SheetHeader title={title} onClose={onClose} onBack={onBack} closeLabel={closeLabel} />

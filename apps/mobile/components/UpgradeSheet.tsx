@@ -53,7 +53,7 @@ export default function UpgradeSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={close} maxHeight="92%">
+    <BottomSheet visible={visible} onClose={close} title={PLANS_PAGE.premium.name} maxHeight="92%">
             <View style={styles.context}>
               <View style={styles.meter}>
                 {Array.from({ length: content.meter }, (_, i) => <View key={i} style={styles.meterSeg} />)}
@@ -97,7 +97,6 @@ export default function UpgradeSheet({
 
             <View style={styles.foot}>
               <TextLink label={`${S.compare} →`} onPress={compare} accessibilityRole="link" />
-              <TextLink quiet label={S.notNow} onPress={close} />
             </View>
     </BottomSheet>
   );

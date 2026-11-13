@@ -73,15 +73,11 @@ export const SETTINGS_VIEW = {
     },
   },
   region: {
-    savingRegion: 'Saving region',
-    saveRegion: 'Save region',
     openRegionSettings: 'Open region settings',
     failedToSaveRegion: 'Failed to save your region.',
     intro: 'Used to show content and streaming services available in your region.',
   },
   timezone: {
-    savingTimezone: 'Saving timezone',
-    saveTimezone: 'Save timezone',
     failedToSaveTimezone: 'Failed to save your timezone.',
     openTimezoneSettings: 'Open timezone settings',
     searchPlaceholder: 'Search timezones…',

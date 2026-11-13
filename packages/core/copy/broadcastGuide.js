@@ -40,7 +40,7 @@ export const BROADCAST_GUIDE = {
   unavailable: 'Listings are unavailable for this region.',
   unavailableBody: 'Your channel choices are kept. Try again when the schedule is available.',
   stale: 'These listings may be out of date.', cached: 'Refresh failed. Showing the last loaded listings.',
-  loading: 'Loading your guide…', retry: 'Try again', close: 'Close program details',
+  loading: 'Loading your guide…', retry: 'Try again',
   noDescription: 'No program description supplied.',
   source: 'Schedule: Matt Huisman', noSchedule: 'No listings supplied',
   updated: 'Downloaded', timezone: 'Times shown in',

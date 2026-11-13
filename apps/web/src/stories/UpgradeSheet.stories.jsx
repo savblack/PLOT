@@ -1,3 +1,4 @@
+import { COMMON } from '@plot/core/copy/common.js';
 import { expect, fireEvent, waitFor, within } from 'storybook/test';
 import { MemoryRouter } from 'react-router-dom';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
@@ -38,7 +39,8 @@ export const ReverseTabStaysInside = {
     const dialog = body.getByRole('dialog');
     await waitFor(() => expect(dialog).toHaveFocus());
     fireEvent.keyDown(document.activeElement, { key: 'Tab', shiftKey: true });
-    await expect(body.getByRole('button', { name: PLANS_PAGE.upgradeSheet.notNow })).toHaveFocus();
+    // The last control is See everything; Cancel in the header is the first.
+    await expect(body.getByRole('button', { name: PLANS_PAGE.upgradeSheet.seeAll })).toHaveFocus();
   },
 };
 
@@ -161,8 +163,8 @@ export const HeldUntilBillingIsKnown = {
     const dialog = within(document.body).getByRole('dialog');
     await expect(dialog.querySelector('.upgrade-sheet-offer')).toHaveAttribute('aria-busy', 'true');
     await expect(dialog.querySelector('.upgrade-sheet-title')).not.toBeVisible();
-    // Not now still works while it waits.
-    await expect(within(dialog).getByRole('button', { name: S.notNow })).toBeVisible();
+    // Cancel still works while it waits.
+    await expect(within(dialog).getByRole('button', { name: COMMON.cancel })).toBeVisible();
   },
 };
 
