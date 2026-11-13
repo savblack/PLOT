@@ -42,7 +42,9 @@ test('admin host serves a disallow-all robots.txt', async () => {
 });
 
 test('admin host returns 410 for the retired desk', async () => {
-  const res = await onRequest(ctx('https://admin.theplot.tv/'));
+  // A path _routes.json still sends to Functions. The admin homepage itself is
+  // static now (noindex via _headers), so the middleware never sees it.
+  const res = await onRequest(ctx('https://admin.theplot.tv/whats-on'));
   assert.equal(res.status, 410);
   assert.equal(await res.text(), 'This page has been removed.');
   assert.equal(res.headers.get('X-Robots-Tag'), 'noindex, nofollow');

@@ -8,8 +8,10 @@
 // Function call spends the account's 100,000-a-day Workers allowance, which
 // ran out on 2026-11-11. So a redirect or host rule added here must also add
 // its path there, or it never runs. Static pages on admin.theplot.tv other than
-// those paths are served as-is, with noindex from _headers.
-import { acceptsMarkdown, homepageMarkdownResponse } from './_lib/markdown.js';
+// those paths are served as-is, with noindex from _headers. That includes the
+// homepage, which stopped running code on 2026-11-13: its markdown version for
+// agents (once negotiated here on Accept: text/markdown) is now the static
+// /index.md, advertised by a Link header in _headers.
 import { vanityTarget } from './_lib/vanity.js';
 import { CONTENT_SECURITY_POLICY } from './_lib/csp.generated.js';
 
@@ -68,9 +70,6 @@ async function route(context) {
   if (url.pathname === '/whats-on/') {
     url.pathname = '/whats-on';
     return Response.redirect(url, 301);
-  }
-  if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/' && acceptsMarkdown(request)) {
-    return homepageMarkdownResponse(request);
   }
   return context.next();
 }

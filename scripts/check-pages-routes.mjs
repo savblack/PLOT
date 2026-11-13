@@ -33,7 +33,7 @@ const PROJECTS = [
     functions: 'apps/website/functions',
     routes: 'apps/website/_routes.json',
     // Handled in apps/website/functions/_middleware.js (and _lib/vanity.js).
-    middlewareOnly: ['/', '/robots.txt', '/ig', '/ig/', '/x', '/x/', '/th', '/th/', '/plans', '/plans.html', '/whats-on/'],
+    middlewareOnly: ['/robots.txt', '/ig', '/ig/', '/x', '/x/', '/th', '/th/', '/plans', '/plans.html', '/whats-on/'],
   },
 ];
 
