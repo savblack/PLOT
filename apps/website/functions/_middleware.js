@@ -3,6 +3,12 @@
 // custom domain still points at this Pages project, answer 410 so the hostname
 // cannot fall through to the marketing site. Other hosts (theplot.tv) fall
 // through to the static site + its functions.
+//
+// This runs only for the paths listed in apps/website/_routes.json: every
+// Function call spends the account's 100,000-a-day Workers allowance, which
+// ran out on 2026-11-11. So a redirect or host rule added here must also add
+// its path there, or it never runs. Static pages on admin.theplot.tv other than
+// those paths are served as-is, with noindex from _headers.
 import { acceptsMarkdown, homepageMarkdownResponse } from './_lib/markdown.js';
 import { vanityTarget } from './_lib/vanity.js';
 import { CONTENT_SECURITY_POLICY } from './_lib/csp.generated.js';

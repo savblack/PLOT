@@ -14,6 +14,12 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), browsing-topics=()
 
+# admin.theplot.tv is retired. The middleware answers 410 on the paths
+# _routes.json sends it; every other path is served statically now (Function
+# calls spend the daily Workers allowance), so keep those out of search.
+https://admin.theplot.tv/*
+  X-Robots-Tag: noindex, nofollow
+
 /
   Link: </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"
 
