@@ -38,7 +38,13 @@ themselves now come from one place. Nothing looks or behaves differently.
 
 ## Next
 
-1. Savannah picks one Watch Together and one Just Decide option (recommended: A and A).
+1. Round 2 (same mockup link): Savannah liked all three Watch Together layouts and
+   none of round 1's Just Decide. Recommended Watch Together = C's people-card row on
+   top + A's shared shelves below + B's "nights together" later. Empty state leads
+   with the off-platform invite link (share sheet), not username search. New Just
+   Decide ideas D (shelves, no questions), E (solo swipe, same parts as Watch
+   Together), F (one-tap moods). Waiting on her confirmation of the Watch Together
+   combination and a Just Decide pick.
 2. Build the pick on web in this branch, reusing `.cal-body`/`.cal-side`,
    `.hist-card`, `.discover-section-header`, `Chip`. Then the iPhone screens
    (`apps/mobile/components/watch/*`, `apps/mobile/app/(app)/tonight.tsx`),
