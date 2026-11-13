@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import BackLink from './BackLink.jsx';
 import { useApp } from '../hooks/useApp.js';
+import { useWide } from '../hooks/useWide.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useShare } from '../hooks/useShare.js';
 import { favoriteWords } from '../utils/spelling.js';
@@ -158,13 +159,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
   const [query, setQuery] = useState('');
   const [view, setView] = useState('auto');
   const [sort, setSort] = useState('list');
-  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches);
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 1023px)');
-    const update = () => setNarrow(media.matches);
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, []);
+  const narrow = !useWide();
 
   const shareList = useCallback((list) => share({
     url: isListShareable(listVisibility(list), profile?.is_public) ? buildListShareUrl({ listId: list.id }) : null,

@@ -1257,3 +1257,23 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     savedSearches: enabled ? saved : [], isSaved, toggleSaveSearch, removeSavedSearch, openSavedSearch,
   };
 }
+
+/**
+ * The meta line under a Just Decide result: year, then the show's format or
+ * season count, runtime (per episode for a show) and score. Web and mobile
+ * both render it on the top pick and on each card.
+ *
+ * @param {{ media_type?: string, release_date?: string | null, miniseries?: boolean, seasons?: number | null, runtime?: number | null, vote_average?: number | null }} item
+ * @returns {string}
+ */
+export function pickResultMeta(item) {
+  const T = TONIGHT_PICKER;
+  const tv = item.media_type === 'tv';
+  return [
+    (item.release_date || '').slice(0, 4),
+    tv && item.miniseries ? T.miniseries : null,
+    tv && !item.miniseries && item.seasons ? T.seasons(item.seasons) : null,
+    item.runtime ? (tv ? T.episodeMinutes(item.runtime) : T.minutes(item.runtime)) : null,
+    item.vote_average ? T.score10(item.vote_average) : null,
+  ].filter(Boolean).join(' · ');
+}

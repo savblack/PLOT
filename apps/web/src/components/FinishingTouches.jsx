@@ -27,6 +27,7 @@ import { createImportReporter, IMPORT_ENTRY_POINTS } from '@plot/core/importPipe
 import { LETTERBOXD_IMPORT_ABANDON } from '@plot/core/letterboxdImportPrompt.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useApp } from '../hooks/useApp.js';
+import { isWide } from '../hooks/useWide.js';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
 import { closeFinishingTouches, hideFinishingTouchesFor, readFinishingTouches } from '../utils/finishingTouchesState.js';
 import { clearLetterboxdImport, readLetterboxdImportPrompt } from '../utils/letterboxdImportPrompt.js';
@@ -38,14 +39,13 @@ import ImportSourceIcon from './ImportSourceIcon.jsx';
 import { Tag } from './Chip.jsx';
 import './FinishingTouches.css';
 
-const wideScreen = () => typeof window !== 'undefined' && window.matchMedia?.('(min-width: 1024px)').matches;
 
 export default function FinishingTouches() {
   const { user, profile, watchlist, watching } = useApp();
   const history = useHistory(user?.id);
   const navigate = useNavigate();
   const [state, setState] = useState(() => readFinishingTouches(user?.id));
-  const [expanded, setExpanded] = useState(wideScreen);
+  const [expanded, setExpanded] = useState(isWide);
   const [sheet, setSheet] = useState(null);
   const [letterboxdPrompt, setLetterboxdPrompt] = useState(() => readLetterboxdImportPrompt(user?.id));
   const follows = useFollows(user?.id, user?.id);

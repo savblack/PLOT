@@ -44,3 +44,17 @@ input, textarea, select {
 img {
   display: block;
 }
+
+/* Visually hidden, still read by screen readers. The one shared copy:
+   pages used to carry their own (.wt-sr, .ob-sr, .plans-sr, .foot-bar-sr). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

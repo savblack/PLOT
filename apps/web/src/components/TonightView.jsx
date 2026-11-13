@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { useApp } from '../hooks/useApp.js';
+import { useWide } from '../hooks/useWide.js';
 import {
   useTonightPicker, pickerTimeOfDay, savedSearchDate,
   PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
   PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, FEATURED_GENRE_COUNT, FEATURED_GENRE_COUNT_WIDE,
-  pickerGenreTiles,
+  pickerGenreTiles, pickResultMeta,
 } from '../hooks/useTonightPicker.js';
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
@@ -110,20 +111,6 @@ function LockedPreview() {
    sheet over the blurred preview. Their answers are kept (see
    useTonightPicker), so upgrading lands them back on their request with the
    picks drawn. The sheet reports `premium_gate_hit` (tonight_picker). */
-
-// The desktop breakpoint TonightView.css switches layouts at.
-const WIDE_QUERY = '(min-width: 1024px)';
-function useWide() {
-  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia?.(WIDE_QUERY).matches);
-  useEffect(() => {
-    const mq = window.matchMedia?.(WIDE_QUERY);
-    if (!mq) return undefined;
-    const on = () => setWide(mq.matches);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
-  return wide;
-}
 
 function Sentence({ parts, className = '' }) {
   return (
@@ -418,17 +405,6 @@ function Finding({ picker }) {
   );
 }
 
-function resultMeta(item) {
-  const tv = item.media_type === 'tv';
-  return [
-    (item.release_date || '').slice(0, 4),
-    tv && item.miniseries ? T.miniseries : null,
-    tv && !item.miniseries && item.seasons ? T.seasons(item.seasons) : null,
-    item.runtime ? (tv ? T.episodeMinutes(item.runtime) : T.minutes(item.runtime)) : null,
-    item.vote_average ? T.score10(item.vote_average) : null,
-  ].filter(Boolean).join(' · ');
-}
-
 function Chips({ item }) {
   if (!item.onWatchlist) return null;
   return <Tag tone="sage" label={T.onYourWatchlist} />;
@@ -470,7 +446,7 @@ function TopPick({ item, onOpen, actions, className = '' }) {
       <span className="tonight-hero-body">
         <span className="tonight-hero-chip">{T.topPick}</span>
         <button type="button" className="tonight-hero-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
-        <span className="tonight-hero-meta">{resultMeta(item)}</span>
+        <span className="tonight-hero-meta">{pickResultMeta(item)}</span>
       </span>
       <FavSave item={item} actions={actions} variant="hero" />
     </div>
@@ -485,7 +461,7 @@ function PickCard({ item, index, onOpen, reveal, actions }) {
       <span className="tonight-card-poster">{img ? <img src={img} alt="" loading="lazy" /> : null}</span>
       <span className="tonight-card-body">
         <button type="button" className="tonight-card-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
-        <span className="tonight-card-meta">{resultMeta(item)}</span>
+        <span className="tonight-card-meta">{pickResultMeta(item)}</span>
         <Chips item={item} />
       </span>
       <FavSave item={item} actions={actions} />

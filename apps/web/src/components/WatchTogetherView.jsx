@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
-import { personName, filterByKind, splitGroupMatches, shufflePick, sessionProgress, swipeDecision, SWIPE_THRESHOLD, unlockedPartners } from '@plot/core/watchTogether.js';
+import { personName, titleMeta, filterByKind, splitGroupMatches, shufflePick, sessionProgress, swipeDecision, SWIPE_THRESHOLD, unlockedPartners } from '@plot/core/watchTogether.js';
 import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherSession, startWatchTogetherSession, liveWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { supabase } from '@plot/core/supabase.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
@@ -46,12 +46,6 @@ function Poster({ title, size = 'md' }) {
   return url
     ? <img className={`wt-poster wt-poster--${size}`} src={url} alt="" loading="lazy" />
     : <span className={`wt-poster wt-poster--${size} wt-poster--empty`} aria-hidden="true" />;
-}
-
-function titleMeta(t) {
-  const year = (t.release_date || '').slice(0, 4);
-  const kind = t.media_type === 'tv' ? T.overlap.show : null;
-  return [year, kind].filter(Boolean).join(' · ');
 }
 
 /* ── Hub ─────────────────────────────────────────────────────────────── */
@@ -145,7 +139,7 @@ function Hub({ wt, premium, profile }) {
   return (
     <div className="wt-page wt-page--wide">
       {/* The app header already shows the page title. */}
-      <h1 className="wt-sr">{T.hub.title}</h1>
+      <h1 className="sr-only">{T.hub.title}</h1>
       {news.unlocked.length > 0 && (
         <section className="wt-welcome wt-welcome--stack" role="status">
           <span className="wt-banner-text">
@@ -292,7 +286,7 @@ function Picker({ wt }) {
       <BackLink to="/together" label={T.hub.title} />
       <h1 className="wt-title">{T.hub.whosWatching}</h1>
       <fieldset className="wt-pick">
-        <legend className="wt-sr">{T.hub.partners}</legend>
+        <legend className="sr-only">{T.hub.partners}</legend>
         {wt.partners.map(p => (
           <label key={p.other_id} className={`wt-row wt-pick-row${picked.has(p.other_id) ? ' selected' : ''}`}>
             <PersonAvatar person={p} />

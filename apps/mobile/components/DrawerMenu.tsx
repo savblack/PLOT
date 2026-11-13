@@ -302,7 +302,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   beta: {
     overflow: 'hidden',
-    borderRadius: 999,
+    borderRadius: radii.pill,
     paddingHorizontal: 8,
     paddingVertical: 3,
     backgroundColor: colors.accentSecondaryFill,

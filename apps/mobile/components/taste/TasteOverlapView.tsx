@@ -471,8 +471,8 @@ function Venn({
 
 function Bar({ width, color, track }: { width: number; color: string; track: string }) {
   return (
-    <View style={{ height: 8, borderRadius: 999, backgroundColor: track, overflow: 'hidden' }}>
-      <View style={{ width: `${Math.max(0, Math.min(1, width)) * 100}%`, height: '100%', borderRadius: 999, backgroundColor: color }} />
+    <View style={{ height: 8, borderRadius: radii.pill, backgroundColor: track, overflow: 'hidden' }}>
+      <View style={{ width: `${Math.max(0, Math.min(1, width)) * 100}%`, height: '100%', borderRadius: radii.pill, backgroundColor: color }} />
     </View>
   );
 }

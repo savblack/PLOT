@@ -15,10 +15,10 @@ import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { PREMIUM_FIRST_WEEK as T } from '@plot/core/copy/premiumFirstWeek.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { useApp } from '../hooks/useApp.js';
+import { isWide } from '../hooks/useWide.js';
 import { closePremiumFirstWeek, hidePremiumFirstWeekFor } from '../utils/premiumFirstWeekState.js';
 import FinishingTouchesCard from './FinishingTouchesCard.jsx';
 
-const wideScreen = () => typeof window !== 'undefined' && window.matchMedia?.('(min-width: 1024px)').matches;
 
 /**
  * @param {{ onChange: (state: import('@plot/core/premiumFirstWeek.js').PremiumFirstWeekState | null) => void }} props
@@ -28,7 +28,7 @@ const wideScreen = () => typeof window !== 'undefined' && window.matchMedia?.('(
 export default function PremiumFirstWeek({ onChange }) {
   const { user, profile, themeFamily, customLists } = useApp();
   const navigate = useNavigate();
-  const [expanded, setExpanded] = useState(wideScreen);
+  const [expanded, setExpanded] = useState(isWide);
   const people = usePeopleFollows(user?.id);
   const together = useWatchTogether(user?.id);
 

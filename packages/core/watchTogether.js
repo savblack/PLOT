@@ -2,6 +2,8 @@
 // the authority (supabase/migrations/20260927100000_watch_together.sql); these
 // helpers only decide what to show. Design: docs/design/watch-together/README.md.
 
+import { WATCH_TOGETHER } from './copy/watchTogether.js';
+
 /** @typedef {'profile' | 'following' | 'none'} RequestsFrom */
 /** @typedef {'none' | 'outgoing' | 'incoming' | 'paired'} PairState */
 /** @typedef {'free' | 'public' | 'private' | 'pending' | 'incoming' | 'paired'} TileMode */
@@ -91,6 +93,19 @@ export function splitWatchTogether(rows) {
 /** @param {{ display_name?: string | null, username?: string | null }} person */
 export function personName(person) {
   return person?.display_name || person?.username || '?';
+}
+
+/**
+ * The meta line under a shared title: "2024" for a movie, "2019 · Show" for a
+ * show. Web and mobile both render it under posters, swipe cards and rows.
+ *
+ * @param {{ release_date?: string | null, media_type?: string | null }} title
+ * @returns {string}
+ */
+export function titleMeta(title) {
+  const year = (title?.release_date || '').slice(0, 4);
+  const kind = title?.media_type === 'tv' ? WATCH_TOGETHER.overlap.show : null;
+  return [year, kind].filter(Boolean).join(' · ');
 }
 
 /**

@@ -226,15 +226,6 @@
 }
 @keyframes footBarDrain { to { transform: scaleX(0); } }
 
-.foot-bar-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 .foot-bar-scrim { display: none; }
 
 /* Touch: the editor lifts the bar into a bottom sheet over a scrim. */

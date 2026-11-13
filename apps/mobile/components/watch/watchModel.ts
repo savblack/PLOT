@@ -1,5 +1,7 @@
 import { useWatchTogether, useWatchTogetherTitles } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
+// Re-exported so the watch screens keep one import line; the helper lives in core.
+export { titleMeta } from '@plot/core/watchTogether.js';
 
 export interface WtPerson {
   id: string;
@@ -130,12 +132,6 @@ export function asLink(value: unknown): LinkPerson | null {
   if (!person || !value || typeof value !== 'object') return null;
   const row = value as Record<string, unknown>;
   return { ...person, state: typeof row.state === 'string' ? row.state : 'none' };
-}
-
-export function titleMeta(title: { release_date?: string | null; media_type?: string | null }): string {
-  const year = (title.release_date || '').slice(0, 4);
-  const kind = title.media_type === 'tv' ? T.overlap.show : null;
-  return [year, kind].filter(Boolean).join(' · ');
 }
 
 export function useTogether(userId: string | null | undefined): TogetherApi {

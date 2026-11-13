@@ -230,7 +230,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
             </div>
             <h1 className="ob-building-title">{F.building.heading} <PlotLogo style={{ fontSize: 30 }} /></h1>
             <div className="ob-lines" role="status">
-              <span className="ob-sr">{F.building.status}</span>
+              <span className="sr-only">{F.building.status}</span>
               {building.lines.map((text, i) => (
                 <p key={text} className={`ob-line${i === building.lineIndex ? ' is-on' : ''}`} aria-hidden="true">{text}</p>
               ))}

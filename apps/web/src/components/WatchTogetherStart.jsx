@@ -322,7 +322,7 @@ export default function WatchTogetherStart({ premium, suggested, onInvite }) {
 
   return (
     <div className="wt-start">
-      <h1 className="wt-sr">{T.hub.title}</h1>
+      <h1 className="sr-only">{T.hub.title}</h1>
       {premium && <Welcome />}
       <Hero titles={titles} premium={premium} sent={sent} onInvite={invite} />
       <FollowingList people={suggested} sent={sent} onInvite={invite} />

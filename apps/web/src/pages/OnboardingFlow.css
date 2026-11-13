@@ -93,8 +93,6 @@
 .ob-head--wide { max-width: 620px; margin: 0 auto; }
 
 /* Text for screen readers only. */
-.ob-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-
 /* Switching apps? row */
 .ob-switch {
   margin: 16px auto 0;

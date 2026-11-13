@@ -51,7 +51,7 @@
 .parental-guide-show {
   padding: 0.05rem 0.45rem;
   border: 1px solid var(--border-strong);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   color: var(--text-muted);
   font: inherit;

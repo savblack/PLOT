@@ -28,7 +28,7 @@ import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import {
   useTonightPicker, pickerTimeOfDay, savedSearchDate,
   PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
-  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, FEATURED_GENRE_COUNT, pickerGenreTiles,
+  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, FEATURED_GENRE_COUNT, pickerGenreTiles, pickResultMeta,
   type PickerCandidate,
 } from '@plot/core/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -36,7 +36,7 @@ import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { titleForView } from '@plot/core/navigation.js';
 import { TONIGHT_PICKER as T } from '@plot/core/copy/tonightPicker.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
-import { Palette, fontFamily, fontSize, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
+import { Palette, fontFamily, fontSize, radii, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 import PlotWordmark from '../../components/PlotWordmark';
 import { EVENTS, track } from '../../lib/analytics';
@@ -51,17 +51,6 @@ const PICKER_STORAGE = {
 };
 type Picker = ReturnType<typeof useTonightPicker>;
 type StepKey = 'type' | 'length' | 'kind' | 'quality';
-
-const resultMeta = (item: PickerCandidate) => {
-  const tv = item.media_type === 'tv';
-  return [
-    (item.release_date || '').slice(0, 4),
-    tv && item.miniseries ? T.miniseries : null,
-    tv && !item.miniseries && item.seasons ? T.seasons(item.seasons) : null,
-    item.runtime ? (tv ? T.episodeMinutes(item.runtime) : T.minutes(item.runtime)) : null,
-    item.vote_average ? T.score10(item.vote_average) : null,
-  ].filter(Boolean).join(' · ');
-};
 
 function useReduceMotion() {
   const [reduce, setReduce] = useState(false);
@@ -405,7 +394,7 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
               <View style={{ gap: 6 }}>
                 <Text style={styles.heroChip}>{T.topPick}</Text>
                 <Text style={styles.heroTitle}>{top.title}</Text>
-                <Text style={styles.heroMeta}>{resultMeta(top)}</Text>
+                <Text style={styles.heroMeta}>{pickResultMeta(top)}</Text>
               </View>
             </TouchableOpacity>
           );
@@ -427,7 +416,7 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
                 {uri ? <Image source={{ uri }} style={styles.cardPoster} /> : <View style={styles.cardPoster} />}
                 <View style={{ flex: 1, gap: 6 }}>
                   <Text style={styles.cardTitle}>{item.title}</Text>
-                  <Text style={styles.cardMeta}>{resultMeta(item)}</Text>
+                  <Text style={styles.cardMeta}>{pickResultMeta(item)}</Text>
                   {item.onWatchlist && <Tag tone="sage" label={T.onYourWatchlist} />}
                 </View>
               </TouchableOpacity>
@@ -610,7 +599,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   qTitle: { fontFamily: fontFamily.display, fontSize: 30, lineHeight: 33, color: colors.textPrimary },
   qSub: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginTop: 6 },
   progress: { flexDirection: 'row', gap: 6, marginTop: spacing.lg, marginBottom: spacing.lg },
-  progressBar: { flex: 1, height: 4, borderRadius: 999, backgroundColor: colors.borderStrong },
+  progressBar: { flex: 1, height: 4, borderRadius: radii.pill, backgroundColor: colors.borderStrong },
   progressOn: { backgroundColor: colors.accent },
   groupLabel: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.md, marginBottom: spacing.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4 },
@@ -643,7 +632,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   filterLabel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
 
   stepNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg },
-  btn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 18, borderRadius: 999 },
+  btn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 18, borderRadius: radii.pill },
   btnSecondary: { backgroundColor: colors.surfaceSunken },
   btnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
 
@@ -664,7 +653,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   hero: { height: 210, borderRadius: 20, overflow: 'hidden', backgroundColor: colors.textPrimary, justifyContent: 'flex-end', padding: spacing.lg },
   // Legibility scrim behind the title, per the design system's text-over-image rule.
   heroChip: {
-    alignSelf: 'flex-start', overflow: 'hidden', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3,
+    alignSelf: 'flex-start', overflow: 'hidden', borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 3,
     backgroundColor: colors.accentFill, color: colors.onAccentFill, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs,
   },
   heroTitle: { fontFamily: fontFamily.display, fontSize: 24, color: colors.imageTextPrimary },
@@ -676,16 +665,16 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   freeNote: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   locked: { position: 'relative', minHeight: 640 },
-  placeholderLine: { height: 14, width: '80%', borderRadius: 999, backgroundColor: colors.borderStrong },
+  placeholderLine: { height: 14, width: '80%', borderRadius: radii.pill, backgroundColor: colors.borderStrong },
   unlock: {
     position: 'absolute', top: 48, left: 0, right: 0, gap: 16, padding: 22,
     backgroundColor: colors.surface, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
-  unlockClose: { position: 'absolute', top: 10, right: 10, width: 40, height: 40, borderRadius: 999, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
+  unlockClose: { position: 'absolute', top: 10, right: 10, width: 40, height: 40, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
   // "plot Premium": the wordmark in Gabarito, both words on one baseline.
   unlockBadge: {
     alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'baseline', gap: 3,
-    paddingHorizontal: 12, paddingTop: 4, paddingBottom: 5, borderRadius: 999, backgroundColor: colors.accentFill,
+    paddingHorizontal: 12, paddingTop: 4, paddingBottom: 5, borderRadius: radii.pill, backgroundColor: colors.accentFill,
   },
   // Outlines have no text baseline: drop the descender so the ink sits on Premium's baseline.
   unlockBrand: { transform: [{ translateY: 16 * 0.19 }] },
@@ -706,7 +695,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   savedRowRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   savedLabel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, lineHeight: 20, color: colors.textPrimary },
   savedMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
-  savedRemove: { width: 40, height: 40, marginTop: 4, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+  savedRemove: { width: 40, height: 40, marginTop: 4, alignItems: 'center', justifyContent: 'center', borderRadius: radii.pill },
 
   empty: { alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
   emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, textAlign: 'center' },
