@@ -160,6 +160,11 @@ const runCustomCopyWriter = (command) => {
   throw new Error('--copy-command is no longer supported because it bypasses the copy-worker sandbox.');
 };
 
+const bufferPushEnabled = () => {
+  const value = String(getEnv('BUFFER_PUSH_ENABLED') ?? '').trim().toLowerCase();
+  return !['0', 'false', 'off', 'no'].includes(value);
+};
+
 const runWeekly = (args) => {
   let copyRejections = false;
   requireEnv([
@@ -216,7 +221,11 @@ const runWeekly = (args) => {
 
   // Straight into Buffer, dated. Not gated on article approval. A card post
   // with no rendered media stays queued. schedule.mjs refuses it.
-  runSchedule(args);
+  // BUFFER_PUSH_ENABLED=0 (repo variable) skips only this push, for a week when
+  // the Buffer queue is already full. Everything above (articles included) has
+  // run and saved. The posts stay queued for the daily top-up. Unset means on.
+  if (bufferPushEnabled()) runSchedule(args);
+  else console.log('\nBUFFER_PUSH_ENABLED=0: skipping the Buffer push. Posts stay queued for the daily top-up.');
 
   if (copyRejections) {
     throw new Error(
