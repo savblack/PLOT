@@ -92,7 +92,7 @@ export const FOOTER_CSS = `
   font-family: var(--sans, 'DM Sans', system-ui, sans-serif);
 }
 .footer-inner {
-  max-width: 1360px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 6rem 2.5rem 0;
 }

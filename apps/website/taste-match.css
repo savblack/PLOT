@@ -4,7 +4,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); font
 a { color: inherit; text-underline-offset: 4px; }
 a:hover { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
-.page-wrap { max-width: 1144px; margin: 0 auto; padding: 96px 2rem 36px; }
+.page-wrap { max-width: 1000px; margin: 0 auto; padding: 96px 2rem 36px; }
 h1, h2 { font-family: var(--display); font-weight: 400; letter-spacing: -.025em; text-wrap: balance; }
 h1 { font-size: clamp(3.2rem, 6vw, 5.4rem); line-height: 1.02; margin: .75rem 0 1.5rem; }
 h2 { font-size: 2rem; line-height: 1.15; }
