@@ -144,28 +144,8 @@ export function retryDelayFor(response, fallbackMs) {
 let warnedMisconfiguredProxy = false;
 let warnedProxyAuth = false;
 
-/**
- * The Supabase project a JWT-format anon key belongs to, from its `ref` claim.
- * Payload only — no verification, and nothing secret: the claims of an anon key
- * are public by design. Returns null for a non-JWT key or an unreadable one.
- */
-function projectRefFromAnonKey(key) {
-  try {
-    const payload = String(key).split('.')[1];
-    if (!payload) return null;
-    const padded = payload.replace(/-/g, '+').replace(/_/g, '/')
-      .padEnd(payload.length + ((4 - (payload.length % 4)) % 4), '=');
-    // atob is present in all three runtimes core targets — browsers, Hermes,
-    // and Node 16+ — so there is no need for a Buffer fallback (which would
-    // not exist in the browser anyway).
-    return JSON.parse(atob(padded)).ref ?? null;
-  } catch {
-    return null;
-  }
-}
-
 const fetchFromTMDBNetwork = async (endpoint, params = {}, { retryDelays = RETRY_DELAYS, sleepFn = sleep } = {}) => {
-  const { tmdbProxyUrl: PROXY_URL, supabaseAnonKey: SUPABASE_ANON_KEY } = getConfig();
+  const { tmdbProxyUrl: PROXY_URL } = getConfig();
   const queryParams = new URLSearchParams({
     path: endpoint.replace(/^\//, ''),
     language: 'en-US',
@@ -194,36 +174,36 @@ const fetchFromTMDBNetwork = async (endpoint, params = {}, { retryDelays = RETRY
   }
 
   const url = `${PROXY_URL}?${queryParams}`;
-  const headers = {
-    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-    'apikey': SUPABASE_ANON_KEY,
-  };
 
+  // No request headers, on purpose. A cross-origin GET with no custom headers
+  // is a CORS "simple request": the browser sends it straight away. Adding
+  // Authorization/apikey (as this did until 2026-11-13) made every lookup send
+  // an OPTIONS preflight first, and the preflight cache is per URL, so nearly
+  // every lookup cost two Worker requests against the Cloudflare account's
+  // 100,000-a-day allowance. It also meant even a lookup the browser's HTTP
+  // cache could answer still sent the preflight. The Worker calls TMDB with
+  // its own key and never read these; its Supabase fallback attaches its own
+  // (UPSTREAM_ANON_KEY in apps/web/workers/tmdb-proxy).
   for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
     try {
-      const response = await runWithTmdbSlot(() => fetch(url, { headers }));
+      const response = await runWithTmdbSlot(() => fetch(url));
       if (!response.ok) {
         const retryable = RETRY_STATUSES.has(response.status);
         if (retryable && attempt < retryDelays.length) {
           await sleepFn(retryDelayFor(response, retryDelays[attempt]));
           continue;
         }
-        // A 401 here is always configuration, never data, and Supabase's own
-        // error code for it (`UNAUTHORIZED_LEGACY_JWT`, "Invalid JWT") reads
-        // like an expired key — which sends you hunting for a key to rotate.
-        // The real cause is that the anon key and the proxy's upstream belong
-        // to DIFFERENT Supabase projects, which is exactly what happens when
-        // local dev is repointed at Staging while tmdbProxyUrl still points at
-        // the production Worker. Name the project so it is obvious which.
+        // A 401 here is always configuration, never data. The app sends no
+        // credentials, so it can only come from the Worker's Supabase fallback
+        // (used when the Worker has no TMDB_API_KEY), whose gateway wants a
+        // signed key the Worker must attach itself.
         if (response.status === 401 && !warnedProxyAuth) {
           warnedProxyAuth = true;
-          const ref = projectRefFromAnonKey(SUPABASE_ANON_KEY);
           console.error(
-            `TMDB Proxy Unauthorized: the proxy at ${PROXY_URL} rejected this app's Supabase ` +
-            `anon key${ref ? ` (project "${ref}")` : ''}. The key is almost certainly valid but ` +
-            'for a different project than the one the proxy forwards to — check that ' +
-            'tmdbProxyUrl matches the same Supabase project as supabaseUrl. ' +
-            'See apps/web/workers/tmdb-proxy/wrangler.toml for the staging Worker.'
+            `TMDB Proxy Unauthorized: the proxy at ${PROXY_URL} is using its Supabase fallback ` +
+            'without a key. Set TMDB_API_KEY on that Worker, or UPSTREAM_ANON_KEY to the ' +
+            'publishable key of the project UPSTREAM points at. See ' +
+            'apps/web/workers/tmdb-proxy/wrangler.toml.'
           );
         }
         console.error(`TMDB Proxy Error: ${response.status} ${endpoint}`);

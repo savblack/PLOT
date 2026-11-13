@@ -109,6 +109,14 @@ const handler = {
     } else if (env.UPSTREAM && env.UPSTREAM_SHARED_SECRET) {
       const upstreamHeaders = forwardHeaders(request.headers);
       upstreamHeaders.set('X-PLOT-TMDB-Proxy-Secret', env.UPSTREAM_SHARED_SECRET);
+      // Clients stopped sending Supabase credentials on 2026-11-13 (they forced
+      // a CORS preflight, a second billable Worker request, on every lookup).
+      // The Edge Function's gateway still wants a signed key, so attach ours
+      // when the caller (an old app build, say) did not.
+      if (env.UPSTREAM_ANON_KEY && !upstreamHeaders.has('authorization')) {
+        upstreamHeaders.set('Authorization', `Bearer ${env.UPSTREAM_ANON_KEY}`);
+        upstreamHeaders.set('apikey', env.UPSTREAM_ANON_KEY);
+      }
       resp = await fetch(`${env.UPSTREAM}?${normalizeParams(url.searchParams)}`, { method: request.method, headers: upstreamHeaders });
     } else {
       resp = new Response(JSON.stringify({ error: 'TMDB proxy is not configured' }), {

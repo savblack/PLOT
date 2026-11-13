@@ -85,6 +85,11 @@ function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': origin || CANONICAL_ORIGIN,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    // The current app sends no headers and so never preflights. Builds still
+    // open in a tab from before 2026-11-13 do, and each preflight is a billable
+    // Worker request; without this the browser forgets the answer after 5s.
+    // Browsers cap it (Chromium at 2 hours), which is fine.
+    'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   };
 }
