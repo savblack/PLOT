@@ -19,16 +19,6 @@
 
 /* ── Question ── */
 .tonight-question { padding-top: 1.25rem; }
-.tonight-question-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: var(--font-display-tracking);
-  font-size: 2rem;
-  line-height: 1.05;
-  color: var(--text-primary);
-  text-wrap: balance;
-}
 
 .tonight-tile {
   border: 2px solid transparent;
@@ -60,7 +50,7 @@
 .tonight-filters {
   margin-top: 1.5rem;
   background: var(--surface-sunken);
-  border-radius: 20px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .tonight-filters-head {
@@ -191,7 +181,7 @@
   position: relative;
   height: 210px;
   border: 0;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--text-primary);
   padding: 16px;
@@ -213,20 +203,10 @@
   z-index: -1;
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.58) 30%, rgba(0,0,0,0.14) 62%, transparent 100%),
-    linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, transparent 30%);
+  background: var(--image-scrim-gradient);
 }
 .tonight-hero-body { display: flex; flex-direction: column; gap: 6px; }
-.tonight-hero-chip {
-  align-self: flex-start;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  background: var(--artwork-fill);
-  color: var(--on-artwork-fill);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
+
 .tonight-hero-title {
   font-family: var(--font-display);
   font-weight: 700;
@@ -284,7 +264,7 @@
 .tonight-card {
   position: relative;
   border: 0;
-  border-radius: 20px;
+  border-radius: var(--radius-md);
   background: var(--surface-sunken);
   padding: 12px;
   display: flex;
@@ -301,7 +281,7 @@
   width: 84px;
   height: 126px;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-badge);
   overflow: hidden;
   background: var(--border-strong);
 }
@@ -322,16 +302,7 @@
 
 /* ── Results heading + Save ── */
 .tonight-results-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-/* Same size as the section headings on Home ("plot's Picks") and Calendar months. */
-.tonight-results-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: var(--font-display-tracking);
-  font-size: 1.25rem;
-  line-height: 1.15;
-  color: var(--text-primary);
-}
+
 .tonight-save { flex-shrink: 0; gap: 6px; }
 .tonight-save svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tonight-save svg.filled { fill: currentColor; }
@@ -419,7 +390,7 @@
 
   .tonight-question,
   .tonight-results { padding-top: 0; }
-  .tonight-question-title { font-size: 2.5rem; }
+  
   
   
   
@@ -431,14 +402,14 @@
 
   /* Sized so the heading, Top pick and four cards fit a 13" laptop window
      (about 1440×780 of page) without scrolling. */
-  .tonight-hero { height: 280px; border-radius: 24px; padding: 20px 24px; }
+  .tonight-hero { height: 280px; border-radius: var(--radius-lg); padding: 20px 24px; }
   .tonight-hero-title { font-size: 1.75rem; }
   .tonight-card { padding: 10px; gap: 14px; }
   .tonight-card-poster { width: 64px; height: 96px; border-radius: 10px; }
   .tonight-card-title { font-size: 1.1rem; }
   .tonight-hero-meta { font-size: 0.875rem; }
   .tonight-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-  .tonight-results-title { font-size: 1.5rem; }
+  
   .tonight-hero-slot--finding { min-height: 280px; }
   .tonight-finding { font-size: 1.875rem; }
   .tonight-saved--phone { display: none; }

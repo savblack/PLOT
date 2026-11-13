@@ -22,15 +22,6 @@ export function PosterThumb({ path, width, height }: { path: string | null; widt
   return <Image source={{ uri: url }} style={{ width, height, borderRadius: radii.sm, backgroundColor: colors.surfaceSunken }} resizeMode="cover" />;
 }
 
-/** Kept for app/(app)/notifications.tsx only; the watch screens use Button directly. */
-export function PrimaryButton({ label, onPress, disabled, flex }: { label: string; onPress: () => void; disabled?: boolean; flex?: boolean }) {
-  return <Button variant="primary" label={label} onPress={onPress} disabled={disabled} flex={flex} />;
-}
-
-export function SecondaryButton({ label, onPress, disabled, flex }: { label: string; onPress: () => void; disabled?: boolean; flex?: boolean }) {
-  return <Button label={label} onPress={onPress} disabled={disabled} flex={flex} />;
-}
-
 export function openPremium(router: { push: (href: Href) => void }) {
   router.push(PREMIUM_SETTINGS_PATH as Href);
 }

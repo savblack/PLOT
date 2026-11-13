@@ -8,6 +8,8 @@
 import { useEffect, useState } from 'react';
 
 export const WIDE_QUERY = '(min-width: 1024px)';
+/** Tablet and up. The CSS scale (tokens.css, Breakpoints) uses 768 / max 767. */
+export const TABLET_QUERY = '(min-width: 768px)';
 
 /** True when the window is at sidebar width right now. Safe outside a browser. */
 export function isWide() {

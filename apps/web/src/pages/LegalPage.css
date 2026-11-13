@@ -84,6 +84,6 @@
 .legal-panel a { color: #1a1a1a; }
 .legal-panel a:hover { opacity: 0.7; }
 
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .legal-panel { padding: 2rem 1.5rem; }
 }

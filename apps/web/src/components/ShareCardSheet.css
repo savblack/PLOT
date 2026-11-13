@@ -144,6 +144,6 @@
   text-underline-offset: 2px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .scs-arrow { display: none; }
 }

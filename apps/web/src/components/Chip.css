@@ -25,5 +25,10 @@
 .tag--neutral { background: var(--surface-sunken); color: var(--text-secondary); }
 .tag--sage { background: var(--accent-secondary-fill); color: var(--on-accent-secondary-fill); }
 .tag--accent { background: var(--accent-dim); color: var(--accent-text); }
+/* Release countdowns: out today, and within the week. Status tokens, not raw colors. */
+.tag--artwork { background: var(--artwork-fill); color: var(--on-artwork-fill); } /* over a poster or backdrop */
+.tag--success { background: var(--success-dim); color: var(--success); }
+.tag--warning { background: color-mix(in srgb, var(--chip-soon) 14%, transparent); color: color-mix(in srgb, var(--chip-soon) 70%, var(--text-primary)); }
 
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+

@@ -2,13 +2,13 @@
 // and the try-it demo with an example partner. The page itself is now the
 // hub's 'invite' stage (WatchHub.tsx), as on web (WatchTogetherStart.jsx
 // exports Demo and FriendSearch to WatchTogetherHub.jsx).
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import SearchField from '../SearchField';
 import { Tag } from '../Chip';
 import Button from '../Button';
 import { pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
-import { supabase } from '@plot/core/supabase.js';
+import { useUserSearch } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -27,27 +27,14 @@ export function FriendSearch({ sent, onInvite }: {
   const { colors } = useTheme();
   const { userId } = useAppData();
   const [query, setQuery] = useState('');
-  const [found, setFound] = useState<WtPerson[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const q = query.trim();
-  const searching = q.length >= 2;
-
-  useEffect(() => {
-    if (q.length < 2) return undefined;
-    let live = true;
-    const timer = setTimeout(() => {
-      void supabase.rpc('search_users', { p_query: q }).then(({ data }: { data: unknown }) => {
-        if (live) setFound(asPeople(data).filter(person => person.id !== userId).slice(0, 5));
-      });
-    }, 250);
-    return () => { live = false; clearTimeout(timer); };
-  }, [q, userId]);
+  const search = useUserSearch(query, { excludeId: userId });
+  const results = search.results ? asPeople(search.results) : null;
 
   const invite = async (person: WtPerson) => {
     setFailed(false);
     if (!(await onInvite(person))) setFailed(true);
   };
-  const results = searching ? found : null;
 
   return (
     <View style={{ gap: spacing.sm }}>

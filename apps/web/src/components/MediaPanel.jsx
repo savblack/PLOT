@@ -654,7 +654,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
               episodeStates,
             });
             const chip       = ep.air_date ? countdownChip(ep.air_date) : null;
-            const isUpcoming = chip && chip.cls !== 'chip-muted';
+            const isUpcoming = chip?.upcoming;
             const airstamp   = isUpcoming ? tvmazeTimes[`${guideSeason}-${ep.episode_number}`] : null;
             const airTime    = airstamp ? fmtAirstamp(airstamp, timezone) : null;
             const isChecking = checkingEp === ep.episode_number;
@@ -676,9 +676,7 @@ export function EpisodeGuide({ tvId, currentProgress, details, timezone, onSerie
                         <span style={{ color: 'var(--text-muted)', marginLeft: '0.3rem' }}>· {airTime}</span>
                       )}
                       {isUpcoming && (
-                        <span className={`chip ${chip.cls}`} style={{ marginLeft: '0.4rem', fontSize: '0.58rem' }}>
-                          {chip.label}
-                        </span>
+                        <Tag tone={chip.tone} label={chip.label} className="ep-air-tag" />
                       )}
                     </div>
                   )}
@@ -1782,9 +1780,9 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               {/* Genres and keywords run the full width under the poster, so a
                   long keyword list never leaves blank space beside it. */}
               <div className="panel-head-tags">
-                {(genreChips.length > 0 || (chip && chip.cls !== 'chip-muted')) && (
+                {(genreChips.length > 0 || chip?.upcoming) && (
                   <div className="panel-genres">
-                    {chip && chip.cls !== 'chip-muted' && <span className={`chip ${chip.cls}`}>{chip.label}</span>}
+                    {chip?.upcoming && <Tag tone={chip.tone} label={chip.label} />}
                     {genreChips.map(g => onBrowse ? (
                       <button type="button" className="panel-tag-link" key={g.id} aria-label={BROWSE.genreLink(g.name)}
                         onClick={() => browse('genre', g.id, g.name, `/home?${new URLSearchParams(genreBrowseParams({ mediaType: itemType, genreId: g.id }))}`)}><Tag tone="sage" label={g.name} /></button>

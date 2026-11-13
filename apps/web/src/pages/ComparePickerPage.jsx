@@ -9,6 +9,7 @@ import { useCompareCandidates } from '@plot/core/useTasteOverlap.js';
 import { canCompare } from '@plot/core/tasteOverlap.js';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { TASTE_OVERLAP as T } from '../copy/tasteOverlap.js';
+import Avatar from '../components/Avatar.jsx';
 
 function detailFor(person) {
   if (person.is_public) return T.publicProfile;
@@ -20,9 +21,7 @@ function PersonRow({ person }) {
   const name = person.display_name || person.username;
   return (
     <li className="to-pick-row">
-      {person.avatar_url
-        ? <img className="to-avatar to-avatar--lg" src={person.avatar_url} alt="" />
-        : <span className="to-avatar to-avatar--lg" aria-hidden="true">{(name || '?').charAt(0).toUpperCase()}</span>}
+      <Avatar src={person.avatar_url} name={name} size={44} />
       <span className="to-pick-text">
         <span className="to-pick-name">{name}</span>
         <span className="to-pick-detail">{detailFor(person)}</span>

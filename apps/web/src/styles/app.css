@@ -348,14 +348,7 @@ svg { stroke-width: 1.5; }
   border: 1px solid var(--border-strong);
   flex-shrink: 0;
 }
-.nav-drawer-avatar-initial {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 0.65rem;
-  color: var(--text-muted);
-}
+
 .nav-drawer-label {
   font-size: 0.95rem;
   font-weight: 600;
@@ -597,18 +590,10 @@ svg { stroke-width: 1.5; }
   border: 1.5px solid var(--text-muted);
   flex-shrink: 0;
 }
-.app-sidebar-avatar-initial {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
+
 .app-sidebar-item.active .app-sidebar-avatar {
   border-color: var(--text-primary);
 }
-
 
 /* Desktop sidebar: navigation scrolls; the profile row (and its account menu) stays pinned. */
 .app-sidebar { overflow: hidden; }
@@ -659,7 +644,6 @@ svg { stroke-width: 1.5; }
 .app-sidebar-profile-copy { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
 .app-sidebar-profile-copy small { font-size: 0.68rem; color: var(--text-secondary); }
 .app-sidebar-profile .app-sidebar-avatar { width: 34px; height: 34px; border: 1px solid var(--border-strong); }
-.app-sidebar-profile .app-sidebar-avatar-initial { font-size: 1.3rem; }
 
 @media (min-width: 1024px) {
   .app-shell.sidebar-collapsed {
@@ -1116,18 +1100,6 @@ svg { stroke-width: 1.5; }
   top: 6px;
   left: 6px;
 }
-.card-chip-overlay .chip-episode,
-.card-chip-overlay .chip-cinema,
-.card-chip-overlay .chip-streaming,
-.card-chip-overlay .chip-soon {
-  background: var(--chip-episode);
-  color: #fff;
-  border: 1px solid color-mix(in srgb, var(--chip-episode) 72%, rgba(255,255,255,0.36));
-  box-shadow: none;
-}
-.card-chip-overlay .chip-cinema    { background: var(--chip-cinema);    border-color: color-mix(in srgb, var(--chip-cinema)    72%, rgba(255,255,255,0.36)); }
-.card-chip-overlay .chip-streaming { background: var(--chip-streaming); border-color: color-mix(in srgb, var(--chip-streaming) 72%, rgba(255,255,255,0.36)); }
-.card-chip-overlay .chip-soon      { background: var(--chip-soon);      border-color: color-mix(in srgb, var(--chip-soon)      72%, rgba(255,255,255,0.36)); }
 
 .card-save-btn {
   position: absolute;
@@ -1351,53 +1323,7 @@ svg { stroke-width: 1.5; }
   user-select: none;
 }
 
-/* ═══════════════════════════════════════
-   COUNTDOWN CHIPS
-═══════════════════════════════════════ */
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.18rem 0.5rem;
-  border-radius: var(--radius-badge);
-  font-size: 0.63rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  line-height: 1.4;
-}
-.chip-now     { background: rgba(5, 150, 105, 0.55);  color: #fff; }
-.chip-today   { background: rgba(5, 150, 105, 0.55);  color: #fff; }
-.chip-tomorrow{ background: rgba(217, 119, 6, 0.55);  color: #fff; }
-.chip-soon    { background: rgba(217, 119, 6, 0.55);  color: #fff; }
-.chip-cinema    {
-  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
-  color: var(--chip-cinema);
-  border: 1px solid color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
-}
-.chip-streaming {
-  background: color-mix(in srgb, var(--chip-streaming) 12%, transparent);
-  color: var(--chip-streaming);
-  border: 1px solid color-mix(in srgb, var(--chip-streaming) 34%, var(--border));
-}
-.chip-episode   {
-  background: color-mix(in srgb, var(--chip-episode) 12%, transparent);
-  color: var(--chip-episode);
-  border: 1px solid color-mix(in srgb, var(--chip-episode) 34%, var(--border));
-}
-.chip-muted   {
-  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
-  color: var(--text-secondary);
-  border: 1px solid color-mix(in srgb, var(--text-muted) 30%, var(--border));
-}
-.chip-reminder {
-  background: color-mix(in srgb, var(--chip-soon) 12%, transparent);
-  color: var(--chip-soon);
-  border: 1px solid color-mix(in srgb, var(--chip-soon) 34%, var(--border));
-}
-.chip-sm { font-size: 0.6rem; }
+/* Countdown and media-type labels are the shared Tag (Chip.jsx) now. */
 
 /* ═══════════════════════════════════════
    SUB TABS
@@ -2091,15 +2017,20 @@ svg { stroke-width: 1.5; }
   /* Above the stream, so the genre popover paints over the posters. */
   z-index: 10;
 }
-.cal-mini-card {
+/* The side-column card. One rule for the Calendar's mini cards and History's
+   (and so My Lists', Watch together's and Just Decide's) cards; the Calendar's
+   only difference is a roomier gap, set below. */
+.cal-mini-card,
+.hist-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 14px 12px 12px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
+.cal-mini-card { gap: 18px; }
 .cal-mini {
   display: flex;
   flex-direction: column;
@@ -2435,7 +2366,7 @@ svg { stroke-width: 1.5; }
   .cal-side { display: flex; }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .page-toolbar.cal-toolbar {
     flex-direction: column;
     align-items: flex-start;
@@ -3308,7 +3239,7 @@ svg { stroke-width: 1.5; }
   .list-page--auto .list-page-items > .private-watchlist,
   .list-page--auto .list-page-rows { display: block; }
 }
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .list-page { padding-inline: var(--gut); }
   .list-page-back { margin-bottom: 12px; }
   .list-page-head { flex-direction: column; align-items: stretch; gap: 14px; }
@@ -3616,7 +3547,7 @@ svg { stroke-width: 1.5; }
   justify-content: flex-end;
   gap: 0.5rem;
 }
-@media (max-width: 540px) {
+@media (max-width: 599px) {
   .review-textarea { font-size: 16px; }
 }
 
@@ -3834,7 +3765,7 @@ svg { stroke-width: 1.5; }
 /* The episode a search result opened, until the highlight fades. */
 .ep-row.ep-found { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); opacity: 1; }
 
-@media (max-width: 560px) {
+@media (max-width: 599px) {
   .panel-upnext-row { flex-wrap: wrap; }
   .panel-upnext-actions { flex-direction: row; width: 100%; justify-content: flex-start; }
 }
@@ -4348,7 +4279,7 @@ svg { stroke-width: 1.5; }
 
 .panel-card {
   background: var(--surface-sunken);
-  border-radius: 20px;
+  border-radius: var(--radius-md);
   padding: 0.35rem 1rem;
   margin-bottom: 1.1rem;
 }
@@ -4501,7 +4432,7 @@ svg { stroke-width: 1.5; }
 /* The foot bar (Watched it? / Thoughts?, stars, Review and Private note) lives
    in components/TitleFootBar.css. */
 
-@media (max-width: 560px) {
+@media (max-width: 599px) {
   .panel-poster { width: 136px; height: 204px; margin-top: -40px; }
   .panel-head { grid-template-columns: 136px 1fr; }
   .panel-head-text { padding-top: 0.6rem; }
@@ -4701,6 +4632,7 @@ a.provider-chip--link:hover {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+.ep-air .ep-air-tag { margin-left: 0.4rem; } /* the countdown beside an air date */
 .ep-air {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -5048,7 +4980,7 @@ a.provider-chip--link:hover {
 .support-plot-hint-break {
   display: none;
 }
-@media (max-width: 640px) {
+@media (max-width: 599px) {
   .settings-inline-actions--stack-mobile {
     flex-direction: column;
     align-items: flex-end;
@@ -6081,7 +6013,7 @@ a.provider-chip--link:hover {
   max-width: 600px;
   margin: 0 auto;
   background: var(--surface);
-  border-radius: 20px 20px 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: 0.75rem 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
@@ -6182,7 +6114,7 @@ a.provider-chip--link:hover {
 .discover-hero-row .discover-hero {
   margin: 0;
 }
-@media (max-width: 640px) {
+@media (max-width: 599px) {
   .discover-hero-row.has-two {
     grid-template-columns: 1fr;
   }
@@ -6240,9 +6172,7 @@ a.provider-chip--link:hover {
   position: absolute;
   inset: 0;
   text-align: left;
-  background:
-    linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.58) 30%, rgba(0,0,0,0.14) 62%, transparent 100%),
-    linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, transparent 30%);
+  background: var(--image-scrim-gradient);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -6935,7 +6865,7 @@ a.provider-chip--link:hover {
   left: auto;
 }
 
-@media (max-width: 520px), (hover: none), (pointer: coarse) {
+@media (max-width: 599px), (hover: none), (pointer: coarse) {
   .discover-chart-card {
     flex-direction: column;
     align-items: stretch;
@@ -7296,7 +7226,7 @@ a.provider-chip--link:hover {
     left: 0;
     width: 100%;
     height: 67dvh;
-    border-radius: 20px 20px 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     box-shadow: var(--shadow-overlay);
     animation: panelSheetIn 0.38s var(--ease);
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -7356,7 +7286,7 @@ a.provider-chip--link:hover {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 599px) {
   .platform-badge,
   .card-save-btn,
   .card-fav-btn {
@@ -7595,15 +7525,7 @@ a.provider-chip--link:hover {
 
 /* ── Side column ── */
 .hist-side { display: flex; flex-direction: column; gap: 24px; }
-.hist-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 14px 12px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+/* .hist-card: shared with .cal-mini-card, see the side panel above. */
 .hist-card-head {
   display: flex;
   align-items: center;
@@ -7679,7 +7601,7 @@ a.provider-chip--link:hover {
 .hist-year-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius-md);
   padding: 20px;
   gap: 16px;
 }
@@ -7867,16 +7789,7 @@ a.provider-chip--link:hover {
   font: inherit;
   color: inherit;
 }
-.hist-person-avatar {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--surface-sunken);
-  border: 1px solid var(--border);
-}
-.hist-person-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .hist-person-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .hist-person-name { font-size: 14px; font-weight: 600; color: var(--text-primary); transition: color 0.12s ease; }
 .hist-person:hover .hist-person-name { color: var(--accent-text); }
@@ -8108,7 +8021,7 @@ a.provider-chip--link:hover {
   .mobile-controls-active { position: absolute; top: 9px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .top5-slot--empty { min-height: 104px; padding: 8px 0; }
   .list-row-title { white-space: normal; overflow-wrap: anywhere; }
   .mylists-card-title, .top5-title { display: block; overflow: visible; overflow-wrap: anywhere; }

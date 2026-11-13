@@ -25,6 +25,7 @@ import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
+import { releaseCaption } from '@plot/core/countdown.js';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
@@ -136,22 +137,6 @@ type ListedTitle = {
 // diverge on which tabs exist or their order. Favourites is region-spelled
 // at the call site — it carries a null label here for exactly that reason.
 const TABS = MY_LISTS_TABS;
-
-// Release / streaming countdown chip — ports web countdownChip(); maps onto
-// the shared status-colour tokens (today / tomorrow / soon / muted).
-function countdownChip(dateStr: string | null | undefined, colors: Palette): { label: string; color: string } | null {
-  if (!dateStr) return null;
-  const [y, m, day] = dateStr.split('-').map(Number);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const d = new Date(y, m - 1, day);
-  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
-  if (diff < 0)   return null; // already out — no chip (only upcoming dates are useful)
-  if (diff === 0) return { label: 'Today',        color: colors.chipToday };
-  if (diff === 1) return { label: 'Tomorrow',     color: colors.chipTomorrow };
-  if (diff <= 7)  return { label: `${diff} days`, color: colors.chipSoon };
-  return { label: d.toLocaleDateString('en', { month: 'short', day: 'numeric' }), color: colors.textMuted };
-}
-
 
 // ── Section add button ────────────────────────────────────────────────
 // The "+" that used to live inside SectionBar. Now passed to
@@ -329,22 +314,8 @@ function episodeCode(item: { current_season?: number | null; current_episode?: n
   return `S${String(item.current_season).padStart(2, '0')}E${String(item.current_episode ?? 0).padStart(2, '0')}`;
 }
 
-// The release or streaming countdown as a caption under a poster. A streaming
-// date wins over a release date when both are ahead ("Streaming in 3 days").
-// countdownChip only needs a palette for the chip colour, which captions skip.
-const noPalette = {} as Palette;
-function countdownPhrase(label: string): string {
-  if (/^\d+ days$/.test(label)) return `in ${label}`;
-  if (label === 'Today') return 'today';
-  if (label === 'Tomorrow') return 'tomorrow';
-  return label;
-}
-function releaseCaption(item: { release_date?: string | null; streaming_date?: string | null }): string | null {
-  const strm = countdownChip(item.streaming_date, noPalette);
-  if (strm) return `Streaming ${countdownPhrase(strm.label)}`;
-  const rel = countdownChip(item.release_date, noPalette);
-  return rel ? `Out ${countdownPhrase(rel.label)}` : null;
-}
+// The release or streaming countdown as a caption under a poster comes from
+// core (releaseCaption), shared with web.
 
 // ── Poster grid ───────────────────────────────────────────────────────
 function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption, statusOf }: {

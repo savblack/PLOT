@@ -79,9 +79,9 @@ function SavedSearches({ picker, className = '' }) {
 function LockedPreview() {
   return (
     <div className="tonight-locked-preview" aria-hidden="true">
-      <div className="tonight-question-title">{T.heading[pickerTimeOfDay()]}</div>
+      <div className="discover-section-title">{T.heading[pickerTimeOfDay()]}</div>
       <div className="tonight-results-list">
-        <div className="tonight-hero tonight-hero--placeholder"><span className="tonight-hero-body"><span className="tonight-hero-chip">{T.topPick}</span></span></div>
+        <div className="tonight-hero tonight-hero--placeholder"><span className="tonight-hero-body"><Tag tone="artwork" label={T.topPick} /></span></div>
         <div className="tonight-cards">
           {[0, 1, 2, 3].map(i => (
             <div key={i} className="tonight-card tonight-card--placeholder">
@@ -182,7 +182,7 @@ function Finding({ picker }) {
   return (
     <section className="tonight-results" aria-live="polite" aria-busy="true">
       <div className="tonight-results-head tonight-results-head--hidden" aria-hidden="true">
-        <span className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</span>
+        <span className="discover-section-title">{T.heading[pickerTimeOfDay()]}</span>
       </div>
       <div className="tonight-results-list">
         <div className="tonight-hero-slot tonight-hero-slot--finding"><FindingSentence parts={picker.sentence} /></div>
@@ -230,7 +230,7 @@ function TopPick({ item, onOpen, actions, className = '' }) {
       {bg && <img src={bg} alt="" />}
       <span className="tonight-hero-scrim" aria-hidden="true" />
       <span className="tonight-hero-body">
-        <span className="tonight-hero-chip">{T.topPick}</span>
+        <Tag tone="artwork" label={T.topPick} />
         <button type="button" className="tonight-hero-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
         <span className="tonight-hero-meta">{pickResultMeta(item)}</span>
       </span>
@@ -268,7 +268,7 @@ function Results({ picker, onOpen, reveal, actions, onKeepFinding }) {
   return (
     <section className="tonight-results" aria-live="polite">
       <div className="tonight-results-head">
-        <h2 className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</h2>
+        <h2 className="discover-section-title">{T.heading[pickerTimeOfDay()]}</h2>
         <div className="tonight-results-actions">
           {/* A1: save the answers as a smart list, beside Save search (the snapshot). */}
           {onKeepFinding && <span className="tonight-keep-hint">{T.createSmartListHint}</span>}

@@ -8,9 +8,6 @@
 
 /* Avatar stacks: initials on the deeper cream with a hairline, overlapping. */
 .wt-avatar--xs { width: 24px; height: 24px; font-size: 0.66rem; font-family: var(--font-display); border: 1px solid var(--border-strong); }
-.cl-stack--xs .wt-avatar + .wt-avatar { margin-left: -6px; }
-.cl-stack--sm .wt-avatar { border: 1px solid var(--border-strong); font-family: var(--font-display); }
-.cl-stack--sm .wt-avatar + .wt-avatar { margin-left: -8px; }
 
 /* ── My Lists (B1, A1) ── */
 .list-cover-byline {
@@ -90,7 +87,7 @@
 /* A phone: the header becomes a bar (back, title, search), and the search
    field only opens from the search button (A8, with search in place of the
    invite icon). */
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .list-page--shared .list-page-back--mobile { display: none; }
   .list-page--shared .list-page-head { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding-bottom: 14px; }
   .list-page--shared .list-page-bar-back {
@@ -108,12 +105,11 @@
 }
 
 /* ── New shared list (B2) ── */
-.cl-chip-btn { border: 0; cursor: pointer; font: inherit; }
 
 /* ── The invite landing (A3, A4, A7 and B3, B4, B7): centred ── */
 .cl-landing { align-items: center; text-align: center; margin-inline: auto; width: 100%; box-sizing: border-box; }
 .cl-landing .wt-top-actions { justify-content: center; }
-.cl-landing .wt-avatar--lg { align-self: center; }
+
 .cl-landing-kicker { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
 .cl-landing--list .wt-title { margin-top: -0.6rem; }
 .cl-landing-people { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
@@ -123,7 +119,7 @@
   border-radius: 10px; border: 1px solid var(--border); background: var(--surface-sunken);
 }
 .cl-landing-fan { display: none; width: 220px; align-self: center; }
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .cl-landing-fan { display: block; }
   .cl-landing-posters { display: none; }
   .cl-landing-posters img { width: 64px; }

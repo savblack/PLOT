@@ -3,7 +3,7 @@ import { customListCreationError, isCustomListLimitError } from '@plot/core/cust
 import { useContext, useState, useEffect, useRef } from 'react';
 import { SectionFoldContext } from './sectionFold.js';
 import { useApp } from '../hooks/useApp.js';
-import { countdownChip } from '../utils/countdown.js';
+import { releaseCountdown } from '@plot/core/countdown.js';
 import { posterUrl } from '../utils/images.js';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
@@ -559,11 +559,11 @@ export function WatchingSection({ watching, hidden, Frame = ListSection }) {
 /* ── Want to Watch ── */
 function wantMeta(item) {
   const parts = [item.media_type === 'tv' ? MEDIA.series : MEDIA.movie];
-  const release = item.release_date ? countdownChip(item.release_date) : null;
+  const release = releaseCountdown(item.release_date);
   // "Released" is the normal case; only an upcoming date is worth a word.
-  if (release && release.label !== 'Released') parts.push(release.label);
-  const streaming = item.streaming_date ? countdownChip(item.streaming_date) : null;
-  if (streaming && streaming.label !== 'Released') parts.push(`Streaming ${streaming.label.toLowerCase()}`);
+  if (release && release.stage !== 'past') parts.push(release.label);
+  const streaming = releaseCountdown(item.streaming_date);
+  if (streaming && streaming.stage !== 'past') parts.push(MEDIA.streamingWhen(streaming.phrase));
   return parts.join(' · ');
 }
 

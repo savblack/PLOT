@@ -16,6 +16,7 @@ import { APP_SHELL } from '../copy/appShell.js';
 import './AccountMenu.css';
 import { PremiumBadge } from './ProfileBadges.jsx';
 import PremiumMark from './PremiumMark.jsx';
+import Avatar from './Avatar.jsx';
 
 const A = SETTINGS_VIEW.appearance;
 const S = A.switcher;
@@ -271,9 +272,7 @@ export default function AccountMenu({
         aria-controls={open ? panelId : undefined}
         onClick={toggle}
       >
-        {profile.avatar_url
-          ? <img className="app-sidebar-avatar" src={profile.avatar_url} alt="" />
-          : <span className="app-sidebar-avatar app-sidebar-avatar-initial">{name.charAt(0).toUpperCase()}</span>}
+        <Avatar src={profile.avatar_url} name={name} size={24} tone="raised" className="app-sidebar-avatar" />
         <span className="app-sidebar-profile-copy">
           <span className="app-sidebar-profile-name"><span className="app-sidebar-label">{name}</span>{isPremium && <PremiumBadge className="app-sidebar-verified" />}</span>
           <small>{APP_SHELL.viewYourProfile}</small>

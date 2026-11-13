@@ -1,0 +1,22 @@
+/* Avatar.jsx: one round profile picture. Size comes in as --avatar-size. */
+.avatar {
+  width: var(--avatar-size, 40px);
+  height: var(--avatar-size, 40px);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  object-fit: cover;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: calc(var(--avatar-size, 40px) * 0.38);
+  line-height: 1;
+  color: var(--text-secondary);
+}
+.avatar--neutral { background: var(--surface-sunken); }
+.avatar--raised { background: var(--surface-raised); }
+.avatar--accent { background: var(--accent-dim); color: var(--accent-text); }
+.avatar--stacked { border: 2px solid var(--bg); }
+.avatar--headshot { object-position: center 22%; }

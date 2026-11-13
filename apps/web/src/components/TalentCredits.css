@@ -23,7 +23,7 @@
 .talent-section-head span { font-size: 0.75rem; color: var(--text-muted); }
 .talent-muted { color: var(--text-muted); font-size: 0.88rem; }
 
-@media (max-width: 520px) {
+@media (max-width: 599px) {
   .talent-credits-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.85rem; }
   .talent-credit-title { margin-top: 0.65rem; }
 }

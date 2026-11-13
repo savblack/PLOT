@@ -38,6 +38,7 @@ import { FollowPill } from './PeopleFollow.jsx';
 import ImportSourceIcon from './ImportSourceIcon.jsx';
 import { Tag } from './Chip.jsx';
 import './FinishingTouches.css';
+import Avatar from './Avatar.jsx';
 
 
 export default function FinishingTouches() {
@@ -206,7 +207,7 @@ function FriendsSheet({ userId, onClose }) {
             const s = status[row.id];
             return (
               <li key={row.id}>
-                <span className="ft-avatar" aria-hidden="true">{row.avatar_url ? <img src={row.avatar_url} alt="" /> : name.charAt(0).toUpperCase()}</span>
+                <Avatar src={row.avatar_url} name={name} size={40} />
                 <span className="ft-person"><b>{name}</b>{row.display_name && <span>@{row.username}</span>}</span>
                 <button
                   type="button"
@@ -255,7 +256,7 @@ function PeopleSheet({ watchlistItems, favourites, onClose }) {
         <ul className="ft-people">
           {suggestions.map(s => (
             <li key={s.id}>
-              <span className="ft-avatar" aria-hidden="true">{profileUrl(s.profilePath) ? <img src={profileUrl(s.profilePath)} alt="" /> : s.name.charAt(0)}</span>
+              <Avatar src={profileUrl(s.profilePath)} name={s.name} size={40} headshot />
               <span className="ft-person"><b>{s.name}</b><span>{reason(s)}</span></span>
               <FollowPill
                 following={follow.isFollowing(s.id)}

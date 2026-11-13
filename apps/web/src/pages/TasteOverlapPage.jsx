@@ -15,15 +15,10 @@ import TasteShareMenu from '../components/TasteShareMenu.jsx';
 import LoginRedirect from '../components/LoginRedirect.jsx';
 import PremiumMark from '../components/PremiumMark.jsx';
 import PremiumGateButton from '../components/PremiumGateButton.jsx';
+import Avatar from '../components/Avatar.jsx';
 
-const initialOf = (s) => (s || '?').charAt(0).toUpperCase();
 const stars = (n) => (n == null ? '' : `${Number.isInteger(n) ? n.toFixed(0) : n.toFixed(1)}`);
 
-function Avatar({ url, name, className = '' }) {
-  return url
-    ? <img className={`to-avatar ${className}`} src={url} alt="" />
-    : <span className={`to-avatar ${className}`} aria-hidden="true">{initialOf(name)}</span>;
-}
 
 /* The shape of the page while taste_overlap is in flight: the match card and
    the genre bars, so the layout does not jump when the answer lands. The
@@ -268,7 +263,7 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
       <header className="to-header">
         <h1 className="to-h1">{T.title}</h1>
         <Link className="to-person" to="/compare" aria-label={`${T.youAnd(name)}. ${T.changePerson}`}>
-          <Avatar url={target?.avatar_url} name={name} />
+          <Avatar src={target?.avatar_url} name={name} size={32} />
           {T.youAnd(name)}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
         </Link>

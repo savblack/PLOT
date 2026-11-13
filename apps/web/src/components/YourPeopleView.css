@@ -12,11 +12,7 @@
 .people-follow-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .people-follow-text b { font-size: 0.8rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .people-follow-text span { font-size: 0.7rem; color: var(--text-muted); }
-.people-avatar {
-  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  width: 30px; height: 30px; border-radius: var(--radius-pill); object-fit: cover; object-position: center 22%;
-  background: var(--surface-sunken); color: var(--text-muted); font-size: 0.75rem; font-weight: 700;
-}
+
 /* Unfollow only shows on the row being pointed at (or focused). */
 .people-follow-row--manage { border-radius: var(--radius-badge); }
 .people-follow-row--manage:hover, .people-follow-row--manage:focus-within { background: var(--surface-sunken); border-bottom-color: transparent; }

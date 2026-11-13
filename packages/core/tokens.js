@@ -496,3 +496,16 @@ export const spacing = {
 export function cssVarName(key) {
   return '--' + key.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
 }
+
+/**
+ * The fade behind text on a poster or backdrop (Home's hero, Just Decide's top
+ * pick), bottom up: offset 0 to 1 from the bottom edge, and its color. Web
+ * mirrors it as --image-scrim-gradient (tokens.css); iPhone passes it to
+ * LinearGradient. Not part of the generated color block.
+ */
+export const imageScrimStops = /** @type {const} */ ([
+  [0, 'rgba(0,0,0,0.92)'],
+  [0.3, 'rgba(0,0,0,0.58)'],
+  [0.62, 'rgba(0,0,0,0.14)'],
+  [1, 'rgba(0,0,0,0)'],
+]);

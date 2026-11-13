@@ -21,6 +21,7 @@ import {
 import PlotLogo from './PlotLogo.jsx';
 import { PremiumBadge } from './ProfileBadges.jsx';
 import PremiumMark from './PremiumMark.jsx';
+import Avatar from './Avatar.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 /* Shared with AppSidebar — see ./navIcons.jsx. */
@@ -257,9 +258,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             >
               {/* The avatar takes the icon column so this row hangs off the
                   same left edge as the rest, the way the rail's profile row does. */}
-              {profile.avatar_url
-                ? <img className="nav-drawer-avatar" src={profile.avatar_url} alt="" />
-                : <span className="nav-drawer-avatar nav-drawer-avatar-initial">{(profile.display_name || profile.username).charAt(0).toUpperCase()}</span>}
+              <Avatar src={profile.avatar_url} name={profile.display_name || profile.username} size={18} tone="raised" className="nav-drawer-avatar" />
               <span className="nav-drawer-label">{APP_SHELL.profile}</span>
               {isPremiumProfile(profile) && <PremiumBadge className="app-sidebar-verified" />}
             </button>

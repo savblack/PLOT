@@ -36,6 +36,7 @@ import {
 import { useTonightShelves, SHELF_CHIPS, chipOn, chipLabel, toggleChip } from '@plot/core/tonightShelves.js';
 import EmptyState from '../../components/EmptyState';
 import { isPremiumProfile } from '@plot/core/premium.js';
+import { imageScrimStops } from '@plot/core/tokens.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { titleForView } from '@plot/core/navigation.js';
 import { TONIGHT_PICKER as T } from '@plot/core/copy/tonightPicker.js';
@@ -46,6 +47,10 @@ import PlotWordmark from '../../components/PlotWordmark';
 import { EVENTS, track } from '../../lib/analytics';
 
 type Styles = ReturnType<typeof makeStyles>;
+
+// The shared image fade (core imageScrimStops), top to bottom for LinearGradient.
+const SCRIM_COLORS = [...imageScrimStops].reverse().map(([, c]) => c) as unknown as readonly [string, string, ...string[]];
+const SCRIM_LOCATIONS = [...imageScrimStops].reverse().map(([o]) => 1 - o) as unknown as readonly [number, number, ...number[]];
 
 // Keeps a Free viewer's answers through upgrading (key and format: core).
 const PICKER_STORAGE = {
@@ -260,7 +265,7 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
             <TouchableOpacity style={styles.hero} onPress={() => onOpen(top)} accessibilityRole="button" accessibilityLabel={top.title}>
               {bg ? <Image source={{ uri: bg }} style={StyleSheet.absoluteFill} /> : null}
               {/* Same fade as the Home hero: dark at the foot, clear by the top, no hard edge. */}
-              <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.14)', 'rgba(0,0,0,0.58)', 'rgba(0,0,0,0.92)']} locations={[0, 0.38, 0.7, 1]} style={StyleSheet.absoluteFill} pointerEvents="none" />
+              <LinearGradient colors={SCRIM_COLORS} locations={SCRIM_LOCATIONS} style={StyleSheet.absoluteFill} pointerEvents="none" />
               <View style={{ gap: 6 }}>
                 <Text style={styles.heroChip}>{T.topPick}</Text>
                 <Text style={styles.heroTitle}>{top.title}</Text>
@@ -528,6 +533,7 @@ export default function TonightScreen() {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
+  qTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, lineHeight: 30, color: colors.textPrimary },
   shelfPoster: { width: SHELF_W, height: SHELF_W * 1.5, borderRadius: radii.badge },
   shelfTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   shelfNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
@@ -537,11 +543,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   screen: { flex: 1, backgroundColor: colors.bg },
 
-  qTitle: { fontFamily: fontFamily.display, fontSize: 30, lineHeight: 33, color: colors.textPrimary },
 
   tileHint: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
 
-  filters: { marginTop: spacing.xl, backgroundColor: colors.surfaceSunken, borderRadius: 20, overflow: 'hidden' },
+  filters: { backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radii.md, overflow: 'hidden' },
   filtersHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
   filtersSummary: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   summaryText: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, flexShrink: 1 },
@@ -560,20 +565,20 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
 
   findingSlot: { minHeight: 210, justifyContent: 'center', marginTop: spacing.lg },
-  finding: { fontFamily: fontFamily.display, fontSize: 24, lineHeight: 34, color: colors.textPrimary },
+  finding: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, lineHeight: 34, color: colors.textPrimary },
   findingHl: { backgroundColor: colors.accentFill, color: colors.onAccentFill },
   findingOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, justifyContent: 'center' },
-  hero: { height: 210, borderRadius: 20, overflow: 'hidden', backgroundColor: colors.textPrimary, justifyContent: 'flex-end', padding: spacing.lg },
+  hero: { height: 210, borderRadius: radii.lg, overflow: 'hidden', backgroundColor: colors.textPrimary, justifyContent: 'flex-end', padding: spacing.lg },
   // Legibility scrim behind the title, per the design system's text-over-image rule.
   heroChip: {
     alignSelf: 'flex-start', overflow: 'hidden', borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 3,
     backgroundColor: colors.accentFill, color: colors.onAccentFill, fontFamily: fontFamily.sansBold, fontSize: fontSize.xs,
   },
-  heroTitle: { fontFamily: fontFamily.display, fontSize: 24, color: colors.imageTextPrimary },
+  heroTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.imageTextPrimary },
   heroMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.imageTextSecondary },
-  card: { flexDirection: 'row', gap: 14, alignItems: 'center', padding: 12, borderRadius: 20, backgroundColor: colors.surfaceSunken },
-  cardPoster: { width: 84, height: 126, borderRadius: 12, backgroundColor: colors.borderStrong },
-  cardTitle: { fontFamily: fontFamily.display, fontSize: 19, color: colors.textPrimary },
+  card: { flexDirection: 'row', gap: 14, alignItems: 'center', padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.surfaceSunken },
+  cardPoster: { width: 84, height: 126, borderRadius: radii.badge, backgroundColor: colors.borderStrong },
+  cardTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   cardMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
 
   freeNote: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
@@ -581,7 +586,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   placeholderLine: { height: 14, width: '80%', borderRadius: radii.pill, backgroundColor: colors.borderStrong },
   unlock: {
     position: 'absolute', top: 48, left: 0, right: 0, gap: 16, padding: 22,
-    backgroundColor: colors.surface, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radii.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
   unlockClose: { position: 'absolute', top: 10, right: 10, width: 40, height: 40, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
   // "plot Premium": the wordmark in Gabarito, both words on one baseline.
@@ -591,19 +596,19 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   // Outlines have no text baseline: drop the descender so the ink sits on Premium's baseline.
   unlockBrand: { transform: [{ translateY: 16 * 0.19 }] },
-  unlockPremium: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.onAccentFill },
-  unlockTitle: { fontFamily: fontFamily.display, fontSize: 26, lineHeight: 28, color: colors.textPrimary, paddingRight: 32 },
-  unlockBody: { fontFamily: fontFamily.sans, fontSize: 15, lineHeight: 23, color: colors.textSecondary },
-  unlockBenefitTitle: { fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.textPrimary },
-  unlockBenefitBody: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 21, color: colors.textSecondary },
+  unlockPremium: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.onAccentFill },
+  unlockTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, lineHeight: 28, color: colors.textPrimary, paddingRight: 32 },
+  unlockBody: { fontFamily: fontFamily.sans, fontSize: fontSize.md, lineHeight: 23, color: colors.textSecondary },
+  unlockBenefitTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
+  unlockBenefitBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 21, color: colors.textSecondary },
   unlockCta: { marginTop: 4 },
-  unlockPrice: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: -6 },
+  unlockPrice: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', marginTop: -6 },
 
   resultsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   // Same size as the section headings on Home and Calendar.
-  resultsTitle: { flex: 1, fontFamily: fontFamily.display, fontSize: 20, lineHeight: 23, color: colors.textPrimary },
-  saved: { marginTop: spacing.xl, padding: spacing.md, paddingBottom: spacing.xs, borderRadius: 16, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  savedTitle: { fontFamily: fontFamily.display, fontSize: 18, color: colors.textPrimary, marginBottom: spacing.xs },
+  resultsTitle: { flex: 1, fontFamily: fontFamily.display, fontSize: fontSize.xl, lineHeight: 23, color: colors.textPrimary },
+  saved: { marginTop: spacing.xl, padding: spacing.md, paddingBottom: spacing.xs, borderRadius: radii.md, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  savedTitle: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary, marginBottom: spacing.xs },
   savedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
   savedRowRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   savedLabel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, lineHeight: 20, color: colors.textPrimary },

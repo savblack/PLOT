@@ -23,6 +23,7 @@ import { requestShareCard, CARD_IDS } from '@plot/core/shareCards.js';
 import { useMonthWrapMoment } from '../hooks/useMonthWrapMoment.js';
 import { SHARE_CARDS } from '../copy/shareCards.js';
 import './NotificationsView.css';
+import SharedAvatar from './Avatar.jsx';
 
 const KindIcon = ({ kind }) => kind === 'request'
   ? <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
@@ -66,9 +67,8 @@ function DigestRow({ n, digest, unread, now, onOpenSmartLists }) {
 }
 
 function Avatar({ url, name, small = false, kind }) {
-  const cls = `notif-avatar${small ? ' notif-avatar--sm' : ''}`;
   return <span className="notif-avatar-wrap">
-    {url ? <img className={cls} src={url} alt="" /> : <span className={cls} aria-hidden="true">{(name || '?').charAt(0).toUpperCase()}</span>}
+    <SharedAvatar src={url} name={name} size={small ? 32 : 44} stacked={small} />
     {kind && <span className={`notif-kind notif-kind--${kind}`} aria-hidden="true"><KindIcon kind={kind} /></span>}
   </span>;
 }

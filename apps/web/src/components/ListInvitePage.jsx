@@ -48,7 +48,7 @@ export function ListInviteListHead({ info, peek, name }) {
         </div>
       )}
       <p className="cl-landing-kicker">{L.invitedToJoin(name)}</p>
-      <h1 className="wt-title">{info.list_name}</h1>
+      <h2 className="wt-title">{info.list_name}</h2>
       <p className="cl-landing-people" aria-label={summary}>
         <MemberStack people={people} max={4} size="sm" />
         <span aria-hidden="true">{summary}</span>
@@ -90,7 +90,7 @@ export default function ListInvitePage({ loadPreview = listInvitePreview, loadPe
   if (screen === 'invalid') {
     return (
       <div className="wt-page wt-landing cl-landing">
-        <h1 className="wt-title">{T.landing.invalidTitle}</h1>
+        <h2 className="wt-title">{T.landing.invalidTitle}</h2>
         <p className="wt-card-body">{T.landing.invalidBody}</p>
       </div>
     );
@@ -111,7 +111,7 @@ export default function ListInvitePage({ loadPreview = listInvitePreview, loadPe
         {listLed ? <ListInviteListHead info={info} peek={peek} name={name} /> : (
           <>
             <PersonAvatar person={info} size="lg" />
-            <h1 className="wt-title">{L.title(name)}</h1>
+            <h2 className="wt-title">{L.title(name)}</h2>
             <p className="wt-person-name">{summary}</p>
           </>
         )}
@@ -128,7 +128,7 @@ export default function ListInvitePage({ loadPreview = listInvitePreview, loadPe
   if (screen === 'owner' || screen === 'member') {
     return (
       <div className="wt-page wt-landing cl-landing">
-        <h1 className="wt-title">{screen === 'owner' ? L.ownerTitle : L.memberTitle}</h1>
+        <h2 className="wt-title">{screen === 'owner' ? L.ownerTitle : L.memberTitle}</h2>
         <p className="wt-person-name">{summary}</p>
         {screen === 'owner' && <p className="wt-card-body">{L.ownerBody}</p>}
         <div><button type="button" className="btn btn-primary" onClick={() => openList(info.list_id)}>{L.open}</button></div>
@@ -140,7 +140,7 @@ export default function ListInvitePage({ loadPreview = listInvitePreview, loadPe
     return (
       <div className="wt-page wt-landing cl-landing">
         <PersonAvatar person={info} size="lg" />
-        <h1 className="wt-title">{L.inactiveTitle}</h1>
+        <h2 className="wt-title">{L.inactiveTitle}</h2>
         <p className="wt-card-body">{L.inactiveBody(name)}</p>
       </div>
     );
@@ -160,7 +160,7 @@ export default function ListInvitePage({ loadPreview = listInvitePreview, loadPe
       {listLed ? <ListInviteListHead info={info} peek={peek} name={name} /> : (
         <>
           <PersonAvatar person={info} size="lg" />
-          <h1 className="wt-title">{L.title(name)}</h1>
+          <h2 className="wt-title">{L.title(name)}</h2>
           <p className="wt-person-name">{summary}</p>
         </>
       )}

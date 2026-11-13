@@ -10,7 +10,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { personName, titleMeta, filterByKind, splitGroupMatches, shufflePick, sessionProgress, swipeDecision, SWIPE_THRESHOLD } from '@plot/core/watchTogether.js';
-import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherSession, startWatchTogetherSession, liveWatchTogetherSession } from '@plot/core/useWatchTogether.js';
+import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherSession, startWatchTogetherSession, liveWatchTogetherSession, useUserSearch } from '@plot/core/useWatchTogether.js';
 import { supabase } from '@plot/core/supabase.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
@@ -64,7 +64,7 @@ function Picker({ wt }) {
   return (
     <div className="wt-page">
       <BackLink to="/together" label={T.hub.title} />
-      <h1 className="wt-title">{T.hub.whosWatching}</h1>
+      <h2 className="discover-section-title">{T.hub.whosWatching}</h2>
       <fieldset className="wt-pick">
         <legend className="sr-only">{T.hub.partners}</legend>
         {wt.partners.map(p => (
@@ -92,20 +92,9 @@ function Invite({ wt }) {
   const { user } = useApp();
   const { people: suggested } = useWatchTogetherSuggestions(user?.id);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
+  const { searching, results } = useUserSearch(query, { excludeId: user?.id, limit: 20 });
   const [sent, setSent] = useState(() => new Set());
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) return undefined;
-    let live = true;
-    const timer = setTimeout(async () => {
-      const { data } = await supabase.rpc('search_users', { p_query: q });
-      if (live) setResults((data || []).filter(p => p.id !== user?.id));
-    }, 250);
-    return () => { live = false; clearTimeout(timer); };
-  }, [query, user?.id]);
 
   const invite = async (person) => {
     setError(null);
@@ -114,11 +103,11 @@ function Invite({ wt }) {
     else setError(T.errors[result.code]);
   };
 
-  const list = query.trim().length >= 2 ? results : suggested;
+  const list = searching ? (results || []) : suggested;
   return (
     <div className="wt-page">
       <BackLink to="/together" label={T.hub.title} />
-      <h1 className="wt-title">{T.invite.title}</h1>
+      <h2 className="discover-section-title">{T.invite.title}</h2>
       <p className="wt-card-body">{T.invite.body}</p>
       <p className="wt-note">{T.invite.mutualNote}</p>
       <SearchField id="wt-invite-search" placeholder={T.invite.search} value={query} onChange={setQuery} />
@@ -207,7 +196,7 @@ function Together({ wt, usernames }) {
     <div className="wt-page">
       <BackLink to="/together" label={T.hub.title} />
       <div className="wt-who"><AvatarStack people={people} /><span className="wt-note">{group ? T.overlap.group(people.map(personName)) : T.overlap.pair(personName(people[0] || {}))}</span></div>
-      <h1 className="wt-title">{group ? T.overlap.groupHeading : T.overlap.heading(titles.length)}</h1>
+      <h2 className="discover-section-title">{group ? T.overlap.groupHeading : T.overlap.heading(titles.length)}</h2>
       {!group && titles.length > 0 && <div><button type="button" className="btn btn-primary btn-sm" onClick={decide}>{T.session.start}</button></div>}
       {locked && (
         <section className="wt-card" role="status">
@@ -365,7 +354,7 @@ function SessionView({ wt, sessionId }) {
       <header className="wt-session-head">
         <BackLink to="/together" label={T.session.leave} />
         <div className="wt-session-title">
-          <h1 className="wt-card-title">{T.session.heading(name)}</h1>
+          <h2 className="wt-card-title">{T.session.heading(name)}</h2>
           <span className="wt-note">{T.session.fromBoth}</span>
         </div>
         <span className="wt-note wt-session-them">{personName(other || {})}: {T.session.theyAnswered(Math.min(session.other_answered + 1, progress.total))}</span>

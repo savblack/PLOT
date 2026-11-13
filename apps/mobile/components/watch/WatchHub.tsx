@@ -7,7 +7,7 @@
 // Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH
 // Rules: @plot/core watchTogether.js (hubStage, joinNames, sharedOnDate).
 // Web parity: apps/web/src/components/WatchTogetherHub.jsx.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,13 +22,12 @@ import { Avatar } from '../Avatar';
 import { Tag } from '../Chip';
 import { IconCheck, IconPlus } from '../icons';
 import {
-  filterByKind, hubStage, joinNames, personName, sharedOnDate, unlockedPartners,
+  filterByKind, hubStage, joinNames, personName, sharedOnDate,
 } from '@plot/core/watchTogether.js';
-import { useWatchTogetherSuggestions, useWatchTogetherExampleTitles, startWatchTogetherSession } from '@plot/core/useWatchTogether.js';
+import { useWatchTogetherSuggestions, useWatchTogetherExampleTitles, startWatchTogetherSession, useUpgradeNews, useUserSearch } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
-import { supabase } from '@plot/core/supabase.js';
 import { fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -88,7 +87,7 @@ export function WatchHub() {
   const suggestions = useWatchTogetherSuggestions(userId);
   const suggested = asPeople(suggestions.people);
   const premium = isPremiumProfile(profile);
-  const news = useUpgradeNews(together.partners, together.loading, premium);
+  const news = useNews(together.partners, together.loading, premium);
   // One instance for the page, so sharing from the card moves the page on.
   const link = useInviteShare();
   const [reviewing, setReviewing] = useState<WtPerson | null>(null);
@@ -475,41 +474,12 @@ function HowItWorks({ premium }: { premium: boolean }) {
   );
 }
 
-function useUpgradeNews(partners: WtPerson[], loading: boolean, premium: boolean) {
-  const [remembered, setRemembered] = useState<string[] | null>(null);
-  useEffect(() => {
-    let live = true;
-    void readStorage(LOCKED_KEY).then(raw => {
-      if (!live) return;
-      try {
-        const parsed = JSON.parse(raw || '[]');
-        setRemembered(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []);
-      } catch {
-        setRemembered([]);
-      }
-    });
-    return () => { live = false; };
-  }, []);
-  useEffect(() => {
-    if (loading || premium || remembered === null) return;
-    const locked = partners.filter(p => !p.can_decide).map(p => p.id);
-    if (locked.length) void writeStorage(LOCKED_KEY, JSON.stringify(locked));
-    else void removeStorage(LOCKED_KEY);
-  }, [loading, premium, partners, remembered]);
-  const unlockedIds = new Set((premium && remembered ? unlockedPartners(partners.map(row => ({
-    other_id: row.id,
-    username: row.username,
-    display_name: row.display_name,
-    avatar_url: row.avatar_url,
-    direction: 'paired' as const,
-    created_at: row.created_at || '',
-    accepted_at: row.accepted_at,
-    i_share_full: row.i_share_full,
-    overlap_count: row.overlap_count,
-    can_decide: row.can_decide,
-  })), remembered) : []).map(row => row.other_id));
-  const unlocked = partners.filter(person => unlockedIds.has(person.id));
-  return { unlocked, dismiss: () => { void removeStorage(LOCKED_KEY); setRemembered([]); } };
+// "You're on Premium" news: who upgrading unlocked (core: useUpgradeNews).
+const NEWS_STORAGE = { getItem: readStorage, setItem: writeStorage, removeItem: removeStorage };
+function useNews(partners: WtPerson[], loading: boolean, premium: boolean) {
+  const rows = partners.map(p => ({ other_id: p.id, can_decide: p.can_decide }));
+  const { unlockedIds, dismiss } = useUpgradeNews({ partners: rows, loading, premium, storage: NEWS_STORAGE });
+  return { unlocked: partners.filter(p => unlockedIds.includes(p.id)), dismiss };
 }
 
 /* ── Other /together screens ─────────────────────────────────────────── */
@@ -564,21 +534,9 @@ export function WatchInvite() {
   const suggestions = useWatchTogetherSuggestions(userId);
   const suggested = asPeople(suggestions.people);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<WtPerson[]>([]);
+  const search = useUserSearch(query, { excludeId: userId, limit: 20 });
   const [sent, setSent] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) return undefined;
-    let live = true;
-    const timer = setTimeout(() => {
-      void supabase.rpc('search_users', { p_query: q }).then(({ data }) => {
-        if (live) setResults(asPeople(data).filter(person => person.id !== userId));
-      });
-    }, 250);
-    return () => { live = false; clearTimeout(timer); };
-  }, [query, userId]);
 
   const invite = async (person: WtPerson) => {
     setError(null);
@@ -586,7 +544,7 @@ export function WatchInvite() {
     if (result.ok) setSent(prev => prev.includes(person.id) ? prev : [...prev, person.id]);
     else setError(errorText(result.code));
   };
-  const list = query.trim().length >= 2 ? results : suggested;
+  const list = search.searching ? asPeople(search.results || []) : suggested;
   return (
     <WatchPage>
       <SectionTitle>{T.invite.title}</SectionTitle>

@@ -46,6 +46,12 @@ export const MEDIA = {
   removeTitleFromWatchlist: title => `Remove ${title} from watchlist`,
   today: 'Today',
   tomorrow: 'Tomorrow',
+  // Release countdowns (countdown.js): a tag, and a phrase after "Out" or "Streaming".
+  released: 'Released',
+  inDays: (n) => `${n} days`,
+  inDaysPhrase: (n) => `in ${n} days`,
+  outWhen: (when) => `Out ${when}`,
+  streamingWhen: (when) => `Streaming ${when}`,
   yesterday: 'Yesterday',
   typeHeading: 'Type',
   genreHeading: 'Genre',

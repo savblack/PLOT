@@ -15,6 +15,7 @@ import { COMMON } from '../copy/common.js';
 import EmptyState from './EmptyState.jsx';
 import SearchField from './SearchField.jsx';
 import './SettingsPage.css';
+import Avatar from './Avatar.jsx';
 
 export function SettingsTextAction({ children, onClick, disabled = false, tone = 'default', label }) {
   return (
@@ -134,9 +135,7 @@ function AccountCard({ account, action = null }) {
   return (
     <div className="hist-card settings-account-card">
       <div className="settings-account-identity">
-        <span className="settings-account-avatar" aria-hidden="true">
-          {avatarUrl ? <img src={avatarUrl} alt="" /> : initial}
-        </span>
+        <Avatar src={avatarUrl} name={initial} size={48} tone="accent" />
         <span className="settings-account-names">
           <span className="settings-account-name">{name || T.page.noName}</span>
           {username && <span className="hist-card-note">@{username}</span>}

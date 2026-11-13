@@ -41,7 +41,7 @@ export default function WatchTogetherLinkPage() {
   if (!info) {
     return (
       <div className="wt-page wt-landing">
-        <h1 className="wt-title">{L.invalidTitle}</h1>
+        <h2 className="wt-title">{L.invalidTitle}</h2>
         <p className="wt-card-body">{L.invalidBody}</p>
       </div>
     );
@@ -55,7 +55,7 @@ export default function WatchTogetherLinkPage() {
     return (
       <div className="wt-page wt-landing">
         <PersonAvatar person={info} size="lg" />
-        <h1 className="wt-title">{L.titleNewLead(name)} <Wordmark /></h1>
+        <h2 className="wt-title">{L.titleNewLead(name)} <Wordmark /></h2>
         <p className="wt-card-body">{L.bodyNew(name)}</p>
         <div className="wt-top-actions">
           <button type="button" className="btn btn-primary" onClick={() => go('/signup')}>{L.joinLead} <Wordmark /> {L.joinTail}</button>
@@ -69,7 +69,7 @@ export default function WatchTogetherLinkPage() {
   if (info.state === 'self') {
     return (
       <div className="wt-page wt-landing">
-        <h1 className="wt-title">{L.selfTitle}</h1>
+        <h2 className="wt-title">{L.selfTitle}</h2>
         <p className="wt-card-body">{L.selfBody}</p>
         <InviteLinkCard />
       </div>
@@ -81,7 +81,7 @@ export default function WatchTogetherLinkPage() {
     return (
       <div className="wt-page wt-landing">
         <PersonAvatar person={info} size="lg" />
-        <h1 className="wt-title">{L.pairedTitle(name)}</h1>
+        <h2 className="wt-title">{L.pairedTitle(name)}</h2>
         <div><Link to={togetherPath} className="btn btn-primary">{T.tile.pairedAction}</Link></div>
       </div>
     );
@@ -99,7 +99,7 @@ export default function WatchTogetherLinkPage() {
   return (
     <div className="wt-page wt-landing">
       <PersonAvatar person={info} size="lg" />
-      <h1 className="wt-title">{L.title(name)}</h1>
+      <h2 className="wt-title">{L.title(name)}</h2>
       <p className="wt-card-body">{info.can_decide ? L.body : L.bodyNoPremium(name)}</p>
       {error && <p className="wt-error" role="alert">{error}</p>}
       <div className="wt-top-actions">

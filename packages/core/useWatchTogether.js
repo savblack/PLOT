@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
-import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey, trendingAsTitles, exampleTitlePool, DEMO_SIZE } from './watchTogether.js';
+import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey, trendingAsTitles, exampleTitlePool, unlockedPartners, DEMO_SIZE } from './watchTogether.js';
 import { tmdb } from './tmdb.js';
 
 /**
@@ -345,4 +345,78 @@ export function useWatchTogetherExampleTitles(saved) {
     return () => { live = false; };
   }, [needMore]);
   return exampleTitlePool(saved, trending);
+}
+
+/**
+ * People to invite by name or @username: search_users, debounced, with the
+ * viewer left out. Nothing runs under two characters. `results` is null until
+ * the first answer for the current query, so callers can tell "searching"
+ * from "nobody found".
+ *
+ * @param {string} query
+ * @param {{ excludeId?: string | null, limit?: number, delayMs?: number }} [opts]
+ */
+export function useUserSearch(query, { excludeId = null, limit = 5, delayMs = 250 } = {}) {
+  const q = (query || '').trim();
+  const [answer, setAnswer] = useState(/** @type {{ q: string, people: any[] } | null} */ (null));
+  useEffect(() => {
+    if (q.length < 2) return undefined;
+    let live = true;
+    const timer = setTimeout(async () => {
+      const { data } = await supabase.rpc('search_users', { p_query: q });
+      if (live) setAnswer({ q, people: (data || []).filter(p => p.id !== excludeId).slice(0, limit) });
+    }, delayMs);
+    return () => { live = false; clearTimeout(timer); };
+  }, [q, excludeId, limit, delayMs]);
+  const searching = q.length >= 2;
+  return { searching, results: searching && answer?.q === q ? answer.people : null };
+}
+
+/** Per-device key for partners seen waiting on Premium while on Free. */
+export const LOCKED_PARTNERS_KEY = 'plot_wt_locked_partners';
+
+/**
+ * "You're on Premium. You can decide together with Sam and Priya now." Who
+ * upgrading unlocked: partners remembered as locked (can_decide false) while
+ * the viewer was on Free that can decide now. Remembered per device in the
+ * platform's storage (web localStorage, mobile AsyncStorage; sync or async).
+ *
+ * @param {{
+ *   partners: { other_id: string, can_decide?: boolean | null }[],
+ *   loading: boolean,
+ *   premium: boolean,
+ *   storage: { getItem: (k: string) => any, setItem: (k: string, v: string) => any, removeItem: (k: string) => any },
+ * }} input
+ * @returns {{ unlockedIds: string[], dismiss: () => void }}
+ */
+export function useUpgradeNews({ partners, loading, premium, storage }) {
+  const [remembered, setRemembered] = useState(/** @type {string[] | null} */ (null));
+  useEffect(() => {
+    let live = true;
+    Promise.resolve().then(() => storage.getItem(LOCKED_PARTNERS_KEY)).catch(() => null).then((raw) => {
+      if (!live) return;
+      try {
+        const parsed = JSON.parse(raw || '[]');
+        setRemembered(Array.isArray(parsed) ? parsed.filter(id => typeof id === 'string') : []);
+      } catch {
+        setRemembered([]);
+      }
+    });
+    return () => { live = false; };
+  }, [storage]);
+  const lockedKey = partners.filter(p => p.can_decide === false).map(p => p.other_id).join(',');
+  useEffect(() => {
+    if (loading || premium || remembered === null) return;
+    Promise.resolve().then(() => (lockedKey
+      ? storage.setItem(LOCKED_PARTNERS_KEY, JSON.stringify(lockedKey.split(',')))
+      : storage.removeItem(LOCKED_PARTNERS_KEY))).catch(() => {});
+  }, [loading, premium, remembered, lockedKey, storage]);
+  const unlockedIds = premium && !loading && remembered
+    ? unlockedPartners(/** @type {any} */ (partners), remembered).map(p => p.other_id)
+    : [];
+  const dismiss = () => {
+    Promise.resolve().then(() => storage.removeItem(LOCKED_PARTNERS_KEY)).catch(() => {});
+    setRemembered([]);
+  };
+  return { unlockedIds, dismiss };
 }

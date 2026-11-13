@@ -5,6 +5,7 @@
  * and they open the title rather than a profile).
  */
 import BackBar from '../../components/BackBar';
+import Button from '../../components/Button';
 import Loader from '../../components/Loader';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -31,7 +32,6 @@ import { SHOW_WATCH_TOGETHER } from '../../lib/launchFeatures';
 import { usePushAlerts } from '@plot/core/usePushAlerts.js';
 import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
 import { AcceptSheet } from '../../components/watch/AcceptSheet';
-import { PrimaryButton, SecondaryButton } from '../../components/watch/WatchChrome';
 import { useTogether, type WtPerson } from '../../components/watch/watchModel';
 import EmptyState from '../../components/EmptyState';
 
@@ -119,8 +119,8 @@ export default function NotificationsScreen() {
                   <Text style={styles.rowText}><Text style={styles.rowName}>{personName(person)}</Text></Text>
                   <Text style={styles.rowMuted}>@{person.username} · {NOTIFICATIONS_PAGE.wantsToWatchTogether}</Text>
                   <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
-                    <SecondaryButton label={NOTIFICATIONS_PAGE.decline} onPress={() => { void together.respond(person.id, false); }} />
-                    <PrimaryButton label={NOTIFICATIONS_PAGE.review} onPress={() => setReviewing(person)} />
+                    <Button label={NOTIFICATIONS_PAGE.decline} onPress={() => { void together.respond(person.id, false); }} />
+                    <Button variant="primary" label={NOTIFICATIONS_PAGE.review} onPress={() => setReviewing(person)} />
                   </View>
                 </View>
               </View>

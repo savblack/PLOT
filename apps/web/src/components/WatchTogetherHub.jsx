@@ -7,11 +7,11 @@
 // Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH
 // Rules: @plot/core watchTogether.js (hubStage, joinNames, titleMeta).
 // Mobile parity: apps/mobile/components/watch/WatchHub.tsx.
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
-import { personName, filterByKind, hubStage, joinNames, sharedOnDate, unlockedPartners } from '@plot/core/watchTogether.js';
-import { useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherExampleTitles, startWatchTogetherSession } from '@plot/core/useWatchTogether.js';
+import { personName, filterByKind, hubStage, joinNames, sharedOnDate } from '@plot/core/watchTogether.js';
+import { useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherExampleTitles, startWatchTogetherSession, useUpgradeNews } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { useInviteShare } from '../hooks/useInviteShare.js';
@@ -27,22 +27,11 @@ import './WatchTogetherHub.css';
 const H = T.hub;
 const reportGate = () => track(EVENTS.PREMIUM_GATE_HIT, { feature: 'watch_together' });
 
-// Partners seen waiting on Premium while the viewer was on Free, so the hub can
-// say who upgrading unlocked. Per device; cleared when the news is dismissed.
-const LOCKED_KEY = 'plot_wt_locked_partners';
-
-function useUpgradeNews(wt, premium) {
-  const [remembered, setRemembered] = useState(() => {
-    try { return JSON.parse(readStorage(LOCKED_KEY) || '[]'); } catch { return []; }
-  });
-  const unlocked = premium && !wt.loading ? unlockedPartners(wt.partners, remembered) : [];
-  useEffect(() => {
-    if (wt.loading || premium) return;
-    const locked = wt.partners.filter(p => p.can_decide === false).map(p => p.other_id);
-    if (locked.length) writeStorage(LOCKED_KEY, JSON.stringify(locked)); else removeStorage(LOCKED_KEY);
-  }, [premium, wt.loading, wt.partners]);
-  const dismiss = () => { removeStorage(LOCKED_KEY); setRemembered([]); };
-  return { unlocked, dismiss };
+// "You're on Premium" news: who upgrading unlocked (core: useUpgradeNews).
+const NEWS_STORAGE = { getItem: readStorage, setItem: writeStorage, removeItem: removeStorage };
+function useNews(wt, premium) {
+  const { unlockedIds, dismiss } = useUpgradeNews({ partners: wt.partners, loading: wt.loading, premium, storage: NEWS_STORAGE });
+  return { unlocked: wt.partners.filter(p => unlockedIds.includes(p.other_id)), dismiss };
 }
 
 function SideCard({ title, labelledBy, children, className = '' }) {
@@ -251,7 +240,7 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState(/** @type {string | null} */ (null));
   const [sent, setSent] = useState(() => new Set());
-  const news = useUpgradeNews(wt, premium);
+  const news = useNews(wt, premium);
   const { partners, incoming, outgoing } = wt;
 
   // Blank only until the first load. Later refreshes (after an invite or a
@@ -287,8 +276,8 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
 
   return (
     <div className="hist-page wth-page">
-      {/* The app header already shows the page title. */}
-      <h1 className="sr-only">{H.title}</h1>
+      {/* Phones only: at sidebar widths the shell heading is the h1. */}
+      <h1 className="sr-only phone-only-h1">{H.title}</h1>
 
       <div className="hist-body">
         <aside className="hist-side">

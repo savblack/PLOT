@@ -21,7 +21,7 @@
 .save-prompt-body { margin: 0.85rem 0 1.1rem; color: var(--text-secondary); font-size: 0.86rem; line-height: 1.5; }
 .save-prompt-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 
-@media (max-width: 520px) {
+@media (max-width: 599px) {
   .save-prompt-content { grid-template-columns: 82px minmax(0, 1fr); gap: 1rem; align-items: start; }
   .save-prompt-poster { width: 82px; }
   .save-prompt-actions { grid-column: 1 / -1; }

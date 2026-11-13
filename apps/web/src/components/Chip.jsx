@@ -50,7 +50,8 @@ export default function Chip({ label, selected, onClick, size = 'md', icon, disa
 }
 
 /**
- * @param {{ label: string, tone?: 'neutral' | 'sage' | 'accent', icon?: import('react').ReactNode, className?: string }} props
+ * @param {{ label: string, tone?: 'neutral' | 'sage' | 'accent' | 'artwork' | 'success' | 'warning', icon?: import('react').ReactNode, className?: string }} props
+ * success: out today, warning: in the next week (release countdowns).
  */
 export function Tag({ label, tone = 'neutral', icon, className = '' }) {
   return (

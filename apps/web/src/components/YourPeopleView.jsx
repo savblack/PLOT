@@ -31,6 +31,7 @@ import Icon from './Icon.jsx';
 import './PeopleFollow.css';
 import './YourPeopleView.css';
 import { Tag } from './Chip.jsx';
+import Avatar from './Avatar.jsx';
 
 const CHIP_TONE = { outToday: 'accent', dated: 'neutral' };
 
@@ -113,8 +114,7 @@ function FollowSearch({ follow }) {
 }
 
 function PersonAvatar({ path, name }) {
-  const src = profileUrl(path);
-  return src ? <img className="people-avatar" src={src} alt="" loading="lazy" /> : <span className="people-avatar" aria-hidden="true">{name?.charAt(0)}</span>;
+  return <Avatar src={profileUrl(path)} name={name} size={30} headshot />;
 }
 
 /** Pure layout; data comes from YourPeopleView (and from a story). */

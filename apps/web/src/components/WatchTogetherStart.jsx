@@ -2,11 +2,11 @@
 // invite, username search and the try-it demo. The hub that arranges them is
 // WatchTogetherHub.jsx (Nov 2026 redesign; the dark start page is gone).
 // Mobile parity: apps/mobile/components/watch/WatchTogetherStart.tsx.
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@plot/core/supabase.js';
 import { useApp } from '../hooks/useApp.js';
 import { personName, pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
+import { useUserSearch } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { posterUrl } from '../utils/images.js';
@@ -71,22 +71,9 @@ export function PersonRow({ person, note, sent, onInvite }) {
 export function FriendSearch({ sent, onInvite, onDark = false }) {
   const { user } = useApp();
   const [query, setQuery] = useState('');
-  const [found, setFound] = useState(null);
   const [failed, setFailed] = useState(false);
-  const q = query.trim();
+  const { searching, results } = useUserSearch(query, { excludeId: user?.id });
 
-  useEffect(() => {
-    if (q.length < 2) return undefined;
-    let live = true;
-    const timer = setTimeout(async () => {
-      const { data } = await supabase.rpc('search_users', { p_query: q });
-      if (live) setFound((data || []).filter(p => p.id !== user?.id).slice(0, 5));
-    }, 250);
-    return () => { live = false; clearTimeout(timer); };
-  }, [q, user?.id]);
-
-  const searching = q.length >= 2;
-  const results = searching ? found : null;
   const invite = async (person) => {
     setFailed(false);
     if (!(await onInvite(person))) setFailed(true);

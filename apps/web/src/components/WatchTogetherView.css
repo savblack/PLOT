@@ -22,19 +22,6 @@
 }
 
 .wt-kicker { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text); }
-.wt-chip {
-  display: inline-flex;
-  align-self: flex-start;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text-primary);
-  font-size: 0.75rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.wt-chip--ok { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
-.wt-chip--accent { background: var(--accent-fill); color: var(--on-accent-fill); }
 
 .wt-note { font-size: 0.8125rem; line-height: 1.45; color: var(--text-secondary); }
 .wt-center { text-align: center; }
@@ -51,7 +38,8 @@
   gap: 0.6rem;
 }
 .wt-card > .btn { align-self: flex-start; }
-.wt-card-title { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; line-height: 1.1; color: var(--text-primary); }
+/* The card-title tier, the same as .hist-card-title (18px). */
+.wt-card-title { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; line-height: 1.15; color: var(--text-primary); }
 .wt-card-body { margin: 0; font-size: 0.875rem; line-height: 1.45; color: var(--text-secondary); }
 
 .wt-section { display: flex; flex-direction: column; }
@@ -92,23 +80,8 @@
 .wt-banner-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .wt-banner-title { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; }
 
-/* People */
-.wt-avatar {
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  object-fit: cover;
-}
-.wt-avatar--md { width: 44px; height: 44px; font-size: 1rem; }
-.wt-avatar--sm { width: 32px; height: 32px; font-size: 0.8125rem; border: 2px solid var(--bg); }
 .wt-stack { display: inline-flex; }
-.wt-stack .wt-avatar + .wt-avatar { margin-left: -10px; }
-.wt-banner .wt-avatar--sm { border-color: var(--surface-sunken); }
+
 .wt-who { display: flex; align-items: center; gap: 0.6rem; }
 
 /* Picker */
@@ -245,7 +218,7 @@
    Mobile stacks: people, see it in action, how it works, invite link, note.
    Desktop puts people and the invite link side by side at the top. */
 .wt-page--wide { max-width: 1040px; }
-.wt-avatar--lg { width: 72px; height: 72px; font-size: 1.75rem; }
+
 .wt-wordmark { font-family: var(--font-display); font-weight: 700; letter-spacing: var(--font-display-tracking); }
 
 .wt-find { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem; }
@@ -268,7 +241,7 @@
 .wt-demo { align-items: center; text-align: center; }
 .wt-demo-head { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .wt-demo-head .wt-section-label { margin: 0; }
-.wt-demo .wt-chip { align-self: center; }
+
 .wt-demo .wt-top-actions { justify-content: center; margin-top: 0; }
 .wt-demo-poster {
   position: relative;
@@ -307,7 +280,7 @@
 .wt-list .wt-row { padding: 0.75rem 1rem; }
 .wt-list .wt-row:first-child { border-top: 0; }
 
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .wt-list .wt-row > .wt-note { max-width: 6.5rem; text-align: right; white-space: normal; }
 }
 
