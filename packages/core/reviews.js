@@ -79,18 +79,32 @@ export function reportAwardsShown(result, { tmdbId = null, mediaType = null } = 
 const MIN_QUOTE_LENGTH = 40;
 const MAX_QUOTE_LENGTH = 220;
 
+// The pull-quote sits on the title page as if Plot chose it, so it must be a
+// review its own author scored well. TMDB's author_details.rating is out of 10;
+// unrated reviews are skipped because their tone is unknown. On 2026-11-13 the
+// shortest Rings of Power review was an unrated "Woke and horrible..." rant,
+// which the old shortest-wins rule put on the page for everyone.
+const MIN_QUOTE_RATING = 7;
+
+// Backstop for a well-rated review that still carries culture-war or abusive
+// language. Matched on word boundaries, case-insensitively.
+const BLOCKED_QUOTE_WORDS = /\b(woke|dei|agenda|propaganda|diversity hire|forced diversity|race[- ]?swap(ped)?|pandering|sjw|snowflakes?|libtards?|retard(ed)?|f+u+c+k\w*|shit\w*|crap|trash|garbage|dreck|abomination)\b/i;
+
 /**
- * Pick one displayable audience quote from a TMDB `/reviews` response. Prefers
- * a review with real substance (not a one-liner) and short enough to read as
- * a pull-quote, trimmed to a clean sentence boundary where possible.
+ * Pick one displayable audience quote from a TMDB `/reviews` response. Only
+ * reviews the author rated MIN_QUOTE_RATING/10 or higher, with no blocked
+ * language, qualify. Among those it prefers a review with real substance (not
+ * a one-liner) and short enough to read as a pull-quote, trimmed to a clean
+ * sentence boundary where possible.
  *
- * @param {{results?: Array<{content?: string, author?: string}>}|null|undefined} reviewsResponse
+ * @param {{results?: Array<{content?: string, author?: string, author_details?: {rating?: number|null}}>}|null|undefined} reviewsResponse
  * @returns {{text: string, author: string}|null}
  */
 export function pickAudienceQuote(reviewsResponse) {
   const candidates = (reviewsResponse?.results || [])
-    .map(r => ({ text: (r.content || '').trim().replace(/\s+/g, ' '), author: r.author }))
-    .filter(r => r.text.length >= MIN_QUOTE_LENGTH);
+    .filter(r => Number.isFinite(r?.author_details?.rating) && r.author_details.rating >= MIN_QUOTE_RATING)
+    .map(r => ({ text: unwrapQuote((r.content || '').trim().replace(/\s+/g, ' ')), author: r.author }))
+    .filter(r => r.text.length >= MIN_QUOTE_LENGTH && !BLOCKED_QUOTE_WORDS.test(r.text));
   if (!candidates.length) return null;
 
   const pick = candidates.sort((a, b) => a.text.length - b.text.length)[0];
@@ -99,7 +113,13 @@ export function pickAudienceQuote(reviewsResponse) {
   const trimmed = pick.text.slice(0, MAX_QUOTE_LENGTH);
   const lastSentence = Math.max(trimmed.lastIndexOf('. '), trimmed.lastIndexOf('! '), trimmed.lastIndexOf('? '));
   const text = lastSentence > MIN_QUOTE_LENGTH ? trimmed.slice(0, lastSentence + 1) : `${trimmed.trimEnd()}…`;
-  return { text, author: pick.author };
+  return { text: unwrapQuote(text), author: pick.author };
+}
+
+// Both apps wrap the quote in their own marks, so drop the review's: a leading
+// mark, and a closing one that sits before final punctuation or the cut.
+function unwrapQuote(text) {
+  return text.replace(/^["“]+/, '').replace(/["”]+([.!?…]?)$/, '$1').trim();
 }
 
 const GAP_MILD = 15;

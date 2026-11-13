@@ -138,8 +138,8 @@ test('pickAudienceQuote returns null with no response, no results, or no review 
 test('pickAudienceQuote picks the shortest qualifying review, not the first or longest', () => {
   const result = pickAudienceQuote({
     results: [
-      { content: 'This is a moderately long review that clears the forty character minimum easily.', author: 'Longer' },
-      { content: 'This one also clears the forty character minimum but is shorter than the other.', author: 'Shorter' },
+      { content: 'This is a moderately long review that clears the forty character minimum easily.', author: 'Longer', author_details: { rating: 8 } },
+      { content: 'This one also clears the forty character minimum but is shorter than the other.', author: 'Shorter', author_details: { rating: 8 } },
     ],
   });
   assert.deepEqual(result, {
@@ -149,7 +149,7 @@ test('pickAudienceQuote picks the shortest qualifying review, not the first or l
 });
 
 test('pickAudienceQuote collapses internal whitespace/newlines in the review text', () => {
-  const result = pickAudienceQuote({ results: [{ content: '  This review\nhas   irregular\twhitespace throughout its whole body of text.  ', author: 'A' }] });
+  const result = pickAudienceQuote({ results: [{ content: '  This review\nhas   irregular\twhitespace throughout its whole body of text.  ', author: 'A', author_details: { rating: 8 } }] });
   assert.equal(result.text, 'This review has irregular whitespace throughout its whole body of text.');
 });
 
@@ -158,7 +158,7 @@ test('pickAudienceQuote cuts an over-length quote at a sentence boundary when on
   const trailing = 'Trailing filler words that keep going and going and going and going and going and going and going and going and going and going and going and going.';
   const content = `${filler}This sentence ends here. ${trailing}`;
 
-  const result = pickAudienceQuote({ results: [{ content, author: 'X' }] });
+  const result = pickAudienceQuote({ results: [{ content, author: 'X', author_details: { rating: 9 } }] });
 
   assert.equal(result.text, 'Padding word Padding word Padding word Padding word Padding word Padding word This sentence ends here.');
   assert.ok(result.text.length <= 220);
@@ -166,8 +166,35 @@ test('pickAudienceQuote cuts an over-length quote at a sentence boundary when on
 
 test('pickAudienceQuote falls back to an ellipsis when no usable sentence boundary exists before the cutoff', () => {
   const content = 'x'.repeat(300);
-  const result = pickAudienceQuote({ results: [{ content, author: 'NoPunct' }] });
+  const result = pickAudienceQuote({ results: [{ content, author: 'NoPunct', author_details: { rating: 10 } }] });
   assert.equal(result.text, 'x'.repeat(220) + '…');
+});
+
+test('pickAudienceQuote skips unrated and low-rated reviews, even when they are shortest', () => {
+  const result = pickAudienceQuote({
+    results: [
+      { content: 'Woke and horrible. This review has no rating and should never be quoted.', author: 'Unrated', author_details: { rating: null } },
+      { content: 'Low rated review that is short enough to win on length alone.', author: 'Low', author_details: { rating: 2 } },
+      { content: 'A warm, well rated review that is a little longer than the others are here.', author: 'Good', author_details: { rating: 9 } },
+    ],
+  });
+  assert.equal(result.author, 'Good');
+});
+
+test('pickAudienceQuote skips a well-rated review that uses blocked language', () => {
+  assert.equal(pickAudienceQuote({
+    results: [{ content: 'Honestly great, despite what the woke crowd online keeps saying about it.', author: 'B', author_details: { rating: 8 } }],
+  }), null);
+  assert.equal(pickAudienceQuote({
+    results: [{ content: 'Surprisingly not trash at all, I had a great time with the whole cast.', author: 'C', author_details: { rating: 8 } }],
+  }), null);
+});
+
+test('pickAudienceQuote does not block words that merely contain a blocked word', () => {
+  const result = pickAudienceQuote({
+    results: [{ content: 'Scrappy, crafty storytelling that awoke something in me I had forgotten.', author: 'D', author_details: { rating: 8 } }],
+  });
+  assert.equal(result?.author, 'D');
 });
 
 test('getConsensusLine returns null when either score is not a finite number', () => {
@@ -234,4 +261,11 @@ test('audienceScoreFromDetails still shows a score when vote_count is missing', 
 test('audienceScoreFromDetails returns null for missing details', () => {
   assert.equal(audienceScoreFromDetails(null), null);
   assert.equal(audienceScoreFromDetails({}), null);
+});
+
+test('pickAudienceQuote drops quote marks wrapping the whole review', () => {
+  const result = pickAudienceQuote({
+    results: [{ content: '"Since it sent fans back to the books, this can only be a good thing".', author: 'Q', author_details: { rating: 7 } }],
+  });
+  assert.equal(result.text, 'Since it sent fans back to the books, this can only be a good thing.');
 });
