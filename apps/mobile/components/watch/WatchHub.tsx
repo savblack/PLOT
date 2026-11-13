@@ -1,23 +1,28 @@
-// Watch together's hub at /together, Nov 2026 redesign: a row of people cards
-// across the top (option C) and shelves of what you share underneath (option
-// A), so it reads like Home and My Lists. The invite card is always in the
-// row. With nobody yet it leads the page, and it puts the invite link first,
-// because most people invite someone who isn't on Plot.
+// Watch together's hub at /together, Nov 2026 redesign. Laid out like the
+// iPhone's My Lists: the title bar at the top (GlassHeader + ScreenHeaderBar),
+// then full-width collapsible sections. Who's watching, requests and the invite
+// link come first (web's left column), then shelves of what you share with
+// whoever is picked. With nobody yet the invite card leads and puts the link
+// first, because most people invite someone who isn't on Plot.
 // Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH
 // Rules: @plot/core watchTogether.js (hubStage, joinNames, sharedOnDate).
 // Web parity: apps/web/src/components/WatchTogetherHub.jsx.
 import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SearchField from '../SearchField';
 import SectionTitle from '../SectionTitle';
 import Button from '../Button';
 import UpgradeSheet from '../UpgradeSheet';
+import CollapsibleSection from '../CollapsibleSection';
+import GlassHeader, { useGlassOnScroll } from '../GlassHeader';
+import ScreenHeaderBar, { SCREEN_HEADER_H } from '../ScreenHeaderBar';
 import { Avatar } from '../Avatar';
 import { Tag } from '../Chip';
 import { IconCheck, IconPlus } from '../icons';
 import {
-  filterByKind, hubStage, joinNames, personName, sharedOnDate, splitGroupMatches, unlockedPartners,
+  filterByKind, hubStage, joinNames, personName, sharedOnDate, unlockedPartners,
 } from '@plot/core/watchTogether.js';
 import { useWatchTogetherSuggestions, useWatchTogetherExampleTitles, startWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
@@ -25,6 +30,7 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { supabase } from '@plot/core/supabase.js';
 import { fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { readStorage, writeStorage, removeStorage } from '../../lib/storage';
@@ -41,10 +47,39 @@ const GROUP_ID = 'group';
 // Partners seen waiting on Premium while the viewer was on Free, so the hub can
 // say who upgrading unlocked. Per device; cleared when the news is dismissed.
 const LOCKED_KEY = 'plot_wt_locked_partners';
-const CARD_W = 200;
 const SHELF_W = 112;
 
 type InviteLink = ReturnType<typeof useInviteShare>;
+
+/** My Lists' page: the glass title bar over a full-width scroll of sections. */
+function HubPage({ children }: { children: ReactNode }) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const glass = useGlassOnScroll();
+  const headerH = insets.top + SCREEN_HEADER_H;
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: headerH + spacing.sm, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
+        onScroll={glass.onScroll}
+      >
+        {children}
+      </ScrollView>
+      <GlassHeader scrollY={glass.scrollY} height={headerH}>
+        <ScreenHeaderBar title={H.title} showSearch={false} />
+      </GlassHeader>
+    </View>
+  );
+}
+
+/** Content inside a section, held to the page gutter (section headers pad themselves). */
+function Gutter({ children, gap = spacing.md }: { children: ReactNode; gap?: number }) {
+  return <View style={{ paddingHorizontal: spacing.xl, gap }}>{children}</View>;
+}
 
 export function WatchHub() {
   const router = useRouter();
@@ -68,13 +103,13 @@ export function WatchHub() {
   const [ready, setReady] = useState(false);
   if (!ready && !together.loading && !suggestions.loading && link.sharedRead) setReady(true);
   if (!ready) {
-    return <WatchPage><Note>{COMMON.loading}</Note></WatchPage>;
+    return <HubPage><Gutter><Note>{COMMON.loading}</Note></Gutter></HubPage>;
   }
 
   const stage = hubStage({ partners, incoming, outgoing, sharedAt: link.sharedAt });
   const decidable = partners.filter(p => p.can_decide);
-  // The first partner who can decide starts selected, so the shelves below
-  // show something straight away.
+  // The first partner who can decide starts selected, so the shelves show
+  // something straight away.
   const selected = selectedId ?? (decidable[0] || partners[0])?.id ?? null;
   const shelfPartners = selected === GROUP_ID ? decidable : partners.filter(p => p.id === selected);
 
@@ -99,48 +134,62 @@ export function WatchHub() {
   };
 
   return (
-    <WatchPage>
-      <SectionTitle accessibilityRole="header">{H.title}</SectionTitle>
-
-      {news.unlocked.length > 0 && <UpgradeNews unlocked={news.unlocked} onDecide={decideWith} onDismiss={news.dismiss} />}
-
-      {stage === 'people' ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          accessibilityLabel={H.whosWatching}
-          style={{ marginHorizontal: -spacing.xl }}
-          contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md, alignItems: 'stretch' }}
-        >
-          {incoming.map(p => (
-            <IncomingCard key={p.id} person={p} busy={busy} onReview={() => setReviewing(p)} onDecline={() => answer(p, false)} />
-          ))}
-          {partners.map(p => (
-            <PartnerCard
-              key={p.id}
-              partner={p}
-              selected={selected === p.id}
-              onSelect={() => setSelectedId(p.id)}
-              onDecide={() => decideWith(p)}
-              onGate={() => setGate(true)}
-            />
-          ))}
-          {decidable.length > 1 && (
-            <GroupCard partners={decidable} selected={selected === GROUP_ID} onSelect={() => setSelectedId(GROUP_ID)} onOpen={openGroup} />
-          )}
-          {outgoing.map(p => <OutgoingCard key={p.id} person={p} onCancel={() => together.cancel(p.id)} />)}
-          <InviteCard stage={stage} link={link} />
-        </ScrollView>
-      ) : (
-        <InviteCard stage={stage} link={link} />
+    <HubPage>
+      {news.unlocked.length > 0 && (
+        <View style={{ marginBottom: spacing.xl }}>
+          <Gutter><UpgradeNews unlocked={news.unlocked} onDecide={decideWith} onDismiss={news.dismiss} /></Gutter>
+        </View>
       )}
 
       {stage === 'people' ? (
-        shelfPartners.length > 0 ? <SharedShelves key={selected ?? ''} partners={shelfPartners} /> : null
+        <>
+          {partners.length > 0 && (
+            <CollapsibleSection id="wt-who" label={H.whosWatching} count={partners.length}>
+              <WhoList
+                partners={partners}
+                decidable={decidable}
+                selected={selected}
+                onSelect={setSelectedId}
+                onDecide={decideWith}
+                onOpenGroup={openGroup}
+                onGate={() => setGate(true)}
+              />
+            </CollapsibleSection>
+          )}
+          {incoming.length + outgoing.length > 0 && (
+            <CollapsibleSection id="wt-requests" label={H.requests} count={incoming.length + outgoing.length}>
+              <Gutter>
+                <ListCard>
+                  {incoming.map(p => (
+                    <PersonRow key={p.id} person={p} note={T.requests.wantsTo} trailing={(
+                      <ButtonRow>
+                        <Button size="sm" variant="primary" label={T.requests.review} onPress={() => setReviewing(p)} disabled={busy} />
+                        <Button size="sm" label={T.requests.decline} onPress={() => answer(p, false)} disabled={busy} />
+                      </ButtonRow>
+                    )} />
+                  ))}
+                  {outgoing.map(p => (
+                    <PersonRow key={p.id} person={p} note={T.requests.sent}
+                      trailing={<Button size="sm" label={T.requests.cancel} onPress={() => together.cancel(p.id)} />} />
+                  ))}
+                </ListCard>
+              </Gutter>
+            </CollapsibleSection>
+          )}
+          {/* Same order as web's left column, then its shelves. */}
+          <CollapsibleSection id="wt-invite-more" label={H.inviteMore}>
+            <InviteCard stage={stage} link={link} />
+          </CollapsibleSection>
+          {shelfPartners.length > 0 && <SharedShelves key={selected ?? ''} partners={shelfPartners} />}
+        </>
       ) : (
         <>
+          <View style={{ marginBottom: spacing.xl }}><InviteCard stage={stage} link={link} /></View>
+          <CollapsibleSection id="wt-onplot" label={suggested.length ? H.peopleYouFollow : H.onPlot}>
+            <OnPlot suggested={suggested} sent={sent} onInvite={invite} />
+          </CollapsibleSection>
           <PreviewShelf />
-          <EmptyExtras premium={premium} suggested={suggested} sent={sent} onInvite={invite} />
+          <HowItWorks premium={premium} />
         </>
       )}
 
@@ -154,156 +203,98 @@ export function WatchHub() {
         />
       )}
       <UpgradeSheet visible={gate} reason="watchTogether" onClose={() => setGate(false)} onCompare={() => openPremium(router)} />
-    </WatchPage>
+    </HubPage>
   );
 }
 
-/* ── Cards ───────────────────────────────────────────────────────────── */
+/* ── Who's watching ──────────────────────────────────────────────────── */
 
-/** A flat cream card like Home's and My Lists': surface, hairline, radii.md. */
-function Card({ children, selected = false, dashed = false, lead = false }: { children: ReactNode; selected?: boolean; dashed?: boolean; lead?: boolean }) {
+/** Pick a person (or everyone) and the shelves follow; Decide sits under the list. */
+function WhoList({ partners, decidable, selected, onSelect, onDecide, onOpenGroup, onGate }: {
+  partners: WtPerson[];
+  decidable: WtPerson[];
+  selected: string | null;
+  onSelect: (id: string) => void;
+  onDecide: (person: WtPerson) => void;
+  onOpenGroup: () => void;
+  onGate: () => void;
+}) {
   const { colors } = useTheme();
-  const border = selected ? 2 : StyleSheet.hairlineWidth;
-  const pad = (lead ? spacing.lg : spacing.md) - border;
+  const chosen = selected === GROUP_ID ? null : partners.find(p => p.id === selected) ?? null;
+  const radio = (on: boolean) => (
+    <View style={{
+      width: 18, height: 18, borderRadius: radii.pill, borderWidth: on ? 5 : 1.5,
+      borderColor: on ? colors.accent : colors.borderStrong, backgroundColor: colors.surface,
+    }} />
+  );
+  return (
+    <Gutter>
+      <ListCard>
+        {partners.map(p => (
+          <PersonRow
+            key={p.id}
+            person={p}
+            note={H.bothSaved(p.overlap_count ?? 0)}
+            onPress={() => onSelect(p.id)}
+            trailing={(
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                {!p.can_decide && <Tag label={H.needsPremium} />}
+                {radio(selected === p.id)}
+              </View>
+            )}
+          />
+        ))}
+        {decidable.length > 1 && (
+          <TouchableOpacity
+            onPress={() => onSelect(GROUP_ID)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: selected === GROUP_ID }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
+          >
+            <View style={{ flexDirection: 'row' }}>
+              {decidable.slice(0, 3).map((p, i) => (
+                <View key={p.id} style={{ marginLeft: i ? -spacing.md : 0 }}>
+                  <Avatar url={p.avatar_url} name={personName(p)} size={32} colors={colors} />
+                </View>
+              ))}
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary }}>{H.allOfYou}</Text>
+              <Note>{T.overlap.savedByAll}</Note>
+            </View>
+            {radio(selected === GROUP_ID)}
+          </TouchableOpacity>
+        )}
+      </ListCard>
+      <ButtonRow>
+        {selected === GROUP_ID
+          ? <Button variant="primary" label={T.overlap.groupAction} onPress={onOpenGroup} />
+          : chosen && !chosen.can_decide
+            ? <Button variant="primary" label={COMMON.seePremium} onPress={onGate} />
+            : chosen && <Button variant="primary" label={H.decideWith(personName(chosen))} onPress={() => onDecide(chosen)} />}
+      </ButtonRow>
+    </Gutter>
+  );
+}
+
+/* ── Invite ──────────────────────────────────────────────────────────── */
+
+/** A flat cream card like My Lists' cards: surface, hairline, radii.md. */
+function Card({ children, lead = false }: { children: ReactNode; lead?: boolean }) {
+  const { colors } = useTheme();
   return (
     <View style={{
-      width: lead ? undefined : CARD_W,
-      padding: pad,
+      marginHorizontal: spacing.xl,
+      padding: lead ? spacing.lg : spacing.md,
       gap: spacing.md,
       borderRadius: radii.md,
-      borderWidth: border,
-      borderStyle: dashed ? 'dashed' : 'solid',
-      borderColor: selected ? colors.textPrimary : dashed ? colors.borderStrong : colors.border,
-      backgroundColor: dashed ? 'transparent' : colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: lead ? colors.borderStrong : colors.border,
+      backgroundColor: colors.surface,
       alignItems: 'flex-start',
     }}>
       {children}
     </View>
-  );
-}
-
-function CardName({ children }: { children: string }) {
-  const { colors } = useTheme();
-  return (
-    <Text numberOfLines={1} style={{ flexShrink: 1, fontFamily: fontFamily.display, fontSize: fontSize.lg, letterSpacing: -0.4, color: colors.textPrimary }}>
-      {children}
-    </Text>
-  );
-}
-
-function PersonHead({ person }: { person: WtPerson }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
-      <Avatar url={person.avatar_url} name={personName(person)} size={36} colors={colors} />
-      <CardName>{personName(person)}</CardName>
-    </View>
-  );
-}
-
-/** A small fan of shared posters; grey placeholders while there are none. */
-function PosterFan({ titles, count = 4 }: { titles: WtTitle[]; count?: number }) {
-  const shown = titles.filter(t => t.poster_path).slice(0, count);
-  const slots: (string | null)[] = shown.length ? shown.map(t => t.poster_path) : [null, null, null];
-  return (
-    <View style={{ flexDirection: 'row' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      {slots.map((path, i) => (
-        <View key={i} style={{ marginLeft: i ? -spacing.md : 0 }}>
-          <PosterThumb path={path} width={40} height={60} />
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function PartnerCard({ partner, selected, onSelect, onDecide, onGate }: {
-  partner: WtPerson;
-  selected: boolean;
-  onSelect: () => void;
-  onDecide: () => void;
-  onGate: () => void;
-}) {
-  const locked = !partner.can_decide;
-  const { titles } = useTogetherTitles(locked ? [] : [partner.id]);
-  const name = personName(partner);
-  return (
-    <Card selected={selected}>
-      {/* The whole top of the card selects them; the Decide button stays separate. */}
-      <TouchableOpacity
-        onPress={onSelect}
-        accessibilityRole="button"
-        accessibilityLabel={name}
-        accessibilityState={{ selected }}
-        style={{ alignSelf: 'stretch', gap: spacing.md }}
-      >
-        <PersonHead person={partner} />
-        <PosterFan titles={titles} />
-        <Note>{H.bothSaved(partner.overlap_count ?? 0)}</Note>
-      </TouchableOpacity>
-      {locked
-        ? <Button size="sm" label={COMMON.seePremium} onPress={onGate} />
-        : <Button size="sm" variant={selected ? 'primary' : 'secondary'} label={T.session.start} accessibilityLabel={H.decideWith(name)} onPress={onDecide} />}
-    </Card>
-  );
-}
-
-function GroupCard({ partners, selected, onSelect, onOpen }: {
-  partners: WtPerson[];
-  selected: boolean;
-  onSelect: () => void;
-  onOpen: () => void;
-}) {
-  const { colors } = useTheme();
-  const { titles } = useTogetherTitles(partners.map(p => p.id));
-  // saved_by counts the viewer too.
-  const everyone = splitGroupMatches(titles, partners.length + 1).all;
-  return (
-    <Card selected={selected}>
-      <TouchableOpacity
-        onPress={onSelect}
-        accessibilityRole="button"
-        accessibilityLabel={H.allOfYou}
-        accessibilityState={{ selected }}
-        style={{ alignSelf: 'stretch', gap: spacing.md }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <View style={{ flexDirection: 'row' }}>
-            {partners.slice(0, 3).map((p, i) => (
-              <View key={p.id} style={{ marginLeft: i ? -spacing.sm : 0 }}>
-                <Avatar url={p.avatar_url} name={personName(p)} size={28} colors={colors} />
-              </View>
-            ))}
-          </View>
-          <CardName>{H.allOfYou}</CardName>
-        </View>
-        <PosterFan titles={everyone.length ? everyone : titles} count={3} />
-        <Note>{T.overlap.savedByAll}</Note>
-      </TouchableOpacity>
-      <Button size="sm" variant={selected ? 'primary' : 'secondary'} label={T.overlap.groupAction} onPress={onOpen} />
-    </Card>
-  );
-}
-
-function IncomingCard({ person, busy, onReview, onDecline }: { person: WtPerson; busy: boolean; onReview: () => void; onDecline: () => void }) {
-  return (
-    <Card dashed>
-      <PersonHead person={person} />
-      <Note>{T.requests.wantsTo}</Note>
-      <ButtonRow>
-        <Button size="sm" variant="primary" label={T.requests.review} onPress={onReview} disabled={busy} />
-        <Button size="sm" label={T.requests.decline} onPress={onDecline} disabled={busy} />
-      </ButtonRow>
-    </Card>
-  );
-}
-
-function OutgoingCard({ person, onCancel }: { person: WtPerson; onCancel: () => void }) {
-  return (
-    <Card dashed>
-      <PersonHead person={person} />
-      <Tag label={T.requests.sent} />
-      <Button size="sm" label={T.requests.cancel} onPress={onCancel} />
-    </Card>
   );
 }
 
@@ -332,10 +323,12 @@ function InviteCard({ stage, link }: { stage: 'invite' | 'waiting' | 'people'; l
 
   if (stage === 'people') {
     return (
-      <Card dashed>
-        <Ghost><IconPlus size={18} color={colors.textMuted} /></Ghost>
-        <Note>{H.inviteMore}</Note>
-        <Button size="sm" label={T.link.share} onPress={share} disabled={!url} />
+      <Card>
+        <Note>{H.inviteFree}</Note>
+        <ButtonRow>
+          <Button size="sm" variant="primary" label={T.link.share} onPress={share} disabled={!url} />
+          <Button size="sm" label={copyLabel} onPress={copy} disabled={!url} />
+        </ButtonRow>
       </Card>
     );
   }
@@ -392,22 +385,40 @@ function UpgradeNews({ unlocked, onDecide, onDismiss }: { unlocked: WtPerson[]; 
   );
 }
 
+function OnPlot({ suggested, sent, onInvite }: { suggested: WtPerson[]; sent: string[]; onInvite: (person: WtPerson) => Promise<boolean> }) {
+  return (
+    <Gutter>
+      <FriendSearch sent={sent} onInvite={onInvite} />
+      {suggested.length > 0 && (
+        <ListCard>
+          {suggested.map(person => (
+            <PersonRow
+              key={person.id}
+              person={person}
+              note={typeof person.overlap_count === 'number' ? T.start.inCommon(person.overlap_count) : T.start.countLater}
+              trailing={sent.includes(person.id)
+                ? <Tag label={T.invite.sent} style={{ alignSelf: 'center' }} />
+                : <Button size="sm" label={T.invite.invite} onPress={() => { void onInvite(person); }} />}
+            />
+          ))}
+        </ListCard>
+      )}
+    </Gutter>
+  );
+}
+
 /* ── Shelves ─────────────────────────────────────────────────────────── */
 
-/** A Home-style shelf: display title, count under it, a rail of posters. */
-function Shelf({ title, count, titles, faded = false }: { title: string; count: number; titles: WtTitle[]; faded?: boolean }) {
+/** A My Lists shelf: a collapsible section with a rail of posters, edge to edge. */
+function Shelf({ id, title, count, titles, faded = false, note }: { id: string; title: string; count: number; titles: WtTitle[]; faded?: boolean; note?: string }) {
   const { colors } = useTheme();
   const openTitle = useOpenTitle();
   return (
-    <View style={{ gap: spacing.md }}>
-      <View>
-        <SectionTitle accessibilityRole="header">{title}</SectionTitle>
-        <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{String(count)}</Text>
-      </View>
+    <CollapsibleSection id={id} label={title} count={count}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ marginHorizontal: -spacing.xl, opacity: faded ? 0.5 : 1 }}
+        style={{ opacity: faded ? 0.5 : 1 }}
         contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
       >
         {titles.map(t => (
@@ -424,7 +435,8 @@ function Shelf({ title, count, titles, faded = false }: { title: string; count: 
           </TouchableOpacity>
         ))}
       </ScrollView>
-    </View>
+      {!!note && <View style={{ marginTop: spacing.sm }}><Gutter><Note>{note}</Note></Gutter></View>}
+    </CollapsibleSection>
   );
 }
 
@@ -432,18 +444,15 @@ function SharedShelves({ partners }: { partners: WtPerson[] }) {
   const locked = partners.some(p => !p.can_decide);
   const { titles, loading } = useTogetherTitles(locked ? [] : partners.map(p => p.id));
   const names = joinNames(partners.map(personName));
-  if (locked) return <Note>{H.lockedShelf}</Note>;
+  const note = (text: string) => <View style={{ marginBottom: spacing.xl }}><Gutter><Note>{text}</Note></Gutter></View>;
+  if (locked) return note(H.lockedShelf);
   if (loading && !titles.length) return null;
-  if (!titles.length) return <Note>{H.nothingShared(names)}</Note>;
+  if (!titles.length) return note(H.nothingShared(names));
   const shelves = ([
     ['movie', H.moviesWith(names)],
     ['tv', H.showsWith(names)],
   ] as const).map(([kind, title]) => ({ kind, title, list: filterByKind(titles, kind) as WtTitle[] })).filter(s => s.list.length);
-  return (
-    <View style={{ gap: spacing.xl }}>
-      {shelves.map(s => <Shelf key={s.kind} title={s.title} count={s.list.length} titles={s.list} />)}
-    </View>
-  );
+  return <>{shelves.map(s => <Shelf key={s.kind} id={`wt-shared-${s.kind}`} title={s.title} count={s.list.length} titles={s.list} />)}</>;
 }
 
 /** With nobody yet: your own watchlist, faded, as the shelf that will fill in. */
@@ -452,48 +461,17 @@ function PreviewShelf() {
   const all = asTitles(watchlist?.items);
   const items = all.filter(t => t.poster_path).slice(0, 12);
   if (!items.length) return null;
-  return (
-    <View style={{ gap: spacing.sm }}>
-      <Shelf title={H.yourWatchlist} count={all.length} titles={items} faded />
-      <Note>{H.previewNote}</Note>
-    </View>
-  );
+  return <Shelf id="wt-preview" title={H.yourWatchlist} count={all.length} titles={items} faded note={H.previewNote} />;
 }
 
-function EmptyExtras({ premium, suggested, sent, onInvite }: {
-  premium: boolean;
-  suggested: WtPerson[];
-  sent: string[];
-  onInvite: (person: WtPerson) => Promise<boolean>;
-}) {
+function HowItWorks({ premium }: { premium: boolean }) {
   const { watchlist } = useAppData();
   const saved = Array.isArray(watchlist?.items) ? watchlist.items : null;
   const pool = asTitles(useWatchTogetherExampleTitles(saved));
   return (
-    <>
-      <View style={{ gap: spacing.md }}>
-        <SectionTitle accessibilityRole="header">{H.seeHow}</SectionTitle>
-        <Demo key={pool.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={pool} />
-      </View>
-      <View style={{ gap: spacing.md }}>
-        <SectionTitle accessibilityRole="header">{suggested.length ? H.peopleYouFollow : H.onPlot}</SectionTitle>
-        <FriendSearch sent={sent} onInvite={onInvite} />
-        {suggested.length > 0 && (
-          <ListCard>
-            {suggested.map(person => (
-              <PersonRow
-                key={person.id}
-                person={person}
-                note={typeof person.overlap_count === 'number' ? T.start.inCommon(person.overlap_count) : T.start.countLater}
-                trailing={sent.includes(person.id)
-                  ? <Tag label={T.invite.sent} style={{ alignSelf: 'center' }} />
-                  : <Button size="sm" label={T.invite.invite} onPress={() => { void onInvite(person); }} />}
-              />
-            ))}
-          </ListCard>
-        )}
-      </View>
-    </>
+    <CollapsibleSection id="wt-how" label={H.seeHow}>
+      <Gutter><Demo key={pool.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={pool} /></Gutter>
+    </CollapsibleSection>
   );
 }
 

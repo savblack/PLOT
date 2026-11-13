@@ -1,6 +1,7 @@
 /**
  * Just Decide — /(app)/tonight (mirrors web TonightView, Nov 2026 redesign).
- * Opens on chips and shelves of titles that fit tonight, laid out like Home;
+ * Laid out like My Lists: the glass title bar, then collapsible sections.
+ * Opens on chips and shelves of titles that fit tonight;
  * a bar above the tab bar has Surprise me and Pick one for me, which run the
  * picker on the chips' options. Shelves and chips: @plot/core/tonightShelves.js.
  * Options, the draw and the time-of-day heading: @plot/core/tonightPicker.js;
@@ -8,7 +9,9 @@
  * and one pick a day; after that Pick opens the upgrade pop-up, and Upgrade
  * goes to the in-app Premium preview (Settings), never an external purchase link.
  */
-import BackBar from '../../components/BackBar';
+import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
+import ScreenHeaderBar, { SCREEN_HEADER_H } from '../../components/ScreenHeaderBar';
+import CollapsibleSection from '../../components/CollapsibleSection';
 import Button, { TextLink } from '../../components/Button';
 import Chip, { Tag } from '../../components/Chip';
 import Toggle from '../../components/Toggle';
@@ -31,7 +34,6 @@ import {
   type PickerCandidate,
 } from '@plot/core/tonightPicker.js';
 import { useTonightShelves, SHELF_CHIPS, chipOn, chipLabel, toggleChip } from '@plot/core/tonightShelves.js';
-import SectionTitle from '../../components/SectionTitle';
 import EmptyState from '../../components/EmptyState';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
@@ -299,8 +301,11 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
 const SHELF_W = 104;
 
 /** Chips that narrow every shelf, then the shelves themselves (core: tonightShelves.js). */
-function Shelves({ picker, premium, onOpen, onUpgrade, styles, colors }: {
-  picker: Picker; premium: boolean; onOpen: (i: PickerCandidate) => void; onUpgrade: () => void; styles: Styles; colors: Palette;
+/** Laid out like My Lists: collapsible sections, rails edge to edge, everything
+ *  else held to the page gutter. `between` (filters, saved searches) sits
+ *  under the chips, as in web's left column, before the shelves. */
+function Shelves({ picker, premium, onOpen, onUpgrade, styles, colors, between }: {
+  picker: Picker; premium: boolean; onOpen: (i: PickerCandidate) => void; onUpgrade: () => void; styles: Styles; colors: Palette; between?: React.ReactNode;
 }) {
   const { userId, profile, watchlist } = useAppData();
   const { shelves, loading, error } = useTonightShelves({
@@ -320,31 +325,33 @@ function Shelves({ picker, premium, onOpen, onUpgrade, styles, colors }: {
     for (const key of Object.keys(next)) if (next[key] !== cur[key]) picker.setOption(key as keyof typeof options, next[key] as never);
   };
   const filled = shelves.filter(s => s.items.length);
+  const gutter = { paddingHorizontal: spacing.xl };
   return (
-    <View style={{ gap: spacing.xl }}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.lg }}
-        contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }} accessibilityLabel={T.chips.label}>
-        {chips.map(chip => (
-          <Chip key={chip} label={chipLabel(chip, options.mediaType)} selected={chipOn(chip, options)} onPress={() => tap(chip)} />
-        ))}
-      </ScrollView>
+    <View>
+      <CollapsibleSection id="tonight-chips" label={T.chips.label}>
+        <View style={[gutter, { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }]} accessibilityLabel={T.chips.label}>
+          {chips.map(chip => (
+            <Chip key={chip} label={chipLabel(chip, options.mediaType)} selected={chipOn(chip, options)} onPress={() => tap(chip)} />
+          ))}
+        </View>
+      </CollapsibleSection>
+      <View style={[gutter, { gap: spacing.xl, marginBottom: spacing.xl }]}>{between}</View>
       {error ? <EmptyState title={T.loadError} />
         : !loading && !filled.length && !shelves.some(s => s.locked)
           ? <EmptyState body={watchlist.items?.length ? T.shelves.empty : T.shelves.emptyWatchlist} />
           : shelves.map(shelf => (
-            <View key={shelf.id} style={{ gap: spacing.md }}>
-              <View>
-                <SectionTitle accessibilityRole="header">{shelf.title}</SectionTitle>
-                {!!shelf.note && <Text style={styles.shelfNote}>{shelf.note}</Text>}
-              </View>
+            <CollapsibleSection key={shelf.id} id={`tonight-${shelf.id}`} label={shelf.title} count={shelf.locked ? undefined : shelf.items.length}>
+              {!!shelf.note && <Text style={[styles.shelfNote, gutter, { marginBottom: spacing.sm }]}>{shelf.note}</Text>}
               {shelf.locked ? (
-                <View style={styles.shelfLocked}>
-                  <Text style={styles.shelfNote}>{T.shelves.servicesLocked}</Text>
-                  <Button label={PLANS_PAGE.upgradeAction} onPress={onUpgrade} variant="secondary" size="sm" />
+                <View style={gutter}>
+                  <View style={styles.shelfLocked}>
+                    <Text style={styles.shelfNote}>{T.shelves.servicesLocked}</Text>
+                    <Button label={PLANS_PAGE.upgradeAction} onPress={onUpgrade} variant="secondary" size="sm" />
+                  </View>
                 </View>
               ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.lg }}
-                  contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}>
                   {shelf.items.map(item => (
                     <TouchableOpacity key={`${item.media_type}:${item.id}`} onPress={() => onOpen(item)} accessibilityRole="button"
                       accessibilityLabel={item.title} style={{ width: SHELF_W, gap: spacing.xs }}>
@@ -357,7 +364,7 @@ function Shelves({ picker, premium, onOpen, onUpgrade, styles, colors }: {
                   ))}
                 </ScrollView>
               )}
-            </View>
+            </CollapsibleSection>
           ))}
     </View>
   );
@@ -454,6 +461,8 @@ export default function TonightScreen() {
     setReveal(picker.phase === 'results' ? lastPhase === 'spinning' || reveal : false);
   }
   const locked = picker.phase === 'locked';
+  const glass = useGlassOnScroll();
+  const headerH = insets.top + SCREEN_HEADER_H;
   const upgrade = () => router.push({ pathname: '/(app)/settings', params: { premium: '1' } });
 
   const btn = (label: string, onPress: () => void, primary: boolean, icon?: React.ReactNode) => (
@@ -461,32 +470,34 @@ export default function TonightScreen() {
   );
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <BackBar />
-
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}>
-        <Text style={styles.pageTitle}>{titleForView('tonight')}</Text>
-
+    <View style={styles.screen}>
+      {/* My Lists' page: content scrolls under the glass title bar. */}
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} scrollEventThrottle={16} onScroll={glass.onScroll}
+        contentContainerStyle={{ paddingTop: headerH + spacing.sm, paddingBottom: spacing.xl }}>
         {locked ? (
-          <Locked
-            picker={picker}
-            onUpgrade={upgrade}
-            styles={styles}
-            colors={colors}
-            dark={resolved === 'dark'}
-          />
+          <View style={{ paddingHorizontal: spacing.xl }}>
+            <Locked
+              picker={picker}
+              onUpgrade={upgrade}
+              styles={styles}
+              colors={colors}
+              dark={resolved === 'dark'}
+            />
+          </View>
         ) : spinning ? (
-          <Finding picker={picker} styles={styles} reduceMotion={reduceMotion} />
+          <View style={{ paddingHorizontal: spacing.xl }}><Finding picker={picker} styles={styles} reduceMotion={reduceMotion} /></View>
         ) : inResults ? (
-          <Results picker={picker} onOpen={open} styles={styles} colors={colors} reduceMotion={reduceMotion} reveal={reveal} />
+          <View style={{ paddingHorizontal: spacing.xl }}>
+            <Results picker={picker} onOpen={open} styles={styles} colors={colors} reduceMotion={reduceMotion} reveal={reveal} />
+          </View>
         ) : (
-          <>
-            <Shelves picker={picker} premium={premium} onOpen={open} onUpgrade={upgrade} styles={styles} colors={colors} />
-            <Filters picker={picker} styles={styles} colors={colors} />
-            <SavedSearches picker={picker} styles={styles} colors={colors} />
-          </>
+          <Shelves picker={picker} premium={premium} onOpen={open} onUpgrade={upgrade} styles={styles} colors={colors}
+            between={<><Filters picker={picker} styles={styles} colors={colors} /><SavedSearches picker={picker} styles={styles} colors={colors} /></>} />
         )}
       </ScrollView>
+      <GlassHeader scrollY={glass.scrollY} height={headerH}>
+        <ScreenHeaderBar title={titleForView('tonight')} showSearch={false} />
+      </GlassHeader>
 
       {!spinning && !locked && (
         <View style={[styles.bar, { marginBottom: tabBarBottom(insets.bottom) + TAB_BAR_HEIGHT }]}>
@@ -525,7 +536,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderRadius: radii.md, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.borderStrong, backgroundColor: colors.surface,
   },
   screen: { flex: 1, backgroundColor: colors.bg },
-  pageTitle: { fontFamily: fontFamily.display, fontSize: fontSize.hero, color: colors.textPrimary, marginBottom: spacing.lg },
 
   qTitle: { fontFamily: fontFamily.display, fontSize: 30, lineHeight: 33, color: colors.textPrimary },
 

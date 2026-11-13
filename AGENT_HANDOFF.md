@@ -53,8 +53,10 @@ https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH
 
 1. Savannah reviews in Storybook or a preview. Then open a PR (needs
    `/unslop`, `/before-and-after`).
-2. iPhone Watch Together still uses a sideways row of people cards; web uses a
-   stacked "Who's watching" card. Decide whether iPhone should match.
+2. Done: iPhone Watch Together and Just Decide now use My Lists' layout (glass
+   title bar, full-width collapsible sections, edge-to-edge poster rails, a
+   stacked "Who's watching?" list instead of sideways cards). Same order as web.
+   Not seen on a device: the simulator was signed out on another branch's build.
 3. Deferred: merge `.cal-mini-card` + `.hist-card`, one tablet breakpoint, shared
    web Avatar, shared people-search hook in core, iPhone clipboard for Copy.
 
