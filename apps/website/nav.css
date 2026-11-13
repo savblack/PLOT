@@ -1,10 +1,10 @@
 /* ─────────────────────────────────────────────────────────────
    Shared marketing-site navbar.
 
-   Single source of truth for the nav on every static sub-page
-   (about / plans / privacy / terms / 404) so they match the home
-   page exactly. The home page (index.html) carries its own inline
-   copy of these same rules; keep the two in sync.
+   Single source of truth for the nav on every static page, home
+   page included. The What's On feed (supabase/functions/marketing-feed)
+   and the title pages (title-page.css) carry their own copy of the
+   pill rules for nav.topnav; keep the three in sync.
 
    Depends on tokens from /theme.css (--serif, --text, --glass-bg …).
    Behaviour (hamburger + scroll glass) lives in /js/nav.js.
@@ -67,8 +67,8 @@ nav.scrolled {
 }
 .nav-links a:hover { color: var(--text); }
 /* The sign-up link is a pink pill, the same shape as .btn-primary. Colour is
-   set without !important so a page can still re-colour the pill (Support and
-   Taste Match use ink). */
+   set without !important so a page can still re-colour the pill. Every page
+   currently uses the same pink, so the nav matches site-wide. */
 .nav-cta {
   background: var(--fill);
   padding: 0.6rem 1.1rem !important;
@@ -130,5 +130,68 @@ nav.scrolled {
     background: rgba(248, 242, 234, 0.94);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
+  }
+}
+
+/* The nav is a centered glass pill on every page. It sits a little lower
+   at the top of the page and glides up once nav.js adds .scrolled. It is
+   sized to its content (left: 50% would otherwise cap it at half the
+   screen and wrap the links). */
+#navbar,
+#navbar.scrolled,
+#navbar.nav-open {
+  top: 26px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  height: 52px;
+  padding: 0 8px 0 22px;
+  gap: 28px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 250, 243, 0.82);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--rule);
+  box-shadow: 0 4px 14px -10px rgba(41, 41, 36, 0.2);
+  transition: top 0.45s var(--ease);
+}
+#navbar.scrolled,
+#navbar.nav-open { top: 14px; }
+#navbar .nav-links { gap: 1.25rem; }
+#navbar .nav-links a,
+#navbar .nav-logo { white-space: nowrap; }
+
+/* Phones: a full-width pill with 16px gutters (no transform, so the fixed
+   menu panel stays relative to the screen) and the menu drops below it. */
+@media (max-width: 600px) {
+  #navbar,
+  #navbar.scrolled,
+  #navbar.nav-open {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    padding: 0 10px 0 20px;
+    justify-content: space-between;
+  }
+  /* backdrop-filter (like transform) makes the nav the containing block
+     for the fixed menu panel, which would then sit inside the inset pill.
+     While the menu is open, drop the blur and go near-opaque instead. */
+  #navbar.nav-open {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(255, 250, 243, 0.97);
+  }
+  #navbar .nav-links.open {
+    top: 76px;
+    left: 16px;
+    right: 16px;
+    border-radius: 24px;
+    border: 1px solid var(--rule);
+    background: rgba(255, 250, 243, 0.97);
+    box-shadow: 0 4px 14px -10px rgba(41, 41, 36, 0.2);
   }
 }

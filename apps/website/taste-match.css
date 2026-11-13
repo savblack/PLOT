@@ -67,6 +67,3 @@ h2 { font-size: 2rem; line-height: 1.15; }
   .tm-privacy { padding: 1.5rem; }
   .site-footer { margin-top: 3rem; }
 }
-/* Same as Support: keep the nav action neutral; the accent is for interaction. */
-#navbar .nav-cta { background: var(--ink); color: var(--bg); }
-#navbar .nav-cta:hover { background: var(--ink-hover); }

@@ -44,6 +44,3 @@ h2 { font-size: 2rem; line-height: 1.15; }
   .help-section { margin-top: 1rem; }
   .site-footer { margin-top: 3rem; }
 }
-/* Keep support actions neutral; reserve the accent for interaction states. */
-#navbar .nav-cta { background: var(--ink); color: var(--bg); }
-#navbar .nav-cta:hover { background: var(--ink-hover); }
