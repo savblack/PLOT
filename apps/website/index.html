@@ -792,12 +792,15 @@
 
     /* Bring your history: a watch history filling in poster by poster, then
        the summary lands. Loops; reduced motion shows the finished state. */
+    /* Narrower than the other demo cards, with full 2:3 posters, so the titles
+       printed on the artwork are not cropped. */
+    .im-card { max-width: 400px; }
     .im-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
     .im-grid img {
       display: block;
       width: 100%;
       height: auto;
-      aspect-ratio: 4 / 5;
+      aspect-ratio: 2 / 3;
       object-fit: cover;
       border-radius: 8px;
       background: var(--surface);
@@ -1308,18 +1311,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="hx-card im-card">
           <div class="dr-head"><span class="hx-card-title">Your watch history</span><span class="dr-sub">All of it, in one place</span></div>
           <div class="im-grid">
-            <img src="https://image.tmdb.org/t/p/w185/tvUHVSTJV9ITON3oyHaWp7oaAc8.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 0">
-            <img src="https://image.tmdb.org/t/p/w185/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 1">
-            <img src="https://image.tmdb.org/t/p/w185/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 2">
-            <img src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 3">
-            <img src="https://image.tmdb.org/t/p/w185/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 4">
-            <img src="https://image.tmdb.org/t/p/w185/vP7Yd6couiAaw9jgMd5cjMRj3hQ.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 5">
-            <img src="https://image.tmdb.org/t/p/w185/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 6">
-            <img src="https://image.tmdb.org/t/p/w185/H6vke7zGiuLsz4v4RPeReb9rsv.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 7">
-            <img src="https://image.tmdb.org/t/p/w185/cpf7vsRZ0MYRQcnLWteD5jK9ymT.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 8">
-            <img src="https://image.tmdb.org/t/p/w185/AdYr4DjOgXvDUMwu6vEhZy1Rnxk.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 9">
-            <img src="https://image.tmdb.org/t/p/w185/78aK4Msbr22A5PGa6PZV0pAvdwf.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 10">
-            <img src="https://image.tmdb.org/t/p/w185/yBKMAIj7clP42UkFejhGDBBoTpb.jpg" alt="" loading="lazy" decoding="async" width="185" height="231" style="--i: 11">
+            <img src="https://image.tmdb.org/t/p/w185/tvUHVSTJV9ITON3oyHaWp7oaAc8.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 0">
+            <img src="https://image.tmdb.org/t/p/w185/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 1">
+            <img src="https://image.tmdb.org/t/p/w185/fWPgbnt2LSqkQ6cdQc0SZN9CpLm.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 2">
+            <img src="https://image.tmdb.org/t/p/w185/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 3">
+            <img src="https://image.tmdb.org/t/p/w185/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 4">
+            <img src="https://image.tmdb.org/t/p/w185/vP7Yd6couiAaw9jgMd5cjMRj3hQ.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 5">
+            <img src="https://image.tmdb.org/t/p/w185/20i4nShZZg1g1VFHSB8xpaYM4r7.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 6">
+            <img src="https://image.tmdb.org/t/p/w185/H6vke7zGiuLsz4v4RPeReb9rsv.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 7">
+            <img src="https://image.tmdb.org/t/p/w185/cpf7vsRZ0MYRQcnLWteD5jK9ymT.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 8">
+            <img src="https://image.tmdb.org/t/p/w185/AdYr4DjOgXvDUMwu6vEhZy1Rnxk.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 9">
+            <img src="https://image.tmdb.org/t/p/w185/78aK4Msbr22A5PGa6PZV0pAvdwf.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 10">
+            <img src="https://image.tmdb.org/t/p/w185/yBKMAIj7clP42UkFejhGDBBoTpb.jpg" alt="" loading="lazy" decoding="async" width="185" height="278" style="--i: 11">
           </div>
           <div class="im-done"><span class="im-done-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><strong>1,284 titles are on your Plot</strong><span>412 ratings · 96 reviews · 58 on your watchlist</span></div></div>
         </div>

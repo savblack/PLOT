@@ -19,6 +19,7 @@ then a pull request can open.
 - `apps/website/index.html`: `--box-gap` 24–48px -> 10–16px; `--box-inset` 16–36px -> 12–24px;
   phone gap/inset 20px/14px -> 10px/10px.
 - `apps/website/index.html`: "Review, rate, remember" card collage 560px -> 500px wide (desktop and tablet); phone 90% -> 82% width, card text bumped so it stays ~9.7px.
+- `apps/website/index.html`: "Bring your whole history" card 480px -> 400px wide; posters 4:5 (cropped) -> 2:3 (full poster, titles visible).
 - Checked at 1440px in `pnpm run dev:website`: box gaps measure 16px; pricing page renders; no console errors.
 - `pnpm run tokens:marketing`, `pnpm run csp:check`, `pnpm run check`: all pass.
 
