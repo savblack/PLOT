@@ -10,9 +10,15 @@ name: Mobile — iOS store build
 # with GITHUB_TOKEN does not start other workflows, so it calls this one
 # directly), and by hand from the Actions tab for any ref.
 #
-# Build only. It does not submit to App Store Connect: Apple refuses an upload
-# whose version has no open version record there, and that record is set by
-# hand before each submission (docs/ops/app-store-listing.md).
+# After the build it sends that build to TestFlight with `eas submit`, using
+# the App Store Connect API key EAS already holds (no Apple login here). That
+# is an upload to App Store Connect only: it never submits for App Review,
+# which stays a person's click. TestFlight does not need an App Store version
+# record matching `expo.version`; 1.4.0 builds 6 to 8 were accepted while App
+# Store Connect's version said 1.2.0 (docs/ops/mobile-builds.md).
+#
+# A manual run can skip the build and send an existing one (`build_id`), or
+# build without sending (`submit: false`).
 #
 # Needs the repo secret EXPO_TOKEN: an expo.dev access token for the
 # `savblack` account. Without it the job says so and exits green.
@@ -29,6 +35,14 @@ on:
         description: Git ref to build (branch, tag or commit)
         type: string
         default: main
+      submit:
+        description: Send the build to TestFlight afterwards
+        type: boolean
+        default: true
+      build_id:
+        description: Skip building and send this existing EAS build id to TestFlight
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -68,7 +82,8 @@ jobs:
       - if: steps.token.outputs.ready == 'true'
         run: pnpm install --frozen-lockfile
       - name: Build on EAS and wait for it
-        if: steps.token.outputs.ready == 'true'
+        id: build
+        if: steps.token.outputs.ready == 'true' && !inputs.build_id
         working-directory: apps/mobile
         run: |
           set -euo pipefail
@@ -84,6 +99,23 @@ jobs:
               print(f"iOS {b.get('appVersion')} ({b.get('appBuildVersion')}): {b.get('status')} [build page]({url})")
           EOF
           cat "$GITHUB_STEP_SUMMARY"
+          python3 -c 'import json,sys; print("id=" + json.load(open(sys.argv[1]))[0]["id"])' \
+            "$RUNNER_TEMP/build.json" >> "$GITHUB_OUTPUT"
+
+      # Release-please calls this without `submit`, which reads as false in a
+      # workflow_call, so only an explicit `false` from a manual run skips it.
+      - name: Send the build to TestFlight
+        id: submit
+        if: steps.token.outputs.ready == 'true' && (github.event_name != 'workflow_dispatch' || inputs.submit)
+        working-directory: apps/mobile
+        env:
+          BUILD_ID: ${{ inputs.build_id || steps.build.outputs.id }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BUILD_ID" ]; then echo "::error::No build id to send."; exit 1; fi
+          npx --yes eas-cli@latest submit --platform ios --profile production \
+            --id "$BUILD_ID" --non-interactive --wait
+          echo "Sent build \`$BUILD_ID\` to TestFlight. Internal testers in \"Plot team\" get it once Apple finishes processing (usually 10 to 30 minutes). Nothing was submitted for App Review." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open an incident issue
         id: incident
@@ -92,7 +124,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           JOB_NAME: mobile-build
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          FAILURE_NOTE: 'The iOS store build for this release failed, so there is no build to send to TestFlight or App Review.'
+          FAILURE_NOTE: "${{ steps.submit.outcome == 'failure' && 'The iOS build finished but sending it to TestFlight failed, so testers will not get it. The run log says why; the build can be resent from Actions with its build id.' || 'The iOS store build for this release failed, so there is no build to send to TestFlight or App Review.' }}"
         run: bash .github/scripts/job-incident.sh open
       - name: Email the admin about a new incident
         if: failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
@@ -103,8 +135,8 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW_NAME: mobile-build
-          ALERT_SUBJECT: 'Plot: the iOS build failed'
-          FAILURE_NOTE: 'The iOS store build for this release failed, so there is no build to send to TestFlight or App Review.'
+          ALERT_SUBJECT: "${{ steps.submit.outcome == 'failure' && 'Plot: the iOS build did not reach TestFlight' || 'Plot: the iOS build failed' }}"
+          FAILURE_NOTE: "${{ steps.submit.outcome == 'failure' && 'The iOS build finished but sending it to TestFlight failed, so testers will not get it. The run log says why; the build can be resent from Actions with its build id.' || 'The iOS store build for this release failed, so there is no build to send to TestFlight or App Review.' }}"
         run: bash .github/scripts/marketing-alert.sh
       - name: Close the incident issue on recovery
         if: success() && steps.token.outputs.ready == 'true'

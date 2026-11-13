@@ -26,11 +26,31 @@ tag and waits for it. The run summary links the build page. A failed build
 opens an `incident` issue and emails; the next good build closes it. Run it by
 hand for any branch or tag from Actions ▸ "Mobile — iOS store build".
 
-It builds only. Submitting stays a manual step for now, because App Store
-Connect must have an open version matching `expo.version` first (see
-[app-store-listing.md](app-store-listing.md)). Needs the `EXPO_TOKEN` repo
-secret (an expo.dev access token for `savblack`); without it the job exits
-green and says so. About six releases a month, well inside EAS's free tier.
+Since 2026-11-13 it also sends the finished build to TestFlight
+(`eas submit --platform ios --profile production --id <build> --non-interactive
+--wait`), using the App Store Connect API key EAS already holds. The internal
+group "Plot team" has automatic distribution, so testers get each release with
+nobody running anything. It **never** submits for App Review; that stays
+Savannah's click in App Store Connect. A failed upload opens the same
+`incident` issue and email as a failed build, with a note saying the build
+exists but did not reach TestFlight.
+
+TestFlight does **not** need an App Store version record matching
+`expo.version`. 1.4.0 builds 6, 7 and 8 were accepted on 2026-11-12 while the
+App Store version in App Store Connect still said 1.2.0, and
+`eas submit:status` lists all three as in beta testing. The record only has to
+match when a build is picked for App Review, which is a manual step anyway (see
+[app-store-listing.md](app-store-listing.md)). What Apple does refuse is a
+version that is not higher than one already released on the App Store; release-please
+only ever raises it, so that cannot happen here.
+
+Manual runs (Actions ▸ "Mobile — iOS store build" ▸ Run workflow) have two
+extra boxes: untick **submit** to build without sending, or fill **build_id**
+with an existing EAS build id to send that build without building again (it
+costs no build credit). Needs the `EXPO_TOKEN` repo secret (an expo.dev access
+token for the robot user `github-actions-builds`, role Developer, on
+`savblack`); without it the job exits green and says so. About six releases a
+month, well inside EAS's free tier.
 
 ## Account status: enrolled, as an individual
 
@@ -53,8 +73,10 @@ Plot is operated by Savannah Black. Details are in
 [app-store-listing.md](app-store-listing.md), along with the whole listing.
 
 The app record already exists and was filled on 2026-10-15 under the
-Individual membership. Do not `eas submit` until the remaining items in
-[app-store-listing.md](app-store-listing.md) are done.
+Individual membership. Sending builds to TestFlight is automatic (above). Do
+not submit for App Review until the remaining items under "Before pressing
+Submit" in [app-store-listing.md](app-store-listing.md) are done; none of them
+block a TestFlight upload.
 
 ### Running locally on a simulator
 

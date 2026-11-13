@@ -36,7 +36,9 @@ company's.
 - Users and Access ▸ Integrations ▸ **App Store Connect API key**, role App
   Manager. Download the `.p8` once (it cannot be re-downloaded) and give it to
   EAS with `eas credentials` ▸ iOS ▸ App Store Connect API Key. This is what
-  lets `eas submit` run unattended.
+  lets `eas submit` run unattended. Done by 2026-11-12: EAS holds the key
+  (`eas submit:status` reports "Using App Store Connect API Key from EAS
+  credentials service"), and the build workflow uses it.
 - My Apps ▸ **New App**: iOS, name "Plot", primary language English (AU or US,
   see below), bundle ID `tv.theplot.app`, SKU `plot-ios`. Copy the numeric
   Apple ID off the App Information page into `ascAppId` in
@@ -217,10 +219,12 @@ so create the Max device type before capturing.
       bumps that number on every mobile release (see
       [versioning.md](versioning.md)), so the app's number wins and App Store
       Connect is changed to match, never the other way round. #1428 set the
-      app to 1.0.0 and the next release moved it to 1.2.0. Apple refuses an
-      upload whose version has no open version record, so check this right
-      before `eas build`. Set to 1.2.0 in App Store Connect on 2026-11-11;
-      left unticked because it has to be checked again at build time.
+      app to 1.0.0 and the next release moved it to 1.2.0. This matters only
+      when picking a build for review: TestFlight uploads go through without
+      it (1.4.0 builds 6 to 8 were accepted on 2026-11-12 with App Store
+      Connect at 1.2.0), and builds now reach TestFlight automatically (see
+      [mobile-builds.md](mobile-builds.md)). Set to 1.2.0 on 2026-11-11; the
+      app is now 1.4.0, so change it right before submitting for review.
 - [x] Review notes in App Store Connect are the current text from
       [../launch/app-review-notes.md](../launch/app-review-notes.md).
 
