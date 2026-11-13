@@ -228,13 +228,25 @@ retake does not have to rediscover them:
 
 ## Before pressing Submit
 
-- [ ] Seller settled (Individual, or a Pty Ltd converted) and the legal copy agrees with it.
-- [ ] Paid Apps agreement active; banking and tax complete.
+- [x] Seller settled (Individual, or a Pty Ltd converted) and the legal copy agrees with it.
+      Decided 2026-11-12: Individual, Savannah Black. EU trader status (DSA)
+      showed Active on 2026-11-13.
+- [ ] Paid Apps agreement active; banking and tax complete. Not needed to
+      submit a free app (the Free Apps agreement is Active), only before
+      in-app purchase is ever added.
 - [x] App record created; `ascAppId` in `eas.json` (`6797167864`).
-- [x] `EXPO_PUBLIC_SHOW_APPLE_LOGIN` is **not** set in the `production` EAS
-      environment (confirmed 2026-10-14), so no social sign-in ships and
-      Sign in with Apple is not required by Guideline 4.8. If Google is ever
-      turned on for iOS, Apple must be too.
+- [x] Sign-in options meet Guideline 4.8: since 2026-11-12 the `production`
+      EAS environment sets both `EXPO_PUBLIC_SHOW_APPLE_LOGIN` and
+      `EXPO_PUBLIC_SHOW_GOOGLE_LOGIN`, so Google ships alongside Sign in with
+      Apple (see [mobile-builds.md](mobile-builds.md), "Social sign-in
+      status"). The review notes say so; on 2026-11-13 they were corrected
+      from "No social sign-in is enabled". If either flag changes, update
+      [../launch/app-review-notes.md](../launch/app-review-notes.md) too.
+- [ ] The updated Apple Developer Program License Agreement is accepted.
+      App Store Connect ▸ Business showed it waiting on 2026-11-13; until the
+      Account Holder accepts it, no new submission goes through.
+- [ ] A build is attached to the version (it showed "Add Build" on
+      2026-11-13 although 1.4.0 builds 6 to 8 are in TestFlight).
 - [ ] Release build drives the smoke list in
       [../qa/mobile-device-smoke.md](../qa/mobile-device-smoke.md), including
       a fresh sign-up and the demo account login.
