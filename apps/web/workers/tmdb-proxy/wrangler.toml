@@ -31,6 +31,11 @@ workers_dev = true
 UPSTREAM = "https://mkegtssedjyqldysvzga.supabase.co/functions/v1/tmdb-proxy"
 # Set TMDB_API_KEY as a Worker secret in each environment. Keep
 # UPSTREAM_SHARED_SECRET during rollout so a missing key cannot break the app.
+# The app no longer sends Supabase credentials (they forced a CORS preflight,
+# a second billable request, on every lookup). For the fallback to work without
+# TMDB_API_KEY, also set UPSTREAM_ANON_KEY (a secret, not a [vars] entry: keep
+# keys out of tracked files) to the publishable key of the UPSTREAM project.
+# Both production and staging use TMDB_API_KEY as of 2026-11-13.
 
 # Distributed rate limit: 100 requests per 10s per client IP, enforced at
 # Cloudflare's edge (consistent across requests, unlike the per-isolate limiter).

@@ -20,6 +20,26 @@ test('English-speaking titles are favoured without excluding other titles', () =
   assert.deepEqual(results.map(item => item.id), [2, 4, 1, 5, 3, 6]);
 });
 
+test('proxy lookups send no request headers, so the browser never preflights them', async () => {
+  // Any header beyond the CORS-safelisted few makes a cross-origin GET send an
+  // OPTIONS preflight first: a second billable Cloudflare Worker request per
+  // lookup, and one the browser's HTTP cache cannot skip.
+  const originalFetch = globalThis.fetch;
+  const inits = [];
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+  globalThis.fetch = async (url, init) => {
+    inits.push(init);
+    return { ok: true, status: 200, json: async () => ({ results: [] }) };
+  };
+  try {
+    await tmdb.getMovieDetails(456);
+    assert.equal(inits.length, 1);
+    assert.equal(inits[0]?.headers, undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('talent helpers use TMDB person endpoints and title details request credits', async () => {
   const originalFetch = globalThis.fetch;
   const requests = [];

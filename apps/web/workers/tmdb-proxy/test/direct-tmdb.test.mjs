@@ -12,6 +12,41 @@ test('serves preflight at Cloudflare without calling Supabase or the limiter', a
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), 'https://app.theplot.tv');
   assert.match(response.headers.get('Access-Control-Allow-Headers'), /authorization/);
+  // Each preflight is a billable Worker request; the browser must remember it.
+  assert.equal(response.headers.get('Access-Control-Max-Age'), '86400');
+});
+
+test('the Supabase fallback attaches the Worker key when the app sends none', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalCaches = globalThis.caches;
+  const seen = [];
+  globalThis.fetch = async (url, init) => {
+    seen.push({ authorization: init.headers.get('Authorization'), apikey: init.headers.get('apikey') });
+    return Response.json({ genres: [] });
+  };
+  globalThis.caches = { default: { match: async () => null, put: async () => {} } };
+  const env = {
+    UPSTREAM: 'https://example.supabase.co/functions/v1/tmdb-proxy',
+    UPSTREAM_SHARED_SECRET: 'test-secret',
+    UPSTREAM_ANON_KEY: 'worker-anon',
+    RL: { limit: async () => ({ success: true }) },
+  };
+  try {
+    await handler.fetch(new Request('https://proxy.example/?path=genre/movie/list', {
+      headers: { Origin: 'https://app.theplot.tv' },
+    }), env, { waitUntil() {} });
+    // An old app build that still sends its own key keeps using it.
+    await handler.fetch(new Request('https://proxy.example/?path=genre/tv/list', {
+      headers: { Origin: 'https://app.theplot.tv', Authorization: 'Bearer client-anon', apikey: 'client-anon' },
+    }), env, { waitUntil() {} });
+    assert.deepEqual(seen, [
+      { authorization: 'Bearer worker-anon', apikey: 'worker-anon' },
+      { authorization: 'Bearer client-anon', apikey: 'client-anon' },
+    ]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    globalThis.caches = originalCaches;
+  }
 });
 
 test('rejects an unapproved TMDB path before reaching TMDB', async () => {
