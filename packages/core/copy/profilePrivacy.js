@@ -1,5 +1,3 @@
-import { FAVOURITES_ENABLED } from '../features.js';
-
 // Shared copy: who can see what on a profile, and on each custom list. Used by
 // the web settings, profile page and list menus, and by mobile's settings,
 // u/[username], requests and my-lists screens.
@@ -18,12 +16,6 @@ import { FAVOURITES_ENABLED } from '../features.js';
 export const PROFILE_PRIVACY = {
   publicLabel: 'Profile is public',
   privateLabel: 'Profile is private',
-  /** @param {string} favourites Region-spelled plural, from favoriteWords(region).pluralLower. */
-  publicDescription: (favourites) =>
-    `Anyone can see your watch history, ratings, reviews, Watching${FAVOURITES_ENABLED ? `, top picks and ${favourites}` : ' and top picks'}. Your watchlist has its own setting below.`,
-  privateDescription:
-    'Only you and followers you approve can see your activity. Your watchlist has its own setting below. People signed in can still see your name, photo and bio, and ask to follow you.',
-  notesAlwaysPrivate: 'Private notes are only ever visible to you.',
 
   lockedTitle: 'Private account',
   /** @param {string} name */
