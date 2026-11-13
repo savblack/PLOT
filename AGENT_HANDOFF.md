@@ -13,7 +13,7 @@ Cloudflare emailed that Plot used up its free 100,000 server requests for the da
 ## Done (checkpoint, not yet a PR)
 
 - `apps/web/public/_routes.json`: only the 8 real Function routes run code (was everything except images and fonts).
-- `apps/web/public/_headers`: generated per-host CSP block (production, preview pages.dev hosts with staging and noindex).
+- `apps/web/public/_headers`: generated CSP. PREVIEW_CSP is the first line of the main `/*` rule, so every host has a policy. app.theplot.tv adds CSP; the browser enforces both, so production's effective policy is CSP (the script fails if CSP stops being a subset of PREVIEW_CSP). pages.dev hosts add noindex. A second `/*` rule does not work: Pages keeps only the last rule for an identical path (seen in wrangler).
 - `scripts/build-app-headers.mjs`: writes that block from `CSP`/`PREVIEW_CSP` in `functions/_middleware.js`; `--check` is in `pnpm run lint`.
 - `apps/website/_routes.json`: only Function routes plus the middleware-only paths (`/`, `/robots.txt`, `/ig`, `/x`, `/th`, `/plans`, `/whats-on/`).
 - `apps/website/_headers`: noindex for `admin.theplot.tv/*`, which now serves static pages on paths other than the ones above, instead of the 410 response.
@@ -23,7 +23,9 @@ Cloudflare emailed that Plot used up its free 100,000 server requests for the da
 
 - `pnpm run check`: pass. `pnpm run csp:check`: pass. `pnpm run test:unit`: pass. `node --test apps/website/functions/_lib/*.test.js`: 83/83 pass.
 - Guard negative test: removing `/og` from the app routes makes `check-pages-routes.mjs` exit 1.
-- `wrangler pages dev apps/web/dist`: `/home` on Host app.theplot.tv has the production CSP; on `*.plot.pages.dev` the preview CSP and noindex; on localhost no CSP (proves the middleware did not run). `/u/x` and `/og` still run their Functions.
+- `wrangler pages dev apps/web/dist`: `/home` on app.theplot.tv carries both policies (effective: production); on `*.plot.pages.dev` the preview CSP and noindex; on an unknown host the preview CSP. `/u/x` still gets one CSP from its Function's middleware.
+- Security review finding (no CSP on unnamed hosts) fixed in the second commit.
+- Not covered: hosts other than pages.dev and app.theplot.tv are no longer noindexed (the middleware noindexed every non-production host).
 
 ## Next
 
