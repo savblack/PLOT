@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.6.0](https://github.com/savblack/PLOT/compare/mobile-v1.5.0...mobile-v1.6.0) (2026-11-14)
+
+
+### Features
+
+* **mobile:** use the plot logo in the Picks heading ([#1682](https://github.com/savblack/PLOT/issues/1682)) ([96d8ccd](https://github.com/savblack/PLOT/commit/96d8ccd0acfd252b786a3d57c106bdc3b02a531f))
+* **ui:** one card, one button for Watch Together and Just Decide ([#1679](https://github.com/savblack/PLOT/issues/1679)) ([479131a](https://github.com/savblack/PLOT/commit/479131a6dbba84151dae5c028a1957151cfba39f))
+* **ui:** Watch Together and Just Decide redesign, plus shared UI components ([#1673](https://github.com/savblack/PLOT/issues/1673)) ([ffada0b](https://github.com/savblack/PLOT/commit/ffada0b0c68e5c641442e7528cfb67b41d6b0501))
+
 ## [1.5.0](https://github.com/savblack/PLOT/compare/mobile-v1.4.0...mobile-v1.5.0) (2026-11-13)
 
 
