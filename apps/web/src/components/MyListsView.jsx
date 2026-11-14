@@ -49,6 +49,8 @@ import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { SectionFoldContext } from './sectionFold.js';
 import MyListsLayoutSheet from './MyListsLayoutSheet.jsx';
+import ActivationNudge from './ActivationNudge.jsx';
+import { useActivationNudge } from '../hooks/useActivationNudge.js';
 
 /* My Lists on the Calendar/History shell: a narrow left column beside one wide
    stream. The column is the index — every list with its count, capped by a
@@ -208,6 +210,9 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const smartIds = useMemo(() => (customLists.smartLists || []).map(l => l.id), [customLists.smartLists]);
   const liveNewCounts = useSmartListNewCounts(smartIds, { enabled: !seedNewCounts && !!user && isPremiumProfile(profile) });
   const newCounts = seedNewCounts ?? liveNewCounts;
+  // An account with nothing saved anywhere gets the one "start here" card
+  // instead of a wall of empty sections (15 Nov 2026, review finding 8).
+  const nudge = useActivationNudge();
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
@@ -215,6 +220,10 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   }
 
   const { lists, smartLists = [], ownedCount, createList, createSmartList, deleteList } = customLists;
+  // Lists, a Top 5 or favorites count as started even with no titles saved.
+  const startedLists = (lists?.length ?? 0) + smartLists.length > 0
+    || Object.values(topLists.lists || {}).some(items => items.length > 0)
+    || (favorites.favorites?.length ?? 0) > 0;
   // Collaborative lists (PLO-525, canvas B1): shared lists get their own
   // section, split by who started them. Off with Watch together.
   const split = SHOW_WATCH_TOGETHER
@@ -526,6 +535,8 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
                 </CardGrid>
               </ListSection>
             </div>
+          ) : nudge.show && !startedLists ? (
+            <ActivationNudge surface="my_lists" sources={nudge.sources} />
           ) : (
             <div className="discover-sections">
               {shownSections.map(id => (

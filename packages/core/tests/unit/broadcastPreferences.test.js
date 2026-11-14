@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { configure } from '../../config.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
 import { loadBroadcastPreferences, saveBroadcastPreferences, validateBroadcastPreferences } from '../../broadcastPreferences.js';
-import { broadcastRegionLabel, broadcastSnapshotUrl, validateGuideSnapshot } from '../../broadcastGuide.js';
+import { broadcastRegionLabel, broadcastSnapshotUrl, validateGuideSnapshot, guideInMenu } from '../../broadcastGuide.js';
 
 test('a market named after its country is labeled once', () => {
   assert.equal(broadcastRegionLabel('Sydney'), 'Sydney, Australia');
@@ -41,4 +41,12 @@ test('rejects unknown markets and malformed channel IDs instead of guessing', ()
   assert.deepEqual(validateBroadcastPreferences({ market_id: 'Sydney', channel_ids: ['abc', 'abc'] }).channel_ids, ['abc']);
   assert.throws(() => broadcastSnapshotUrl('../private'));
   assert.throws(() => validateGuideSnapshot({ sourceUrl: 'javascript:alert(1)' }, 'Sydney'));
+});
+
+test('Guide is in the menu only where a region has listings', () => {
+  for (const region of ['AU', 'NZ', 'US', 'CA']) assert.equal(guideInMenu(region), true, region);
+  // GB's source is down; other countries have no markets at all.
+  for (const region of ['GB', 'FR', 'IN']) assert.equal(guideInMenu(region), false, region);
+  // No region yet: keep it, as before.
+  assert.equal(guideInMenu(null), true);
 });

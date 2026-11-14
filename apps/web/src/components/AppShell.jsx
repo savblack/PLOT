@@ -34,7 +34,7 @@ const FeedbackPanel = lazy(() => import('./SettingsView.jsx').then(module => ({ 
 // Before this, every move between Home and Calendar was two taps through a
 // menu button, and the menu ignored the saved order (design audit pick 1.4 A).
 const TAB_ITEMS = APP_NAV_ITEMS.filter(item => item.primary);
-const menuItems = (order) => sidebarNavItems(order).filter(item => !item.primary && item.id !== 'search');
+const menuItems = (order, region) => sidebarNavItems(order, region).filter(item => !item.primary && item.id !== 'search');
 
 export default function AppShell({ currentView, navigateTo, children, profile, user, panelOpen, onOpenSearch }) {
   const navigate = useNavigate();
@@ -234,7 +234,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         </div>
 
         <nav className="nav-drawer-nav">
-          {menuItems(uiPrefs?.prefs.sidebar).map(({ id, label, premium }) => {
+          {menuItems(uiPrefs?.prefs.sidebar, profile?.region).map(({ id, label, premium }) => {
             const Icon = NAV_ICONS[id];
             return (
               <button
