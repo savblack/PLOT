@@ -18,6 +18,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { IconChevronDown } from '../../components/icons';
 import SectionTitle from '../../components/SectionTitle';
+import PlotWordmark from '../../components/PlotWordmark';
 import { TextLink } from '../../components/Button';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -355,6 +356,30 @@ function SectionHeader({ kicker, title }: { kicker?: string; title: string }) {
     <View style={styles.sectionHeader}>
       <SectionTitle>{title}</SectionTitle>
       {kicker ? <Text style={styles.sectionKicker}>{kicker}</Text> : null}
+    </View>
+  );
+}
+
+// plot's Picks heading: the logo, then "'s Picks", like web. The wordmark
+// sits on the text baseline; translateY drops it by its descent so the ink
+// lines up with the words. Read aloud as one label.
+function PicksHeader() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  return (
+    <View
+      style={[styles.sectionHeader, styles.picksTitleRow]}
+      accessible
+      accessibilityRole="header"
+      accessibilityLabel={DISCOVER_VIEW.picks.cardsLabel}
+    >
+      <PlotWordmark
+        size={fontSize.xl}
+        color={colors.textPrimary}
+        label={null}
+        style={styles.picksWordmark}
+      />
+      <SectionTitle>{DISCOVER_VIEW.picks.afterLogo}</SectionTitle>
     </View>
   );
 }
@@ -830,7 +855,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       <>
         {(hero || curated) && (
           <View onLayout={e => { picksBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}>
-            <SectionHeader title={DISCOVER_VIEW.picks.cardsLabel} />
+            <PicksHeader />
             {(hero && curated) || otherPicks.length > 0 ? (
               <PicksCarousel cardWidth={PICKS_CARD_W} inView={picksInView}>
                 {hero && (
@@ -1193,6 +1218,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // ── Sections ──
   section: { marginTop: spacing.xl, marginBottom: 0 },
   sectionHeader: { paddingHorizontal: spacing.xl, marginBottom: spacing.md },
+  picksTitleRow: { flexDirection: 'row', alignItems: 'baseline' },
+  picksWordmark: { transform: [{ translateY: fontSize.xl * 0.19 }] },
   sectionKicker: {
     fontFamily: fontFamily.sans,
     fontSize: 12,
