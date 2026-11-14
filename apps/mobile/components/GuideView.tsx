@@ -56,7 +56,7 @@ export function BroadcastAgenda({ region, preferences, endpoint = '', showHeadin
         {button(COPY.changeRegion, () => router.push('/settings'))}
         <Text style={{ color: colors.textMuted }}>{COPY.coverage[market.scope as keyof typeof COPY.coverage]}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-          {Array.from({ length: market.days }, (_, index) => <View key={index}>{button(index === 0 ? COPY.today : broadcastDayLabel(guideDay(today, index), { weekday: 'short', day: 'numeric' }), () => { agenda.setOffset(index); agenda.setMode('all'); }, index === agenda.offset)}</View>)}
+          {Array.from({ length: market.days }, (_, index) => <View key={index}>{button(index === 0 ? COPY.today : `${broadcastDayLabel(guideDay(today, index), { weekday: 'short' })} ${broadcastDayLabel(guideDay(today, index), { day: 'numeric' })}`, () => { agenda.setOffset(index); agenda.setMode('all'); }, index === agenda.offset)}</View>)}
         </ScrollView>
         <View style={{ flexDirection: 'row', gap: 8 }}>{button(COPY.allDay, () => agenda.setMode('all'), agenda.mode === 'all')}{button(COPY.now, () => { agenda.setMode('now'); agenda.setOffset(0); }, agenda.mode === 'now')}</View>
         {button(COPY.channels, () => { setDraft(visibleChannels.map((c: Channel) => c.id)); setSaveError(false); }, false, !data)}

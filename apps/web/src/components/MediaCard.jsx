@@ -1,7 +1,7 @@
 import { posterUrl, backdropUrl, logoUrl } from '../utils/images.js';
 import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
-import { MEDIA } from '../copy/media.js';
+import { cardMetaLine } from '@plot/core/media.js';
 import { SaveButton, FavoriteButton } from './TitleActions.jsx';
 
 /* The poster card used by the release rails (Calendar's "All releases"; it
@@ -13,9 +13,7 @@ export default function MediaCard({ item, openPanel, providerLogo, watchlist }) 
   const img = posterUrl(displayPosterPath(shown), 'w185') || backdropUrl(displayBackdropPath(shown), 'w300');
   const type  = item.media_type || 'movie';
   const title = item.title || item.name;
-  const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
-  const typeLabel = type === 'tv' ? MEDIA.tv : item._cinema ? MEDIA.cinema : MEDIA.movie;
-  const meta  = [year, typeLabel].filter(Boolean).join(' · ');
+  const meta  = cardMetaLine(item);
 
   return (
     <div className="media-card" onClick={() => openPanel(item.id, type)}>

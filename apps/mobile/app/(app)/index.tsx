@@ -42,6 +42,7 @@ import PosterRail, { useRowLayout } from '../../components/PosterRail';
 import ListRow from '../../components/ListRow';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
+import { cardMetaLine } from '@plot/core/media.js';
 import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
 import { useContinueWatching } from '@plot/core/useHomeShelves.js';
 import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
@@ -161,13 +162,11 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
   const img      = posterUrl(displayPosterPath(art.apply(item)), 'w185');
 
   if (row) {
-    const year = (item.release_date || item.first_air_date || '').slice(0, 4);
-    const kind = item.media_type === 'tv' ? MEDIA.tv : MEDIA.movie;
     return (
       <ListRow
         posterUri={img}
         title={title}
-        meta={[year, kind].filter(Boolean).join(' · ')}
+        meta={cardMetaLine(item)}
         onPress={onPress}
         trailing={(
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -240,7 +239,6 @@ function BingeCard({ item, onPress }: { item: MediaItem; onPress: () => void }) 
   const shown = art.apply(item);
   const title    = item.name || item.title || '';
   const backdrop = backdropUrl(displayBackdropPath(shown), 'w780') || posterUrl(displayPosterPath(shown), 'w342');
-  const year     = (item.first_air_date || '').slice(0, 4);
 
   return (
     <TouchableOpacity style={styles.bingeCard} onPress={onPress} activeOpacity={0.85}>
@@ -251,7 +249,7 @@ function BingeCard({ item, onPress }: { item: MediaItem; onPress: () => void }) 
       <View style={styles.bingeShade} />
       <View style={styles.bingeCopy}>
         <Text style={styles.bingeTitle} numberOfLines={2}>{title}</Text>
-        <Text style={styles.bingeMeta}>{year ? `${year} · ` : ''}TV Series</Text>
+        <Text style={styles.bingeMeta}>{cardMetaLine(item, { fallbackType: 'tv' })}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -270,8 +268,6 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
   const art = useUserArtwork();
   const title = item.title || item.name || '';
   const img   = posterUrl(displayPosterPath(art.apply(item)), 'w92');
-  const type  = item.media_type === 'tv' ? 'TV' : 'Movie';
-  const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
   const glow  = rank <= 10;
 
   return (
@@ -287,7 +283,7 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
       </View>
       <View style={styles.chartInfo}>
         <Text style={styles.chartTitle} numberOfLines={2}>{title}</Text>
-        <Text style={styles.chartMeta}>{year}{year ? ' · ' : ''}{type}</Text>
+        <Text style={styles.chartMeta}>{cardMetaLine(item)}</Text>
       </View>
       <TouchableOpacity
         style={[styles.chartSaveBtn, saved && styles.chartSaveBtnSaved]}
