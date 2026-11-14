@@ -196,6 +196,58 @@ test('buildCalendarEvents labels a cinema window Cinema and keeps the later stre
   );
 });
 
+test('buildCalendarEvents shows the next airing of an in-progress show when you are still in an older season', async () => {
+  const events = await buildCalendarEvents({
+    watching: [{ tmdb_id: 9, title: 'Show', current_season: 4, current_episode: 20 }],
+    todayStr: TODAY,
+    ...fakeFetchers({
+      details: {
+        9: {
+          next_episode_to_air: { season_number: 6, episode_number: 7, air_date: '2026-09-02' },
+          seasons: [
+            { season_number: 4, episode_count: 22 },
+            { season_number: 5, episode_count: 22 },
+            { season_number: 6, episode_count: 22 },
+          ],
+        },
+      },
+      seasons: {
+        '9:4': { episodes: [
+          { episode_number: 20, season_number: 4, air_date: '2025-04-01' },
+          { episode_number: 21, season_number: 4, air_date: '2025-04-08' },
+          { episode_number: 22, season_number: 4, air_date: '2025-04-15' },
+        ] },
+        '9:6': { episodes: [
+          { episode_number: 6, season_number: 6, air_date: '2026-08-05' },
+          { episode_number: 7, season_number: 6, air_date: '2026-09-02' },
+          { episode_number: 8, season_number: 6, air_date: '2026-09-09' },
+        ] },
+      },
+    }),
+  });
+
+  assert.deepEqual(events.map(e => [e.date, e.label]), [['2026-09-02', 'S06E07'], ['2026-09-09', 'S06E08']]);
+  // 3 left in S4 + 22 in S5 + 6 already out in S6.
+  assert.equal(events[0].behind, 31);
+});
+
+test('buildCalendarEvents leaves the behind count unknown when a skipped season has no episode count', async () => {
+  const events = await buildCalendarEvents({
+    watching: [{ tmdb_id: 9, title: 'Show', current_season: 1, current_episode: 1 }],
+    todayStr: TODAY,
+    ...fakeFetchers({
+      details: { 9: { next_episode_to_air: { season_number: 3 }, seasons: [] } },
+      seasons: {
+        '9:1': { episodes: [{ episode_number: 1, season_number: 1, air_date: '2024-01-01' }] },
+        '9:3': { episodes: [{ episode_number: 1, season_number: 3, air_date: '2026-09-02' }] },
+      },
+    }),
+  });
+
+  assert.deepEqual(events.map(e => e.label), ['S03E01']);
+  assert.equal(events[0].behind, null);
+});
+
 test('buildCalendarEvents skips in-progress episodes you are already past', async () => {
   const events = await buildCalendarEvents({
     watching: [{ tmdb_id: 9, title: 'Show', current_season: 2, current_episode: 5 }],

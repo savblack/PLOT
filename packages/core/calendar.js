@@ -205,21 +205,51 @@ export async function buildCalendarEvents({
           fetchSeason?.(progress.tmdb_id, progress.current_season),
           Promise.resolve(fetchTvDetails?.(progress.tmdb_id)).catch(() => null),
         ]);
-        if (!season?.episodes) return [];
         const networkName = details?.networks?.[0]?.name ?? null;
         const genreIds    = genreIdsFromItem(details);
-        return season.episodes
-          .filter(ep =>
-            ep.episode_number >= progress.current_episode &&
-            ep.air_date && ep.air_date >= todayStr
-          )
+        const currentSeason = Number(progress.current_season);
+        const currentEpisode = Number(progress.current_episode);
+
+        const currentSeasonEpisodes = (season?.episodes ?? [])
+          .filter(ep => ep.episode_number >= currentEpisode)
           .map(ep => ({
-            date:  ep.air_date,
-            type:  'episode',
-            label: episodeLabel(progress.current_season, ep.episode_number),
+            seasonNum: currentSeason,
+            ep,
             // current_episode is the next one to watch, so everything between
             // it and this airing is already out and still unwatched.
-            behind: Math.max(0, ep.episode_number - progress.current_episode),
+            behind: Math.max(0, ep.episode_number - currentEpisode),
+          }));
+
+        // A viewer partway through an older season still wants the show's next
+        // airing. Reading only current_season hid it: on 2026-11-13 Abbott
+        // Elementary's S06E07 (Dec 2) was missing for anyone still in S05, and
+        // the Calendar said "Nothing coming up". So also read the season TMDB
+        // says airs next when it's ahead of where the viewer is.
+        const nextSeasonNum = Number(details?.next_episode_to_air?.season_number);
+        let laterSeasonEpisodes = [];
+        if (Number.isFinite(nextSeasonNum) && nextSeasonNum > currentSeason) {
+          const later = await Promise.resolve(fetchSeason?.(progress.tmdb_id, nextSeasonNum)).catch(() => null);
+          // Unwatched before the later season starts: the rest of this season
+          // plus every season in between. Unknown if any count is missing.
+          let before = season?.episodes ? currentSeasonEpisodes.length : null;
+          for (let s = currentSeason + 1; s < nextSeasonNum && before != null; s += 1) {
+            const count = details?.seasons?.find(x => x.season_number === s)?.episode_count;
+            before = Number.isFinite(count) ? before + count : null;
+          }
+          laterSeasonEpisodes = (later?.episodes ?? []).map(ep => ({
+            seasonNum: nextSeasonNum,
+            ep,
+            behind: before == null ? null : before + Math.max(0, ep.episode_number - 1),
+          }));
+        }
+
+        return [...currentSeasonEpisodes, ...laterSeasonEpisodes]
+          .filter(({ ep }) => ep.air_date && ep.air_date >= todayStr)
+          .map(({ seasonNum, ep, behind }) => ({
+            date:  ep.air_date,
+            type:  'episode',
+            label: episodeLabel(seasonNum, ep.episode_number),
+            behind,
             item: {
               title:        progress.title,
               poster_path:  progress.poster_path,

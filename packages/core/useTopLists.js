@@ -1,6 +1,41 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { isTopListRank } from './listCollections.js';
+import { tmdb } from './tmdb.js';
+
+/**
+ * The title fields a Top 5 slot saves for `item`, which may be a TMDB result,
+ * a history row, or another top-list row.
+ *
+ * `tmdb_id` wins over `id`: on a history or top-list row `id` is that row's own
+ * key, not the title. The mobile "From history" picker used to save the history
+ * row's id as the title, so the slot opened the wrong title. A missing poster
+ * (imported history often has none) is filled from TMDB, so the tile isn't
+ * blank; on 2026-11-13 Spirited Away picked from history saved with no poster.
+ *
+ * @param {string} listType - 'movies' | 'tv'
+ * @param {any} item
+ * @param {(mediaType: 'movie'|'tv', tmdbId: number) => Promise<any>} [fetchDetails]
+ * @returns {Promise<{ tmdb_id: number, media_type: string, title: string, poster_path: string|null }>}
+ */
+export async function topListSlotFields(listType, item, fetchDetails = defaultFetchDetails) {
+  const tmdbId = Number(item?.tmdb_id ?? item?.id);
+  const mediaType = item?.media_type || (listType === 'movies' ? 'movie' : 'tv');
+  let posterPath = item?.poster_path || null;
+  let title = item?.title || item?.name || '';
+  if ((!posterPath || !title) && Number.isFinite(tmdbId)) {
+    try {
+      const details = await fetchDetails(mediaType, tmdbId);
+      posterPath = posterPath || details?.poster_path || null;
+      title = title || details?.title || details?.name || '';
+    } catch { /* keep what the item had; the slot still saves */ }
+  }
+  return { tmdb_id: tmdbId, media_type: mediaType, title, poster_path: posterPath };
+}
+
+function defaultFetchDetails(mediaType, tmdbId) {
+  return mediaType === 'tv' ? tmdb.getTVDetails(tmdbId) : tmdb.getMovieDetails(tmdbId);
+}
 
 /**
  * Ranked Top 5 lists (movies + TV) for a user.
@@ -50,7 +85,9 @@ export function useTopLists(userId) {
 
   const setSlot = useCallback(async (listType, rank, item) => {
     if (!userId || !isTopListRank(rank)) return false;
-    const tmdbId = Number(item.id || item.tmdb_id);
+    const fields = await topListSlotFields(listType, item);
+    const tmdbId = fields.tmdb_id;
+    if (!Number.isFinite(tmdbId)) return false;
 
     // Remove any existing entry for this item in this list (same tmdb_id, different rank)
     const removeExisting = await supabase.from('user_top_lists')
@@ -80,10 +117,10 @@ export function useTopLists(userId) {
         user_id:     userId,
         list_type:   listType,
         tmdb_id:     tmdbId,
-        media_type:  item.media_type || (listType === 'movies' ? 'movie' : 'tv'),
+        media_type:  fields.media_type,
         rank,
-        title:       item.title || item.name || '',
-        poster_path: item.poster_path || null,
+        title:       fields.title,
+        poster_path: fields.poster_path,
       })
       .select()
       .single();
