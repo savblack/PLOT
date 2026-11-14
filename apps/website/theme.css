@@ -84,3 +84,8 @@
   --ease:            cubic-bezier(0.23, 1, 0.32, 1);
   --ticker-height:   2.75rem;
 }
+
+/* Site-wide scale. Nearly every size on the site is set in rem, so this one
+   value shrinks type and rem spacing together (14px base instead of 16px).
+   A percentage, not px, so a visitor's own browser text size still applies. */
+html { font-size: 87.5%; }

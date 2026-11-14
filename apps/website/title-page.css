@@ -31,7 +31,7 @@ nav.topnav.scrolled{background:rgba(248,242,234,.86);backdrop-filter:blur(16px);
 .nav-hamburger.open span:nth-child(2){opacity:0;}
 .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
 @media (max-width:600px){.nav-links{display:none;}.nav-links.open{display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(248,242,234,.94);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);padding:1.25rem 2rem;gap:.35rem;align-items:stretch;}.nav-links.open li{display:block;}.nav-links.open a{display:block;padding:.85rem 0;text-align:center;}.nav-links.open .nav-cta{text-align:center;}.nav-hamburger{display:flex;}nav.topnav.nav-open{background:rgba(248,242,234,.94);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);}}
-.wrap{max-width:960px;margin:0 auto;padding:64px 28px 0;}
+.wrap{max-width:960px;margin:0 auto;padding:96px 28px 0;}
 .crumbs{height:44px;display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--mut);}
 .crumbs a{text-decoration:none;}
 .crumbs a:hover{color:var(--accent);}
@@ -108,7 +108,7 @@ h1.title{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,2.9rem);font-we
 .rel a:hover .rt{color:var(--accent);}
 .site-footer{margin-top:40px;}
 @media (max-width:640px){
-.wrap{padding:64px 16px 0;}
+.wrap{padding:88px 16px 0;}
 nav.topnav{padding:0 1rem;}
 .band{height:172px;}
 .band img{height:172px;border-radius:14px 14px 0 0;}
@@ -130,4 +130,64 @@ nav.topnav{padding:0 1rem;}
 .watch-label{width:100%;}
 .cast{gap:18px;}
 .cast figure{width:96px;}
+}
+
+/* The nav pill: a copy of the rules in apps/website/nav.css, keep in sync. */
+nav.topnav,
+nav.topnav.scrolled,
+nav.topnav.nav-open {
+  top: 26px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  height: 52px;
+  padding: 0 8px 0 22px;
+  gap: 28px;
+  border-radius: 9999px;
+  background: rgba(255, 250, 243, 0.82);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(41,41,36,0.12);
+  box-shadow: 0 4px 14px -10px rgba(41, 41, 36, 0.2);
+  transition: top 0.45s var(--ease);
+}
+nav.topnav.scrolled,
+nav.topnav.nav-open { top: 14px; }
+nav.topnav .nav-links { gap: 1.25rem; }
+nav.topnav .nav-links a,
+nav.topnav .nav-logo { white-space: nowrap; }
+
+/* Phones: a full-width pill with 16px gutters (no transform, so the fixed
+   menu panel stays relative to the screen) and the menu drops below it. */
+@media (max-width: 600px) {
+  nav.topnav,
+  nav.topnav.scrolled,
+  nav.topnav.nav-open {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    padding: 0 10px 0 20px;
+    justify-content: space-between;
+  }
+  /* backdrop-filter (like transform) makes the nav the containing block
+     for the fixed menu panel, which would then sit inside the inset pill.
+     While the menu is open, drop the blur and go near-opaque instead. */
+  nav.topnav.nav-open {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(255, 250, 243, 0.97);
+  }
+  nav.topnav .nav-links.open {
+    top: 76px;
+    left: 16px;
+    right: 16px;
+    border-radius: 24px;
+    border: 1px solid rgba(41,41,36,0.12);
+    background: rgba(255, 250, 243, 0.97);
+    box-shadow: 0 4px 14px -10px rgba(41, 41, 36, 0.2);
+  }
 }
