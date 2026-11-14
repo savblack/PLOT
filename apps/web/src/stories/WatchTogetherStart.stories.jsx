@@ -8,9 +8,8 @@ import WatchTogetherView from '../components/WatchTogetherView.jsx';
 import { AcceptDialog, WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
 
 /* Watch together for someone with nobody to watch with yet, the normal state
-   (Nov 2026 redesign). The invite card leads with the link, because most people
-   invite someone who isn't on Plot; then the demo and, second, search for people
-   already on Plot. "Waiting" is the same page after the link has gone out.
+   (Nov 14, round 3A). One card leads with the link, because most people invite
+   someone who isn't on Plot; search and the demo are quiet links. "Waiting" is the same page after the link has gone out.
    People are fictional; a stub Supabase client answers the calls, so nothing
    here reads or writes account data. */
 
@@ -99,7 +98,7 @@ const suggested = [
 export const NobodyYet = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.inviteTitle })).toBeInTheDocument());
+    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.inviteLead })).toBeInTheDocument());
     await expect(canvas.getByRole('button', { name: T.hub.sendInvite })).toBeEnabled();
   },
 };
@@ -117,6 +116,7 @@ export const WithPeopleYouFollow = { args: { suggested } };
 export const SearchAndInvite = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole('button', { name: T.hub.findOnPlot }));
     await userEvent.type(await canvas.findByPlaceholderText(T.invite.search), 'sam');
     await waitFor(() => expect(canvas.getByText('@samk')).toBeInTheDocument());
     await userEvent.click(canvas.getAllByRole('button', { name: T.invite.invite })[0]);

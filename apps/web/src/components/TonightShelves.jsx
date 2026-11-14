@@ -1,17 +1,17 @@
-// Just Decide's opening view (Nov 2026 redesign, option D): chips that narrow
-// everything, then shelves of titles that fit tonight, laid out like Home.
-// "Pick one for me" runs the picker on the chips' options and the page moves
-// to its results (TonightView.jsx). Rules and shelves: @plot/core
-// tonightShelves.js. Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH
+// Just Decide's right column (Nov 14, round 3A): the best shelf for the
+// card's options, with the rest behind "See more shelves". "Pick one for me"
+// runs the picker on the same options and the page moves to its results
+// (TonightView.jsx). Rules and shelves: @plot/core tonightShelves.js.
+// Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH (round 3)
 // Mobile parity: apps/mobile/app/(app)/tonight.tsx.
 import { DEFAULT_REGION } from '@plot/core/regions.js';
-import { useTonightShelves, SHELF_CHIPS, chipOn, chipLabel, toggleChip } from '@plot/core/tonightShelves.js';
+import { useState } from 'react';
+import { useTonightShelves } from '@plot/core/tonightShelves.js';
 import { useApp } from '../hooks/useApp.js';
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { RailSection } from './DiscoverView.jsx';
 import MediaCard from './MediaCard.jsx';
-import Chip, { ChipRow } from './Chip.jsx';
 import EmptyState from './EmptyState.jsx';
 import PremiumGateButton from './PremiumGateButton.jsx';
 import PremiumMark from './PremiumMark.jsx';
@@ -31,23 +31,6 @@ export function PickForMe({ picker, premium, className = '' }) {
   );
 }
 
-/** The chips: they narrow every shelf, and Pick uses them too. */
-export function ShelfChips({ picker }) {
-  const { options } = picker;
-  const chips = SHELF_CHIPS.filter(c => c !== 'services' || picker.hasServices);
-  const tap = (chip) => {
-    const next = toggleChip(chip, options);
-    for (const key of Object.keys(next)) if (next[key] !== options[key]) picker.setOption(key, next[key]);
-  };
-  return (
-    <ChipRow className="tonight-chips" aria-label={T.chips.label}>
-      {chips.map(chip => (
-        <Chip key={chip} label={chipLabel(chip, options.mediaType)} selected={chipOn(chip, options)} onClick={() => tap(chip)} />
-      ))}
-    </ChipRow>
-  );
-}
-
 /** `useShelves` is a seam for stories; the app always uses the real loader. */
 export default function TonightShelves({ picker, premium, useShelves = useTonightShelves }) {
   const { user, profile, watchlist, openPanel } = useApp();
@@ -61,6 +44,9 @@ export default function TonightShelves({ picker, premium, useShelves = useTonigh
     region: profile?.region || DEFAULT_REGION,
   });
   const filled = shelves.filter(s => s.items.length);
+  // One shelf first: the best match. The rest wait behind a link.
+  const [more, setMore] = useState(false);
+  const shown = more ? shelves : shelves.slice(0, 1);
 
   return (
     <div className="tonight-shelves">
@@ -68,7 +54,7 @@ export default function TonightShelves({ picker, premium, useShelves = useTonigh
         {error ? <EmptyState className="tonight-empty" title={T.loadError} />
           : !loading && !filled.length && !shelves.some(s => s.locked)
             ? <EmptyState className="tonight-empty" body={watchlist.items?.length ? T.shelves.empty : T.shelves.emptyWatchlist} />
-            : shelves.map(shelf => shelf.locked ? (
+            : shown.map(shelf => shelf.locked ? (
               <section key={shelf.id} className="discover-section tonight-shelf-locked">
                 <div className="discover-section-header"><div className="discover-section-heading"><h2 className="discover-section-title">{shelf.title}</h2></div></div>
                 <div className="tonight-shelf-locked-body">
@@ -86,6 +72,11 @@ export default function TonightShelves({ picker, premium, useShelves = useTonigh
               </RailSection>
             ))}
       </div>
+      {!error && shelves.length > 1 && (
+        <button type="button" className="tonight-quiet tonight-more-shelves" aria-expanded={more} onClick={() => setMore(v => !v)}>
+          {more ? T.fewerShelves : T.moreShelves}
+        </button>
+      )}
     </div>
   );
 }

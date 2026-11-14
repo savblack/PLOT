@@ -17,9 +17,6 @@
    let that select the label. */
 .tonight-view button { -webkit-user-select: none; user-select: none; }
 
-/* ── Question ── */
-.tonight-question { padding-top: 1.25rem; }
-
 .tonight-tile {
   border: 2px solid transparent;
   border-radius: 16px;
@@ -46,38 +43,6 @@
 
 .tonight-hint { margin: 0.6rem 0 0; font-size: 0.75rem; color: var(--text-muted); }
 
-/* ── Phone filters panel ── */
-.tonight-filters {
-  margin-top: 1.5rem;
-  background: var(--surface-sunken);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-.tonight-filters-head {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: var(--text-primary);
-  cursor: pointer;
-  text-align: left;
-}
-.tonight-filters-summary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  min-width: 0;
-}
-.tonight-chev svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; display: block; transition: transform 0.15s ease; }
-.tonight-chev.open svg { transform: rotate(180deg); }
-.tonight-filters-body { padding: 0 16px 4px; }
 .tonight-filter-row {
   display: flex;
   align-items: center;
@@ -89,7 +54,7 @@
 }
 .tonight-filter-row.disabled .tonight-filter-label { color: var(--text-muted); }
 .tonight-filter-label { display: block; font-size: 0.95rem; font-weight: 500; color: var(--text-primary); }
-.tonight-filter-hint { display: block; font-size: 0.75rem; color: var(--text-muted); }
+
 .tonight-select {
   border: 0;
   background: transparent;
@@ -101,36 +66,6 @@
   padding: 6px 0;
 }
 .tonight-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
-
-.tonight-surprise svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.tonight-surprise svg { stroke-width: 1.8; }
-
-/* ── Phone sticky bar ── */
-.tonight-bar {
-  /* .app-main already ends above the tab bar, so 0 is its bottom edge. With
-     the view at least a screen tall and this bar last, it sits on the bottom
-     even when the page is short. */
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  margin-top: auto;
-  padding: 24px var(--gut) 16px;
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-.tonight-bar-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-.tonight-bar .btn { min-height: 44px; padding-inline: 18px; font-size: 0.9rem; }
-.tonight-bar .tonight-go { padding-inline: 32px; font-size: 1rem; }
 
 /* ── Finding… → picks ── */
 /* The Top pick's slot. While picks load it holds the sentence; when they
@@ -353,7 +288,7 @@
 }
 .tonight-saved-remove:hover { background: var(--surface-sunken); color: var(--text-primary); }
 .tonight-saved-remove svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-.tonight-saved--phone { margin-top: 1.5rem; }
+
 .tonight-saved-more { align-self: flex-start; margin: 2px 4px 0; padding: 6px 0; border: 0; background: none; font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--accent-text); cursor: pointer; }
 
 /* ── Locked (Free): the upgrade pop-up over blurred placeholder picks ── */
@@ -386,9 +321,8 @@
   .tonight-saved-label { -webkit-line-clamp: 1; }
   .tonight-saved-open { padding-block: 8px; }
   
-  .tonight-bar { display: none; }
+  
 
-  .tonight-question,
   .tonight-results { padding-top: 0; }
   
   
@@ -412,7 +346,7 @@
   
   .tonight-hero-slot--finding { min-height: 280px; }
   .tonight-finding { font-size: 1.875rem; }
-  .tonight-saved--phone { display: none; }
+  
 
   .tonight-locked { padding-top: 0; }
 }
@@ -457,5 +391,34 @@
 @media (max-width: 1023px) {
   .tonight-side-actions--desk { display: none; }
 }
-/* Filters fold in the column as a card, like the cards around it. */
-.tonight-side .tonight-filters { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+
+/* ── Nov 14 (round 3A): one card on the left, one shelf on the right ── */
+.tonight-mood-card { gap: 14px; padding: 18px 16px 16px; border-color: var(--border-strong); }
+.tonight-mood-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 20px;
+  line-height: 1.15;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+.tonight-mood-card .tonight-chips { padding: 0; }
+.tonight-switches { display: flex; flex-direction: column; }
+.tonight-switches .tonight-filter-row { padding: 8px 2px; border-top: 1px solid var(--border); }
+.tonight-switches .tonight-filter-row:first-child { border-top: 0; }
+.tonight-mood-pick { width: 100%; justify-content: center; }
+.tonight-mood-links { display: flex; flex-wrap: wrap; gap: 16px; }
+.tonight-quiet {
+  all: unset;
+  width: max-content;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.tonight-quiet:hover { color: var(--accent-text); }
+.tonight-quiet:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.tonight-more-shelves { margin-top: 4px; }

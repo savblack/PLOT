@@ -57,6 +57,19 @@ export const WATCH_TOGETHER = Object.freeze({
     allOfYou: 'All of you',
     lockedShelf: 'One of you needs Premium to see and swipe through what you share. Your friend never has to pay.',
     nothingShared: (names) => `Nothing you and ${names} have both saved yet.`,
+    // Nov 14 (round 3A): one card, one button. Faces pick who's watching.
+    inviteLead: 'Invite the person you watch with',
+    inviteLeadBody: 'They get a link. When they join, you both see what you’ve saved and swipe until you agree.',
+    findOnPlot: 'Already on Plot? Find them',
+    both: 'Both',
+    everyone: 'Everyone',
+    savedCount: (names, n) => `${n} ${n === 1 ? 'title' : 'titles'} you and ${names} both saved`,
+    savedWith: (names) => `You and ${names} saved`,
+    previewFirst: 'What they’ll see first',
+    previewMatched: 'Your watchlist, matched with theirs.',
+    requestNotice: (name, more) => (more ? `${name} and ${more} more want to watch together` : `${name} wants to watch together`),
+    waitingOn: (name) => `Waiting for ${name} to accept`,
+    seeAll: 'See all',
   },
 
   // What someone with nobody to watch with yet sees at /together, Free or not.
