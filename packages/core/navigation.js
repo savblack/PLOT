@@ -14,6 +14,9 @@ export const APP_NAV_ITEMS = [
   // Own nav item on web and mobile (opened from the drawer). Not primary, so it
   // stays out of the tab bar.
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
+  // New Releases: its own page on both apps. Mobile lists it in its drawer
+  // (DrawerMenu.tsx) right after Guide; web's rail and phone drawer read it here.
+  { id: 'new-releases', label: 'New Releases', path: '/new-releases', primary: false },
   // Just Decide, the tonight picker (Premium). Free viewers land on the Premium gate,
   // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
   { id: 'tonight', label: 'Just Decide', path: '/tonight', primary: false, premium: true },
@@ -30,7 +33,6 @@ export const PRIMARY_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.primary);
 export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
   (titles, item) => ({ ...titles, [item.id]: item.id === 'home' ? 'plot' : item.label }),
   {
-    'new-releases': 'New Releases',
     'design-system': 'Design System',
     requests: 'Follow requests',
     notifications: 'Notifications',
