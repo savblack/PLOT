@@ -1,79 +1,85 @@
-/* Watch together hub (WatchTogetherHub.jsx). History's frame: .hist-page,
-   .hist-body, a .hist-side column of .hist-card cards, and a stream of Home's
-   shelves on the right. Only what that frame doesn't already have is here.
-   No dark blocks, no gradients. */
+/* Watch together hub (WatchTogetherHub.jsx), round 3A. History's frame
+   (.hist-page, .hist-body, .hist-side, .hist-card) with one card on the left
+   and one shelf on the right. One filled button on the page; everything else
+   is a quiet text link. */
 
 .wth-stream { --discover-rail-gut: 0px; }
 .wth-stream .discover-sections { padding-bottom: 0; }
 .wth-stream .discover-section-header { padding-left: 0; padding-right: 0; }
 
-.wth-side-card { gap: 12px; }
-.wth-card-title { margin: 0; font-weight: 700; text-wrap: balance; }
-.wth-side-card--lead { border-color: var(--border-strong); }
+.wth-side { gap: 12px; }
+.wth-main-card { gap: 14px; padding: 18px 16px 16px; border-color: var(--border-strong); }
+.wth-main-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--font-display-tracking);
+  font-size: 20px;
+  line-height: 1.15;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+.wth-main-btn { width: 100%; justify-content: center; }
+.wth-body { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.wth-note { font-size: 12px; line-height: 1.4; color: var(--text-muted); }
 
-.wth-body { margin: 0; padding: 0 4px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
-.wth-note { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
-.wth-side-card > .wth-note { padding: 0 4px; }
-.wth-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-
-/* Rows in the column: who's watching and requests. */
-.wth-who { display: flex; flex-direction: column; }
-.wth-who-row {
+/* Quiet links: the page's secondary actions. */
+.wth-link {
   all: unset;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 4px;
-  border-top: 1px solid var(--border);
+  width: max-content;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
-.wth-who-row:first-child,
-.wth-request:first-child { border-top: 0; }
-.wth-who-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
-.wth-who-row:hover .wth-who-name { color: var(--accent-text); }
-.wth-who-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.wth-who-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.wth-radio {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  border: 1.5px solid var(--border-strong);
-}
-.wth-who-row[aria-pressed="true"] .wth-radio {
-  border-color: var(--accent);
-  background: var(--accent);
-  box-shadow: inset 0 0 0 3px var(--surface);
-}
-.wth-request { display: flex; flex-direction: column; gap: 8px; padding: 8px 4px; border-top: 1px solid var(--border); }
-.wth-row-head { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0 4px; }
-.wth-request .wth-row-head { padding: 0; }
+.wth-link:hover { color: var(--accent-text); }
+.wth-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.wth-link:disabled { opacity: 0.5; cursor: default; }
+.wth-side > .wth-link { padding-left: 4px; }
 
-.wth-faces { display: flex; flex-shrink: 0; }
-.wth-faces > * + * { margin-left: -8px; }
+/* A one-line notice inside the card: a request, or one you sent. */
+.wth-notice {
+  all: unset;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--radius-badge);
+  background: var(--accent-dim);
+  color: var(--accent-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.wth-notice--quiet { background: var(--surface-sunken); color: var(--text-secondary); cursor: default; }
+
+/* Faces: who's watching. */
+.wth-faces { display: flex; flex-wrap: wrap; gap: 14px; }
+.wth-face {
+  all: unset;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.wth-face-img { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-pill); }
+.wth-face[aria-pressed="true"] .wth-face-img { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.wth-face-name { font-size: 12px; color: var(--text-muted); max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wth-face[aria-pressed="true"] .wth-face-name { color: var(--text-primary); font-weight: 600; }
+.wth-face:focus-visible .wth-face-img { outline: 2px solid var(--accent); outline-offset: 4px; }
+.wth-faces-mini { display: flex; }
+.wth-faces-mini > * + * { margin-left: -14px; }
 
 .wth-ghost {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-pill);
   border: 1.5px dashed var(--border-strong);
   display: grid;
   place-items: center;
   color: var(--text-muted);
+  font-size: 18px;
 }
-.wth-pulse { animation: wth-pulse 2.4s ease-in-out infinite; }
-@keyframes wth-pulse { 50% { opacity: 0.45; } }
-@media (prefers-reduced-motion: reduce) { .wth-pulse { animation: none; } }
 
 /* The message your friend gets. */
 .wth-bubble {
@@ -90,12 +96,10 @@
 }
 .wth-bubble-link { font-size: 12px; color: var(--accent-text); overflow-wrap: anywhere; }
 
-/* People on Plot: the search and rows sit inside the card, not as a second card. */
-.wth-onplot-list { background: transparent; border: 0; border-radius: 0; }
-.wth-onplot-list .wt-row { padding: 0.6rem 4px; }
+.wth-news { gap: 8px; }
+.wth-find { display: flex; flex-direction: column; gap: 10px; }
 
 /* ── Right column ── */
-.wth-shelf-note { margin: 0; }
-.wth-preview { display: flex; flex-direction: column; gap: 8px; }
 .wth-preview .media-card { opacity: 0.6; }
-.wth-demo { max-width: 420px; }
+.wth-demo-link { margin-top: 4px; }
+.wth-demo { max-width: 420px; margin-top: 12px; }

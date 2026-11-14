@@ -16,10 +16,12 @@ import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { favoriteWords } from '../utils/spelling.js';
 import './TonightView.css';
 import { SaveButton, FavoriteButton } from './TitleActions.jsx';
-import { Tag } from './Chip.jsx';
+import Chip, { ChipRow, Tag } from './Chip.jsx';
 import EmptyState from './EmptyState.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
-import TonightShelves, { PickForMe, ShelfChips } from './TonightShelves.jsx';
+import TonightShelves, { PickForMe } from './TonightShelves.jsx';
+import { TYPE_CHIPS, MOOD_CHIPS, SWITCH_CHIPS, chipOn, chipLabel, toggleChip } from '@plot/core/tonightShelves.js';
+import Segmented from './Segmented.jsx';
 
 /* Just Decide (Nov 2026 redesign, option D). It opens on chips and shelves
    of titles that fit tonight (TonightShelves.jsx), laid out like Home.
@@ -28,10 +30,6 @@ import TonightShelves, { PickForMe, ShelfChips } from './TonightShelves.jsx';
    upgrade sheet. Phone keeps the actions in a bar above the tab bar. The
    title and subline come from the app shell. */
 
-const IconSparkle = () => (
-  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 3.5 11.6 8.4 16.5 10 11.6 11.6 10 16.5 8.4 11.6 3.5 10 8.4 8.4Z" /><path d="M18 14.5v5M15.5 17h5" /><path d="M18.5 3.5v3M17 5h3" /></svg>
-);
-const IconChevron = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>;
 
 // Two arrows round: a list that keeps looking (A1).
 const IconKeepFinding = () => (
@@ -119,36 +117,50 @@ function LanguageSelect({ picker, id }) {
   );
 }
 
-/* Phone: folding panel with switches, like Settings rows. */
-function FiltersPanel({ picker }) {
-  const [open, setOpen] = useState(false);
-  const { options, setOption } = picker;
-  const switchRow = (label, checked, onChange, disabled, hint) => (
-    <div className={`tonight-filter-row${disabled ? ' disabled' : ''}`}>
-      <span>
-        <span className="tonight-filter-label">{label}</span>
-        {hint && <span className="tonight-filter-hint">{hint}</span>}
-      </span>
-      <SettingsSwitch label={label} checked={checked} disabled={disabled} onChange={onChange} />
+/* The request, as one card (Nov 14, round 3A): movie or show, mood chips,
+   three switches and one pink button. Surprise me and the rarer filters
+   (kids, language) are quiet links, so Pick is the only filled button. */
+function MoodCard({ picker, premium }) {
+  const [more, setMore] = useState(false);
+  const { options } = picker;
+  const apply = (chip) => {
+    const next = toggleChip(chip, options);
+    for (const key of Object.keys(next)) if (next[key] !== options[key]) picker.setOption(key, next[key]);
+  };
+  const switches = SWITCH_CHIPS.filter(c => (c !== 'services' || picker.hasServices) && (c !== 'watchlist' || picker.hasWatchlist));
+  const switchRow = (label, checked, onChange) => (
+    <div className="tonight-filter-row" key={label}>
+      <span className="tonight-filter-label">{label}</span>
+      <SettingsSwitch label={label} checked={checked} onChange={onChange} />
     </div>
   );
   return (
-    <section className="tonight-filters">
-      <button type="button" className="tonight-filters-head" aria-expanded={open} onClick={() => setOpen(v => !v)}>
-        <span className="tonight-filter-label">{T.filtersTitle}</span>
-        <span className="tonight-filters-summary">
-          {open ? null : picker.filtersSummary}
-          <span className={`tonight-chev${open ? ' open' : ''}`}><IconChevron /></span>
-        </span>
-      </button>
-      {open && (
-        <div className="tonight-filters-body">
-          {switchRow(T.onlyServices, options.onlyServices && picker.hasServices, () => setOption('onlyServices', !options.onlyServices), !picker.hasServices, picker.hasServices ? null : T.onlyServicesMissing)}
-          {switchRow(T.onlyWatchlist, options.onlyWatchlist && picker.hasWatchlist, () => setOption('onlyWatchlist', !options.onlyWatchlist), !picker.hasWatchlist, picker.hasWatchlist ? null : T.onlyWatchlistMissing(options.mediaType))}
-          {switchRow(T.hideKids, options.hideKids, () => setOption('hideKids', !options.hideKids), false, null)}
+    <section className="hist-card tonight-mood-card" aria-labelledby="tonight-mood-title">
+      <h2 className="tonight-mood-title" id="tonight-mood-title">{T.moodTitle}</h2>
+      <Segmented
+        ariaLabel={T.steps.type.shortTitle}
+        options={TYPE_CHIPS.map(c => ({ value: c, label: chipLabel(c, options.mediaType) }))}
+        value={options.mediaType === 'tv' ? 'shows' : 'movies'}
+        onChange={apply}
+      />
+      <ChipRow className="tonight-chips" aria-label={T.chips.label}>
+        {MOOD_CHIPS.map(c => <Chip key={c} size="sm" label={chipLabel(c, options.mediaType)} selected={chipOn(c, options)} onClick={() => apply(c)} />)}
+      </ChipRow>
+      <div className="tonight-switches">
+        {switches.map(c => switchRow(chipLabel(c, options.mediaType), chipOn(c, options), () => apply(c)))}
+      </div>
+      <PickForMe picker={picker} premium={premium} className="tonight-mood-pick" />
+      {picker.freePickLeft && <p className="tonight-hint">{T.freePickNote}</p>}
+      <div className="tonight-mood-links">
+        <button type="button" className="tonight-quiet" onClick={() => picker.go('surprise')}>{T.surpriseMe}</button>
+        <button type="button" className="tonight-quiet" aria-expanded={more} onClick={() => setMore(v => !v)}>{more ? T.fewerOptions : T.moreOptions}</button>
+      </div>
+      {more && (
+        <div className="tonight-switches">
+          {switchRow(T.hideKids, options.hideKids, () => picker.setOption('hideKids', !options.hideKids))}
           <div className="tonight-filter-row">
-            <label className="tonight-filter-label" htmlFor="tonight-lang-m">{T.languageLabel}</label>
-            <LanguageSelect picker={picker} id="tonight-lang-m" />
+            <label className="tonight-filter-label" htmlFor="tonight-lang">{T.languageLabel}</label>
+            <LanguageSelect picker={picker} id="tonight-lang" />
           </div>
         </div>
       )}
@@ -336,17 +348,8 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions, smartL
           </div>
         </section>
       ) : (
-        <section className="hist-card tonight-side-card" aria-label={T.chips.label}>
-          <div className="hist-card-head"><span className="hist-card-title">{T.chips.label}</span></div>
-          <ShelfChips picker={picker} />
-          <div className="tonight-side-actions tonight-side-actions--desk">
-            <PickForMe picker={picker} premium={premium} className="btn-sm" />
-            <button type="button" className="btn btn-secondary btn-sm tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
-          </div>
-          {picker.freePickLeft && <p className="tonight-hint tonight-side-actions--desk">{T.freePickNote}</p>}
-        </section>
+        <MoodCard picker={picker} premium={premium} />
       )}
-      {!inResults && <FiltersPanel picker={picker} />}
       <SavedSearches picker={picker} />
     </aside>
   );
@@ -395,24 +398,6 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions, smartL
         />
       )}
 
-      {/* Phone only: the actions stay in reach above the tab bar. */}
-      {!spinning && !locked && (
-        <div className="tonight-bar">
-          <div className="tonight-bar-actions">
-            {inResults ? (
-              <>
-                <button type="button" className="btn btn-secondary" onClick={picker.backToOptions}>{T.changeOptions}</button>
-                {picker.canSpinAgain && <button type="button" className="btn btn-primary" onClick={picker.spinAgain}>{T.spinAgain}</button>}
-              </>
-            ) : (
-              <>
-                <button type="button" className="btn btn-secondary tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
-                <PickForMe picker={picker} premium={premium} />
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

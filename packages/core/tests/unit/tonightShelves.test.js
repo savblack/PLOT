@@ -26,7 +26,7 @@ test('switching to shows drops movie genres and movie length', () => {
   assert.deepEqual(tv.genreIds, []);
   assert.equal(tv.maxRuntime, null);
   assert.equal(chipOn('shows', tv), true);
-  assert.equal(chipLabel('short', 'tv'), TONIGHT_PICKER.chips.short.tv);
+  assert.equal(chipLabel('short', 'tv'), TONIGHT_PICKER.shelves.short.tv);
 });
 
 test('shelves sort the watchlist and skip facets a chip already set', () => {
@@ -60,4 +60,13 @@ test('a shelf holds at most SHELF_SIZE titles', () => {
   const watchlist = Array.from({ length: SHELF_SIZE + 5 }, (_, i) => movie(i + 1));
   const [first] = buildShelves({ watchlist, services: [], options: defaultPickerOptions(), hasServices: false, premium: true });
   assert.equal(first.items.length, SHELF_SIZE);
+});
+
+test('only-my-watchlist switch: toggles the option and drops the services shelf', () => {
+  const o = toggleChip('watchlist', defaultPickerOptions({ hasServices: true }));
+  assert.equal(o.onlyWatchlist, true);
+  assert.equal(chipOn('watchlist', o), true);
+  const shelves = buildShelves({ watchlist: [movie(1)], services: [movie(9)], options: o, hasServices: true, premium: true });
+  assert.deepEqual(shelves.map(s => s.id), ['watchlist', 'short']);
+  assert.equal(chipLabel('watchlist', 'movie'), TONIGHT_PICKER.onlyWatchlist);
 });

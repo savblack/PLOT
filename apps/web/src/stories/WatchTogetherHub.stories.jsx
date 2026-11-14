@@ -5,9 +5,9 @@ import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { AppContext } from '../hooks/useApp.js';
 import WatchTogetherView from '../components/WatchTogetherView.jsx';
 
-/* The Watch together hub for someone with partners (Nov 2026 redesign):
-   History's frame, with who's watching, requests and the invite link in the
-   left column and shelves of what you share with whoever is picked on the right. Free with everyone waiting on Premium puts the
+/* The Watch together hub for someone with partners (Nov 14, round 3A): one
+   card on the left (faces pick who's watching, one pink button, requests as a
+   notice) and one shelf of what you share on the right. Free with everyone waiting on Premium puts the
    upgrade on each card. People and titles are fictional (negative ids, no
    posters); a stub Supabase client answers every call, so nothing here reads
    or writes account data. */
@@ -99,11 +99,11 @@ export const Premium = {
   args: { premium: true, rows: unlocked },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const people = within(await canvas.findByRole('group', { name: T.hub.whosWatching }));
     await waitFor(() => expect(canvas.getAllByRole('button', { name: T.hub.decideWith('Sam Okafor') })[0]).toBeEnabled());
-    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.moviesWith('Sam Okafor') })).toBeInTheDocument());
-    await userEvent.click(people.getByRole('button', { name: new RegExp(T.hub.allOfYou) }));
-    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.showsWith('Sam Okafor and Priya Nair') })).toBeInTheDocument());
+    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.savedWith('Sam Okafor') })).toBeInTheDocument());
+    const faces = within(canvas.getByRole('group', { name: T.hub.whosWatching }));
+    await userEvent.click(faces.getByRole('button', { name: T.hub.both }));
+    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.savedWith('Sam Okafor and Priya Nair') })).toBeInTheDocument());
   },
 };
 

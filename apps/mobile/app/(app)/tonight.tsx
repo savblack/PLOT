@@ -25,7 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
-import { IconChevronLeft, IconChevronRight, IconChevronDown, IconChevronUp, IconClose, IconCheck } from '../../components/icons';
+import { IconClose, IconCheck } from '../../components/icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -33,7 +33,7 @@ import {
   useTonightPicker, pickerTimeOfDay, savedSearchDate, PICKER_LANGUAGES, pickResultMeta,
   type PickerCandidate,
 } from '@plot/core/tonightPicker.js';
-import { useTonightShelves, SHELF_CHIPS, chipOn, chipLabel, toggleChip } from '@plot/core/tonightShelves.js';
+import { useTonightShelves, TYPE_CHIPS, MOOD_CHIPS, SWITCH_CHIPS, chipOn, chipLabel, toggleChip, type ShelfChip } from '@plot/core/tonightShelves.js';
 import EmptyState from '../../components/EmptyState';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { imageScrimStops } from '@plot/core/tokens.js';
@@ -77,41 +77,55 @@ function Sparkle({ color }: { color: string }) {
     </Svg>
   );
 }
-function Chevron({ color, dir }: { color: string; dir: 'left' | 'right' | 'down' | 'up' }) {
-  const Icon = { left: IconChevronLeft, right: IconChevronRight, down: IconChevronDown, up: IconChevronUp }[dir];
-  return <Icon size={16} color={color} />;
-}
 
 
 
 
-
-function Filters({ picker, styles, colors }: { picker: Picker; styles: Styles; colors: Palette }) {
-  const [open, setOpen] = useState(false);
+/* The request, as one card (Nov 14, round 3A, like web): movie or show, mood
+   chips, three switches and one pink button. Surprise me and the rarer
+   filters (kids, language) are quiet links, so Pick is the only filled button. */
+function MoodCard({ picker, premium, styles, colors }: { picker: Picker; premium: boolean; styles: Styles; colors: Palette }) {
+  const [more, setMore] = useState(false);
   const { options, setOption } = picker;
-  const row = (label: string, value: boolean, onChange: (v: boolean) => void, disabled: boolean, hint: string | null) => (
-    <View style={styles.filterRow}>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.filterLabel, disabled && { color: colors.textMuted }]}>{label}</Text>
-        {hint ? <Text style={styles.tileHint}>{hint}</Text> : null}
-      </View>
-      <Toggle value={value} onValueChange={onChange} disabled={disabled} accessibilityLabel={label} />
+  const apply = (chip: ShelfChip) => {
+    const next = toggleChip(chip, options) as Record<string, unknown>;
+    const cur = options as unknown as Record<string, unknown>;
+    for (const key of Object.keys(next)) if (next[key] !== cur[key]) setOption(key as keyof typeof options, next[key] as never);
+  };
+  const switches = SWITCH_CHIPS.filter(c => (c !== 'services' || picker.hasServices) && (c !== 'watchlist' || picker.hasWatchlist));
+  const row = (label: string, value: boolean, onChange: () => void) => (
+    <View style={styles.filterRow} key={label}>
+      <Text style={[styles.filterLabel, { flex: 1 }]}>{label}</Text>
+      <Toggle value={value} onValueChange={onChange} accessibilityLabel={label} />
     </View>
   );
+  const locked = !premium && !picker.freePickLeft;
   return (
-    <View style={styles.filters}>
-      <TouchableOpacity style={styles.filtersHead} onPress={() => setOpen(v => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }}>
-        <Text style={styles.filterLabel}>{T.filtersTitle}</Text>
-        <View style={styles.filtersSummary}>
-          {!open && <Text style={styles.summaryText} numberOfLines={1}>{picker.filtersSummary}</Text>}
-          <Chevron color={colors.textSecondary} dir={open ? 'up' : 'down'} />
-        </View>
-      </TouchableOpacity>
-      {open && (
-        <View style={{ paddingHorizontal: spacing.lg }}>
-          {row(T.onlyServices, options.onlyServices && picker.hasServices, v => setOption('onlyServices', v), !picker.hasServices, picker.hasServices ? null : T.onlyServicesMissing)}
-          {row(T.onlyWatchlist, options.onlyWatchlist && picker.hasWatchlist, v => setOption('onlyWatchlist', v), !picker.hasWatchlist, picker.hasWatchlist ? null : T.onlyWatchlistMissing(options.mediaType))}
-          {row(T.hideKids, options.hideKids, v => setOption('hideKids', v), false, null)}
+    <View style={styles.moodCard}>
+      <Text style={styles.moodTitle} accessibilityRole="header">{T.moodTitle}</Text>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }} accessibilityRole="radiogroup">
+        {TYPE_CHIPS.map(c => <Chip key={c} label={chipLabel(c, options.mediaType)} selected={chipOn(c, options)} onPress={() => apply(c)} accessibilityRole="radio" />)}
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }} accessibilityLabel={T.chips.label}>
+        {MOOD_CHIPS.map(c => <Chip key={c} size="sm" label={chipLabel(c, options.mediaType)} selected={chipOn(c, options)} onPress={() => apply(c)} />)}
+      </View>
+      <View>{switches.map(c => row(chipLabel(c, options.mediaType), chipOn(c, options), () => apply(c)))}</View>
+      <Button
+        variant="primary"
+        flex
+        label={T.pickForMe}
+        onPress={() => picker.go(premium ? 'five' : 'surprise')}
+        icon={locked ? <Lock color={colors.onAccentFill} /> : undefined}
+        accessibilityLabel={locked ? `${T.pickForMe}, ${T.gate.locked}` : picker.freePickLeft ? `${T.pickForMe}. ${T.freePickNote}` : undefined}
+      />
+      {picker.freePickLeft && <Text style={styles.freeNote}>{T.freePickNote}</Text>}
+      <View style={{ flexDirection: 'row', gap: spacing.lg }}>
+        <TextLink quiet label={T.surpriseMe} onPress={() => picker.go('surprise')} />
+        <TextLink quiet label={more ? T.fewerOptions : T.moreOptions} onPress={() => setMore(v => !v)} />
+      </View>
+      {more && (
+        <View>
+          {row(T.hideKids, options.hideKids, () => setOption('hideKids', !options.hideKids))}
           <View style={[styles.filterRow, { flexDirection: 'column', alignItems: 'stretch', gap: spacing.sm, paddingVertical: spacing.md }]}>
             <Text style={styles.filterLabel}>{T.languageLabel}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
@@ -322,29 +336,21 @@ function Shelves({ picker, premium, onOpen, onUpgrade, styles, colors, between }
     streamingProviders: profile?.streaming_providers,
     region: profile?.region || DEFAULT_REGION,
   });
-  const { options } = picker;
-  const chips = SHELF_CHIPS.filter(c => c !== 'services' || picker.hasServices);
-  const tap = (chip: (typeof SHELF_CHIPS)[number]) => {
-    const next = toggleChip(chip, options) as Record<string, unknown>;
-    const cur = options as unknown as Record<string, unknown>;
-    for (const key of Object.keys(next)) if (next[key] !== cur[key]) picker.setOption(key as keyof typeof options, next[key] as never);
-  };
   const filled = shelves.filter(s => s.items.length);
+  // One shelf first: the best match. The rest wait behind a link.
+  const [moreShelves, setMoreShelves] = useState(false);
+  const shown = moreShelves ? shelves : shelves.slice(0, 1);
   const gutter = { paddingHorizontal: spacing.xl };
   return (
     <View>
-      <CollapsibleSection id="tonight-chips" label={T.chips.label}>
-        <View style={[gutter, { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }]} accessibilityLabel={T.chips.label}>
-          {chips.map(chip => (
-            <Chip key={chip} label={chipLabel(chip, options.mediaType)} selected={chipOn(chip, options)} onPress={() => tap(chip)} />
-          ))}
-        </View>
-      </CollapsibleSection>
-      <View style={[gutter, { gap: spacing.xl, marginBottom: spacing.xl }]}>{between}</View>
+      <View style={[gutter, { gap: spacing.xl, marginBottom: spacing.xl }]}>
+        <MoodCard picker={picker} premium={premium} styles={styles} colors={colors} />
+        {between}
+      </View>
       {error ? <EmptyState title={T.loadError} />
         : !loading && !filled.length && !shelves.some(s => s.locked)
           ? <EmptyState body={watchlist.items?.length ? T.shelves.empty : T.shelves.emptyWatchlist} />
-          : shelves.map(shelf => (
+          : shown.map(shelf => (
             <CollapsibleSection key={shelf.id} id={`tonight-${shelf.id}`} label={shelf.title} count={shelf.locked ? undefined : shelf.items.length}>
               {!!shelf.note && <Text style={[styles.shelfNote, gutter, { marginBottom: spacing.sm }]}>{shelf.note}</Text>}
               {shelf.locked ? (
@@ -371,6 +377,9 @@ function Shelves({ picker, premium, onOpen, onUpgrade, styles, colors, between }
               )}
             </CollapsibleSection>
           ))}
+      {!error && shelves.length > 1 && (
+        <View style={gutter}><TextLink quiet label={moreShelves ? T.fewerShelves : T.moreShelves} onPress={() => setMoreShelves(v => !v)} /></View>
+      )}
     </View>
   );
 }
@@ -497,35 +506,21 @@ export default function TonightScreen() {
           </View>
         ) : (
           <Shelves picker={picker} premium={premium} onOpen={open} onUpgrade={upgrade} styles={styles} colors={colors}
-            between={<><Filters picker={picker} styles={styles} colors={colors} /><SavedSearches picker={picker} styles={styles} colors={colors} /></>} />
+            between={<SavedSearches picker={picker} styles={styles} colors={colors} />} />
         )}
       </ScrollView>
       <GlassHeader scrollY={glass.scrollY} height={headerH}>
         <ScreenHeaderBar title={titleForView('tonight')} showSearch={false} />
       </GlassHeader>
 
-      {!spinning && !locked && (
+      {/* After a pick: Edit and Regenerate stay in reach above the tab bar. The
+          request itself has its one button in the card. */}
+      {inResults && (
         <View style={[styles.bar, { marginBottom: tabBarBottom(insets.bottom) + TAB_BAR_HEIGHT }]}>
-          {inResults ? (
-            <View style={styles.barActions}>
-              {btn(T.changeOptions, picker.backToOptions, false)}
-              {picker.canSpinAgain ? btn(T.spinAgain, picker.spinAgain, true) : null}
-            </View>
-          ) : (
-            <>
-              {picker.freePickLeft && <Text style={styles.freeNote}>{T.freePickNote}</Text>}
-              <View style={styles.barActions}>
-                {btn(T.surpriseMe, () => picker.go('surprise'), false, <Sparkle color={colors.textPrimary} />)}
-                <Button
-                  variant="primary"
-                  label={T.pickForMe}
-                  onPress={() => picker.go(premium ? 'five' : 'surprise')}
-                  icon={!premium && !picker.freePickLeft ? <Lock color={colors.onAccentFill} /> : undefined}
-                  accessibilityLabel={!premium && !picker.freePickLeft ? `${T.pickForMe}, ${T.gate.locked}` : picker.freePickLeft ? `${T.pickForMe}. ${T.freePickNote}` : undefined}
-                />
-              </View>
-            </>
-          )}
+          <View style={styles.barActions}>
+            {btn(T.changeOptions, picker.backToOptions, false)}
+            {picker.canSpinAgain ? btn(T.spinAgain, picker.spinAgain, true) : null}
+          </View>
         </View>
       )}
     </View>
@@ -533,6 +528,11 @@ export default function TonightScreen() {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
+  moodCard: {
+    gap: spacing.md, padding: spacing.lg, borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong, backgroundColor: colors.surface,
+  },
+  moodTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, lineHeight: 24, color: colors.textPrimary },
   qTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, lineHeight: 30, color: colors.textPrimary },
   shelfPoster: { width: SHELF_W, height: SHELF_W * 1.5, borderRadius: radii.badge },
   shelfTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
@@ -544,12 +544,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
 
-  tileHint: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
 
-  filters: { backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radii.md, overflow: 'hidden' },
-  filtersHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
-  filtersSummary: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
-  summaryText: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary, flexShrink: 1 },
   filterRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 52,
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,

@@ -36,11 +36,19 @@ export const SHELF_SIZE = 12;
 const WATCHLIST_TARGET = 40;
 
 /**
- * @typedef {'movies'|'shows'|'short'|'light'|'gripping'|'recent'|'rated'|'services'} ShelfChip
+ * @typedef {'movies'|'shows'|'short'|'light'|'gripping'|'recent'|'rated'|'services'|'watchlist'} ShelfChip
  */
 
 /** Chips in the order they're shown. `services` only when the viewer has services. */
 export const SHELF_CHIPS = /** @type {ShelfChip[]} */ (['movies', 'shows', 'short', 'light', 'gripping', 'recent', 'rated', 'services']);
+
+// Nov 14 (round 3A): the card splits the same options into three kinds.
+/** Movie or show: a two-way switch. */
+export const TYPE_CHIPS = /** @type {ShelfChip[]} */ (['movies', 'shows']);
+/** What kind of night: any number of these. */
+export const MOOD_CHIPS = /** @type {ShelfChip[]} */ (['light', 'gripping', 'recent', 'rated']);
+/** On or off. `services` only with services, `watchlist` only with a watchlist. */
+export const SWITCH_CHIPS = /** @type {ShelfChip[]} */ (['short', 'services', 'watchlist']);
 
 const hasAll = (list, ids) => ids.every(id => list.includes(id));
 
@@ -59,6 +67,7 @@ export function chipOn(chip, o) {
     case 'recent': return o.era === 'recent';
     case 'rated': return o.minScore === 7;
     case 'services': return o.onlyServices;
+    case 'watchlist': return o.onlyWatchlist;
     default: return false;
   }
 }
@@ -87,6 +96,7 @@ export function toggleChip(chip, o) {
     case 'recent': return { ...o, era: on ? 'any' : 'recent' };
     case 'rated': return { ...o, minScore: on ? null : 7 };
     case 'services': return { ...o, onlyServices: !on };
+    case 'watchlist': return { ...o, onlyWatchlist: !on };
     default: return o;
   }
 }
@@ -98,7 +108,10 @@ export function toggleChip(chip, o) {
  */
 export function chipLabel(chip, mediaType) {
   const C = TONIGHT_PICKER.chips;
-  if (chip === 'short') return C.short[mediaType];
+  // A switch row has room for the whole phrase ("Under 2 hours").
+  if (chip === 'short') return TONIGHT_PICKER.shelves.short[mediaType];
+  if (chip === 'services') return TONIGHT_PICKER.onlyServices;
+  if (chip === 'watchlist') return TONIGHT_PICKER.onlyWatchlist;
   return C[chip];
 }
 
@@ -132,6 +145,8 @@ export function buildShelves({ watchlist, services, options, hasServices, premiu
     shelves.push({ id: 'gripping', title: S.gripping, items: cap(watchlist.filter(c => inGenres(c, SHELF_GENRES.gripping[type]))) });
   }
   const out = shelves.filter(s => s.items.length);
+  // "Only my watchlist" means no discovery shelf at all.
+  if (options.onlyWatchlist) return out;
   if (premium) {
     if (services.length) out.push({ id: 'services', title: hasServices && options.onlyServices ? S.services : S.popular, items: cap(services) });
   } else {
@@ -179,7 +194,7 @@ export function useTonightShelves({ options, premium, userId, watchlistItems, wa
           watchlistItems, options: { ...opts, onlyServices: false, onlyWatchlist: true }, providerIds, region, excludeIds, target: WATCHLIST_TARGET,
         });
         let services = [];
-        if (premium) {
+        if (premium && !opts.onlyWatchlist) {
           const savedIds = new Set((watchlistItems || []).filter(i => (i.media_type || 'movie') === opts.mediaType).map(i => Number(i.tmdb_id)));
           const page = await loadDiscoverPage({ options: { ...opts, onlyWatchlist: false }, providerIds, region, excludeIds, savedIds });
           services = page.pool.filter(c => !savedIds.has(c.id));

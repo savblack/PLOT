@@ -1,16 +1,16 @@
-// Watch together's hub at /together, Nov 2026 redesign. The same frame as
-// History and My Lists: a 264px column of cards on the left (who's watching,
-// requests, the invite link) and shelves of what you share on the right.
-// Phones stack the column above the shelves (.hist-body). With nobody yet,
-// the invite card leads and puts the link first, because most people invite
-// someone who isn't on Plot.
-// Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH
-// Rules: @plot/core watchTogether.js (hubStage, joinNames, titleMeta).
+// Watch together's hub at /together. Nov 14 2026 (round 3A): one card, one
+// button. History's frame: the left column is a single card (who's watching
+// as a row of faces, a one-line count, one pink button), the right column one
+// shelf of what you share. Requests are a one-line notice in the card; search,
+// the demo and inviting more people are quiet links. With nobody yet the card
+// leads with the invite link, because most people invite someone not on Plot.
+// Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH (round 3)
+// Rules: @plot/core watchTogether.js (hubStage, joinNames, sharedOnDate).
 // Mobile parity: apps/mobile/components/watch/WatchHub.tsx.
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
-import { personName, filterByKind, hubStage, joinNames, sharedOnDate } from '@plot/core/watchTogether.js';
+import { personName, hubStage, joinNames, sharedOnDate } from '@plot/core/watchTogether.js';
 import { useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherExampleTitles, startWatchTogetherSession, useUpgradeNews } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
@@ -21,10 +21,10 @@ import { Demo, FriendSearch, PersonRow } from './WatchTogetherStart.jsx';
 import { RailSection } from './DiscoverView.jsx';
 import MediaCard from './MediaCard.jsx';
 import PremiumGateButton from './PremiumGateButton.jsx';
-import { Tag } from './Chip.jsx';
 import './WatchTogetherHub.css';
 
 const H = T.hub;
+const GROUP = 'group';
 const reportGate = () => track(EVENTS.PREMIUM_GATE_HIT, { feature: 'watch_together' });
 
 // "You're on Premium" news: who upgrading unlocked (core: useUpgradeNews).
@@ -34,196 +34,125 @@ function useNews(wt, premium) {
   return { unlocked: wt.partners.filter(p => unlockedIds.includes(p.other_id)), dismiss };
 }
 
-function SideCard({ title, labelledBy, children, className = '' }) {
+/** A face that picks who's watching. The picked one gets the accent ring. */
+function Face({ label, picked, onPick, children }) {
   return (
-    <section className={`hist-card wth-side-card ${className}`} aria-labelledby={labelledBy}>
-      <div className="hist-card-head"><h2 className="hist-card-title wth-card-title" id={labelledBy}>{title}</h2></div>
-      {children}
+    <button type="button" className="wth-face" aria-pressed={picked} onClick={onPick}>
+      <span className="wth-face-img">{children}</span>
+      <span className="wth-face-name">{label}</span>
+    </button>
+  );
+}
+
+/* ── With nobody yet ─────────────────────────────────────────────────── */
+
+function InviteCard({ link }) {
+  const { url, display, copied, share, copy, sharedAt } = link;
+  const waiting = !!sharedAt;
+  return (
+    <section className="hist-card wth-main-card" aria-labelledby="wth-card-title">
+      <span className="wth-ghost" aria-hidden="true">{waiting ? '…' : '+'}</span>
+      <h2 className="wth-main-title" id="wth-card-title">{waiting ? H.waitingTitle : H.inviteLead}</h2>
+      <p className="wth-body">{waiting ? H.sharedOn(sharedOnDate(sharedAt)) : H.inviteLeadBody}</p>
+      {!waiting && (
+        // The words your friend receives, so it's clear this goes outside Plot.
+        <div className="wth-bubble">
+          <span>{T.link.shareText}</span>
+          <span className="wth-bubble-link">{display}</span>
+        </div>
+      )}
+      <button type="button" className="btn btn-primary wth-main-btn" onClick={share} disabled={!url}>{waiting ? H.shareAgain : H.sendInvite}</button>
+      <span className="wth-note">
+        {waiting ? H.notifyNote : H.inviteFree}{' '}
+        <button type="button" className="wth-link" onClick={copy} disabled={!url}>{copied ? T.link.copied : T.link.copy}</button>
+      </span>
     </section>
   );
 }
 
-/* ── Left column ─────────────────────────────────────────────────────── */
+/* ── With people ─────────────────────────────────────────────────────── */
 
-/** The invite card: leads the column with nobody yet, then a short card. */
-function InviteCard({ stage, link }) {
-  const { url, display, copied, share, copy, sharedAt } = link;
-  const copyButton = <button type="button" className="btn btn-secondary btn-sm" onClick={copy} disabled={!url}>{copied ? T.link.copied : T.link.copy}</button>;
-  if (stage === 'people') {
-    return (
-      <SideCard title={H.inviteMore} labelledBy="wth-invite-title">
-        <span className="wth-note">{H.inviteFree}</span>
-        <div className="wth-actions">
-          <button type="button" className="btn btn-primary btn-sm" onClick={share} disabled={!url}>{T.link.share}</button>
-          {copyButton}
-        </div>
-      </SideCard>
-    );
-  }
-  if (stage === 'waiting' && sharedAt) {
-    return (
-      <SideCard title={H.waitingTitle} labelledBy="wth-invite-title" className="wth-side-card--lead">
-        <div className="wth-row-head">
-          <span className="wth-ghost wth-pulse" aria-hidden="true">…</span>
-          <span className="wth-note">{H.sharedOn(sharedOnDate(sharedAt))}</span>
-        </div>
-        <div className="wth-actions">
-          <button type="button" className="btn btn-primary btn-sm" onClick={share} disabled={!url}>{H.shareAgain}</button>
-          {copyButton}
-        </div>
-        <span className="wth-note">{H.notifyNote}</span>
-      </SideCard>
-    );
-  }
+function PeopleCard({ partners, decidable, selected, onSelect, incoming, outgoing, onReview, onCancel, onDecide, onOpenGroup }) {
+  const chosen = selected === GROUP ? null : partners.find(p => p.other_id === selected);
   return (
-    <SideCard title={H.inviteTitle} labelledBy="wth-invite-title" className="wth-side-card--lead">
-      <p className="wth-body">{H.inviteBody}</p>
-      {/* The words your friend receives, so it's clear this goes outside Plot. */}
-      <div className="wth-bubble">
-        <span>{T.link.shareText}</span>
-        <span className="wth-bubble-link">{display}</span>
-      </div>
-      <div className="wth-actions">
-        <button type="button" className="btn btn-primary btn-sm" onClick={share} disabled={!url}>{H.sendInvite}</button>
-        {copyButton}
-      </div>
-      <span className="wth-note">{H.inviteFree}</span>
-    </SideCard>
-  );
-}
-
-/** Who's watching: pick a person (or everyone) and the shelves follow. */
-function WhoCard({ partners, decidable, selected, groupId, onSelect, onDecide, onOpenGroup }) {
-  const chosen = selected === groupId ? null : partners.find(p => p.other_id === selected);
-  const locked = chosen?.can_decide === false;
-  return (
-    <SideCard title={H.whosWatching} labelledBy="wth-who-title">
-      <div className="wth-who" role="group" aria-labelledby="wth-who-title">
-        {partners.map(p => (
-          <button key={p.other_id} type="button" className="wth-who-row" aria-pressed={selected === p.other_id} onClick={() => onSelect(p.other_id)}>
-            <span className="wth-radio" aria-hidden="true" />
-            <PersonAvatar person={p} size="sm" />
-            <span className="wth-who-text">
-              <span className="wth-who-name">{personName(p)}</span>
-              <span className="wth-note">{H.bothSaved(p.overlap_count ?? 0)}</span>
-            </span>
-            {p.can_decide === false && <Tag label={H.needsPremium} />}
-          </button>
-        ))}
-        {decidable.length > 1 && (
-          <button type="button" className="wth-who-row" aria-pressed={selected === groupId} onClick={() => onSelect(groupId)}>
-            <span className="wth-radio" aria-hidden="true" />
-            <span className="wth-faces">{decidable.slice(0, 3).map(p => <PersonAvatar key={p.other_id} person={p} size="sm" />)}</span>
-            <span className="wth-who-text">
-              <span className="wth-who-name">{H.allOfYou}</span>
-              <span className="wth-note">{T.overlap.savedByAll}</span>
-            </span>
-          </button>
-        )}
-      </div>
-      {selected === groupId
-        ? <button type="button" className="btn btn-primary btn-sm" onClick={onOpenGroup}>{T.overlap.groupAction}</button>
-        : locked
-          ? <PremiumGateButton reason="watchTogether" className="btn btn-primary btn-sm" onOpen={reportGate} />
-          : chosen && <button type="button" className="btn btn-primary btn-sm" onClick={() => onDecide(chosen)}>{H.decideWith(personName(chosen))}</button>}
-    </SideCard>
-  );
-}
-
-function RequestsCard({ incoming, outgoing, busy, onReview, onDecline, onCancel }) {
-  if (!incoming.length && !outgoing.length) return null;
-  return (
-    <SideCard title={H.requests} labelledBy="wth-requests-title">
-      <div className="wth-who">
-        {incoming.map(p => (
-          <div key={p.other_id} className="wth-request">
-            <span className="wth-row-head">
-              <PersonAvatar person={p} size="sm" />
-              <span className="wth-who-text"><span className="wth-who-name">{personName(p)}</span><span className="wth-note">{T.requests.wantsTo}</span></span>
-            </span>
-            <span className="wth-actions">
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => onReview(p)} disabled={busy}>{T.requests.review}</button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onDecline(p)} disabled={busy}>{T.requests.decline}</button>
-            </span>
-          </div>
-        ))}
-        {outgoing.map(p => (
-          <div key={p.other_id} className="wth-request">
-            <span className="wth-row-head">
-              <PersonAvatar person={p} size="sm" />
-              <span className="wth-who-text"><span className="wth-who-name">{personName(p)}</span><span className="wth-note">{T.requests.sent}</span></span>
-            </span>
-            <span className="wth-actions">
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onCancel(p)}>{T.requests.cancel}</button>
-            </span>
-          </div>
-        ))}
-      </div>
-    </SideCard>
-  );
-}
-
-/** People already on Plot: search and the people you follow. Second to the link. */
-function OnPlotCard({ suggested, sent, onInvite }) {
-  return (
-    <SideCard title={suggested.length ? H.peopleYouFollow : H.onPlot} labelledBy="wth-onplot-title">
-      <FriendSearch sent={sent} onInvite={onInvite} />
-      {suggested.length > 0 && (
-        <div className="wt-list wth-onplot-list">
-          {suggested.map(p => <PersonRow key={p.id} person={p} sent={sent.has(p.id)} onInvite={onInvite} />)}
-        </div>
+    <section className="hist-card wth-main-card" aria-label={H.whosWatching}>
+      {incoming.length > 0 && (
+        <button type="button" className="wth-notice" onClick={() => onReview(incoming[0])}>
+          {H.requestNotice(personName(incoming[0]), incoming.length - 1)} · <u>{T.requests.review}</u>
+        </button>
       )}
-    </SideCard>
+      {outgoing.map(p => (
+        <span key={p.other_id} className="wth-notice wth-notice--quiet">
+          {H.waitingOn(personName(p))} · <button type="button" className="wth-link" onClick={() => onCancel(p)}>{T.requests.cancel}</button>
+        </span>
+      ))}
+      {partners.length > 0 && (
+        <>
+          <div className="wth-faces" role="group" aria-label={H.whosWatching}>
+            {partners.map(p => (
+              <Face key={p.other_id} label={personName(p).split(' ')[0]} picked={selected === p.other_id} onPick={() => onSelect(p.other_id)}>
+                <PersonAvatar person={p} />
+              </Face>
+            ))}
+            {decidable.length > 1 && (
+              <Face label={decidable.length === 2 ? H.both : H.everyone} picked={selected === GROUP} onPick={() => onSelect(GROUP)}>
+                <span className="wth-faces-mini" aria-hidden="true">
+                  {decidable.slice(0, 2).map(p => <PersonAvatar key={p.other_id} person={p} size="sm" />)}
+                </span>
+              </Face>
+            )}
+          </div>
+          <h2 className="wth-main-title">
+            {selected === GROUP ? T.overlap.groupHeading : chosen ? H.savedCount(personName(chosen), chosen.overlap_count ?? 0) : ''}
+          </h2>
+          {selected === GROUP
+            ? <button type="button" className="btn btn-primary wth-main-btn" onClick={onOpenGroup}>{T.overlap.groupAction}</button>
+            : chosen?.can_decide === false
+              ? <PremiumGateButton reason="watchTogether" className="btn btn-primary wth-main-btn" onOpen={reportGate} />
+              : chosen && <button type="button" className="btn btn-primary wth-main-btn" onClick={() => onDecide(chosen)}>{H.decideWith(personName(chosen))}</button>}
+          {chosen?.can_decide === false && <span className="wth-note">{T.start.premiumCardBody}</span>}
+        </>
+      )}
+    </section>
   );
 }
 
-/* ── Right column ────────────────────────────────────────────────────── */
-
-/** Shared titles as MediaCard items (MediaCard reads `id`). */
-const asItem = (t) => ({ ...t, id: t.tmdb_id });
-
-function SharedShelves({ partners }) {
+/** One shelf: what you share with whoever is picked, with See all. */
+function SharedShelf({ partners }) {
   const { openPanel, watchlist } = useApp();
   const locked = partners.some(p => p.can_decide === false);
   const { titles, loading } = useWatchTogetherTitles(locked ? [] : partners.map(p => p.other_id));
   const names = joinNames(partners.map(personName));
-  if (locked) return <p className="wth-note wth-shelf-note">{H.lockedShelf}</p>;
+  // Locked: the card above already says one of you needs Premium.
+  if (locked) return null;
   if (loading && !titles.length) return null;
-  if (!titles.length) return <p className="wth-note wth-shelf-note">{H.nothingShared(names)}</p>;
-  const shelves = [
-    ['movie', H.moviesWith(names)],
-    ['tv', H.showsWith(names)],
-  ].map(([kind, title]) => [kind, title, filterByKind(titles, kind)]).filter(([, , list]) => list.length);
-  return shelves.map(([kind, title, list]) => (
-    <RailSection key={kind} title={title} subtitle={String(list.length)}>
-      {list.map(t => <MediaCard key={`${t.media_type}:${t.tmdb_id}`} item={asItem(t)} openPanel={openPanel} watchlist={watchlist} />)}
-    </RailSection>
-  ));
-}
-
-/** With nobody yet: your own watchlist, faded, as the shelf that will fill in. */
-function PreviewShelf() {
-  const { watchlist, openPanel } = useApp();
-  const items = (watchlist?.items || []).filter(i => i.poster_path).slice(0, 12);
-  if (!items.length) return null;
+  if (!titles.length) return <p className="wth-note">{H.nothingShared(names)}</p>;
+  const all = `/together/with/${partners.map(p => encodeURIComponent(p.username)).join(',')}`;
   return (
-    <div className="wth-preview">
-      <RailSection title={H.yourWatchlist} subtitle={String(watchlist.items.length)}>
-        {items.map(i => <MediaCard key={`${i.media_type}:${i.tmdb_id}`} item={{ ...i, id: i.tmdb_id }} openPanel={openPanel} watchlist={watchlist} />)}
-      </RailSection>
-      <p className="wth-note wth-shelf-note">{H.previewNote}</p>
-    </div>
+    <RailSection title={H.savedWith(names)} subtitle={String(titles.length)} headerRight={<Link className="wth-link" to={all}>{H.seeAll}</Link>}>
+      {titles.map(t => <MediaCard key={`${t.media_type}:${t.tmdb_id}`} item={{ ...t, id: t.tmdb_id }} openPanel={openPanel} watchlist={watchlist} />)}
+    </RailSection>
   );
 }
 
-function HowItWorks({ premium }) {
-  const { watchlist } = useApp();
+/** With nobody yet: your watchlist, faded, as what they'll see first. */
+function PreviewShelf({ premium }) {
+  const { watchlist, openPanel } = useApp();
+  const [demo, setDemo] = useState(false);
   const pool = useWatchTogetherExampleTitles(watchlist?.items);
+  const items = (watchlist?.items || []).filter(i => i.poster_path).slice(0, 12);
   return (
-    <section className="discover-section wth-section" aria-labelledby="wth-how">
-      <div className="discover-section-header"><div className="discover-section-heading"><h2 className="discover-section-title" id="wth-how">{H.seeHow}</h2></div></div>
-      <div className="wth-demo"><Demo key={pool.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={pool} /></div>
-    </section>
+    <>
+      {items.length > 0 && (
+        <div className="wth-preview">
+          <RailSection title={H.previewFirst} subtitle={H.previewMatched}>
+            {items.map(i => <MediaCard key={`${i.media_type}:${i.tmdb_id}`} item={{ ...i, id: i.tmdb_id }} openPanel={openPanel} watchlist={watchlist} />)}
+          </RailSection>
+        </div>
+      )}
+      <button type="button" className="wth-link wth-demo-link" aria-expanded={demo} onClick={() => setDemo(v => !v)}>{H.seeHow}</button>
+      {demo && <div className="wth-demo"><Demo key={pool.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={pool} /></div>}
+    </>
   );
 }
 
@@ -234,11 +163,11 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
   const { user } = useApp();
   // One instance for the page, so sharing from the card moves the page on.
   const link = useInviteShare();
-  const { sharedAt } = link;
   const { people: suggested, loading: suggestionsLoading, refresh: refreshSuggestions } = useWatchTogetherSuggestions(user?.id);
   const [reviewing, setReviewing] = useState(null);
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState(/** @type {string | null} */ (null));
+  const [finding, setFinding] = useState(false);
   const [sent, setSent] = useState(() => new Set());
   const news = useNews(wt, premium);
   const { partners, incoming, outgoing } = wt;
@@ -249,13 +178,11 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
   if (!ready && !wt.loading && !suggestionsLoading) setReady(true);
   if (!ready) return <div className="hist-page wth-page" aria-busy="true" />;
 
-  const stage = hubStage({ partners, incoming, outgoing, sharedAt });
+  const stage = hubStage({ partners, incoming, outgoing, sharedAt: link.sharedAt });
   const decidable = partners.filter(p => p.can_decide !== false);
-  const groupId = 'group';
-  // The first partner who can decide starts selected, so the shelves show
-  // something straight away.
+  // The first partner who can decide starts picked, so the button works in one tap.
   const selected = selectedId ?? (decidable[0] || partners[0])?.other_id ?? null;
-  const shelfPartners = selected === groupId ? decidable : partners.filter(p => p.other_id === selected);
+  const shelfPartners = selected === GROUP ? decidable : partners.filter(p => p.other_id === selected);
 
   const decideWith = async (person) => {
     const result = await startWatchTogetherSession(person.other_id);
@@ -280,47 +207,42 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
       <h1 className="sr-only phone-only-h1">{H.title}</h1>
 
       <div className="hist-body">
-        <aside className="hist-side">
+        <aside className="hist-side wth-side">
           {news.unlocked.length > 0 && (
-            <section className="hist-card wth-side-card" role="status">
-              <span className="wth-who-text">
-                <span className="hist-card-title">{H.upgradedTitle}</span>
-                <span className="wth-note">{H.upgradedBody(news.unlocked.map(personName))}</span>
-              </span>
-              <div className="wth-actions">
-                <button type="button" className="btn btn-primary btn-sm" onClick={() => decideWith(news.unlocked[0])}>{H.decideWith(personName(news.unlocked[0]))}</button>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={news.dismiss}>{H.dismiss}</button>
-              </div>
+            <section className="hist-card wth-news" role="status">
+              <span className="wth-body"><b>{H.upgradedTitle}.</b> {H.upgradedBody(news.unlocked.map(personName))}</span>
+              <button type="button" className="wth-link" onClick={news.dismiss}>{H.dismiss}</button>
             </section>
           )}
           {stage === 'people' ? (
-            <>
-              {partners.length > 0 && (
-                <WhoCard partners={partners} decidable={decidable} selected={selected} groupId={groupId}
-                  onSelect={setSelectedId} onDecide={decideWith} onOpenGroup={openGroup} />
+            <PeopleCard
+              partners={partners} decidable={decidable} selected={selected} onSelect={setSelectedId}
+              incoming={incoming} outgoing={outgoing}
+              onReview={setReviewing} onCancel={(p) => wt.cancel(p.other_id)}
+              onDecide={decideWith} onOpenGroup={openGroup}
+            />
+          ) : <InviteCard link={link} />}
+
+          {stage === 'people'
+            ? <button type="button" className="wth-link" onClick={link.share} disabled={!link.url}>{H.inviteSomeone}</button>
+            : <button type="button" className="wth-link" aria-expanded={finding} onClick={() => setFinding(v => !v)}>{H.findOnPlot}</button>}
+          {finding && stage !== 'people' && (
+            <div className="wth-find">
+              <FriendSearch sent={sent} onInvite={invite} />
+              {suggested.length > 0 && (
+                <div className="wt-list">
+                  {suggested.map(p => <PersonRow key={p.id} person={p} sent={sent.has(p.id)} onInvite={invite} />)}
+                </div>
               )}
-              <RequestsCard incoming={incoming} outgoing={outgoing} busy={busy}
-                onReview={setReviewing} onDecline={(p) => answer(p, false)} onCancel={(p) => wt.cancel(p.other_id)} />
-              <InviteCard stage={stage} link={link} />
-            </>
-          ) : (
-            <>
-              <InviteCard stage={stage} link={link} />
-              <OnPlotCard suggested={suggested} sent={sent} onInvite={invite} />
-            </>
+            </div>
           )}
         </aside>
 
         <div className="hist-stream wth-stream">
           <div className="discover-sections">
             {stage === 'people'
-              ? shelfPartners.length > 0 && <SharedShelves key={selected} partners={shelfPartners} />
-              : (
-                <>
-                  <PreviewShelf />
-                  <HowItWorks premium={premium} />
-                </>
-              )}
+              ? shelfPartners.length > 0 && <SharedShelf key={selected} partners={shelfPartners} />
+              : <PreviewShelf premium={premium} />}
           </div>
         </div>
       </div>

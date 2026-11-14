@@ -192,6 +192,12 @@ export const TONIGHT_PICKER = {
   // The chips set the same options the questions used to, and narrow every
   // shelf at once. "Pick one for me" runs the picker on those options.
   pickForMe: 'Pick one for me',
+  // Nov 14 (round 3A): one card, one button, the rest behind links.
+  moodTitle: 'What are you in the mood for?',
+  moreOptions: 'More options',
+  fewerOptions: 'Fewer options',
+  moreShelves: 'See more shelves',
+  fewerShelves: 'Show fewer shelves',
   chips: {
     label: 'Narrow it down',
     movies: 'Movies',
