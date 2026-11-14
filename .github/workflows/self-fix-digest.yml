@@ -8,6 +8,11 @@ on:
     # 21:00 UTC: 8:00am Sydney in daylight time (7:00am in standard time).
     - cron: '0 21 * * *'
   workflow_dispatch:
+    inputs:
+      send_when_empty:
+        description: 'Send the email even if nothing merged (to check the email path works)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -30,10 +35,18 @@ jobs:
             --jq "[.[] | select(.mergedAt >= \"$since\")]" > merged.json
           count=$(jq length merged.json)
           echo "count=$count" >> "$GITHUB_OUTPUT"
-          body=$(jq -r '"<p>These fixes went live on their own in the last 24 hours. Each passed every check and GitHub's CodeQL security scan, and matched the kinds you allowed.</p><ul>" + ([.[] | "<li><a href=\"\(.url)\">#\(.number)</a> \(.title | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;"))</li>"] | join("")) + "</ul>"' merged.json)
+          # The jq program sits inside single quotes, so its text must never
+          # contain a straight apostrophe: one ends the quote and bash fails
+          # with "syntax error near unexpected token `<'" (every run from
+          # 2026-11-12 to -14 died this way). Write &#39; in the HTML instead.
+          if [ "$count" = "0" ]; then
+            body='<p>No fixes went live on their own in the last 24 hours.</p>'
+          else
+            body=$(jq -r '"<p>These fixes went live on their own in the last 24 hours. Each passed every check and GitHub&#39;s CodeQL security scan, and matched the kinds you allowed.</p><ul>" + ([.[] | "<li><a href=\"\(.url)\">#\(.number)</a> \(.title | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;"))</li>"] | join("")) + "</ul>"' merged.json)
+          fi
           { echo 'body<<EOF'; echo "$body"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
       - name: Email the report
-        if: steps.list.outputs.count != '0'
+        if: steps.list.outputs.count != '0' || inputs.send_when_empty
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
