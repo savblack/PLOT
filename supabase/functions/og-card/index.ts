@@ -68,10 +68,12 @@ const safeAvatar = (url: unknown) => (typeof url === 'string' && url.startsWith(
 
 // Handles are exact, case-insensitive matches. PostgREST's `ilike` treats `%`
 // and `_` as wildcards, so the handle is restricted to the username alphabet
-// and `_` is escaped before it goes into the filter.
+// and every pattern character (backslash, `%` and `_`) is escaped before it
+// goes into the filter. HANDLE_RE already rules out backslash and `%`; escaping
+// them anyway keeps the filter exact if that alphabet is ever widened.
 const HANDLE_RE = /^[a-z0-9_.-]{1,40}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ilikeHandle = (handle: string) => encodeURIComponent(handle.replace(/_/g, '\\_'));
+const ilikeHandle = (handle: string) => encodeURIComponent(handle.replace(/[\\%_]/g, '\\$&'));
 const sh = (a: number) => `0 2px 12px rgba(0,0,0,${a})`;
 // Posters get a hairline edge, not a blurred drop shadow. resvg rasterises a
 // box-shadow as a Gaussian blur over the poster's area, and at 50px that one

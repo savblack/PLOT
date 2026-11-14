@@ -630,7 +630,7 @@ function AvatarCropModal({ src, saving, onCancel, onSave }) {
         >
           <img
             ref={imgRef}
-            src={src}
+            src={safeImageSrc(src)}
             alt=""
             onLoad={onImgLoad}
             draggable={false}

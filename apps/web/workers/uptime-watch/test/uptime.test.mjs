@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checksFor, classify, emailContent, tmdbProbeUrl, verdictFor } from '../src/index.js';
+import { checksFor, classify, emailContent, issueText, tmdbProbeUrl, verdictFor } from '../src/index.js';
 
 const noWait = async () => {};
 const opts = { attempts: 2, waitMs: 0 };
@@ -73,4 +73,21 @@ test('every email has a subject and no em dash, and escapes the reason', () => {
     assert.ok(!/—/.test(subject + html), `${kind} contains an em dash`);
   }
   assert.match(emailContent({ kind: 'down', reason: '<b>x</b>' }, { now: 0 }).html, /&lt;b&gt;x/);
+});
+
+test('issueText turns the alert email into plain issue text', () => {
+  assert.equal(issueText('<p><strong>Not working:</strong> app.</p><p>Second.</p>'), 'Not working: app.\n\nSecond.');
+});
+
+test('issueText leaves no tag behind, even nested ones', () => {
+  for (const html of ['<scr<b>ipt>alert(1)</script>', '<<script>script>x', '<p>a < b</p>', 'tail <img src=x onerror=y']) {
+    const text = issueText(html);
+    assert.doesNotMatch(text, /</, html);
+    assert.doesNotMatch(text, />/, html);
+  }
+});
+
+test('issueText keeps an escaped reason escaped', () => {
+  const { html } = emailContent({ kind: 'reminder', since: 0, reason: '<script>x</script>' }, { now: 60_000 });
+  assert.match(issueText(html), /&lt;script&gt;x&lt;\/script&gt;/);
 });
