@@ -34,6 +34,29 @@ export const WATCH_TOGETHER = Object.freeze({
     inviteSomeone: 'Invite someone',
     dismiss: 'Dismiss',
     unlocked: 'Unlocked',
+    // The invite card. Leads the page when there is nobody yet, then sits at
+    // the end of the row of people. Most people invite someone who isn't on
+    // Plot, so the link comes first and username search second.
+    inviteTitle: 'Who do you watch with?',
+    inviteBody: 'Send your link to anyone. When they join, Plot shows what you’ve both saved and you swipe until you agree.',
+    inviteFree: 'They don’t need an account. It’s free for them.',
+    sendInvite: 'Send invite',
+    inviteMore: 'Invite someone else',
+    waitingTitle: 'Waiting for someone to join',
+    sharedOn: (date) => `You shared your link on ${date}`,
+    shareAgain: 'Share again',
+    notifyNote: 'We’ll send you a notification when they join.',
+    // Shelves under the row of people.
+    yourWatchlist: 'Your watchlist',
+    previewNote: 'When someone joins, the titles you’ve both saved show up here.',
+    seeHow: 'See how it works',
+    onPlot: 'Already on Plot?',
+    peopleYouFollow: 'People you follow',
+    moviesWith: (names) => `Movies you and ${names} saved`,
+    showsWith: (names) => `Shows you and ${names} saved`,
+    allOfYou: 'All of you',
+    lockedShelf: 'One of you needs Premium to see and swipe through what you share. Your friend never has to pay.',
+    nothingShared: (names) => `Nothing you and ${names} have both saved yet.`,
   },
 
   // What someone with nobody to watch with yet sees at /together, Free or not.

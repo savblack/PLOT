@@ -4,7 +4,7 @@ import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { loadCertificationMeaning, movieGuide, tvGuide } from '@plot/core/parentalGuide.js';
 import { regionName } from '@plot/core/regions.js';
 import { getTmdbRegion, tmdb } from '../lib/tmdb';
-import { fontFamily, fontSize, type Palette } from '../lib/tokens';
+import { fontFamily, fontSize, radii, type Palette } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 
 export type ParentalGuideDetails = {
@@ -147,7 +147,7 @@ function makeStyles(colors: Palette) {
       paddingHorizontal: 8,
       borderWidth: 1,
       borderColor: colors.borderStrong,
-      borderRadius: 999,
+      borderRadius: radii.pill,
       backgroundColor: colors.surfaceSunken,
     },
     actionText: {

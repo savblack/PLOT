@@ -2,6 +2,8 @@
 // the authority (supabase/migrations/20260927100000_watch_together.sql); these
 // helpers only decide what to show. Design: docs/design/watch-together/README.md.
 
+import { WATCH_TOGETHER } from './copy/watchTogether.js';
+
 /** @typedef {'profile' | 'following' | 'none'} RequestsFrom */
 /** @typedef {'none' | 'outgoing' | 'incoming' | 'paired'} PairState */
 /** @typedef {'free' | 'public' | 'private' | 'pending' | 'incoming' | 'paired'} TileMode */
@@ -91,6 +93,19 @@ export function splitWatchTogether(rows) {
 /** @param {{ display_name?: string | null, username?: string | null }} person */
 export function personName(person) {
   return person?.display_name || person?.username || '?';
+}
+
+/**
+ * The meta line under a shared title: "2024" for a movie, "2019 · Show" for a
+ * show. Web and mobile both render it under posters, swipe cards and rows.
+ *
+ * @param {{ release_date?: string | null, media_type?: string | null }} title
+ * @returns {string}
+ */
+export function titleMeta(title) {
+  const year = (title?.release_date || '').slice(0, 4);
+  const kind = title?.media_type === 'tv' ? WATCH_TOGETHER.overlap.show : null;
+  return [year, kind].filter(Boolean).join(' · ');
 }
 
 /**
@@ -254,6 +269,41 @@ export function demoPartnerSaysYes({ index, total, matchedSoFar, random = Math.r
 export function unlockedPartners(partners, rememberedLocked) {
   const was = new Set(rememberedLocked || []);
   return partners.filter(p => was.has(p.other_id) && p.can_decide !== false);
+}
+
+/** Per-device record of when the viewer last shared their invite link. */
+export const INVITE_SHARED_KEY = 'plot_wt_invite_shared_at';
+
+/**
+ * Which top card the hub shows: the invite card on its own while nobody has
+ * joined, "waiting" once the link has gone out, or the row of people.
+ *
+ * @param {{ partners: unknown[], incoming: unknown[], outgoing: unknown[], sharedAt?: string | null }} input
+ * @returns {'invite' | 'waiting' | 'people'}
+ */
+export function hubStage({ partners, incoming, outgoing, sharedAt }) {
+  if (partners.length || incoming.length || outgoing.length) return 'people';
+  return sharedAt ? 'waiting' : 'invite';
+}
+
+/**
+ * "November 11" for the waiting card. US date order (Plot's copy is American).
+ *
+ * @param {string | null | undefined} iso
+ */
+export function sharedOnDate(iso) {
+  const d = iso ? new Date(iso) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : '';
+}
+
+/**
+ * Names for a shelf heading: "Sam", "Sam and Priya", "Sam, Priya and Jo".
+ *
+ * @param {string[]} names
+ */
+export function joinNames(names) {
+  if (names.length < 2) return names[0] || '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
 /**

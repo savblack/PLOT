@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tileMode, tileShowsCount, splitWatchTogether, personName, filterByKind, splitGroupMatches, shufflePick, watchTogetherErrorCode } from '../../watchTogether.js';
+import { tileMode, tileShowsCount, splitWatchTogether, personName, filterByKind, splitGroupMatches, shufflePick, watchTogetherErrorCode, titleMeta } from '../../watchTogether.js';
 import { WATCH_TOGETHER } from '../../copy/watchTogether.js';
 
 test('tile mode follows pair state first, then plan and privacy', () => {
@@ -132,4 +132,11 @@ test('reportWatchTogether sends the action and shape props through the seam, and
   configure({ onWatchTogether: () => { throw new Error('broken transport'); } });
   assert.doesNotThrow(() => reportWatchTogether('match'));
   configure({ onWatchTogether: undefined });
+});
+
+test('title meta is the year, plus "Show" for a series', () => {
+  assert.equal(titleMeta({ release_date: '2024-10-25', media_type: 'movie' }), '2024');
+  assert.equal(titleMeta({ release_date: '2019-02-01', media_type: 'tv' }), `2019 · ${WATCH_TOGETHER.overlap.show}`);
+  assert.equal(titleMeta({ release_date: null, media_type: 'tv' }), WATCH_TOGETHER.overlap.show);
+  assert.equal(titleMeta({}), '');
 });

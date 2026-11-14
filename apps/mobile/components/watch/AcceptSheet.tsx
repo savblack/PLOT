@@ -9,7 +9,9 @@ import { useMutualFollow } from '@plot/core/useWatchTogether.js';
 import { fontFamily, fontSize, spacing } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
-import { ButtonRow, Note, PrimaryButton, SecondaryButton, SectionLabel, Sheet } from './WatchChrome';
+import Button from '../Button';
+import BottomSheet from '../BottomSheet';
+import { ButtonRow, Note, SectionLabel } from './WatchChrome';
 
 export function AcceptSheet({ person, busy = false, onAccept, onDecline, onClose }: {
   person: { id?: string; other_id?: string; display_name?: string | null; username?: string | null };
@@ -27,14 +29,14 @@ export function AcceptSheet({ person, busy = false, onAccept, onDecline, onClose
   const shareFull = chosen ?? mutual;
   const name = personName(person);
   return (
-    <Sheet
+    <BottomSheet
       visible
       title={T.accept.title(name)}
       onClose={onClose}
       footer={(
         <ButtonRow>
-          <SecondaryButton label={T.accept.notNow} onPress={onDecline} disabled={busy} flex />
-          <PrimaryButton label={T.accept.accept} onPress={() => onAccept(shareFull)} disabled={busy} flex />
+          <Button label={T.accept.notNow} onPress={onDecline} disabled={busy} flex />
+          <Button variant="primary" label={T.accept.accept} onPress={() => onAccept(shareFull)} disabled={busy} flex />
         </ButtonRow>
       )}
     >
@@ -62,7 +64,7 @@ export function AcceptSheet({ person, busy = false, onAccept, onDecline, onClose
         </View>
       )}
       <Note>{T.accept.foot(name)}</Note>
-    </Sheet>
+    </BottomSheet>
   );
 }
 

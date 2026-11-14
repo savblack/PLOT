@@ -8,7 +8,7 @@
   align-items: center;
   gap: clamp(32px, 5vw, 80px);
   padding: clamp(24px, 3vw, 48px);
-  border-radius: 20px;
+  border-radius: var(--radius-md);
   background: var(--surface-sunken);
   color: var(--text-primary);
 }
@@ -66,7 +66,7 @@
   .guide-setup { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 24px; }
   .guide-setup-intro h2 { font-size: 28px; }
 }
-@media (max-width: 480px) {
+@media (max-width: 479px) {
   .guide-setup-shell { padding-top: 20px; }
   .guide-setup { padding: 20px; }
   .guide-setup-intro h2 { font-size: 26px; }

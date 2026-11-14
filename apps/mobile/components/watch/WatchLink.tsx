@@ -11,9 +11,10 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { rememberWatchTogetherReturn } from '../../lib/watchTogetherReturn';
 import { AcceptSheet } from './AcceptSheet';
 import { InviteLinkCard } from './InviteLinkCard';
-import {
-  ButtonRow, ErrorNote, Note, PageTitle, PersonFace, PrimaryButton, SecondaryButton, WatchPage, Wordmark, openPremium,
-} from './WatchChrome';
+import Button from '../Button';
+import SectionTitle from '../SectionTitle';
+import { Avatar } from '../Avatar';
+import { ButtonRow, ErrorNote, Note, WatchPage, Wordmark, openPremium } from './WatchChrome';
 import { LinkPerson, asLink, asResult, errorText } from './watchModel';
 
 const L = T.landing;
@@ -47,7 +48,7 @@ export function WatchLink({ username, linkKey }: { username: string; linkKey: st
   if (!info) {
     return (
       <WatchPage hideBack>
-        <PageTitle>{L.invalidTitle}</PageTitle>
+        <SectionTitle>{L.invalidTitle}</SectionTitle>
         <Note>{L.invalidBody}</Note>
       </WatchPage>
     );
@@ -59,15 +60,15 @@ export function WatchLink({ username, linkKey }: { username: string; linkKey: st
   if (!userId) {
     return (
       <WatchPage hideBack>
-        <PersonFace person={info} size={72} />
+        <Avatar url={info.avatar_url} name={personName(info)} size={72} colors={colors} />
         <Text style={{ fontFamily: fontFamily.display, fontSize: fontSize.xl, letterSpacing: -0.6, lineHeight: 28, color: colors.textPrimary }}>
           {L.titleNewLead(name)}{' '}
         </Text>
         <Wordmark />
         <Note>{L.bodyNew(name)}</Note>
         <ButtonRow>
-          <PrimaryButton label={`${L.joinLead} plot ${L.joinTail}`} onPress={signIn} />
-          <SecondaryButton label={L.haveAccount} onPress={signIn} />
+          <Button variant="primary" label={`${L.joinLead} plot ${L.joinTail}`} onPress={signIn} />
+          <Button label={L.haveAccount} onPress={signIn} />
         </ButtonRow>
         <Note>{L.newNote(name)}</Note>
       </WatchPage>
@@ -77,7 +78,7 @@ export function WatchLink({ username, linkKey }: { username: string; linkKey: st
   if (info.state === 'self') {
     return (
       <WatchPage hideBack>
-        <PageTitle>{L.selfTitle}</PageTitle>
+        <SectionTitle>{L.selfTitle}</SectionTitle>
         <Note>{L.selfBody}</Note>
         <InviteLinkCard />
       </WatchPage>
@@ -87,9 +88,9 @@ export function WatchLink({ username, linkKey }: { username: string; linkKey: st
   if (info.state === 'paired') {
     return (
       <WatchPage hideBack>
-        <PersonFace person={info} size={72} />
-        <PageTitle>{L.pairedTitle(name)}</PageTitle>
-        <PrimaryButton label={T.tile.pairedAction} onPress={() => router.push(togetherPath)} />
+        <Avatar url={info.avatar_url} name={personName(info)} size={72} colors={colors} />
+        <SectionTitle>{L.pairedTitle(name)}</SectionTitle>
+        <Button variant="primary" label={T.tile.pairedAction} onPress={() => router.push(togetherPath)} />
       </WatchPage>
     );
   }
@@ -106,20 +107,20 @@ export function WatchLink({ username, linkKey }: { username: string; linkKey: st
 
   return (
     <WatchPage hideBack>
-      <PersonFace person={info} size={72} />
-      <PageTitle>{L.title(name)}</PageTitle>
+      <Avatar url={info.avatar_url} name={personName(info)} size={72} colors={colors} />
+      <SectionTitle>{L.title(name)}</SectionTitle>
       <Note>{info.can_decide ? L.body : L.bodyNoPremium(name)}</Note>
       {!!error && <ErrorNote>{error}</ErrorNote>}
       <ButtonRow>
         {info.can_decide ? (
           <>
-            <PrimaryButton label={L.accept} onPress={() => setReviewing(true)} disabled={busy} />
-            <SecondaryButton label={L.notNow} onPress={() => router.replace('/(app)/together' as Href)} />
+            <Button variant="primary" label={L.accept} onPress={() => setReviewing(true)} disabled={busy} />
+            <Button label={L.notNow} onPress={() => router.replace('/(app)/together' as Href)} />
           </>
         ) : (
           <>
-            <PrimaryButton label={T.start.getPremium} onPress={() => openPremium(router)} />
-            <SecondaryButton label={L.imIn(name)} onPress={() => setReviewing(true)} disabled={busy} />
+            <Button variant="primary" label={T.start.getPremium} onPress={() => openPremium(router)} />
+            <Button label={L.imIn(name)} onPress={() => setReviewing(true)} disabled={busy} />
           </>
         )}
       </ButtonRow>

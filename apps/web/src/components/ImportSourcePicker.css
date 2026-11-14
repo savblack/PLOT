@@ -38,7 +38,7 @@
 .isp-drop-hint { font-size: 12.5px; line-height: 1.4; color: var(--text-secondary); max-width: 320px; }
 
 .isp-lanes { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 20px; }
-@media (min-width: 760px) { .isp-lanes { grid-template-columns: 240px 1fr; } }
+@media (min-width: 768px) { .isp-lanes { grid-template-columns: 240px 1fr; } }
 .isp-lane {
   padding: 14px;
   border-radius: var(--radius-lg);
@@ -48,10 +48,10 @@
 .isp-lane-title { margin: 0; font: inherit; font-size: 15px; font-weight: 700; color: var(--text-primary); }
 .isp-lane-hint { margin: 2px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--text-secondary); }
 .isp-only-desktop { display: none; }
-@media (min-width: 760px) { .isp-only-desktop { display: inline; } .isp-only-phone { display: none; } }
+@media (min-width: 768px) { .isp-only-desktop { display: inline; } .isp-only-phone { display: none; } }
 .isp-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .isp-tiles--connect { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (min-width: 760px) {
+@media (min-width: 768px) {
   .isp-tiles--connect { grid-template-columns: 1fr; }
   .isp-tiles--connect .isp-tile { flex-direction: row; justify-content: flex-start; padding: 10px 12px; font-size: 13.5px; }
 }

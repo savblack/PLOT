@@ -5,10 +5,12 @@ import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { AppContext } from '../hooks/useApp.js';
 import WatchTogetherView from '../components/WatchTogetherView.jsx';
 
-/* The Watch together hub for someone with partners. Free with everyone waiting
-   on Premium shows the one Get Premium action; Premium shows who's watching
-   chips and Decide. People are fictional; a stub Supabase client answers the
-   list and suggestion calls, so nothing here reads or writes account data. */
+/* The Watch together hub for someone with partners (Nov 2026 redesign):
+   History's frame, with who's watching, requests and the invite link in the
+   left column and shelves of what you share with whoever is picked on the right. Free with everyone waiting on Premium puts the
+   upgrade on each card. People and titles are fictional (negative ids, no
+   posters); a stub Supabase client answers every call, so nothing here reads
+   or writes account data. */
 
 configure({
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
@@ -25,6 +27,13 @@ const suggestions = [
   { id: 'u-dana', display_name: 'Dana Reyes', username: 'danar', avatar_url: null, overlap_count: 4 },
   { id: 'u-tom', display_name: 'Tom Kask', username: 'tomk', avatar_url: null },
 ];
+const title = (id, name, media_type, saved_by) => ({ tmdb_id: id, media_type, title: name, poster_path: null, release_date: '2024-01-01', genre_ids: [], provider_ids: [], saved_by });
+const shared = [
+  title(-101, 'East Pier', 'movie', ['u-mia', 'u-sam', 'u-priya']),
+  title(-102, 'Digger Bay', 'movie', ['u-mia', 'u-sam']),
+  title(-103, 'Slow Lane', 'tv', ['u-mia', 'u-sam', 'u-priya']),
+  title(-104, 'Night Ferry', 'tv', ['u-mia', 'u-priya']),
+];
 const queryOf = (data) => {
   const result = { data, error: null };
   const chain = new Proxy(function query() {}, {
@@ -36,8 +45,12 @@ const queryOf = (data) => {
   return chain;
 };
 const clientFor = (rows) => ({
-  rpc: async (name) => {
+  rpc: async (name, args) => {
     if (name === 'list_watch_together') return { data: rows, error: null };
+    if (name === 'watch_together_titles') {
+      const ids = args?.p_others || [];
+      return { data: shared.filter(t => ids.every(id => t.saved_by.includes(id))), error: null };
+    }
     if (name === 'suggest_watch_together') return { data: suggestions, error: null };
     if (name === 'my_watch_together_link') return { data: 'abc123', error: null };
     return { data: null, error: null };
@@ -54,7 +67,8 @@ const clientFor = (rows) => ({
 const app = (is_premium) => ({
   user: { id: 'u-mia' },
   profile: { region: 'GB', is_premium, display_name: 'Mia', username: 'mia', is_public: true },
-  watchlist: { items: [] },
+  watchlist: { items: [], isInList: () => false, add: noop, remove: noop },
+  openPanel: noop,
 });
 
 export default {
@@ -85,9 +99,11 @@ export const Premium = {
   args: { premium: true, rows: unlocked },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => expect(canvas.getByRole('button', { name: T.hub.decideWith('Sam Okafor') })).toBeEnabled());
-    await userEvent.click(canvas.getByRole('button', { name: /Priya/ }));
-    await waitFor(() => expect(canvas.getByRole('button', { name: T.overlap.groupAction })).toBeEnabled());
+    const people = within(await canvas.findByRole('group', { name: T.hub.whosWatching }));
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: T.hub.decideWith('Sam Okafor') })[0]).toBeEnabled());
+    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.moviesWith('Sam Okafor') })).toBeInTheDocument());
+    await userEvent.click(people.getByRole('button', { name: new RegExp(T.hub.allOfYou) }));
+    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.showsWith('Sam Okafor and Priya Nair') })).toBeInTheDocument());
   },
 };
 

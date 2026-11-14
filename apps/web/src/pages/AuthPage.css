@@ -617,14 +617,14 @@ a.auth-cta { text-decoration: none; }
 .auth-magiclink:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Mobile ──────────────────────────────────────────────── */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .auth-visual { display: none; }
   .auth-panel-logo { padding: 1.75rem; }
   .auth-panel-body { padding: 0 1.75rem; }
   .auth-header h1 { font-size: 1.9rem; }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 479px) {
   .auth-panel-logo { padding: 1.5rem 1.25rem; }
   .auth-panel .service-notice { margin-inline: 1.25rem; }
   .auth-panel-body { padding: 0 1.25rem; }

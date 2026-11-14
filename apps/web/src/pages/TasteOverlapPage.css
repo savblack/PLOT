@@ -56,15 +56,6 @@
   text-decoration: none;
   font-size: 0.875rem; font-weight: 600;
 }
-.to-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
-  object-fit: cover; flex-shrink: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--accent-secondary-fill);
-  color: var(--on-accent-secondary-fill);
-  font-size: 0.8rem; font-weight: 700;
-}
-.to-avatar--lg { width: 44px; height: 44px; font-size: 1rem; }
 
 .to-card {
   padding: 1.1rem;

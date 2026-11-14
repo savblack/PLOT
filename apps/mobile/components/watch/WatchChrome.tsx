@@ -3,12 +3,11 @@ import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { useRouter, type Href } from 'expo-router';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconChevronLeft, IconChevronRight } from '../icons';
-import SectionTitle from '../SectionTitle';
+import { IconChevronRight } from '../icons';
 import Button from '../Button';
-import BottomSheet from '../BottomSheet';
+import BackBar from '../BackBar';
+import { Avatar } from '../Avatar';
 import { personName } from '@plot/core/watchTogether.js';
-import { COMMON } from '@plot/core/copy/common.js';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { PREMIUM_SETTINGS_PATH } from '../../lib/premium';
@@ -16,34 +15,11 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { WtPerson } from './watchModel';
 import PlotWordmark from '../PlotWordmark';
 
-export function PersonFace({ person, size = 40 }: { person: { display_name?: string | null; username?: string | null; avatar_url?: string | null }; size?: number }) {
-  const { colors } = useTheme();
-  const name = personName(person);
-  const url = person.avatar_url;
-  if (url) {
-    return <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.surfaceSunken }} />;
-  }
-  return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.surfaceSunken, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontFamily: fontFamily.sansBold, fontSize: size > 36 ? fontSize.md : fontSize.sm, color: colors.textPrimary }}>{name.charAt(0).toUpperCase()}</Text>
-    </View>
-  );
-}
-
 export function PosterThumb({ path, width, height }: { path: string | null; width: number; height: number }) {
   const { colors } = useTheme();
   const url = posterUrl(path, width > 140 ? 'w342' : 'w185');
   if (!url) return <View style={{ width, height, borderRadius: radii.sm, backgroundColor: colors.surfaceSunken }} />;
   return <Image source={{ uri: url }} style={{ width, height, borderRadius: radii.sm, backgroundColor: colors.surfaceSunken }} resizeMode="cover" />;
-}
-
-/** Watch together's names for the shared buttons, so every caller reads the same. */
-export function PrimaryButton({ label, onPress, disabled, flex }: { label: string; onPress: () => void; disabled?: boolean; flex?: boolean }) {
-  return <Button variant="primary" label={label} onPress={onPress} disabled={disabled} flex={flex} />;
-}
-
-export function SecondaryButton({ label, onPress, disabled, flex }: { label: string; onPress: () => void; disabled?: boolean; flex?: boolean }) {
-  return <Button label={label} onPress={onPress} disabled={disabled} flex={flex} />;
 }
 
 export function openPremium(router: { push: (href: Href) => void }) {
@@ -57,25 +33,15 @@ export function useOpenTitle() {
   };
 }
 
-export function BackRow({ label = COMMON.back, backTo }: { label?: string; backTo?: Href }) {
+export function WatchPage({ children, backTo, hideBack, scroll = true }: { children: ReactNode; backTo?: Href; hideBack?: boolean; scroll?: boolean }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const goBack = () => {
     if (backTo) router.replace(backTo);
     else if (router.canGoBack()) router.back();
     else router.replace('/(app)/together' as Href);
   };
-  return (
-    <TouchableOpacity onPress={goBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={label} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
-      <IconChevronLeft color={colors.textPrimary} />
-      <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-export function WatchPage({ children, backTo, backLabel, hideBack, scroll = true }: { children: ReactNode; backTo?: Href; backLabel?: string; hideBack?: boolean; scroll?: boolean }) {
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const body = scroll ? (
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE, gap: spacing.lg }}>
       {children}
@@ -85,7 +51,7 @@ export function WatchPage({ children, backTo, backLabel, hideBack, scroll = true
   );
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
-      {hideBack ? <View style={{ height: spacing.sm }} /> : <BackRow label={backLabel} backTo={backTo} />}
+      {hideBack ? <View style={{ height: spacing.sm }} /> : <BackBar onBack={goBack} />}
       {body}
     </View>
   );
@@ -105,17 +71,9 @@ export function ButtonRow({ children }: { children: ReactNode }) {
   return <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>{children}</View>;
 }
 
-export function Sheet({ visible, title, onClose, children, footer, closeLabel }: { visible: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; closeLabel?: string | null }) {
-  return <BottomSheet visible={visible} title={title} onClose={onClose} footer={footer} closeLabel={closeLabel}>{children}</BottomSheet>;
-}
-
 export function SectionLabel({ children }: { children: string }) {
   const { colors } = useTheme();
   return <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, letterSpacing: 0.6, color: colors.textMuted, textTransform: 'uppercase' }}>{children}</Text>;
-}
-
-export function PageTitle({ children }: { children: string }) {
-  return <SectionTitle>{children}</SectionTitle>;
 }
 
 export function Note({ children }: { children: string }) {
@@ -127,7 +85,7 @@ export function PersonRow({ person, note, onPress, trailing }: { person: WtPerso
   const { colors } = useTheme();
   const body = (
     <>
-      <PersonFace person={person} />
+      <Avatar url={person.avatar_url} name={personName(person)} size={40} colors={colors} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary }} numberOfLines={1}>{personName(person)}</Text>
         {!!note && <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }} numberOfLines={2}>{note}</Text>}
@@ -146,35 +104,6 @@ export function PersonRow({ person, note, onPress, trailing }: { person: WtPerso
   );
 }
 
-/** The dark top card: one per screen, holds the one primary action. Dark in both themes. */
-export function useInk() {
-  const { resolved } = useTheme();
-  const dark = resolved === 'dark';
-  return {
-    bg: dark ? '#1d1d1a' : '#292924',
-    raised: dark ? '#2b2b27' : '#3a3a34',
-    line: dark ? '#46463f' : '#55554d',
-    text: '#f8f2ea',
-    muted: '#d9d2c4',
-    note: '#b9b2a4',
-  };
-}
-
-export function InkCard({ children }: { children: ReactNode }) {
-  const ink = useInk();
-  return <View style={{ backgroundColor: ink.bg, borderRadius: radii.lg, padding: spacing.xl, gap: spacing.md }}>{children}</View>;
-}
-
-export function InkTitle({ children }: { children: string }) {
-  const ink = useInk();
-  return <Text style={{ fontFamily: fontFamily.display, fontSize: 34, lineHeight: 36, letterSpacing: -1, color: ink.text }}>{children}</Text>;
-}
-
-export function InkText({ children, tone = 'muted' }: { children: string; tone?: 'muted' | 'note' }) {
-  const ink = useInk();
-  return <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 21, color: tone === 'muted' ? ink.muted : ink.note }}>{children}</Text>;
-}
-
 /** Rows grouped on one surface with hairlines between them. */
 export function ListCard({ children }: { children: ReactNode }) {
   const { colors } = useTheme();
@@ -188,22 +117,3 @@ export function ListCard({ children }: { children: ReactNode }) {
   );
 }
 
-/** A partner toggle on the ink card. */
-export function WhoChip({ person, on, onPress }: { person: WtPerson; on: boolean; onPress: () => void }) {
-  const { colors } = useTheme();
-  const ink = useInk();
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: on }}
-      style={{
-        flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44, paddingLeft: 4, paddingRight: spacing.md,
-        borderRadius: radii.pill, borderWidth: 1.5, borderColor: on ? colors.accentFill : ink.line, backgroundColor: on ? colors.accentFill : 'transparent',
-      }}
-    >
-      <PersonFace person={person} size={34} />
-      <Text style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: on ? colors.onAccentFill : ink.text }}>{personName(person)}</Text>
-    </TouchableOpacity>
-  );
-}

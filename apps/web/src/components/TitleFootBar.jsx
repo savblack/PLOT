@@ -369,7 +369,7 @@ export default function TitleFootBar({
         {fresh && !editing && <span className="foot-bar-drain" aria-hidden="true" />}
       </div>
 
-      <span className="foot-bar-sr" role="status" aria-live="polite">{status || noteEditor.status}</span>
+      <span className="sr-only" role="status" aria-live="polite">{status || noteEditor.status}</span>
     </div>
   );
 }

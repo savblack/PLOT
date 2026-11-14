@@ -6,9 +6,11 @@ import {
   PICKER_MIN_SPIN_MS, PICKER_MODES, PICKER_STEPS,
 } from '@plot/core/tonightPicker.js';
 import { GENRE_MOODS } from '@plot/core/copy/tonightPicker.js';
+import { buildShelves } from '@plot/core/tonightShelves.js';
 import { TonightPage } from '../components/TonightView.jsx';
 
-// Static states for the picker page. Title ids are fixture values, not TMDB
+// Static states for the picker page. It opens on chips and shelves; the
+// shelves come from buildShelves over the fixture pool, so no TMDB calls. Title ids are fixture values, not TMDB
 // ids, and posters are left empty, so nothing here looks like a real lookup.
 // Genre ids are TMDB's fixed genre catalog ids so the mood words resolve.
 const GENRES = [[35, 'Comedy'], [53, 'Thriller'], [18, 'Drama'], [28, 'Action'], [27, 'Horror'], [10749, 'Romance'], [80, 'Crime'], [878, 'Science Fiction'], [99, 'Documentary'], [16, 'Animation'], [9648, 'Mystery'], [14, 'Fantasy'], [36, 'History']]
@@ -23,7 +25,7 @@ const POOL = [
   ['Late show', 88, 6.4, false],
 ].map(([title, runtime, vote_average, onWatchlist], i) => ({
   id: -(100 + i), media_type: 'movie', title, poster_path: null, backdrop_path: null,
-  release_date: `20${12 + i}-05-01`, genre_ids: [], runtime, vote_average,
+  release_date: `20${12 + i}-05-01`, genre_ids: [[35], [53], [18], [35, 10749], [80], [27]][i], runtime, vote_average,
   providers: i % 2 ? [{ id: 8, name: 'Netflix', logo_path: null }] : [], onWatchlist,
 }));
 
@@ -85,10 +87,15 @@ function useFakeActions() {
   };
 }
 
-function Story({ premium = true, ...props }) {
-  const picker = useFakePicker({ ...props, premium });
+function Story({ premium = true, pool = POOL, ...props }) {
+  const picker = useFakePicker({ ...props, pool, premium });
   const actions = useFakeActions();
-  return <TonightPage premium={premium} picker={picker} onOpen={noop} navigate={noop} actions={actions} />;
+  const useShelves = ({ options }) => ({
+    shelves: buildShelves({ watchlist: pool.filter(p => p.onWatchlist || premium), services: premium ? pool.filter(p => !p.onWatchlist) : [], options, hasServices: props.hasServices !== false, premium }),
+    loading: false,
+    error: false,
+  });
+  return <TonightPage premium={premium} picker={picker} onOpen={noop} navigate={noop} actions={actions} useShelves={useShelves} />;
 }
 
 export default {
@@ -100,7 +107,7 @@ export default {
   decorators: [
     (StoryFn) => (
       <MemoryRouter initialEntries={['/tonight']}>
-        <AppContext.Provider value={{ profile: { id: 'story-user', is_premium: false } }}>
+        <AppContext.Provider value={{ profile: { id: 'story-user', is_premium: false }, user: { id: 'story-user' }, openPanel: noop, watchlist: { items: POOL, loading: false, isInList: () => false, add: noop, remove: noop } }}>
           <StoryFn />
         </AppContext.Provider>
       </MemoryRouter>
@@ -108,17 +115,14 @@ export default {
   ],
 };
 
-export const Question1 = { render: () => <Story /> };
-export const Question2 = { render: () => <Story step={1} /> };
-export const Question2Tv = { render: () => <Story step={1} preset={{ mediaType: 'tv' }} /> };
-export const Question3 = { render: () => <Story step={2} preset={{ maxRuntime: 120, genreIds: [35, 53] }} /> };
-export const Question4 = { render: () => <Story step={3} preset={{ maxRuntime: 120, genreIds: [35, 53], era: '2010s', minScore: 7 }} /> };
+export const Shelves = { render: () => <Story /> };
+export const ShelvesNarrowed = { render: () => <Story preset={{ maxRuntime: 120, genreIds: [35, 16, 10749] }} /> };
 export const Spinning = { render: () => <Story phase="spinning" /> };
 export const Results = { render: () => <Story phase="results" preset={{ maxRuntime: 120, genreIds: [35, 53], era: '2010s', minScore: 7 }} /> };
 export const NothingFits = { render: () => <Story phase="empty" pool={[]} /> };
 export const NoServicesOrWatchlist = { render: () => <Story hasServices={false} hasWatchlist={false} /> };
-// Free: every question works; Go and Surprise me open the upgrade pop-up.
-export const FreeAnswering = { render: () => <Story premium={false} step={3} preset={{ maxRuntime: 120, genreIds: [35, 53], era: '2010s', minScore: 7 }} /> };
+// Free: shelves from your own watchlist; finding new titles on your services is Premium.
+export const FreeShelves = { render: () => <Story premium={false} /> };
 export const FreeUnlockPopUp = { render: () => <Story premium={false} phase="locked" step={3} preset={{ maxRuntime: 120, genreIds: [35, 53], era: '2010s', minScore: 7 }} /> };
 
 const SAVED = [

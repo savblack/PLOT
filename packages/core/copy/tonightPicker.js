@@ -187,6 +187,36 @@ export const TONIGHT_PICKER = {
   },
   // Under the Go button for a Free viewer whose pick for the day is unused.
   freePickNote: 'Free: one pick a day.',
+
+  // Nov 2026: the page opens on shelves of ready answers (tonightShelves.js).
+  // The chips set the same options the questions used to, and narrow every
+  // shelf at once. "Pick one for me" runs the picker on those options.
+  pickForMe: 'Pick one for me',
+  chips: {
+    label: 'Narrow it down',
+    movies: 'Movies',
+    shows: 'Shows',
+    short: { movie: 'Under 2h', tv: 'Short episodes' },
+    light: 'Light',
+    gripping: 'Gripping',
+    recent: 'New',
+    rated: 'Rated 7+',
+    services: 'My services',
+    more: 'More filters',
+    fewer: 'Fewer filters',
+  },
+  shelves: {
+    watchlist: 'From your watchlist',
+    short: { movie: 'Under 2 hours', tv: 'Short episodes' },
+    shortNote: { movie: 'Done before it gets late.', tv: 'One or two before bed.' },
+    light: 'Something light',
+    gripping: 'Something gripping',
+    services: 'On your services',
+    popular: 'Popular right now',
+    servicesLocked: 'Premium also finds titles on your services that you haven’t saved yet.',
+    empty: 'Nothing fits yet. Turn off a chip, or save a few titles to your watchlist.',
+    emptyWatchlist: 'Save a few titles and they’ll show up here, sorted for tonight.',
+  },
 };
 
 // A feeling word per TMDB genre id, shown under the genre on question 3 and

@@ -22,12 +22,12 @@ import UpgradeSheet from './UpgradeSheet.jsx';
 import { EVENTS, track } from '../lib/analytics.js';
 import PremiumMark from './PremiumMark.jsx';
 import Chip, { ChipRow, Tag } from './Chip.jsx';
+import Avatar from './Avatar.jsx';
 
+// Watch together's sizes on the shared Avatar: sm overlaps in stacks.
+const PERSON_SIZES = { sm: 32, md: 44, lg: 72 };
 export function PersonAvatar({ person, size = 'md' }) {
-  const name = personName(person);
-  return person?.avatar_url
-    ? <img className={`wt-avatar wt-avatar--${size}`} src={person.avatar_url} alt="" />
-    : <span className={`wt-avatar wt-avatar--${size}`} aria-hidden="true">{name.charAt(0).toUpperCase()}</span>;
+  return <Avatar src={person?.avatar_url} name={personName(person)} size={PERSON_SIZES[size] ?? 44} stacked={size === 'sm'} />;
 }
 
 function Check() {

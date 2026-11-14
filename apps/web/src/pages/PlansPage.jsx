@@ -228,7 +228,7 @@ export default function PlansPage() {
           <table className="cmp-table">
             <thead>
               <tr>
-                <th scope="col" className="cmp-feat"><span className="plans-sr">{CMP.featureHeader}</span></th>
+                <th scope="col" className="cmp-feat"><span className="sr-only">{CMP.featureHeader}</span></th>
                 <th scope="col">{CMP.freeHeader}</th>
                 <th scope="col">{CMP.premiumHeader}</th>
               </tr>

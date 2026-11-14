@@ -72,7 +72,7 @@
 .scs-arrow--next { right: 0; }
 
 .scs-dots { display: flex; justify-content: center; gap: 6px; }
-.scs-dots i { width: 22px; height: 6px; border-radius: 999px; background: var(--surface-sunken); }
+.scs-dots i { width: 22px; height: 6px; border-radius: var(--radius-pill); background: var(--surface-sunken); }
 .scs-dots i.on { background: var(--accent-fill); }
 
 .scs-caption { display: flex; flex-direction: column; gap: 0.3rem; }
@@ -144,6 +144,6 @@
   text-underline-offset: 2px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .scs-arrow { display: none; }
 }

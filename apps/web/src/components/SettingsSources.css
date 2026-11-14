@@ -52,7 +52,7 @@
 .ss-foot { margin: 8px 16px 0; font-size: 12px; color: var(--text-muted); }
 
 /* On phones the row's inline action gives way to the detail. */
-@media (max-width: 639px) { .ss-row-action { display: none; } }
+@media (max-width: 599px) { .ss-row-action { display: none; } }
 
 /* Status chips: icon, colour and a word, never colour alone. */
 .ss-chip {

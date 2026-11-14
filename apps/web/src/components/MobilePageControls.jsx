@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { onWideChange } from '../hooks/useWide.js';
 import { createPortal } from 'react-dom';
 import { COMMON } from '../copy/common.js';
 import { MOBILE_CONTROLS } from '@plot/core/copy/mobileControls.js';
@@ -41,11 +42,9 @@ export default function MobilePageControls({ groups = [], options, value, onChan
     const element = dialog.current;
     const opener = trigger.current;
     element.showModal();
-    const desktop = window.matchMedia('(min-width: 1024px)');
-    const onResize = () => { if (desktop.matches) setOpen(false); };
-    desktop.addEventListener('change', onResize);
+    const offWide = onWideChange((wide) => { if (wide) setOpen(false); });
     return () => {
-      desktop.removeEventListener('change', onResize);
+      offWide();
       element.close();
       opener?.focus();
     };

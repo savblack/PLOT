@@ -1,3 +1,4 @@
+import { Tag } from '../components/Chip.jsx';
 import { useState, useEffect } from 'react';
 import './DesignSystemPage.css';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
@@ -276,14 +277,14 @@ export default function DesignSystemPage() {
           ))}
         </div>
         <div className="ds-chip-row">
-          <span className="chip chip-cinema">Cinema</span>
-          <span className="chip chip-streaming">Movie</span>
-          <span className="chip chip-episode">TV</span>
-          <span className="chip chip-now">Now</span>
-          <span className="chip chip-today">Today</span>
-          <span className="chip chip-tomorrow">Tomorrow</span>
-          <span className="chip chip-soon">Soon</span>
-          <span className="chip chip-muted">Saved</span>
+          <Tag tone="accent" label="Cinema" />
+          <Tag tone="neutral" label="Movie" />
+          <Tag tone="sage" label="TV" />
+          <Tag tone="success" label="Now" />
+          <Tag tone="success" label="Today" />
+          <Tag tone="warning" label="Tomorrow" />
+          <Tag tone="warning" label="Soon" />
+          <Tag tone="neutral" label="Saved" />
         </div>
 
         <h3 className="ds-subsection-title">Profile badges</h3>
@@ -362,7 +363,7 @@ export default function DesignSystemPage() {
             <div className="ds-bar-copy"><strong>Date group header</strong><p>Collapsible strip for saved, watching, today, and release groups.</p></div>
             <button className="date-group-header date-group-collapsible ds-fake-date-group">
               <span className="date-group-label">Today</span>
-              <span className="chip chip-streaming">Movie</span>
+              <Tag tone="neutral" label="Movie" />
             </button>
           </div>
 
@@ -490,7 +491,7 @@ export default function DesignSystemPage() {
             <div className="media-card ds-media-sample">
               <div className="media-card-img">
                 <div className="ds-poster-art"><span><PlotLogo inherit /></span></div>
-                <div className="card-chip-overlay"><span className="chip chip-streaming">Movie</span></div>
+                <div className="card-chip-overlay"><Tag tone="neutral" label="Movie" /></div>
                 <button className="card-save-btn saved" aria-label="Saved sample"><IconBookmark /></button>
               </div>
               <div className="media-card-title">Sample poster card</div>
@@ -569,7 +570,7 @@ export default function DesignSystemPage() {
                   <div className="cal-event-title">Dune: Part Three</div>
                   <div className="cal-event-meta">Cinema release</div>
                 </div>
-                <span className="chip chip-cinema">Cinema</span>
+                <Tag tone="accent" label="Cinema" />
               </div>
             </div>
           </div>
@@ -580,7 +581,7 @@ export default function DesignSystemPage() {
               <div className="ds-panel-art" />
               <div className="panel-body">
                 <h3 className="panel-title">Sample title</h3>
-                <div className="panel-meta-row"><span>2026</span><span className="chip chip-streaming">Movie</span></div>
+                <div className="panel-meta-row"><span>2026</span><Tag tone="neutral" label="Movie" /></div>
                 <p className="panel-overview">Use for overview, save actions, providers, notes, and episode lists.</p>
                 <div className="providers-grid">
                   <span className="provider-chip">
@@ -1373,9 +1374,9 @@ export default function DesignSystemPage() {
               <span className="active">Discover</span><span>New Releases</span><span>Upcoming</span><span>Guide</span>
             </div>
             <div className="ds-phone-chiprow">
-              <span className="chip chip-now">Now</span>
-              <span className="chip chip-today">Today</span>
-              <span className="chip chip-streaming">Movie</span>
+              <Tag tone="success" label="Now" />
+              <Tag tone="success" label="Today" />
+              <Tag tone="neutral" label="Movie" />
             </div>
             <div className="ds-phone-rows">
               <div className="ds-phone-listrow"><span className="ds-phone-poster" /><span className="ds-phone-lines"><b /><i /></span></div>

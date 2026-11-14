@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  pickResultMeta,
   pickerProviderIds,
   regionFlatrate,
   defaultPickerOptions,
@@ -454,4 +455,18 @@ test('a Free viewer gets one pick a day, renewed on the next local date', () => 
 test('the free pick is stored per viewer, never shared between accounts', () => {
   assert.notEqual(freePickKey('a'), freePickKey('b'));
   assert.equal(freePickKey(null), freePickKey(undefined));
+});
+
+test('result meta: movie shows year, runtime and score; a show its format', async () => {
+  const { TONIGHT_PICKER: P } = await import('../../copy/tonightPicker.js');
+  assert.equal(
+    pickResultMeta({ media_type: 'movie', release_date: '2024-10-25', runtime: 120, vote_average: 7.4 }),
+    ['2024', P.minutes(120), P.score10(7.4)].join(' · '),
+  );
+  assert.equal(
+    pickResultMeta({ media_type: 'tv', release_date: '2021-01-01', miniseries: true, runtime: 50 }),
+    ['2021', P.miniseries, P.episodeMinutes(50)].join(' · '),
+  );
+  assert.equal(pickResultMeta({ media_type: 'tv', seasons: 3 }), P.seasons(3));
+  assert.equal(pickResultMeta({ media_type: 'movie' }), '');
 });

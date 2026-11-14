@@ -8,7 +8,8 @@ import { supabase } from '@plot/core/supabase.js';
 import { fontFamily, fontSize, spacing } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
-import { Note, PersonFace } from './WatchChrome';
+import { Avatar } from '../Avatar';
+import { Note } from './WatchChrome';
 import { WtPerson, asPeople } from './watchModel';
 
 export function SavedByToo({ tmdbId, mediaType }: { tmdbId: number; mediaType: string }) {
@@ -42,7 +43,7 @@ export function SavedByToo({ tmdbId, mediaType }: { tmdbId: number; mediaType: s
       <View style={{ flexDirection: 'row' }}>
         {people.slice(0, 3).map((person, index) => (
           <View key={person.id} style={{ marginLeft: index === 0 ? 0 : -8 }}>
-            <PersonFace person={person} size={28} />
+            <Avatar url={person.avatar_url} name={personName(person)} size={28} colors={colors} />
           </View>
         ))}
       </View>

@@ -10,7 +10,9 @@ import { fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { Tag } from '../Chip';
-import { ErrorNote, Note, PersonRow, PrimaryButton, SectionLabel, Sheet } from './WatchChrome';
+import Button from '../Button';
+import BottomSheet from '../BottomSheet';
+import { ErrorNote, Note, PersonRow, SectionLabel } from './WatchChrome';
 import { useTogether, WtPerson } from './watchModel';
 
 const L = T.sharedList;
@@ -52,11 +54,11 @@ export function ShareListSheet({ partner, overlapCount, title, onClose }: {
   };
 
   return (
-    <Sheet
+    <BottomSheet
       visible
       title={title || L.sheetTitle}
       onClose={onClose}
-      footer={<PrimaryButton label={L.create} onPress={create} disabled={busy || !name.trim()} />}
+      footer={<Button variant="primary" label={L.create} onPress={create} disabled={busy || !name.trim()} />}
     >
       <View style={{ gap: spacing.xs }}>
         <SectionLabel>{L.name}</SectionLabel>
@@ -93,7 +95,7 @@ export function ShareListSheet({ partner, overlapCount, title, onClose }: {
         <Note>{L.whosOnNote}</Note>
       </View>
       {!!error && <ErrorNote>{error}</ErrorNote>}
-    </Sheet>
+    </BottomSheet>
   );
 }
 
@@ -110,13 +112,13 @@ export function AddPeopleSheet({ listId, people, locked, onClose }: {
   const candidates = partners.filter(p => !onList.has(p.id));
   if (locked) {
     return (
-      <Sheet visible title={L.addPeople} onClose={onClose}>
+      <BottomSheet visible title={L.addPeople} onClose={onClose}>
         <Note>{COLLABORATIVE_LISTS.hostNeedsPremium}</Note>
-      </Sheet>
+      </BottomSheet>
     );
   }
   return (
-    <Sheet visible title={L.addPeople} onClose={onClose} closeLabel={COMMON.done}>
+    <BottomSheet visible title={L.addPeople} onClose={onClose} closeLabel={COMMON.done}>
       <Note>{L.addPeopleNote}</Note>
       {candidates.length === 0 && <Note>{L.noOneToAdd}</Note>}
       {candidates.map(p => (
@@ -125,13 +127,13 @@ export function AddPeopleSheet({ listId, people, locked, onClose }: {
           person={p}
           trailing={added.includes(p.id)
             ? <Tag label={L.shared} style={{ alignSelf: 'center' }} />
-            : <PrimaryButton label={L.add} onPress={async () => {
+            : <Button variant="primary" label={L.add} onPress={async () => {
               const ok = await customLists.addMember(listId, p.id);
               if (ok) setAdded(prev => prev.includes(p.id) ? prev : [...prev, p.id]);
             }} />}
         />
       ))}
-    </Sheet>
+    </BottomSheet>
   );
 }
 

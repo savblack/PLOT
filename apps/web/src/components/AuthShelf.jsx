@@ -12,9 +12,10 @@ import { AUTH_PAGE } from '../copy/authPage.js';
 import { MEDIA } from '../copy/media.js';
 import { posterUrl } from '../utils/images.js';
 import PlotLogo from './PlotLogo.jsx';
+import { TABLET_QUERY } from '../hooks/useWide.js';
 
-// Must match the breakpoint in AuthPage.css that hides .auth-visual.
-const SHELF_VISIBLE_QUERY = '(min-width: 769px)';
+// The tablet breakpoint, where AuthPage.css shows .auth-visual.
+const SHELF_VISIBLE_QUERY = TABLET_QUERY;
 
 const EMPTY_TILES = Array.from({ length: NEW_THIS_WEEK_COUNT }, (_, i) => ({ key: `empty-${i}` }));
 

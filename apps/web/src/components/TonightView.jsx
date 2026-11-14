@@ -1,13 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { useApp } from '../hooks/useApp.js';
 import {
-  useTonightPicker, pickerTimeOfDay, savedSearchDate,
-  PICKER_STEPS, PICKER_RUNTIMES, PICKER_TV_FORMATS, PICKER_EPISODE_RUNTIMES,
-  PICKER_ERAS, PICKER_MIN_SCORES, PICKER_LANGUAGES, FEATURED_GENRE_COUNT, FEATURED_GENRE_COUNT_WIDE,
-  pickerGenreTiles,
+  useTonightPicker, pickerTimeOfDay, savedSearchDate, PICKER_LANGUAGES, pickResultMeta,
 } from '../hooks/useTonightPicker.js';
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
@@ -16,33 +13,25 @@ import { SettingsSwitch } from './SettingsPage.jsx';
 import SmartListDialog from './SmartListDialog.jsx';
 import { smartListRulesFromPicker } from '@plot/core/smartLists.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
-import { MEDIA } from '../copy/media.js';
 import { favoriteWords } from '../utils/spelling.js';
-import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import './TonightView.css';
 import { SaveButton, FavoriteButton } from './TitleActions.jsx';
-import PremiumMark from './PremiumMark.jsx';
 import { Tag } from './Chip.jsx';
 import EmptyState from './EmptyState.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
+import TonightShelves, { PickForMe, ShelfChips } from './TonightShelves.jsx';
 
-/* Just Decide. Phone: one column, a Filters panel that folds away, and a
-   sticky bar with the sentence and Pick. Desktop (>=1024px): the same 264px
-   side column of cards as History and Settings (your request, the four
-   questions) beside the current question, with the same Filters panel under
-   it. Both layouts render; CSS shows one. The title and subline come from
-   the app shell. */
+/* Just Decide (Nov 2026 redesign, option D). It opens on chips and shelves
+   of titles that fit tonight (TonightShelves.jsx), laid out like Home.
+   "Pick one for me" and "Surprise me" run the picker on the chips' options
+   and show its results here; Free viewers get one pick a day, then the
+   upgrade sheet. Phone keeps the actions in a bar above the tab bar. The
+   title and subline come from the app shell. */
 
 const IconSparkle = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 3.5 11.6 8.4 16.5 10 11.6 11.6 10 16.5 8.4 11.6 3.5 10 8.4 8.4Z" /><path d="M18 14.5v5M15.5 17h5" /><path d="M18.5 3.5v3M17 5h3" /></svg>
 );
-const IconBack = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>;
-const IconNext = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>;
 const IconChevron = () => <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>;
-const IconMovie = () => (
-  <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2" /><path d="m3 6 3-3M9 6l3-3M15 6l3-3M3 10h18" /></svg>
-);
-const IconTv = () => <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="13" rx="2" /><path d="M8 21h8M12 18v3" /></svg>;
 
 // Two arrows round: a list that keeps looking (A1).
 const IconKeepFinding = () => (
@@ -90,9 +79,9 @@ function SavedSearches({ picker, className = '' }) {
 function LockedPreview() {
   return (
     <div className="tonight-locked-preview" aria-hidden="true">
-      <div className="tonight-question-title">{T.heading[pickerTimeOfDay()]}</div>
+      <div className="discover-section-title">{T.heading[pickerTimeOfDay()]}</div>
       <div className="tonight-results-list">
-        <div className="tonight-hero tonight-hero--placeholder"><span className="tonight-hero-body"><span className="tonight-hero-chip">{T.topPick}</span></span></div>
+        <div className="tonight-hero tonight-hero--placeholder"><span className="tonight-hero-body"><Tag tone="artwork" label={T.topPick} /></span></div>
         <div className="tonight-cards">
           {[0, 1, 2, 3].map(i => (
             <div key={i} className="tonight-card tonight-card--placeholder">
@@ -111,182 +100,11 @@ function LockedPreview() {
    useTonightPicker), so upgrading lands them back on their request with the
    picks drawn. The sheet reports `premium_gate_hit` (tonight_picker). */
 
-// The desktop breakpoint TonightView.css switches layouts at.
-const WIDE_QUERY = '(min-width: 1024px)';
-function useWide() {
-  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia?.(WIDE_QUERY).matches);
-  useEffect(() => {
-    const mq = window.matchMedia?.(WIDE_QUERY);
-    if (!mq) return undefined;
-    const on = () => setWide(mq.matches);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
-  return wide;
-}
 
-function Sentence({ parts, className = '' }) {
-  return (
-    <p className={`tonight-sentence ${className}`} aria-live="polite">
-      {parts.map((p, i) => (
-        <span key={i}>
-          {i > 0 && ' '}
-          <span className={p.kind === 'plain' ? undefined : `tonight-sentence-${p.kind}`}>{p.text}</span>
-        </span>
-      ))}
-    </p>
-  );
-}
 
-function Tile({ selected, onClick, label, hint, role = 'radio' }) {
-  return (
-    <button
-      type="button"
-      role={role}
-      aria-checked={selected}
-      className={`tonight-tile${selected ? ' selected' : ''}`}
-      onClick={onClick}
-    >
-      <span className="tonight-tile-label">{label}</span>
-      {hint && <span className="tonight-tile-hint">{hint}</span>}
-    </button>
-  );
-}
 
-function Progress({ step }) {
-  return (
-    <div className="tonight-progress" role="progressbar" aria-label={T.progress(step + 1, PICKER_STEPS.length)} aria-valuemin={1} aria-valuemax={PICKER_STEPS.length} aria-valuenow={step + 1}>
-      {PICKER_STEPS.map((s, i) => <span key={s} className={i <= step ? 'on' : undefined} />)}
-    </div>
-  );
-}
 
-/* ── The four questions ── */
-function Question({ picker }) {
-  const { options, setOption, toggleGenre, genres, step } = picker;
-  const [allGenres, setAllGenres] = useState(false);
-  const tv = options.mediaType === 'tv';
-  const key = PICKER_STEPS[step];
-  const title = key === 'length' ? (tv ? T.steps.length.tvTitle : T.steps.length.movieTitle) : T.steps[key].title;
-  const subline = T.steps[key].subline;
-  const wide = useWide();
-  const featuredCount = wide ? FEATURED_GENRE_COUNT_WIDE : FEATURED_GENRE_COUNT;
-  const shownGenres = pickerGenreTiles(genres, { count: featuredCount, all: allGenres });
 
-  return (
-    <section className="tonight-question" aria-labelledby="tonight-question-title">
-      <h2 id="tonight-question-title" className="tonight-question-title">{title}</h2>
-      {subline && <p className="tonight-question-sub">{subline}</p>}
-      <Progress step={step} />
-
-      {key === 'type' && (
-        <div className="tonight-tiles tonight-tiles--type" role="radiogroup" aria-label={title}>
-          {['movie', 'tv'].map(t => (
-            <button
-              key={t}
-              type="button"
-              role="radio"
-              aria-checked={options.mediaType === t}
-              className={`tonight-type${options.mediaType === t ? ' selected' : ''}`}
-              onClick={() => setOption('mediaType', t)}
-            >
-              {t === 'movie' ? <IconMovie /> : <IconTv />}
-              <span className="tonight-type-text">
-                <span className="tonight-type-label">{T.mediaTypes[t].label}</span>
-                <span className="tonight-tile-hint">{T.mediaTypes[t].hint}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {key === 'length' && !tv && (
-        <div className="tonight-tiles tonight-tiles--two" role="radiogroup" aria-label={title}>
-          {PICKER_RUNTIMES.map(m => (
-            <Tile key={m ?? 'any'} label={T.runtimes(m)} selected={options.maxRuntime === m}
-              onClick={() => setOption('maxRuntime', m)} />
-          ))}
-        </div>
-      )}
-      {key === 'length' && tv && (
-        <>
-          <div className="tonight-group-label">{T.tvFormatLabel}</div>
-          <div className="tonight-tiles tonight-tiles--two" role="radiogroup" aria-label={T.tvFormatLabel}>
-            {PICKER_TV_FORMATS.map(f => (
-              <Tile key={f} label={T.tvFormats[f]} selected={options.tvFormat === f} onClick={() => setOption('tvFormat', f)} />
-            ))}
-          </div>
-          <div className="tonight-group-label">{T.episodeLabel}</div>
-          <div className="tonight-tiles tonight-tiles--four" role="radiogroup" aria-label={T.episodeLabel}>
-            {PICKER_EPISODE_RUNTIMES.map(m => (
-              <Tile key={m ?? 'any'} label={T.episodeRuntime(m)} selected={options.maxEpisodeRuntime === m} onClick={() => setOption('maxEpisodeRuntime', m)} />
-            ))}
-          </div>
-        </>
-      )}
-
-      {key === 'kind' && (
-        <>
-          <div className="tonight-tiles tonight-tiles--genres" role="group" aria-label={title}>
-            {shownGenres.map(g => (
-              <Tile key={g.id} role="checkbox" label={g.name} hint={g.mood} selected={options.genreIds.includes(g.id)} onClick={() => toggleGenre(g.id)} />
-            ))}
-          </div>
-          {genres.length > featuredCount && (
-            <button type="button" className="tonight-link" onClick={() => setAllGenres(v => !v)}>
-              {allGenres ? T.showFewerGenres : T.showAllGenres(genres.length)}
-            </button>
-          )}
-        </>
-      )}
-
-      {key === 'quality' && (
-        <>
-          <div className="tonight-group-label">{T.eraLabel}</div>
-          <div className="tonight-tiles tonight-tiles--three" role="radiogroup" aria-label={T.eraLabel}>
-            {PICKER_ERAS.map(e => (
-              <Tile key={e.id} label={T.eras[e.id]} selected={options.era === e.id} onClick={() => setOption('era', e.id)} />
-            ))}
-          </div>
-          <div className="tonight-group-label">{T.scoreLabel}</div>
-          <div className="tonight-tiles tonight-tiles--four" role="radiogroup" aria-label={T.scoreLabel}>
-            {PICKER_MIN_SCORES.map(m => (
-              <Tile key={m ?? 'any'} label={T.score(m)} selected={options.minScore === m} onClick={() => setOption('minScore', m)} />
-            ))}
-          </div>
-          <p className="tonight-hint">{T.scoreHint}</p>
-        </>
-      )}
-    </section>
-  );
-}
-
-function PickButton({ picker, premium, className = '' }) {
-  // A Free viewer's first pick of the day is real, so the lock only shows once it is used.
-  const locked = !premium && !picker.freePickLeft;
-  return (
-    <button type="button" className={`btn btn-primary tonight-go ${className}`} onClick={() => picker.go('five')}
-      aria-label={locked ? `${T.go}, ${T.gate.locked}` : picker.freePickLeft ? `${T.go}. ${T.freePickNote}` : undefined}
-      title={picker.freePickLeft ? T.freePickNote : undefined}>
-      {locked && <PremiumMark className="tonight-go-mark" />}{T.go}
-    </button>
-  );
-}
-
-/* On the last question Pick takes Next's place (desktop; on phone it lives in
-   the sticky bar). */
-function StepNav({ picker, premium }) {
-  const first = picker.step === 0;
-  const last = picker.step === PICKER_STEPS.length - 1;
-  return (
-    <div className="tonight-stepnav">
-      {first ? <span /> : <button type="button" className="btn btn-secondary btn-sm tonight-stepbtn" onClick={picker.prevStep}><IconBack />{T.back}</button>}
-      {last
-        ? <PickButton picker={picker} premium={premium} className="btn-sm tonight-stepbtn tonight-stepnav-pick" />
-        : <button type="button" className="btn btn-secondary btn-sm tonight-stepbtn" onClick={picker.nextStep}>{T.next}<IconNext /></button>}
-    </div>
-  );
-}
 
 function LanguageSelect({ picker, id }) {
   return (
@@ -338,51 +156,6 @@ function FiltersPanel({ picker }) {
   );
 }
 
-/* Desktop side column: the same cards History uses. Filters sit under the
-   question on both layouts, as a panel that folds away. */
-function SideColumn({ picker, results }) {
-  return (
-    <aside className="tonight-side">
-      <section className="hist-card" aria-label={T.yourRequest}>
-        <div className="hist-card-head"><span className="hist-card-title">{T.yourRequest}</span></div>
-        <Sentence parts={picker.sentence} className="tonight-sentence--side" />
-        <div className="tonight-side-actions">
-          {results ? (
-            <>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={picker.backToOptions}>{T.changeOptions}</button>
-              {picker.canSpinAgain && <button type="button" className="btn btn-primary btn-sm" onClick={picker.spinAgain}>{T.spinAgain}</button>}
-            </>
-          ) : (
-            <div className="tonight-side-or">
-              <span>{T.orSurprise}</span>
-              <button type="button" className="btn btn-secondary btn-sm tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="hist-card" aria-label={T.questionsTitle}>
-        <div className="hist-card-head"><span className="hist-card-title">{T.questionsTitle}</span></div>
-        <div>
-          {PICKER_STEPS.map((key, i) => {
-            const current = !results && picker.step === i;
-            return (
-              <button key={key} type="button" className="tonight-qrow" aria-current={current ? 'step' : undefined} onClick={() => picker.goToStep(i)}>
-                <span className={`tonight-qnum${current ? ' current' : ''}`}>{i + 1}</span>
-                <span className="tonight-qtext">
-                  <span className="tonight-qtitle">{T.steps[key].shortTitle}</span>
-                  <span className="tonight-qanswer">{picker.answers[key]}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <SavedSearches picker={picker} />
-    </aside>
-  );
-}
 
 /* "Finding…": the viewer's own sentence, answered phrases highlighted one by
    one while picks load. It sits where the Top pick will land, so when the
@@ -409,24 +182,13 @@ function Finding({ picker }) {
   return (
     <section className="tonight-results" aria-live="polite" aria-busy="true">
       <div className="tonight-results-head tonight-results-head--hidden" aria-hidden="true">
-        <span className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</span>
+        <span className="discover-section-title">{T.heading[pickerTimeOfDay()]}</span>
       </div>
       <div className="tonight-results-list">
         <div className="tonight-hero-slot tonight-hero-slot--finding"><FindingSentence parts={picker.sentence} /></div>
       </div>
     </section>
   );
-}
-
-function resultMeta(item) {
-  const tv = item.media_type === 'tv';
-  return [
-    (item.release_date || '').slice(0, 4),
-    tv && item.miniseries ? T.miniseries : null,
-    tv && !item.miniseries && item.seasons ? T.seasons(item.seasons) : null,
-    item.runtime ? (tv ? T.episodeMinutes(item.runtime) : T.minutes(item.runtime)) : null,
-    item.vote_average ? T.score10(item.vote_average) : null,
-  ].filter(Boolean).join(' · ');
 }
 
 function Chips({ item }) {
@@ -468,9 +230,9 @@ function TopPick({ item, onOpen, actions, className = '' }) {
       {bg && <img src={bg} alt="" />}
       <span className="tonight-hero-scrim" aria-hidden="true" />
       <span className="tonight-hero-body">
-        <span className="tonight-hero-chip">{T.topPick}</span>
+        <Tag tone="artwork" label={T.topPick} />
         <button type="button" className="tonight-hero-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
-        <span className="tonight-hero-meta">{resultMeta(item)}</span>
+        <span className="tonight-hero-meta">{pickResultMeta(item)}</span>
       </span>
       <FavSave item={item} actions={actions} variant="hero" />
     </div>
@@ -485,7 +247,7 @@ function PickCard({ item, index, onOpen, reveal, actions }) {
       <span className="tonight-card-poster">{img ? <img src={img} alt="" loading="lazy" /> : null}</span>
       <span className="tonight-card-body">
         <button type="button" className="tonight-card-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
-        <span className="tonight-card-meta">{resultMeta(item)}</span>
+        <span className="tonight-card-meta">{pickResultMeta(item)}</span>
         <Chips item={item} />
       </span>
       <FavSave item={item} actions={actions} />
@@ -506,7 +268,7 @@ function Results({ picker, onOpen, reveal, actions, onKeepFinding }) {
   return (
     <section className="tonight-results" aria-live="polite">
       <div className="tonight-results-head">
-        <h2 className="tonight-results-title">{T.heading[pickerTimeOfDay()]}</h2>
+        <h2 className="discover-section-title">{T.heading[pickerTimeOfDay()]}</h2>
         <div className="tonight-results-actions">
           {/* A1: save the answers as a smart list, beside Save search (the snapshot). */}
           {onKeepFinding && <span className="tonight-keep-hint">{T.createSmartListHint}</span>}
@@ -547,7 +309,7 @@ function Results({ picker, onOpen, reveal, actions, onKeepFinding }) {
  * create one, and in Storybook a genre catalog and a count). Absent, the
  * button is not shown.
  */
-export function TonightPage({ premium, picker, onOpen, navigate, actions, smartList = null }) {
+export function TonightPage({ premium, picker, onOpen, navigate, actions, smartList = null, useShelves }) {
   const [keepFinding, setKeepFinding] = useState(false);
   const locked = picker.phase === 'locked';
   const inResults = picker.phase === 'results' || picker.phase === 'empty' || picker.phase === 'error';
@@ -561,27 +323,49 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions, smartL
     setReveal(picker.phase === 'results' ? lastPhase === 'spinning' || reveal : false);
   }
 
+  // History's frame in every state: the request on the left (chips, Pick,
+  // filters, saved searches), the shelves or the picks on the right.
+  const side = (
+    <aside className="hist-side tonight-side">
+      {inResults ? (
+        <section className="hist-card tonight-side-card">
+          <div className="hist-card-head"><span className="hist-card-title">{T.yourRequest}</span></div>
+          <div className="tonight-side-actions">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={picker.backToOptions}>{T.changeOptions}</button>
+            {picker.canSpinAgain && <button type="button" className="btn btn-primary btn-sm" onClick={picker.spinAgain}>{T.spinAgain}</button>}
+          </div>
+        </section>
+      ) : (
+        <section className="hist-card tonight-side-card" aria-label={T.chips.label}>
+          <div className="hist-card-head"><span className="hist-card-title">{T.chips.label}</span></div>
+          <ShelfChips picker={picker} />
+          <div className="tonight-side-actions tonight-side-actions--desk">
+            <PickForMe picker={picker} premium={premium} className="btn-sm" />
+            <button type="button" className="btn btn-secondary btn-sm tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
+          </div>
+          {picker.freePickLeft && <p className="tonight-hint tonight-side-actions--desk">{T.freePickNote}</p>}
+        </section>
+      )}
+      {!inResults && <FiltersPanel picker={picker} />}
+      <SavedSearches picker={picker} />
+    </aside>
+  );
+
   return (
-    <div className="tonight-view">
-      <div className="tonight-layout">
-        <SideColumn picker={picker} results={inResults} />
-        <div className="tonight-main">
+    <div className="hist-page tonight-view">
+      <div className="hist-body">
+        {!locked && !spinning && side}
+        <div className="hist-stream tonight-stream">
           {locked ? (
             <div className="tonight-locked">
               <LockedPreview />
               <UpgradeSheet reason="justDecide" onClose={picker.closeLock} />
             </div>
           ) : spinning ? <Finding picker={picker} />
-            : inResults ? <Results picker={picker} onOpen={onOpen} reveal={reveal} actions={actions}
-              onKeepFinding={smartList && premium && picker.phase === 'results' ? () => setKeepFinding(true) : null} />
-            : (
-              <>
-                <Question picker={picker} />
-                <FiltersPanel picker={picker} />
-                <StepNav picker={picker} premium={premium} />
-                <SavedSearches picker={picker} className="tonight-saved--phone" />
-              </>
-            )}
+            : inResults ? (
+              <Results picker={picker} onOpen={onOpen} reveal={reveal} actions={actions}
+                onKeepFinding={smartList && premium && picker.phase === 'results' ? () => setKeepFinding(true) : null} />
+            ) : <TonightShelves picker={picker} premium={premium} useShelves={useShelves} />}
         </div>
       </div>
 
@@ -611,24 +395,22 @@ export function TonightPage({ premium, picker, onOpen, navigate, actions, smartL
         />
       )}
 
-      {/* Phone only: the sentence and actions stay in reach above the tab bar. */}
+      {/* Phone only: the actions stay in reach above the tab bar. */}
       {!spinning && !locked && (
         <div className="tonight-bar">
-          {inResults ? (
-            <div className="tonight-bar-actions">
-              <button type="button" className="btn btn-secondary" onClick={picker.backToOptions}>{T.changeOptions}</button>
-              {picker.canSpinAgain && <button type="button" className="btn btn-primary" onClick={picker.spinAgain}>{T.spinAgain}</button>}
-            </div>
-          ) : (
-            <>
-              <Sentence parts={picker.sentence} />
-              {picker.freePickLeft && <p className="tonight-free-note">{T.freePickNote}</p>}
-              <div className="tonight-bar-actions">
+          <div className="tonight-bar-actions">
+            {inResults ? (
+              <>
+                <button type="button" className="btn btn-secondary" onClick={picker.backToOptions}>{T.changeOptions}</button>
+                {picker.canSpinAgain && <button type="button" className="btn btn-primary" onClick={picker.spinAgain}>{T.spinAgain}</button>}
+              </>
+            ) : (
+              <>
                 <button type="button" className="btn btn-secondary tonight-surprise" onClick={() => picker.go('surprise')}><IconSparkle />{T.surpriseMe}</button>
-                <PickButton picker={picker} premium={premium} />
-              </div>
-            </>
-          )}
+                <PickForMe picker={picker} premium={premium} />
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

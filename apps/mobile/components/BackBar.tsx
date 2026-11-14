@@ -10,14 +10,18 @@ import { IconChevronLeft } from './icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 
-/** `title` is optional: some screens carry their own large title under the bar. */
-export default function BackBar({ title, onBack }: { title?: string; onBack?: () => void }) {
+/**
+ * `title` is optional: some screens carry their own large title under the bar.
+ * `label` names the chevron for VoiceOver when it does more than go back
+ * (Watch together's session: Leave).
+ */
+export default function BackBar({ title, label, onBack }: { title?: string; label?: string; onBack?: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   return (
     <View style={styles.bar}>
-      <TouchableOpacity onPress={onBack ?? (() => router.back())} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.back} accessibilityLabel="Go back" accessibilityRole="button">
+      <TouchableOpacity onPress={onBack ?? (() => router.back())} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.back} accessibilityLabel={label ?? 'Go back'} accessibilityRole="button">
         <IconChevronLeft size={24} color={colors.textPrimary} />
       </TouchableOpacity>
       {title ? <Text style={styles.title} accessibilityRole="header">{title}</Text> : null}

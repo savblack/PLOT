@@ -11,7 +11,7 @@ import DialogActions from './DialogActions.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
-import { Tag } from './Chip.jsx';
+import Chip, { Tag } from './Chip.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import { PersonAvatar, SharedListPeopleDialog } from './WatchTogetherParts.jsx';
 import { useApp } from '../hooks/useApp.js';
@@ -325,9 +325,8 @@ export function NewSharedListDialog({ onClose, partners: givenPartners }) {
               <div key={p.other_id} className="wt-row">
                 <PersonAvatar person={p} />
                 <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span>{p.username && <span className="wt-note">@{p.username}</span>}</span>
-                {picked.has(p.other_id)
-                  ? <button type="button" className="wt-chip wt-chip--ok cl-chip-btn" aria-pressed="true" onClick={() => toggle(p.other_id)}>{C.create.added}</button>
-                  : <button type="button" className="btn btn-primary btn-sm" aria-pressed="false" onClick={() => toggle(p.other_id)}>{T.sharedList.add}</button>}
+                <Chip size="sm" label={picked.has(p.other_id) ? C.create.added : T.sharedList.add}
+                  selected={picked.has(p.other_id)} onClick={() => toggle(p.other_id)} />
               </div>
             ))}
           </div>

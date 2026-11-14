@@ -18,7 +18,7 @@ import { COMMON } from '../copy/common.js';
 import Spinner from './Spinner.jsx';
 import Icon from './Icon.jsx';
 import EmptyState from './EmptyState.jsx';
-import Chip, { ChipRow } from './Chip.jsx';
+import Chip, { ChipRow, Tag } from './Chip.jsx';
 import './SearchPalette.css';
 
 /* Web-only rendering: a command palette over whatever is on screen, opened by
@@ -109,7 +109,7 @@ function Row({ item, active, index, onHover, onSelect, watchlist, history, genre
         <span className="search-palette-title">{title}</span>
         {meta && <span className="search-palette-meta">{meta}</span>}
       </span>
-      {watched && <span className="chip chip-episode">{MEDIA.watched}</span>}
+      {watched && <Tag tone="sage" label={MEDIA.watched} />}
       {inList && (
         <Icon name="bookmark" filled className="search-palette-saved" label={MEDIA_PANEL.inWatchlist} />
       )}

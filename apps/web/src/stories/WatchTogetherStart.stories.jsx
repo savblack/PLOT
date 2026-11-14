@@ -3,15 +3,16 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { configure, getConfig } from '@plot/core/config.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { AppContext } from '../hooks/useApp.js';
-import WatchTogetherStart from '../components/WatchTogetherStart.jsx';
+import { INVITE_SHARED_KEY } from '@plot/core/watchTogether.js';
+import WatchTogetherView from '../components/WatchTogetherView.jsx';
 import { AcceptDialog, WatchTogetherTile } from '../components/WatchTogetherParts.jsx';
 
-/* The Watch together start page for someone with nobody to watch with yet:
-   a dark hero (friend search, invite link, example pairing), the people they
-   follow when there are any, and the demo; Free adds one Premium card and
-   Premium a dismissible welcome. People are fictional;
-   a stub Supabase client answers search_users, so nothing here reads or
-   writes account data. */
+/* Watch together for someone with nobody to watch with yet, the normal state
+   (Nov 2026 redesign). The invite card leads with the link, because most people
+   invite someone who isn't on Plot; then the demo and, second, search for people
+   already on Plot. "Waiting" is the same page after the link has gone out.
+   People are fictional; a stub Supabase client answers the calls, so nothing
+   here reads or writes account data. */
 
 configure({
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
@@ -20,6 +21,8 @@ configure({
   isDev: true,
 });
 
+// suggest_watch_together's answer for the story being shown.
+let currentSuggested = [];
 const people = [
   { id: 'u-sam', display_name: 'Sam Kerr', username: 'samk', avatar_url: null },
   { id: 'u-samira', display_name: 'Samira', username: 'samira.b', avatar_url: null },
@@ -36,7 +39,14 @@ const queryOf = (data) => {
   return chain;
 };
 const stubClient = {
-  rpc: async (name) => ({ data: name === 'search_users' ? people : name === 'watch_together_status' ? [{ state: 'none' }] : null, error: null }),
+  rpc: async (name) => {
+    if (name === 'search_users') return { data: people, error: null };
+    if (name === 'watch_together_status') return { data: [{ state: 'none' }], error: null };
+    if (name === 'list_watch_together') return { data: [], error: null };
+    if (name === 'suggest_watch_together') return { data: currentSuggested, error: null };
+    if (name === 'my_watch_together_link') return { data: 'abc123', error: null };
+    return { data: null, error: null };
+  },
   // Mia and Sam follow each other, so the accept sheet shares by default.
   from: (table) => queryOf(table === 'follows' ? [{ follower_id: 'u-mia' }, { follower_id: 'u-sam' }] : []),
   channel: () => ({ on() { return this; }, subscribe() { return this; } }),
@@ -50,28 +60,34 @@ const stubClient = {
 const app = (is_premium) => ({
   user: { id: 'u-mia' },
   profile: { region: 'GB', is_premium, display_name: 'Mia', username: 'mia', is_public: true },
-  watchlist: { items: [] },
+  watchlist: { items: [], isInList: () => false, add: noop, remove: noop },
+  openPanel: noop,
 });
 
 export default {
   title: 'Watch together/Start',
-  component: WatchTogetherStart,
+  component: WatchTogetherView,
   parameters: { layout: 'fullscreen' },
   decorators: [
     (Story, context) => {
       if (getConfig().supabaseClient !== stubClient) configure({ supabaseClient: stubClient });
+      currentSuggested = context.args.suggested || [];
+      try {
+        if (context.args.sharedAt) window.localStorage.setItem(INVITE_SHARED_KEY, context.args.sharedAt);
+        else window.localStorage.removeItem(INVITE_SHARED_KEY);
+      } catch { /* storage blocked */ }
       return (
         <MemoryRouter initialEntries={['/together']}>
           <AppContext.Provider value={app(context.args.premium)}>
             <div className="app-main-inner" style={{ padding: '1rem 0 3rem', minHeight: '100vh', background: 'var(--bg)' }}>
-              <div className="wt-page wt-page--wide"><Story /></div>
+              <Story key={`${context.args.sharedAt || ''}:${(context.args.suggested || []).length}`} />
             </div>
           </AppContext.Provider>
         </MemoryRouter>
       );
     },
   ],
-  args: { premium: true, suggested: [], onInvite: async () => true },
+  args: { premium: false, suggested: [] },
 };
 
 const suggested = [
@@ -80,15 +96,28 @@ const suggested = [
   { id: 'u-priya', display_name: 'Priya Nair', username: 'priya.n', avatar_url: null },
 ];
 
-export const WithSuggestions = { args: { suggested } };
-export const WithSuggestionsFree = { args: { suggested, premium: false } };
-export const NobodySuggestedPremium = {};
-export const NobodySuggestedFree = { args: { premium: false } };
+export const NobodyYet = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.inviteTitle })).toBeInTheDocument());
+    await expect(canvas.getByRole('button', { name: T.hub.sendInvite })).toBeEnabled();
+  },
+};
+export const NobodyYetPremium = { args: { premium: true } };
+export const WaitingForSomeone = {
+  args: { sharedAt: '2026-11-11T12:00:00' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.waitingTitle })).toBeInTheDocument());
+    await expect(canvas.getByText(T.hub.sharedOn('November 11'))).toBeInTheDocument();
+  },
+};
+export const WithPeopleYouFollow = { args: { suggested } };
 
 export const SearchAndInvite = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.type(canvas.getByPlaceholderText(T.invite.search), 'sam');
+    await userEvent.type(await canvas.findByPlaceholderText(T.invite.search), 'sam');
     await waitFor(() => expect(canvas.getByText('@samk')).toBeInTheDocument());
     await userEvent.click(canvas.getAllByRole('button', { name: T.invite.invite })[0]);
     await waitFor(() => expect(canvas.getByText(T.invite.sent)).toBeInTheDocument());

@@ -37,7 +37,7 @@
   border: 1px solid var(--border);
   background: var(--surface-raised);
   color: var(--text-secondary);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0.28rem 0.7rem;
   font-size: 0.82rem;
   font-weight: 650;

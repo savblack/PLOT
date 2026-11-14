@@ -1156,7 +1156,7 @@
   background: #f0efe8;
   color: #0c0c0c;
   padding: 0.55rem 1.25rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: default;
@@ -1167,7 +1167,7 @@
   color: #f0efe8;
   border: 1px solid rgba(240, 239, 232, 0.25);
   padding: 0.55rem 1.25rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   font-size: 0.85rem;
   cursor: default;
 }
@@ -1203,7 +1203,7 @@
   font-size: 0.72rem;
   font-family: var(--font-mono, monospace);
   padding: 0.2rem 0.55rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
 }
 
@@ -1556,7 +1556,7 @@
 .ds-phone-bar {
   width: 34%;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--border-strong);
   margin: 0.5rem auto 0.6rem;
 }
@@ -1699,7 +1699,7 @@
   color: var(--text-secondary);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .ds-type-grid,
   .ds-token-grid,
   .ds-spec-grid,
@@ -1722,7 +1722,7 @@
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 599px) {
   .design-system-page {
     padding: 0.75rem 0.75rem 5rem;
   }

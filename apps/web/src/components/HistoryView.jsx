@@ -41,6 +41,7 @@ import PremiumMark from './PremiumMark.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import ActivationNudge from './ActivationNudge.jsx';
 import { useActivationNudge } from '../hooks/useActivationNudge.js';
+import Avatar from './Avatar.jsx';
 
 /* History is its own page: the poster shelf, one month at a time, with a
    sticky column of small cards beside it that say something about the year
@@ -288,7 +289,7 @@ function PeopleCard({ entries, details, openPanel, onShare, shareReady }) {
           const img = profileUrl(art.path('person', p.id, 'profile') || p.profile_path, 'w185');
           return (
             <button key={p.id} type="button" className="hist-person" onClick={() => openPanel(p.id, 'person', 'history')}>
-              <span className="hist-person-avatar">{img && <img src={img} alt="" />}</span>
+              <Avatar src={img} name={p.name} size={36} headshot />
               <span className="hist-person-text">
                 <span className="hist-person-name">{p.name}</span>
                 <span className="hist-card-note">{p.line}</span>
