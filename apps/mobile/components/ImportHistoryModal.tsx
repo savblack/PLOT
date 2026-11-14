@@ -827,17 +827,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl, paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
-  previewRowDim: { opacity: 0.45 },
-  previewPoster: { width: 36, height: 54, borderRadius: 4, backgroundColor: colors.surfaceSunken },
-  previewPosterFallback: {},
   previewTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   previewMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
   reviewBanner: { padding: spacing.md, marginBottom: spacing.sm, borderRadius: radii.md, backgroundColor: colors.accentSecondaryDim },
-  alreadyBadge: {
-    backgroundColor: colors.surfaceSunken, borderRadius: radii.pill,
-    paddingHorizontal: spacing.sm, paddingVertical: 3,
-  },
-  alreadyBadgeText: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
 
   previewFooter: {
     position: 'absolute', bottom: 0, left: 0, right: 0,

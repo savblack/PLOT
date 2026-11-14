@@ -59,9 +59,6 @@ async function fetchOne(entry) {
   return p;
 }
 
-/** Test seam. */
-export const _resetHistoryDetailsCache = () => { cache.clear(); pending.clear(); };
-
 /**
  * @param {any[]} entries History rows to resolve.
  * @param {{ enabled?: boolean }} [opts]

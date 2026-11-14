@@ -22,9 +22,6 @@ export const IMPORT_JOB_FINISHED = Object.freeze(['succeeded', 'partial', 'faile
 /** Home polls an active job this often. Each poll also nudges the worker. */
 const POLL_MS = 4000;
 
-/** Sources that connect an account rather than upload a file. */
-export const CONNECTION_SOURCES = Object.freeze(['trakt', 'plex', 'simkl']);
-
 /** Display names for the sources a job can carry. */
 export const IMPORT_SOURCE_NAMES = Object.freeze({
   letterboxd: 'Letterboxd', netflix: 'Netflix', prime: 'Amazon Prime', disney: 'Disney+', max: 'Max', apple: 'Apple TV+',
@@ -282,17 +279,6 @@ export async function finishImportJobReview(job) {
   await supabase.storage.from(IMPORT_UPLOADS_BUCKET).remove([`${job.user_id}/${job.id}/_review.json`]).catch(() => {});
   const { error } = await supabase.rpc('finish_import_job_review', { p_job: job.id });
   return !error;
-}
-
-/**
- * The newest import for this account, finished or not.
- * @param {string} userId
- */
-export async function readLatestImportJob(userId) {
-  if (!userId) return { job: null, error: null };
-  const { data, error } = await supabase.from('import_jobs')
-    .select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle();
-  return { job: data || null, error };
 }
 
 /**

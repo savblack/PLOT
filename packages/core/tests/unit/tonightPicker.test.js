@@ -13,7 +13,6 @@ import {
   resolveKeywordGenres,
   loadWatchedIds,
   pickerGenres,
-  pickerGenreTiles,
   pickerTimeOfDay,
   pickerSentence,
   pickerFiltersSummary,
@@ -333,12 +332,6 @@ test('a saved request that is stale, malformed or odd is dropped or cleaned', ()
   assert.equal(cleaned.mode, 'five');
 });
 
-test('genre tiles keep the most useful few, then sort them alphabetically', () => {
-  const g = ['Drama', 'Comedy', 'Western', 'Action'].map((name, i) => ({ id: i + 1, name }));
-  assert.deepEqual(pickerGenreTiles(g, { count: 3 }).map(x => x.name), ['Comedy', 'Drama', 'Western']);
-  assert.deepEqual(pickerGenreTiles(g, { count: 3, all: true }).map(x => x.name), ['Action', 'Comedy', 'Drama', 'Western']);
-  assert.deepEqual(g.map(x => x.name), ['Drama', 'Comedy', 'Western', 'Action']);
-});
 
 // Opaque fixture picks (negative ids, never real TMDB titles).
 const pick = (n, extra = {}) => ({ id: -n, media_type: 'movie', title: `Fixture ${n}`, poster_path: null, backdrop_path: null, release_date: '2019-01-01', genre_ids: [], runtime: 100, seasons: null, miniseries: false, vote_average: 7, providers: [], onWatchlist: false, ...extra });

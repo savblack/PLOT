@@ -1938,15 +1938,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   themeTabText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textSecondary },
   themeTabTextActive: { color: colors.textPrimary },
 
-  // Modal
-  modalContainer: { flex: 1, backgroundColor: colors.bg },
   modalSearchWrap: { padding: spacing.md, paddingHorizontal: spacing.xl },
   modalSearchInput: {
     flex: 1,
     paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
     fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary,
   },
-  modalFooter: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
 
   regionGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.xl, gap: spacing.sm },
   genreErrorWrap: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },

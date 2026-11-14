@@ -1413,13 +1413,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
   upNextEmptyRow: { flexDirection: 'row', gap: spacing.md },
   customize: { alignSelf: 'center', marginTop: spacing.xl },
-  emptyWatchlist: {
-    marginHorizontal: spacing.xl,
-    padding: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    alignItems: 'center',
-  },
   emptyTitle: {
     fontFamily: fontFamily.display,
     fontSize: fontSize.xl,
