@@ -509,6 +509,25 @@ async function sendEmail(env, email, now, watch = 'uptime') {
 }
 
 /**
+ * The alert email's HTML as plain issue text. Paragraph ends become blank
+ * lines, the remaining tags are removed until none are left (one pass can
+ * leave a tag behind when tags nest, e.g. "<scr<b>ipt>"), and any stray angle
+ * bracket is escaped, so the result can never carry markup into the issue.
+ * Entities stay encoded: GitHub renders "&lt;" as "<", which is what the email showed.
+ * @param {string} html
+ * @returns {string}
+ */
+export function issueText(html) {
+  let text = String(html).replace(/<\/p>/gi, '\n\n');
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(/<[^<>]*>/g, '');
+  } while (text !== previous);
+  return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();
+}
+
+/**
  * Optional GitHub issue alongside the email: opened on 'down', commented on
  * 'reminder', closed on 'recovered'. Failure here never blocks the email.
  * Returns the issue number to remember, or the one already stored.
@@ -523,7 +542,7 @@ async function syncIssue(env, email, issue, now, watch = 'uptime') {
     'Content-Type': 'application/json',
   };
   const { subject, html } = emailContent(email, { now, watch });
-  const body = html.replace(/<[^>]+>/g, '').trim();
+  const body = issueText(html);
   try {
     if (email.kind === 'down') {
       const res = await fetch(api, { method: 'POST', headers, body: JSON.stringify({ title: subject, body, labels: ['incident'] }) });

@@ -8,6 +8,7 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { SAVE_PAGE } from '../copy/savePage.js';
 import { isKnownAccountBrowser } from '../utils/accountRecognition.js';
 import PlotLogo from '../components/PlotLogo.jsx';
+import { safeImageSrc } from '../utils/safeImageSrc.js';
 
 /**
  * /save?media_type=movie&tmdb_id=12345
@@ -25,7 +26,10 @@ import PlotLogo from '../components/PlotLogo.jsx';
  *    the primary action. Recognition is a local boolean, never account data.
  *  - New browser → the title preview with account creation as the primary CTA.
  */
-const posterUrl = (path) => (path ? `https://image.tmdb.org/t/p/w342${path}` : null);
+// The poster path is read back from the page (the server-embedded title), so
+// it is checked against TMDB's shape ("/abc123.jpg") rather than trusted.
+const TMDB_POSTER_PATH = /^\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp|svg)$/;
+const posterUrl = (path) => (typeof path === 'string' && TMDB_POSTER_PATH.test(path) ? `https://image.tmdb.org/t/p/w342${path}` : null);
 const yearOf = (t) => (t?.release_date || t?.first_air_date || '').slice(0, 4);
 const serverTitle = (intent) => {
   const script = document.getElementById('plot-save-title');
@@ -148,7 +152,7 @@ export default function SavePage() {
 
       <div className="save-inner">
         {poster
-          ? <img className="save-poster" src={poster} alt={name ? `${name} poster` : ''} />
+          ? <img className="save-poster" src={safeImageSrc(poster)} alt={name ? `${name} poster` : ''} />
           : <div className="save-poster save-poster--empty" aria-hidden="true" />}
 
         <p className="save-kicker">{returning ? SHARING.returningKicker : SHARING.previewKicker(src)}</p>

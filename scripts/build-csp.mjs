@@ -64,13 +64,14 @@ const SCRIPT_HOSTS = [
 /**
  * Inline JavaScript blocks in one HTML document: no src attribute, and no
  * type or a JavaScript one. JSON-LD and other data blocks are not executed, so
- * CSP does not gate them and they need no hash.
+ * CSP does not gate them and they need no hash. The end tag may carry
+ * whitespace (`</script >`), which browsers accept, so the match does too.
  * @param {string} html
  * @returns {string[]} the exact text between the tags, which is what CSP hashes
  */
 export function inlineScripts(html) {
   const out = [];
-  for (const [, attrs = '', body] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+  for (const [, attrs = '', body] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
     if (/\bsrc\s*=/i.test(attrs)) continue;
     const type = attrs.match(/\btype\s*=\s*["']?([^"'\s>]+)/i)?.[1]?.toLowerCase();
     if (type && type !== 'text/javascript' && type !== 'module' && type !== 'application/javascript') continue;
