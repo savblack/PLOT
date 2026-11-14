@@ -45,9 +45,6 @@ import { WATCH_TOGETHER } from './copy/watchTogether.js';
 
 export const REQUESTS_FROM_OPTIONS = /** @type {const} */ (['profile', 'following', 'none']);
 
-/** Requests expire after this many days (mirrors the migration). */
-export const REQUEST_EXPIRY_DAYS = 30;
-
 /**
  * Which state the invite tile on someone's profile shows. 'free' is a Free
  * viewer: they can still invite (one of you needs Premium to decide).

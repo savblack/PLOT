@@ -1419,13 +1419,6 @@ function CustomListCard({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
-  monthNav: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  monthNavLabel: {
-    fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs,
-    color: colors.textSecondary, minWidth: 54, textAlign: 'center',
-  },
-  subTabsScroll: { flex: 1, height: 44 },
-  subTabsRow: { paddingHorizontal: spacing.xl, alignItems: 'center' },
   listSearch: { marginHorizontal: spacing.xl, marginBottom: spacing.sm },
   searchHeading: {
     paddingHorizontal: spacing.xl,
@@ -1440,21 +1433,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   publicBadge: { marginLeft: spacing.sm, alignSelf: 'center' },
-  subTab: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  subTabUnderline: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: 2,
-    backgroundColor: 'transparent',
-  },
-  subTabUnderlineActive: { backgroundColor: colors.accent },
-  subTabText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textMuted },
-  subTabTextActive: { color: colors.accent },
 
   sectionAddBtn: { marginLeft: spacing.xs },
   sectionActionText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
@@ -1471,7 +1449,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   listRowPoster: { width: 44, height: 66, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, flexShrink: 0 },
   listRowInfo: { flex: 1 },
   listRowTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary, marginBottom: 4 },
-  listRowMeta: { flexDirection: 'row', gap: spacing.sm },
   typeBadge: {},
   typeBadgeText: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
   epChip: {
@@ -1488,14 +1465,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     color: colors.chipEpisode,
     letterSpacing: 0.4,
   },
-  statusChips: { flexDirection: 'row', gap: 4, alignItems: 'center' },
-  statusChip: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.badge,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  statusChipText: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.4 },
 
   posterGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, gap: spacing.sm, paddingHorizontal: spacing.xl },
   posterRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
@@ -1524,18 +1493,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   topSwitchTextOn: { color: colors.textPrimary },
   sharedGroupLabel: { marginHorizontal: spacing.xl, marginTop: spacing.md, marginBottom: spacing.sm, fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.9, textTransform: 'uppercase', color: colors.textMuted },
   customize: { alignSelf: 'center', marginTop: spacing.xl },
-  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: spacing.sm },
   emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
   emptyAddBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
 
   newListRow: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  smartNewRow: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: 2 },
-  smartNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   smartKept: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm },
-  smartRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: spacing.sm },
-  smartRowText: { flex: 1 },
-  smartRowTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
-  smartRowMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
   smartNew: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
 
   customList: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },

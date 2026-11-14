@@ -319,12 +319,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 24,
   },
-  help: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
   helpTitle: {
     fontFamily: fontFamily.sansBold,
     fontSize: 11,

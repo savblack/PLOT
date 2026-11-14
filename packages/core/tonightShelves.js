@@ -39,9 +39,6 @@ const WATCHLIST_TARGET = 40;
  * @typedef {'movies'|'shows'|'short'|'light'|'gripping'|'recent'|'rated'|'services'|'watchlist'} ShelfChip
  */
 
-/** Chips in the order they're shown. `services` only when the viewer has services. */
-export const SHELF_CHIPS = /** @type {ShelfChip[]} */ (['movies', 'shows', 'short', 'light', 'gripping', 'recent', 'rated', 'services']);
-
 // Nov 14 (round 3A): the card splits the same options into three kinds.
 /** Movie or show: a two-way switch. */
 export const TYPE_CHIPS = /** @type {ShelfChip[]} */ (['movies', 'shows']);

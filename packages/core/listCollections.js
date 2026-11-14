@@ -4,11 +4,6 @@
 
 /** @typedef {'want' | 'favorites'} BuiltInKey */
 
-// History left My Lists on 17 Sep 2026: it has had its own page since the
-// sub-tabs went, and a cover that navigated away from /my-lists was the only
-// one that did.
-export const BUILT_IN_KEYS = ['want', 'favorites'];
-
 /* Personal ranked lists have five slots on every client and in the database. */
 export const TOP_LIST_SIZE = 5;
 
