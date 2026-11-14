@@ -121,6 +121,18 @@ export function IconHistory() {
   );
 }
 
+// New Releases: a film frame with a spark at its corner, so it reads as
+// "new titles" and not as a second Calendar.
+export function IconNewReleases() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="6" width="14" height="15" rx="2" />
+      <path d="M3 11h14" />
+      <path d="M19 2v4M17 4h4" />
+    </svg>
+  );
+}
+
 // A starred list: Just Decide's shortlist of picks.
 export function IconTonight() {
   return (
@@ -152,6 +164,7 @@ export function IconWatchTogether() {
 export const NAV_ICONS = {
   home: IconHome,
   guide: IconGuide,
+  'new-releases': IconNewReleases,
   calendar: IconCalendar,
   'my-lists': IconLists,
   history: IconHistory,
