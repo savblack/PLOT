@@ -21,12 +21,12 @@ import { OFFICIAL_PLATFORMS } from '@plot/core/usePlatformCharts.js';
 import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
+import { cardMetaLine } from '@plot/core/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { SaveButton, FavoriteButton } from './TitleActions.jsx';
 import Icon from './Icon.jsx';
 import EmptyState from './EmptyState.jsx';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
-import { COMMON } from '@plot/core/copy/common.js';
 import { clampToSentences } from '@plot/core/sentences.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
 import { visibleHomeSections } from '@plot/core/homeLayout.js';
@@ -44,7 +44,7 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import SideFilters from './SideFilters.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
-import { IconCalendar, IconChevronRight, IconSearch } from './navIcons.jsx';
+import { IconCalendar, IconChevronRight } from './navIcons.jsx';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { localDateStr } from '../utils/date.js';
 import { useHistory } from '../hooks/useHistory.js';
@@ -194,16 +194,15 @@ export function HomePageNav({ sections }) {
   );
 }
 
-/* The date and title search share the Home header row. The grouped filter is
-   retained only as the mobile bottom sheet; the desktop trigger is hidden. */
-export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres = [], onOpenSearch }) {
+/* The date heads the Home and New Releases header row. Search lives in the
+   sidebar (and the phone header's icon), which opens the same palette, so the
+   row carries no second search box. The grouped filter is retained only as
+   the mobile bottom sheet; the desktop trigger is hidden. */
+export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres = [] }) {
   return (
     <div className="page-toolbar">
       <span className="page-toolbar-date">{todayLongLabel()}</span>
       <div className="home-toolbar-actions">
-        <button type="button" className="home-search-trigger" onClick={onOpenSearch}>
-          <IconSearch /><span>{COMMON.searchTitles}</span>
-        </button>
         <GroupedFilterMenu
           mobileControls
           ariaLabel="Filter discover"
@@ -315,13 +314,6 @@ function OnThisDayCard({ item, openPanel }) {
   );
 }
 
-/* ── Compact "year · type" meta line for poster cards ── */
-function cardMeta(item) {
-  const year = (item.release_date || item.first_air_date || '').slice(0, 4);
-  const type = item.media_type === 'tv' ? MEDIA.tv : item._cinema ? MEDIA.cinema : MEDIA.movie;
-  return [year, type].filter(Boolean).join(' · ');
-}
-
 // The Top 20 rows tier their ranks: accent for #1, secondary for the rest of
 // the podium, muted beyond that.
 function rankBadgeClass(rank) {
@@ -363,7 +355,7 @@ export function RankedCard({ item, rank, showRank = true, showMeta = true, openP
           : poster
         }
         <div className="media-card-title">{title}</div>
-        {showMeta && <div className="media-card-meta">{cardMeta(item)}</div>}
+        {showMeta && <div className="media-card-meta">{cardMetaLine(item)}</div>}
       </button>
       <FavoriteButton item={item} />
       <SaveButton item={item} watchlist={watchlist} />
@@ -381,7 +373,6 @@ function BingeCard({ item, openPanel, watchlist }) {
   const backdrop = backdropUrl(displayBackdropPath(shown), 'w780');
   const poster   = posterUrl(displayPosterPath(shown), 'w342');
   const type     = item.media_type || 'tv';
-  const year     = (item.first_air_date || item.release_date || '').slice(0, 4);
   const openDetails = () => openPanel(item.id, type);
 
   return (
@@ -396,7 +387,7 @@ function BingeCard({ item, openPanel, watchlist }) {
         <span className="discover-binge-card-copy">
           <span className="discover-binge-card-title">{title}</span>
           <span className="discover-binge-card-meta">
-            {year ? `${year} • ` : ''}{type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}
+            {cardMetaLine(item, { fallbackType: 'tv' })}
           </span>
         </span>
       </button>
@@ -451,7 +442,7 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
           <h2 className="discover-hero-title">{title}</h2>
           {year && (
             <p className="discover-hero-meta">
-              {year} · {type === 'tv' ? MEDIA.tvSeries : MEDIA.movie}{note ? ` · ${note}` : ''}
+              {cardMetaLine(item, { year, note })}
             </p>
           )}
           {synopsis && <p className="discover-hero-synopsis">{synopsis}</p>}
@@ -499,7 +490,6 @@ function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
   const img   = posterUrl(displayPosterPath(art.apply(item)), 'w154');
   const type  = item.media_type || 'movie';
   const id    = item.id;
-  const year  = (item.release_date || item.first_air_date || '').slice(0, 4);
   const openDetails = () => openPanel(id, type);
 
   return (
@@ -514,7 +504,7 @@ function ChartCard({ item, rank, openPanel, watchlist, favorites, region }) {
         </div>
         <div className="discover-chart-info">
           <div className="discover-chart-title">{title}</div>
-          <div className="discover-chart-meta">{year}{year ? ' · ' : ''}{type === 'tv' ? MEDIA.tv : MEDIA.movie}</div>
+          <div className="discover-chart-meta">{cardMetaLine(item)}</div>
         </div>
       </button>
       <div className="discover-chart-actions search-row-actions">
@@ -963,7 +953,6 @@ export default function DiscoverView() {
         genreFilters={genreFilters}
         setGenreFilters={setGenreFilters}
         genres={genres}
-        onOpenSearch={openSearch}
       />
       {/* The greeting leads. Every card sits under it. */}
       <h1 className="home-greeting">{greetingFor({ name: profile?.first_name })}</h1>

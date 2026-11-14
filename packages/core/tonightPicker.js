@@ -401,7 +401,7 @@ export function addSavedSearch(items, { label, options, mode, results }, now = D
  * @param {number} savedAt
  */
 export function savedSearchDate(savedAt) {
-  return new Date(savedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return new Date(savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 /** Which picks a search holds, order-insensitive. @param {Array<{id:number, media_type:string}>} results */

@@ -167,7 +167,7 @@ export function HistoryRows({ items, onOpen }: { items: ShelfItem[]; onOpen: OnO
     <View>
       {items.map((it, i) => {
         const date = it.watched_at
-          ? new Date(it.watched_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+          ? new Date(it.watched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
           : null;
         return (
           <View key={String(it.id ?? `${it.tmdb_id}-${i}`)} style={styles.historyRow}>

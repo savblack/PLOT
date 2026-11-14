@@ -26,7 +26,7 @@ import './SettingsSources.css';
 const T = SETTINGS_VIEW.sources;
 const C = IMPORT_JOBS.card;
 
-const shortDate = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '');
+const shortDate = (iso) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '');
 
 function Chip({ kind, children }) {
   const icon = kind === 'run' ? '' : kind === 'ok' ? '✓' : kind === 'warn' ? '!' : kind === 'bad' ? '✕' : '';

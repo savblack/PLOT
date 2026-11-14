@@ -14,6 +14,9 @@ export const CALENDAR_VIEW = {
     mine: 'My dates',
     all: 'All releases',
   },
+  // The Calendar's own filter box. Worded for the page so it doesn't read as
+  // a second copy of the sidebar's Search (which opens the title palette).
+  search: 'Search the calendar',
   // Web Calendar side panel: the Show (type) and Genre filter rows.
   filter: {
     show: 'Show',

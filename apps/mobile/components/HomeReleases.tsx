@@ -13,6 +13,7 @@ import { tmdb, getTmdbRegion } from '../lib/tmdb';
 import { supabase } from '../lib/supabase';
 import { buildProviderLogoCacheKey, collectPendingProviderLogoRequests } from '@plot/core/providerLogos.js';
 import { localDateStr } from '@plot/core/date.js';
+import { cardMetaLine } from '@plot/core/media.js';
 import { pickOutNow, groupFuture } from '@plot/core/useUpcoming.js';
 import { posterUrl, backdropUrl, logoUrl, Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
@@ -209,8 +210,7 @@ function WideReleaseCard({ item, providerLogo, onPress }: { item: ReleaseItem; p
   const shown = art.apply(item);
   const title    = item.title || item.name || '';
   const backdrop = backdropUrl(displayBackdropPath(shown), 'w780') || posterUrl(displayPosterPath(shown), 'w342');
-  const isTV     = item.media_type === 'tv';
-  const meta     = isTV ? 'Series' : item._cinema ? 'In Cinemas' : 'Movie';
+  const meta     = cardMetaLine(item);
   const logo     = logoUrl(providerLogo);
 
   return (

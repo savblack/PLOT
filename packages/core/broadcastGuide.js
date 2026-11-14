@@ -96,7 +96,7 @@ export function broadcastSnapshotUrl(region) {
 export function broadcastTime(stamp, date, timezone) {
   const instant = new Date(stamp);
   const clock = instant.toLocaleTimeString('en-AU', { timeZone: timezone, hour: 'numeric', minute: '2-digit' });
-  return guideDate(stamp, timezone) === date ? clock : `${instant.toLocaleDateString('en-AU', { timeZone: timezone, day: 'numeric', month: 'short' })} ${clock}`;
+  return guideDate(stamp, timezone) === date ? clock : `${instant.toLocaleDateString('en-US', { timeZone: timezone, month: 'short', day: 'numeric' })} ${clock}`;
 }
 
 /** The hour a programme starts in, as a heading ("8 pm").
@@ -130,5 +130,5 @@ export function programmeProgress(programme, now) {
 
 /** @param {string} day @param {Intl.DateTimeFormatOptions} options */
 export function broadcastDayLabel(day, options) {
-  return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-AU', { timeZone: 'UTC', ...options });
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', ...options });
 }
