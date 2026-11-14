@@ -97,7 +97,7 @@ export default function AppSidebar({
 
       <div className="app-sidebar-scroll">
         <nav className="app-sidebar-nav">
-          {sidebarNavItems(sidebarOrder).map(({ id, label, premium }) => {
+          {sidebarNavItems(sidebarOrder, profile?.region).map(({ id, label, premium }) => {
             const Icon = NAV_ICONS[id];
             return (
               <button

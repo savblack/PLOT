@@ -202,7 +202,7 @@ replaces History's empty state on web, and is gone at the first title.
 
 | Event | When | Properties |
 |---|---|---|
-| `activation_nudge_shown` | The nudge drew (once per mount) | `surface: 'home' \| 'history'` |
+| `activation_nudge_shown` | The nudge drew (once per mount) | `surface: 'home' \| 'history' \| 'my_lists'` |
 | `activation_nudge_add_clicked` | Find a title (opens Search) | `surface` |
 | `activation_nudge_import_clicked` | An import source button | `surface`, `source` (import platform id, e.g. `trakt`) |
 

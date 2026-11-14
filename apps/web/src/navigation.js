@@ -2,6 +2,7 @@
 // The one web addition: items behind a launch flag (`feature`) are dropped here
 // until that feature ships, so the sidebar and drawer never link to a hidden route.
 import { APP_NAV_ITEMS as CORE_NAV_ITEMS } from '@plot/core/navigation.js';
+import { guideInMenu } from '@plot/core/broadcastGuide.js';
 import { SIDEBAR_FIXED_FIRST, orderSidebarItems } from '@plot/core/uiPrefs.js';
 import { SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 
@@ -19,7 +20,13 @@ const SIDEBAR_BASE_ITEMS = [
   APP_NAV_ITEMS.find(item => item.id === 'search'),
   ...APP_NAV_ITEMS.filter(item => item.id !== 'settings' && item.id !== 'search'),
 ];
-/** @param {string[] | undefined} order saved ui_prefs.sidebar */
-export const sidebarNavItems = (order) => orderSidebarItems(SIDEBAR_BASE_ITEMS, order);
+/**
+ * @param {string[] | undefined} order saved ui_prefs.sidebar
+ * @param {string | null | undefined} [region] profile.region: Guide only where it has listings
+ */
+export const sidebarNavItems = (order, region) => orderSidebarItems(
+  SIDEBAR_BASE_ITEMS.filter(item => item.id !== 'guide' || guideInMenu(region)),
+  order,
+);
 /** The items the viewer can move, in their current order (everything but the fixed Search). */
-export const movableSidebarItems = (order) => sidebarNavItems(order).filter(item => !SIDEBAR_FIXED_FIRST.includes(item.id));
+export const movableSidebarItems = (order, region) => sidebarNavItems(order, region).filter(item => !SIDEBAR_FIXED_FIRST.includes(item.id));
