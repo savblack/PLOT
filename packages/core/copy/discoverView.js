@@ -22,6 +22,8 @@ export const DISCOVER_VIEW = {
     trendingTv: 'Trending TV',
     trendingMovie: 'Trending movie',
     cardsLabel: 'plot\'s Picks',
+    // The visible heading: the plot logo is drawn, then these words follow it.
+    afterLogo: '’s Picks',
     showCard: (n) => `Show card ${n}`,
   },
   releasedThisDay: (year) => `Released this day in ${year}.`,
