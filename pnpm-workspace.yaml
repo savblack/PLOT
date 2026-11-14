@@ -46,9 +46,29 @@ overrides:
   # decode-uri-component ^0.2.2. That caret stops before 0.3.0, so the
   # lockfile stayed on 0.2.2. CVE-2026-45822 (GHSA-vcc3-ghjq-m6fr) is fixed
   # in 0.5.0. query-string already turns "+" into a space before decoding.
-  # 0.5.0 is ESM-only, and query-string calls require(), so the patch
+  # 0.5.0 then had GHSA-qr28-fpjm-wq7f (quadratic replacement of
+  # percent-encoded runs, a denial of service), fixed in 0.5.1.
+  # 0.5.x is ESM-only, and query-string calls require(), so the patch
   # publishes the same function as CommonJS.
-  "decode-uri-component@<=0.4.2": 0.5.0
+  "decode-uri-component@<0.5.1": 0.5.1
+  # @expo/cli 57 depends on zod ^3.25.76 and eslint-plugin-react-hooks on
+  # zod ^3.25.0 || ^4.0.0. GHSA-mrhx-c7xc-m3w5 (oversized constrained
+  # collections exhaust memory) covers every release below 4.6.6, the 3.x
+  # line included, and 3.x gets no fix. Expo CLI only builds dev-tools plugin
+  # schemas with z.object/string/enum/array/union/literal and reads
+  # safeParse's error.message and error.issues, which zod 4 keeps. Drop the
+  # zod part of this once Expo SDK 58 is in (it no longer depends on zod).
+  "zod@<4.6.6": 4.6.7
+  # GHSA-3g3m-2fjr-6pw4 (AbortSignal ignored after a timeout) is fixed in
+  # glob 14.0.2, and GHSA-g3hv-75wg-m249 (globparts amplification, a denial
+  # of service) in minimatch 11.0.1. The Expo 57 packages, Storybook and
+  # @typescript-eslint still ask for glob ^13 / minimatch ^10. The majors
+  # remove makeRe(), Minimatch#regexp, glob's isRegExp() and the debug
+  # option, and make GlobWalker#walk() return an array; none of those
+  # dependents call any of them (checked 2026-11-14). Same exports and
+  # CommonJS build. Remove each once every dependent asks for the new major.
+  "glob@>=9.0.0 <14.0.2": 14.0.6
+  "minimatch@>=7.0.0 <11.0.1": 11.0.8
   # @expo/cli and @expo/code-signing-certificates depend on node-forge.
   # 1.4.0 is still the latest npm release. CVE-2026-85393
   # (GHSA-86w9-cpqp-85rv) lets a nested DigestAlgorithm carry extra elements
