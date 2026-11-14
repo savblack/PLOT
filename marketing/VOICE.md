@@ -119,11 +119,14 @@ the platform out rather than naming another country.
 
 Every trailer-related post must include the direct YouTube link to the trailer
 in each social caption: X, Instagram, and Threads. This includes trailer drops
-and any other post about a trailer or teaser. Use the verified official video
-from the payload's `trailer_url`. Never invent a video ID or link to a search
-page, fan upload, or a different trailer. If the link is missing, resolve and
-verify the official trailer before writing the post; leave it for review if
-that cannot be verified.
+and any other post about a trailer or teaser. Use the exact official link in the
+brief's "Trailer link" section (a youtube.com/watch or youtu.be link the
+pipeline took from TMDB). Never invent a video ID or link to a search page, fan
+upload, or a different trailer. If the brief says no official trailer is known,
+do not mention a trailer or teaser at all.
+
+The trailer link is the only URL a social caption may carry. The article
+(page_body) stays link-free.
 
 This is an exception to the X and Threads URL bans. Keep X within 280 characters,
 including the complete link; shorten the caption rather than cutting the URL.
@@ -166,7 +169,7 @@ evergreen, title-free prompts, and they are **never about something unreleased**
   hasn't — never reveal a twist, an ending, or a death to set it up.
 - Vary the angle across the week — a verdict, a reaction to the reception, a
   "which part worked for you" — so the slot doesn't read as one template.
-- No hashtags, no URLs. Threads and X only (no image, so not Instagram).
+- No hashtags, no URLs, and no trailer talk (a question carries no link). Threads and X only (no image, so not Instagram).
 
 ## Ratings
 
