@@ -589,7 +589,8 @@ ${head}
   .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
   .dateline { color: var(--mut); white-space: nowrap; padding-bottom: 0.6em; }
   h1.feed-title { font-family: var(--display); font-size: clamp(2.8rem, 6vw, 4rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
-  h1.feed-title em { font-style: normal; font-weight: 500; color: var(--mut); }
+  /* One size, weight and color for the whole title (no grey second word). */
+  h1.feed-title em { font-style: normal; font-weight: inherit; color: inherit; }
 
   .wsearch { display: flex; align-items: center; gap: 6px; flex: 0 1 300px; min-width: 0; margin-bottom: 8px; background: var(--paper); border-radius: 9999px; padding: 3px 3px 3px 16px; }
   .wsearch input[type=search] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.95rem; color: var(--ink); padding: 6px 0; -webkit-appearance: none; appearance: none; }
