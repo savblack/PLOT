@@ -1559,7 +1559,6 @@ export default function SettingsView() {
           avatarUrl: profile?.avatar_url || null,
           isPremium: premium.isPremium,
         }}
-        accountAction={premium.isPremium ? null : <GoPremiumLink profile={profile} placement="settings" className="settings-go-premium" />}
       >
         {actionError && <p className="settings-error" role="alert">{actionError}</p>}
         {activeSection === 'account' && <>
@@ -1787,6 +1786,7 @@ export default function SettingsView() {
         {showSidebarOrder && (
           <SidebarOrderSheet
             order={uiPrefs?.prefs.sidebar}
+            region={profile?.region}
             isDefault={(uiPrefs?.prefs.sidebar.length ?? 0) === 0}
             error={uiPrefs?.error}
             onNudge={uiPrefs?.nudgeSidebar}

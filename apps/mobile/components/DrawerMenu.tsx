@@ -21,10 +21,12 @@ import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 import PlotWordmark from './PlotWordmark';
 import { GoPremiumSpark, useGoPremiumLink } from './GoPremiumLink';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
+import { guideInMenu } from '@plot/core/broadcastGuide.js';
 
 // Web's drawer is min(300px, 85vw). The old 58% width was sized for bare labels.
 const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
 
+// Guide shows only where the region has listings (core guideInMenu, as web).
 // Same order as the web phone drawer, with Search kept at the top because
 // the desktop rail leads with it. Settings stays pinned. Watch together is
 // included while SHOW_WATCH_TOGETHER is on. Follow requests live in Settings.
@@ -165,7 +167,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Main nav */}
           <View style={styles.nav}>
-            {NAV_ITEMS.map(item => {
+            {NAV_ITEMS.filter(item => item.id !== 'guide' || guideInMenu(profile?.region)).map(item => {
               const active = isActive(item.id);
               const color = active ? colors.textPrimary : colors.textSecondary;
               return (

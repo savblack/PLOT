@@ -14,7 +14,7 @@ const T = ACTIVATION_NUDGE;
 
 /**
  * @param {{
- *   surface: 'home' | 'history',
+ *   surface: 'home' | 'history' | 'my_lists',
  *   sources: Array<{ id: string, name: string }>,
  * }} props
  */

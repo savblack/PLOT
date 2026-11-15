@@ -87,6 +87,9 @@ import { createUndoBatch, UNDO_ACTIONS, type UndoOption } from '@plot/core/undo.
 import { WATCHING_SORTS, parseWatchingSort, watchingSortKey, type WatchingSort } from '@plot/core/watchingOrder.js';
 import { useWatchingSort } from '@plot/core/useWatchingSort.js';
 import EmptyState from '../../components/EmptyState';
+import ActivationNudge, { useActivationNudgeVisible } from '../../components/ActivationNudge';
+import ImportHistoryModal from '../../components/ImportHistoryModal';
+import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
@@ -612,9 +615,17 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   // The hook's rows are already last watched first and re-sorted after a tick.
   const sortedWatching = useWatchingSort(watching.items ?? [], watchingSort);
 
+  // An account with nothing saved anywhere gets the one "start here" card
+  // instead of a wall of empty sections (15 Nov 2026, review finding 8, as web).
+  const nudgeVisible = useActivationNudgeVisible();
+  const [importSource, setImportSource] = useState<string | null>(null);
   const isLoading = watchlist.loading || watching.loading || favorites.loading || customLists.loading || topLists.loading;
   if (isLoading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
 
+  // Lists, a Top 5 or favorites count as started even with no titles saved.
+  const startedLists = (customLists.lists?.length ?? 0) + (customLists.smartLists?.length ?? 0) > 0
+    || Object.values(topLists.lists || {}).some(items => (items as unknown[]).length > 0)
+    || (favorites.favorites?.length ?? 0) > 0;
   const want = wantToWatchItems(watchlist.items, watching.items, localDateStr());
   const sortedSaved = byType(want);
 
@@ -770,7 +781,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         {openList && !isHistory ? renderListCard(openList) : null}
         {/* Each section is a keyed piece so the viewer's saved order can place it
             (ui_prefs.myLists, shared with web). */}
-        {!openList || isHistory ? inOrder({
+        {!isHistory && isAll && !openList && !searching && nudgeVisible && !startedLists ? (
+          <ActivationNudge onImport={setImportSource} />
+        ) : !openList || isHistory ? inOrder({
           watching: (<>
         {/* ── Watching ── */}
         {showWatching && (watchingList.length > 0 || (isAll && !searching)) && (
@@ -1074,6 +1087,14 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         )}
           </>),
         }) : null}
+        {importSource && userId && (
+          <ImportHistoryModal
+            userId={userId}
+            entry={IMPORT_ENTRY_POINTS.ONBOARDING}
+            initialPlatform={importSource as never}
+            onClose={() => setImportSource(null)}
+          />
+        )}
         </>
         )}
 

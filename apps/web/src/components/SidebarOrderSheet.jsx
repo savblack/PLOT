@@ -22,8 +22,8 @@ const C = SETTINGS_VIEW.sidebar;
  *   onClose: () => void,
  * }} props
  */
-export default function SidebarOrderSheet({ order, isDefault, error, onNudge, onMove, onReset, onClose }) {
-  const items = movableSidebarItems(order);
+export default function SidebarOrderSheet({ order, region, isDefault, error, onNudge, onMove, onReset, onClose }) {
+  const items = movableSidebarItems(order, region);
   const ids = items.map(i => i.id);
   const close = useStableClose(onClose);
   return (

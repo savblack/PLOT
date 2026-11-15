@@ -8,6 +8,22 @@ import markets from './broadcastMarkets.json' with { type: 'json' };
 export const GUIDE_REGIONS = markets;
 export const GUIDE_COUNTRIES = ['AU', 'NZ', 'US', 'CA', 'GB'];
 
+const NO_LISTINGS = new Set(['unavailable', 'unsupported']);
+/** @param {{ provider?: string | null, scope?: string }} market */
+const hasListings = (market) => !!market?.provider && !NO_LISTINGS.has(market.scope);
+
+/**
+ * Whether Guide belongs in this viewer's menu: their region has at least one
+ * TV market with listings. Today that is AU, NZ, US and CA; GB's source is
+ * down and every other country has none. The page itself still opens from a
+ * link (15 Nov 2026, review finding 9). Web and mobile menus both read this.
+ * @param {string | null | undefined} region profile.region (ISO country)
+ */
+export function guideInMenu(region) {
+  if (!region) return true;
+  return GUIDE_REGIONS.some(market => market.country === region && hasListings(market));
+}
+
 /** @param {string} country */
 export function guideMarketsForCountry(country) {
   return GUIDE_REGIONS.filter(market => market.country === country);

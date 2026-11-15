@@ -1,21 +1,10 @@
-/* The Go Premium link (GoPremiumLink.jsx). The Settings line is laid out by
-   settings-go-premium; the side-nav chip (go-premium-chip) is a pink pill
-   that sits just above the profile row. */
+/* The Go Premium link (GoPremiumLink.jsx): the side-nav chip
+   (go-premium-chip), a pink pill just above the profile row. Settings no
+   longer repeats it (15 Nov 2026: Premium is asked for once). */
 .go-premium-link { color: var(--accent-text); font-weight: 600; text-decoration: none; }
 .go-premium-link-mark { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .go-premium-link .premium-mark { margin-left: 0; }
 
-.settings-go-premium {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 10px 0 0;
-  border-top: 1px solid var(--border);
-  font-size: .82rem;
-}
-.settings-go-premium:hover span:last-child { text-decoration: underline; }
-.settings-go-premium:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm, 8px); }
 /* The menu rows style their line icons; the spark stays a solid accent glyph. */
 .go-premium-link .premium-mark svg { width: 100%; height: 100%; fill: currentColor; stroke: none; color: inherit; }
 
