@@ -58,6 +58,23 @@ export function currentCinemaMovies(nowPlayingResults, { today, hideKids = false
 }
 
 /**
+ * Most Anticipated: the next ten English-origin movies from TMDB's upcoming
+ * results that open after `today`, kids content dropped when asked. The
+ * strict `>` keeps it apart from currentCinemaMovies. Home reads this on web
+ * and mobile.
+ * @param {any[] | null | undefined} upcomingResults
+ * @param {{ today: string, hideKids?: boolean }} options
+ * @returns {any[]}
+ */
+export function anticipatedMoviesFrom(upcomingResults, { today, hideKids = false }) {
+  return dedupeByMediaId(
+    excludeKidsContent((upcomingResults || []).filter(isEnglishOriginTitle), hideKids)
+      .filter(movie => (movie.release_date || '') > today)
+      .map(movie => ({ ...movie, media_type: 'movie' })),
+  ).slice(0, 10);
+}
+
+/**
  * The "In cinemas" card in plot's Picks: the highest trending movie that is
  * in cinemas now, else the first title in cinemas.
  * @param {any[]} trendingMovies Trending movies, most trending first.
@@ -128,11 +145,7 @@ export async function loadDiscoverData({ hideKids = false, client = tmdb, onPrim
   const today = localDateStr();
   const inCinemas = currentCinemaMovies(nowPlaying?.results, { today, hideKids });
   const cinemaMovies = inCinemas.slice(0, 10);
-  const anticipatedMovies = dedupeByMediaId(
-    excludeKidsContent((upcoming?.results || []).filter(isEnglishOriginTitle), hideKids)
-      .filter(movie => (movie.release_date || '') > today)
-      .map(movie => ({ ...movie, media_type: 'movie' })),
-  ).slice(0, 10);
+  const anticipatedMovies = anticipatedMoviesFrom(upcoming?.results, { today, hideKids });
   const trendingCinema = trendingCinemaHero(trendingMovieItems, inCinemas);
 
   return {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadDiscoverData, currentCinemaMovies, trendingCinemaHero } from '../../useDiscover.js';
+import { loadDiscoverData, currentCinemaMovies, trendingCinemaHero, anticipatedMoviesFrom } from '../../useDiscover.js';
 
 const item = (id, extra = {}) => ({ id, original_language: 'en', poster_path: `/${id}.jpg`, ...extra });
 
@@ -43,4 +43,20 @@ test('the In cinemas card is the most trending movie in cinemas, else the first 
   assert.equal(trendingCinemaHero([{ id: 1 }, { id: 9 }, { id: 7 }], inCinemas).id, 9);
   assert.equal(trendingCinemaHero([{ id: 1 }], inCinemas).id, 7);
   assert.equal(trendingCinemaHero([{ id: 1 }], []), null);
+});
+
+test('Most Anticipated keeps only English-origin movies opening after today, at most ten', () => {
+  const upcoming = [
+    item(1, { release_date: '2026-11-15' }),
+    item(2, { release_date: '2026-11-20' }),
+    item(3, { release_date: '2026-12-01', original_language: 'ko', origin_country: ['KR'] }),
+    item(2, { release_date: '2026-11-20' }),
+    ...Array.from({ length: 12 }, (_, i) => item(10 + i, { release_date: '2026-12-10' })),
+  ];
+  const result = anticipatedMoviesFrom(upcoming, { today: '2026-11-15' });
+  assert.equal(result.length, 10);
+  assert.equal(result[0].id, 2);
+  assert.ok(result.every(movie => movie.media_type === 'movie'));
+  assert.ok(!result.some(movie => movie.id === 1 || movie.id === 3));
+  assert.deepEqual(anticipatedMoviesFrom(null, { today: '2026-11-15' }), []);
 });
