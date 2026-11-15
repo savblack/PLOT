@@ -15,11 +15,9 @@ on:
   pull_request:
   push:
     branches: [main]
-  # release-please.yml starts this on its release branch. Its PR is opened
-  # with GITHUB_TOKEN, and GitHub never starts pull_request workflows for
-  # that, so without this the required `check` never runs on a mobile
-  # release PR and it stays blocked (as #1678 did on 2026-11-15). CircleCI
-  # covered this until 2026-11-12 because it is a separate app.
+  # For a manual run on any branch. A dispatched run does not count toward a
+  # PR's required checks; release PRs get CI because release-please pushes
+  # with AUTO_MERGE_TOKEN (see release-please.yml).
   workflow_dispatch:
 
 permissions:
