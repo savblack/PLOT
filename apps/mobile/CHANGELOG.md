@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.0](https://github.com/savblack/PLOT/compare/mobile-v1.5.0...mobile-v1.6.0) (2026-11-15)
+
+
+### Features
+
+* **home:** five shelves, each title once; moved rows lead New Releases ([#1687](https://github.com/savblack/PLOT/issues/1687)) ([fb2c348](https://github.com/savblack/PLOT/commit/fb2c34832caa5be3dddcdd662d1acbfdf1f94c2b))
+* **mobile:** use the plot logo in the Picks heading ([#1682](https://github.com/savblack/PLOT/issues/1682)) ([96d8ccd](https://github.com/savblack/PLOT/commit/96d8ccd0acfd252b786a3d57c106bdc3b02a531f))
+* **ui:** ask for Premium once, start card on empty My Lists, Guide where it works ([#1684](https://github.com/savblack/PLOT/issues/1684)) ([3bceffc](https://github.com/savblack/PLOT/commit/3bceffca5ece15d6fb5143646160e236cb58beb7))
+* **ui:** one card, one button for Watch Together and Just Decide ([#1679](https://github.com/savblack/PLOT/issues/1679)) ([479131a](https://github.com/savblack/PLOT/commit/479131a6dbba84151dae5c028a1957151cfba39f))
+* **ui:** Watch Together and Just Decide redesign, plus shared UI components ([#1673](https://github.com/savblack/PLOT/issues/1673)) ([ffada0b](https://github.com/savblack/PLOT/commit/ffada0b0c68e5c641442e7528cfb67b41d6b0501))
+
+
+### Bug Fixes
+
+* **ui:** US dates, one card meta line, one search box, Up next on phones ([#1683](https://github.com/savblack/PLOT/issues/1683)) ([379e24a](https://github.com/savblack/PLOT/commit/379e24a61b480fc53d7685e4afd8a8b6457005e8))
+
 ## [1.5.0](https://github.com/savblack/PLOT/compare/mobile-v1.4.0...mobile-v1.5.0) (2026-11-13)
 
 
