@@ -18,13 +18,21 @@ in the Sign-In Information fields next to these notes. Leave
 `[password in Sign-In Information]` as it is, or replace it there by hand; never
 commit it.
 
+This block matches what was saved in App Store Connect on 2026-11-13. The
+Premium wording there was edited by hand on 2026-11-12 and is kept as written;
+the sign-in paragraph changed because Sign in with Apple and Google now ship
+(see `docs/ops/mobile-builds.md`, "Social sign-in status"). In App Store
+Connect the paragraphs are pasted without the line wrapping used here.
+
 ```
-Plot is a movie and TV tracker. Everything in the app is free to use. Plot
-Premium is an optional paid plan.
+Plot is a movie and TV tracker.
 
 SIGNING IN
-Sign in with email and password using the demo account below. No social
-sign-in is enabled in this build.
+Please use the demo account below with email and password. The app opens on
+"Create your account": tap "Sign in" next to "Already have an account?" at the
+bottom, then enter the email and password. If a "Verify you are human" box
+appears, tick it. The sign-in screen also offers "Continue with Apple" and
+"Continue with Google". Both work, but the demo account does not use them.
 
 Demo account: savannah+appreview@theplot.tv / [password in Sign-In Information]
 Username: @plotreview
@@ -43,20 +51,21 @@ PREMIUM
 Premium is purchased on our website through Stripe, and the same account
 unlocks Premium in the app. The app has no in-app purchase.
 
-The app describes Premium and its price under Settings > plot Premium >
-Explore Premium. On the United States storefront it also shows an "Upgrade to
-Premium" button that opens our web checkout in the browser, as Guideline
-3.1.1(a) allows. While web checkout is not yet open, that same button reads
-"Join the waitlist" and only records interest; nothing is charged. On every other storefront the app shows no purchase button or link
-and does not tell people how to buy. The app reads the storefront with
-StoreKit's Storefront API and shows the button only when it is the United
-States. If the storefront cannot be read, no button is shown. A member who
-bought Premium on the web is recognized in the app on every storefront.
+The app describes Premium and its price under Settings > Plot Premium >
+Explore Premium. On the United States storefront, an “Upgrade to Premium”
+button opens our web checkout in the browser, as permitted by Guideline
+3.1.1(a). On other storefronts, the app shows no purchase button or link and
+does not direct people to buy outside the app.
+
+The app uses StoreKit’s Storefront API to show the button only for the United
+States storefront. If the storefront cannot be determined, the button is
+hidden. Members who purchased Premium on the web can sign in and access it in
+the app on any storefront.
 
 To see the button, use a device or simulator whose App Store storefront is the
-United States, then open Settings > plot Premium > Explore Premium. It also appears
-in the upgrade sheet shown when a Free account taps a Premium theme under
-Settings > Themes.
+United States, then open Settings > plot Premium > Explore Premium. It also
+appears in the upgrade sheet shown when a Free account taps a Premium theme
+under Settings > Themes.
 
 CONTENT
 Film and TV metadata and artwork come from TMDB under its API terms. The app

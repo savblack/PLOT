@@ -198,15 +198,55 @@ Take them on an iPhone 17 Pro Max simulator with
 17 Pro gives 1206 × 2622, which App Store Connect rejects for the 6.9" slot,
 so create the Max device type before capturing.
 
+### Current set (2026-11-13, app 1.4.0)
+
+Four screenshots, in this order: Home, the Ted Lasso title panel (Watching,
+with Up next), My Lists (Watching row and Top 5 movies), History (2026 stats).
+Taken on Savannah's own account against Production, light theme, status bar
+set with `xcrun simctl status_bar <device> override --time 9:41
+--batteryState discharging --batteryLevel 100`. Saved as JPEG (simulator
+PNGs carry an alpha channel). The 6.5" files are the 6.9" ones scaled to
+1284 wide and trimmed 12 px at the bottom.
+
+App Store Connect's Media Manager (redesigned for iOS 27) groups by device:
+"iPhone with Dynamic Island (large display)" is the 6.9" slot, "iPhone with
+Face ID (large display)" is 6.5", and the required "medium display" slot
+reuses the large set when it has none of its own.
+
+Rules from Apple's asset best practices that shaped the set, so the next
+retake does not have to rediscover them:
+
+- Every image must suit a 4+ audience even though the app is rated 9+. Trending
+  rails and a real account's Up next are full of guns and horror posters, so
+  each shot was checked poster by poster. Family titles were added to
+  Watching to lead Up next, and Top 5 #3 was changed.
+- No prices, URLs, © symbols, or other platforms' logos. Streaming logos in
+  "Where to watch" are why the title panel is Ted Lasso (Apple TV only).
+- Left out on purpose: Calendar (showed "Nothing coming up" on 1.4.0 despite
+  an episode due Dec 2, which looks like a bug), New Releases (weak, dark
+  posters even when filtered), and the profile (shows a real name).
+
 ## Before pressing Submit
 
-- [ ] Seller settled (Individual, or a Pty Ltd converted) and the legal copy agrees with it.
-- [ ] Paid Apps agreement active; banking and tax complete.
+- [x] Seller settled (Individual, or a Pty Ltd converted) and the legal copy agrees with it.
+      Decided 2026-11-12: Individual, Savannah Black. EU trader status (DSA)
+      showed Active on 2026-11-13.
+- [ ] Paid Apps agreement active; banking and tax complete. Not needed to
+      submit a free app (the Free Apps agreement is Active), only before
+      in-app purchase is ever added.
 - [x] App record created; `ascAppId` in `eas.json` (`6797167864`).
-- [x] `EXPO_PUBLIC_SHOW_APPLE_LOGIN` is **not** set in the `production` EAS
-      environment (confirmed 2026-10-14), so no social sign-in ships and
-      Sign in with Apple is not required by Guideline 4.8. If Google is ever
-      turned on for iOS, Apple must be too.
+- [x] Sign-in options meet Guideline 4.8: since 2026-11-12 the `production`
+      EAS environment sets both `EXPO_PUBLIC_SHOW_APPLE_LOGIN` and
+      `EXPO_PUBLIC_SHOW_GOOGLE_LOGIN`, so Google ships alongside Sign in with
+      Apple (see [mobile-builds.md](mobile-builds.md), "Social sign-in
+      status"). The review notes say so; on 2026-11-13 they were corrected
+      from "No social sign-in is enabled". If either flag changes, update
+      [../launch/app-review-notes.md](../launch/app-review-notes.md) too.
+- [ ] The updated Apple Developer Program License Agreement is accepted.
+      App Store Connect ▸ Business showed it waiting on 2026-11-13; until the
+      Account Holder accepts it, no new submission goes through.
+- [ ] A build is attached to the version (it showed "Add Build" on
+      2026-11-13 although 1.4.0 builds 6 to 8 are in TestFlight).
 - [ ] Release build drives the smoke list in
       [../qa/mobile-device-smoke.md](../qa/mobile-device-smoke.md), including
       a fresh sign-up and the demo account login.
@@ -223,8 +263,10 @@ so create the Max device type before capturing.
       when picking a build for review: TestFlight uploads go through without
       it (1.4.0 builds 6 to 8 were accepted on 2026-11-12 with App Store
       Connect at 1.2.0), and builds now reach TestFlight automatically (see
-      [mobile-builds.md](mobile-builds.md)). Set to 1.2.0 on 2026-11-11; the
-      app is now 1.4.0, so change it right before submitting for review.
+      [mobile-builds.md](mobile-builds.md)). App Store Connect showed 1.4.0
+      on 2026-11-13, matching `app.json`; left unticked because the next
+      release will move the app again, so check it right before submitting
+      for review.
 - [x] Review notes in App Store Connect are the current text from
       [../launch/app-review-notes.md](../launch/app-review-notes.md).
 
@@ -247,10 +289,11 @@ Black.
 - Review notes are filled. The demo login is `savannah+appreview@theplot.tv`
   (`plotreview`). `@plotreader` (`savannah+appreview2@theplot.tv`) follows it.
   The password is only in App Store Connect and was not committed.
-- Six screenshots are uploaded for the 6.9" slot (1320×2868, `APP_IPHONE_67`)
-  and the 6.5" slot (1284×2778, `APP_IPHONE_65`): Home, the Inception title
-  panel, My Lists, Calendar, New Releases, and the plotreview profile. They
-  are not submitted. iOS 27 needs the UIScene lifecycle. `apps/mobile` is on
+- Screenshots: the October set of six (Home, Inception, My Lists, Calendar,
+  New Releases, the plotreview profile) was replaced on 2026-11-13 by the four
+  described under "Current set" above, in both the 6.9" and 6.5" slots. The
+  old ones are still in the Asset Library. Not submitted.
+- iOS 27 needs the UIScene lifecycle. `apps/mobile` is on
   Expo 57.0.29 with `ios.enableSceneSupport`. The `ios/` tree is gitignored,
   so EAS prebuild generates the AppDelegate on the builder.
 - Production build 3 (`d27afc63-52ea-439c-8bc6-d00be0f1b969`) failed because
