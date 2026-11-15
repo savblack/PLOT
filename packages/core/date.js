@@ -111,10 +111,11 @@ export function relativeTime(iso, now = Date.now(), region = null) {
   return new Date(iso).toLocaleDateString(dateLocaleForRegion(region), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-/** Today, spelt out in the viewer's own locale ("Tuesday 15 September"). The
- *  line under the Home and Calendar page headings. */
+/** Today, written out in US order ("Tuesday, September 15"). The line under
+ *  the Home, New Releases and Calendar page headings. Fixed to en-US rather than
+ *  the device locale, which put the day first on non-US devices. */
 export function todayLongLabel(now = new Date()) {
-  return now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+  return now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
 /** "October" while the year is the current one, "January 2027" once it is not.
@@ -131,7 +132,7 @@ function localDay(value) {
 }
 
 /**
- * "16 Dec" this year, "16 Dec 2027" otherwise. Dates on the Your people
+ * "Dec 16" this year, "Dec 16, 2027" otherwise. Dates on the Your people
  * shelf and page, and a person's Coming up strip.
  * @param {string} value YYYY-MM-DD
  * @param {number} [todayYear]
@@ -140,13 +141,13 @@ export function shortDayMonth(value, todayYear = new Date().getFullYear()) {
   const d = localDay(value);
   if (!d) return '';
   // Built by hand: en-GB now spells September "Sept", the boards say "Sep".
-  const dayMonth = `${d.getDate()} ${d.toLocaleDateString('en', { month: 'short' })}`;
-  return d.getFullYear() === todayYear ? dayMonth : `${dayMonth} ${d.getFullYear()}`;
+  const monthDay = `${d.toLocaleDateString('en', { month: 'short' })} ${d.getDate()}`;
+  return d.getFullYear() === todayYear ? monthDay : `${monthDay}, ${d.getFullYear()}`;
 }
 
-/** "Thu 1 Oct": the date column on the Your people page. @param {string} value YYYY-MM-DD */
+/** "Thu, Oct 1": the date column on the Your people page. @param {string} value YYYY-MM-DD */
 export function weekdayDayMonth(value) {
   const d = localDay(value);
   if (!d) return '';
-  return `${d.toLocaleDateString('en', { weekday: 'short' })} ${d.getDate()} ${d.toLocaleDateString('en', { month: 'short' })}`;
+  return `${d.toLocaleDateString('en', { weekday: 'short' })}, ${d.toLocaleDateString('en', { month: 'short' })} ${d.getDate()}`;
 }

@@ -158,3 +158,13 @@ test('mediaIdentityRow strips release_date from baseMediaRow', () => {
 test('mediaIdentityRow returns null when baseMediaRow would return null', () => {
   assert.equal(mediaIdentityRow({ name: 'B' }), null);
 });
+
+test('cardMetaLine: one year · type format for every card', async () => {
+  const { cardMetaLine } = await import('../../media.js');
+  assert.equal(cardMetaLine({ media_type: 'movie', release_date: '2026-03-01' }), '2026 · Movie');
+  assert.equal(cardMetaLine({ media_type: 'tv', first_air_date: '2026-03-01' }), '2026 · TV');
+  assert.equal(cardMetaLine({ media_type: 'movie', release_date: '2026-03-01', _cinema: true }), '2026 · Cinema');
+  assert.equal(cardMetaLine({ first_air_date: '2025-01-01' }, { fallbackType: 'tv' }), '2025 · TV');
+  assert.equal(cardMetaLine({ media_type: 'movie' }), 'Movie');
+  assert.equal(cardMetaLine({ media_type: 'tv', first_air_date: '2026-01-01' }, { year: '2001', note: 'From the archive' }), '2001 · TV · From the archive');
+});

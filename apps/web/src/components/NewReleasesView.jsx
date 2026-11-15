@@ -89,7 +89,7 @@ export default function NewReleasesView() {
   );
 
   if (!app) return null;
-  const { openPanel, openSearch, watchlist } = app;
+  const { openPanel, watchlist } = app;
 
   return (
     <div className="new-releases-page">
@@ -100,7 +100,6 @@ export default function NewReleasesView() {
         genreFilters={genreFilters}
         setGenreFilters={setGenreFilters}
         genres={genres}
-        onOpenSearch={openSearch}
       />
       <div className="cal-body new-releases-layout">
         <aside className="cal-side new-releases-side">

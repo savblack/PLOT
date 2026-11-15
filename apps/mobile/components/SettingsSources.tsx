@@ -40,7 +40,7 @@ type Integration = MediaIntegration & { selected_server?: { name: string; profil
 type Connection = { integration_id: string; automatic_enabled: boolean };
 type ChipKind = 'run' | 'queued' | 'ok' | 'warn' | 'bad' | 'off';
 
-const shortDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '');
+const shortDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '');
 
 function Chip({ kind, text }: { kind: ChipKind; text: string }) {
   const { colors } = useTheme();

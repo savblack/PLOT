@@ -42,7 +42,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { favoriteWords } from '../lib/spelling';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { findDuplicateCustomList } from '@plot/core/customLists.js';
-import { mediaTypeFromItem, recommendationsFromDetails, releaseDateFromItem, titleFromItem } from '@plot/core/media.js';
+import { cardMetaLine, mediaTypeFromItem, recommendationsFromDetails, titleFromItem } from '@plot/core/media.js';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { buildWatchLink } from '@plot/core/watchLinks.js';
 import {
@@ -1768,12 +1768,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm + 2, paddingBottom: spacing.xs }}>
                       {similar.map((item: any) => {
                         const type = mediaTypeFromItem(item);
-                        const year = releaseDateFromItem(item)?.slice(0, 4) || '';
                         return (
                           <TouchableOpacity key={`${type}-${item.id}`} style={styles.similarCard} activeOpacity={0.7} onPress={() => openTitle(item.id, type)} accessibilityRole="button" accessibilityLabel={titleFromItem(item)}>
                             <Image source={{ uri: posterUrl(displayPosterPath(art.apply(item)), 'w185') ?? '' }} style={styles.similarPoster} />
                             <Text style={styles.similarName} numberOfLines={1}>{titleFromItem(item)}</Text>
-                            <Text style={styles.similarMeta} numberOfLines={1}>{[year, type === 'tv' ? 'TV' : 'Movie'].filter(Boolean).join(' · ')}</Text>
+                            <Text style={styles.similarMeta} numberOfLines={1}>{cardMetaLine(item)}</Text>
                           </TouchableOpacity>
                         );
                       })}

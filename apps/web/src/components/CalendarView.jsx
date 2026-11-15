@@ -10,7 +10,6 @@ import { useCalendar } from '../hooks/useCalendar.js';
 import { useFilteredUpcoming } from '../hooks/useFilteredUpcoming.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
-import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
 import { titleMatchesQuery } from '@plot/core/media.js';
@@ -167,7 +166,7 @@ export default function CalendarView() {
             value={view}
             onChange={setView}
           />
-          <SearchField className="hist-search cal-search" value={query} onChange={setQuery} placeholder={COMMON.searchTitles} ariaLabel={COMMON.searchTitles} />
+          <SearchField className="hist-search cal-search" value={query} onChange={setQuery} placeholder={CALENDAR_VIEW.search} ariaLabel={CALENDAR_VIEW.search} />
         </div>
       </div>
 

@@ -6,13 +6,13 @@ const today = '2026-10-04';
 
 test('a premiere reads as "Season N premiere" with a short date', () => {
   const line = nextEpisodeLine({ next_episode_to_air: { air_date: '2026-10-09', season_number: 5, episode_number: 1 } }, today);
-  assert.deepEqual(line, { date: '2026-10-09', when: 'Fri 9 Oct', label: 'Season 5 premiere' });
+  assert.deepEqual(line, { date: '2026-10-09', when: 'Fri, Oct 9', label: 'Season 5 premiere' });
 });
 
 test('a mid-season episode reads as S·E', () => {
   const line = nextEpisodeLine({ next_episode_to_air: { air_date: today, season_number: 2, episode_number: 7 } }, today);
   assert.equal(line.label, 'S2 · E7');
-  assert.equal(line.when, 'Sun 4 Oct');
+  assert.equal(line.when, 'Sun, Oct 4');
 });
 
 test('nothing dated, or a date already past, is no line', () => {

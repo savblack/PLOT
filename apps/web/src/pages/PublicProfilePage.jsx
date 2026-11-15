@@ -755,7 +755,7 @@ function HistoryRows({ items, openPanel, columns = false }) {
     <button type="button" className="pp-history-row" key={item.id || `${item.tmdb_id}-${i}`}
       onClick={() => openPanel(item.tmdb_id, item.media_type || 'movie')}>
       {item.poster_path ? <img src={posterUrl(item.poster_path, 'w185')} alt="" loading="lazy" /> : <span className="pp-history-placeholder" />}
-      <span><strong>{item.title}</strong><small>{MEDIA.watched}{item.watched_at && <> · {new Date(item.watched_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}</>}</small></span>
+      <span><strong>{item.title}</strong><small>{MEDIA.watched}{item.watched_at && <> · {new Date(item.watched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</>}</small></span>
     </button>
   ))}</div>;
 }

@@ -39,7 +39,7 @@ export function ContinueCard({ item, onOpen }) {
 // The same tones as Your people's feed (YourPeopleView.jsx).
 const CHIP_TONE = { outToday: 'accent', dated: 'neutral' };
 
-/** Who, and then the service or the date: "Florence Pugh · Netflix", "Pedro Pascal · 3 Dec". */
+/** Who, and then the service or the date: "Florence Pugh · Netflix", "Pedro Pascal · Dec 3". */
 function shelfMeta(item, today) {
   const who = item.people.map(p => p.name).join(', ');
   const tail = item.date && item.date > today ? shortDayMonth(item.date) : item.network;

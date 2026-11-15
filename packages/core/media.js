@@ -1,3 +1,5 @@
+import { MEDIA } from './copy/media.js';
+
 export function normalizeMediaType(value) {
   if (value === 'show' || value === 'series') return 'tv';
   if (value === 'movie' || value === 'tv') return value;
@@ -28,6 +30,24 @@ export function posterPathFromItem(item) {
 
 export function releaseDateFromItem(item) {
   return item?.release_date || item?.first_air_date || null;
+}
+
+/**
+ * The one meta line under a title on a card or row: "2026 · Movie",
+ * "2026 · TV", or "2026 · Cinema" for a cinema release. Every shelf on both
+ * apps reads this so the separator and the type word can't drift apart again
+ * (Home once showed "2026 • TV Series" next to "2026 · TV").
+ *
+ * @param {any} item a TMDB-shaped title
+ * @param {{ year?: string, fallbackType?: 'movie' | 'tv', note?: string | null }} [options]
+ *   year overrides the release year (the hero's anniversary), fallbackType is
+ *   used when the item has no media_type, note is appended as a third part.
+ * @returns {string}
+ */
+export function cardMetaLine(item, { year, fallbackType = 'movie', note = null } = {}) {
+  const y = year ?? (releaseDateFromItem(item) || '').slice(0, 4);
+  const type = mediaTypeFromItem(item, fallbackType) === 'tv' ? MEDIA.tv : item?._cinema ? MEDIA.cinema : MEDIA.movie;
+  return [y, type, note].filter(Boolean).join(' · ');
 }
 
 /**

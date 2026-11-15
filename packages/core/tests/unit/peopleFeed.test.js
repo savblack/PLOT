@@ -104,8 +104,8 @@ test('suggestions: four people from logged titles, at least one director', () =>
 
 test('short dates read "16 Sep", "16 Sep 2027" and "Thu 1 Oct"', async () => {
   const { shortDayMonth, weekdayDayMonth } = await import('../../date.js');
-  assert.equal(shortDayMonth('2026-09-16', 2026), '16 Sep');
-  assert.equal(shortDayMonth('2027-12-16', 2026), '16 Dec 2027');
+  assert.equal(shortDayMonth('2026-09-16', 2026), 'Sep 16');
+  assert.equal(shortDayMonth('2027-12-16', 2026), 'Dec 16, 2027');
   assert.equal(shortDayMonth('', 2026), '');
-  assert.equal(weekdayDayMonth('2026-10-01'), 'Thu 1 Oct');
+  assert.equal(weekdayDayMonth('2026-10-01'), 'Thu, Oct 1');
 });
