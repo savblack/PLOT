@@ -1,8 +1,6 @@
 // Display names for the Home shelves the Customize Home screen lists. The ids
 // are @plot/core/homeLayout.js HOME_SECTION_IDS; the names match the section
-// headers Home draws (and web's Jump to card). Mobile does not render the
-// anticipated shelf yet, but a layout is shared with web, so it is still
-// listed and reorderable here.
+// headers Home draws (and web's Jump to card).
 import { PEOPLE } from '@plot/core/copy/people.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 
