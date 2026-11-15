@@ -13,7 +13,6 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  actions: write # start ci.yml on the release branch
 
 jobs:
   release-please:
@@ -25,34 +24,19 @@ jobs:
       - id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
+          # Not GITHUB_TOKEN: GitHub starts no pull_request workflows for a PR
+          # opened or pushed with it, so the required `check` never ran on a
+          # release PR and 1.6.0 (#1678) sat blocked. A CI run started by
+          # workflow_dispatch does not count toward a PR's required checks
+          # either (tried in #1685 and #1686). AUTO_MERGE_TOKEN (Contents and
+          # Pull requests: read and write on this repo only) acts as Savannah,
+          # so release PR pushes start CI like any other PR.
+          token: ${{ secrets.AUTO_MERGE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
       # The release PR is opened or updated with GITHUB_TOKEN, which starts no
       # pull_request workflows, so its required `check` would never run. Start
       # CI on the release branch directly; the run reports on the PR's head.
-      # Also when the PR already existed and did not change (a push to main
-      # with no mobile commits), as long as its head has no `check` yet:
-      # 1.6.0 (#1678) sat blocked on 2026-11-15 because it was opened before
-      # this step existed and nothing updated it afterwards.
-      - name: Run CI on the release PR
-        if: steps.release.outputs['apps/mobile--release_created'] != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh pr list --repo "$GITHUB_REPOSITORY" --state open --label "autorelease: pending" \
-            --json headRefName,headRefOid --jq '.[] | "\(.headRefName) \(.headRefOid)"' |
-          while read -r branch sha; do
-            ran=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs?check_name=check" --jq '.total_count')
-            if [ "$ran" != "0" ]; then echo "$branch already has a check run."; continue; fi
-            if gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$branch"; then
-              echo "Started CI on $branch"
-            else
-              # A branch cut before ci.yml accepted workflow_dispatch cannot be
-              # dispatched; updating it from the PR page starts CI normally.
-              echo "::warning::Could not start CI on $branch. Update the branch from the release PR."
-            fi
-          done
 
   # A new mobile-vX.Y.Z starts the iOS store build. Called directly because a
   # tag pushed with GITHUB_TOKEN does not trigger other workflows.
