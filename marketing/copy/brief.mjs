@@ -114,7 +114,8 @@ Never add an explanatory trailer like "…just genuinely curious what everyone
 thinks", and do NOT close with "No wrong answers" — it's retired for being used
 on nearly every question. A closing line is optional; if one genuinely earns its
 place, write a fresh one. No hashtags, no links, no emoji strings. Must fit 280
-characters.
+characters. Do not mention a trailer or teaser: a question carries no link, and a
+social post that talks about a trailer must link it.
 
 **No spoilers**, and the question has to land for someone who hasn't seen it —
 never assume the reader already watched.
@@ -195,8 +196,9 @@ ${await voice()}
  * @returns {string} markdown brief for a single planned post.
  * @param {object} post  a marketing_posts row (needs id, post_type, payload)
  * @param {Array}  research  research pack from enrichPost() (may be empty)
+ * @param {{trailerUrl?: string|null}} options  the official YouTube trailer from TMDB, if known
  */
-export const buildBrief = async (post, research = []) => {
+export const buildBrief = async (post, research = [], { trailerUrl = null } = {}) => {
   const brief = POST_TYPE_BRIEFS[post.post_type] || '';
   const outFile = `${post.id}.copy.json`;
   const hasResearch = research.length > 0;
@@ -213,6 +215,12 @@ ${post.payload?.days_until != null ? `\n**This is ${post.payload.days_until} day
 \`\`\`json
 ${JSON.stringify(post.payload, null, 2)}
 \`\`\`
+
+## Trailer link (social captions only)
+${trailerUrl
+    ? `The official YouTube trailer for this title is ${trailerUrl}. Any social caption (x, instagram, threads) that mentions the trailer or a teaser must include this exact link. It is the only URL a caption may carry: link no other video and no other site. On X, the caption plus the full link must fit 280 characters, so shorten the words, never the link. Trailer posts use \`cta_variant: none\`.`
+    : 'No official YouTube trailer is known for this post. Do not mention a trailer or teaser in the social captions, and put no URLs in them.'}
+The article (page_body) stays link-free either way.
 
 ## Rules the validator does not check
 - Social captions, hashtags, and alt text may state only what is in the JSON above. A name, date, platform, or "first trailer" that appears only in the research pack stays out of them. A director hashtag is allowed. A cast hashtag is allowed only when that person's name is in the JSON.

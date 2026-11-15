@@ -122,15 +122,19 @@ Re-run after edits to refresh. The weekly email points to Notion and Buffer.
 - British spelling (colour, favourite, theatre, organise, programme) or a UK or
   Australian platform or release date. The post is for a US reader.
 - An upcoming / now-streaming title that already released — not "new".
-- X over 280 chars, a URL in the X copy, or an article that narrates its sources (§3).
+- X over 280 chars, a URL in a social caption other than the official YouTube trailer link,
+  a caption that mentions a trailer without that link, or an article that narrates its sources (§3).
 Surface these with the fix (edit, regenerate, reschedule) rather than approving as-is.
 
 ## 3. Edit (conversational) — write to the DB
 Follow the contracts: **`marketing/VOICE.md`** (voice + CTAs) and the article rules in
 **`marketing/copy/brief.mjs`** (a finished editorial article, NEVER narrate sources).
 Enforce **`marketing/copy/schema.mjs`** (re-exported from
-`supabase/functions/_shared/copySchema.js`): X ≤280 chars, no URLs, no hashtags; Threads no
-URLs; Instagram 3–5 hashtags. Questions are generic and text-only (X + Threads), never
+`supabase/functions/_shared/copySchema.js`): X ≤280 chars, no hashtags; Threads no hashtags;
+Instagram 3–5 hashtags. No URLs in any caption, except that a caption that mentions a trailer
+must include the official YouTube trailer link (youtube.com/watch or youtu.be, from the
+payload's `trailer_url` or TMDB). Never invent one: if none is known, drop the trailer mention.
+Articles stay link-free. Questions are generic and text-only (X + Threads), never
 tied to a title. You write the copy yourself (you are the copy worker too — do NOT call
 a paid API; see `marketing/copy/AGENT.md`).
 - **Article fields** (`page_title`, `page_body`, `cta_variant`): read current `copy`,
@@ -243,7 +247,8 @@ Do not schedule one by hand with a TMDB backdrop. Approval governs the
   This stops posts **entering** Buffer's queue. Anything already scheduled there
   is unaffected and must be removed in Buffer.
 Buffer gotcha (handled in `marketing/publish/buffer.mjs`): Instagram needs
-`metadata.instagram = { type: post, shouldShareToFeed: true }`; X copy must have no URL.
+`metadata.instagram = { type: post, shouldShareToFeed: true }`; X copy must have no URL except
+the official YouTube trailer link on a post that mentions a trailer.
 After a run, verify each post's `marketing_post_publications.status`/`permalink`.
 - **Log it**: one `marketing_review_events` row (§0). `action` is `publish_now`, `retry`,
   `pause`, or `resume` (the last two take no `post_id`).

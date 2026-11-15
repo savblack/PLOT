@@ -14,9 +14,9 @@ export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'journal_it', 'none
 // Field-by-field spec, rendered into every brief so the worker sees the exact
 // contract it must satisfy. Keep this in lockstep with validateCopy below.
 export const COPY_FIELDS = [
-  ['x', 'string', 'X post text. <=280 characters. No URLs except a YouTube trailer link on trailer-related posts; a bare domain counts, so never write "at theplot.tv" here (end the CTA "with Plot" instead). No hashtags.'],
-  ['instagram', 'string', 'Instagram caption, 1-3 short paragraphs. Do NOT put the hashtags here — they go in the hashtags array.'],
-  ['threads', 'string', 'Threads post text, one conversational thought. No URLs except a YouTube trailer link on trailer-related posts (the system also appends the article link, so never write "theplot.tv" here). No hashtags.'],
+  ['x', 'string', 'X post text. <=280 characters. No URLs except the official YouTube trailer link given in the brief, which any caption that mentions a trailer must include; a bare domain counts, so never write "at theplot.tv" here (end the CTA "with Plot" instead). No hashtags.'],
+  ['instagram', 'string', 'Instagram caption, 1-3 short paragraphs. Do NOT put the hashtags here — they go in the hashtags array. No URLs except the official YouTube trailer link given in the brief (required if the caption mentions a trailer); "at theplot.tv" in the CTA is fine.'],
+  ['threads', 'string', 'Threads post text, one conversational thought. No URLs except the official YouTube trailer link given in the brief, which any caption that mentions a trailer must include (the system also appends the article link, so never write "theplot.tv" here). No hashtags.'],
   ['hashtags', 'string[]', '3-5 niche hashtags for Instagram only, WITHOUT the # prefix, no spaces (e.g. "A24", "mikeflanagan").'],
   ['alt_text', 'string', 'One-sentence literal description of the image for accessibility.'],
   ['cta_variant', `enum: ${CTA_VARIANTS.join(' | ')}`, 'Which approved CTA this post uses (or "none").'],
@@ -43,7 +43,7 @@ export const POST_TYPE_BRIEFS = {
     'The weekly top-10 trending chart. Comment on the most interesting movement (a new entry, a big climb, a stubborn #1). ' +
     'X gets the full top-10 chart as its single image, and the X caption names number one and every other title on the chart. Do not invent why a title moved. ' +
     'Instagram and Threads get a carousel: chart 1-5, chart 6-10, then detail cards for the top 3.',
-  trailer: 'A new official trailer just dropped for this title, which is still unreleased (`when_label` is the release date). React to the trailer existing; never describe scenes you haven\'t been given, and never treat footage as proof the film works. Do not call it the first trailer unless a page you loaded says no earlier official trailer exists. Do not claim who was going to direct unless a page you loaded says so.',
+  trailer: 'A new official trailer just dropped for this title, which is still unreleased (`when_label` is the release date). React to the trailer existing; never describe scenes you haven\'t been given, and never treat footage as proof the film works. Do not call it the first trailer unless a page you loaded says no earlier official trailer exists. Do not claim who was going to direct unless a page you loaded says so. Put the payload\'s `trailer_url` (the official YouTube link) in full in x, instagram, and threads, and use `cta_variant: none`; the validator rejects a trailer post without it.',
   on_this_day: 'A release anniversary. The payload says how many years, counted from the original theatrical release (for a US film, its US opening, not the premiere). Invite reflection or a rewatch; no spoilers, and make a title-specific critical point rather than a birthday calculation. Say "today" only when the US theatrical opening is the publish day. When that opening and TMDB\'s primary date disagree, the US opening is the anniversary, and a different publish day is not a birthday.',
   watch_tonight: 'A "what to watch tonight" pick — a title streaming right now. Make a quick, genuine case for tonight, and ALWAYS name the US platform from `streaming.US`. Do not name a UK or Australian service.',
   hidden_gem: 'A "hidden gem" — an older film (1980s onwards) that is well made but outside the obvious picks, streamable now. Say who it will reward and why it has been overlooked; ALWAYS name the US platform from `streaming.US`. Do not name a UK or Australian service. No spoilers. A film that won three or more Oscars, or that a US reader already knows as a classic, is the wrong slot: do not call it a discovery. fuboTV and MGM+ are US services when they appear in `streaming.US`. Name those services. Do not add a phrase only so a checker will pass.',
@@ -65,6 +65,27 @@ export const GUIDE_ARCHETYPE_BRIEFS = {
 };
 
 const hasUrl = (s) => /https?:\/\/|www\.|\b[a-z0-9-]+\.(com|tv|net|org|io|co)\b/i.test(s);
+
+// The only URL a social caption may carry: the official YouTube trailer, as
+// youtube.com/watch?v=KEY or youtu.be/KEY. Nothing else (no shorts, embeds,
+// search pages or other sites).
+const YOUTUBE_LINK = /https:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})|youtu\.be\/([A-Za-z0-9_-]{11}))(?![A-Za-z0-9_-])(?:[?&][^\s]*)?/g;
+
+/**
+ * The canonical watch URL for a YouTube trailer link, or null when the value is
+ * not exactly one youtube.com/watch or youtu.be link. Used to compare the link a
+ * writer used against the one the pipeline resolved from TMDB.
+ */
+export const officialTrailerUrl = (value) => {
+  const text = typeof value === 'string' ? value.trim() : '';
+  const [match] = [...text.matchAll(YOUTUBE_LINK)];
+  if (!match || match.index !== 0 || match[0] !== text) return null;
+  return `https://www.youtube.com/watch?v=${match[1] || match[2]}`;
+};
+
+// Instagram's approved CTAs end "at theplot.tv" (the profile link is live
+// there), so that one domain is not a URL for Instagram. Any other is.
+const PLOT_DOMAIN_ANYWHERE = /(?:https?:\/\/)?(?:www\.)?theplot\.tv(?:\/[^\s]*)?/gi;
 
 // The approved CTAs in marketing/VOICE.md end "at theplot.tv". That is right
 // for Instagram, where the profile link is live, but on X and Threads the bare
@@ -212,14 +233,43 @@ export const validateCopy = (raw, context = {}) => {
   copy.threads = stripPlotDomainCta(copy.threads);
 
   // Hard platform guarantees — the same ones the API path enforced.
+  //
+  // A social caption that talks about a trailer or teaser must carry the
+  // official YouTube trailer link, and no caption may carry any other URL.
+  // context.trailer_url is what the pipeline resolved from TMDB (the payload's
+  // trailer_url, or the title's official YouTube trailer):
+  //   a URL      -> the only video a caption may link; appended when missing
+  //   null       -> none is known, so a caption may not mention a trailer
+  //   undefined  -> a caller that predates this (a Notion edit to an old
+  //                 post): any youtube.com/watch or youtu.be link is accepted
   const trailerRelated = context.post_type === 'trailer'
-    || /\b(?:trailer|teaser)\b/i.test(`${copy.x} ${copy.instagram} ${copy.threads}`);
-  const youtubeLink = /https:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[A-Za-z0-9_-]+|youtu\.be\/[A-Za-z0-9_-]+)(?:&[^\s]*)?/g;
+    || /\b(?:trailer|teaser)s?\b/i.test(`${copy.x} ${copy.instagram} ${copy.threads}`);
+  const knownTrailer = context.trailer_url === undefined
+    ? undefined
+    : officialTrailerUrl(context.trailer_url);
+  if (trailerRelated && knownTrailer) {
+    // Deterministic backstop: the writer mentioned the trailer but left the
+    // link off one caption. The link is known, so add it rather than reject.
+    for (const field of ['x', 'instagram', 'threads']) {
+      if (copy[field] && !(copy[field].match(YOUTUBE_LINK) || []).length) {
+        copy[field] = `${copy[field]}\n\n${knownTrailer}`;
+      }
+    }
+    copy.trailer_url = knownTrailer;
+  }
   for (const field of ['x', 'instagram', 'threads']) {
-    const links = copy[field].match(youtubeLink) || [];
-    if (trailerRelated && links.length === 0) errors.push(`${field} needs the official YouTube trailer link`);
-    const remainder = trailerRelated ? copy[field].replace(youtubeLink, '') : copy[field];
-    if (field !== 'instagram' && hasUrl(remainder)) errors.push(`${field} contains a URL (only YouTube trailer links allowed on trailer-related posts)`);
+    const links = copy[field].match(YOUTUBE_LINK) || [];
+    if (trailerRelated && links.length === 0) {
+      errors.push(knownTrailer === null
+        ? `${field} mentions a trailer, but no official YouTube trailer is known for this title; remove the trailer mention`
+        : `${field} needs the official YouTube trailer link`);
+    }
+    if (trailerRelated && knownTrailer && links.some((link) => officialTrailerUrl(link) !== knownTrailer)) {
+      errors.push(`${field} links a YouTube video that is not the official trailer (${knownTrailer})`);
+    }
+    const remainder = trailerRelated && knownTrailer !== null ? copy[field].replace(YOUTUBE_LINK, '') : copy[field];
+    const checked = field === 'instagram' ? remainder.replace(PLOT_DOMAIN_ANYWHERE, '') : remainder;
+    if (hasUrl(checked)) errors.push(`${field} contains a URL (only the official YouTube trailer link is allowed, on trailer-related posts)`);
   }
   if (trailerRelated && copy.x.length > 280) errors.push('x exceeds 280 characters; shorten the caption and keep the complete trailer link');
   if (/#\w/.test(copy.x)) errors.push('x contains a hashtag (not allowed on X)');

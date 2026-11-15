@@ -84,6 +84,7 @@ export const mergedCopyForEdit = (post, fields) => {
         when_label: post?.payload?.when_label,
         post_type: post?.post_type,
         home_kind: post?.payload?.home_kind,
+        trailer_url: post?.payload?.trailer_url ?? post?.copy?.trailer_url,
       });
 
   if (!result.valid) return { ok: false, errors: result.errors, before };

@@ -48,9 +48,10 @@ announced the wrong day, or called a classic a hidden gem.
 - Follow `marketing/copy/WHATSON_GUIDELINES.md` for website-article sourcing,
   structure and post-type guidance.
 - Use only the facts supplied in the brief for social copy.
-- Every trailer-related social caption must include the verified official YouTube
-  trailer link. Follow the trailer section in `marketing/VOICE.md`, including
-  its exception to the X and Threads URL bans and `cta_variant: none`.
+- Every social caption that mentions a trailer or teaser must include the exact
+  official YouTube trailer link from the brief's "Trailer link" section. If the
+  brief says none is known, do not mention a trailer. Follow the trailer section
+  in `marketing/VOICE.md`, including `cta_variant: none`.
 - The website article can use the brief's research pack plus live web research.
 - Always paraphrase in Plot's voice.
 - Never quote reviews verbatim.
@@ -60,8 +61,10 @@ announced the wrong day, or called a classic a hidden gem.
 
 ## Validator constraints
 
-- `x`: max 280 characters, no URLs except a YouTube trailer link on trailer-related posts, no hashtags
-- `threads`: no URLs except a YouTube trailer link on trailer-related posts, no hashtags
+- `x`: max 280 characters, no URLs except the brief's official YouTube trailer link on trailer-related posts, no hashtags
+- `threads`: no URLs except the brief's official YouTube trailer link on trailer-related posts, no hashtags
+- `instagram`: no URLs except that same trailer link ("at theplot.tv" in the CTA is fine)
+- A caption that mentions a trailer without a known official link is rejected; drop the mention
 - `hashtags`: 3 to 5 items, no `#` prefix
 - `cta_variant`: one of `track_it`, `whats_on_tonight`, `journal_it`, `none`
 
