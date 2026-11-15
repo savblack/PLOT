@@ -23,12 +23,12 @@ export const HOME_SECTION_IDS = Object.freeze([
   'hot',
   'weekly',
   'people',
-  'releases',
-  'binged',
-  'cinema',
   'anticipated',
-  'platforms',
 ]);
+/* New Releases, Most Binged, Now Showing and Top 10 by Platform used to be
+   Home shelves too. They moved to the New Releases page (November 2026) so
+   Home is five shelves that do not repeat each other. A saved layout that
+   still names them is fine: unknown ids are dropped on read. */
 
 /** What a pin can point at. `watchlist` has one fixed id; `list` is a custom list id; `person` is a TMDB person id. */
 export const PIN_KINDS = Object.freeze(['watchlist', 'list', 'person']);
@@ -212,4 +212,32 @@ export function nudgeHomePin(layout, pin, delta) {
 export function visibleHomePins(layout, { premium, exists }) {
   if (!premium) return [];
   return normalizeHomeLayout(layout).pins.filter(pin => exists(pin));
+}
+
+const titleKey = (item) => `${item?.media_type}-${item?.id}`;
+
+/**
+ * Show each title once on Home. Walks the shelves in render order and drops
+ * any title a shelf above already showed. Shelves in `whole` are never
+ * trimmed (a ranked chart's numbers would lie, and plot's Picks is a
+ * carousel of a few cards) but what they show still counts for the shelves
+ * below them.
+ * @template {{ id?: number | string, media_type?: string }} T
+ * @param {string[]} order shelf ids in render order
+ * @param {Record<string, T[] | undefined>} shelves titles per shelf id
+ * @param {{ whole?: Iterable<string> }} [opts]
+ * @returns {Record<string, T[]>} the same ids, trimmed
+ */
+export function dedupeHomeShelves(order, shelves, { whole = [] } = {}) {
+  const keep = new Set(whole);
+  const seen = new Set();
+  /** @type {Record<string, T[]>} */
+  const out = {};
+  for (const id of order) {
+    const items = shelves[id];
+    if (!Array.isArray(items)) continue;
+    out[id] = keep.has(id) ? items : items.filter(item => !seen.has(titleKey(item)));
+    for (const item of items) seen.add(titleKey(item));
+  }
+  return out;
 }

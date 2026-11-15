@@ -25,6 +25,22 @@ const dedupeByMediaId = items => {
 const MIN_RAIL_SIZE = 14;
 
 /**
+ * Most Binged Shows: TMDB's trending-today TV, English-origin, with posters.
+ * Shared by Home's Picks (its TV leader) and the New Releases page.
+ * @param {any[] | null | undefined} trendingTvResults
+ * @param {{ hideKids?: boolean }} [options]
+ * @returns {any[]}
+ */
+export function bingedShowsFrom(trendingTvResults, { hideKids = false } = {}) {
+  return trendingTvItemsFrom(trendingTvResults, hideKids).filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
+}
+
+const trendingTvItemsFrom = (results, hideKids) => dedupeByMediaId(
+  excludeKidsContent((results || []).filter(isEnglishOriginTitle), hideKids)
+    .map(show => ({ ...show, media_type: 'tv' })),
+);
+
+/**
  * Movies in cinemas today, from TMDB's now-playing results: English-origin,
  * kids content dropped when asked, released on or before `today` (so they and
  * "coming soon" never share a title), flagged `_cinema`. Web's Now Showing
@@ -81,10 +97,7 @@ export async function loadDiscoverData({ hideKids = false, client = tmdb, onPrim
 
   const trendingItems = dedupeByMediaId(excludeKidsContent((trendingDay?.results || []).filter(isEnglishOriginTitle), hideKids)).slice(0, 20);
   const hero = trendingItems[0] || null;
-  const trendingTVItems = dedupeByMediaId(
-    excludeKidsContent((trendingTVDay?.results || []).filter(isEnglishOriginTitle), hideKids)
-      .map(show => ({ ...show, media_type: 'tv' })),
-  );
+  const trendingTVItems = trendingTvItemsFrom(trendingTVDay?.results, hideKids);
   const trendingMovieItems = dedupeByMediaId(
     excludeKidsContent((trendingMovieDay?.results || []).filter(isEnglishOriginTitle), hideKids)
       .map(movie => ({ ...movie, media_type: 'movie' })),
@@ -100,7 +113,7 @@ export async function loadDiscoverData({ hideKids = false, client = tmdb, onPrim
     },
     hotRail: trendingItems.slice(1, 10),
     weekly: dedupeByMediaId(excludeKidsContent((trendingWeek?.results || []).filter(isEnglishOriginTitle), hideKids)).slice(0, 20),
-    bingedShows: trendingTVItems.filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18)),
+    bingedShows: bingedShowsFrom(trendingTVDay?.results, { hideKids }),
   };
   onPrimary?.(primary);
 

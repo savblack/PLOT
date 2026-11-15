@@ -4,10 +4,7 @@
 import { useNewReleases as useCoreNewReleases } from '@plot/core/useNewReleases.js';
 import { useApp } from '../App.jsx';
 
-export function useNewReleases({ includeGenreRails = true } = {}) {
+export function useNewReleases() {
   const { profile } = useApp();
-  return useCoreNewReleases({
-    hideKids: !(profile?.include_kids_content ?? true),
-    includeGenreRails,
-  });
+  return useCoreNewReleases({ hideKids: !(profile?.include_kids_content ?? true) });
 }

@@ -74,18 +74,3 @@ export const NotScrollable = {
 export const NoSubtitle = {
   render: () => <Shelf title="Hot Right Now">{cards(14)}</Shelf>,
 };
-
-// The landscape binge rail: same controls, different card shape.
-export const BingeRail = {
-  render: () => (
-    <Shelf title="Most Anticipated" className="discover-binge-rail">
-      {Array.from({ length: 8 }, (_, i) => (
-        <div
-          key={i}
-          className="discover-binge-card"
-          style={{ background: 'var(--surface-sunken)', borderRadius: 'var(--radius-md)' }}
-        />
-      ))}
-    </Shelf>
-  ),
-};

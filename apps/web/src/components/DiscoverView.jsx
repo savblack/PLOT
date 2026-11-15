@@ -15,8 +15,6 @@ import RailArrows from './RailArrows.jsx';
 import { useRailScroll } from '../hooks/useRailScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
-import { useNewReleases } from '../hooks/useNewReleases.js';
-import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
 import { OFFICIAL_PLATFORMS } from '@plot/core/usePlatformCharts.js';
 import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
@@ -29,7 +27,7 @@ import EmptyState from './EmptyState.jsx';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { clampToSentences } from '@plot/core/sentences.js';
 import { homePersonalState, selectHomeHero, selectHomeUpNext } from '@plot/core/home.js';
-import { visibleHomeSections } from '@plot/core/homeLayout.js';
+import { dedupeHomeShelves, visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import { usePinnedShelves } from '@plot/core/usePinnedShelves.js';
 import { pinLabel, pinOptions } from '@plot/core/homePins.js';
@@ -100,10 +98,6 @@ function Rail({ rail, children }) {
   );
 }
 
-function BingeRail({ rail, children }) {
-  return <ScrollRail rail={rail} className="discover-binge-rail">{children}</ScrollRail>;
-}
-
 /* The section banner: a Gabarito title, an optional subtitle, and a slot on the
    right for the rail's scroll arrows or a "See all" link.
 
@@ -126,9 +120,8 @@ export function DiscoverSectionHeader({ subtitle, title, headerRight }) {
 
 /* A section whose body is a rail. Owns the scroll state so the header can
    carry the arrows while the rail itself holds the cards. */
-export function RailSection({ id, title, subtitle, sectionClassName = 'discover-section', binge = false, headerRight, children }) {
+export function RailSection({ id, title, subtitle, sectionClassName = 'discover-section', headerRight, children }) {
   const rail = useRailScroll();
-  const RailBody = binge ? BingeRail : Rail;
 
   return (
     <section id={id} className={sectionClassName}>
@@ -137,7 +130,7 @@ export function RailSection({ id, title, subtitle, sectionClassName = 'discover-
         subtitle={subtitle}
         headerRight={<>{headerRight}<RailArrows rail={rail} /></>}
       />
-      <RailBody rail={rail}>{children}</RailBody>
+      <Rail rail={rail}>{children}</Rail>
     </section>
   );
 }
@@ -150,11 +143,7 @@ const HOME_SECTION = {
   people: { id: 'home-people', label: PEOPLE.shelf.title, navLabel: PEOPLE.shelf.title },
   hot: { id: 'home-hot', label: 'Hot Right Now', navLabel: 'Hot Right Now' },
   weekly: { id: 'home-weekly', label: 'Top 20 This Week', navLabel: 'Top 20 This Week' },
-  releases: { id: 'home-releases', label: 'New Releases', navLabel: 'New Releases' },
-  binged: { id: 'home-binged', label: 'Most Binged Shows', navLabel: 'Most Binged Shows' },
-  cinema: { id: 'home-cinema', label: 'Now Showing', navLabel: 'Now Showing' },
   anticipated: { id: 'home-anticipated', label: DISCOVER_VIEW.mostAnticipatedTitle, navLabel: DISCOVER_VIEW.mostAnticipatedTitle },
-  platforms: { id: 'home-platforms', label: 'Top 10 by Platform', navLabel: 'Top 10 By Platform' },
 };
 
 export function HomePageNav({ sections }) {
@@ -359,46 +348,6 @@ export function RankedCard({ item, rank, showRank = true, showMeta = true, openP
       </button>
       <FavoriteButton item={item} />
       <SaveButton item={item} watchlist={watchlist} />
-    </div>
-  );
-}
-
-function BingeCard({ item, openPanel, watchlist }) {
-  const art = useUserArtwork();
-  const { favorites, profile } = useApp();
-  const fw       = favoriteWords(profile?.region);
-  const [hovered, setHovered] = useState(false);
-  const title    = item.name || item.title;
-  const shown    = art.apply(item);
-  const backdrop = backdropUrl(displayBackdropPath(shown), 'w780');
-  const poster   = posterUrl(displayPosterPath(shown), 'w342');
-  const type     = item.media_type || 'tv';
-  const openDetails = () => openPanel(item.id, type);
-
-  return (
-    <div
-      className="discover-binge-card"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ backgroundImage: `url(${backdrop || poster || ''})` }}
-    >
-      <button type="button" className="discover-binge-card-hit interactive-surface" onClick={openDetails} aria-label={`View details for ${title}`}>
-        <span className="discover-binge-card-shade" />
-        <span className="discover-binge-card-copy">
-          <span className="discover-binge-card-title">{title}</span>
-          <span className="discover-binge-card-meta">
-            {cardMetaLine(item, { fallbackType: 'tv' })}
-          </span>
-        </span>
-      </button>
-
-      {/* Corner action buttons. Each shows itself when its own state is
-          active; the inactive one waits for hover, so an active favourite
-          doesn't display an empty bookmark next to it. */}
-      <div className={`discover-hero-corner-btns${hovered ? ' visible' : ''}`}>
-        <FavoriteButton variant="hero" item={{ ...item, media_type: type }} favorites={favorites} favWords={fw} style={{ position: 'absolute', top: 10, left: 10 }} />
-        <SaveButton variant="hero" item={item} watchlist={watchlist} style={{ position: 'absolute', top: 10, right: 10 }} />
-      </div>
     </div>
   );
 }
@@ -620,7 +569,7 @@ function PlatformRow({ def, chart, logoPath, openPanel, watchlist, typeFilters, 
   );
 }
 
-function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, genreFilters }) {
+export function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, genreFilters }) {
   const byKey = Object.fromEntries(platformList.map(p => [p.key, p]));
   const logos = usePlatformLogos();
   return (
@@ -706,15 +655,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     region: profile?.region || DEFAULT_REGION,
     today: todayStr,
   });
-  const navigate = useNavigate();
   const { data, loading } = useDiscover();
-  // Home only renders the recent rail. Loading every per-genre New Releases
-  // rail here bursts past the TMDB proxy limit before most users visit that page.
-  const { data: releases } = useNewReleases({ includeGenreRails: false });
-  // Hard-coded official-chart platforms — the same set for everyone, unrelated
-  // to the user's own streaming selections. The hook returns only platforms
-  // with synced rows; PlatformCharts fills in the rest as unavailable.
-  const platformList = usePlatformCharts();
   const savedShown = !loading && firstRun && !watchlist?.loading
     ? Math.min(watchlist?.items?.length ?? 0, 20)
     : 0;
@@ -731,12 +672,6 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const applyFilters = (items) => filterByGenre(filterByType(items, typeFilters), genreFilters);
   const hero              = selectHomeHero(data.heroByType, typeFilters);
   const onThisDay        = data.onThisDay;
-  const hotRail           = applyFilters(data.hotRail).filter(item => item.id !== hero?.id || item.media_type !== hero?.media_type);
-  const weekly            = applyFilters(data.weekly);
-  const bingedShows       = applyFilters(data.bingedShows);
-  const cinemaMovies      = applyFilters(data.cinemaMovies);
-  const anticipatedMovies = applyFilters(data.anticipatedMovies);
-  const recent            = applyFilters(releases.recent);
   // The list card follows the type filter like the hero does: a TV-only list has nothing to show under Movies.
   const featuredList = featuredCuratedList();
   const curated = featuredList && filterByType(featuredList.entries, typeFilters).length > 0 ? featuredList : null;
@@ -752,7 +687,19 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     curated && <CuratedListCard key={curated.id} curated={curated} onOpen={() => setOpenCurated(curated)} />,
     ...otherHeroes.map(({ type, item }) => <HeroCard key={`${type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} badge={picksBadges[type]} />),
   ].filter(Boolean);
-  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || bingedShows.length > 0 || cinemaMovies.length > 0 || anticipatedMovies.length > 0 || platformList.length > 0;
+  // Each title shows once on Home: a shelf drops what a shelf above it in the
+  // viewer's order already showed. Picks and the Top 20 chart keep every
+  // card (a chart's numbers would lie otherwise) but still count.
+  const shown = dedupeHomeShelves(visibleHomeSections(homeLayout.layout, homeLayout.layout.order), {
+    picks: showPicks ? [hero, ...otherHeroes.map(({ item }) => item)].filter(Boolean) : [],
+    hot: applyFilters(data.hotRail),
+    weekly: applyFilters(data.weekly),
+    anticipated: applyFilters(data.anticipatedMovies),
+  }, { whole: ['picks', 'weekly'] });
+  const hotRail = shown.hot ?? [];
+  const weekly = shown.weekly ?? [];
+  const anticipatedMovies = shown.anticipated ?? [];
+  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || anticipatedMovies.length > 0;
   const savedItems = firstRun ? (watchlist?.items ?? []).slice(0, 20).map(row => ({ id: row.tmdb_id, media_type: row.media_type, title: row.title, poster_path: row.poster_path })) : [];
   // Which shelves have content right now; the viewer's layout then decides
   // the order and drops the ones they hid. The first-run Saved shelf stays
@@ -763,11 +710,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     hot: hotRail.length > 0,
     weekly: weekly.length > 0,
     people: peopleShelf.visible,
-    releases: recent.length > 0,
-    binged: bingedShows.length > 0,
-    cinema: cinemaMovies.length > 0,
     anticipated: anticipatedMovies.length > 0,
-    platforms: platformList.length > 0,
   };
   const orderedIds = visibleHomeSections(homeLayout.layout, Object.keys(available).filter(id => available[id]));
   const pinId = (shelf) => `home-pin-${shelf.key.replace(':', '-')}`;
@@ -801,53 +744,21 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
       </RailSection>
     ),
     hot: () => (
-      <RailSection key="hot" id={HOME_SECTION.hot.id} title={HOME_SECTION.hot.label} subtitle="Trending today" sectionClassName="discover-section discover-binge-section" binge>
+      <RailSection key="hot" id={HOME_SECTION.hot.id} title={HOME_SECTION.hot.label} subtitle="Trending today">
         {hotRail.map(item => (
-          <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+          <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
         ))}
       </RailSection>
     ),
     weekly: () => <WeeklyChart key="weekly" id={HOME_SECTION.weekly.id} items={weekly} openPanel={openPanel} watchlist={watchlist} />,
     people: () => <YourPeopleSection key="people" shelf={peopleShelf} openPanel={openPanel} />,
-    releases: () => (
-      <RailSection
-        key="releases"
-        id={HOME_SECTION.releases.id}
-        title={HOME_SECTION.releases.label}
-        subtitle="Last 30 days"
-        headerRight={
-          <button type="button" className="discover-see-all" onClick={() => navigate('/new-releases')}>
-            {MEDIA.seeAll}
-          </button>
-        }
-      >
-        {recent.map(item => (
-          <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-        ))}
-      </RailSection>
-    ),
-    binged: () => (
-      <RailSection key="binged" id={HOME_SECTION.binged.id} title={HOME_SECTION.binged.label} subtitle="Popular TV">
-        {bingedShows.map(item => (
-          <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
-        ))}
-      </RailSection>
-    ),
-    cinema: () => (
-      <RailSection key="cinema" id={HOME_SECTION.cinema.id} title={HOME_SECTION.cinema.label} subtitle={MEDIA.inCinemas} sectionClassName="discover-section discover-binge-section" binge>
-        {cinemaMovies.map(item => (
-          <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
-        ))}
-      </RailSection>
-    ),
     anticipated: () => (
-      <RailSection key="anticipated" id={HOME_SECTION.anticipated.id} title={HOME_SECTION.anticipated.label} subtitle={DISCOVER_VIEW.mostAnticipatedSubtitle} sectionClassName="discover-section discover-binge-section" binge>
+      <RailSection key="anticipated" id={HOME_SECTION.anticipated.id} title={HOME_SECTION.anticipated.label} subtitle={DISCOVER_VIEW.mostAnticipatedSubtitle}>
         {anticipatedMovies.map(item => (
-          <BingeCard key={`${item.media_type}-${item.id}`} item={item} openPanel={openPanel} watchlist={watchlist} />
+          <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
         ))}
       </RailSection>
     ),
-    platforms: () => <PlatformCharts key="platforms" id={HOME_SECTION.platforms.id} platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />,
   };
 
   return (

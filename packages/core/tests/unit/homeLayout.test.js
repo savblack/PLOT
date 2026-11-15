@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   HOME_SECTION_IDS, defaultHomeLayout, isDefaultHomeLayout, moveHomeSection,
-  normalizeHomeLayout, nudgeHomeSection, setHomeSectionVisible, visibleHomeSections,
+  normalizeHomeLayout, nudgeHomeSection, dedupeHomeShelves, setHomeSectionVisible, visibleHomeSections,
 } from '../../homeLayout.js';
 
 test('normalize: garbage becomes the default layout', () => {
@@ -27,9 +27,9 @@ test('isDefault: order and hidden both matter', () => {
 });
 
 test('move: clamps and keeps the rest in place', () => {
-  const moved = moveHomeSection(defaultHomeLayout(), 'platforms', 0);
-  assert.equal(moved.order[0], 'platforms');
-  assert.deepEqual(moved.order.slice(1), HOME_SECTION_IDS.filter(id => id !== 'platforms'));
+  const moved = moveHomeSection(defaultHomeLayout(), 'anticipated', 0);
+  assert.equal(moved.order[0], 'anticipated');
+  assert.deepEqual(moved.order.slice(1), HOME_SECTION_IDS.filter(id => id !== 'anticipated'));
   const clamped = moveHomeSection(defaultHomeLayout(), 'picks', 99);
   assert.equal(clamped.order.at(-1), 'picks');
   assert.deepEqual(moveHomeSection(defaultHomeLayout(), 'nope', 0), defaultHomeLayout());
@@ -37,7 +37,7 @@ test('move: clamps and keeps the rest in place', () => {
 
 test('nudge at the edges is a no-op', () => {
   assert.deepEqual(nudgeHomeSection(defaultHomeLayout(), 'picks', -1), defaultHomeLayout());
-  assert.deepEqual(nudgeHomeSection(defaultHomeLayout(), 'platforms', 1), defaultHomeLayout());
+  assert.deepEqual(nudgeHomeSection(defaultHomeLayout(), 'anticipated', 1), defaultHomeLayout());
   assert.equal(nudgeHomeSection(defaultHomeLayout(), 'hot', 1).order.indexOf('hot'), 3);
 });
 
@@ -51,8 +51,8 @@ test('setVisible toggles when no flag is given and keeps hidden in canonical ord
 });
 
 test('visibleHomeSections respects order, hidden, and what has content', () => {
-  const l = setHomeSectionVisible(moveHomeSection(defaultHomeLayout(), 'platforms', 0), 'hot', false);
-  assert.deepEqual(visibleHomeSections(l, ['hot', 'picks', 'platforms', 'weekly']), ['platforms', 'picks', 'weekly']);
+  const l = setHomeSectionVisible(moveHomeSection(defaultHomeLayout(), 'anticipated', 0), 'hot', false);
+  assert.deepEqual(visibleHomeSections(l, ['hot', 'picks', 'anticipated', 'weekly']), ['anticipated', 'picks', 'weekly']);
 });
 
 /* ── Pinned shelves ── */
@@ -112,4 +112,33 @@ test('pins: only Premium sees them, and only ones that still resolve', () => {
   assert.deepEqual(visibleHomePins(l, { premium: true, exists }).map(p => p.id), ['watchlist', '5']);
   // A lapsed member keeps their pins stored: nothing was removed.
   assert.equal(l.pins.length, 3);
+});
+
+test('normalize: a layout saved with the shelves that moved to New Releases still loads', () => {
+  const l = normalizeHomeLayout({ order: ['platforms', 'binged', 'hot', 'releases', 'cinema'], hidden: ['binged', 'weekly'] });
+  assert.equal(l.order[0], 'hot');
+  assert.deepEqual([...l.order].sort(), [...HOME_SECTION_IDS].sort());
+  assert.deepEqual(l.hidden, ['weekly']);
+});
+
+test('dedupe: a title shows once, in the first shelf that has it', () => {
+  const a = { id: 1, media_type: 'movie' };
+  const b = { id: 2, media_type: 'movie' };
+  const tvB = { id: 2, media_type: 'tv' };
+  const c = { id: 3, media_type: 'tv' };
+  const out = dedupeHomeShelves(['picks', 'hot', 'weekly', 'anticipated'], {
+    picks: [a],
+    hot: [a, b, tvB],
+    weekly: [b, c, a],
+    anticipated: [c, { id: 4, media_type: 'movie' }],
+  }, { whole: ['picks', 'weekly'] });
+  assert.deepEqual(out.hot, [b, tvB], 'same id, different type is a different title');
+  assert.deepEqual(out.weekly, [b, c, a], 'a ranked chart keeps every row');
+  assert.deepEqual(out.anticipated, [{ id: 4, media_type: 'movie' }]);
+});
+
+test('dedupe: follows the viewer order and skips shelves with no list', () => {
+  const a = { id: 1, media_type: 'movie' };
+  const out = dedupeHomeShelves(['anticipated', 'continue', 'hot'], { hot: [a], anticipated: [a] });
+  assert.deepEqual(out, { anticipated: [a], hot: [] });
 });
