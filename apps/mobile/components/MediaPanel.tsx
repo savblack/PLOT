@@ -1885,8 +1885,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
-  // Full width under the head, pulled up to sit closer to it (web: .panel-head-tags).
-  headTags: { marginTop: -spacing.sm, marginBottom: spacing.lg },
+  // Full width under the head. With the head's own marginBottom this leaves
+  // 20pt between the genres/poster and the keywords (web: .panel-head-tags).
+  headTags: { marginTop: 4, marginBottom: spacing.lg },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   scoresRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
