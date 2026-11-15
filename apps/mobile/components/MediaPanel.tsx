@@ -1372,8 +1372,15 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         return !error;
                       }}
                     />
+                  </View>
+                </View>
+
+                {/* Genres and keywords run full width under the poster row, as on web,
+                    so a long keyword list doesn't stack in the narrow column beside the poster. */}
+                {(genreChips.length > 0 || keywordChips.length > 0) && (
+                  <View style={styles.headTags}>
                     {genreChips.length > 0 && (
-                      <View style={styles.genreRow}>
+                      <View style={styles.tagRow}>
                         {genreChips.map(genre => (
                           <TouchableOpacity
                             key={genre.id}
@@ -1387,7 +1394,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       </View>
                     )}
                     {keywordChips.length > 0 && (
-                      <View style={styles.genreRow} accessibilityLabel={BROWSE.keywordsLabel}>
+                      <View style={styles.tagRow} accessibilityLabel={BROWSE.keywordsLabel}>
                         {keywordChips.map(k => (
                           <TouchableOpacity
                             key={k.id}
@@ -1410,7 +1417,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       </View>
                     )}
                   </View>
-                </View>
+                )}
 
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
@@ -1878,7 +1885,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     position: 'absolute', left: 148, right: 56, bottom: 10, height: 36, zIndex: 2,
   },
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
-  genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
+  // Full width under the head, pulled up to sit closer to it (web: .panel-head-tags).
+  headTags: { gap: spacing.sm, marginTop: -spacing.sm, marginBottom: spacing.lg },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   scoresRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     paddingBottom: spacing.lg, marginBottom: spacing.lg,
