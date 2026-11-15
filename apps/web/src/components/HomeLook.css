@@ -13,7 +13,6 @@
 .home-page[data-density="compact"] .discover-sections { gap: 1.4rem; }
 .home-page[data-density="compact"] .rail-scroll { gap: 0.5rem; }
 .home-page[data-density="compact"] .media-card-title { font-size: 0.74rem; min-height: 2.5em; }
-.home-page[data-density="compact"] .discover-binge-card { flex-basis: clamp(200px, 58vw, 290px); }
 .home-page[data-density="compact"] .discover-chart-rail { grid-auto-columns: min(228px, 72vw); column-gap: 1.25rem; }
 .home-page[data-density="compact"] .discover-chart-card { min-height: 68px; padding-block: 0.3rem; }
 

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { tmdb, isEnglishOriginTitle, excludeKidsContent } from './tmdb.js';
 import { filterByGenre, filterByType } from './mediaFilters.js';
 import { TV_KEYWORD_GENRES, tvKeywordIds } from './keywordGenres.js';
+import { bingedShowsFrom, currentCinemaMovies } from './useDiscover.js';
+import { localDateStr } from './date.js';
 
 const hasPoster = item => !!item.poster_path;
 const MIN_RAIL_SIZE = 14;
@@ -121,21 +123,20 @@ function prepareRecentReleases(recentReleases, hideKids) {
 }
 
 /**
- * Load either the full New Releases catalogue or the recent rail used on Home.
- * Home must not pay for every per-genre discovery request it never renders.
+ * Load the New Releases page: the last 30 days, Most Binged Shows, Now
+ * Showing, and one rail per genre. Only this page loads it; Home has no
+ * releases shelf since November 2026.
  *
- * @param {{ hideKids?: boolean, includeGenreRails?: boolean, client?: typeof tmdb }} [options]
+ * @param {{ hideKids?: boolean, client?: typeof tmdb }} [options]
  */
-export async function loadNewReleaseData({ hideKids = false, includeGenreRails = true, client = tmdb } = {}) {
+export async function loadNewReleaseData({ hideKids = false, client = tmdb } = {}) {
   const recentPromise = client.getRecentReleases(30, []);
-  if (!includeGenreRails) {
-    return { recent: prepareRecentReleases(await recentPromise, hideKids), genreRails: [] };
-  }
-
   const genreDefinitions = buildGenreRailDefinitions(await client.getGenreCatalog());
-  const [recentReleases, nowPlaying, ...genreResults] = await Promise.all([
+  const [recentReleases, nowPlaying, trendingTv, ...genreResults] = await Promise.all([
     recentPromise,
     client.getNowPlaying(),
+    // Most Binged Shows heads the page (it was a Home shelf); a failure only empties that row.
+    Promise.resolve().then(() => client.getTrending('tv', 'day')).catch(() => null),
     ...genreDefinitions.map(rail => loadGenreRail(rail, hideKids, client)),
   ]);
 
@@ -149,26 +150,31 @@ export async function loadNewReleaseData({ hideKids = false, includeGenreRails =
     nowPlaying?.results || [],
   );
 
-  return { recent: prepareRecentReleases(recentReleases, hideKids), genreRails };
+  return {
+    recent: prepareRecentReleases(recentReleases, hideKids),
+    genreRails,
+    binged: bingedShowsFrom(trendingTv?.results, { hideKids }),
+    cinema: currentCinemaMovies(nowPlaying?.results, { today: localDateStr(), hideKids }).slice(0, 10),
+  };
 }
 
 /**
- * @param {{ hideKids?: boolean, includeGenreRails?: boolean }} [options]
+ * @param {{ hideKids?: boolean }} [options]
  * See {@link useDiscover} — the app supplies `hideKids`.
  */
-export function useNewReleases({ hideKids = false, includeGenreRails = true } = {}) {
-  const [data,    setData]    = useState({ recent: [], genreRails: [] });
+export function useNewReleases({ hideKids = false } = {}) {
+  const [data,    setData]    = useState({ recent: [], genreRails: [], binged: [], cinema: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const emptyData = { recent: [], genreRails: [] };
+    const emptyData = { recent: [], genreRails: [], binged: [], cinema: [] };
 
     async function load() {
       setLoading(true);
       setData(emptyData);
       try {
-        const nextData = await loadNewReleaseData({ hideKids, includeGenreRails });
+        const nextData = await loadNewReleaseData({ hideKids });
         if (cancelled) return;
         setData(nextData);
       } catch (error) {
@@ -180,7 +186,7 @@ export function useNewReleases({ hideKids = false, includeGenreRails = true } = 
     }
     load();
     return () => { cancelled = true; };
-  }, [hideKids, includeGenreRails]);
+  }, [hideKids]);
 
   return { data, loading };
 }

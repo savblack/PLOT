@@ -52,26 +52,39 @@ test('tagCinemaReleases makes regional now-playing movies available to the cinem
   assert.equal(prepared[0].items[0]._cinema, true);
 });
 
-test('recent-only loading skips the per-genre catalogue Home does not render', async () => {
-  const calls = [];
+test('the page leads with Most Binged and Now Showing from the same load', async () => {
+  // Ids are opaque fixture values from a fake client, never real TMDB ids.
   const client = {
-    async getRecentReleases() {
-      calls.push('recent');
-      return {
-        movies: [{ id: 1, media_type: 'movie', title: 'Recent', release_date: '2026-09-20', original_language: 'en', poster_path: '/recent.jpg' }],
-        tv: [],
-      };
+    async getRecentReleases() { return { movies: [], tv: [] }; },
+    async getGenreCatalog() { return { movie: [], tv: [] }; },
+    async getNowPlaying() {
+      return { results: [
+        { id: 11, title: 'Out now', original_language: 'en', poster_path: '/a.jpg', release_date: '2026-01-02' },
+        { id: 12, title: 'Not yet', original_language: 'en', poster_path: '/b.jpg', release_date: '2999-01-01' },
+      ] };
     },
-    async getGenreCatalog() { calls.push('genres'); throw new Error('should not load genres'); },
-    async getNowPlaying() { calls.push('cinema'); throw new Error('should not load cinema'); },
-    async discoverNewestByGenre() { calls.push('genre rail'); throw new Error('should not load genre rails'); },
+    async getTrending(type, window) {
+      assert.deepEqual([type, window], ['tv', 'day']);
+      return { results: [
+        { id: 21, name: 'Show', original_language: 'en', poster_path: '/c.jpg' },
+        { id: 22, name: 'No poster', original_language: 'en', poster_path: null },
+      ] };
+    },
   };
+  const data = await loadNewReleaseData({ client });
+  assert.deepEqual(data.binged.map(i => [i.id, i.media_type]), [[21, 'tv']]);
+  assert.deepEqual(data.cinema.map(i => i.id), [11]);
+});
 
-  const data = await loadNewReleaseData({ includeGenreRails: false, client });
-
-  assert.deepEqual(calls, ['recent']);
-  assert.deepEqual(data.genreRails, []);
-  assert.deepEqual(data.recent.map(item => item.id), [1]);
+test('a failed trending call empties Most Binged and nothing else', async () => {
+  const client = {
+    async getRecentReleases() { return { movies: [], tv: [] }; },
+    async getGenreCatalog() { return { movie: [], tv: [] }; },
+    async getNowPlaying() { return { results: [] }; },
+    async getTrending() { throw new Error('429'); },
+  };
+  const data = await loadNewReleaseData({ client });
+  assert.deepEqual(data.binged, []);
 });
 
 // Keyword ids and titles below are opaque fixture values from a fake client.

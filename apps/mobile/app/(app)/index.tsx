@@ -2,7 +2,8 @@
  * Home screen. Mirrors web DiscoverView.
  * Shelf order comes from the viewer's Home layout (@plot/core/homeLayout.js);
  * the default is picks, Continue watching, Hot Right Now, Top 20 This Week,
- * Your people, releases (Out Today, recent, coming soon), Most Binged, platforms.
+ * Your people. The New Releases screen (mode "new") leads with Out Today,
+ * recent and coming soon, Most Binged and Top 10 by Platform, then genre rails.
  */
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -61,7 +62,7 @@ import PicksCarousel from '../../components/PicksCarousel';
 import { currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
 import { localDateStr } from '@plot/core/date.js';
 import { greetingFor } from '@plot/core/greeting.js';
-import { visibleHomeSections } from '@plot/core/homeLayout.js';
+import { dedupeHomeShelves, visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
 import PremiumFirstWeek, { usePremiumFirstWeekState } from '../../components/PremiumFirstWeek';
@@ -542,8 +543,10 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
 // requests (Recently Released plus a movie and a TV call per genre rail),
 // so calling it from HomeScreen would spend that budget on every app open
 // and trip the proxy's rate limit for people who never open the tab.
-function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel }: {
+function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel, afterCinema }: {
   hideKids: boolean;
+  /** Drawn after Now Showing and before the genre rails (Top 10 by Platform), as on web. */
+  afterCinema?: ReactNode;
   typeFilters: string[];
   genreFilters: number[];
   savedIds: Set<number>;
@@ -561,11 +564,18 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
   // The same rails web's New Releases page shows (prepareNewReleaseGenreRails):
   // one per category, titled by the genre alone, since the screen title
   // already says "New Releases".
-  const rails: Array<{ key: string; title: string; items: MediaItem[] }> =
+  const genreRails: Array<{ key: string; title: string; items: MediaItem[] }> =
     prepareNewReleaseGenreRails(data.genreRails, typeFilters, genreFilters);
+  // Now Showing was a web Home shelf; it heads the genre rails here, as on web.
+  const cinema = filterByGenre(filterByType(data.cinema, typeFilters), genreFilters) ?? [];
+  const rails = cinema.length
+    ? [{ key: 'cinema', title: 'Now Showing', kicker: MEDIA.inCinemas, items: cinema }, ...genreRails]
+    : genreRails;
 
   if (!rails.length) {
     return (
+      <>
+      {afterCinema}
       <View style={styles.section}>
         <Text style={styles.emptyTitle}>Nothing new</Text>
         <Text style={styles.emptyBody}>
@@ -574,14 +584,17 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
             : 'Nothing has landed in the last 30 days. Check back soon.'}
         </Text>
       </View>
+      </>
     );
   }
 
   return (
     <>
-      {rails.map(rail => (
-        <View key={rail.key} style={styles.section}>
-          <SectionHeader title={rail.title} />
+      {rails.map((rail: { key: string; title: string; kicker?: string; items: MediaItem[] }, i) => (
+        <View key={rail.key}>
+        {i === (cinema.length ? 1 : 0) && afterCinema}
+        <View style={styles.section}>
+          <SectionHeader kicker={rail.kicker} title={rail.title} />
           <FlatList
             horizontal
             data={rail.items}
@@ -600,6 +613,7 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
             nestedScrollEnabled
             contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
           />
+        </View>
         </View>
       ))}
     </>
@@ -775,7 +789,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   // follows the type filter and hides under a genre filter, as the hero does.
   const featuredList = featuredCuratedList();
   const curated = genreFilters.length === 0 && featuredList && filterByType(featuredList.entries, typeFilters)?.length ? featuredList : null;
-  const hotRail  = applyFilters(trending.slice(1, 10));
   // Picks takes turns, as on web: the trending hero, the plot list, then the
   // trending TV and movie leaders and the one in cinemas now, when they are
   // not already shown, as on web.
@@ -793,6 +806,15 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         return true;
       }) as { item: MediaItem; badge: string }[]
     : [];
+  // Each title shows once on Home, as on web: a shelf drops what a shelf
+  // above it in the viewer's order already showed. Picks and the Top 20
+  // chart keep every card but still count.
+  const shown = dedupeHomeShelves(visibleHomeSections(homeLayout.layout, homeLayout.layout.order), {
+    picks: [hero, ...otherPicks.map(({ item }) => item)].filter((item): item is MediaItem => !!item),
+    hot: applyFilters(trending.slice(1, 10)),
+    weekly: applyFilters(weekly),
+  }, { whole: ['picks', 'weekly'] });
+  const hotRail = shown.hot ?? [];
 
   // Three trending titles stand in for Up next while nothing is saved, each
   // with its bookmark, so the first saves happen where the shelf will be.
@@ -939,6 +961,11 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       </>
     ),
     people: () => <YourPeopleShelf />,
+  };
+  // New Releases, Most Binged and Top 10 by Platform were Home shelves until
+  // November 2026. They head the New Releases screen now, as on web, so Home
+  // is five shelves that do not repeat each other.
+  const releaseShelves: Record<string, () => ReactNode> = {
     releases: () => <HomeReleases rails={['today', 'recent', 'comingSoon']} />,
     binged: () => (
       <>
@@ -998,7 +1025,9 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           scrollEventThrottle={16}
           onScroll={glass.onScroll}
         >
+          {(['releases', 'binged'] as const).map(id => <View key={id}>{releaseShelves[id]()}</View>)}
           <NewReleasesContent
+            afterCinema={releaseShelves.platforms()}
             hideKids={hideKids}
             typeFilters={typeFilters}
             genreFilters={genreFilters}
@@ -1071,8 +1100,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         <PremiumTrialPrompt userId={userId} profile={profile} />
 
         {/* ── Shelves, in the viewer's order (Customize Home). Fixed cards
-            above are not part of the layout; a hidden shelf is skipped. The
-            releases slot carries Out Today, recent and coming soon together.
+            above are not part of the layout; a hidden shelf is skipped.
             Ids are shared with web (@plot/core/homeLayout.js). ── */}
         <PinnedShelves />
         {homeShelves.map(id => <View key={id}>{renderShelf[id]?.()}</View>)}

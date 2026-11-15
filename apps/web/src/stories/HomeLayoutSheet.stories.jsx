@@ -53,7 +53,7 @@ function Preview({ initial = defaultHomeLayout(), error = null, premium = true }
 export default { title: 'Home/Customize Home', component: Preview, parameters: { layout: 'fullscreen' } };
 export const Default = {};
 export const Customized = {
-  args: { initial: setHomeSectionVisible(moveHomeSection(defaultHomeLayout(), 'platforms', 0), 'binged', false) },
+  args: { initial: setHomeSectionVisible(moveHomeSection(defaultHomeLayout(), 'anticipated', 0), 'hot', false) },
 };
 export const WithPins = {
   args: { initial: addHomePin(addHomePin(addHomePin(defaultHomeLayout(), { kind: 'watchlist' }), { kind: 'list', id: 'l1' }), { kind: 'person', id: -10 }) },
