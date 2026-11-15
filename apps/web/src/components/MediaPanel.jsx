@@ -1776,10 +1776,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     return !error;
                   }}
                 />
-              </div>
-              {/* Genres and keywords run the full width under the poster, so a
-                  long keyword list never leaves blank space beside it. */}
-              <div className="panel-head-tags">
                 {(genreChips.length > 0 || chip?.upcoming) && (
                   <div className="panel-genres">
                     {chip?.upcoming && <Tag tone={chip.tone} label={chip.label} />}
@@ -1789,20 +1785,23 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     ) : <Tag tone="sage" key={g.id} label={g.name} />)}
                   </div>
                 )}
-                {onBrowse && (keywordChips.length > 0) && (
-                  <div className="panel-genres panel-keywords" role="group" aria-label={BROWSE.keywordsLabel}>
-                    {keywordChips.map(k => (
-                      <button type="button" className="panel-tag-link" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
-                        onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}><Tag label={k.name} /></button>
-                    ))}
-                    {(hiddenKeywords > 0 || keywordsOpen) && (
-                      <button type="button" className="panel-tag-link" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
-                        <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
+              {/* Keywords run the full width under the poster, so a long list
+                  never stacks in the narrow column beside it. Genres stay in that
+                  column, under the rating, where two short tags fit. */}
+              {onBrowse && keywordChips.length > 0 && (
+                <div className="panel-genres panel-keywords panel-head-tags" role="group" aria-label={BROWSE.keywordsLabel}>
+                  {keywordChips.map(k => (
+                    <button type="button" className="panel-tag-link" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
+                      onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}><Tag label={k.name} /></button>
+                  ))}
+                  {(hiddenKeywords > 0 || keywordsOpen) && (
+                    <button type="button" className="panel-tag-link" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
+                      <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* ── Actions ──

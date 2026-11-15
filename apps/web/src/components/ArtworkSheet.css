@@ -32,7 +32,7 @@
 }
 
 @media (max-width: 599px) {
-  .panel-title-logo { left: calc(1.25rem + 148px); }
+  .panel-title-logo { left: calc(1.25rem + 162px); }
 }
 
 .artwork-sheet {
