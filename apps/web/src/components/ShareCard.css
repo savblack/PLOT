@@ -236,9 +236,7 @@
 .sc-hm-d { display: flex; align-items: center; justify-content: center; align-self: stretch; font-size: calc(var(--u) * 1.5); line-height: 0; color: var(--sc-soft); padding-right: calc(var(--u) * 0.6); }
 .sc--story .sc-hm-d { padding-right: calc(var(--u) * 1.4); }
 .sc-hm-c { display: block; aspect-ratio: 1; min-width: 0; border-radius: calc(var(--u) * 0.5); background: var(--sc-empty); }
-.sc-hm-c--l1 { background: var(--sc-second); }
-.sc-hm-c--l2 { background: color-mix(in srgb, var(--sc-second) 68%, var(--sc-second-ink)); }
-.sc-hm-c--l3 { background: var(--sc-second-ink); }
+
 .sc-hm-c--best { background: var(--sc-accent); }
 /* Days outside the range (before 1 January, after today) keep the grid a clean
    rectangle without reading as days that were watched or missed. */

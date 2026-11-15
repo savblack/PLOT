@@ -16,8 +16,6 @@ import { supabase } from './supabase.js';
 
 /** Most keys kept per list. Far more than one open shows; old keys fall off the end. */
 export const SMART_LIST_SEEN_CAP = 1000;
-/** Most keys the roll-up keeps waiting for the next open. */
-export const SMART_LIST_PENDING_CAP = 200;
 
 /**
  * @typedef {Object} SmartListSeenRow

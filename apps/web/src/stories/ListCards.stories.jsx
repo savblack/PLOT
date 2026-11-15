@@ -1,4 +1,4 @@
-import { CardGrid, HistoryCard, ListCard } from '../components/ListCards.jsx';
+import { ListCard } from '../components/ListCards.jsx';
 
 /* The poster card My Lists and History are built from. Poster paths are
    deliberately absent (a TMDB path must come from a real response), so the
@@ -6,23 +6,9 @@ import { CardGrid, HistoryCard, ListCard } from '../components/ListCards.jsx';
 
 const noop = () => {};
 
-const historyEntries = Array.from({ length: 12 }, (_, i) => ({
-  id: `h${i}`, tmdb_id: 500 + i, title: `Watched title ${i + 1}`, media_type: i % 2 ? 'tv' : 'movie',
-  poster_path: null, watched_at: `2026-09-${String(14 - i).padStart(2, '0')}`,
-  rating: i % 3 === 0 ? 8 : null, note: i % 4 === 0 ? 'Loved it.' : null,
-}));
-
 export default {
   title: 'Components/ListCards',
   component: ListCard,
-};
-
-export const HistoryGrid = {
-  render: () => (
-    <CardGrid>
-      {historyEntries.map(entry => <HistoryCard key={entry.id} entry={entry} openPanel={noop} />)}
-    </CardGrid>
-  ),
 };
 
 export const WatchingCard = {

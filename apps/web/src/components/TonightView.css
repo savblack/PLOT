@@ -17,30 +17,6 @@
    let that select the label. */
 .tonight-view button { -webkit-user-select: none; user-select: none; }
 
-.tonight-tile {
-  border: 2px solid transparent;
-  border-radius: 16px;
-  background: var(--surface-sunken);
-  color: var(--text-primary);
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s ease, background 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.tonight-tile {
-  min-height: 60px;
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-}
-
-.tonight-tile:hover { border-color: var(--border-strong); }
-.tonight-tile.selected { border-color: var(--text-primary); }
-.tonight-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
 .tonight-hint { margin: 0.6rem 0 0; font-size: 0.75rem; color: var(--text-muted); }
 
 .tonight-filter-row {
@@ -330,7 +306,7 @@
   
   
   
-  .tonight-tile { min-height: 72px; }
+  
   
   
 
@@ -388,9 +364,6 @@
 }
 .tonight-shelf-locked-body .tonight-hint { margin: 0; flex: 1 1 240px; }
 /* Phone: the bar above the tab bar carries Pick and Surprise me. */
-@media (max-width: 1023px) {
-  .tonight-side-actions--desk { display: none; }
-}
 
 /* ── Nov 14 (round 3A): one card on the left, one shelf on the right ── */
 .tonight-mood-card { gap: 14px; padding: 18px 16px 16px; border-color: var(--border-strong); }

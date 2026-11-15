@@ -33,9 +33,6 @@ import { TONIGHT_PICKER, GENRE_MOODS } from './copy/tonightPicker.js';
 /** Movie length budgets, in minutes. `null` means any length. */
 export const PICKER_RUNTIMES = [90, 120, 150, null];
 
-/** TV formats. Mini-series maps to TMDB's show type; season counts need details. */
-export const PICKER_TV_FORMATS = ['any', 'miniseries', 'oneSeason', 'multiSeason'];
-
 /** Average episode length budgets for TV, in minutes. `null` means any. */
 export const PICKER_EPISODE_RUNTIMES = [30, 45, 60, null];
 
@@ -77,10 +74,6 @@ const FEATURED_GENRES = {
 // id, whose absolute value is the movie genre they stand for.
 /** @param {number} id */
 export const isKeywordGenre = (id) => id < 0;
-export const FEATURED_GENRE_COUNT = 10;
-// Desktop lays genres out three across, so nine fills the grid.
-export const FEATURED_GENRE_COUNT_WIDE = 9;
-
 /** The spin always lasts at least this long, so it reads as a reveal, not a flicker. */
 export const PICKER_MIN_SPIN_MS = 1400;
 
@@ -441,19 +434,6 @@ export function pickerGenres(catalog, options) {
       && !(options.hideKids && KIDS_GENRE_IDS.has(g.id)))
     .map(g => ({ ...g, mood: g.mood ?? GENRE_MOODS[g.id] ?? null }))
     .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
-}
-
-/**
- * The genre tiles to show: the `count` most useful (pickerGenres' order),
- * or every genre when expanded, either way in alphabetical order.
- * @template {{id:number,name:string,mood?:string|null}} T
- * @param {T[]} genres pickerGenres' output
- * @param {{ count: number, all?: boolean }} opts
- * @returns {T[]}
- */
-export function pickerGenreTiles(genres, { count, all = false }) {
-  const shown = all ? genres : genres.slice(0, count);
-  return [...shown].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**

@@ -108,10 +108,7 @@
 .settings-premium-features { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; list-style: none; margin: 1.5rem 0; padding: 1.25rem 0; border-block: 1px solid var(--border); }
 .settings-premium-features li { display: flex; gap: .6rem; font-size: .8rem; }
 .settings-premium-features li span { color: var(--accent-text); }
-.settings-billing-cycle { border: 0; padding: 0; margin: 0; }
-.settings-billing-cycle legend { font-size: .85rem; margin-bottom: .75rem; }
-.settings-billing-cycle button { min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); border-radius: var(--radius-pill); margin-right: .5rem; cursor: pointer; }
-.settings-billing-cycle button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface); }
+
 .settings-billing-actions { display: flex; gap: 1.5rem; justify-content: space-between; align-items: center; margin-top: 1.5rem; }
 .settings-billing-actions p { font-size: .8rem; flex: 1; }
 .settings-billing-actions .settings-text-action { flex-shrink: 0; width: auto; }

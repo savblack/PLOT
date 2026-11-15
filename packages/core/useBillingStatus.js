@@ -50,8 +50,3 @@ export function useBillingStatusResult(userId) {
 export function useBillingStatus(userId) {
   return useBillingStatusResult(userId).data;
 }
-
-/** For tests: forget every remembered answer. */
-export function clearBillingStatusCache() {
-  lastKnown.clear();
-}

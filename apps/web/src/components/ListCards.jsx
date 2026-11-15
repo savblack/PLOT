@@ -1,10 +1,6 @@
 import { isTypeNarrowed, ALL_TYPES } from '@plot/core/mediaFilters.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import { useGenres } from '../hooks/useGenres.js';
-import { posterUrl } from '../utils/images.js';
-import { displayPosterPath } from '@plot/core/artwork.js';
-import { useUserArtwork } from '@plot/core/useUserArtwork.js';
-import { historyRatingLabel } from '../utils/history.js';
 import { isFinishedStatus } from '@plot/core/listWatchStatus.js';
 import { MEDIA } from '../copy/media.js';
 import { HISTORY_VIEW } from '../copy/historyView.js';
@@ -150,43 +146,3 @@ export function ListCard({
   );
 }
 
-/* watched_at is a plain calendar date. Read the digits rather than handing
-   the string to Date, which would parse it as UTC midnight and roll it back
-   a day anywhere behind UTC. */
-function watchedLabel(dateStr) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr || '');
-  if (!m) return '';
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-    .toLocaleDateString('en', { month: 'short', day: 'numeric' });
-}
-
-/* A history entry as a card. A written review is a permanent icon in the
-   meta line, never a toggle: every card stays the same height whether or
-   not it carries one. Reading the review happens in the media panel. */
-export function HistoryCard({ entry, openPanel }) {
-  const art = useUserArtwork();
-  const title  = entry.title || MEDIA.unknown;
-  const date   = watchedLabel(entry.watched_at);
-  const rating = historyRatingLabel(entry.rating);
-  const meta = (
-    <>
-      {date && <span>{date}</span>}
-      {rating && <span className="mylists-card-rating">{rating}</span>}
-      {entry.note && (
-        <span className="mylists-card-note" title={HISTORY_VIEW.reviewed} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z" />
-          </svg>
-        </span>
-      )}
-    </>
-  );
-  return (
-    <ListCard
-      title={title}
-      img={posterUrl(displayPosterPath(art.apply(entry)), 'w185')}
-      meta={meta}
-      onOpen={() => openPanel(entry.tmdb_id, entry.media_type || 'movie')}
-    />
-  );
-}

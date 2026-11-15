@@ -42,12 +42,6 @@ async function load(userId) {
   })();
   try { await inflight; } finally { inflight = null; }
 }
-
-/** For tests and Storybook: seed the store without Supabase. @param {string | null} userId @param {Follow[]} follows */
-export function _seedPeopleFollows(userId, follows) {
-  setStore({ userId, follows, loaded: true });
-}
-
 /**
  * Ask the server to fill people_feed for someone just followed, so Your
  * people shows their work straight away. Resolves to the number of titles
