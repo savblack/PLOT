@@ -13,6 +13,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write # start ci.yml on the release branch
 
 jobs:
   release-please:
@@ -26,6 +27,20 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+      # The release PR is opened or updated with GITHUB_TOKEN, which starts no
+      # pull_request workflows, so its required `check` would never run. Start
+      # CI on the release branch directly; the run reports on the PR's head.
+      - name: Run CI on the release PR
+        if: steps.release.outputs.prs_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_JSON: ${{ steps.release.outputs.pr }}
+        run: |
+          set -euo pipefail
+          branch=$(printf '%s' "$PR_JSON" | jq -r '.headBranchName // empty')
+          branch=${branch:-release-please--branches--main--components--mobile}
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$branch"
+          echo "Started CI on $branch"
 
   # A new mobile-vX.Y.Z starts the iOS store build. Called directly because a
   # tag pushed with GITHUB_TOKEN does not trigger other workflows.
