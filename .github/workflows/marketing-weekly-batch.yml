@@ -268,6 +268,8 @@ jobs:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
           # Repo variable; unset means draft (the safe default in schedule.mjs).
           BUFFER_PUSH_AS_DRAFT: ${{ vars.BUFFER_PUSH_AS_DRAFT }}
+          # Repo variable; 0 skips only the Buffer push. Unset means push.
+          BUFFER_PUSH_ENABLED: ${{ vars.BUFFER_PUSH_ENABLED }}
 
       # Grok has replaced the refresh token by now, so the copy restored above
       # no longer works. Save the current one for next week, even on failure.
