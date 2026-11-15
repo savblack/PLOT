@@ -200,6 +200,8 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<Mode>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Matches web's Show/Hide toggle on the same field (AuthPage.jsx).
+  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [inboxKind, setInboxKind] = useState<InboxKind>('signup');
@@ -1004,19 +1006,33 @@ export default function AuthScreen() {
                 {social && (
                   <View style={styles.inputWrap}>
                     <Text style={styles.inputLabel}>{AUTH_PAGE.passwordLabel}</Text>
-                    <TextInput
-                      style={[styles.input, passwordError ? styles.inputInvalid : null]}
-                      placeholder={mode === 'signup' ? AUTH_PAGE.passwordPlaceholder.signup : AUTH_PAGE.passwordPlaceholder.login}
-                      placeholderTextColor={PLACEHOLDER}
-                      value={password}
-                      onChangeText={(t) => { setPassword(t); setPasswordError(null); noteSignupStarted(); }}
-                      onBlur={() => { if (mode === 'signup' && password) checkPassword(); }}
-                      secureTextEntry
-                      autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                      returnKeyType="go"
-                      onSubmitEditing={handleSubmit}
-                      accessibilityLabel={AUTH_PAGE.passwordLabel}
-                    />
+                    <View style={styles.passwordWrap}>
+                      <TextInput
+                        style={[styles.input, styles.passwordInput, passwordError ? styles.inputInvalid : null]}
+                        placeholder={mode === 'signup' ? AUTH_PAGE.passwordPlaceholder.signup : AUTH_PAGE.passwordPlaceholder.login}
+                        placeholderTextColor={PLACEHOLDER}
+                        value={password}
+                        onChangeText={(t) => { setPassword(t); setPasswordError(null); noteSignupStarted(); }}
+                        onBlur={() => { if (mode === 'signup' && password) checkPassword(); }}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                        returnKeyType="go"
+                        onSubmitEditing={handleSubmit}
+                        accessibilityLabel={AUTH_PAGE.passwordLabel}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowPassword(v => !v)}
+                        style={styles.showPassword}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        accessibilityRole="button"
+                        accessibilityLabel={showPassword ? AUTH_PAGE.hidePassword : AUTH_PAGE.showPassword}
+                        accessibilityState={{ selected: showPassword }}
+                      >
+                        <Text style={styles.showPasswordText}>{showPassword ? AUTH_PAGE.hide : AUTH_PAGE.show}</Text>
+                      </TouchableOpacity>
+                    </View>
                     {passwordError ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{passwordError}</Text> : null}
                     {mode === 'signin' && (
                       <TouchableOpacity onPress={() => switchMode('forgot')} style={styles.forgotUnder} accessibilityRole="button">
@@ -1262,6 +1278,24 @@ const styles = StyleSheet.create({
   },
   inputInvalid: {
     borderColor: colors.danger,
+  },
+  passwordWrap: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    // Room for the Show/Hide label so typed text never runs under it.
+    paddingRight: 64,
+  },
+  showPassword: {
+    position: 'absolute',
+    right: spacing.lg,
+  },
+  showPasswordText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: fontSize.xs,
+    color: MUTED,
+    letterSpacing: 0.2,
   },
   fieldError: {
     fontFamily: fontFamily.sans,
