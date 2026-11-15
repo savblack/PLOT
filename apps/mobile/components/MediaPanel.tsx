@@ -1372,15 +1372,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         return !error;
                       }}
                     />
-                  </View>
-                </View>
-
-                {/* Genres and keywords run full width under the poster row, as on web,
-                    so a long keyword list doesn't stack in the narrow column beside the poster. */}
-                {(genreChips.length > 0 || keywordChips.length > 0) && (
-                  <View style={styles.headTags}>
                     {genreChips.length > 0 && (
-                      <View style={styles.tagRow}>
+                      <View style={styles.genreRow}>
                         {genreChips.map(genre => (
                           <TouchableOpacity
                             key={genre.id}
@@ -1393,29 +1386,35 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         ))}
                       </View>
                     )}
-                    {keywordChips.length > 0 && (
-                      <View style={styles.tagRow} accessibilityLabel={BROWSE.keywordsLabel}>
-                        {keywordChips.map(k => (
-                          <TouchableOpacity
-                            key={k.id}
-                            accessibilityRole="link"
-                            accessibilityLabel={BROWSE.keywordLink(k.name)}
-                            onPress={() => browse('keyword', k.id, k.name, { pathname: '/(app)/browse', params: keywordBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', keywordId: k.id, name: k.name }) })}
-                          >
-                            <Tag label={k.name} />
-                          </TouchableOpacity>
-                        ))}
-                        {(hiddenKeywords > 0 || keywordsOpen) && (
-                          <TouchableOpacity
-                            accessibilityRole="button"
-                            accessibilityState={{ expanded: keywordsOpen }}
-                            onPress={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}
-                          >
-                            <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    )}
+                  </View>
+                </View>
+
+                {/* Keywords run full width under the poster row, as on web, so a long
+                    list doesn't stack in the narrow column beside the poster. Genres stay
+                    in that column, under the rating, where two short tags fit. */}
+                {keywordChips.length > 0 && (
+                  <View style={styles.headTags}>
+                    <View style={styles.tagRow} accessibilityLabel={BROWSE.keywordsLabel}>
+                      {keywordChips.map(k => (
+                        <TouchableOpacity
+                          key={k.id}
+                          accessibilityRole="link"
+                          accessibilityLabel={BROWSE.keywordLink(k.name)}
+                          onPress={() => browse('keyword', k.id, k.name, { pathname: '/(app)/browse', params: keywordBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', keywordId: k.id, name: k.name }) })}
+                        >
+                          <Tag label={k.name} />
+                        </TouchableOpacity>
+                      ))}
+                      {(hiddenKeywords > 0 || keywordsOpen) && (
+                        <TouchableOpacity
+                          accessibilityRole="button"
+                          accessibilityState={{ expanded: keywordsOpen }}
+                          onPress={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}
+                        >
+                          <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                 )}
 
@@ -1873,7 +1872,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg, marginBottom: spacing.lg },
   poster: {
-    width: 112, height: 168, marginTop: -36, borderRadius: radii.md,
+    width: 136, height: 204, marginTop: -36, borderRadius: radii.md,
     backgroundColor: colors.surfaceSunken, zIndex: 1,
     shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6,
   },
@@ -1882,11 +1881,12 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   kicker: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accent },
   title: { fontFamily: fontFamily.display, fontSize: 24, letterSpacing: -0.6, color: colors.textPrimary, lineHeight: 26, marginBottom: 4 },
   titleLogo: {
-    position: 'absolute', left: 148, right: 56, bottom: 10, height: 36, zIndex: 2,
+    position: 'absolute', left: 172, right: 56, bottom: 10, height: 36, zIndex: 2,
   },
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
+  genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
   // Full width under the head, pulled up to sit closer to it (web: .panel-head-tags).
-  headTags: { gap: spacing.sm, marginTop: -spacing.sm, marginBottom: spacing.lg },
+  headTags: { marginTop: -spacing.sm, marginBottom: spacing.lg },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   scoresRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
