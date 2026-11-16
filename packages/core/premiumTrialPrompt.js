@@ -7,7 +7,7 @@
  * engaged moment instead: right after onboarding completes, or right after a
  * Trakt import saves titles. It shows once per account on each device, opens
  * the existing upgrade sheet (and through it the existing Checkout with the
- * 7-day trial), and is easy to dismiss.
+ * 7-day trial) once the shared value rule is met, and is easy to dismiss.
  *
  * This module owns the rules, the storage key and a tiny in-memory request
  * channel. The moment happens in one place (OnboardingFlow, reportImport) and
@@ -17,10 +17,10 @@
  * localStorage, mobile through AsyncStorage.
  */
 
-/** @typedef {'onboarding' | 'trakt_import'} PremiumTrialPromptTrigger */
+/** @typedef {'onboarding' | 'trakt_import' | 'fifth_title' | 'second_session'} PremiumTrialPromptTrigger */
 
 /** @type {readonly PremiumTrialPromptTrigger[]} */
-export const PREMIUM_TRIAL_PROMPT_TRIGGERS = Object.freeze(['onboarding', 'trakt_import']);
+export const PREMIUM_TRIAL_PROMPT_TRIGGERS = Object.freeze(['onboarding', 'trakt_import', 'fifth_title', 'second_session']);
 
 /** The value stored once the prompt has been shown. */
 export const PREMIUM_TRIAL_PROMPT_SEEN = 'shown';
@@ -29,6 +29,8 @@ export const PREMIUM_TRIAL_PROMPT_SEEN = 'shown';
 const SHEET_REASONS = Object.freeze({
   onboarding: 'trialAfterOnboarding',
   trakt_import: 'trialAfterTraktImport',
+  fifth_title: 'trialAfterOnboarding',
+  second_session: 'trialAfterOnboarding',
 });
 
 /** @param {string} userId */
@@ -62,10 +64,35 @@ export function premiumTrialPromptTriggerForImport({ source, count } = {}) {
  * subscription), and checkout is not closed. `trialEligible` must be the
  * answered value: undefined/null (billing still loading) is not yet.
  *
- * @param {{ seen: boolean, isPremium: boolean, trialEligible: boolean | null | undefined, checkoutOpen: boolean }} state
+ * @param {{ seen: boolean, isPremium: boolean, trialEligible: boolean | null | undefined, checkoutOpen: boolean, titleCount: number | null, sessionCount: number | null }} state
  */
-export function shouldShowPremiumTrialPrompt({ seen, isPremium, trialEligible, checkoutOpen }) {
-  return !seen && !isPremium && trialEligible === true && checkoutOpen;
+export function shouldShowPremiumTrialPrompt({ seen, isPremium, trialEligible, checkoutOpen, titleCount, sessionCount }) {
+  return !seen && !isPremium && trialEligible === true && checkoutOpen
+    && (Number.isInteger(titleCount) && titleCount >= 5 || Number.isInteger(sessionCount) && sessionCount >= 2);
+}
+
+/**
+ * A suppressed request remains pending and must never write the seen flag.
+ * @param {Parameters<typeof shouldShowPremiumTrialPrompt>[0]} state
+ * @returns {'discard' | 'show' | 'wait' | 'suppress'}
+ */
+export function premiumTrialPromptDecision(state) {
+  if (state.seen || state.isPremium || state.trialEligible !== true || !state.checkoutOpen) return 'discard';
+  if (shouldShowPremiumTrialPrompt(state)) return 'show';
+  if (state.titleCount == null || state.sessionCount == null) return 'wait';
+  return 'suppress';
+}
+
+/**
+ * Keep the import wording if it qualified immediately; name a later value moment.
+ * @param {PremiumTrialPromptTrigger} trigger
+ * @param {boolean} wasSuppressed
+ * @param {number | null} titleCount
+ * @returns {PremiumTrialPromptTrigger}
+ */
+export function premiumTrialPromptMoment(trigger, wasSuppressed, titleCount) {
+  if (!wasSuppressed) return trigger;
+  return titleCount >= 5 ? 'fifth_title' : 'second_session';
 }
 
 /** @type {PremiumTrialPromptTrigger | null} */
@@ -114,6 +141,7 @@ export function takePremiumTrialPrompt() {
 /** Drop a waiting trigger, e.g. the person is already on their way to Checkout. */
 export function clearPremiumTrialPrompt() {
   pending = null;
+  notify();
 }
 
 let holds = 0;
@@ -156,5 +184,6 @@ export function premiumTrialPromptHeld() {
  */
 export function onPremiumTrialPromptRequest(fn) {
   listeners.add(fn);
+  if (pending) fn(pending);
   return () => { listeners.delete(fn); };
 }

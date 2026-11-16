@@ -54,6 +54,10 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { ArtworkProvider } from '@plot/core/useUserArtwork.js';
 import { AppContext, useApp } from './hooks/useApp.js';
 import { SHOW_WATCH_TOGETHER } from './launchFeatures.js';
+import { useHistory } from '@plot/core/useHistory.js';
+import { useAccountSession } from '@plot/core/accountSession.js';
+import { useAccountValue } from '@plot/core/useAccountValue.js';
+import { clearPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 
 export { useApp };
 
@@ -140,6 +144,12 @@ function SaveToast({ toast, onClose }) {
 export default function App() {
   const navigate  = useNavigate();
   const location  = useLocation();
+  const [visible, setVisible] = useState(() => document.visibilityState !== 'hidden');
+  useEffect(() => {
+    const update = () => setVisible(document.visibilityState !== 'hidden');
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
 
   const [user,    setUser]    = useState(() => {
     const cached = readCachedSession();
@@ -223,6 +233,7 @@ export default function App() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (activeUserIdRef.current && activeUserIdRef.current !== (session?.user?.id ?? null)) clearPremiumTrialPrompt();
       activeUserIdRef.current = session?.user?.id ?? null;
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -342,6 +353,9 @@ export default function App() {
   const watchlist    = useWatchlist(user?.id);
   const privateNotes = usePrivateNotes(user?.id);
   const watching     = useWatching(user?.id);
+  const history      = useHistory(user?.id);
+  const sessionCount = useAccountSession(profile?.id === user?.id ? user?.id : null, profile?.timezone, visible);
+  const accountValue = useAccountValue({ userId: user?.id, watchlist, watching, history, sessionCount });
   const reminders    = useReminders(user?.id);
   const topLists     = useTopLists(user?.id);
   const favorites    = useFavorites(user?.id, { watching, watchlist });
@@ -424,6 +438,8 @@ export default function App() {
     watchlist,
     privateNotes,
     watching,
+    history,
+    accountValue,
     reminders,
     topLists,
     favorites,

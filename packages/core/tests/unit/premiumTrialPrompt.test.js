@@ -5,12 +5,12 @@ import {
   PREMIUM_TRIAL_PROMPT_TRIGGERS, clearPremiumTrialPrompt, holdPremiumTrialPrompt, onPremiumTrialPromptRequest,
   peekPremiumTrialPrompt, premiumTrialPromptHeld, premiumTrialPromptKey, premiumTrialPromptReason,
   premiumTrialPromptTriggerForImport, requestPremiumTrialPrompt, shouldHoldPremiumTrialPrompt,
-  shouldShowPremiumTrialPrompt, takePremiumTrialPrompt,
+  shouldShowPremiumTrialPrompt, premiumTrialPromptDecision, premiumTrialPromptMoment, takePremiumTrialPrompt,
 } from '../../premiumTrialPrompt.js';
 import { upgradeSheetContent, upgradeSheetGateFeature } from '../../upgradeSheet.js';
 import { EVENTS } from '../../analyticsEvents.js';
 
-const eligible = { seen: false, isPremium: false, trialEligible: true, checkoutOpen: true };
+const eligible = { seen: false, isPremium: false, trialEligible: true, checkoutOpen: true, titleCount: 5, sessionCount: 1 };
 
 test('shows only to an unseen Free member who can still have the trial while checkout is open', () => {
   assert.equal(shouldShowPremiumTrialPrompt(eligible), true);
@@ -21,6 +21,26 @@ test('shows only to an unseen Free member who can still have the trial while che
   assert.equal(shouldShowPremiumTrialPrompt({ ...eligible, trialEligible: null }), false);
   assert.equal(shouldShowPremiumTrialPrompt({ ...eligible, trialEligible: undefined }), false);
   assert.equal(shouldShowPremiumTrialPrompt({ ...eligible, checkoutOpen: false }), false);
+  assert.equal(shouldShowPremiumTrialPrompt({ ...eligible, titleCount: 4, sessionCount: 1 }), false);
+  assert.equal(shouldShowPremiumTrialPrompt({ ...eligible, titleCount: 0, sessionCount: 2 }), true);
+  assert.equal(shouldShowPremiumTrialPrompt({ ...eligible, titleCount: null, sessionCount: null }), false);
+});
+
+test('suppressed trial request remains pending without a seen write', () => {
+  clearPremiumTrialPrompt();
+  requestPremiumTrialPrompt('onboarding');
+  const writes = [];
+  const decision = premiumTrialPromptDecision({ ...eligible, titleCount: 4, sessionCount: 1 });
+  if (decision === 'show') { writes.push('shown'); takePremiumTrialPrompt(); }
+  assert.equal(decision, 'suppress');
+  assert.deepEqual(writes, []);
+  assert.equal(peekPremiumTrialPrompt(), 'onboarding');
+  assert.equal(premiumTrialPromptDecision({ ...eligible, titleCount: 5, sessionCount: 1 }), 'show');
+  assert.equal(premiumTrialPromptDecision({ ...eligible, titleCount: 4, sessionCount: null }), 'wait');
+  assert.equal(premiumTrialPromptMoment('trakt_import', false, 5), 'trakt_import');
+  assert.equal(premiumTrialPromptMoment('onboarding', true, 5), 'fifth_title');
+  assert.equal(premiumTrialPromptMoment('onboarding', true, 2), 'second_session');
+  clearPremiumTrialPrompt();
 });
 
 test('only a Trakt import that saved titles is a trigger', () => {
@@ -34,7 +54,7 @@ test('only a Trakt import that saved titles is a trigger', () => {
 
 test('the key is per account and each trigger has its own sheet copy, with no gate hit', () => {
   assert.equal(premiumTrialPromptKey('u1'), 'plot.premiumTrialPrompt.u1');
-  assert.deepEqual([...PREMIUM_TRIAL_PROMPT_TRIGGERS], ['onboarding', 'trakt_import']);
+  assert.deepEqual([...PREMIUM_TRIAL_PROMPT_TRIGGERS], ['onboarding', 'trakt_import', 'fifth_title', 'second_session']);
   for (const trigger of PREMIUM_TRIAL_PROMPT_TRIGGERS) {
     const reason = premiumTrialPromptReason(trigger);
     const content = upgradeSheetContent(reason);
@@ -93,4 +113,5 @@ test('the three prompt events exist', () => {
   assert.equal(EVENTS.PREMIUM_PROMPT_SHOWN, 'premium_prompt_shown');
   assert.equal(EVENTS.PREMIUM_PROMPT_CLICKED, 'premium_prompt_clicked');
   assert.equal(EVENTS.PREMIUM_PROMPT_DISMISSED, 'premium_prompt_dismissed');
+  assert.equal(EVENTS.PREMIUM_PROMPT_SUPPRESSED, 'premium_prompt_suppressed');
 });

@@ -67,6 +67,7 @@ import FinishingTouches, { useFinishingTouchesState } from '../../components/Fin
 import PremiumFirstWeek, { usePremiumFirstWeekState } from '../../components/PremiumFirstWeek';
 import PremiumTrialPrompt from '../../components/PremiumTrialPrompt';
 import ActivationNudge, { useActivationNudgeVisible } from '../../components/ActivationNudge';
+import QuickAdd from '../../components/QuickAdd';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 import ImportJobCard, { type ImportJobRow } from '../../components/ImportJobCard';
 import { markImportDone } from '../../lib/finishingTouches';
@@ -678,7 +679,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
      ACTIVATED analytics, and left the shared store stale until app restart:
      save on Home, open the title's panel, and it still offered "Add to
      Watchlist". */
-  const { favorites, watchlist, watching, history, userId, profile, user, customLists, refreshProfile } = useAppData();
+  const { favorites, watchlist, watching, history, userId, profile, user, customLists, refreshProfile, accountValue } = useAppData();
   const homeLayout = useHomeLayout({ userId, saved: profile?.home_layout, onPersisted: refreshProfile });
   const router = useRouter();
   // Up next: the shows with an episode out, then the saved titles, one shelf.
@@ -1073,6 +1074,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         style={styles.screen}
         contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
           scrollEventThrottle={16}
           onScroll={e => {
             glass.onScroll(e);
@@ -1095,9 +1097,12 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           </TouchableOpacity>
         )}
         {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
-        {/* No titles at all: the empty-library nudge takes the checklist's place. */}
-        {nudgeVisible
-          ? <ActivationNudge onImport={setImportSource} />
+        {/* Quick-add leads through the first four unique titles. */}
+        {accountValue.titleCount != null && accountValue.titleCount < 5 && !importSource && !reviewJob && <QuickAdd />}
+        {accountValue.titleCount === 0 && !firstWeek.visible
+          ? null
+          : nudgeVisible && accountValue.titleCount == null
+            ? <ActivationNudge onImport={setImportSource} />
           : firstWeek.visible
             ? <PremiumFirstWeek onState={firstWeek.setState} />
             : <FinishingTouches state={ft.state} onState={ft.setState} />}

@@ -9,6 +9,10 @@ import { isPremiumProfile } from '@plot/core/premium.js';
  * refetches or shows a loading screen (mutations update the shared state).
  */
 import { createContext, useContext, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
+import { useAccountSession } from '@plot/core/accountSession.js';
+import { useAccountValue } from '@plot/core/useAccountValue.js';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useWatchlist } from '../hooks/useWatchlist';
 import { useWatching } from '../hooks/useWatching';
@@ -31,11 +35,17 @@ interface AppData {
   customLists: any;
   topLists: any;
   history: any;
+  accountValue: { titleCount: number | null; sessionCount: number | null; feltValue: boolean };
 }
 
 const AppDataContext = createContext<AppData | null>(null);
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
+  const [active, setActive] = useState(AppState.currentState === 'active');
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => setActive(state === 'active'));
+    return () => subscription.remove();
+  }, []);
   const { userId, user, profile, refreshProfile } = useCurrentUser();
   const broadcastPreferences = useBroadcastPreferences(userId);
   const watchlist   = useWatchlist(userId);
@@ -45,9 +55,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const customLists = useCustomLists(userId, { includeShared: SHOW_WATCH_TOGETHER });
   const topLists    = useTopLists(userId);
   const history     = useHistory(userId);
+  const sessionCount = useAccountSession(profile?.id === userId ? userId : null, profile?.timezone, active);
+  const accountValue = useAccountValue({ userId, watchlist, watching, history, sessionCount });
 
   return (
-    <AppDataContext.Provider value={{ broadcastPreferences, userId, user, profile, refreshProfile, privateNotes, watchlist, watching, favorites, customLists, topLists, history }}>
+    <AppDataContext.Provider value={{ broadcastPreferences, userId, user, profile, refreshProfile, privateNotes, watchlist, watching, favorites, customLists, topLists, history, accountValue }}>
       <ArtworkProvider userId={userId} premium={!!profile && isPremiumProfile(profile)}>
         {children}
       </ArtworkProvider>

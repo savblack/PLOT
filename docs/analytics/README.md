@@ -184,21 +184,36 @@ allowed (US storefront).
 
 | Event | When | Properties |
 |---|---|---|
-| `premium_prompt_shown` | The prompt opened | `trigger: 'onboarding' \| 'trakt_import'` |
+| `premium_prompt_shown` | The prompt opened after value | `trigger: 'onboarding' \| 'trakt_import' \| 'fifth_title' \| 'second_session'`, `felt_value: true`, `title_count`, `session_count` |
 | `premium_prompt_clicked` | Start free trial (or Upgrade), or See everything in Premium | `trigger`, `target: 'checkout' \| 'plans'`, `plan` for checkout |
 | `premium_prompt_dismissed` | Closed without a click: Not now, Escape, the scrim, Android back | `trigger` |
 
 Read `premium_prompt_clicked` (target `checkout`) next to
 `premium_checkout_started` to see whether the prompt leads to checkouts.
 
+Premium trial prompts now wait until a Free account has 5 unique library titles
+or starts its second server-recorded session. `premium_prompt_suppressed` records
+`reason` (`first_session` or `titles_lt_5`), `title_count`, `session_count`, and
+`trigger`. The seen flag remains unset until a prompt appears. The existing
+`premium_prompt_shown` also records `felt_value: true`, both counts, and the
+trigger (`onboarding`, `trakt_import`, `fifth_title`, or `second_session`).
+The Settings Premium link and deliberate feature gates remain available.
+
+Home's quick-add appears at 0–4 unique titles. `quick_add_shown` records
+`title_count` and `surface: home`; `quick_add_title_added` records the count
+after a successful one-tap save, `list` (`watching` or `watchlist`), and
+`surface: home`. At zero titles, quick-add also preserves the
+`activation_nudge_shown` and `activation_nudge_add_clicked` funnel.
+
 ### The empty-library nudge
 
-An account with no titles in its watchlist, watching or history sees "Add
-your first show or movie" (any number counts; there is no target) with an
+An account with no titles in its watchlist, watching or history sees the Home
+quick-add. History still shows "Add your first show or movie" with an
 import button for each source confirmed end to end in production
 (`ACTIVATION_NUDGE_SOURCE_IDS` in `packages/core/activationNudge.js`, Trakt and
-Simkl as of 12 Nov 2026). It sits in Home's checklist slot (web and mobile) and
-replaces History's empty state on web, and is gone at the first title.
+Simkl as of 12 Nov 2026). The History nudge replaces its empty state on web
+and is gone at the first title. Home quick-add emits the shown and add-clicked
+events at zero titles so the original activation funnel remains comparable.
 
 | Event | When | Properties |
 |---|---|---|
