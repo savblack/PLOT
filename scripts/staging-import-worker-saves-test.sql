@@ -14,10 +14,16 @@
 \set ON_ERROR_STOP on
 begin;
 
--- A title Staging already knows, so no TMDB id is typed in here.
+-- A title Staging already knows, so no TMDB id is typed in here, and one
+-- fixture account A does not have: otherwise "already there" would pass for
+-- "saved by this call".
 create temporary table worker_title as
-  select tmdb_id, media_type, title from public.history where media_type = 'movie' limit 1;
-do $$ begin if not exists (select 1 from worker_title) then raise exception 'An existing Staging movie is required'; end if; end $$;
+  select h.tmdb_id, h.media_type, h.title from public.history h
+  where h.media_type = 'movie'
+    and not exists (select 1 from public.history mine
+      where mine.user_id = '467ce784-39eb-480e-8593-4632667fc9c3' and mine.tmdb_id = h.tmdb_id and mine.media_type = h.media_type)
+  order by h.id limit 1;
+do $$ begin if not exists (select 1 from worker_title) then raise exception 'A Staging movie that account A has not watched is required'; end if; end $$;
 grant select on worker_title to service_role, authenticated, anon;
 
 -- ── the worker: service role, no account ─────────────────────────────────────
@@ -29,6 +35,10 @@ declare
   t record; result jsonb; refused integer := 0;
 begin
   select * into t from worker_title;
+  if exists (select 1 from public.history where user_id = a and tmdb_id = t.tmdb_id and media_type = t.media_type)
+    or exists (select 1 from public.imported_list_entries where user_id = a and source_key = 'worker-proof-list') then
+    raise exception 'Account A already has the test rows; the checks below would prove nothing';
+  end if;
 
   -- The failure, before the fix: the plain writers refuse the worker.
   begin perform public.import_watch_events('[]'); exception when insufficient_privilege then refused := refused + 1; end;
@@ -68,8 +78,10 @@ begin
   result := public.import_saved_list_as(a, '{"kind":"watchlist","key":"worker-proof:watchlist","name":"Watchlist"}',
     jsonb_build_array(jsonb_build_object('source_key', 'worker-proof-list',
       'summary', jsonb_build_object('tmdb_id', t.tmdb_id, 'media_type', t.media_type, 'title', t.title, 'poster_path', null))));
-  if coalesce((result->>'inserted')::integer, 0) + coalesce((result->>'duplicates')::integer, 0) <> 1 or result ? 'not_imported' then
-    raise exception 'Watchlist entry was not saved: %', result;
+  if result->>'inserted' <> '1' or result ? 'not_imported'
+    or not exists (select 1 from public.imported_list_entries where user_id = a and source_key = 'worker-proof-list')
+    or not exists (select 1 from public.lists where user_id = a and name = '__watchlist__') then
+    raise exception 'Watchlist entry was not saved for the account: %', result;
   end if;
   raise notice 'PASS the worker saves a watchlist entry for the account';
 
@@ -81,6 +93,22 @@ begin
     raise exception 'Rating was not saved for the account: %', result;
   end if;
   raise notice 'PASS the worker saves a rating for the account';
+
+  -- A batch the writer rejects after the account was named leaves no account
+  -- named and nothing saved.
+  begin
+    perform public.import_watch_events_as(a, jsonb_build_array(jsonb_build_object(
+      'event', jsonb_build_object('tmdb_id', t.tmdb_id, 'media_type', 'movie', 'source', 'letterboxd', 'source_account', 'local',
+        'source_key', 'worker-proof-rejected', 'date_precision', 'unknown'),
+      'summary', jsonb_build_object('tmdb_id', t.tmdb_id, 'media_type', 'tv', 'title', t.title))));
+    raise exception 'A mismatched record was accepted';
+  exception when raise_exception then
+    if sqlerrm = 'A mismatched record was accepted' then raise; end if;
+  end;
+  if auth.uid() is not null or exists (select 1 from public.watch_events where source_key = 'worker-proof-rejected') then
+    raise exception 'A rejected batch left the account named or a row behind';
+  end if;
+  raise notice 'PASS a rejected batch leaves no account named and nothing saved';
 
   -- No account, or one that does not exist, is refused.
   begin perform public.import_watch_events_as(null, '[]'); raise exception 'A null account was accepted';

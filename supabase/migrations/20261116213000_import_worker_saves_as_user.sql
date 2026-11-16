@@ -2,17 +2,25 @@
 --
 -- The import-worker edge function runs the same writers the apps run:
 -- import_watch_events, import_saved_list and import_saved_annotations. All
--- three take the account from auth.uid() and are granted to `authenticated`
--- only, which is right for a browser. The worker is the service role, so it
--- has no auth.uid() and no grant: every batch was refused, the job ended
--- "partial" with imported = 0, and no row was written. Found on 2026-11-16 by
+-- three take the account from auth.uid() and raise 42501 when there is none,
+-- which is right for a browser. The worker is the service role, so it has no
+-- auth.uid(): every batch was refused, the job ended "partial" with
+-- imported = 0, and no row was written. Found on 2026-11-16 by
 -- running four sample files through production on the monitoring account.
 --
 -- Additive only. Nothing existing is redefined: each new function names the
 -- account for the length of the call, runs the existing function unchanged,
--- then puts the request's own identity back. So the worker saves through
--- exactly the SQL a signed-in person does, including the free custom-list
--- limit and every trigger on history.
+-- then puts the request's own identity back. So the worker runs the same
+-- statements a signed-in person does, including the free custom-list limit
+-- and every trigger on history.
+--
+-- One difference: row-level security. import_watch_events is security
+-- invoker, and called from here it runs as this function's owner, so the
+-- insert policies on watch_events and history are skipped rather than
+-- evaluated. That changes nothing today (both policies are
+-- user_id = auth.uid(), and the function writes auth.uid() itself), but a
+-- stricter insert policy added later will not apply to worker imports unless
+-- it is also enforced inside import_watch_events.
 --
 -- The service role alone may call these. The worker passes job.user_id, which
 -- enqueue_file_import_job set from auth.uid() when the person queued the job.
