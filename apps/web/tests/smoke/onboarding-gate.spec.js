@@ -143,3 +143,14 @@ test('a failed Trakt connect started in setup links back to setup', async ({ pag
   await back.click();
   await expect(page).toHaveURL(/\/onboarding\?import=trakt$/);
 });
+
+// The Simkl error page had the same fixed link, to Import.
+test('a failed Simkl connect started in setup links back to setup', async ({ page, baseURL }) => {
+  await setup(page);
+  await page.addInitScript(() => sessionStorage.setItem('plot_simkl_oauth_return_to', '/onboarding?import=simkl'));
+  await page.goto(gateUrl(baseURL, '/auth/simkl'));
+  const back = page.getByRole('link', { name: TRAKT_CALLBACK_PAGE.backToSetup, exact: true });
+  await expect(back).toHaveAttribute('href', '/onboarding?import=simkl');
+  await back.click();
+  await expect(page).toHaveURL(/\/onboarding\?import=simkl$/);
+});

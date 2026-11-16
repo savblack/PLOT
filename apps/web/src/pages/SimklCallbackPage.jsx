@@ -3,18 +3,25 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { callAuthenticatedFunction } from '@plot/core/functions.js';
 import { track, EVENTS } from '../lib/analytics.js';
-import { consumeSimklReturnTo, consumeSimklState, getSimklCallbackUrl } from '../utils/redirects.js';
+import { consumeSimklReturnTo, consumeSimklState, getSimklCallbackUrl, simklErrorReturn } from '../utils/redirects.js';
+import { CONNECT_BACK_LABELS } from '../copy/traktCallbackPage.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 
 export default function SimklCallbackPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const [error, setError] = useState('');
+  const [error, setErrorMessage] = useState('');
+  // Where the error page's link goes: back to the page the connect started on.
+  const [back, setBack] = useState(() => simklErrorReturn(null));
   const called = useRef(false);
 
   useEffect(() => {
     if (called.current) return;
     called.current = true;
+    const setError = (message) => {
+      setBack(simklErrorReturn(consumeSimklReturnTo()));
+      setErrorMessage(message);
+    };
     const run = async () => {
       const code = params.get('code');
       if (!code || !consumeSimklState(params.get('state'))) {
@@ -34,6 +41,6 @@ export default function SimklCallbackPage() {
   }, [navigate, params]);
 
   return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '2rem', textAlign: 'center' }}>
-    <div><PlotLogo style={{ fontSize: '2rem' }} /><p>{error || 'Connecting Simkl…'}</p>{error && <a href="/import?source=simkl">Back to import</a>}</div>
+    <div><PlotLogo style={{ fontSize: '2rem' }} /><p>{error || 'Connecting Simkl…'}</p>{error && <a href={back.href}>{CONNECT_BACK_LABELS[back.place]}</a>}</div>
   </div>;
 }

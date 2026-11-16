@@ -4,17 +4,11 @@ import { supabase } from '@plot/core/supabase.js';
 import { callAuthenticatedFunction, edgeFunctionUrl } from '@plot/core/functions.js';
 import { consumeTraktReturnTo, consumeTraktState, getTraktCallbackUrl, traktErrorReturn, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
 import PlotLogo from '../components/PlotLogo.jsx';
-import { TRAKT_CALLBACK_PAGE } from '../copy/traktCallbackPage.js';
+import { CONNECT_BACK_LABELS, TRAKT_CALLBACK_PAGE } from '../copy/traktCallbackPage.js';
 import { track, EVENTS } from '../lib/analytics.js';
 
 // One style for the link and the popup's button, so they look the same.
 const BACK_STYLE = { color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' };
-
-const BACK_LABELS = {
-  setup: TRAKT_CALLBACK_PAGE.backToSetup,
-  import: TRAKT_CALLBACK_PAGE.backToImport,
-  settings: TRAKT_CALLBACK_PAGE.backToSettings,
-};
 
 export default function TraktCallbackPage() {
   const navigate = useNavigate();
@@ -102,7 +96,7 @@ export default function TraktCallbackPage() {
         <p style={{ color: '#c0392b', fontSize: '0.95rem', maxWidth: 360 }}>{error}</p>
         {inPopup
           ? <button type="button" onClick={() => window.close()} style={{ ...BACK_STYLE, background: 'none', border: 0, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>{TRAKT_CALLBACK_PAGE.closeWindow}</button>
-          : <a href={back.href} style={BACK_STYLE}>{BACK_LABELS[back.place]}</a>}
+          : <a href={back.href} style={BACK_STYLE}>{CONNECT_BACK_LABELS[back.place]}</a>}
       </div>
     );
   }
