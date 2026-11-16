@@ -5,7 +5,18 @@ import { useApp } from '../hooks/useApp.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useUnifiedSearch } from '@plot/core/useUnifiedSearch.js';
-import { describeSearchResult, pushRecentSearch } from '@plot/core/search.js';
+import { describeSearchResult, homePlaceShelves, listsPlaceSources, placeSearchRows, pushRecentSearch, SEARCH_PLACES } from '@plot/core/search.js';
+import { loadDiscoverData } from '@plot/core/useDiscover.js';
+import { loadSmartListTitles } from '@plot/core/smartLists.js';
+import { pickerProviderIds } from '@plot/core/tonightPicker.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
+import { DEFAULT_REGION } from '@plot/core/regions.js';
+import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
+import { wantToWatchItems, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
+import { APP_NAV_ITEMS, MY_LISTS_TABS } from '@plot/core/navigation.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
+import { localDateStr, shortDayMonth } from '@plot/core/date.js';
+import { useCalendar } from '../hooks/useCalendar.js';
 import { posterUrl, profileUrl } from '../utils/images.js';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
@@ -15,6 +26,7 @@ import { SEARCH_PALETTE } from '../copy/searchPalette.js';
 import { MEDIA } from '../copy/media.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
 import { COMMON } from '../copy/common.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import Spinner from './Spinner.jsx';
 import Icon from './Icon.jsx';
 import EmptyState from './EmptyState.jsx';
@@ -23,9 +35,9 @@ import './SearchPalette.css';
 
 /* Web-only rendering: a command palette over whatever is on screen, opened by
    Cmd/Ctrl+K or the Search nav item. The fetching and merging live in
-   @plot/core/useUnifiedSearch.js so mobile can render the same results in its
-   own way; mobile still has the tabbed screen, see the parity issue in the PR
-   that introduced this file. */
+   @plot/core/useUnifiedSearch.js, and which titles a "Search in" place holds
+   in @plot/core/search.js, so mobile renders the same results in its own way
+   (apps/mobile/app/(app)/search.tsx). */
 
 const RECENT_KEY = 'plot_recent_searches';
 const readRecent = () => {
@@ -37,6 +49,15 @@ const STATUS_LABEL = {
   saved: SEARCH_PALETTE.status.saved,
   watched: MEDIA.watched,
 };
+
+// Each place is a page, so it carries that page's nav name.
+const NAV_ID = { home: 'home', calendar: 'calendar', lists: 'my-lists', history: 'history' };
+const placeLabel = (place) => (place === 'everywhere'
+  ? SEARCH_PALETTE.everywhere
+  : place === 'smart' ? SMART_LISTS.section
+  : APP_NAV_ITEMS.find(item => item.id === NAV_ID[place])?.label || place);
+const TOP_LABEL = MY_LISTS_TABS.find(tab => tab.id === 'top10')?.label;
+const NO_ROWS = [];
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '');
 const MOD_KEY = isMac ? '⌘' : 'Ctrl';
@@ -60,7 +81,8 @@ function Row({ item, active, index, onHover, onSelect, watchlist, history, genre
   if (kind === 'library') {
     thumb = posterUrl(displayPosterPath(art.apply(data)), 'w92');
     title = data.title || MEDIA.unknown;
-    meta = '';
+    // A place search says where the match sits: the list, or the date.
+    meta = [data.date && shortDayMonth(data.date), data.where].filter(Boolean).join(' · ');
     kindLabel = STATUS_LABEL[data.status] || SEARCH_PALETTE.kind[data.media_type] || SEARCH_PALETTE.kind.movie;
   } else if (kind === 'title') {
     const type = data.media_type || 'movie';
@@ -120,7 +142,7 @@ function Row({ item, active, index, onHover, onSelect, watchlist, history, genre
 }
 
 export default function SearchPalette({ onClose, initialQuery = '' }) {
-  const { openPanel, watchlist, watching, user } = useApp();
+  const { openPanel, watchlist, watching, user, profile, reminders, topLists, favorites, customLists } = useApp();
   const navigate = useNavigate();
   const history = useHistory(user?.id);
   const { genres } = useGenres();
@@ -128,6 +150,74 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
   const [query, setQuery] = useState(initialQuery);
   const [active, setActive] = useState(0);
   const [recent, setRecent] = useState(readRecent);
+  const [place, setPlace] = useState('everywhere');
+  const local = place !== 'everywhere';
+
+  // Calendar's events are only built once Calendar is the place picked.
+  const listsReady = !watchlist?.loading && !watching?.loading && !reminders?.loading;
+  const calendar = useCalendar(
+    watchlist?.items,
+    watching?.items,
+    watching?.fetchSeason,
+    reminders?.reminders,
+    { ready: place === 'calendar' && listsReady },
+  );
+
+  // Home's shelves, loaded the first time Home is picked.
+  const hideKids = !(profile?.include_kids_content ?? true);
+  const [shelves, setShelves] = useState(null);
+  const shelvesAsked = useRef(false);
+  useEffect(() => {
+    if (place !== 'home' || shelvesAsked.current) return;
+    shelvesAsked.current = true;
+    // The first shelves arrive early (onPrimary); the cinema shelves follow.
+    loadDiscoverData({ hideKids, onPrimary: setShelves }).then(setShelves).catch(() => setShelves({}));
+  }, [place, hideKids]);
+
+  // Smart lists find their titles when asked, so they are loaded the first
+  // time Smart lists is picked: each list's matches as opening it shows them.
+  // Premium only, like the lists themselves; with none, the chip is not shown.
+  const smartLists = isPremiumProfile(profile) ? customLists?.smartLists : null;
+  const hasSmartLists = (smartLists?.length ?? 0) > 0;
+  const smartReady = listsReady && !history?.loading;
+  const [smartTitles, setSmartTitles] = useState(null);
+  useEffect(() => {
+    if (place !== 'smart' || smartTitles || !smartReady || !hasSmartLists) return undefined;
+    let cancelled = false;
+    loadSmartListTitles({
+      lists: smartLists,
+      watchlistItems: watchlist?.items,
+      historyEntries: history?.entries,
+      providerIds: pickerProviderIds(profile?.streaming_providers),
+      region: profile?.region || DEFAULT_REGION,
+      hideKids,
+    }).then(found => { if (!cancelled) setSmartTitles(found); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loaded once per open, from what the lists hold at that moment
+  }, [place, smartTitles, smartReady, hasSmartLists]);
+  const places = useMemo(() => SEARCH_PLACES.filter(id => id !== 'smart' || hasSmartLists), [hasSmartLists]);
+
+  const placeRows = useMemo(() => {
+    if (place === 'lists') {
+      return placeSearchRows('lists', { lists: listsPlaceSources({
+        watching: watching?.items,
+        topMovies: topLists?.lists?.movies,
+        topTv: topLists?.lists?.tv,
+        want: wantToWatchItems(watchlist?.items || [], watching?.items || [], localDateStr()),
+        favorites: FAVOURITES_ENABLED ? favorites?.favorites : null,
+        customLists: customLists?.lists,
+        labels: { top: TOP_LABEL, want: CUSTOM_LISTS.wantToWatch },
+        topSize: TOP_LIST_SIZE,
+      }) });
+    }
+    if (place === 'smart') return placeSearchRows('smart', { lists: smartTitles || NO_ROWS });
+    if (place === 'history') return placeSearchRows('history', { history: history?.entries });
+    if (place === 'calendar') return placeSearchRows('calendar', { calendarEvents: calendar.events, todayStr: localDateStr() });
+    if (place === 'home') return placeSearchRows('home', { shelves: homePlaceShelves(shelves, watching?.items) });
+    return NO_ROWS;
+  }, [place, watching?.items, watchlist?.items, topLists?.lists, favorites?.favorites, customLists?.lists, history?.entries, calendar.events, shelves, smartTitles]);
+  // The page's titles are still arriving, so "nothing matches" would be a lie.
+  const placeLoading = (place === 'calendar' && calendar.loading) || (place === 'home' && !shelves) || (place === 'smart' && !smartTitles);
 
   // The viewer's own titles, tagged with where they sit. Priority order:
   // something you are mid-way through beats something you only saved.
@@ -150,6 +240,8 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
   const { items, loading, searched, emptyMode, scope, term } = useUnifiedSearch(query, {
     signedIn: !!user,
     library,
+    place,
+    placeRows,
     onSearched,
   });
 
@@ -228,12 +320,13 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
   }, []);
 
   const emptyCopy = useMemo(() => {
-    if (!searched || loading || items.length) return null;
+    if (!searched || loading || placeLoading || items.length) return null;
+    if (local) return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noneIn(placeLabel(place)) };
     if (scope === 'friends') return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noFriends };
     if (scope === 'people') return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noPeople };
     if (emptyMode === 'title-guidance') return { title: MEDIA.searchByTitle, body: MEDIA.searchByTitleBody };
     return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noResultsBody };
-  }, [searched, loading, items.length, scope, emptyMode]);
+  }, [searched, loading, placeLoading, items.length, scope, emptyMode, local, place]);
 
   const showHint = term.length < 2;
   const activeId = items.length ? `search-palette-option-${active}` : undefined;
@@ -258,7 +351,7 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder={SEARCH_PALETTE.placeholder}
+            placeholder={local ? SEARCH_PALETTE.placeholderIn(placeLabel(place)) : SEARCH_PALETTE.placeholder}
             autoFocus
             autoComplete="off"
             spellCheck={false}
@@ -268,7 +361,7 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
             aria-activedescendant={activeId}
             aria-autocomplete="list"
           />
-          {loading && <Spinner size="sm" label={SEARCH_PALETTE.loading} />}
+          {(loading || (placeLoading && term.length >= 2)) && <Spinner size="sm" label={SEARCH_PALETTE.loading} />}
           {query ? (
             <button
               type="button"
@@ -284,6 +377,22 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
             </button>
           )}
         </div>
+
+        {user && (
+          <div className="search-palette-places" role="radiogroup" aria-labelledby="search-palette-places-label">
+            <span id="search-palette-places-label" className="search-palette-places-label">{SEARCH_PALETTE.searchIn}</span>
+            {places.map(id => (
+              <Chip
+                key={id}
+                size="sm"
+                role="radio"
+                label={placeLabel(id)}
+                selected={place === id}
+                onClick={() => { setPlace(id); inputRef.current?.focus(); }}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="search-palette-body">
           {items.length > 0 && (
@@ -304,7 +413,7 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
             </div>
           )}
 
-          {showHint && !items.length && recent.length > 0 && (
+          {showHint && !local && !items.length && recent.length > 0 && (
             <div className="search-palette-recent">
               <div className="search-palette-recent-head">
                 <span>{SEARCH_PALETTE.recent}</span>
@@ -322,7 +431,14 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
             </div>
           )}
 
-          {showHint && !items.length && (
+          {showHint && local && (
+            <div className="search-palette-empty">
+              <div className="search-palette-empty-title">{SEARCH_PALETTE.hintTitleIn(placeLabel(place))}</div>
+              <div className="search-palette-empty-body">{SEARCH_PALETTE.placeHint[place]}</div>
+            </div>
+          )}
+
+          {showHint && !local && !items.length && (
             <div className={`search-palette-empty${recent.length ? ' compact' : ''}`}>
               {!recent.length && <div className="search-palette-empty-title">{SEARCH_PALETTE.hintTitle}</div>}
               <div className="search-palette-empty-body">{SEARCH_PALETTE.hintBody}</div>
@@ -341,11 +457,13 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
         <div className="search-palette-foot">
           <span><Kbd>↑</Kbd><Kbd>↓</Kbd> {SEARCH_PALETTE.move}</span>
           <span><Kbd>↵</Kbd> {SEARCH_PALETTE.open}</span>
-          <span><Kbd>{MOD_KEY}</Kbd><Kbd>↵</Kbd> {SEARCH_PALETTE.saveToList}</span>
+          {!local && <span><Kbd>{MOD_KEY}</Kbd><Kbd>↵</Kbd> {SEARCH_PALETTE.saveToList}</span>}
           <span className="search-palette-foot-spacer" />
-          <span>
-            {SEARCH_PALETTE.filters} <Kbd>@</Kbd> {SEARCH_PALETTE.filterFriends}<span aria-hidden="true">·</span><Kbd>/</Kbd> {SEARCH_PALETTE.filterPeople}
-          </span>
+          {!local && (
+            <span>
+              {SEARCH_PALETTE.filters} <Kbd>@</Kbd> {SEARCH_PALETTE.filterFriends}<span aria-hidden="true">·</span><Kbd>/</Kbd> {SEARCH_PALETTE.filterPeople}
+            </span>
+          )}
         </div>
       </div>
     </div>,

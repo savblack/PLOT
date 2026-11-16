@@ -1,5 +1,7 @@
 // Phone shape of the web search palette: one field, every kind of result,
-// no key hints. Fetching and merging stay in useUnifiedSearch.
+// no key hints. Fetching and merging stay in useUnifiedSearch. The "Search
+// in" row narrows it to one page's own titles; which rows a page holds is
+// core's (placeSearchRows and friends), gathering them is this screen's.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, FlatList, Image, Pressable, ScrollView,
@@ -14,7 +16,19 @@ import Svg, { Path } from 'react-native-svg';
 import { IconSearch, IconChevronLeft, IconClose } from '../../components/icons';
 import Chip from '../../components/Chip';
 import { useUnifiedSearch } from '@plot/core/useUnifiedSearch.js';
-import { describeSearchResult, pushRecentSearch } from '@plot/core/search.js';
+import { describeSearchResult, homePlaceShelves, listsPlaceSources, placeSearchRows, pushRecentSearch, SEARCH_PLACES } from '@plot/core/search.js';
+import { loadDiscoverData } from '@plot/core/useDiscover.js';
+import { loadSmartListTitles } from '@plot/core/smartLists.js';
+import { pickerProviderIds } from '@plot/core/tonightPicker.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
+import { DEFAULT_REGION } from '@plot/core/regions.js';
+import { wantToWatchItems, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
+import { APP_NAV_ITEMS, MY_LISTS_TABS } from '@plot/core/navigation.js';
+import { FAVOURITES_ENABLED } from '@plot/core/features.js';
+import { localDateStr, shortDayMonth } from '@plot/core/date.js';
+import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
+import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
+import { useCalendarEvents, type CalendarEvent } from '../../hooks/useCalendarEvents';
 import { useGenres } from '@plot/core/useGenres.js';
 import { SEARCH_PALETTE } from '@plot/core/copy/searchPalette.js';
 import { MEDIA } from '@plot/core/copy/media.js';
@@ -43,11 +57,39 @@ type HitData = {
   username?: string;
   display_name?: string;
   status?: string;
+  /** A place search: the list the match is in, or what its date is. */
+  where?: string;
+  /** A Calendar match: the day, YYYY-MM-DD. */
+  date?: string;
   known_for_department?: string;
   known_for?: { title?: string; name?: string }[];
 };
 
 type Hit = { kind: string; key: string; data: HitData };
+
+type Place = (typeof SEARCH_PLACES)[number];
+
+// Each place is a page, so it carries that page's nav name.
+const NAV_ID: Partial<Record<Place, string>> = { home: 'home', calendar: 'calendar', lists: 'my-lists', history: 'history' };
+const placeLabel = (place: Place): string => {
+  if (place === 'everywhere') return SEARCH_PALETTE.everywhere;
+  if (place === 'smart') return SMART_LISTS.section;
+  return APP_NAV_ITEMS.find(item => item.id === NAV_ID[place])?.label || place;
+};
+const TOP_LABEL = MY_LISTS_TABS.find(tab => tab.id === 'top10')?.label || '';
+const NO_ROWS: never[] = [];
+
+/** Builds the calendar only while Calendar is the place picked: the hook has
+ *  no off switch, so it lives in a component that is mounted on demand. */
+function CalendarSource({ watchlistItems, watchingItems, onChange }: {
+  watchlistItems: unknown[];
+  watchingItems: unknown[];
+  onChange: (state: { events: CalendarEvent[]; loading: boolean }) => void;
+}) {
+  const { events, loading } = useCalendarEvents(watchlistItems, watchingItems);
+  useEffect(() => { onChange({ events, loading }); }, [events, loading, onChange]);
+  return null;
+}
 
 const STATUS_LABEL: Record<string, string> = {
   watching: MEDIA_PANEL.watching,
@@ -93,7 +135,8 @@ function rowFacts(item: Hit, genres: { id: number; name: string }[], art: Return
   if (kind === 'library') {
     return {
       title: data.title || MEDIA.unknown,
-      meta: '',
+      // A place search says where the match sits: the list, or the date.
+      meta: [data.date && shortDayMonth(data.date), data.where].filter(Boolean).join(' · '),
       kindLabel: (data.status && STATUS_LABEL[data.status]) || (data.media_type === 'tv' ? SEARCH_PALETTE.kind.tv : SEARCH_PALETTE.kind.movie),
       thumb: posterUrl(displayPosterPath(art.apply(data)), 'w92'),
       round: false,
@@ -151,12 +194,73 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { open: openPanel } = useMediaPanel();
-  const { userId, watchlist, history, watching } = useAppData();
+  const { userId, profile, watchlist, history, watching, favorites, customLists, topLists } = useAppData();
   const art = useUserArtwork();
   const { genres } = useGenres();
   const inputRef = useRef<TextInput>(null);
   const [query, setQuery] = useState('');
   const [recent, setRecent] = useState<string[]>([]);
+  const [place, setPlace] = useState<Place>('everywhere');
+  const local = place !== 'everywhere';
+
+  const [calendar, setCalendar] = useState<{ events: CalendarEvent[]; loading: boolean }>({ events: [], loading: true });
+
+  // Home's shelves, loaded the first time Home is picked.
+  const hideKids = !(profile?.include_kids_content ?? true);
+  const [shelves, setShelves] = useState<unknown>(null);
+  const shelvesAsked = useRef(false);
+  useEffect(() => {
+    if (place !== 'home' || shelvesAsked.current) return;
+    shelvesAsked.current = true;
+    // The first shelves arrive early (onPrimary); the cinema shelves follow.
+    loadDiscoverData({ hideKids, onPrimary: setShelves }).then(setShelves).catch(() => setShelves({}));
+  }, [place, hideKids]);
+
+  // Smart lists find their titles when asked, so they are loaded the first
+  // time Smart lists is picked. Premium only, like the lists themselves;
+  // with none, the chip is not shown.
+  const smartLists: { name: string; rules: unknown }[] | null = isPremiumProfile(profile) ? (customLists.smartLists || null) : null;
+  const hasSmartLists = (smartLists?.length ?? 0) > 0;
+  const smartReady = !watchlist.loading && !history.loading;
+  const [smartTitles, setSmartTitles] = useState<{ name: string; items: unknown[] }[] | null>(null);
+  const smartAsked = useRef(false);
+  useEffect(() => {
+    if (place !== 'smart' || smartAsked.current || !smartReady || !smartLists?.length) return;
+    smartAsked.current = true;
+    loadSmartListTitles({
+      lists: smartLists,
+      watchlistItems: watchlist.items,
+      historyEntries: history.entries,
+      providerIds: pickerProviderIds(profile?.streaming_providers),
+      region: profile?.region || DEFAULT_REGION,
+      hideKids,
+    }).then(setSmartTitles).catch(() => setSmartTitles([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loaded once per visit, from what the lists hold at that moment
+  }, [place, smartReady, hasSmartLists]);
+  const places = useMemo(() => SEARCH_PLACES.filter(id => id !== 'smart' || hasSmartLists), [hasSmartLists]);
+
+  const placeRows = useMemo(() => {
+    if (place === 'lists') {
+      // The same lists, in the same order, as My Lists.
+      return placeSearchRows('lists', { lists: listsPlaceSources({
+        watching: watching.items,
+        topMovies: topLists.lists?.movies,
+        topTv: topLists.lists?.tv,
+        want: wantToWatchItems(watchlist.items || [], watching.items || [], localDateStr()),
+        favorites: FAVOURITES_ENABLED ? favorites.favorites : null,
+        customLists: customLists.lists,
+        labels: { top: TOP_LABEL, want: CUSTOM_LISTS.wantToWatch },
+        topSize: TOP_LIST_SIZE,
+      }) });
+    }
+    if (place === 'smart') return placeSearchRows('smart', { lists: smartTitles || NO_ROWS });
+    if (place === 'history') return placeSearchRows('history', { history: history.entries });
+    if (place === 'calendar') return placeSearchRows('calendar', { calendarEvents: calendar.events, todayStr: localDateStr() });
+    if (place === 'home') return placeSearchRows('home', { shelves: homePlaceShelves(shelves, watching.items) });
+    return NO_ROWS;
+  }, [place, watching.items, watchlist.items, topLists.lists, favorites.favorites, customLists.lists, history.entries, calendar.events, shelves, smartTitles]);
+  // The page's titles are still arriving, so "nothing matches" would be a lie.
+  const placeLoading = (place === 'calendar' && calendar.loading) || (place === 'home' && !shelves) || (place === 'smart' && !smartTitles);
 
   useEffect(() => {
     AsyncStorage.getItem(RECENT_KEY).then(raw => setRecent(readRecent(raw))).catch(() => {});
@@ -175,6 +279,8 @@ export default function SearchScreen() {
   const { items, loading, searched, emptyMode, scope, term } = useUnifiedSearch(query, {
     signedIn: !!userId,
     library,
+    place,
+    placeRows,
     onSearched,
   });
   const hits = items as Hit[];
@@ -217,12 +323,13 @@ export default function SearchScreen() {
   };
 
   const emptyCopy = useMemo(() => {
-    if (!searched || loading || hits.length) return null;
+    if (!searched || loading || placeLoading || hits.length) return null;
+    if (local) return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noneIn(placeLabel(place)) };
     if (scope === 'friends') return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noFriends };
     if (scope === 'people') return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noPeople };
     if (emptyMode === 'title-guidance') return { title: MEDIA.searchByTitle, body: MEDIA.searchByTitleBody };
     return { title: SEARCH_PALETTE.noResults, body: SEARCH_PALETTE.noResultsBody };
-  }, [searched, loading, hits.length, scope, emptyMode]);
+  }, [searched, loading, placeLoading, hits.length, scope, emptyMode, local, place]);
 
   const showHint = term.length < 2;
 
@@ -244,7 +351,7 @@ export default function SearchScreen() {
           style={styles.input}
           value={query}
           onChangeText={setQuery}
-          placeholder={SEARCH_PALETTE.placeholder}
+          placeholder={local ? SEARCH_PALETTE.placeholderIn(placeLabel(place)) : SEARCH_PALETTE.placeholder}
           placeholderTextColor={colors.textMuted}
           accessibilityLabel={SEARCH_PALETTE.label}
           autoFocus
@@ -255,7 +362,7 @@ export default function SearchScreen() {
           selectionColor={colors.accent}
           onSubmitEditing={() => { if (hits[0]) select(hits[0]); }}
         />
-        {loading ? (
+        {loading || (placeLoading && term.length >= 2) ? (
           <ActivityIndicator color={colors.textMuted} accessibilityLabel={SEARCH_PALETTE.loading} />
         ) : query.length > 0 ? (
           <Pressable
@@ -269,6 +376,34 @@ export default function SearchScreen() {
           </Pressable>
         ) : null}
       </View>
+
+      {!!userId && (
+        <View style={styles.placesBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.places}
+            accessibilityRole="radiogroup"
+            accessibilityLabel={SEARCH_PALETTE.searchIn}
+          >
+            <Text style={styles.placesLabel}>{SEARCH_PALETTE.searchIn}</Text>
+            {places.map(id => (
+              <Chip
+                key={id}
+                size="sm"
+                accessibilityRole="radio"
+                label={placeLabel(id)}
+                selected={place === id}
+                onPress={() => { setPlace(id); inputRef.current?.focus(); }}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+      {place === 'calendar' && (
+        <CalendarSource watchlistItems={watchlist.items || NO_ROWS} watchingItems={watching.items || NO_ROWS} onChange={setCalendar} />
+      )}
 
       {hits.length > 0 ? (
         <FlatList
@@ -315,7 +450,7 @@ export default function SearchScreen() {
         />
       ) : (
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}>
-          {showHint && recent.length > 0 && (
+          {showHint && !local && recent.length > 0 && (
             <View style={styles.recent}>
               <View style={styles.recentHead}>
                 <Text style={styles.recentLabel}>{SEARCH_PALETTE.recent}</Text>
@@ -330,7 +465,13 @@ export default function SearchScreen() {
               </View>
             </View>
           )}
-          {showHint && (
+          {showHint && local && (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>{SEARCH_PALETTE.hintTitleIn(placeLabel(place))}</Text>
+              <Text style={styles.emptyBody}>{SEARCH_PALETTE.placeHint[place as Exclude<Place, 'everywhere'>]}</Text>
+            </View>
+          )}
+          {showHint && !local && (
             <View style={[styles.empty, recent.length > 0 && styles.emptyCompact]}>
               {recent.length === 0 && <Text style={styles.emptyTitle}>{SEARCH_PALETTE.hintTitle}</Text>}
               <Text style={styles.emptyBody}>{SEARCH_PALETTE.hintBody}</Text>
@@ -368,6 +509,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     fontSize: 18,
     color: colors.textPrimary,
   },
+  placesBar: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  places: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.lg, paddingVertical: 10 },
+  placesLabel: { marginRight: 4, fontFamily: fontFamily.sans, fontSize: 13, color: colors.textSecondary },
   clear: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   row: {
     flexDirection: 'row',

@@ -532,3 +532,131 @@ export function pushRecentSearch(recent = [], term = '') {
   return [clean, ...(Array.isArray(recent) ? recent : []).filter(t => String(t).toLowerCase() !== lower)]
     .slice(0, RECENT_SEARCH_LIMIT);
 }
+
+/* ═══════════════════════════════════════
+   Search in one place
+═══════════════════════════════════════ */
+
+/**
+ * Where the palette can be told to look. "everywhere" is the unified search;
+ * the others only match titles the viewer already has on that page, so they
+ * answer from memory and never ask TMDB.
+ *
+ * @typedef {'everywhere'|'home'|'calendar'|'lists'|'smart'|'history'} SearchPlace
+ */
+
+/** In the order the chips are shown. */
+export const SEARCH_PLACES = /** @type {SearchPlace[]} */ (['everywhere', 'home', 'calendar', 'lists', 'smart', 'history']);
+
+/** A page can hold many matches; the unified list only leads with three. */
+export const PLACE_MATCH_LIMIT = 30;
+
+const placeRow = (item, extra = {}) => ({
+  ...extra,
+  tmdb_id: item?.tmdb_id ?? item?.id,
+  media_type: extra.media_type || item?.media_type || 'movie',
+  title: item?.title || item?.name || '',
+  poster_path: item?.poster_path ?? null,
+});
+
+/**
+ * The titles one page holds, as rows matchLibrary can search. Each app
+ * gathers the page's data its own way and passes it in; this owns which
+ * rows count and how they are labelled, so web and mobile agree.
+ *
+ * - `lists`: every list on My Lists, in page order. `where` is the list's
+ *   name, so a match says which list it is in.
+ * - `smart`: every smart list's matches (loadSmartListTitles), in the same
+ *   shape as `lists`. Each app offers it only when the viewer has smart lists.
+ * - `history`: everything watched.
+ * - `calendar`: dated events from today on. `date` is the event's day and
+ *   `where` its label ("Streaming", "S2 E4"). Reminders have no TMDB title
+ *   to open and are left out.
+ * - `home`: the titles on Home's shelves (TMDB results; people are skipped).
+ *
+ * @param {SearchPlace} place
+ * @param {{
+ *   lists?: { name: string, items?: any[], status?: LibraryRow['status'], mediaType?: string }[],
+ *   history?: any[],
+ *   calendarEvents?: { date: string, label?: string, item?: any }[],
+ *   todayStr?: string,
+ *   shelves?: any[][],
+ * }} [sources]
+ * @returns {(LibraryRow & { where?: string, date?: string })[]}
+ */
+export function placeSearchRows(place, sources = {}) {
+  if (place === 'lists' || place === 'smart') {
+    return (sources.lists || []).flatMap(list => (list.items || []).map(item => placeRow(item, {
+      where: list.name,
+      ...(list.status ? { status: list.status } : {}),
+      ...(list.mediaType ? { media_type: list.mediaType } : {}),
+    })));
+  }
+  if (place === 'history') {
+    return (sources.history || []).map(item => placeRow(item, { status: 'watched' }));
+  }
+  if (place === 'calendar') {
+    const today = sources.todayStr || '';
+    return (sources.calendarEvents || [])
+      .filter(ev => ev?.item?.tmdb_id && ev.date >= today)
+      .map(ev => placeRow(ev.item, { where: ev.label, date: ev.date }));
+  }
+  if (place === 'home') {
+    return (sources.shelves || []).flat()
+      .filter(item => item?.id && item.media_type !== 'person')
+      .map(item => placeRow(item));
+  }
+  return [];
+}
+
+/**
+ * The lists My Lists holds, in the page's own order, as `placeSearchRows`
+ * takes them for the "lists" place: Watching, the two Top 5s, the watchlist,
+ * favorites, then every custom list. Shared so web and mobile search the
+ * same lists under the same names. Each app passes the labels it shows.
+ *
+ * Favorites carry no name: theirs is spelled per region at the call site,
+ * and the row's kind label is enough.
+ *
+ * @param {{
+ *   watching?: any[], topMovies?: any[], topTv?: any[],
+ *   want?: any[], favorites?: any[] | null,
+ *   customLists?: { name: string, items?: any[] }[],
+ *   labels?: { top?: string, want?: string },
+ *   topSize?: number,
+ * }} sources `want` is wantToWatchItems(); `favorites` is null when the
+ *   feature is off; `topSize` is TOP_LIST_SIZE.
+ * @returns {{ name: string, items?: any[], status?: LibraryRow['status'], mediaType?: string }[]}
+ */
+export function listsPlaceSources({ watching, topMovies, topTv, want, favorites, customLists, labels = {}, topSize = 5 } = {}) {
+  const top = (items, mediaType) => ({
+    name: labels.top || '',
+    mediaType,
+    items: (items || []).filter(item => item.rank <= topSize),
+  });
+  return [
+    { name: '', status: 'watching', mediaType: 'tv', items: watching },
+    top(topMovies, 'movie'),
+    top(topTv, 'tv'),
+    { name: labels.want || '', items: want },
+    ...(favorites ? [{ name: '', items: favorites }] : []),
+    ...(customLists || []).map(list => ({ name: list.name, items: list.items })),
+  ];
+}
+
+/**
+ * Home's shelves as `placeSearchRows` takes them for the "home" place: what
+ * the viewer is watching, then the Discover shelves (loadDiscoverData).
+ *
+ * @param {any} discover loadDiscoverData()'s result, or its `onPrimary` half.
+ * @param {any[]} [watching]
+ * @returns {any[][]}
+ */
+export function homePlaceShelves(discover, watching = []) {
+  const d = discover || {};
+  return [
+    (watching || []).map(item => ({ ...item, id: item.tmdb_id, media_type: 'tv' })),
+    ...[[d.hero], d.hotRail, d.weekly, d.bingedShows, d.cinemaMovies, d.anticipatedMovies]
+      .map(shelf => (shelf || []).filter(Boolean)),
+  ];
+}

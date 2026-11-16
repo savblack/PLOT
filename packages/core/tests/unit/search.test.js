@@ -9,6 +9,13 @@ import {
   normalizeTitle,
   describeSearchResult,
   MIN_RATED_VOTES,
+  placeSearchRows,
+  listsPlaceSources,
+  homePlaceShelves,
+  matchLibrary,
+  LIBRARY_MATCH_LIMIT,
+  SEARCH_PLACES,
+  PLACE_MATCH_LIMIT,
 } from '../../search.js';
 
 test('classifySearchResults keeps playable movie and tv results', () => {
@@ -255,4 +262,102 @@ test('describeSearchResult shows the original title only when it really differs'
 
   const empty = describeSearchResult({});
   assert.deepEqual(empty, { year: '', genres: [], rating: null, originalTitle: null });
+});
+
+// ── Search in one place ──
+// Symbolic identifiers are local fixtures, never TMDB lookup IDs.
+
+test('placeSearchRows: lists carry the list name, status and a forced media type', () => {
+  const rows = placeSearchRows('lists', { lists: [
+    { name: '', status: 'watching', mediaType: 'tv', items: [{ tmdb_id: 'fx-a', title: 'Quiet Days' }] },
+    { name: 'Rainy Sunday', items: [{ tmdb_id: 'fx-b', media_type: 'movie', name: 'The Quiet Night', poster_path: '/p.jpg' }] },
+    { name: 'Empty' },
+  ] });
+  assert.deepEqual(rows, [
+    { where: '', status: 'watching', media_type: 'tv', tmdb_id: 'fx-a', title: 'Quiet Days', poster_path: null },
+    { where: 'Rainy Sunday', media_type: 'movie', tmdb_id: 'fx-b', title: 'The Quiet Night', poster_path: '/p.jpg' },
+  ]);
+});
+
+test('placeSearchRows: smart lists carry the smart list name', () => {
+  const rows = placeSearchRows('smart', { lists: [{ name: 'Short thrillers', items: [{ tmdb_id: 'fx-s', media_type: 'movie', title: 'Quiet Hour' }] }] });
+  assert.deepEqual(rows, [{ where: 'Short thrillers', media_type: 'movie', tmdb_id: 'fx-s', title: 'Quiet Hour', poster_path: null }]);
+});
+
+test('placeSearchRows: history rows are all watched', () => {
+  const [row] = placeSearchRows('history', { history: [{ tmdb_id: 'fx-a', media_type: 'tv', title: 'Quiet Days' }] });
+  assert.equal(row.status, 'watched');
+  assert.equal(row.media_type, 'tv');
+});
+
+test('placeSearchRows: calendar keeps dated titles from today on and drops reminders', () => {
+  const item = { tmdb_id: 'fx-a', media_type: 'tv', title: 'Quiet Days' };
+  const rows = placeSearchRows('calendar', {
+    todayStr: '2026-11-16',
+    calendarEvents: [
+      { date: '2026-11-10', label: 'S1 E1', item },
+      { date: '2026-11-16', label: 'S1 E2', item },
+      { date: '2026-11-20', label: 'Reminder', item: { tmdb_id: null, title: 'Quiet Days' } },
+    ],
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].date, '2026-11-16');
+  assert.equal(rows[0].where, 'S1 E2');
+});
+
+test('placeSearchRows: home reads TMDB shelf results and skips people', () => {
+  const rows = placeSearchRows('home', { shelves: [
+    [{ id: 'fx-a', media_type: 'tv', name: 'Quiet Days' }, { id: 'fx-p', media_type: 'person', name: 'Quiet Person' }],
+    [{ id: 'fx-b', title: 'The Quiet Night' }],
+  ] });
+  assert.deepEqual(rows.map(r => [r.tmdb_id, r.media_type, r.title]), [
+    ['fx-a', 'tv', 'Quiet Days'],
+    ['fx-b', 'movie', 'The Quiet Night'],
+  ]);
+});
+
+test('placeSearchRows: everywhere and unknown places have no rows', () => {
+  assert.deepEqual(placeSearchRows('everywhere', { history: [{ tmdb_id: 'fx-a', title: 'x' }] }), []);
+  assert.deepEqual(placeSearchRows('nowhere'), []);
+});
+
+test('a place search matches through matchLibrary, one row per title, up to the place limit', () => {
+  const item = { tmdb_id: 'fx-a', media_type: 'tv', title: 'Quiet Days' };
+  const rows = placeSearchRows('calendar', {
+    todayStr: '2026-11-16',
+    calendarEvents: [
+      { date: '2026-11-17', label: 'S1 E2', item },
+      { date: '2026-11-24', label: 'S1 E3', item },
+    ],
+  });
+  const found = matchLibrary('quiet', rows, { limit: PLACE_MATCH_LIMIT });
+  assert.equal(found.length, 1);
+  assert.equal(found[0].data.date, '2026-11-17');
+  assert.ok(PLACE_MATCH_LIMIT > LIBRARY_MATCH_LIMIT);
+  assert.deepEqual(SEARCH_PLACES, ['everywhere', 'home', 'calendar', 'lists', 'smart', 'history']);
+});
+
+test('listsPlaceSources: My Lists order, Top 5 capped, favorites only when on', () => {
+  const lists = listsPlaceSources({
+    watching: [{ tmdb_id: 'fx-w', title: 'Quiet Days' }],
+    topMovies: [{ tmdb_id: 'fx-t1', title: 'One', rank: 1 }, { tmdb_id: 'fx-t6', title: 'Six', rank: 6 }],
+    topTv: [],
+    want: [{ tmdb_id: 'fx-s', title: 'Saved' }],
+    favorites: null,
+    customLists: [{ name: 'Rainy Sunday', items: [{ tmdb_id: 'fx-c', title: 'Custom' }] }],
+    labels: { top: 'Top 5', want: 'Watchlist' },
+    topSize: 5,
+  });
+  assert.deepEqual(lists.map(l => [l.name, (l.items || []).length]), [['', 1], ['Top 5', 1], ['Top 5', 0], ['Watchlist', 1], ['Rainy Sunday', 1]]);
+  const rows = placeSearchRows('lists', { lists });
+  assert.deepEqual(rows.map(r => [r.title, r.where, r.media_type]), [
+    ['Quiet Days', '', 'tv'], ['One', 'Top 5', 'movie'], ['Saved', 'Watchlist', 'movie'], ['Custom', 'Rainy Sunday', 'movie'],
+  ]);
+  assert.equal(listsPlaceSources({ favorites: [{ tmdb_id: 'fx-f', title: 'Fav' }] }).length, 5);
+});
+
+test('homePlaceShelves: watching first, then the Discover shelves, gaps tolerated', () => {
+  const shelves = homePlaceShelves({ hero: { id: 'fx-h', title: 'Hero' }, hotRail: [{ id: 'fx-r', name: 'Rail', media_type: 'tv' }], weekly: null }, [{ tmdb_id: 'fx-w', title: 'Quiet Days' }]);
+  assert.deepEqual(placeSearchRows('home', { shelves }).map(r => [r.tmdb_id, r.media_type]), [['fx-w', 'tv'], ['fx-h', 'movie'], ['fx-r', 'tv']]);
+  assert.deepEqual(placeSearchRows('home', { shelves: homePlaceShelves(null) }), []);
 });
