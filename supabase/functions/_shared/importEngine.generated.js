@@ -2445,7 +2445,8 @@ var FAILED_ACTIONS = Object.freeze({
   WATCH_TOGETHER_VOTE: "watch_together_vote",
   // Joining a collaborative list from its invite link (useListInvites.js).
   LIST_INVITE_ACCEPT: "list_invite_accept",
-  // The delete-account request never reached the edge function (deleteAccount.js).
+  // Deleting the account failed (deleteAccount.js): the request never reached
+  // the edge function (`network`), or the function answered with an error.
   ACCOUNT_DELETE: "account_delete",
   // Auth emails that are not a sign-in or a signup, so they stay out of
   // login_submit_failed / signup_submit_failed and those funnels' rates.

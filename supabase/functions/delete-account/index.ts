@@ -14,6 +14,15 @@ function jsonError(message: string, status = 500, extra: Record<string, unknown>
   })
 }
 
+// A deletion that stops partway answers 500 and leaves the account in place.
+// Report the step and the error's message so the backend error alert sees it:
+// until 2026-11-16 only the billing and Brevo failures were reported, and a
+// missing table failed every deletion on Staging with nothing recorded (#1711).
+function failedStep(step: string, message: string, extra: Record<string, unknown> = {}) {
+  reportError('delete-account', `delete-account: ${step} failed:`, message)
+  return jsonError(message, 500, extra)
+}
+
 // deno-lint-ignore no-explicit-any
 async function removeImportUploads(client: { storage: { from: (bucket: string) => any } }, userId: string): Promise<string | null> {
   const bucket = client.storage.from('import-uploads')
@@ -71,7 +80,7 @@ Deno.serve(async (req) => {
     .select('attachments')
     .eq('user_id', userId)
 
-  if (feedbackError) return jsonError(feedbackError.message || 'Failed to load feedback attachments.')
+  if (feedbackError) return failedStep('feedback attachment lookup', feedbackError.message || 'Failed to load feedback attachments.')
 
   const attachmentPaths = (feedbackRows ?? [])
     .flatMap((row) => attachmentPathsFrom(row.attachments))
@@ -82,17 +91,17 @@ Deno.serve(async (req) => {
     // object ownership. A service-role delete would turn a caller-controlled
     // URL in their feedback row into authority over somebody else's object.
     const { error: storageError } = await supabaseClient.storage.from('feedback-attachments').remove(attachmentPaths)
-    if (storageError) return jsonError(storageError.message || 'Failed to delete feedback attachments.')
+    if (storageError) return failedStep('feedback attachment removal', storageError.message || 'Failed to delete feedback attachments.')
   }
 
   // Background-import files (uploads still queued, review leftovers) live at
   // import-uploads/<user id>/<job id>/. The folder is the caller's own, and the
   // owner delete policy applies through their client.
   const importFilesError = await removeImportUploads(supabaseClient, userId)
-  if (importFilesError) return jsonError(importFilesError)
+  if (importFilesError) return failedStep('import file removal', importFilesError)
 
   const avatarError = await removeAvatarObjects(supabaseAdmin, userId)
-  if (avatarError) return jsonError(avatarError.message || 'Failed to delete profile photos.')
+  if (avatarError) return failedStep('profile photo removal', avatarError.message || 'Failed to delete profile photos.')
 
   // Billing stops after every storage step that can fail, so a failed attempt
   // never leaves a live account whose subscription is already canceled.
@@ -107,15 +116,15 @@ Deno.serve(async (req) => {
 
   const cleanupError = await runAccountCleanup(supabaseAdmin, userId)
   if (cleanupError) {
-    return jsonError(
+    return failedStep(
+      `cleanup of ${cleanupError.table}`,
       cleanupError.error?.message || `Failed to delete rows from ${cleanupError.table}.`,
-      500,
       { table: cleanupError.table },
     )
   }
 
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
-  if (deleteError) return jsonError(deleteError.message)
+  if (deleteError) return failedStep('auth user removal', deleteError.message)
 
   // Best-effort — the account is already gone either way, this just keeps a
   // deleted user's PII from lingering in the Brevo contact list.
