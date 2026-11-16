@@ -56,9 +56,6 @@ export const IMPORT_JOBS = {
     continue: 'Continue →',
   },
 
-  // ── The building moment: its first line while an import runs ──
-  building: { matching: (source) => `Matching your ${source} history…` },
-
   // ── Home card ──
   card: {
     title: (source) => `Importing from ${source}`,

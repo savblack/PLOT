@@ -15,12 +15,10 @@ import { detectRegion, detectTimezone, guessRegionFromTimezone } from '@plot/cor
 import { upsertProfile } from '@plot/core/profile.js';
 import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
 import {
-  ONBOARDING_PROGRESS, BUILDING_FADE_MS, BUILDING_LINE_MS, BUILDING_MIN_MS, buildingLines, buildingShelf, firstNameFromAuthUser, topRegionServices,
+  ONBOARDING_PROGRESS, firstNameFromAuthUser, topRegionServices,
 } from '@plot/core/onboardingSetup.js';
 import { loadSeedTrending, searchSeedTitles } from '@plot/core/onboardingSeed.js';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
-import { importSourceName } from '@plot/core/importJobs.js';
-import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { useImportStart } from '../hooks/useImportStart.js';
 import { finishingTouchesKey, serialiseFinishingTouches, startFinishingTouches } from '@plot/core/finishingTouches.js';
 import { useWatchlist } from '../hooks/useWatchlist.js';
@@ -41,8 +39,6 @@ import {
 } from '@plot/core/onboardingGate.js';
 
 const F = ONBOARDING_FLOW;
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 export default function OnboardingFlow() {
   const navigate = useNavigate();
@@ -102,12 +98,6 @@ export default function OnboardingFlow() {
   const [services, setServices] = useState([]);
   const [servicesError, setServicesError] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
-
-  // Building
-  const [buildingServiceCount, setBuildingServiceCount] = useState(0);
-  const [lineIndex, setLineIndex] = useState(0);
-  const [leaving, setLeaving] = useState(false);
-  const nextPathRef = useRef(null);
 
   const firstName = useMemo(() => firstNameFromAuthUser(user), [user]);
 
@@ -232,7 +222,7 @@ export default function OnboardingFlow() {
     return () => { alive = false; };
   }, [step, region]);
 
-  /* ── Save and finish. Runs behind the building moment, or straight away on Skip. ── */
+  /* ── Save and finish. Runs from the services step's Continue, or from Skip. ── */
   const save = async ({ seeds, providers }) => {
     if (!user) return false;
     setSaving(true);
@@ -322,23 +312,17 @@ export default function OnboardingFlow() {
     if (path) navigate(path, { replace: true });
   };
 
-  const startBuilding = ({ skipped = false } = {}) => {
+  // The last step. The save runs with the services step still on screen (its
+  // buttons hold while it does), and Home opens as soon as it lands. There
+  // was a building screen between the two until 2026-11-16. A failed save
+  // stays here and shows why.
+  const finish = async ({ skipped = false } = {}) => {
     completeStep('services', { skipped });
     const providers = skipped ? [] : services.filter(s => selectedServiceIds.includes(s.id));
-    setBuildingServiceCount(providers.length);
-    setLineIndex(0);
-    setLeaving(false);
-    setStep('building');
-    // Leave as soon as the save lands, but not before the shelf has filled.
-    const wait = new Promise(resolve => setTimeout(resolve, BUILDING_MIN_MS));
-    Promise.all([save({ seeds: seedSelected, providers }), wait]).then(async ([ok]) => {
-      if (!ok) { setStep('services'); return; }
-      completeStep('building');
-      nextPathRef.current = await exitPath();
-      if (!nextPathRef.current) return;
-      setLeaving(true);
-      setTimeout(() => navigate(nextPathRef.current, { replace: true }), prefersReducedMotion() ? 0 : BUILDING_FADE_MS);
-    });
+    const ok = await save({ seeds: seedSelected, providers });
+    if (!ok) return;
+    const path = await exitPath();
+    if (path) navigate(path, { replace: true });
   };
 
   const toggleSeed = (item) => {
@@ -353,15 +337,7 @@ export default function OnboardingFlow() {
     else if (step === 'services') setStep(importSource ? 'import' : 'seed');
   };
 
-  /* ── Step through the building lines; the last one stays ── */
-  useEffect(() => {
-    if (step !== 'building') return undefined;
-    const last = buildingLines(true).length - 1;
-    const id = setInterval(() => setLineIndex(i => Math.min(i + 1, last)), BUILDING_LINE_MS);
-    return () => clearInterval(id);
-  }, [step]);
-
-  // Onboarding shows no loader anywhere except its last step: while the
+  // Onboarding shows no loader anywhere: while the
   // account is checked, the page is just its background.
   if (authLoading || !user || setupGate !== 'show') {
     return <div className="app-boot-loader" aria-busy="true" />;
@@ -377,7 +353,7 @@ export default function OnboardingFlow() {
       saveError={saveError}
       canGoBack={step === 'import' || (step === 'services' && !pendingSave)}
       onBack={goBack}
-      onSkip={step === 'services' ? () => startBuilding({ skipped: true }) : skipToHome}
+      onSkip={step === 'services' ? () => finish({ skipped: true }) : skipToHome}
       seed={{
         query: seedQuery,
         onQuery: setSeedQuery,
@@ -408,17 +384,7 @@ export default function OnboardingFlow() {
         onEditRegion: () => setEditingRegion(true),
         onRegion: (code) => { setRegion(code); setRegionTouched(true); setEditingRegion(false); },
         onRegionDone: () => setEditingRegion(false),
-        onContinue: () => startBuilding(),
-      }}
-      building={{
-        leaving,
-        shelf: buildingShelf(seedSelected, trending),
-        // While a background import runs, the line says so; otherwise what the one save is writing.
-        lines: buildingLines(
-          buildingServiceCount > 0,
-          importStart.current ? IMPORT_JOBS.building.matching(importSourceName(importStart.current.source)) : null,
-        ),
-        lineIndex,
+        onContinue: () => finish(),
       }}
     />
   );

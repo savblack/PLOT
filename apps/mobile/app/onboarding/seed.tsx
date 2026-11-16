@@ -9,8 +9,8 @@
  * opens its sheet (components/ImportSourceSheet.tsx): the file is uploaded,
  * or the account connected, and the import runs in the background while
  * setup continues. A second source can be queued behind the first. Picks are
- * held in the flow context and saved to the watchlist once, behind the
- * building moment, so backing out of a later step costs nothing.
+ * held in the flow context and saved to the watchlist once, when the services
+ * step finishes, so backing out of a later step costs nothing.
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
@@ -97,7 +97,6 @@ export default function Seed() {
   const queued = start.jobs.length > 0;
   const running = start.current;
   const selected = flow.seeds;
-  const setFlowTrending = flow.setTrending;
 
   // Trending prefill (shown until the user searches). Retry re-runs it.
   useEffect(() => {
@@ -108,10 +107,9 @@ export default function Seed() {
       if (!alive) return;
       setTrending(load.items);
       setTrendingFailed(!load.ok);
-      if (load.ok) setFlowTrending(load.items);
     });
     return () => { alive = false; };
-  }, [setFlowTrending, trendingTry]);
+  }, [trendingTry]);
 
   // Debounced search. A failed request stops the spinner and shows an inline
   // error with Retry; the trending grid stays, so the step is still completable.
