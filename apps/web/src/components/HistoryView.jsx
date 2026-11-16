@@ -24,7 +24,6 @@ import LoadingSpinner from './LoadingSpinner.jsx';
 import { IconChevronLeft, IconChevronRight, IconShare } from './navIcons.jsx';
 import EmptyState from './EmptyState.jsx';
 import Segmented from './Segmented.jsx';
-import SearchField from './SearchField.jsx';
 import ShareCardSheet from './ShareCardSheet.jsx';
 import SideFilters, { FilterRow } from './SideFilters.jsx';
 import MobilePageControls from './MobilePageControls.jsx';
@@ -389,7 +388,6 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   const [genres, setGenres] = useState([]);
   const [reviewed, setReviewed] = useState(false);
   const [dnf, setDnf] = useState(false);
-  const [query, setQuery] = useState('');
   // A Free viewer tapping the upgrade line under the year card gets the
   // upgrade sheet for deeper stats.
   const [statsGate, setStatsGate] = useState(false);
@@ -400,8 +398,8 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
   // chip and the list never disagree.
   const drill = premium ? drilldown : null;
   const filtered = useMemo(
-    () => filterEntries(yearEntries, { types, genres, reviewed, dnf, query, ...drilldownFilter(drill) }),
-    [yearEntries, types, genres, reviewed, dnf, query, drill],
+    () => filterEntries(yearEntries, { types, genres, reviewed, dnf, ...drilldownFilter(drill) }),
+    [yearEntries, types, genres, reviewed, dnf, drill],
   );
   // Where a tile goes: the same page with the filter in the URL.
   // A Free viewer's tiles stay text. One line under the card goes to the plans
@@ -469,7 +467,6 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
               </select>
             )
           )}
-          <SearchField className="hist-search" value={query} onChange={setQuery} placeholder={T.searchPlaceholder} ariaLabel={T.searchPlaceholder} />
         </div>
       </div>
 

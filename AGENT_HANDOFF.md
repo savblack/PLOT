@@ -5,7 +5,7 @@ The search box (Cmd/Ctrl+K) now has a "Search in:" row: Everywhere, Home, Calend
 Status: paused
 Branch: agent/2026-11-16-search-in-place
 Worktree: ~/Developer/PLOT-worktrees/2026-11-16-search-in-place
-Updated: 2026-11-16T10:05:00Z
+Updated: 2026-11-16T10:40:00Z
 Owner: Hailey (product). Requested by Savannah in Claude Code.
 
 ## Goal
@@ -19,6 +19,15 @@ Let people search titles within one page (Home, Calendar, My Lists, History) fro
 - `packages/core/copy/searchPalette.js`: copy for the row, hints and empty state.
 - `apps/web/src/components/SearchPalette.jsx` + `.css`: the chip row (signed-in only), per-place rows, list name or date under each match.
 - Tests: `packages/core/tests/unit/search.test.js` (6 new), story `SearchInMyLists`.
+
+## Web page search bars retired (Savannah said yes, 2026-11-16)
+
+- Removed the title search field from `MyListsView.jsx`, `ListPage.jsx` (including the shared-list phone search button), `HistoryView.jsx` and `CalendarView.jsx`, with their dead styles in `app.css` and `CollaborativeLists.css`.
+- Removed stories that tested them: `ListPageSearchKeepsFocus`, `PhoneInListSearch`, and the search step of `CustomListPageFilters`.
+- Kept on purpose: Guide search (TV programs, no "Search in" place covers it), the add-a-title pickers in `ListSections.jsx`, Settings search, find friends, Compare and Watch Together pickers, episode search.
+- Kept the shared copy keys (`searchThisList`, `searchPlaceholder`, `CALENDAR_VIEW.search`, ...) and `searchCollectionTitles` in core, because mobile still uses them until issue 1719.
+- Known loss: a smart list's titles are not in the My Lists place (they load when the list is opened), so smart lists have no title search now.
+- Checks after this: `pnpm run check`, `test:unit`, `copy:check`, `core:check` passed; story tests for MyListsView, CollaborativeLists, SearchPalette passed (17). Pages looked at in Storybook at 1280 wide: My Lists, a custom list, History. Calendar not looked at. `test:smoke` not run.
 
 ## Checks
 
@@ -38,7 +47,7 @@ Let people search titles within one page (Home, Calendar, My Lists, History) fro
 
 1. Savannah tries it signed in on the web app.
 2. Open the PR (run `/unslop`, `/before-and-after`) and link the mobile parity issue: https://github.com/savblack/PLOT/issues/1719
-3. Savannah's direction (2026-11-16): search lives only in the web side nav and the mobile top-left icon. In-page title search bars are to be retired on both apps. Not started. The issue lists every bar, the ones recommended to keep (settings, find friends, pickers, episode search), and the gaps to close first (no single-list or Guide place; page bars filter in place, the palette does not).
+3. Savannah's direction (2026-11-16): search lives only in the web side nav and the mobile top-left icon. Web is done on this branch (see below). Mobile is issue 1719.
 4. Delete this file in the last commit before merge.
 
 ## Approvals

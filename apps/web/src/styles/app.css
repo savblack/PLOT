@@ -1597,7 +1597,6 @@ svg { stroke-width: 1.5; }
 .cal-scope-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .cal-toolbar-controls { gap: 12px; }
 .cal-suggest-btn { width: fit-content; flex: 0 0 auto; }
-.cal-search { width: min(280px, 26vw); }
 
 .cal-body {
   display: flex;
@@ -2704,7 +2703,6 @@ svg { stroke-width: 1.5; }
 .list-page-progress-bar { flex: 1; height: 5px; border-radius: var(--radius-pill); background: var(--surface-sunken); overflow: hidden; }
 .list-page-progress-bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent-secondary); }
 .list-page-progress-label { font-size: .78rem; color: var(--text-muted); white-space: nowrap; }
-.list-page-search { width: 220px; flex-shrink: 0; }
 .list-page-body { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 72px; align-items: start; }
 .list-page-body--no-side { display: block; }
 .list-page-side { display: flex; flex-direction: column; gap: 24px; }
@@ -2785,7 +2783,6 @@ svg { stroke-width: 1.5; }
   .list-page-side { display: none; }
   .list-page-body { display: block; }
   .list-page-head { padding-bottom: 18px; }
-  .list-page-search { width: min(220px, 44vw); }
   .list-page-toolbar { margin-bottom: 4px; }
   .list-page--auto .list-page-items > .mylists-grid,
   .list-page--auto .list-page-stream > .mylists-grid { display: none; }
@@ -2797,7 +2794,6 @@ svg { stroke-width: 1.5; }
   .list-page-back { margin-bottom: 12px; }
   .list-page-head { flex-direction: column; align-items: stretch; gap: 14px; }
   .list-page-title { font-size: 1.75rem; }
-  .list-page-search { width: 100%; }
   .list-page-toolbar { min-height: 48px; }
   .list-page-toolbar-actions { width: 100%; justify-content: flex-end; }
   .list-page-view { width: 38px; height: 38px; border-radius: 50%; }
