@@ -40,13 +40,13 @@ a day per device and account.
 - `pnpm --filter @plot/mobile run typecheck`: passed.
 - Web on Staging (localhost:5177, Savannah's Staging account): both shelves load with real titles, no console errors.
 - Daily storage and 10-year cutoff, in Savannah's Chrome on localhost:5177 against Staging: both shelves drawn (6 and 20 titles), `plot:home-recs:v1:*` stored for 2026-11-16 (about 8 KB), stored titles dated 2017-09-06 to 2026-10-07. With the stored copy deleted, a load made 13 details requests (5 Continue watching shows + 8 seeds); with it present, a reload made 5 (Continue watching only).
-- Not done: mobile not run on the simulator; no Cloudflare preview checked.
+- Mobile, iPhone 17 Pro simulator, existing dev client, Metro from this worktree on port 8091 (port 8081 belonged to another project), Staging: both shelves drawn under Up next with the same titles as web; AsyncStorage holds `plot:home-recs:v1:*` for 2026-11-16 (6 + 20 titles, dated 2017-09-06 to 2026-10-07, 7,844 bytes); reopening the app drew the same shelves from it; tapping Barron's Cove in Recommended for you opened its title panel.
+- Not done: Cloudflare preview's Home not looked at.
 
 ## Next
 
 1. Watch the PR's checks; look at the Cloudflare preview's Home.
-2. Run mobile on the iPhone simulator and look at the two shelves.
-3. Delete this file in the last commit before merge.
+2. Delete this file in the last commit before merge.
 
 ## Approvals
 
