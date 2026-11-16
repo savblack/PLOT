@@ -2,7 +2,7 @@
 
 Status: active
 Branch: agent/2026-11-16-compare-picker-unify
-Updated: 2026-11-17T10:40:00Z
+Updated: 2026-11-17T11:15:00Z
 
 ## In plain words
 
@@ -140,5 +140,9 @@ Given: build boards 1 and 2; sync saved comparisons across devices (2026-11-17).
 
 ## Next
 
-Show Savannah the Storybook stories or a Cloudflare preview, apply her notes,
-then open the pull request when she says so. Delete this file before merge.
+Pull request opened on 2026-11-17 at Savannah's request (find it with
+`gh pr list --head agent/2026-11-16-compare-picker-unify`). Main was merged in
+first and every check rerun green. Do NOT merge without her explicit yes: the
+migration applies to production on merge. Before merge, run
+`pnpm run worktrees -- done` and commit the removal of this file. Still
+untested: the signed-in web app and the iPhone simulator.
