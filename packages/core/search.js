@@ -532,3 +532,77 @@ export function pushRecentSearch(recent = [], term = '') {
   return [clean, ...(Array.isArray(recent) ? recent : []).filter(t => String(t).toLowerCase() !== lower)]
     .slice(0, RECENT_SEARCH_LIMIT);
 }
+
+/* ═══════════════════════════════════════
+   Search in one place
+═══════════════════════════════════════ */
+
+/**
+ * Where the palette can be told to look. "everywhere" is the unified search;
+ * the others only match titles the viewer already has on that page, so they
+ * answer from memory and never ask TMDB.
+ *
+ * @typedef {'everywhere'|'home'|'calendar'|'lists'|'history'} SearchPlace
+ */
+
+/** In the order the chips are shown. */
+export const SEARCH_PLACES = /** @type {SearchPlace[]} */ (['everywhere', 'home', 'calendar', 'lists', 'history']);
+
+/** A page can hold many matches; the unified list only leads with three. */
+export const PLACE_MATCH_LIMIT = 30;
+
+const placeRow = (item, extra = {}) => ({
+  ...extra,
+  tmdb_id: item?.tmdb_id ?? item?.id,
+  media_type: extra.media_type || item?.media_type || 'movie',
+  title: item?.title || item?.name || '',
+  poster_path: item?.poster_path ?? null,
+});
+
+/**
+ * The titles one page holds, as rows matchLibrary can search. Each app
+ * gathers the page's data its own way and passes it in; this owns which
+ * rows count and how they are labelled, so web and mobile agree.
+ *
+ * - `lists`: every list on My Lists, in page order. `where` is the list's
+ *   name, so a match says which list it is in.
+ * - `history`: everything watched.
+ * - `calendar`: dated events from today on. `date` is the event's day and
+ *   `where` its label ("Streaming", "S2 E4"). Reminders have no TMDB title
+ *   to open and are left out.
+ * - `home`: the titles on Home's shelves (TMDB results; people are skipped).
+ *
+ * @param {SearchPlace} place
+ * @param {{
+ *   lists?: { name: string, items?: any[], status?: LibraryRow['status'], mediaType?: string }[],
+ *   history?: any[],
+ *   calendarEvents?: { date: string, label?: string, item?: any }[],
+ *   todayStr?: string,
+ *   shelves?: any[][],
+ * }} [sources]
+ * @returns {(LibraryRow & { where?: string, date?: string })[]}
+ */
+export function placeSearchRows(place, sources = {}) {
+  if (place === 'lists') {
+    return (sources.lists || []).flatMap(list => (list.items || []).map(item => placeRow(item, {
+      where: list.name,
+      ...(list.status ? { status: list.status } : {}),
+      ...(list.mediaType ? { media_type: list.mediaType } : {}),
+    })));
+  }
+  if (place === 'history') {
+    return (sources.history || []).map(item => placeRow(item, { status: 'watched' }));
+  }
+  if (place === 'calendar') {
+    const today = sources.todayStr || '';
+    return (sources.calendarEvents || [])
+      .filter(ev => ev?.item?.tmdb_id && ev.date >= today)
+      .map(ev => placeRow(ev.item, { where: ev.label, date: ev.date }));
+  }
+  if (place === 'home') {
+    return (sources.shelves || []).flat()
+      .filter(item => item?.id && item.media_type !== 'person')
+      .map(item => placeRow(item));
+  }
+  return [];
+}

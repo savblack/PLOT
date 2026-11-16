@@ -204,6 +204,24 @@
 }
 .search-palette-recent-head button:hover { color: var(--text-primary); }
 
+/* ── Search in: one row of places, scrolls sideways rather than wrapping ── */
+.search-palette-places {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.search-palette-places::-webkit-scrollbar { display: none; }
+.search-palette-places > * { flex: none; white-space: nowrap; }
+.search-palette-places-label {
+  margin-right: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
 /* ── Empty states ── */
 .search-palette-empty {
   display: flex;
@@ -261,6 +279,7 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
   .search-palette-head { padding: 12px 1rem; }
+  .search-palette-places { padding: 8px 1rem; }
   /* Key hints mean nothing to a thumb. */
   .search-palette-foot,
   .search-palette-esc,

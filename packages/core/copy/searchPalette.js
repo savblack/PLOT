@@ -10,6 +10,19 @@ export const SEARCH_PALETTE = {
   hintBody: 'Titles, franchises, actors, directors and friends, all from one box.',
   hintFriends: 'to find friends',
   hintPeople: 'for actors and directors',
+  // The "Search in" row: look everywhere, or only at one page's own titles.
+  // The page names themselves come from the nav (APP_NAV_ITEMS).
+  searchIn: 'Search in:',
+  everywhere: 'Everywhere',
+  placeholderIn: (place) => `Search ${place}…`,
+  hintTitleIn: (place) => `Search ${place}`,
+  placeHint: {
+    home: 'Only the titles on your Home shelves right now.',
+    calendar: 'Only titles with upcoming dates in your Calendar.',
+    lists: 'Only titles saved in your lists.',
+    history: 'Only titles you have watched.',
+  },
+  noneIn: (place) => `Nothing in ${place} matches. Try a different spelling, or search everywhere.`,
   // After a search that found nothing.
   noResults: 'No results',
   noResultsBody: 'Try a different spelling, or add a year.',
