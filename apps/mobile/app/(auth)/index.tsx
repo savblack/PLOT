@@ -231,6 +231,8 @@ export default function AuthScreen() {
   const [captchaHasToken, setCaptchaHasToken] = useState(false);
   const [captchaErrored, setCaptchaErrored] = useState(false);
   const [captchaInteractive, setCaptchaInteractive] = useState(false);
+  // Cloudflare's "Verify you are human" box is on screen right now.
+  const [captchaVisible, setCaptchaVisible] = useState(false);
   const [captchaWaitStart, setCaptchaWaitStart] = useState(() => Date.now());
   const [captchaNow, setCaptchaNow] = useState(() => Date.now());
   // Form token, minimum form age, and the POSTs to signup-bypass, shared with
@@ -1047,18 +1049,20 @@ export default function AuthScreen() {
               </View>
 
               {/* CTA — solid ink, like the web .auth-cta. Turnstile takes no space
-                  and ignores touches by default (see its own pointerEvents) — if
-                  Cloudflare ever decides this sign-in needs a real interactive
-                  check, it pops up over the fields above instead of permanently
-                  reserving a gap for something that's normally invisible. */}
+                  and ignores touches by default (see its own pointerEvents), so
+                  there is no permanent gap for something that's normally
+                  invisible. When Cloudflare does show its checkbox, the box
+                  moves into the layout and the sheet grows to fit it: until
+                  2026-11 it floated over the Password field instead. */}
               <View style={styles.ctaWrap}>
                 {TURNSTILE_SITE_KEY ? (
-                  <View style={styles.captcha}>
+                  <View style={captchaVisible ? styles.captchaShown : styles.captcha}>
                     <Turnstile
                       siteKey={TURNSTILE_SITE_KEY}
                       onToken={handleCaptchaToken}
                       onError={handleCaptchaError}
                       onInteractive={handleCaptchaInteractive}
+                      onVisibleChange={setCaptchaVisible}
                       resetSignal={captchaNonce}
                       executeSignal={captchaExecute}
                       start={captchaStarted}
@@ -1321,6 +1325,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     marginBottom: spacing.xs,
+    alignItems: 'center',
+  },
+  captchaShown: {
+    marginBottom: spacing.sm,
     alignItems: 'center',
   },
   cta: {

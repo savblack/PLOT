@@ -29,7 +29,7 @@ Lists) and copy.
 | Notifications screen + header bell | done |
 | "Help build Plot" drawer section (feedback + Ko-fi), flat mobile variant | done |
 | Premium upgrade sheet at the Free list cap (My Lists, title panel, collections; content from `@plot/core/upgradeSheet.js`). "Compare every feature" opens Settings' Premium section, since mobile has no /plans | done |
-| New onboarding (#1167): save a few with the Switching apps? branch, where do you watch, the building moment; name from the sign-in provider (`app/onboarding/*`, state in `contexts/OnboardingFlowContext.tsx`) | **static only**: not run on a device |
+| New onboarding (#1167): save a few with the Switching apps? branch, where do you watch, the building moment; name from the sign-in provider (`app/onboarding/*`, state in `contexts/OnboardingFlowContext.tsx`) | **run in the iOS simulator against Staging (2026-11-16)** on two new test accounts: step 1 with Skip top right, the three-part bar, the three-across grid and the picked state; the import list with "I'll do this later"; services with back and Skip; Continue through the building moment to Home with both picks under Up next; and Skip on step 1 with a title picked, which reached Home with nothing saved. **Not run**: Skip tapped on services, a real import queued from step 1, the building screen held long enough to read (it lasts about a second) |
 | Home greeting, first-run Saved to watch rail, and the Finishing touches card with its friends, import and people sheets (`components/FinishingTouches.tsx`, storage in `lib/finishingTouches.ts`) | **static only**: not run on a device |
 | "Your first week of Premium" on Home (`components/PremiumFirstWeek.tsx`, storage in `lib/premiumFirstWeek.ts`): the five steps, wording and seven-day window from `@plot/core/premiumFirstWeek.js`, drawn with the Finishing touches card's styles and shown in its place. Each button opens mobile's own screen (Themes, Your people, Watch together, Settings › Connections for the calendar, My Lists). The phone has no checkout return and the profile has no upgrade date, so the week starts when the phone sees an account it had seen on Free turn Premium, or a Premium account under seven days old (`premiumFirstWeekShouldStart`). Someone who upgraded on web before ever opening this phone, on an account older than a week, gets no card | **run in the iOS simulator against Staging (2026-11-11)** on a test account switched from Free to Premium in the database: the card took Finishing touches' place, survived a restart, expanded to the five steps, "Pick a theme" opened Themes, choosing a theme ticked the step (1 of 5), `settings?section=connections` opened on Subscribe to Calendar, and Dismiss gave the slot back. The header was fixed after this run showed its arrow wrapping to a second line. **Not run**: the start after returning from Stripe, the other three buttons pressed from the card, the all-done state, Android |
 | Title panel foot bar (Watched it? / Thoughts?, half stars, Review and Private note boxes, one editor sheet): same state in `@plot/core/useTitleFootBar.js`, drawn in `components/TitleFootBar.tsx` | **static only**: not run on a device |
@@ -69,14 +69,13 @@ expand-all button is unused CSS, so mobile does not add it. Drawer rows use
 the web nav strokes at 18px, including feedback, Support Plot, and an 18px
 profile avatar. The drawer width matches web `min(300px, 85vw)`.
 
-The onboarding and Finishing touches rows above passed `tsc`, ESLint,
-`copy:check`, and have **not been opened on a device**: it
-needs a fresh account to reach `/onboarding/seed`. Drive it once with a new
-sign-up: the seed grid, the Switching apps? row into import and services, the
-building fan and fade into Home, then the card (tiles tick from real data;
-Import opens the existing import modal on the chosen source).
+The onboarding row was driven in the simulator with new sign-ups on
+2026-11-16 (see its row). The Finishing touches card was seen on Home at 1 of 5
+in that run; its tiles and the Import tile opening the import modal on the
+chosen source have still not been pressed on a device.
 Differences from web that are deliberate: the card starts collapsed (web opens
-it on wide screens only), the grid loads 24 trending titles rather than 48,
+it on wide screens only), the import sources open in place of the poster grid
+rather than on their own screen (the "Switching apps?" row is the way back),
 Following a person still hits the Free-tier upgrade sheet through
 `useFollowPerson`, and there is no saved-title shortcut or checkout intent
 (neither exists on mobile).

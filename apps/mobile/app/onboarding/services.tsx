@@ -8,7 +8,7 @@ import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { useRouter } from 'expo-router';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
-import { topRegionServices } from '@plot/core/onboardingSetup.js';
+import { ONBOARDING_PROGRESS, topRegionServices } from '@plot/core/onboardingSetup.js';
 import { REGIONS } from '@plot/core/regions.js';
 import { tmdb } from '../../lib/tmdb';
 import { Palette, fontFamily, fontSize, logoUrl, spacing, radii } from '../../lib/tokens';
@@ -68,7 +68,7 @@ export default function Services() {
 
   return (
     <OnboardingScaffold
-      step={2}
+      step={ONBOARDING_PROGRESS.services}
       title={F.services.title}
       subtitle={F.services.subtitle}
       onBack={() => router.back()}

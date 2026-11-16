@@ -49,6 +49,8 @@ export const ONBOARDING_FLOW = {
     searchError: 'Search isn\u2019t working right now.',
     trendingError: 'We couldn\u2019t load this week\u2019s trending titles.',
     retry: 'Retry',
+    // Mobile only: on a phone the grid is the whole screen, so an empty search says why.
+    noResults: 'No titles found.',
     continueWith: (n) => `Continue with ${n} ${n === 1 ? 'title' : 'titles'} →`,
     tapAFew: 'Pick at least one to continue',
   },
