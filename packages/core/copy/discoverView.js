@@ -4,6 +4,8 @@ import { COMMON } from './common.js';
 export const DISCOVER_VIEW = {
   mostAnticipatedTitle: 'Most Anticipated',
   mostAnticipatedSubtitle: 'Coming soon',
+  nowOnStreamingTitle: 'Now on Streaming',
+  nowOnStreamingSubtitle: 'Fresh from theaters, to rent or buy',
   upNext: 'Up next',
   startHere: 'Start here',
   startHereBody: 'Choose a show that’s airing now. We’ll show you when the next episode drops here.',

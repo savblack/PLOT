@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadDiscoverData, currentCinemaMovies, trendingCinemaHero, anticipatedMoviesFrom } from '../../useDiscover.js';
+import { loadDiscoverData, currentCinemaMovies, trendingCinemaHero, anticipatedMoviesFrom, nowOnStreamingFrom } from '../../useDiscover.js';
 
 const item = (id, extra = {}) => ({ id, original_language: 'en', poster_path: `/${id}.jpg`, ...extra });
 
@@ -59,4 +59,25 @@ test('Most Anticipated keeps only English-origin movies opening after today, at 
   assert.ok(result.every(movie => movie.media_type === 'movie'));
   assert.ok(!result.some(movie => movie.id === 1 || movie.id === 3));
   assert.deepEqual(anticipatedMoviesFrom(null, { today: '2026-11-15' }), []);
+});
+
+test('Now on Streaming keeps digital releases that also had a cinema release', () => {
+  const releases = {
+    digital: [
+      item(1, { release_date: '2026-11-10' }),
+      item(2, { release_date: '2026-11-03' }), // straight to streaming: no cinema release
+      item(3, { release_date: '2026-10-20', original_language: 'ko', origin_country: ['KR'] }),
+      item(1, { release_date: '2026-11-10' }),
+      item(4, { release_date: '2026-10-06', poster_path: null }),
+      item(5, { release_date: '2026-10-06' }),
+    ],
+    theatrical: [item(1), item(3), item(4), item(5), item(9)],
+  };
+  const result = nowOnStreamingFrom(releases);
+  assert.deepEqual(result.map(movie => movie.id), [1, 5]);
+  assert.ok(result.every(movie => movie.media_type === 'movie'));
+  // The digital date is the one kept, not the cinema date.
+  assert.equal(result[0].release_date, '2026-11-10');
+  assert.deepEqual(nowOnStreamingFrom(null), []);
+  assert.deepEqual(nowOnStreamingFrom({ digital: [item(1)] }), []);
 });

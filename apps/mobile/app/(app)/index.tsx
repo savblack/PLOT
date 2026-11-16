@@ -2,7 +2,7 @@
  * Home screen. Mirrors web DiscoverView.
  * Shelf order comes from the viewer's Home layout (@plot/core/homeLayout.js);
  * the default is picks, Up next, Hot Right Now, Top 20 This Week,
- * Your people, Most Anticipated. The New Releases screen (mode "new") leads with Out Today,
+ * Your people, Now on Streaming, Most Anticipated. The New Releases screen (mode "new") leads with Out Today,
  * recent and coming soon, Most Binged and Top 10 by Platform, then genre rails.
  */
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
@@ -62,7 +62,7 @@ import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { featuredCuratedList } from '@plot/core/curatedLists.js';
 import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists';
 import PicksCarousel from '../../components/PicksCarousel';
-import { anticipatedMoviesFrom, currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
+import { anticipatedMoviesFrom, currentCinemaMovies, nowOnStreamingFrom, trendingCinemaHero } from '@plot/core/useDiscover.js';
 import { localDateStr } from '@plot/core/date.js';
 import { dedupeHomeShelves, visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
@@ -629,6 +629,8 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   const [cinemaHero,    setCinemaHero]    = useState<MediaItem | null>(null);
   // Most Anticipated: movies opening after today (shared with web: useDiscover.js).
   const [anticipated,   setAnticipated]   = useState<MediaItem[]>([]);
+  // Now on Streaming: movies that left cinemas for rent or buy (shared with web: useDiscover.js).
+  const [streaming,     setStreaming]     = useState<MediaItem[]>([]);
   // Official published charts from platform_charts — a fixed platform list,
   // identical for everyone, rather than TMDB popularity filtered to whatever
   // the user happens to subscribe to.
@@ -758,7 +760,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
 
         // The watchlist is no longer fetched here — useWatchlist (via
         // useAppData) owns loading it, for every surface at once.
-        const [trendingDay, trendingWeek, trendingTV, nowPlaying, upcoming] = await Promise.all([
+        const [trendingDay, trendingWeek, trendingTV, nowPlaying, upcoming, nowOnStreaming] = await Promise.all([
           tmdb.getTrending('all', 'day'),
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv',  'day'),
@@ -766,6 +768,8 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           tmdb.getNowPlaying().catch(() => null),
           // Only feeds Most Anticipated; a failure hides that shelf, nothing else.
           tmdb.getUpcoming().catch(() => null),
+          // Only feeds Now on Streaming; a failure hides that shelf, nothing else.
+          tmdb.getNowOnStreaming().catch(() => null),
         ]);
 
         if (cancelled) return;
@@ -774,6 +778,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         const today = localDateStr();
         const inCinemas = currentCinemaMovies(nowPlaying?.results, { today, hideKids });
         setAnticipated(anticipatedMoviesFrom(upcoming?.results, { today, hideKids }));
+        setStreaming(nowOnStreamingFrom(nowOnStreaming, { hideKids }));
         const trendingMovies = excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingDay?.results ?? []), hideKids).filter((t: MediaItem) => t.media_type === 'movie');
         setCinemaHero(trendingCinemaHero(trendingMovies, inCinemas));
         if (trendingWeek?.results) setWeekly(excludeKidsContent(trendingWeek.results, hideKids).slice(0, 20));
@@ -840,11 +845,13 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
     forYou: applyFilters(recs.forYou),
     hot: applyFilters(trending.slice(1, 10)),
     weekly: applyFilters(weekly),
+    streaming: applyFilters(streaming),
     anticipated: applyFilters(anticipated),
   }, { whole: ['picks', 'weekly'] });
   const becauseRail: MediaItem[] = shown.because ?? [];
   const forYouRail: MediaItem[] = shown.forYou ?? [];
   const hotRail = shown.hot ?? [];
+  const streamingRail = shown.streaming ?? [];
   const anticipatedRail = shown.anticipated ?? [];
 
   // Three trending titles stand in for Up next while nothing is saved, each
@@ -1038,6 +1045,29 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       </>
     ),
     people: () => <YourPeopleShelf />,
+    streaming: () => (
+      <>
+        {streamingRail.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker={DISCOVER_VIEW.nowOnStreamingSubtitle} title={DISCOVER_VIEW.nowOnStreamingTitle} />
+            <PosterRail
+              data={streamingRail}
+              keyExtractor={item => String(item.id)}
+              renderItem={({ item }) => (
+                <PosterCard
+                  item={item}
+                  onPress={() => item.id && openPanel(item.id, 'movie')}
+                  saved={savedIds.has(item.id ?? 0)}
+                  onSave={() => handleSave(item)}
+                  isFav={favorites.isFavorite(item.id ?? 0)}
+                  onFavorite={() => toggleFav(item)}
+                />
+              )}
+            />
+          </View>
+        )}
+      </>
+    ),
     anticipated: () => (
       <>
         {anticipatedRail.length > 0 && (

@@ -13,7 +13,7 @@ import { defaultUiPrefs, setCardStyle, setDensity } from '@plot/core/uiPrefs.js'
 const LABELS = {
   picks: "Plot's Picks", continue: 'Continue watching', because: 'Because you watched', forYou: 'Recommended for you', hot: 'Hot Right Now', weekly: 'Top 20 This Week',
   people: 'Your people', releases: 'New Releases', binged: 'Most Binged Shows', cinema: 'Now Showing',
-  anticipated: 'Most Anticipated', platforms: 'Top 10 By Platform',
+  streaming: 'Now on Streaming', anticipated: 'Most Anticipated', platforms: 'Top 10 By Platform',
 };
 const lists = [{ id: 'l1', name: 'Comfort rewatches' }, { id: 'l2', name: 'Date night' }];
 const follows = [{ tmdb_person_id: -10, name: 'Ada Quill' }, { tmdb_person_id: -11, name: 'Ben Arlo' }];
