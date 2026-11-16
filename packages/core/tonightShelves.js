@@ -169,16 +169,19 @@ export function moodRows(mediaType) {
 }
 
 /**
- * The one-of rows that are off "any", for the phone's removable chips and
- * its Filters count. `reset` is the row's "any" value.
+ * The one-of rows that are off "any", for the phone's one-line summary.
+ * `summary` reads on its own ("Rated 7+"); `reset` is the row's "any" value.
  * @param {PickerOptions} o
- * @returns {Array<{ id: MoodRow['id'], key: keyof PickerOptions, label: string, reset: any }>}
+ * @returns {Array<{ id: MoodRow['id'], key: keyof PickerOptions, label: string, summary: string, reset: any }>}
  */
 export function activeMoodChoices(o) {
   return moodRows(o.mediaType).flatMap(row => {
     const reset = row.choices[0].value;
     const chosen = row.choices.find(c => c.value === o[row.key]);
-    return chosen && chosen.value !== reset ? [{ id: row.id, key: row.key, label: chosen.label, reset }] : [];
+    if (!chosen || chosen.value === reset) return [];
+    // A bare "7+" says nothing away from its row, so the score spells itself out.
+    const summary = row.id === 'score' ? TONIGHT_PICKER.chips.ratedMin(chosen.value) : chosen.label;
+    return [{ id: row.id, key: row.key, label: chosen.label, summary, reset }];
   });
 }
 

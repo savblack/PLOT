@@ -9,9 +9,9 @@ Updated: 2026-11-16
 
 The "What are you in the mood for?" card on Just Decide now shows far more
 choices, on web and in the phone app. Web shows every filter as a labelled row
-of chips. The phone app swipes the moods sideways and keeps score, length,
-release, where, kids and language in a Filters sheet opened from a button beside
-Movies / Shows. Nothing hides behind "More options" any more. Savannah chose the
+of chips. The phone app shows the moods under a Mood label, then one plain
+"Filters" line (for example "Rated 7+, My services") with Edit, which opens a
+sheet with score, length, release, where, kids and language. Nothing hides behind "More options" any more. Savannah chose the
 web layout ("Web A") and the mobile layout from mockups on 2026-11-16, then asked
 for the follow-ups to be actioned. A pull request is open; nothing is merged.
 
@@ -21,7 +21,7 @@ for the follow-ups to be actioned. A pull request is open; nothing is merged.
   `moodRows`, `activeMoodChoices`, `moodFiltersOn`, `clearMoodFilters`. Mood shelves
   hide when any genre is chosen (was: only with the Light or Gripping chip).
 - `packages/core/copy/tonightPicker.js`: `chips.rows`, `chips.moods`, `chips.clearAll`,
-  `chips.filtersCount`.
+  `chips.ratedMin`.
 - `packages/core/tonightPicker.js`: `tonight_picks_drawn` also reports `min_score`,
   `max_minutes`, `era` (documented in `docs/analytics/README.md`, typed in `config.js`).
 - Web: `apps/web/src/components/TonightView.jsx` + `.css`, the new `MoodCard`.
@@ -29,6 +29,11 @@ for the follow-ups to be actioned. A pull request is open; nothing is merged.
 - Tests: `tonightShelves.test.js` (five new), `engagementAnalytics.test.js` (extended).
 
 ## Decisions
+
+- Mobile was rebuilt on 2026-11-16 after Savannah rejected the first version
+  (swiping moods, a Filters chip, pink removable chips: too much pink, three pill
+  rows). She chose "option 1": a neutral Movies / Shows switch, wrapped moods, a
+  one-line filter summary, a compact Pick button, Clear all inside the sheet.
 
 - No "Light" chip. It was Funny + Romantic + Animated bundled, which would light
   three chips at once; those are separate chips now. `MOOD_CHIPS` and the light /
@@ -47,9 +52,9 @@ for the follow-ups to be actioned. A pull request is open; nothing is merged.
   under the test server (letterboxd-recovery, premium-preview); both pass rerun alone.
 - Web seen in Storybook at 1280, 800 and 390px.
 - Mobile run in the iOS simulator (iPhone 17 Pro, dev client, Metro from this
-  worktree): card, a mood chip narrowing the shelf, the Filters sheet, choosing 7+,
-  the count going to 2 and the removable chip. Not run: Done / tapping a chip's x,
-  Shows, Clear all, a real pick, dark theme, VoiceOver.
+  worktree): the option 1 card with the summary line reading "Rated 7+, My
+  services", and the Filters sheet opening from it with Clear all at its foot.
+  Not run: Shows, Clear all, a real pick, dark theme, VoiceOver.
 
 ## Next
 

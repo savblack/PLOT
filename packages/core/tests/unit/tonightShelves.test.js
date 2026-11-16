@@ -130,6 +130,8 @@ test('active choices list the rows that are off any, each with its reset', () =>
   const busy = { ...base, minScore: 7, maxRuntime: 120 };
   const active = activeMoodChoices(busy);
   assert.deepEqual(active.map(a => [a.key, a.label]), [['minScore', TONIGHT_PICKER.score(7)], ['maxRuntime', TONIGHT_PICKER.runtimes(120)]]);
+  // The summary line spells the score out; other rows read as their chip.
+  assert.deepEqual(active.map(a => a.summary), ['Rated 7+', TONIGHT_PICKER.runtimes(120)]);
   const cleared = active.reduce((o, a) => ({ ...o, [a.key]: a.reset }), busy);
   assert.deepEqual(cleared, base);
   // A show reads episode length, not movie length.
