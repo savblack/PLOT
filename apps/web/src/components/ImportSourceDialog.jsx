@@ -155,7 +155,7 @@ export default function ImportSourceDialog({ start, onContinue, continueLabel = 
             <input type="file" accept={src.accept} multiple disabled={phase === 'uploading'}
               onChange={e => { if (e.target.files?.length) start.attachFiles(e.target.files); e.target.value = ''; }} />
             {phase === 'uploading' && !quiet ? <PlotLoader size="sm" /> : <UploadIcon />}
-            <span className="isp-drop-title">{phase === 'uploading' ? I.uploading : S.dropTitle}</span>
+            <span className="isp-drop-title">{phase === 'uploading' ? I.uploading : <><span className="isp-only-phone">{S.chooseTitle}</span><span className="isp-only-desktop">{S.dropTitle}</span></>}</span>
             <span className="isp-drop-hint">{S.dropFormats(src.formats)}</span>
           </label>
         )}

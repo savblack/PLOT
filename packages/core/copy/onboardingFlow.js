@@ -42,14 +42,13 @@ export const ONBOARDING_FLOW = {
     switchingLead: 'Switching apps?',
     switchingBody: 'Bring your history and watchlist over instead.',
     // Mobile folds the import-source picker into this step: the row above
-    // toggles it in place of the poster grid, and this is the row's text while
-    // the sources are showing.
-    switchingBack: 'Pick a few titles instead.',
+    // toggles it in place of the poster grid. While the sources are showing
+    // the row is the lead alone ("Switching apps?"), with nothing after it.
     // Inline, under the search field. Both keep the step completable.
     searchError: 'Search isn\u2019t working right now.',
     trendingError: 'We couldn\u2019t load this week\u2019s trending titles.',
     retry: 'Retry',
-    // Mobile only: on a phone the grid is the whole screen, so an empty search says why.
+    // A search that worked and matched nothing. A failed one is searchError.
     noResults: 'No titles found.',
     continueWith: (n) => `Continue with ${n} ${n === 1 ? 'title' : 'titles'} →`,
     tapAFew: 'Pick at least one to continue',
@@ -62,7 +61,9 @@ export const ONBOARDING_FLOW = {
     connectLane: 'Connect an account',
     connectLaneHint: 'Plot pulls your history itself. Nothing to download.',
     uploadLane: 'Upload an export',
-    uploadLaneHint: 'Download the file from the app, then drop it here.',
+    // Phones (the mobile app, and web below 768px) have nothing to drag, so
+    // this one says upload. Desktop keeps the drop wording.
+    uploadLaneHint: 'Download the file from the app, then upload it here.',
     uploadLaneHintDesktop: 'Download the file from the app, then drop it here. Or drop it on any tile.',
     // What comes across from each source. Shown under the name on the tile
     // and in the source sheet's header.
@@ -99,21 +100,25 @@ export const ONBOARDING_FLOW = {
     continueTo: (name) => `Continue to ${name}`,
     openAgain: 'Open it again',
     // Export steps per file source, in the order a person does them.
+    // The last step says upload, not drop: the same lines show on a phone,
+    // where the file is chosen from a picker.
     steps: {
-      letterboxd: ['On letterboxd.com open Settings › Import & export', 'Choose Export your data', 'Drop the ZIP here. No need to unzip it.'],
-      netflix: ['On netflix.com open Account › Profile & parental controls › your profile', 'Choose Viewing activity, then Download all at the bottom', 'Drop NetflixViewingHistory.csv here'],
-      prime: ['On amazon.com open Account › Data & Privacy › Request your data', 'Choose Digital content and submit the request', 'When the ZIP arrives, drop the CSV inside it here'],
-      disney: ['Sign in at privacy.disneyplus.com', 'Choose Request your data', 'When the ZIP arrives, drop the watch history JSON here'],
-      max: ['Sign in at privacycenter.max.com', 'Choose Download your data', 'Drop the CSV or JSON here'],
-      apple: ['Sign in at privacy.apple.com and choose Request a copy of your data', 'Pick Apple TV & Purchases', 'When the ZIP arrives, drop the TV interactions JSON here'],
-      tvtime: ['Use the export TV Time already sent you (GDPR archive or TV Time Liberator)', 'Drop tracking-prod-records-v2.csv, tracking-prod-records.csv, the JSON or the ZIP here', 'Keep the original file names'],
-      imdb: ['On imdb.com open Your Ratings, your Watchlist or a list', 'Choose Export', 'Drop the downloaded CSV here'],
+      letterboxd: ['On letterboxd.com open Settings › Import & export', 'Choose Export your data', 'Upload the ZIP here. No need to unzip it.'],
+      netflix: ['On netflix.com open Account › Profile & parental controls › your profile', 'Choose Viewing activity, then Download all at the bottom', 'Upload NetflixViewingHistory.csv here'],
+      prime: ['On amazon.com open Account › Data & Privacy › Request your data', 'Choose Digital content and submit the request', 'When the ZIP arrives, upload the CSV inside it here'],
+      disney: ['Sign in at privacy.disneyplus.com', 'Choose Request your data', 'When the ZIP arrives, upload the watch history JSON here'],
+      max: ['Sign in at privacycenter.max.com', 'Choose Download your data', 'Upload the CSV or JSON here'],
+      apple: ['Sign in at privacy.apple.com and choose Request a copy of your data', 'Pick Apple TV & Purchases', 'When the ZIP arrives, upload the TV interactions JSON here'],
+      tvtime: ['Use the export TV Time already sent you (GDPR archive or TV Time Liberator)', 'Upload tracking-prod-records-v2.csv, tracking-prod-records.csv, the JSON or the ZIP here', 'Keep the original file names'],
+      imdb: ['On imdb.com open Your Ratings, your Watchlist or a list', 'Choose Export', 'Upload the downloaded CSV here'],
     },
     // One privacy line under the drop zone.
     privacy: 'We read titles, dates and ratings. The file is deleted once it’s matched.',
     privacyNoRatings: 'We read titles and dates. The file is deleted once it’s matched.',
     noRatings: { netflix: 'Netflix exports don’t include ratings.' },
     dropTitle: 'Drop your export here, or browse',
+    // The same control on a phone, where it opens the file picker.
+    chooseTitle: 'Choose your export file',
     dropFormats: (formats) => `${formats}, unmodified`,
     fileReady: (name, count) => (count ? `${name} · ${count.toLocaleString()} rows · ready to import` : `${name} · ready to import`),
     importRows: (count) => (count ? `Import ${count.toLocaleString()} rows` : 'Import it'),

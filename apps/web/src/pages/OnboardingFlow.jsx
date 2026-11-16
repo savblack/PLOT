@@ -17,6 +17,7 @@ import { reportLoadFailure, FAILED_LOADS } from '@plot/core/actionFailures.js';
 import {
   ONBOARDING_PROGRESS, BUILDING_FADE_MS, BUILDING_LINE_MS, BUILDING_MIN_MS, buildingLines, buildingShelf, firstNameFromAuthUser, topRegionServices,
 } from '@plot/core/onboardingSetup.js';
+import { loadSeedTrending, searchSeedTitles } from '@plot/core/onboardingSeed.js';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { importSourceName } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
@@ -40,8 +41,6 @@ import {
 } from '@plot/core/onboardingGate.js';
 
 const F = ONBOARDING_FLOW;
-// Step 1's grid: 8 full rows on desktop (6 across), 16 on phones (3 across).
-const TRENDING_COUNT = 48;
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -73,7 +72,13 @@ export default function OnboardingFlow() {
   const [seedQuery, setSeedQuery] = useState('');
   const [seedResults, setSeedResults] = useState([]);
   const [seedSearching, setSeedSearching] = useState(false);
+  // A failed search or trending load shows a line with Retry under the search
+  // field. The try counters re-run the load.
+  const [seedSearchFailed, setSeedSearchFailed] = useState(false);
+  const [seedSearchTry, setSeedSearchTry] = useState(0);
   const [trending, setTrending] = useState([]);
+  const [trendingFailed, setTrendingFailed] = useState(false);
+  const [trendingTry, setTrendingTry] = useState(0);
   // The same-tab Trakt fallback parks the picks in sessionStorage on the way
   // out (utils/onboardingStash.js); ?import=trakt is the way back in.
   const [seedSelected, setSeedSelected] = useState(() => (searchParams.get('import') ? takeOnboardingStash()?.seeds ?? [] : []));
@@ -169,36 +174,38 @@ export default function OnboardingFlow() {
   useEffect(() => {
     if (step !== 'seed' || trending.length > 0) return;
     let alive = true;
-    tmdb.getTrending('all', 'week').then(data => {
+    // A failed load comes back as `ok: false`, never a throw (onboardingSeed.js).
+    loadSeedTrending(tmdb).then(load => {
       if (!alive) return;
-      // getTrending already fetches three pages (up to 60); a title can land on
-      // two of them, so keep the first of each.
-      const seen = new Set();
-      setTrending((data?.results || [])
-        .filter(r => (r.media_type === 'tv' || r.media_type === 'movie') && r.poster_path)
-        .filter(r => { const k = `${r.media_type}-${r.id}`; if (seen.has(k)) return false; seen.add(k); return true; })
-        .slice(0, TRENDING_COUNT));
+      setTrending(load.items);
+      setTrendingFailed(!load.ok);
     });
     return () => { alive = false; };
-  }, [step, trending.length]);
+  }, [step, trending.length, trendingTry]);
 
   /* ── Search ── */
   useEffect(() => {
     if (step !== 'seed' || !seedQuery.trim()) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- clear transient search results when the query is empty
       setSeedResults([]);
+      setSeedSearching(false);
+      setSeedSearchFailed(false);
       return;
     }
+    let alive = true;
+    // Searching from the keystroke, not from when the request leaves, so "No
+    // titles found." can't flash during the debounce.
+    setSeedSearching(true);
+    setSeedSearchFailed(false);
     const t = setTimeout(async () => {
-      setSeedSearching(true);
-      const data = await tmdb.search(seedQuery);
-      setSeedResults((data?.results || [])
-        .filter(r => (r.media_type === 'tv' || r.media_type === 'movie') && r.poster_path)
-        .slice(0, 24));
+      const load = await searchSeedTitles(tmdb, seedQuery.trim());
+      if (!alive) return;
+      setSeedResults(load.items);
+      setSeedSearchFailed(!load.ok);
       setSeedSearching(false);
     }, 350);
-    return () => clearTimeout(t);
-  }, [seedQuery, step]);
+    return () => { alive = false; clearTimeout(t); };
+  }, [seedQuery, step, seedSearchTry]);
 
   /* ── The region's services ── */
   useEffect(() => {
@@ -305,6 +312,8 @@ export default function OnboardingFlow() {
     return path;
   };
 
+  // Skip saves nothing: titles already picked on step 1 are forgotten, on
+  // purpose (decided 2026-11-16). Mobile's Skip does the same.
   const skipToHome = async () => {
     completeStep(step, { skipped: true });
     const ok = await save({ seeds: [], providers: [] });
@@ -373,6 +382,10 @@ export default function OnboardingFlow() {
         query: seedQuery,
         onQuery: setSeedQuery,
         searching: seedSearching,
+        searchFailed: !!seedQuery.trim() && seedSearchFailed,
+        onRetrySearch: () => setSeedSearchTry(n => n + 1),
+        trendingFailed: !seedQuery.trim() && trendingFailed,
+        onRetryTrending: () => { setTrendingFailed(false); setTrendingTry(n => n + 1); },
         items: seedQuery.trim() ? seedResults : trending,
         selectedIds: new Set(seedSelected.map(i => i.id)),
         count: n,

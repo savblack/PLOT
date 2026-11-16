@@ -15,7 +15,7 @@ const services = ['Service One', 'Service Two', 'Service Three', 'Service Four',
   .map((name, i) => ({ id: -(i + 100), name, logo_path: null }));
 const noop = () => {};
 
-function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', ticking = false, importSource = null, importPhase = 'pick', importError = null, jobs = [], pendingFiles = null, pendingRows = null, connectedIds = [] }) {
+function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 'Sam', ticking = false, importSource = null, importPhase = 'pick', importError = null, jobs = [], pendingFiles = null, pendingRows = null, connectedIds = [], seedState = {} }) {
   const [sel, setSel] = useState(selected);
   const [svc, setSvc] = useState(picked);
   // The building lines step on, as in the app; the last one stays.
@@ -37,7 +37,8 @@ function Screen({ step, selected = [-2, -4], picked = [-100, -104], firstName = 
       seed={{
         query: '', onQuery: noop, searching: false, items: titles, selectedIds: new Set(sel), count: sel.length,
         onToggle: (item) => setSel(s => (s.includes(item.id) ? s.filter(x => x !== item.id) : [...s, item.id])),
-        onContinue: noop, onSwitch: noop,
+        onContinue: noop, onSwitch: noop, onRetrySearch: noop, onRetryTrending: noop,
+        ...seedState,
       }}
       importStep={{
         start: {
@@ -72,6 +73,12 @@ export default {
 export const SaveAFew = { render: () => <Screen step="seed" /> };
 /** 1 · No name from the sign-in provider (email sign-up), nothing saved yet. */
 export const SaveAFewNoName = { render: () => <Screen step="seed" firstName="" selected={[]} /> };
+// Search could not reach TMDB: the line and Retry, with the grid empty under it.
+export const SaveAFewSearchFailed = { render: () => <Screen step="seed" selected={[]} seedState={{ query: 'slow', items: [], searchFailed: true }} /> };
+// Search worked and matched nothing.
+export const SaveAFewNoResults = { render: () => <Screen step="seed" selected={[]} seedState={{ query: 'zzzz', items: [] }} /> };
+// This week's trending titles did not load.
+export const SaveAFewTrendingFailed = { render: () => <Screen step="seed" selected={[]} seedState={{ items: [], trendingFailed: true }} /> };
 /** 1b · Switching apps: where their history is now. Part of step 1. */
 export const SwitchingApps = { render: () => <Screen step="import" /> };
 // The import starts on this step and carries on in the background.

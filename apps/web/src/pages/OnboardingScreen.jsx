@@ -48,6 +48,7 @@ function Progress({ step }) {
  *   firstName: string, saving: boolean, saveError: string | null,
  *   canGoBack: boolean, onBack: () => void, onSkip: () => void,
  *   seed: { query: string, onQuery: (q: string) => void, searching: boolean, items: any[], selectedIds: Set<number>,
+ *           searchFailed?: boolean, onRetrySearch?: () => void, trendingFailed?: boolean, onRetryTrending?: () => void,
  *           count: number, onToggle: (item: any) => void, onContinue: () => void, onSwitch: () => void },
  *   importStep: { start: ReturnType<typeof import('../hooks/useImportStart.js').useImportStart>,
  *                 onContinue: () => void, onLater: () => void },
@@ -107,7 +108,18 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
                 </button>
               )}
             </div>
+            {/* A failed load says so and offers Retry; the grid under it stays usable. */}
+            {(seed.searchFailed || seed.trendingFailed) && (
+              <div className="ob-load-error" role="status">
+                <span>{seed.searchFailed ? F.seed.searchError : F.seed.trendingError}</span>
+                <button type="button" onClick={seed.searchFailed ? seed.onRetrySearch : seed.onRetryTrending}>{F.seed.retry}</button>
+              </div>
+            )}
             <div className="ob-grid-scroll">
+            {/* A search that worked and matched nothing. */}
+            {!!seed.query.trim() && !seed.searching && !seed.searchFailed && seed.items.length === 0 && (
+              <p className="ob-empty" role="status">{F.seed.noResults}</p>
+            )}
             <div className="ob-grid">
               {seed.items.map(item => {
                 const on = seed.selectedIds.has(item.id);

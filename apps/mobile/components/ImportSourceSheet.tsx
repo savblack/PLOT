@@ -180,7 +180,7 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
         ) : (
           <TouchableOpacity style={styles.drop} onPress={() => { void start.chooseFile(); }} disabled={uploading} accessibilityRole="button" accessibilityState={{ busy: uploading, disabled: uploading }}>
             {uploading ? <Spinner /> : <UploadIcon color={colors.textSecondary} />}
-            <Text style={styles.dropTitle}>{uploading ? I.uploading : S.dropTitle}</Text>
+            <Text style={styles.dropTitle}>{uploading ? I.uploading : S.chooseTitle}</Text>
             <Text style={styles.dropHint}>{S.dropFormats(src.formats)}</Text>
           </TouchableOpacity>
         )}
