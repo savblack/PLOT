@@ -10,7 +10,9 @@ Updated: 2026-11-17
 Home gets a new shelf, "Now on Streaming": movies that were in theaters and
 became available to rent or buy in the last 60 days. It is built for web and
 iPhone and sits above Most Anticipated. The code is finished and the checks
-pass. Nobody has looked at it on screen yet, and no pull request is open.
+pass. It has been seen working on web Home (13 titles on an Australian
+account). It has not been seen on the iPhone simulator, and no pull request
+is open.
 
 ## Goal and owner
 
@@ -21,7 +23,12 @@ Savannah asked for it on 2026-11-17 (Hailey's area: core tracker, parity).
 - `packages/core/tmdb.js`: `getNowOnStreaming()`. Two TMDB discover queries,
   both limited to titles a US storefront rents or sells now: digital release
   in the last 60 days (2 pages), cinema release in the last 180 days
-  (3 pages). Five requests, cached like every other TMDB call.
+  (3 pages). Five requests in the US, seven elsewhere, cached like every
+  other TMDB call.
+- Region fix (2026-11-17): TMDB has few digital dates outside the US, so an
+  Australian account got one title. Outside the US the US digital list is
+  also read, for timing only; availability still comes from the viewer's own
+  region. Live results after the fix: AU 15, GB 17, CA 18, US 18.
 - `packages/core/useDiscover.js`: `nowOnStreamingFrom()` keeps the digital
   releases that also had a cinema release; `loadDiscoverData` returns
   `streamingMovies`. A failed call hides only this shelf.
@@ -39,16 +46,15 @@ Savannah asked for it on 2026-11-17 (Hailey's area: core tracker, parity).
 - `pnpm --filter @plot/mobile run typecheck`: clean. `pnpm run copy:check`: pass.
 - Core code run against the live TMDB proxy on 2026-11-17: 18 titles, each
   with a cinema date followed by a later digital date.
-- Not done: seeing the shelf in the web app (Home needs a sign-in) or on the
-  iPhone simulator. `pnpm run test:smoke` not run.
+- Web preview (port 5203), signed in, phone width: shelf shows 13 titles with
+  posters, appears in Jump to, no console errors.
+- Not done: desktop width, Customize Home, the iPhone simulator,
+  `pnpm run test:smoke`.
 
 ## Next
 
-1. Sign in on the local preview (launch config `web-now-streaming`, port
-   5203) and check the shelf on Home, in Jump to and in Customize Home, at
-   desktop and phone width.
-2. Check it on the iPhone simulator.
-3. Run `pnpm run test:smoke`, then open the pull request.
+1. Check it on the iPhone simulator.
+2. Run `pnpm run test:smoke`, then open the pull request.
 
 ## Approvals
 
