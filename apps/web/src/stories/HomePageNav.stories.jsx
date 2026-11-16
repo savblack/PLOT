@@ -5,7 +5,7 @@ import { defaultHomeLayout } from '@plot/core/homeLayout.js';
 // Home's sidebar Jump to card. The sections are the default set. Customize is
 // not on this card: it sits at the foot of the page (DiscoverView).
 const LABELS = {
-  picks: "Plot's Picks", continue: 'Continue watching', hot: 'Hot Right Now', weekly: 'Top 20 This Week',
+  picks: "Plot's Picks", continue: 'Continue watching', because: 'Because you watched', forYou: 'Recommended for you', hot: 'Hot Right Now', weekly: 'Top 20 This Week',
   people: 'Your people', releases: 'New Releases', binged: 'Most Binged Shows', cinema: 'Now Showing',
   anticipated: 'Most Anticipated', platforms: 'Top 10 By Platform',
 };

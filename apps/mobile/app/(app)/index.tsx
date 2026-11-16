@@ -24,6 +24,7 @@ import PlotWordmark from '../../components/PlotWordmark';
 import { TextLink } from '../../components/Button';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
 import { useNewReleases, prepareNewReleaseGenreRails } from '@plot/core/useNewReleases.js';
@@ -48,8 +49,8 @@ import { MEDIA } from '@plot/core/copy/media.js';
 import { cardMetaLine } from '@plot/core/media.js';
 import { PosterCaption, posterColumnWidth } from '../../components/PosterCard';
 import EmptyState from '../../components/EmptyState';
-import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
-import { useContinueWatching } from '@plot/core/useHomeShelves.js';
+import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, fetchHomeTitle, type ContinueWatchingItem } from '../../components/people/HomeShelves';
+import { useContinueWatching, useRecommendationShelves } from '@plot/core/useHomeShelves.js';
 import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
 import RateCard from '../../components/RateCard';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
@@ -81,6 +82,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const SCREEN_W = Dimensions.get('window').width;
+// The day's recommendation shelves are kept here, so Home asks TMDB once a day.
+const RECS_STORAGE = {
+  getItem: (key: string) => AsyncStorage.getItem(key),
+  setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
+};
 const CARD_W   = posterColumnWidth(SCREEN_W);
 const BINGE_W  = SCREEN_W * 0.62;
 const BINGE_H  = BINGE_W * 0.56;
@@ -672,6 +678,17 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   const router = useRouter();
   // Up next: the shows with an episode out, then the saved titles, one shelf.
   const continueWatching = useContinueWatching(watching.items ?? [], fetchContinueWatchingTv);
+  // Because you watched / Recommended for you, as on web (recommendations.js).
+  const recs = useRecommendationShelves({
+    history: history.entries ?? [],
+    watchlist: watchlist.items,
+    watching: watching.items,
+    fetchDetails: fetchHomeTitle,
+    today: localDateStr(),
+    enabled: !history.loading,
+    userId,
+    storage: RECS_STORAGE,
+  });
   // The line that leads Home: nights logged in the last seven days.
   const weekNights = useMemo(() => nightsThisWeek(history.entries ?? []), [history.entries]);
   const bestStreak = useMemo(() => streaks(history.entries ?? []).best, [history.entries]);
@@ -695,6 +712,20 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       track(EVENTS.SAVED_TO_WATCH_VIEWED, { item_count: watchlistItems.length, first_run: firstRun });
     });
   }, [tab, ft.ready, watchlist.loading, watchlistItems.length, firstRun]);
+  const becauseCount = recs.because?.items.length ?? 0;
+  const forYouCount = recs.forYou.length;
+  useEffect(() => {
+    if (tab !== 'discover' || becauseCount === 0) return;
+    oncePerSession('recommendations_viewed_because', () => {
+      track(EVENTS.RECOMMENDATIONS_VIEWED, { shelf: 'because', item_count: becauseCount });
+    });
+  }, [tab, becauseCount]);
+  useEffect(() => {
+    if (tab !== 'discover' || forYouCount === 0) return;
+    oncePerSession('recommendations_viewed_for_you', () => {
+      track(EVENTS.RECOMMENDATIONS_VIEWED, { shelf: 'for_you', item_count: forYouCount });
+    });
+  }, [tab, forYouCount]);
   const savedIds = new Set<number>(watchlistItems.map((i: MediaItem) => i.tmdb_id ?? i.id ?? 0));
   const toggleFav = useCallback((item: MediaItem) => {
     const id = item.id ?? item.tmdb_id ?? 0;
@@ -805,10 +836,14 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   // chart keep every card but still count.
   const shown = dedupeHomeShelves(visibleHomeSections(homeLayout.layout, homeLayout.layout.order), {
     picks: [hero, ...otherPicks.map(({ item }) => item)].filter((item): item is MediaItem => !!item),
+    because: applyFilters(recs.because?.items ?? []),
+    forYou: applyFilters(recs.forYou),
     hot: applyFilters(trending.slice(1, 10)),
     weekly: applyFilters(weekly),
     anticipated: applyFilters(anticipated),
   }, { whole: ['picks', 'weekly'] });
+  const becauseRail: MediaItem[] = shown.because ?? [];
+  const forYouRail: MediaItem[] = shown.forYou ?? [];
   const hotRail = shown.hot ?? [];
   const anticipatedRail = shown.anticipated ?? [];
 
@@ -914,6 +949,52 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
     // layout calls `continue`, so the viewer's order and hide apply to it. On
     // the first run it sits above the shelves instead.
     continue: () => (firstRun ? null : upNext),
+    because: () => (
+      <>
+        {recs.because && becauseRail.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader title={DISCOVER_VIEW.recommendations.becauseTitle(recs.because.seed.title)} />
+            <PosterRail
+              data={becauseRail}
+              keyExtractor={item => `${item.media_type}-${item.id}`}
+              renderItem={({ item }) => (
+                <PosterCard
+                  item={item}
+                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                  saved={savedIds.has(item.id ?? 0)}
+                  onSave={() => handleSave(item)}
+                  isFav={favorites.isFavorite(item.id ?? 0)}
+                  onFavorite={() => toggleFav(item)}
+                />
+              )}
+            />
+          </View>
+        )}
+      </>
+    ),
+    forYou: () => (
+      <>
+        {forYouRail.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker={DISCOVER_VIEW.recommendations.forYouSubtitle} title={DISCOVER_VIEW.recommendations.forYouTitle} />
+            <PosterRail
+              data={forYouRail}
+              keyExtractor={item => `${item.media_type}-${item.id}`}
+              renderItem={({ item }) => (
+                <PosterCard
+                  item={item}
+                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                  saved={savedIds.has(item.id ?? 0)}
+                  onSave={() => handleSave(item)}
+                  isFav={favorites.isFavorite(item.id ?? 0)}
+                  onFavorite={() => toggleFav(item)}
+                />
+              )}
+            />
+          </View>
+        )}
+      </>
+    ),
     hot: () => (
       <>
         {hotRail.length > 0 && (
