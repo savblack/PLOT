@@ -27,10 +27,10 @@
 .guide-notice { padding: 6px 4px 0; }
 .guide-missing-notice { padding-top: 24px; }
 
-/* Calendar pulls its whole toolbar into the desktop heading band. Do the same
-   here so both the side panel and the stream begin at Calendar's height. */
+/* Calendar's toolbar is the first row of the page. Do the same here so both
+   the side panel and the stream begin at Calendar's height. */
 @media (min-width: 1024px) {
-  .guide-page .hist-toolbar { min-height: 3.5rem; margin-top: calc(-1 * (2rem + 1.5rem)); margin-bottom: 1.5rem; padding: 0; }
+  .guide-page .hist-toolbar { margin-bottom: 1.5rem; padding: 0; }
   .guide-page .hist-toolbar-controls { margin-left: auto; }
 }
 
