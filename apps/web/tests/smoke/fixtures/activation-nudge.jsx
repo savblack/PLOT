@@ -16,15 +16,28 @@ import ActivationNudge from '../../../src/components/ActivationNudge.jsx';
 import { activationNudgeSources } from '@plot/core/activationNudge.js';
 import { hasFeltValue } from '@plot/core/hasFeltValue.js';
 import { notifyPendingWatchQueued, onPendingWatchQueued, shouldOpenPendingWatchPanel } from '@plot/core/watchQueued.js';
+import { requestPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 import { _setPostHogClient } from '../../../src/lib/analytics.js';
+import ResponsiveDialog from '../../../src/components/ResponsiveDialog.jsx';
 import '../../../src/styles/app.css';
 import '../../../src/index.css';
 
 const params = new URLSearchParams(window.location.search);
 const titleCount = Number(params.get('titles') || 0);
 const page = params.get('page') === 'history' ? 'history' : 'home';
-const client = createInMemorySupabase({ tables: { history: [], import_jobs: [], notifications: [] } });
-client.rpc = async (name) => (name === 'get_my_billing_status' ? { data: { isPremium: false, canManage: false, status: null }, error: null } : { data: null, error: null });
+const trialOverlay = params.get('trialOverlay') === '1';
+const profileRow = { id: '00000000-0000-4000-8000-000000000002', premium_trial_prompt_deferred_at: trialOverlay ? '2026-11-16T00:00:00Z' : null };
+const client = createInMemorySupabase({ tables: { history: [], import_jobs: [], notifications: [], profiles: [profileRow] } });
+window.__trialClaims = 0;
+client.rpc = async (name) => {
+  if (name === 'get_my_billing_status') return { data: { isPremium: false, canManage: false, status: null }, error: null };
+  if (name === 'set_premium_trial_prompt_deferral' && profileRow.premium_trial_prompt_deferred_at) {
+    window.__trialClaims += 1;
+    profileRow.premium_trial_prompt_deferred_at = null;
+    return { data: true, error: null };
+  }
+  return { data: null, error: null };
+};
 // Home's other cards use a few filters the in-memory client lacks; they only
 // narrow reads of tables that are empty here, so pass them through.
 const builder = Object.getPrototypeOf(client.from('history'));
@@ -43,6 +56,8 @@ function Shell() {
   const [count, setCount] = useState(titleCount);
   const [saved, setSaved] = useState(titleCount ? [item] : []);
   const [panelItem, setPanelItem] = useState(null);
+  const [competingSheet, setCompetingSheet] = useState(trialOverlay);
+  useEffect(() => { if (trialOverlay) requestPremiumTrialPrompt('fifth_title'); }, []);
   useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type, source }) => {
     if (shouldOpenPendingWatchPanel(source)) setPanelItem({ id: tmdb_id, type: media_type });
   }), []);
@@ -69,6 +84,9 @@ function Shell() {
       <AppShell currentView={view} navigateTo={setView} profile={profile} user={user} panelOpen={!!panelItem} onOpenSearch={app.openSearch}>
         <p data-testid="searches" hidden>{searches}</p>
         {panelItem && <aside data-testid="title-panel">{`${panelItem.type} ${panelItem.id}`}</aside>}
+        {competingSheet && <ResponsiveDialog title="Fill your calendar" onClose={() => setCompetingSheet(false)}>
+          <button type="button" onClick={() => setCompetingSheet(false)}>Close calendar sheet</button>
+        </ResponsiveDialog>}
         {page === 'home' ? (
           <div className="discover-page"><h1 style={{ margin: '0 var(--gut) 16px' }}>Good evening, Alex</h1><HomeTopCards /></div>
         ) : (

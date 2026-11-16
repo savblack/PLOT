@@ -27,7 +27,7 @@ const S = PLANS_PAGE.upgradeSheet;
 const HOLD_MS = 700;
 
 export default function UpgradeSheet({
-  visible, reason, family, kept = false, onClose, onCompare, onAction,
+  visible, reason, family, kept = false, onClose, onCompare, onAction, holdTrialPrompt = true,
 }: {
   visible: boolean;
   reason: UpgradeReason;
@@ -36,6 +36,8 @@ export default function UpgradeSheet({
   /** Smart lists: the Free viewer's rules are kept for them. */
   kept?: boolean;
   onClose: () => void;
+  /** False only for the proactive prompt, so it cannot register its own hold. */
+  holdTrialPrompt?: boolean;
   /** Opens the full comparison; the sheet closes itself first. */
   onCompare: () => void;
   /** Told when the viewer presses the purchase button or See everything,
@@ -78,7 +80,7 @@ export default function UpgradeSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={close} title={PLANS_PAGE.premium.name} maxHeight="92%">
+    <BottomSheet visible={visible} onClose={close} title={PLANS_PAGE.premium.name} maxHeight="92%" holdTrialPrompt={holdTrialPrompt}>
       <View style={styles.context}>
         {content.meter > 0 && (
           <View style={styles.meter}>

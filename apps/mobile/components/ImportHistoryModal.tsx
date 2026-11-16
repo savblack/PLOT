@@ -7,9 +7,9 @@ import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
 import { holdPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
-  Modal, StyleSheet, FlatList, Linking, AppState,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, FlatList, Linking, AppState,
 } from 'react-native';
+import AppModal from './AppModal';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -486,7 +486,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   const unmatched   = resolved.filter(row => row.status === 'unmatched').length;
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <AppModal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.container, { paddingTop: sheetTop }]}>
 
         {/* Header */}
@@ -718,7 +718,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
 
         {dialog}
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

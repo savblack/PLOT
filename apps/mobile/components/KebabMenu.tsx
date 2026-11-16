@@ -12,7 +12,8 @@
  * whatever is underneath.
  */
 import { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import AppModal from './AppModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 
@@ -49,7 +50,7 @@ export default function KebabMenu({
         <Text style={styles.triggerText}>···</Text>
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <AppModal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         {/* Dismiss catcher — mirrors web's full-screen click-catcher. */}
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setOpen(false)}>
           <View style={styles.panel}>
@@ -69,7 +70,7 @@ export default function KebabMenu({
             ))}
           </View>
         </TouchableOpacity>
-      </Modal>
+      </AppModal>
     </>
   );
 }

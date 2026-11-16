@@ -62,6 +62,24 @@ test('quick-add searches and saves a title', async ({ page }) => {
   await expect(page.locator('.app-shell.panel-docked')).toHaveCount(0);
 });
 
+test('the deferred trial waits for the calendar sheet, then appears once', async ({ page }) => {
+  await page.goto(`${url}?titles=5&trialOverlay=1`);
+  const calendar = page.getByRole('dialog', { name: 'Fill your calendar' });
+  await expect(calendar).toBeVisible();
+  await expect(page.locator('.upgrade-sheet-title')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__trialClaims)).toBe(0);
+  expect(await page.evaluate(() => window.__smokeEvents.filter(({ event }) => event === 'premium_prompt_shown'))).toHaveLength(0);
+  expect(await page.evaluate(() => localStorage.getItem('plot.premiumTrialPrompt.00000000-0000-4000-8000-000000000002'))).toBeNull();
+
+  await calendar.getByRole('button', { name: 'Close calendar sheet' }).click();
+  await expect(page.locator('.upgrade-sheet-title')).toHaveText('Want more from Plot? Try Premium free for 7 days.');
+  expect(await page.evaluate(() => window.__trialClaims)).toBe(1);
+  expect(await page.evaluate(() => window.__smokeEvents.filter(({ event }) => event === 'premium_prompt_shown'))).toHaveLength(1);
+  await page.getByRole('dialog', { name: 'Premium' }).getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.locator('.upgrade-sheet-title')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__trialClaims)).toBe(1);
+});
+
 test('quick-add focus fires once per mount, separate from History nudge events', async ({ page }) => {
   await page.goto(url);
   const search = page.getByRole('searchbox', { name: 'Search for a show or movie' });

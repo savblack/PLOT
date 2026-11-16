@@ -145,6 +145,39 @@ test('suppressed trial request remains pending without a seen write', () => {
   clearPremiumTrialPrompt();
 });
 
+test('an open overlay holds a deferred offer without claiming, seeing, or showing it; release shows once', async () => {
+  clearPremiumTrialPrompt();
+  const profile = deferredProfile();
+  await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'onboarding', decision: 'suppress', wasSuppressed: false, client: profile.client });
+  requestPremiumTrialPrompt('fifth_title');
+  const seenWrites = [];
+  const shown = [];
+  const release = holdPremiumTrialPrompt();
+  const heldDecision = premiumTrialPromptDecision({ ...eligible, trigger: 'fifth_title', overlayOpen: premiumTrialPromptHeld() });
+  assert.equal(heldDecision, 'wait');
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'fifth_title', decision: heldDecision, wasSuppressed: false, client: profile.client }), 'wait');
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'fifth_title', decision: 'show', wasSuppressed: false, client: profile.client, canShow: () => !premiumTrialPromptHeld() }), 'wait');
+  assert.ok(profile.marker);
+  assert.equal(profile.calls.length, 1);
+  assert.equal(peekPremiumTrialPrompt(), 'fifth_title');
+  assert.deepEqual(seenWrites, []);
+  assert.deepEqual(shown, []);
+
+  release();
+  const readyDecision = premiumTrialPromptDecision({ ...eligible, trigger: 'fifth_title', overlayOpen: premiumTrialPromptHeld() });
+  assert.equal(readyDecision, 'show');
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'fifth_title', decision: readyDecision, wasSuppressed: false, client: profile.client }), 'show_deferred');
+  seenWrites.push('shown');
+  shown.push('premium_prompt_shown');
+  takePremiumTrialPrompt();
+  assert.equal(profile.marker, null);
+  assert.deepEqual(profile.calls.map(call => call[2]), [true, false]);
+  assert.equal(peekPremiumTrialPrompt(), null);
+  assert.deepEqual(seenWrites, ['shown']);
+  assert.deepEqual(shown, ['premium_prompt_shown']);
+  clearPremiumTrialPrompt();
+});
+
 test('Trakt waits for refreshed counts before deciding, and deferral selects value copy', async () => {
   const profile = deferredProfile();
   const stale = premiumTrialPromptDecision({ ...eligible, trigger: 'trakt_import', importRefreshReady: false, titleCount: 0, sessionCount: 2 });

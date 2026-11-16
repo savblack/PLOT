@@ -76,13 +76,15 @@ export function shouldShowPremiumTrialPrompt({ seen, isPremium, trialEligible, c
 
 /**
  * A suppressed request remains pending and must never write the seen flag.
- * @param {Parameters<typeof shouldShowPremiumTrialPrompt>[0] & { importRefreshReady?: boolean, trigger?: PremiumTrialPromptTrigger }} state
+ * @param {Parameters<typeof shouldShowPremiumTrialPrompt>[0] & { importRefreshReady?: boolean, trigger?: PremiumTrialPromptTrigger, overlayOpen?: boolean }} state
  * @returns {'discard' | 'show' | 'wait' | 'suppress'}
  */
 export function premiumTrialPromptDecision(state) {
   if (state.seen || state.isPremium || state.trialEligible !== true || !state.checkoutOpen) return 'discard';
   if (state.trigger === 'trakt_import' && (!state.importRefreshReady || state.titleCount == null)) return 'wait';
-  if (shouldShowPremiumTrialPrompt(state)) return 'show';
+  // An offer that is ready remains pending until the screen is free. No
+  // caller may claim its deferral, mark it seen, or emit "shown" while held.
+  if (shouldShowPremiumTrialPrompt(state)) return state.overlayOpen ? 'wait' : 'show';
   if (state.titleCount == null || state.sessionCount == null) return 'wait';
   return 'suppress';
 }
@@ -164,10 +166,9 @@ function notify() {
 }
 
 /**
- * Hold the prompt while something else owns the screen. The phone's import
- * sheet takes a hold while it is open: a second native modal over it would
- * not appear on iOS, and a prompt behind it would count as shown when nobody
- * saw it. Returns the release; calling it twice is harmless.
+ * Hold the prompt while something else owns the screen. Native modals register
+ * here because a second modal over one may not appear on iOS, yet would count
+ * as shown. Returns the release; calling it twice is harmless.
  *
  * @returns {() => void}
  */

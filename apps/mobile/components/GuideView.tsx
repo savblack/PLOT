@@ -1,7 +1,8 @@
 // Native renderer. The account settings, dates, filtering and loading lifecycle
 // are shared with web. FlatList virtualizes large broadcast schedules.
 import { useState } from 'react';
-import { View, Text, Pressable, FlatList, ScrollView, Modal, Linking } from 'react-native';
+import { View, Text, Pressable, FlatList, ScrollView, Linking } from 'react-native';
+import AppModal from './AppModal';
 import { TextInput } from './TextInput';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,7 +70,7 @@ export function BroadcastAgenda({ region, preferences, endpoint = '', showHeadin
       renderItem={({ item }) => <Pressable accessibilityRole="button" onPress={() => setSelected(item)} style={{ paddingVertical: 18, borderBottomWidth: 1, borderColor: colors.border, gap: 6 }}><Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansBold }}>{item.title}</Text><Text style={{ color: colors.textMuted }}>{names.get(item.channelId)} · {time(item.start)}–{time(item.end)}</Text>{isOnNow(item, now) && <Text style={{ color: colors.accentText }}>{COPY.now}</Text>}</Pressable>}
       ListFooterComponent={data ? <View style={{ paddingTop: 16, gap: 8 }}>{button(`${COPY.providerLabel}: ${data.source}`, () => { void Linking.openURL(data.sourceUrl); })}<Text style={{ color: colors.textMuted }}>{COPY.updated} {new Date(data.fetchedAt).toLocaleString('en-AU', { timeZone: timezone })}</Text></View> : null}
     />
-    <Modal visible={draft !== null} animationType="slide" onRequestClose={() => { if (!preferences.saving) setDraft(null); }}>
+    <AppModal visible={draft !== null} animationType="slide" onRequestClose={() => { if (!preferences.saving) setDraft(null); }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20, gap: 12 }} style={{ backgroundColor: colors.bg }}>
         <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.display, fontSize: 24 }}>{COPY.channels}</Text>
         {button(COPY.allChannels, () => setDraft(channels.map((c: Channel) => c.id)), false, preferences.saving)}
@@ -79,14 +80,14 @@ export function BroadcastAgenda({ region, preferences, endpoint = '', showHeadin
         {button(COPY.cancel, () => setDraft(null), false, preferences.saving)}
         {saveError && <Text accessibilityRole="alert" style={{ color: colors.danger }}>{COPY.saveError}</Text>}
       </ScrollView>
-    </Modal>
-    <Modal visible={selected !== null} animationType="slide" onRequestClose={() => setSelected(null)}>
+    </AppModal>
+    <AppModal visible={selected !== null} animationType="slide" onRequestClose={() => setSelected(null)}>
       <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
         <ModalHeader title={selected?.title ?? ''} actionLabel={COMMON.cancel} onAction={() => setSelected(null)} />
         <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
           {selected && <><Text style={{ color: colors.textMuted }}>{names.get(selected.channelId)} · {time(selected.start)}–{time(selected.end)}</Text><Text style={{ color: colors.textPrimary }}>{selected.description || COPY.noDescription}</Text></>}
         </ScrollView>
       </View>
-    </Modal>
+    </AppModal>
   </View>;
 }

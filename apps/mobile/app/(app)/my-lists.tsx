@@ -7,9 +7,9 @@ import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from '
 import { arrangeByMyListsOrder, normalizeUiPrefs } from '@plot/core/uiPrefs.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import {
-  View, Text, ScrollView, FlatList, Image, TouchableOpacity,
-  Modal, StyleSheet, Dimensions, Alert,
+  View, Text, ScrollView, FlatList, Image, TouchableOpacity, StyleSheet, Dimensions, Alert,
 } from 'react-native';
+import AppModal from '../../components/AppModal';
 import { TextInput } from '../../components/TextInput';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -434,7 +434,7 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
     }
   };
   return (
-    <Modal visible animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
+    <AppModal visible animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
       <View style={styles.createModal}>
         <Text style={styles.createModalTitle}>New list</Text>
         <TextInput
@@ -454,7 +454,7 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
           <Button flex label={COMMON.cancel} onPress={onClose} />
         </SheetActions>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
