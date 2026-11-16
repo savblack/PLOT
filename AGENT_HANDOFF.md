@@ -1,10 +1,10 @@
 # because-you-watched
 
-Status: paused (built and checked on web; waiting for Savannah's go-ahead to open a PR)
+Status: paused (PR open, waiting for review and Savannah's OK to merge)
 Owner: Claude Code (Hailey's area: core tracker and web/mobile parity)
 Branch: agent/2026-11-16-because-you-watched
 Worktree: ~/Developer/PLOT-worktrees/2026-11-16-because-you-watched
-Latest pushed commit: 9d123e591 (checkpoint), plus this handoff update
+Latest pushed commit: see the PR head
 Updated: 2026-11-16
 
 ## In plain words
@@ -37,10 +37,11 @@ watching, and can be moved or hidden in Customize Home.
 
 ## Next
 
-1. Savannah's OK to open the PR (no migration, no billing, no permissions change).
+1. Watch the PR's checks; look at the Cloudflare preview's Home.
 2. Run mobile on the iPhone simulator and look at the two shelves.
+3. Delete this file in the last commit before merge.
 
 ## Approvals
 
-- Given: build both shelves (chat, 2026-11-16).
-- Still needed: opening the PR and merging.
+- Given: build both shelves; open the PR (chat, 2026-11-16).
+- Still needed: merging.
