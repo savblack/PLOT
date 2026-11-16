@@ -9,7 +9,7 @@ import { arrangeByMyListsOrder, normalizeUiPrefs } from '@plot/core/uiPrefs.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity,
-  Modal, StyleSheet, Dimensions, Alert,
+  StyleSheet, Dimensions, Alert,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
@@ -20,7 +20,7 @@ import SearchField, { SEARCH_FIELD_H } from '../../components/SearchField';
 import Button, { TextLink } from '../../components/Button';
 import { Tag } from '../../components/Chip';
 import { useDialog } from '../../components/Dialog';
-import { SheetActions } from '../../components/BottomSheet';
+import BottomSheet from '../../components/BottomSheet';
 import SectionTitle from '../../components/SectionTitle';
 import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -439,9 +439,12 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
     }
   };
   return (
-    <Modal visible animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
-      <View style={styles.createModal}>
-        <Text style={styles.createModalTitle}>New list</Text>
+    <BottomSheet
+      visible
+      onClose={onClose}
+      title="New list"
+      footer={<Button variant="primary" label="Create" onPress={submit} disabled={busy || !name.trim()} busy={busy} />}
+    >
         <TextInput
           style={styles.createModalInput}
           placeholder="List name…"
@@ -453,13 +456,8 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
           editable={!busy}
           onSubmitEditing={submit}
         />
-        {!!error && <Text accessibilityRole="alert" style={{ color: colors.textSecondary, marginBottom: spacing.sm }}>{error}</Text>}
-        <SheetActions>
-          <Button variant="primary" flex label="Create" onPress={submit} disabled={busy || !name.trim()} />
-          <Button flex label={COMMON.cancel} onPress={onClose} />
-        </SheetActions>
-      </View>
-    </Modal>
+        {!!error && <Text accessibilityRole="alert" style={{ color: colors.textSecondary }}>{error}</Text>}
+    </BottomSheet>
   );
 }
 
@@ -1534,8 +1532,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   customListCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   renameInput: { flex: 1, fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary, borderBottomWidth: 1, borderBottomColor: colors.accent, paddingVertical: 2 },
 
-  createModal: { flex: 1, backgroundColor: colors.bg, padding: spacing.xl, gap: spacing.lg },
-  createModalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   createModalInput: { backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
 });
 

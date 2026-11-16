@@ -81,7 +81,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: spacing.xl, paddingTop: spacing.sm, gap: spacing.md,
   },
   flush: { paddingHorizontal: 0 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  // A hairline under the title, as on the full-page sheets and web's pop-ups.
+  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingBottom: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   title: { flex: 1, minWidth: 0 },
   close: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
   flushTitle: { marginHorizontal: spacing.xl },

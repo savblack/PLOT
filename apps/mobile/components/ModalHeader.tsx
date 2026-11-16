@@ -8,9 +8,13 @@ import { ReactNode, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
+import { IconChevronLeft } from './icons';
 
-export default function ModalHeader({ title, actionLabel, onAction, accent = false, action }: {
+export default function ModalHeader({ title, actionLabel, onAction, accent = false, action, onBack, backLabel }: {
   title: string;
+  /** A back chevron before the title, for a sheet with steps (Import). */
+  onBack?: () => void;
+  backLabel?: string;
   actionLabel?: string;
   onAction?: () => void;
   /** Draws the action word in the accent color (the title picker's Done). */
@@ -22,6 +26,11 @@ export default function ModalHeader({ title, actionLabel, onAction, accent = fal
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.header}>
+      {onBack ? (
+        <TouchableOpacity onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={backLabel}>
+          <IconChevronLeft size={22} color={colors.textSecondary} />
+        </TouchableOpacity>
+      ) : null}
       <Text style={styles.title} accessibilityRole="header">{title}</Text>
       {action ?? (
         <TouchableOpacity onPress={onAction}>
