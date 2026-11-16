@@ -24,7 +24,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { IconClose, IconCheck } from '../../components/icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -44,6 +44,7 @@ import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { Palette, fontFamily, fontSize, radii, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 import PlotWordmark from '../../components/PlotWordmark';
+import PremiumMark from '../../components/PremiumMark';
 import { EVENTS, track } from '../../lib/analytics';
 
 type Styles = ReturnType<typeof makeStyles>;
@@ -69,17 +70,6 @@ function useReduceMotion() {
   }, []);
   return reduce;
 }
-
-function Sparkle({ color }: { color: string }) {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M10 3.5 11.6 8.4 16.5 10 11.6 11.6 10 16.5 8.4 11.6 3.5 10 8.4 8.4Z" /><Path d="M18 14.5v5M15.5 17h5" /><Path d="M18.5 3.5v3M17 5h3" />
-    </Svg>
-  );
-}
-
-
-
 
 /* The request, as one card (Nov 14, round 3A, like web): movie or show, mood
    chips, three switches and one pink button. Surprise me and the rarer
@@ -115,7 +105,7 @@ function MoodCard({ picker, premium, styles, colors }: { picker: Picker; premium
         flex
         label={T.pickForMe}
         onPress={() => picker.go(premium ? 'five' : 'surprise')}
-        icon={locked ? <Lock color={colors.onAccentFill} /> : undefined}
+        icon={locked ? <PremiumMark color={colors.onAccentFill} size={16} /> : undefined}
         accessibilityLabel={locked ? `${T.pickForMe}, ${T.gate.locked}` : picker.freePickLeft ? `${T.pickForMe}. ${T.freePickNote}` : undefined}
       />
       {picker.freePickLeft && <Text style={styles.freeNote}>{T.freePickNote}</Text>}
@@ -384,13 +374,6 @@ function Shelves({ picker, premium, onOpen, onUpgrade, styles, colors, between }
   );
 }
 
-function Lock({ color }: { color: string }) {
-  return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Rect x={4} y={11} width={16} height={10} rx={2} /><Path d="M8 11V7a4 4 0 0 1 8 0v4" />
-    </Svg>
-  );
-}
 
 /* The upgrade pop-up over the results layout with no titles or images,
    blurred. Nothing behind it is fetched. */
