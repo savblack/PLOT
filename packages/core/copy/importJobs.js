@@ -29,6 +29,12 @@ export const IMPORT_JOBS = {
     imdbListWatchlistNote: 'Adds these titles to your Plot watchlist',
     imdbListOther: 'No, another list',
     imdbListOtherNote: 'Adds them to a Plot list called IMDb list',
+    // Asked when a Letterboxd file could be watched.csv or watchlist.csv: the
+    // two share one layout, so a renamed file cannot say which it is. The
+    // "yes" answer reuses imdbListWatchlist and its note.
+    letterboxdListQuestion: 'Is this your Letterboxd watchlist?',
+    letterboxdListWatched: 'No, films I’ve watched',
+    letterboxdListWatchedNote: 'Marks these films watched in Plot',
     plexProfile: 'Profile',
     plexOwned: 'Owned',
     plexShared: 'Shared with you',

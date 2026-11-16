@@ -130,10 +130,46 @@ test('an answered IMDb list question names the upload so the worker reads the an
     assert.deepEqual(uploads, [stored]);
     assert.ok(enqueued.p_files[0].endsWith(`/${stored}`));
   }
-  // Another source ignores the answer.
-  uploads.length = 0;
-  await startFileImport({ userId: 'u1', source: 'letterboxd', listChoice: 'watchlist', files: [{ name: 'watched.csv', body: new Uint8Array([1]) }] });
-  assert.deepEqual(uploads, ['watched.csv']);
+  // Letterboxd's answer names the file watched.csv or watchlist.csv.
+  for (const [listChoice, stored] of [['watchlist', 'watchlist.csv'], ['watched', 'watched.csv'], [null, 'export.csv']]) {
+    uploads.length = 0;
+    await startFileImport({ userId: 'u1', source: 'letterboxd', listChoice, files: [{ name: 'export.csv', body: new Uint8Array([1]) }] });
+    assert.deepEqual(uploads, [stored]);
+  }
+  // An answer that is not one of the source's own, and a source that never asks, change nothing.
+  for (const [source, listChoice] of [['letterboxd', 'list'], ['imdb', 'watched'], ['netflix', 'watchlist']]) {
+    uploads.length = 0;
+    await startFileImport({ userId: 'u1', source, listChoice, files: [{ name: 'export.csv', body: new Uint8Array([1]) }] });
+    assert.deepEqual(uploads, ['export.csv']);
+  }
+});
+
+test('a Letterboxd watched or watchlist file with any other name asks which it is, then imports as the answer', async () => {
+  const { importListChoiceNeeded, importFileNameForListChoice, importListChoiceOptions } = await import('../../importJobs.js');
+  const { configure } = await import('../../config.js');
+  const { prepareImportFiles } = await import('../../importDocument.js');
+  const { readFileSync } = await import('node:fs');
+  const fixture = name => readFileSync(new URL(`../fixtures/imports/${name}`, import.meta.url), 'utf8');
+  const watched = fixture('letterboxd-watched.csv');
+  // Any name that says neither word asks; a name that says one is its own answer.
+  for (const name of ['export.csv', 'my films.csv', 'download (3).csv', '']) assert.equal(importListChoiceNeeded('letterboxd', watched, name), true, name);
+  for (const name of ['watched.csv', 'watched (1).csv', 'watchlist.csv', 'letterboxd-sam-watchlist.csv']) assert.equal(importListChoiceNeeded('letterboxd', watched, name), false, name);
+  assert.equal(importListChoiceNeeded('letterboxd', watched.split('\n')[0], 'export.csv'), true); // the header row is enough
+  // The other Letterboxd layouts say what they are and never ask.
+  for (const other of ['letterboxd-diary.csv', 'letterboxd-ratings.csv', 'letterboxd-reviews.csv']) assert.equal(importListChoiceNeeded('letterboxd', fixture(other), 'export.csv'), false, other);
+  assert.deepEqual(importListChoiceOptions('letterboxd').options.map(option => option.id), ['watchlist', 'watched']);
+  assert.deepEqual(importListChoiceOptions('imdb').options.map(option => option.id), ['watchlist', 'list']);
+  configure({ importEventsEnabled: true });
+  try {
+    const asWatched = prepareImportFiles('letterboxd', [{ name: importFileNameForListChoice('watched', 'letterboxd'), text: watched }]);
+    assert.ok(asWatched.entries.length > 0);
+    assert.ok(asWatched.entries.every(row => !row.destination));
+    const asWatchlist = prepareImportFiles('letterboxd', [{ name: importFileNameForListChoice('watchlist', 'letterboxd'), text: watched }]);
+    assert.equal(asWatchlist.entries.length, asWatched.entries.length);
+    assert.ok(asWatchlist.entries.every(row => row.destination.kind === 'watchlist'));
+  } finally {
+    configure({ importEventsEnabled: false });
+  }
 });
 
 test('the /import page and the background sheet read an answered IMDb list under one name', async () => {

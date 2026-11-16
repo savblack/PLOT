@@ -14,7 +14,7 @@ import { emit, HISTORY_CHANGED_EVENT } from './events.js';
 export { splitImportForBackground } from './importBackground.js';
 import { IMPORT_JOBS } from './copy/importJobs.js';
 import { IMPORT_ENTRY_POINTS } from './importPipeline.js';
-import { isImdbListExport, namesWatchlist } from './importParsing.js';
+import { isImdbListExport, isLetterboxdFilmList, namesWatched, namesWatchlist } from './importParsing.js';
 
 export const IMPORT_UPLOADS_BUCKET = 'import-uploads';
 export const IMPORT_JOB_ACTIVE = Object.freeze(['queued', 'running', 'retry_wait']);
@@ -161,20 +161,47 @@ export function enqueueError(error) {
   return error instanceof Error ? error : new Error(String(error.message || error));
 }
 
-/** @typedef {'watchlist' | 'list'} ImportListChoice */
+/** @typedef {'watchlist' | 'list' | 'watched'} ImportListChoice */
 
 /**
+ * Some exports cannot say what they are, so the pickers ask the person
+ * before uploading.
+ *
  * IMDb's watchlist and its other lists are one file layout, and IMDb names
- * every export with a random ID, so nothing in the file says which it is.
- * The pickers ask the person when this is true, before uploading. A name
- * that already says watchlist (an older export, or one the person named) is
- * its own answer.
+ * every export with a random ID. Letterboxd's watched.csv and watchlist.csv
+ * are one layout too, so a renamed one ("export.csv") could be either.
+ * A name that already says which it is (an older export, or one the person
+ * named) is its own answer.
  * @param {string} source
  * @param {string} text the file's text, or at least its first line
  * @param {string} [fileName]
  */
 export function importListChoiceNeeded(source, text, fileName = '') {
-  return source === 'imdb' && typeof text === 'string' && isImdbListExport(text) && !namesWatchlist(fileName);
+  if (typeof text !== 'string') return false;
+  if (source === 'imdb') return isImdbListExport(text) && !namesWatchlist(fileName);
+  if (source === 'letterboxd') return isLetterboxdFilmList(text) && !namesWatchlist(fileName) && !namesWatched(fileName);
+  return false;
+}
+
+/**
+ * The question and its two answers for a source, in the order shown. One
+ * definition, so the web sheet, the /import page and the iPhone sheet ask
+ * the same thing.
+ * @param {string | null | undefined} source
+ * @returns {{ question: string, options: { id: ImportListChoice, label: string, note: string }[] }}
+ */
+export function importListChoiceOptions(source) {
+  const I = IMPORT_JOBS.onboarding;
+  if (source === 'letterboxd') {
+    return { question: I.letterboxdListQuestion, options: [
+      { id: 'watchlist', label: I.imdbListWatchlist, note: I.imdbListWatchlistNote },
+      { id: 'watched', label: I.letterboxdListWatched, note: I.letterboxdListWatchedNote },
+    ] };
+  }
+  return { question: I.imdbListQuestion, options: [
+    { id: 'watchlist', label: I.imdbListWatchlist, note: I.imdbListWatchlistNote },
+    { id: 'list', label: I.imdbListOther, note: I.imdbListOtherNote },
+  ] };
 }
 
 /**
@@ -185,16 +212,22 @@ export function importListChoiceNeeded(source, text, fileName = '') {
  * @param {{ name: string }[]} files
  */
 function namedForListChoice(source, listChoice, files) {
-  if (source !== 'imdb' || !listChoice || files.length !== 1) return files;
-  return [{ ...files[0], name: importFileNameForListChoice(listChoice) }];
+  if (!listChoice || files.length !== 1) return files;
+  const name = importFileNameForListChoice(listChoice, source);
+  return name ? [{ ...files[0], name }] : files;
 }
 
-/** The name an answered IMDb list file is read under, by the worker and by
- * the in-browser /import page alike (parsePlatform reads the name).
+/** The name an answered list file is read under, by the worker and by the
+ * in-browser /import page alike (parsePlatform reads the name). Null when the
+ * answer does not belong to the source.
  * @param {ImportListChoice} listChoice
+ * @param {string} [source]
+ * @returns {string | null}
  */
-export function importFileNameForListChoice(listChoice) {
-  return listChoice === 'watchlist' ? 'imdb-watchlist.csv' : 'imdb-list.csv';
+export function importFileNameForListChoice(listChoice, source = 'imdb') {
+  if (source === 'imdb') return listChoice === 'watchlist' ? 'imdb-watchlist.csv' : listChoice === 'list' ? 'imdb-list.csv' : null;
+  if (source === 'letterboxd') return listChoice === 'watchlist' ? 'watchlist.csv' : listChoice === 'watched' ? 'watched.csv' : null;
+  return null;
 }
 
 /**

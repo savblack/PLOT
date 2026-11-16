@@ -2,7 +2,7 @@ import { isLetterboxdDocument, parseLetterboxdDocument } from './letterboxdImpor
 import { getConfig } from './config.js';
 import { parseTraktAnnotations, TRAKT_ANNOTATION_FILES } from './traktAnnotations.js';
 import { identifyImportEntries } from './importEvents.js';
-import { isImdbListExport, namesWatchlist, originalExportName, parseCSV, parsePlatform } from './importParsing.js';
+import { isImdbListExport, namesWatched, namesWatchlist, originalExportName, parseCSV, parsePlatform } from './importParsing.js';
 import { parseTvTimeDocument } from './tvTimeImport.js';
 import { IMPORT_VIEW } from './copy/importView.js';
 
@@ -67,7 +67,7 @@ function letterboxdFileName(fileName, text) {
   const [header = []] = parseCSV(text.replace(/^\uFEFF/, '').split('\n', 1)[0]);
   if (header.join(',') !== 'Date,Name,Year,Letterboxd URI') return fileName;
   if (namesWatchlist(original)) return 'watchlist.csv';
-  if (/watched/.test(original)) return 'watched.csv';
+  if (namesWatched(original)) return 'watched.csv';
   return fileName;
 }
 

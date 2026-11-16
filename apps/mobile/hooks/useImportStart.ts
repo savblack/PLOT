@@ -92,7 +92,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
   const [pendingRows, setPendingRows] = useState<number | null>(null);
   // An IMDb list file: is it the watchlist? null until the person answers.
   const [listChoiceNeeded, setListChoiceNeeded] = useState(false);
-  const [listChoice, setListChoice] = useState<'watchlist' | 'list' | null>(null);
+  const [listChoice, setListChoice] = useState<'watchlist' | 'list' | 'watched' | null>(null);
 
   const jobs = useImportJobs(userId, { history });
   const trakt = useTraktSync(userId);
@@ -177,8 +177,9 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
       setListChoiceNeeded(false);
       setListChoice(null);
       countRows(files).then(count => setPendingRows(count));
-      // The header row is enough to tell an IMDb list from a ratings export.
-      if (source === 'imdb' && files.length === 1) {
+      // The header row is enough to tell an IMDb list from a ratings export,
+      // or a Letterboxd watched/watchlist file from its other exports.
+      if ((source === 'imdb' || source === 'letterboxd') && files.length === 1 && !/\.zip$/i.test(files[0].name)) {
         new FileSystem.File(files[0].uri).text()
           .then(text => setListChoiceNeeded(importListChoiceNeeded(source, text.slice(0, 4096), files[0].name)))
           .catch(() => setListChoiceNeeded(false));
