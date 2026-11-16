@@ -25,6 +25,7 @@ import { CAPTCHA_SUBMIT_ATTEMPTS, captchaRetryAfterWait, captchaSubmitEnabled, c
 import { shouldMagicLinkViaBypass, shouldResendViaBypass } from '@plot/core/authBypass.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import { AUTH_PAGE, MIN_PASSWORD_LENGTH } from '@plot/core/copy/authPage.js';
 import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
 import { hasSignedInBefore } from '../../lib/signedInBefore';
@@ -1030,7 +1031,9 @@ export default function AuthScreen() {
                         accessibilityLabel={showPassword ? AUTH_PAGE.hidePassword : AUTH_PAGE.showPassword}
                         accessibilityState={{ selected: showPassword }}
                       >
-                        <Text style={styles.showPasswordText}>{showPassword ? AUTH_PAGE.hide : AUTH_PAGE.show}</Text>
+                        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <Path d={showPassword ? ICON_PATHS.eye : ICON_PATHS.eyeClosed} />
+                        </Svg>
                       </TouchableOpacity>
                     </View>
                     {passwordError ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{passwordError}</Text> : null}
@@ -1284,18 +1287,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   passwordInput: {
-    // Room for the Show/Hide label so typed text never runs under it.
-    paddingRight: 64,
+    // Room for the eye toggle so typed text never runs under it.
+    paddingRight: 48,
   },
   showPassword: {
     position: 'absolute',
     right: spacing.lg,
-  },
-  showPasswordText: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.xs,
-    color: MUTED,
-    letterSpacing: 0.2,
   },
   fieldError: {
     fontFamily: fontFamily.sans,

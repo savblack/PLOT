@@ -45,8 +45,6 @@ export const AUTH_PAGE = {
   passwordLabel: 'Password',
   showPassword: 'Show password',
   hidePassword: 'Hide password',
-  show: 'Show',
-  hide: 'Hide',
   forgotPassword: 'Forgot password?',
   continueWithApple: 'Continue with Apple',
   continueWithGoogle: 'Continue with Google',

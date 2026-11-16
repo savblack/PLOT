@@ -20,6 +20,7 @@ import { markSignupReferralPending } from '../utils/attribution.js';
 import { writePendingSearch } from '../utils/pendingSearch.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 import PlotLogo from '../components/PlotLogo.jsx';
+import Icon from '../components/Icon.jsx';
 import AuthShelf from '../components/AuthShelf.jsx';
 import { loginNeedsConfirmation, shouldMagicLinkViaBypass, shouldResendViaBypass } from '../utils/authBypass.js';
 import { rememberPendingBypassSignup, rememberSignupTracked } from '../utils/authCallbackReport.js';
@@ -981,7 +982,7 @@ export default function AuthPage({ initialMode = 'signup' }) {
                         aria-pressed={showPassword}
                         title={showPassword ? AUTH_PAGE.hidePassword : AUTH_PAGE.showPassword}
                       >
-                        {showPassword ? AUTH_PAGE.hide : AUTH_PAGE.show}
+                        <Icon name={showPassword ? 'eye' : 'eyeClosed'} size={20} />
                       </button>
                     </div>
                     {mode === 'login' && (

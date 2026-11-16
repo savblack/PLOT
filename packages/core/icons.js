@@ -8,7 +8,7 @@
 //
 // Add an icon here when a second surface needs it. Do not redraw one inline.
 
-/** @typedef {'bookmark' | 'heart' | 'check' | 'spark'} IconName */
+/** @typedef {'bookmark' | 'heart' | 'check' | 'spark' | 'eye' | 'eyeClosed'} IconName */
 
 /** @type {Record<IconName, string>} */
 export const ICON_PATHS = {
@@ -20,6 +20,10 @@ export const ICON_PATHS = {
   // Premium. The one marker for a Premium feature. The padlock is not used
   // for Premium: it means private (notes, privacy).
   spark: 'M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z',
+  // The password field's reveal toggle. The eye shows the field's state:
+  // open while the password is readable, closed while it is dots.
+  eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  eyeClosed: 'M2 10c2.6 3.6 6 5.4 10 5.4s7.4-1.8 10-5.4 M4.6 13.4 2.8 15.6 M8.6 15.2 7.8 18 M15.4 15.2l.8 2.8 M19.4 13.4l1.8 2.2',
 };
 
 /** Icons that read as a shape and can be drawn solid. A line icon (check) cannot. */
