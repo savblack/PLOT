@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import './AuthPage.css';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import Icon from '../components/Icon.jsx';
 import { COMMON } from '../copy/common.js';
 import { AUTH_PAGE, MIN_PASSWORD_LENGTH } from '../copy/authPage.js';
 import { RESET_PASSWORD_PAGE } from '../copy/resetPasswordPage.js';
@@ -82,7 +83,7 @@ export default function ResetPasswordPage() {
                       aria-pressed={showPassword}
                       title={showPassword ? RESET_PASSWORD_PAGE.hidePasswords : RESET_PASSWORD_PAGE.showPasswords}
                     >
-                      {showPassword ? AUTH_PAGE.hide : AUTH_PAGE.show}
+                      <Icon name={showPassword ? 'eye' : 'eyeClosed'} size={20} />
                     </button>
                   </div>
                 </div>
