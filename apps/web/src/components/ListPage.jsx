@@ -59,7 +59,7 @@ function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, 
   const searching = searchOpen || query !== '';
   return (
     <section className={`list-page list-page--${view}${shared ? ' list-page--shared' : ''}${shared && searching ? ' list-page--search-open' : ''}`}>
-      <BackLink className="list-page-back--mobile" to="/my-lists" label={CUSTOM_LISTS.backToMyLists} />
+      <BackLink className="list-page-back" to="/my-lists" label={CUSTOM_LISTS.backToMyLists} />
       <header className="list-page-head">
         {shared && <Link className="list-page-bar-back" to="/my-lists" aria-label={CUSTOM_LISTS.backToMyLists}><IconChevronLeft /></Link>}
         <div className="list-page-heading">
