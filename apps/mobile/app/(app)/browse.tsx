@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
-import { Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { PosterCaption, posterColumnWidth } from '../../components/PosterCard';
+import { cardMetaLine } from '@plot/core/media.js';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft } from '../../components/icons';
@@ -14,7 +16,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 
-const CARD_W = (Dimensions.get('window').width - spacing.xl * 2 - spacing.md * 2) / 3;
+const CARD_W = posterColumnWidth();
 
 interface BrowseItem {
   id: number;
@@ -86,7 +88,7 @@ export default function BrowseScreen() {
                   <View style={{ width: CARD_W, height: CARD_W * 1.5, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken }}>
                     {uri ? <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : null}
                   </View>
-                  <Text numberOfLines={2} style={{ marginTop: spacing.xs, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }}>{title}</Text>
+                  <PosterCaption title={title} meta={cardMetaLine(item)} />
                 </TouchableOpacity>
               );
             })}

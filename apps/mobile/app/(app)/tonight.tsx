@@ -44,6 +44,7 @@ import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { Palette, fontFamily, fontSize, radii, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 import PlotWordmark from '../../components/PlotWordmark';
+import { PosterArt, PosterCaption, posterColumnWidth } from '../../components/PosterCard';
 import PremiumMark from '../../components/PremiumMark';
 import { EVENTS, track } from '../../lib/analytics';
 
@@ -307,7 +308,7 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
   );
 }
 
-const SHELF_W = 104;
+const SHELF_W = posterColumnWidth();
 
 /** Chips that narrow every shelf, then the shelves themselves (core: tonightShelves.js). */
 /** Laid out like My Lists: collapsible sections, rails edge to edge, everything
@@ -355,12 +356,9 @@ function Shelves({ picker, premium, onOpen, onUpgrade, styles, colors, between }
                   contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}>
                   {shelf.items.map(item => (
                     <TouchableOpacity key={`${item.media_type}:${item.id}`} onPress={() => onOpen(item)} accessibilityRole="button"
-                      accessibilityLabel={item.title} style={{ width: SHELF_W, gap: spacing.xs }}>
-                      {item.poster_path
-                        ? <Image source={{ uri: posterUrl(item.poster_path, 'w185') ?? undefined }} style={styles.shelfPoster} />
-                        : <View style={[styles.shelfPoster, { backgroundColor: colors.surfaceSunken }]} />}
-                      <Text numberOfLines={1} style={styles.shelfTitle}>{item.title}</Text>
-                      <Text numberOfLines={1} style={styles.shelfNote}>{pickResultMeta(item)}</Text>
+                      accessibilityLabel={item.title} style={{ width: SHELF_W }}>
+                      <PosterArt uri={posterUrl(item.poster_path, 'w185')} width={SHELF_W} style={{ height: SHELF_W * 1.5 }} />
+                      <PosterCaption title={item.title} meta={pickResultMeta(item)} />
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -517,8 +515,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   moodTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, lineHeight: 24, color: colors.textPrimary },
   qTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, lineHeight: 30, color: colors.textPrimary },
-  shelfPoster: { width: SHELF_W, height: SHELF_W * 1.5, borderRadius: radii.badge },
-  shelfTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },
   shelfNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   shelfLocked: {
     flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md, padding: spacing.md,

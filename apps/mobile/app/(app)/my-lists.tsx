@@ -47,6 +47,8 @@ import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
 import { filterByWatchStatus, isFinishedStatus, listProgress, listWatchStatus, LIST_STATUS_FILTER_IDS, type ListWatchStatus } from '@plot/core/listWatchStatus.js';
 import WatchStatusChip from '../../components/WatchStatusChip';
+import { PosterCaption, POSTER_GAP, posterColumnWidth } from '../../components/PosterCard';
+import { cardMetaLine } from '@plot/core/media.js';
 import { myListsSearchSources, searchCollectionTitles, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '@plot/core/date.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
@@ -93,7 +95,7 @@ import ImportHistoryModal from '../../components/ImportHistoryModal';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
 const SCREEN_W = Dimensions.get('window').width;
-const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
+const POSTER_W = posterColumnWidth(SCREEN_W);
 const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collapses in a flex-wrap row on Fabric)
 
 
@@ -394,8 +396,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
             />
           )}
         </TouchableOpacity>
-        <Text style={[styles.posterTitle, finished && styles.finishedTitle]} numberOfLines={1}>{title}</Text>
-        {!!byline && <Text style={styles.posterCaption} numberOfLines={2}>{byline}</Text>}
+        <PosterCaption title={title} meta={byline ?? cardMetaLine(item)} dimmed={finished} />
       </View>
     );
   };
@@ -1495,9 +1496,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     letterSpacing: 0.4,
   },
 
-  posterGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, gap: spacing.sm, paddingHorizontal: spacing.xl },
-  posterRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
-  posterCard: { height: POSTER_H, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, marginBottom: spacing.xs },
+  posterGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, columnGap: POSTER_GAP, rowGap: spacing.lg, paddingHorizontal: spacing.xl },
+  posterRow: { flexDirection: 'row', gap: POSTER_GAP, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
+  posterCard: { height: POSTER_H, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   listToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
   progressWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.surfaceSunken, overflow: 'hidden' },
@@ -1507,8 +1508,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   finishedArt: { opacity: 0.45 },
   finishedTitle: { color: colors.textMuted },
   removeBtn: { position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
-  posterTitle: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
-  posterCaption: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
   sharedLine: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
 
   empty: { padding: spacing.xl, alignItems: 'center' },

@@ -16,6 +16,8 @@ import { useSmartListSeen } from '@plot/core/useSmartListSeen.js';
 import { isFinishedStatus, listWatchStatus } from '@plot/core/listWatchStatus.js';
 import WatchStatusChip from '../WatchStatusChip';
 import ListCardMarkers from '../ListCardMarkers';
+import { PosterCaption, POSTER_GAP, posterColumnWidth } from '../PosterCard';
+import { cardMetaLine } from '@plot/core/media.js';
 import { listCardMarkers } from '@plot/core/listCardMarkers.js';
 import { useGenreCatalog } from '@plot/core/useGenres.js';
 import { isSmartListPremiumError } from '@plot/core/customListCreation.js';
@@ -76,7 +78,7 @@ export default function SmartListView({ listId }: { listId: string }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const posterW = (width - spacing.xl * 2 - spacing.sm * 2) / 3;
+  const posterW = posterColumnWidth(width);
   const { open } = useMediaPanel();
   const { userId, profile, watchlist, watching, history, customLists, privateNotes } = useAppData();
   const catalogRaw = useGenreCatalog();
@@ -341,8 +343,7 @@ function Matches({
               {status && <View style={styles.statusChipSlot} pointerEvents="none"><WatchStatusChip status={status} /></View>}
               <ListCardMarkers {...markersOf(item)} />
             </View>
-            <Text style={[styles.posterTitle, finished && styles.titleFinished]} numberOfLines={2}>{item.title}</Text>
-            <Text style={styles.posterMeta}>{item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}</Text>
+            <PosterCaption title={item.title} meta={cardMetaLine(item)} dimmed={finished} />
           </TouchableOpacity>
         );
       })}
@@ -422,14 +423,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   groupTitle: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary, letterSpacing: -0.5 },
   groupCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   groupNew: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  poster: { borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: POSTER_GAP, rowGap: spacing.lg },
+  poster: { borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   posterImage: { width: '100%', height: '100%' },
   posterFinished: { opacity: 0.45 },
-  titleFinished: { color: colors.textMuted },
   statusChipSlot: { position: 'absolute', top: 6, left: 6 },
-  posterTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary, marginTop: spacing.xs },
-  posterMeta: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
   more: { alignSelf: 'center', marginTop: spacing.lg },
   note: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.md },
   locked: { gap: spacing.sm, paddingVertical: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, marginTop: spacing.md },

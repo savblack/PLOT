@@ -46,6 +46,7 @@ import ListRow from '../../components/ListRow';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { cardMetaLine } from '@plot/core/media.js';
+import { PosterCaption, posterColumnWidth } from '../../components/PosterCard';
 import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
 import { useContinueWatching } from '@plot/core/useHomeShelves.js';
 import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
@@ -79,7 +80,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const SCREEN_W = Dimensions.get('window').width;
-const CARD_W   = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
+const CARD_W   = posterColumnWidth(SCREEN_W);
 const BINGE_W  = SCREEN_W * 0.62;
 const BINGE_H  = BINGE_W * 0.56;
 
@@ -217,7 +218,7 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
+      <PosterCaption title={title} meta={cardMetaLine(item)} />
     </TouchableOpacity>
   );
 }
@@ -523,7 +524,7 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
           <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
+      <PosterCaption title={title} meta={cardMetaLine(item)} />
     </TouchableOpacity>
   );
 }
@@ -1275,7 +1276,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderRadius: radii.md,
     overflow: 'hidden',
     backgroundColor: colors.surfaceSunken,
-    marginBottom: spacing.sm,
   },
   // Naked corner icons over the poster — same treatment as the web card
   // buttons (no pill, no circle; a drop shadow keeps them legible on light
@@ -1296,12 +1296,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   cardActionBtnLeft: {
     right: undefined,
     left: 3,
-  },
-  cardTitle: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    lineHeight: 16,
   },
 
   // ── Binge cards ──
