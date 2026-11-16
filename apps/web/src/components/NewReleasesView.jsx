@@ -1,6 +1,6 @@
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
 import { prepareNewReleaseGenreRails } from '@plot/core/useNewReleases.js';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useNewReleases } from '../hooks/useNewReleases.js';
@@ -12,47 +12,8 @@ import EmptyState from './EmptyState.jsx';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { DiscoverToolbar, PlatformCharts, RailSection, RankedCard } from './DiscoverView.jsx';
 import SideFilters from './SideFilters.jsx';
-
-function NewReleasesJump({ rails }) {
-  const [activeKey, setActiveKey] = useState(rails[0]?.key);
-  const currentKey = rails.some(rail => rail.key === activeKey) ? activeKey : rails[0]?.key;
-
-  useEffect(() => {
-    const nodes = rails.map(rail => document.getElementById(`new-releases-${rail.key}`)).filter(Boolean);
-    const observer = new IntersectionObserver(entries => {
-      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-      if (visible[0]) setActiveKey(visible[0].target.id.replace('new-releases-', ''));
-    }, { rootMargin: '-15% 0px -65% 0px' });
-    nodes.forEach(node => observer.observe(node));
-    return () => observer.disconnect();
-  }, [rails]);
-
-  if (!rails.length) return null;
-  const jumpTo = (key) => {
-    setActiveKey(key);
-    document.getElementById(`new-releases-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  return (
-    <nav className="hist-card new-releases-jump" aria-label="Jump to genre">
-      <div className="hist-card-head"><h2 className="hist-card-title">Jump to</h2></div>
-      <div>
-        {rails.map(rail => (
-          <button
-            key={rail.key}
-            type="button"
-            className="cal-filter-row"
-            aria-current={currentKey === rail.key ? 'true' : undefined}
-            onClick={() => jumpTo(rail.key)}
-          >
-            <span className="cal-filter-name">{rail.title}</span>
-            <span className="mylists-jump-count">{rail.items.length}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
-  );
-}
+import { NewReleasesJumpBar, NewReleasesJumpCard } from './NewReleasesJump.jsx';
+import { useActiveRail } from '../hooks/useActiveRail.js';
 
 /* What is out now, then the same filtered, alphabetical set of genre rails.
    The first four rows (Last 30 days, Most Binged, Now Showing, Top 10 by
@@ -101,8 +62,11 @@ export default function NewReleasesView() {
       { key: 'cinema', title: 'Now Showing', subtitle: MEDIA.inCinemas, items: applyFilters(data.cinema) },
     ].filter(rail => rail.items.length > 0);
     const platforms = platformList.length > 0 ? [{ key: 'platforms', title: 'Top 10 by Platform', items: platformList }] : [];
-    return [...lead, ...platforms, ...prepareNewReleaseGenreRails(data.genreRails, typeFilters, genreFilters)];
+    const genreRails = prepareNewReleaseGenreRails(data.genreRails, typeFilters, genreFilters).map(rail => ({ ...rail, isGenre: true }));
+    return [...lead, ...platforms, ...genreRails];
   }, [data.recent, data.genreRails, data.binged, data.cinema, platformList, typeFilters, genreFilters]);
+
+  const [currentKey, jumpTo] = useActiveRail(rails);
 
   if (!app) return null;
   const { openPanel, watchlist } = app;
@@ -117,9 +81,10 @@ export default function NewReleasesView() {
         setGenreFilters={setGenreFilters}
         genres={genres}
       />
+      {!loading && <NewReleasesJumpBar rails={rails} currentKey={currentKey} onJump={jumpTo} />}
       <div className="cal-body new-releases-layout">
         <aside className="cal-side new-releases-side">
-          {!loading && <NewReleasesJump rails={rails} />}
+          {!loading && <NewReleasesJumpCard rails={rails} currentKey={currentKey} onJump={jumpTo} />}
           <section className="hist-card home-filter-card">
             <SideFilters
               typeFilters={typeFilters}

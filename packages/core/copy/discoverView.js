@@ -77,6 +77,12 @@ export const DISCOVER_VIEW = {
     filtered: 'Nothing matches right now. Try widening your filters.',
     none: 'Nothing has landed in the last 30 days. Check back soon.',
   },
+  // New Releases' jump index: the card's genre heading, and the name screen
+  // readers give the whole index. (The card's visible title is CUSTOM_LISTS.jumpTo.)
+  newReleasesJump: {
+    genres: 'Genres',
+    label: 'Jump to section',
+  },
   // Home's saved-titles shelf: the bottom of mobile Home, and the top of web
   // Home during the first run.
   savedToWatch: 'Saved to watch',
