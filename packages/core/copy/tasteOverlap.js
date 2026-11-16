@@ -55,7 +55,6 @@ export const TASTE_OVERLAP = {
 
   /** @param {number} n */
   watchlistOverlap: (n) => `${plural(n, 'title', 'titles')} on both your watchlists`,
-  watchTogether: 'Choose one together in Watch together',
 
   share: 'Share your match',
 

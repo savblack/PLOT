@@ -2,7 +2,7 @@
 
 Status: active
 Branch: agent/2026-11-16-compare-picker-unify
-Updated: 2026-11-17T11:15:00Z
+Updated: 2026-11-17T12:00:00Z
 
 ## In plain words
 
@@ -137,6 +137,16 @@ the iPhone simulator, `test:smoke`, `test-storybook:web`.
 ## Approvals
 
 Given: build boards 1 and 2; sync saved comparisons across devices (2026-11-17). Run the two production-reading checks (given 2026-11-17, done). Still needed: opening a pull request, merging (which applies the migration to production).
+
+## Sixth round (2026-11-17): Watch Together button
+
+The shared-watchlist row now carries a pink "Watch Together" button (label is
+`WATCH_TOGETHER.navLabel`), left-aligned under the count, on web and mobile.
+On a real comparison it opens `/together/with/<username>`, which already
+shows shared titles if paired, the invite if not, and the Premium prompt if
+neither has Premium. On the sample it opens the `/together` hub. Hidden when
+SHOW_WATCH_TOGETHER is off. Event `compare_watch_together_tapped` with
+`{ sample }`. Copy key `watchTogether` removed from tasteOverlap copy.
 
 ## Next
 

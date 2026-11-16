@@ -17,6 +17,9 @@ import { historyRatingLabel } from '@plot/core/history.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { TASTE_OVERLAP as T } from '@plot/core/copy/tasteOverlap.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { EVENTS } from '@plot/core/analyticsEvents.js';
+import { track } from '../../lib/analytics';
 import { COMMON } from '@plot/core/copy/common.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -296,15 +299,17 @@ function OverlapMessage({
 }
 
 function WatchlistOverlap({
-  styles, colors, count, onPress,
+  styles, colors, count, onPress, sample = false,
 }: {
   styles: ReturnType<typeof makeStyles>;
   colors: Palette;
   count: number;
+  /** Opens Watch Together; without it the row is the count alone. */
   onPress?: () => void;
+  sample?: boolean;
 }) {
-  const copy = (
-    <>
+  return (
+    <View style={styles.watchlist}>
       <View style={styles.watchIcon}>
         <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.accentSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
           <Path d="M3 5h18v12H3z" />
@@ -314,20 +319,17 @@ function WatchlistOverlap({
       </View>
       <View style={styles.watchCopy}>
         <Text style={styles.watchText}>{T.watchlistOverlap(count)}</Text>
-        {onPress ? <Text style={styles.watchCta}>{T.watchTogether}</Text> : null}
+        {onPress ? (
+          <Button
+            variant="primary"
+            size="sm"
+            label={WATCH_TOGETHER.navLabel}
+            onPress={() => { track(EVENTS.COMPARE_WATCH_TOGETHER_TAPPED, { sample }); onPress(); }}
+            style={styles.watchBtn}
+          />
+        ) : null}
       </View>
-    </>
-  );
-  if (!onPress) return <View style={styles.watchlist}>{copy}</View>;
-  return (
-    <TouchableOpacity
-      style={styles.watchlist}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`${T.watchlistOverlap(count)}. ${T.watchTogether}`}
-    >
-      {copy}
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -340,6 +342,7 @@ export function TasteOverlapExample() {
   const { colors } = useTheme();
   const overlap = useExampleOverlap();
   const { open } = useMediaPanel();
+  const router = useRouter();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const genreName = useMemo(() => exampleGenreNames(T.exampleGenres), []);
   return (
@@ -353,6 +356,8 @@ export function TasteOverlapExample() {
       genreName={genreName}
       onOpen={(id, mediaType) => open(id, mediaType === 'tv' ? 'tv' : 'movie')}
       onShare={() => {}}
+      // The sample is nobody in particular, so its button opens the hub.
+      onWatchTogether={SHOW_WATCH_TOGETHER ? () => router.push('/(app)/together' as Href) : undefined}
     />
   );
 }
@@ -487,6 +492,7 @@ function OverlapBody({
           colors={colors}
           count={sharedWatchlist}
           onPress={onWatchTogether}
+          sample={example}
         />
       )}
 
@@ -636,9 +642,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   watchIcon: {
     width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,
   },
-  watchCopy: { flex: 1, gap: 2 },
+  watchCopy: { flex: 1, gap: spacing.sm },
+  watchBtn: { alignSelf: 'flex-start' },
   watchText: { fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.onAccentSecondaryFill },
-  watchCta: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.onAccentSecondaryFill },
   primary: { alignSelf: 'center' },
   state: { alignItems: 'flex-start', gap: spacing.md, padding: 18, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   stateTitle: { fontFamily: fontFamily.display, fontSize: 22, letterSpacing: -0.4, color: colors.textPrimary },

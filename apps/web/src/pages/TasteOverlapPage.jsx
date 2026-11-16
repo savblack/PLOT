@@ -13,6 +13,7 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { posterUrl } from '../utils/images.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { TASTE_OVERLAP as T } from '../copy/tasteOverlap.js';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
 import TasteShareDialog from '../components/TasteShareDialog.jsx';
 import TasteShareMenu from '../components/TasteShareMenu.jsx';
 import LoginRedirect from '../components/LoginRedirect.jsx';
@@ -78,17 +79,27 @@ function Poster({ item, className }) {
  */
 const watchTogetherPath = (username) => `/together/with/${encodeURIComponent(username)}`;
 
-function WatchlistRowText({ count, cta = false }) {
+/**
+ * The shared-watchlist row. With `to` it carries the Watch Together button:
+ * a person's own Watch Together page, which already handles every case (your
+ * shared titles if you are paired, the invite if you are not, the Premium
+ * prompt if neither of you has it), or the hub from the picker's sample.
+ */
+function WatchlistRow({ count, to, sample = false }) {
   return (
-    <>
+    <div className="to-watchlist">
       <span className="to-watchlist-icon" aria-hidden="true">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></svg>
       </span>
       <span className="to-watchlist-text">
         <strong>{T.watchlistOverlap(count)}</strong>
-        {cta && <span>{T.watchTogether}</span>}
+        {to && (
+          <Link className="btn btn-sm btn-primary" to={to} onClick={() => track(EVENTS.COMPARE_WATCH_TOGETHER_TAPPED, { sample })}>
+            {WATCH_TOGETHER.navLabel}
+          </Link>
+        )}
       </span>
-    </>
+    </div>
   );
 }
 
@@ -241,16 +252,13 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
         </section>
         )}
 
-        {sharedWatchlist > 0 && (SHOW_WATCH_TOGETHER && !example ? (
-          <Link className="to-watchlist" to={watchTogetherPath(target.username)}>
-            <WatchlistRowText count={sharedWatchlist} cta />
-            <svg className="to-watchlist-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-          </Link>
-        ) : (
-          <div className="to-watchlist">
-            <WatchlistRowText count={sharedWatchlist} />
-          </div>
-        ))}
+        {sharedWatchlist > 0 && (
+          <WatchlistRow
+            count={sharedWatchlist}
+            sample={example}
+            to={!SHOW_WATCH_TOGETHER ? null : example ? '/together' : watchTogetherPath(target.username)}
+          />
+        )}
 
         {/* A sample is nobody's match to share. */}
         {!example && (
