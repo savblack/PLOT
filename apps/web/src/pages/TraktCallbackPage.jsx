@@ -2,20 +2,37 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { callAuthenticatedFunction, edgeFunctionUrl } from '@plot/core/functions.js';
-import { consumeTraktReturnTo, consumeTraktState, getTraktCallbackUrl, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
+import { consumeTraktReturnTo, consumeTraktState, getTraktCallbackUrl, traktErrorReturn, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 import { TRAKT_CALLBACK_PAGE } from '../copy/traktCallbackPage.js';
 import { track, EVENTS } from '../lib/analytics.js';
 
+const BACK_LABELS = {
+  setup: TRAKT_CALLBACK_PAGE.backToSetup,
+  import: TRAKT_CALLBACK_PAGE.backToImport,
+  settings: TRAKT_CALLBACK_PAGE.backToSettings,
+};
+
 export default function TraktCallbackPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [error, setError] = useState(null);
+  const [error, setErrorMessage] = useState(null);
+  // Where the error page's link goes: back to the page the connect started on.
+  const [back, setBack] = useState(() => traktErrorReturn(null));
+  // Setup connects in a popup. The page behind it is still open, so the
+  // popup offers to close itself, not to open a second copy of setup.
+  const [inPopup, setInPopup] = useState(false);
   const called = useRef(false); // prevent StrictMode double-invoke
 
   useEffect(() => {
     if (called.current) return;
     called.current = true;
+
+    const setError = (message) => {
+      setBack(traktErrorReturn(consumeTraktReturnTo()));
+      setInPopup(Boolean(window.opener && !window.opener.closed));
+      setErrorMessage(message);
+    };
 
     const handle = async () => {
       const code = searchParams.get('code');
@@ -80,7 +97,9 @@ export default function TraktCallbackPage() {
       }}>
         <PlotLogo style={{ fontSize: '2rem' }} />
         <p style={{ color: '#c0392b', fontSize: '0.95rem', maxWidth: 360 }}>{error}</p>
-        <a href="/settings" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>{TRAKT_CALLBACK_PAGE.backToSettings}</a>
+        {inPopup
+          ? <button type="button" onClick={() => window.close()} style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem', background: 'none', border: 0, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>{TRAKT_CALLBACK_PAGE.closeWindow}</button>
+          : <a href={back.href} style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>{BACK_LABELS[back.place]}</a>}
       </div>
     );
   }

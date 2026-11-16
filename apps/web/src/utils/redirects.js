@@ -80,6 +80,24 @@ export function consumeTraktReturnTo() {
   return returnTo?.startsWith('/') ? returnTo : '/settings';
 }
 
+// Where the Trakt error page offers to go back to: the page the connect was
+// started from, so someone part-way through setup is not sent to Settings.
+// Only the three pages that start a connect are accepted; anything else
+// (including a missing address) falls back to Settings.
+const TRAKT_ERROR_RETURNS = [['/onboarding', 'setup'], ['/import', 'import'], ['/settings', 'settings']];
+
+/**
+ * @param {string | null | undefined} returnTo the stored return address
+ * @returns {{ href: string, place: 'setup' | 'import' | 'settings' }}
+ */
+export function traktErrorReturn(returnTo) {
+  const path = typeof returnTo === 'string' ? returnTo : '';
+  for (const [base, place] of TRAKT_ERROR_RETURNS) {
+    if (path === base || path.startsWith(`${base}?`)) return { href: path, place: /** @type {'setup' | 'import' | 'settings'} */ (place) };
+  }
+  return { href: '/settings', place: 'settings' };
+}
+
 export function buildTraktAuthorizeUrl(clientId, state) {
   const params = new URLSearchParams({
     response_type: 'code',
