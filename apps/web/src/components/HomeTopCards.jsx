@@ -24,6 +24,7 @@ import QuickAdd from './QuickAdd.jsx';
 
 export default function HomeTopCards() {
   const { user, profile, accountValue } = useApp();
+  const titleCount = accountValue?.titleCount ?? null;
   const imports = useImportJobs(user?.id);
   const importShowing = importCardsShown(imports).length > 0;
   const allowed = homeTopCardsAllowed({ importsLoading: imports.loading });
@@ -38,13 +39,13 @@ export default function HomeTopCards() {
   // The original nudge remains on History and as a fallback while counts load.
   const nudge = useActivationNudge();
   const nudgeShowing = nudge.show && !importShowing;
-  const quickAddShowing = !importShowing && accountValue.titleCount != null && accountValue.titleCount < 5;
+  const quickAddShowing = !importShowing && titleCount != null && titleCount < 5;
 
   return (
     <>
       <ImportJobCard imports={imports} />
       {quickAddShowing && <QuickAdd />}
-      {allowed.checklist && (quickAddShowing && accountValue.titleCount === 0 && !firstWeekShowing
+      {allowed.checklist && (quickAddShowing && titleCount === 0 && !firstWeekShowing
         ? null
         : nudgeShowing && !quickAddShowing ? <ActivationNudge surface="home" sources={nudge.sources} />
         : firstWeekShowing ? <PremiumFirstWeek onChange={setFirstWeek} /> : <FinishingTouches />)}

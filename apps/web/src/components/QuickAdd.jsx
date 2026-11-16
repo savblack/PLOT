@@ -15,7 +15,7 @@ export default function QuickAdd() {
   const [error, setError] = useState(false);
   const shown = useRef(false);
   const { items, loading } = useUnifiedSearch(query, { signedIn: true });
-  const count = accountValue.titleCount;
+  const count = accountValue?.titleCount ?? null;
   useEffect(() => {
     if (shown.current || count == null) return;
     shown.current = true;

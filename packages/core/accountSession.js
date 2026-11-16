@@ -41,6 +41,18 @@ export async function recordAccountSession(userId, timezone, { client = supabase
 }
 
 /**
+ * Return only the count read for the current signed-in account. Anonymous
+ * callers and a result from the account that just signed out fail closed.
+ * @param {{ userId: string, count: number | null } | null} result
+ * @param {string | null | undefined} userId
+ * @returns {number | null}
+ */
+export function accountSessionCountForUser(result, userId) {
+  if (!userId || !result || result.userId !== userId) return null;
+  return result.count;
+}
+
+/**
  * The active edge is supplied by each platform's visible/foreground shell.
  * @param {string | null | undefined} userId
  * @param {string | null | undefined} timezone
@@ -56,5 +68,5 @@ export function useAccountSession(userId, timezone, active) {
     });
     return () => { live = false; };
   }, [userId, timezone, active]);
-  return result?.userId === userId ? result.count : null;
+  return accountSessionCountForUser(result, userId);
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { feltValueSuppressionReason, hasFeltValue, quickAddCountAfterAdd, quickAddProgress, uniqueLibraryTitleCount } from '../../hasFeltValue.js';
-import { recordAccountSession, shouldStartAccountSession } from '../../accountSession.js';
+import { accountSessionCountForUser, recordAccountSession, shouldStartAccountSession } from '../../accountSession.js';
 
 const ready = rows => ({ items: rows, entries: rows, loading: false, error: false, loadError: false });
 const title = (tmdb_id, media_type = 'movie') => ({ tmdb_id, media_type });
@@ -42,6 +42,14 @@ test('session recording asks the server and fails closed when its column or RPC 
   assert.deepEqual(args, ['record_account_session', { p_timezone: 'America/New_York' }]);
   assert.equal(await recordAccountSession(null, 'UTC', { client }), null);
   assert.equal(await recordAccountSession('account', 'UTC', { client: { rpc: async () => ({ error: { code: '42883' } }) } }), null);
+});
+
+test('a missing session result cannot match an anonymous user ID', () => {
+  assert.equal(accountSessionCountForUser(null, undefined), null);
+  assert.equal(accountSessionCountForUser(null, null), null);
+  assert.equal(accountSessionCountForUser({ userId: 'previous', count: 2 }, undefined), null);
+  assert.equal(accountSessionCountForUser({ userId: 'previous', count: 2 }, 'current'), null);
+  assert.equal(accountSessionCountForUser({ userId: 'current', count: 2 }, 'current'), 2);
 });
 
 test('session boundary matches the SQL 30-minute or new-local-day rule', () => {

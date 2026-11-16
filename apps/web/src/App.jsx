@@ -355,7 +355,7 @@ export default function App() {
   const privateNotes = usePrivateNotes(user?.id);
   const watching     = useWatching(user?.id);
   const history      = useHistory(user?.id);
-  const sessionCount = useAccountSession(profile?.id === user?.id ? user?.id : null, profile?.timezone, visible);
+  const sessionCount = useAccountSession(user?.id && profile?.id === user.id ? user.id : null, profile?.timezone, visible);
   const accountValue = useAccountValue({
     userId: user?.id, watchlist, watching, history, sessionCount,
     readPromptSeen,
