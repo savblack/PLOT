@@ -8,6 +8,8 @@
  * Trakt import saves titles. It shows once per account on each device, opens
  * the existing upgrade sheet (and through it the existing Checkout with the
  * 7-day trial) once the shared value rule is met, and is easy to dismiss.
+ * A suppressed offer is persisted on the caller's profile and claimed once
+ * across devices before it opens.
  *
  * This module owns the rules, the storage key and a tiny in-memory request
  * channel. The moment happens in one place (OnboardingFlow, reportImport) and
@@ -16,6 +18,7 @@
  * finishingTouches.js, each app reads and writes the key itself: web through
  * localStorage, mobile through AsyncStorage.
  */
+import { hasFeltValue } from './hasFeltValue.js';
 
 /** @typedef {'onboarding' | 'trakt_import' | 'fifth_title' | 'second_session'} PremiumTrialPromptTrigger */
 
@@ -68,7 +71,7 @@ export function premiumTrialPromptTriggerForImport({ source, count } = {}) {
  */
 export function shouldShowPremiumTrialPrompt({ seen, isPremium, trialEligible, checkoutOpen, titleCount, sessionCount }) {
   return !seen && !isPremium && trialEligible === true && checkoutOpen
-    && (Number.isInteger(titleCount) && titleCount >= 5 || Number.isInteger(sessionCount) && sessionCount >= 2);
+    && hasFeltValue({ titleCount, sessionCount });
 }
 
 /**

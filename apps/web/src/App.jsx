@@ -57,13 +57,14 @@ import { SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 import { useHistory } from '@plot/core/useHistory.js';
 import { useAccountSession } from '@plot/core/accountSession.js';
 import { useAccountValue } from '@plot/core/useAccountValue.js';
-import { clearPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
+import { clearPremiumTrialPrompt, premiumTrialPromptKey, PREMIUM_TRIAL_PROMPT_SEEN } from '@plot/core/premiumTrialPrompt.js';
 
 export { useApp };
 
 /* ── Timezone mismatch banner ─────────── */
 const TZ_DISMISS_KEY = 'plot_tz_dismissed';
 const TZ_NUDGE_DAYS  = 7;
+const readPromptSeen = userId => readStorage(premiumTrialPromptKey(userId)) === PREMIUM_TRIAL_PROMPT_SEEN;
 
 function TimezoneBanner({ deviceTz, onUpdate, onDismiss }) {
   return (
@@ -355,7 +356,10 @@ export default function App() {
   const watching     = useWatching(user?.id);
   const history      = useHistory(user?.id);
   const sessionCount = useAccountSession(profile?.id === user?.id ? user?.id : null, profile?.timezone, visible);
-  const accountValue = useAccountValue({ userId: user?.id, watchlist, watching, history, sessionCount });
+  const accountValue = useAccountValue({
+    userId: user?.id, watchlist, watching, history, sessionCount,
+    readPromptSeen,
+  });
   const reminders    = useReminders(user?.id);
   const topLists     = useTopLists(user?.id);
   const favorites    = useFavorites(user?.id, { watching, watchlist });

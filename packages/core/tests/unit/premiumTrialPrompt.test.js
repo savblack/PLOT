@@ -7,10 +7,112 @@ import {
   premiumTrialPromptTriggerForImport, requestPremiumTrialPrompt, shouldHoldPremiumTrialPrompt,
   shouldShowPremiumTrialPrompt, premiumTrialPromptDecision, premiumTrialPromptMoment, takePremiumTrialPrompt,
 } from '../../premiumTrialPrompt.js';
+import {
+  preparePremiumTrialPromptDecision, readPremiumTrialPromptDeferral, requestDeferredPremiumTrialPrompt,
+  clearIneligiblePremiumTrialPromptDeferral,
+} from '../../premiumTrialPromptDeferral.js';
 import { upgradeSheetContent, upgradeSheetGateFeature } from '../../upgradeSheet.js';
 import { EVENTS } from '../../analyticsEvents.js';
 
 const eligible = { seen: false, isPremium: false, trialEligible: true, checkoutOpen: true, titleCount: 5, sessionCount: 1 };
+
+function deferredProfile() {
+  let marker = null;
+  const calls = [];
+  const client = {
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({
+      data: { premium_trial_prompt_deferred_at: marker }, error: null,
+    }) }) }) }),
+    rpc: async (name, { p_user_id, p_deferred }) => {
+      calls.push([name, p_user_id, p_deferred]);
+      if (p_deferred) {
+        marker ??= '2026-11-16T00:00:00Z';
+        return { data: true, error: null };
+      }
+      if (!marker) return { data: false, error: null };
+      marker = null;
+      return { data: true, error: null };
+    },
+  };
+  return { client, calls, get marker() { return marker; } };
+}
+
+test('no deferred offer means neither fifth title nor second session requests a prompt', async () => {
+  clearPremiumTrialPrompt();
+  const profile = deferredProfile();
+  const readSeen = async () => false;
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 5, sessionCount: 1, readSeen, client: profile.client }), null);
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 4, sessionCount: 2, readSeen, client: profile.client }), null);
+  assert.equal(peekPremiumTrialPrompt(), null);
+  assert.deepEqual(profile.calls, []);
+});
+
+test('a suppressed offer persists without a seen write, then requests and claims exactly once at fifth title', async () => {
+  clearPremiumTrialPrompt();
+  const profile = deferredProfile();
+  const seenWrites = [];
+  const requests = [];
+  const off = onPremiumTrialPromptRequest(trigger => requests.push(trigger));
+  const readSeen = async () => seenWrites.length > 0;
+  const decision = premiumTrialPromptDecision({ ...eligible, titleCount: 4 });
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'onboarding', decision, wasSuppressed: false, client: profile.client }), 'suppress');
+  assert.ok(profile.marker);
+  assert.deepEqual(seenWrites, []);
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 4, sessionCount: 1, readSeen, client: profile.client }), null);
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 5, sessionCount: 1, readSeen, client: profile.client }), 'fifth_title');
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 5, sessionCount: 1, readSeen, client: profile.client }), null);
+  assert.equal(peekPremiumTrialPrompt(), 'fifth_title');
+  assert.deepEqual(requests, ['fifth_title']);
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'fifth_title', decision: 'show', wasSuppressed: false, client: profile.client }), 'show');
+  assert.equal(profile.marker, null);
+  seenWrites.push('shown');
+  takePremiumTrialPrompt();
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 5, sessionCount: 2, readSeen, client: profile.client }), null);
+  assert.deepEqual(profile.calls, [
+    ['set_premium_trial_prompt_deferral', 'u1', true],
+    ['set_premium_trial_prompt_deferral', 'u1', false],
+  ]);
+  clearPremiumTrialPrompt();
+  off();
+});
+
+test('a deferred offer requests once at second session and only one device can claim it', async () => {
+  clearPremiumTrialPrompt();
+  const profile = deferredProfile();
+  const requests = [];
+  const off = onPremiumTrialPromptRequest(trigger => requests.push(trigger));
+  const readSeen = async () => false;
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'trakt_import', decision: 'suppress', wasSuppressed: false, client: profile.client }), 'suppress');
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 4, sessionCount: 2, readSeen: async () => true, client: profile.client }), null);
+  assert.equal(peekPremiumTrialPrompt(), null);
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 4, sessionCount: 2, readSeen, client: profile.client }), 'second_session');
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 4, sessionCount: 3, readSeen, client: profile.client }), null);
+  assert.deepEqual(requests, ['second_session']);
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'second_session', decision: 'show', wasSuppressed: false, client: profile.client }), 'show');
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'second_session', decision: 'show', wasSuppressed: false, client: profile.client }), 'wait');
+  assert.equal(profile.marker, null);
+  clearPremiumTrialPrompt();
+  off();
+});
+
+test('unknown marker or unavailable RPC fails closed, including an in-memory suppression', async () => {
+  clearPremiumTrialPrompt();
+  const broken = { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: { code: '42703' } }) }) }) }), rpc: async () => ({ data: null, error: { code: '42883' } }) };
+  assert.equal(await readPremiumTrialPromptDeferral('u1', { client: broken }), null);
+  assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 5, sessionCount: 2, readSeen: async () => false, client: broken }), null);
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'onboarding', decision: 'suppress', wasSuppressed: false, client: broken }), 'wait');
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'onboarding', decision: 'show', wasSuppressed: true, client: broken }), 'wait');
+  assert.equal(peekPremiumTrialPrompt(), null);
+});
+
+test('only a confirmed permanent ineligibility clears a deferred marker', async () => {
+  const profile = deferredProfile();
+  await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'onboarding', decision: 'suppress', wasSuppressed: false, client: profile.client });
+  assert.equal(await clearIneligiblePremiumTrialPromptDeferral({ userId: 'u1', isPremium: false, trialEligible: false, billingKnown: false, client: profile.client }), false);
+  assert.ok(profile.marker);
+  assert.equal(await clearIneligiblePremiumTrialPromptDeferral({ userId: 'u1', isPremium: false, trialEligible: false, billingKnown: true, client: profile.client }), true);
+  assert.equal(profile.marker, null);
+});
 
 test('shows only to an unseen Free member who can still have the trial while checkout is open', () => {
   assert.equal(shouldShowPremiumTrialPrompt(eligible), true);

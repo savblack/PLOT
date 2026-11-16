@@ -1,11 +1,12 @@
 -- A session is a signed-in visible/foreground open, shared across web and phone.
 -- A null last_session_at records session 1; otherwise 30 minutes since the
 -- last qualifying open OR a new date in the viewer's local timezone increments.
--- Existing profiles start at 1 with a fresh timestamp, so rollout itself
--- cannot make every established Free account eligible for a trial prompt.
+-- Existing profiles start at 1 with a fresh timestamp. Their deferred prompt
+-- marker stays null, so rollout cannot create a natural-moment offer.
 alter table public.profiles
   add column session_count integer not null default 0 check (session_count >= 0),
-  add column last_session_at timestamptz;
+  add column last_session_at timestamptz,
+  add column premium_trial_prompt_deferred_at timestamptz;
 
 update public.profiles set session_count = 1, last_session_at = now();
 
@@ -35,3 +36,29 @@ $$;
 
 revoke all on function public.record_account_session(text) from public;
 grant execute on function public.record_account_session(text) to authenticated;
+
+-- Only an explicit suppressed onboarding or Trakt offer creates this marker.
+-- Existing profiles stay null. Claiming is atomic across devices.
+create function public.set_premium_trial_prompt_deferral(p_user_id uuid, p_deferred boolean)
+returns boolean language plpgsql security definer set search_path = '' as $$
+declare
+  v_updated boolean;
+begin
+  if auth.uid() is null then raise exception 'not_authenticated'; end if;
+  if p_user_id is distinct from auth.uid() then raise exception 'account_mismatch'; end if;
+  if p_deferred is null then raise exception 'invalid_deferral'; end if;
+  if p_deferred then
+    update public.profiles
+      set premium_trial_prompt_deferred_at = coalesce(premium_trial_prompt_deferred_at, now())
+      where id = auth.uid();
+  else
+    update public.profiles set premium_trial_prompt_deferred_at = null
+      where id = auth.uid() and premium_trial_prompt_deferred_at is not null;
+  end if;
+  v_updated := found;
+  return v_updated;
+end;
+$$;
+
+revoke all on function public.set_premium_trial_prompt_deferral(uuid, boolean) from public;
+grant execute on function public.set_premium_trial_prompt_deferral(uuid, boolean) to authenticated;

@@ -16,6 +16,7 @@ import {
   premiumTrialPromptDecision, premiumTrialPromptMoment,
   type PremiumTrialPromptTrigger,
 } from '@plot/core/premiumTrialPrompt.js';
+import { preparePremiumTrialPromptDecision, clearIneligiblePremiumTrialPromptDeferral } from '@plot/core/premiumTrialPromptDeferral.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { trialEligible } from '@plot/core/billing.js';
 import { useBillingStatusResult } from '@plot/core/useBillingStatus.js';
@@ -55,44 +56,55 @@ function TrialPromptGate({ userId, profile, trigger, accountValue, onDone }: {
   const decided = useRef(false);
   const clicked = useRef(false);
   const suppressed = useRef(false);
+  const inFlight = useRef(false);
+  const needsRecheck = useRef(false);
+  const [revision, setRevision] = useState(0);
   const doneRef = useRef(onDone);
   useEffect(() => { doneRef.current = onDone; });
 
   useEffect(() => {
     if (decided.current || !ready) return;
+    if (inFlight.current) { needsRecheck.current = true; return; }
     // No Upgrade button outside storefronts that allow the browser checkout,
     // so no prompt there either. Wait for the storefront read before deciding.
     if (!checkout.allowed && !checkout.storefrontKnown) return;
     const { titleCount, sessionCount } = accountValue;
     const key = premiumTrialPromptKey(userId);
-    let live = true;
+    inFlight.current = true;
     void (async () => {
       const seen = (await readStorage(key)) === PREMIUM_TRIAL_PROMPT_SEEN;
-      if (!live || decided.current) return;
+      if (decided.current) return;
+      const isPremium = isPremiumProfile(profile) || billing?.isPremium === true;
+      const canTrial = trialEligible(billing);
       const decision = premiumTrialPromptDecision({
         seen,
-        isPremium: isPremiumProfile(profile) || billing?.isPremium === true,
-        trialEligible: trialEligible(billing),
+        isPremium,
+        trialEligible: canTrial,
         checkoutOpen: checkout.allowed && !checkout.closed,
         titleCount, sessionCount,
       });
       if (decision === 'wait') return;
-      if (decision !== 'show') {
-        if (decision === 'suppress') {
-          if (!suppressed.current) {
-            suppressed.current = true;
-            track(EVENTS.PREMIUM_PROMPT_SUPPRESSED, {
-              reason: feltValueSuppressionReason(trigger), title_count: titleCount,
-              session_count: sessionCount, trigger,
-            });
-          }
-          return;
-        }
+      if (decision === 'suppress' && suppressed.current) return;
+      if (decision === 'discard') {
+        void clearIneligiblePremiumTrialPromptDeferral({
+          userId, isPremium, trialEligible: canTrial, billingKnown: billing != null,
+        });
         decided.current = true;
         takePremiumTrialPrompt();
         doneRef.current();
         return;
       }
+      const result = await preparePremiumTrialPromptDecision({ userId, trigger, decision, wasSuppressed: suppressed.current });
+      if (result === 'suppress') {
+        suppressed.current = true;
+        track(EVENTS.PREMIUM_PROMPT_SUPPRESSED, {
+          reason: feltValueSuppressionReason(trigger), title_count: titleCount,
+          session_count: sessionCount, trigger,
+        });
+        setRevision(value => value + 1);
+        return;
+      }
+      if (result !== 'show' || decided.current) return;
       decided.current = true;
       takePremiumTrialPrompt();
       const effectiveTrigger = premiumTrialPromptMoment(trigger, suppressed.current, titleCount);
@@ -102,9 +114,14 @@ function TrialPromptGate({ userId, profile, trigger, accountValue, onDone }: {
         trigger: effectiveTrigger, felt_value: true, title_count: titleCount, session_count: sessionCount,
       });
       setOpen(true);
-    })();
-    return () => { live = false; };
-  }, [ready, billing, checkout.allowed, checkout.storefrontKnown, checkout.closed, profile, userId, trigger, accountValue]);
+    })().finally(() => {
+      inFlight.current = false;
+      if (needsRecheck.current) {
+        needsRecheck.current = false;
+        setRevision(value => value + 1);
+      }
+    });
+  }, [ready, billing, checkout.allowed, checkout.storefrontKnown, checkout.closed, profile, userId, trigger, accountValue, revision]);
 
   const reason = premiumTrialPromptReason(shownTrigger);
   if (!open || !reason) return null;

@@ -13,6 +13,8 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { useAccountSession } from '@plot/core/accountSession.js';
 import { useAccountValue } from '@plot/core/useAccountValue.js';
+import { premiumTrialPromptKey, PREMIUM_TRIAL_PROMPT_SEEN } from '@plot/core/premiumTrialPrompt.js';
+import { readStorage } from '../lib/storage';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useWatchlist } from '../hooks/useWatchlist';
 import { useWatching } from '../hooks/useWatching';
@@ -21,6 +23,8 @@ import { useCustomLists } from '../hooks/useCustomLists';
 import { useTopLists } from '../hooks/useTopLists';
 import { useHistory } from '../hooks/useHistory';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
+
+const readPromptSeen = async (id: string) => (await readStorage(premiumTrialPromptKey(id))) === PREMIUM_TRIAL_PROMPT_SEEN;
 
 interface AppData {
   broadcastPreferences: ReturnType<typeof useBroadcastPreferences>;
@@ -56,7 +60,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const topLists    = useTopLists(userId);
   const history     = useHistory(userId);
   const sessionCount = useAccountSession(profile?.id === userId ? userId : null, profile?.timezone, active);
-  const accountValue = useAccountValue({ userId, watchlist, watching, history, sessionCount });
+  const accountValue = useAccountValue({
+    userId, watchlist, watching, history, sessionCount,
+    readPromptSeen,
+  });
 
   return (
     <AppDataContext.Provider value={{ broadcastPreferences, userId, user, profile, refreshProfile, privateNotes, watchlist, watching, favorites, customLists, topLists, history, accountValue }}>
