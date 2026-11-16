@@ -199,11 +199,11 @@ or starts its second server-recorded session. `premium_prompt_suppressed` record
 trigger (`onboarding`, `trakt_import`, `fifth_title`, or `second_session`).
 The Settings Premium link and deliberate feature gates remain available.
 
-Home's quick-add appears at 0–4 unique titles. `quick_add_shown` records
-`title_count` and `surface: home`; `quick_add_title_added` records the count
-after a successful one-tap save, `list` (`watching` or `watchlist`), and
-`surface: home`. At zero titles, quick-add also preserves the
-`activation_nudge_shown` and `activation_nudge_add_clicked` funnel.
+Home's quick-add appears at 0–4 unique titles. The zero-title Home activation
+funnel is `quick_add_shown` → `quick_add_focused` → `quick_add_title_added`.
+Shown and focused record `title_count` and `surface: home`; focused fires once
+per mount. Title added records the count after a successful one-tap save,
+`list` (`watching` or `watchlist`), and `surface: home`.
 
 ### The empty-library nudge
 
@@ -212,12 +212,12 @@ quick-add. History still shows "Add your first show or movie" with an
 import button for each source confirmed end to end in production
 (`ACTIVATION_NUDGE_SOURCE_IDS` in `packages/core/activationNudge.js`, Trakt and
 Simkl as of 12 Nov 2026). The History nudge replaces its empty state on web
-and is gone at the first title. Home quick-add emits the shown and add-clicked
-events at zero titles so the original activation funnel remains comparable.
+and is gone at the first title. `activation_nudge_*` events remain on the
+History nudge; Home quick-add uses its own events above.
 
 | Event | When | Properties |
 |---|---|---|
-| `activation_nudge_shown` | The nudge drew (once per mount) | `surface: 'home' \| 'history' \| 'my_lists'` |
+| `activation_nudge_shown` | The nudge drew (once per mount) | `surface: 'history' \| 'my_lists'` |
 | `activation_nudge_add_clicked` | Find a title (opens Search) | `surface` |
 | `activation_nudge_import_clicked` | An import source button | `surface`, `source` (import platform id, e.g. `trakt`) |
 

@@ -12,7 +12,7 @@ import { isPremiumFamily } from './themes.js';
 /**
  * @typedef {'lists' | 'themes' | 'pins' | 'smartLists' | 'collaborativeLists' | 'alerts' | 'seasonAlerts' | 'alertEmail'
  *   | 'artwork' | 'stats' | 'tasteOverlap' | 'calendarFeed' | 'autoImport' | 'justDecide' | 'watchTogether'
- *   | 'trialAfterOnboarding' | 'trialAfterTraktImport'} UpgradeReason
+ *   | 'trialAfterOnboarding' | 'trialAfterTraktImport' | 'trialAfterValue'} UpgradeReason
  */
 
 /**

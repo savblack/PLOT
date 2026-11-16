@@ -15,6 +15,7 @@ import { HistoryPage } from '../../../src/components/HistoryView.jsx';
 import ActivationNudge from '../../../src/components/ActivationNudge.jsx';
 import { activationNudgeSources } from '@plot/core/activationNudge.js';
 import { hasFeltValue } from '@plot/core/hasFeltValue.js';
+import { _setPostHogClient } from '../../../src/lib/analytics.js';
 import '../../../src/styles/app.css';
 import '../../../src/index.css';
 
@@ -28,6 +29,8 @@ client.rpc = async (name) => (name === 'get_my_billing_status' ? { data: { isPre
 const builder = Object.getPrototypeOf(client.from('history'));
 for (const name of ['is', 'neq', 'gt', 'lt', 'lte', 'or', 'ilike']) if (!builder[name]) builder[name] = function passThrough() { return this; };
 configure({ supabaseClient: client, simklClientId: 'smoke-simkl', tmdbProxyUrl: '/mock-tmdb' });
+window.__smokeEvents = [];
+_setPostHogClient({ capture: (event, props) => window.__smokeEvents.push({ event, props }) });
 
 const user = { id: '00000000-0000-4000-8000-000000000002', email: 'new@example.com' };
 const profile = { id: user.id, username: 'newbie', display_name: 'Alex', avatar_url: null, is_premium: false };

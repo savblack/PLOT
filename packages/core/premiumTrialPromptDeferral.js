@@ -71,7 +71,7 @@ export async function requestDeferredPremiumTrialPrompt({ userId, titleCount, se
  * An immediate onboarding/import offer has no prior suppression to claim.
  * @param {{ userId: string, trigger: import('./premiumTrialPrompt.js').PremiumTrialPromptTrigger, decision: 'discard' | 'show' | 'wait' | 'suppress',
  *   wasSuppressed: boolean, client?: any }} input
- * @returns {Promise<'discard' | 'show' | 'wait' | 'suppress'>}
+ * @returns {Promise<'discard' | 'show' | 'show_deferred' | 'wait' | 'suppress'>}
  */
 export async function preparePremiumTrialPromptDecision({ userId, trigger, decision, wasSuppressed, client = supabase }) {
   if (decision === 'suppress') {
@@ -80,10 +80,10 @@ export async function preparePremiumTrialPromptDecision({ userId, trigger, decis
   }
   if (decision !== 'show') return decision;
   if (wasSuppressed || trigger === 'fifth_title' || trigger === 'second_session') {
-    return await setPremiumTrialPromptDeferral(userId, false, { client }) ? 'show' : 'wait';
+    return await setPremiumTrialPromptDeferral(userId, false, { client }) ? 'show_deferred' : 'wait';
   }
   const deferred = await readPremiumTrialPromptDeferral(userId, { client });
   if (deferred === null) return 'wait';
   if (deferred && !await setPremiumTrialPromptDeferral(userId, false, { client })) return 'wait';
-  return 'show';
+  return deferred ? 'show_deferred' : 'show';
 }

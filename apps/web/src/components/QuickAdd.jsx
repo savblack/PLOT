@@ -14,13 +14,13 @@ export default function QuickAdd() {
   const [saving, setSaving] = useState(null);
   const [error, setError] = useState(false);
   const shown = useRef(false);
+  const focused = useRef(false);
   const { items, loading } = useUnifiedSearch(query, { signedIn: true });
   const count = accountValue?.titleCount ?? null;
   useEffect(() => {
     if (shown.current || count == null) return;
     shown.current = true;
     track(EVENTS.QUICK_ADD_SHOWN, { title_count: count, surface: 'home' });
-    if (count === 0) track(EVENTS.ACTIVATION_NUDGE_SHOWN, { surface: 'home' });
   }, [count]);
 
   const add = async (item, list) => {
@@ -52,7 +52,12 @@ export default function QuickAdd() {
       <label className="sr-only" htmlFor="quick-add-search">{QUICK_ADD.search}</label>
       <input id="quick-add-search" type="search" value={query} placeholder={QUICK_ADD.search}
         onChange={event => setQuery(event.target.value)}
-        onFocus={() => { if (count === 0) track(EVENTS.ACTIVATION_NUDGE_ADD_CLICKED, { surface: 'home' }); }} />
+        onFocus={() => {
+          if (focused.current) return;
+          focused.current = true;
+          track(EVENTS.QUICK_ADD_FOCUSED, { title_count: count, surface: 'home' });
+        }} />
+      <p className="quick-add-hint">{QUICK_ADD.hint}</p>
       {count > 0 && <p className="quick-add-progress">{QUICK_ADD.progress(quickAddProgress(count))}</p>}
       {error && <p role="alert">{QUICK_ADD.unavailable}</p>}
       {results.length > 0 && <ul className="quick-add-results">{results.map(({ key, data }) => (

@@ -45,7 +45,7 @@ export default function PremiumTrialPrompt({ userId, profile }: { userId: string
 
 function TrialPromptGate({ userId, profile, trigger, accountValue, onDone }: {
   userId: string; profile: Profile; trigger: PremiumTrialPromptTrigger;
-  accountValue: { titleCount: number | null; sessionCount: number | null; feltValue: boolean };
+  accountValue: { titleCount: number | null; sessionCount: number | null; feltValue: boolean; importRefreshReady: boolean };
   onDone: () => void;
 }) {
   const router = useRouter();
@@ -81,7 +81,7 @@ function TrialPromptGate({ userId, profile, trigger, accountValue, onDone }: {
         isPremium,
         trialEligible: canTrial,
         checkoutOpen: checkout.allowed && !checkout.closed,
-        titleCount, sessionCount,
+        titleCount, sessionCount, trigger, importRefreshReady: accountValue.importRefreshReady,
       });
       if (decision === 'wait') return;
       if (decision === 'suppress' && suppressed.current) return;
@@ -98,16 +98,16 @@ function TrialPromptGate({ userId, profile, trigger, accountValue, onDone }: {
       if (result === 'suppress') {
         suppressed.current = true;
         track(EVENTS.PREMIUM_PROMPT_SUPPRESSED, {
-          reason: feltValueSuppressionReason(trigger), title_count: titleCount,
+          reason: feltValueSuppressionReason({ titleCount, sessionCount }), title_count: titleCount,
           session_count: sessionCount, trigger,
         });
         setRevision(value => value + 1);
         return;
       }
-      if (result !== 'show' || decided.current) return;
+      if ((result !== 'show' && result !== 'show_deferred') || decided.current) return;
       decided.current = true;
       takePremiumTrialPrompt();
-      const effectiveTrigger = premiumTrialPromptMoment(trigger, suppressed.current, titleCount);
+      const effectiveTrigger = premiumTrialPromptMoment(trigger, result === 'show_deferred', titleCount);
       setShownTrigger(effectiveTrigger);
       await writeStorage(key, PREMIUM_TRIAL_PROMPT_SEEN);
       track(EVENTS.PREMIUM_PROMPT_SHOWN, {

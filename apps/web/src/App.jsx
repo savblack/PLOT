@@ -146,10 +146,30 @@ export default function App() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const [visible, setVisible] = useState(() => document.visibilityState !== 'hidden');
+  const [sessionActivityAt, setSessionActivityAt] = useState(0);
   useEffect(() => {
-    const update = () => setVisible(document.visibilityState !== 'hidden');
+    let lastSignal = 0;
+    const signal = () => {
+      const now = Date.now();
+      if (now - lastSignal < 60_000) return;
+      lastSignal = now;
+      setSessionActivityAt(now);
+    };
+    const update = () => {
+      const next = document.visibilityState !== 'hidden';
+      setVisible(next);
+      if (next) signal();
+    };
     document.addEventListener('visibilitychange', update);
-    return () => document.removeEventListener('visibilitychange', update);
+    window.addEventListener('focus', signal);
+    document.addEventListener('pointerdown', signal);
+    document.addEventListener('keydown', signal);
+    return () => {
+      document.removeEventListener('visibilitychange', update);
+      window.removeEventListener('focus', signal);
+      document.removeEventListener('pointerdown', signal);
+      document.removeEventListener('keydown', signal);
+    };
   }, []);
 
   const [user,    setUser]    = useState(() => {
@@ -355,7 +375,7 @@ export default function App() {
   const privateNotes = usePrivateNotes(user?.id);
   const watching     = useWatching(user?.id);
   const history      = useHistory(user?.id);
-  const sessionCount = useAccountSession(user?.id && profile?.id === user.id ? user.id : null, profile?.timezone, visible);
+  const sessionCount = useAccountSession(user?.id && profile?.id === user.id ? user.id : null, profile?.timezone, visible, sessionActivityAt);
   const accountValue = useAccountValue({
     userId: user?.id, watchlist, watching, history, sessionCount,
     readPromptSeen,

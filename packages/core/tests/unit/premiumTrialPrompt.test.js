@@ -63,7 +63,7 @@ test('a suppressed offer persists without a seen write, then requests and claims
   assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 5, sessionCount: 1, readSeen, client: profile.client }), null);
   assert.equal(peekPremiumTrialPrompt(), 'fifth_title');
   assert.deepEqual(requests, ['fifth_title']);
-  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'fifth_title', decision: 'show', wasSuppressed: false, client: profile.client }), 'show');
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'fifth_title', decision: 'show', wasSuppressed: false, client: profile.client }), 'show_deferred');
   assert.equal(profile.marker, null);
   seenWrites.push('shown');
   takePremiumTrialPrompt();
@@ -88,7 +88,7 @@ test('a deferred offer requests once at second session and only one device can c
   assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 4, sessionCount: 2, readSeen, client: profile.client }), 'second_session');
   assert.equal(await requestDeferredPremiumTrialPrompt({ userId: 'u1', titleCount: 4, sessionCount: 3, readSeen, client: profile.client }), null);
   assert.deepEqual(requests, ['second_session']);
-  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'second_session', decision: 'show', wasSuppressed: false, client: profile.client }), 'show');
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'second_session', decision: 'show', wasSuppressed: false, client: profile.client }), 'show_deferred');
   assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'second_session', decision: 'show', wasSuppressed: false, client: profile.client }), 'wait');
   assert.equal(profile.marker, null);
   clearPremiumTrialPrompt();
@@ -145,6 +145,25 @@ test('suppressed trial request remains pending without a seen write', () => {
   clearPremiumTrialPrompt();
 });
 
+test('Trakt waits for refreshed counts before deciding, and deferral selects value copy', async () => {
+  const profile = deferredProfile();
+  const stale = premiumTrialPromptDecision({ ...eligible, trigger: 'trakt_import', importRefreshReady: false, titleCount: 0, sessionCount: 2 });
+  assert.equal(stale, 'wait');
+  assert.equal(premiumTrialPromptDecision({ ...eligible, trigger: 'trakt_import', importRefreshReady: true, titleCount: null, sessionCount: 2 }), 'wait');
+  assert.equal(profile.marker, null);
+  const refreshed = premiumTrialPromptDecision({ ...eligible, trigger: 'trakt_import', importRefreshReady: true, titleCount: 5 });
+  assert.equal(refreshed, 'show');
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'trakt_import', decision: refreshed, wasSuppressed: false, client: profile.client }), 'show');
+  assert.equal(premiumTrialPromptReason('trakt_import'), 'trialAfterTraktImport');
+  assert.deepEqual(profile.calls, []);
+  assert.equal(premiumTrialPromptDecision({ ...eligible, trigger: 'trakt_import', importRefreshReady: true, titleCount: 5, seen: true }), 'discard');
+
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'onboarding', decision: 'suppress', wasSuppressed: false, client: profile.client }), 'suppress');
+  assert.equal(await preparePremiumTrialPromptDecision({ userId: 'u1', trigger: 'trakt_import', decision: refreshed, wasSuppressed: false, client: profile.client }), 'show_deferred');
+  assert.equal(premiumTrialPromptReason(premiumTrialPromptMoment('trakt_import', true, 5)), 'trialAfterValue');
+  assert.equal(profile.marker, null);
+});
+
 test('only a Trakt import that saved titles is a trigger', () => {
   assert.equal(premiumTrialPromptTriggerForImport({ source: 'trakt', count: 12 }), 'trakt_import');
   assert.equal(premiumTrialPromptTriggerForImport({ source: 'trakt', count: 0 }), null);
@@ -156,6 +175,11 @@ test('only a Trakt import that saved titles is a trigger', () => {
 
 test('the key is per account and each trigger has its own sheet copy, with no gate hit', () => {
   assert.equal(premiumTrialPromptKey('u1'), 'plot.premiumTrialPrompt.u1');
+  assert.equal(premiumTrialPromptReason('onboarding'), 'trialAfterOnboarding');
+  assert.equal(premiumTrialPromptReason('trakt_import'), 'trialAfterTraktImport');
+  assert.equal(premiumTrialPromptReason('fifth_title'), 'trialAfterValue');
+  assert.equal(premiumTrialPromptReason('second_session'), 'trialAfterValue');
+  assert.equal(upgradeSheetContent('trialAfterValue').title, 'Want more from Plot? Try Premium free for 7 days.');
   assert.deepEqual([...PREMIUM_TRIAL_PROMPT_TRIGGERS], ['onboarding', 'trakt_import', 'fifth_title', 'second_session']);
   for (const trigger of PREMIUM_TRIAL_PROMPT_TRIGGERS) {
     const reason = premiumTrialPromptReason(trigger);

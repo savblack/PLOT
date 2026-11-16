@@ -32,8 +32,8 @@ export const PREMIUM_TRIAL_PROMPT_SEEN = 'shown';
 const SHEET_REASONS = Object.freeze({
   onboarding: 'trialAfterOnboarding',
   trakt_import: 'trialAfterTraktImport',
-  fifth_title: 'trialAfterOnboarding',
-  second_session: 'trialAfterOnboarding',
+  fifth_title: 'trialAfterValue',
+  second_session: 'trialAfterValue',
 });
 
 /** @param {string} userId */
@@ -76,11 +76,12 @@ export function shouldShowPremiumTrialPrompt({ seen, isPremium, trialEligible, c
 
 /**
  * A suppressed request remains pending and must never write the seen flag.
- * @param {Parameters<typeof shouldShowPremiumTrialPrompt>[0]} state
+ * @param {Parameters<typeof shouldShowPremiumTrialPrompt>[0] & { importRefreshReady?: boolean, trigger?: PremiumTrialPromptTrigger }} state
  * @returns {'discard' | 'show' | 'wait' | 'suppress'}
  */
 export function premiumTrialPromptDecision(state) {
   if (state.seen || state.isPremium || state.trialEligible !== true || !state.checkoutOpen) return 'discard';
+  if (state.trigger === 'trakt_import' && (!state.importRefreshReady || state.titleCount == null)) return 'wait';
   if (shouldShowPremiumTrialPrompt(state)) return 'show';
   if (state.titleCount == null || state.sessionCount == null) return 'wait';
   return 'suppress';
@@ -100,6 +101,7 @@ export function premiumTrialPromptMoment(trigger, wasSuppressed, titleCount) {
 
 /** @type {PremiumTrialPromptTrigger | null} */
 let pending = null;
+let pendingVersion = 0;
 /** @type {Set<(trigger: PremiumTrialPromptTrigger) => void>} */
 const listeners = new Set();
 
@@ -114,7 +116,13 @@ const listeners = new Set();
 export function requestPremiumTrialPrompt(trigger) {
   if (!PREMIUM_TRIAL_PROMPT_TRIGGERS.includes(trigger)) return;
   pending = trigger;
+  pendingVersion += 1;
   notify();
+}
+
+/** Changes with each request, including a second request for the same trigger. */
+export function premiumTrialPromptRequestVersion() {
+  return pendingVersion;
 }
 
 /**

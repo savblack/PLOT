@@ -39,18 +39,28 @@ interface AppData {
   customLists: any;
   topLists: any;
   history: any;
-  accountValue: { titleCount: number | null; sessionCount: number | null; feltValue: boolean };
+  accountValue: { titleCount: number | null; sessionCount: number | null; feltValue: boolean; importRefreshReady: boolean };
 }
 
 const AppDataContext = createContext<AppData | null>(null);
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState(AppState.currentState === 'active');
+  const [sessionActivityAt, setSessionActivityAt] = useState(0);
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', state => setActive(state === 'active'));
+    const subscription = AppState.addEventListener('change', state => {
+      const foreground = state === 'active';
+      setActive(foreground);
+      if (foreground) setSessionActivityAt(Date.now());
+    });
     return () => subscription.remove();
   }, []);
   const { userId, user, profile, refreshProfile } = useCurrentUser();
+  useEffect(() => {
+    if (!active || !userId) return undefined;
+    const timer = setInterval(() => setSessionActivityAt(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, [active, userId]);
   const broadcastPreferences = useBroadcastPreferences(userId);
   const watchlist   = useWatchlist(userId);
   const privateNotes = usePrivateNotes(userId);
@@ -59,7 +69,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const customLists = useCustomLists(userId, { includeShared: SHOW_WATCH_TOGETHER });
   const topLists    = useTopLists(userId);
   const history     = useHistory(userId);
-  const sessionCount = useAccountSession(profile?.id === userId ? userId : null, profile?.timezone, active);
+  const sessionCount = useAccountSession(profile?.id === userId ? userId : null, profile?.timezone, active, sessionActivityAt);
   const accountValue = useAccountValue({
     userId, watchlist, watching, history, sessionCount,
     readPromptSeen,

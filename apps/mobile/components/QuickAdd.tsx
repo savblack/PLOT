@@ -21,13 +21,13 @@ export default function QuickAdd() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
   const shown = useRef(false);
+  const focused = useRef(false);
   const { items, loading } = useUnifiedSearch(query, { signedIn: true });
   const count = accountValue.titleCount;
   useEffect(() => {
     if (shown.current || count == null) return;
     shown.current = true;
     track(EVENTS.QUICK_ADD_SHOWN, { title_count: count, surface: 'home' });
-    if (count === 0) track(EVENTS.ACTIVATION_NUDGE_SHOWN, { surface: 'home' });
   }, [count]);
 
   const add = async (item: Result['data'], list: 'watching' | 'watchlist') => {
@@ -58,7 +58,12 @@ export default function QuickAdd() {
       <TextInput style={styles.input} value={query} onChangeText={setQuery}
         placeholder={QUICK_ADD.search} placeholderTextColor={colors.textMuted}
         accessibilityLabel={QUICK_ADD.search}
-        onFocus={() => { if (count === 0) track(EVENTS.ACTIVATION_NUDGE_ADD_CLICKED, { surface: 'home' }); }} />
+        onFocus={() => {
+          if (focused.current) return;
+          focused.current = true;
+          track(EVENTS.QUICK_ADD_FOCUSED, { title_count: count, surface: 'home' });
+        }} />
+      <Text style={styles.hint}>{QUICK_ADD.hint}</Text>
       {count > 0 && <Text style={styles.progress}>{QUICK_ADD.progress(quickAddProgress(count))}</Text>}
       {error && <Text accessibilityRole="alert" style={styles.progress}>{QUICK_ADD.unavailable}</Text>}
       {results.map(({ key, data }) => (
@@ -86,6 +91,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   title: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary },
   input: { minHeight: 44, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radii.md, color: colors.textPrimary },
   progress: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  hint: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
   result: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   resultTitle: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
   actions: { flexDirection: 'row', gap: spacing.xs },

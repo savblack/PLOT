@@ -17,6 +17,7 @@ for (const [label, size] of [['desktop', { width: 1280, height: 800 }], ['phone'
     const quickAdd = page.getByRole('region', { name: 'What are you watching right now?' });
     await expect(quickAdd).toBeVisible();
     await expect(quickAdd.getByRole('searchbox', { name: 'Search for a show or movie' })).toBeVisible();
+    await expect(quickAdd.getByText('Movies go to your Watchlist')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Add your first show or movie' })).toHaveCount(0);
     await expect(page.locator('.ft-card')).toHaveCount(0);
     await shot(page, `quick-add-web-${label}-home`);
@@ -56,14 +57,27 @@ test('quick-add searches and saves a title', async ({ page }) => {
   await quickAdd.getByRole('searchbox', { name: 'Search for a show or movie' }).fill('Breaking Bad');
   await expect(quickAdd.getByText('Breaking Bad')).toBeVisible();
   await quickAdd.getByRole('button', { name: 'Add to watchlist' }).click();
-  await expect(quickAdd.getByText('1 of 5 titles in your library')).toBeVisible();
+  await expect(quickAdd.getByText('1 title in your library')).toBeVisible();
+});
+
+test('quick-add focus fires once per mount, separate from History nudge events', async ({ page }) => {
+  await page.goto(url);
+  const search = page.getByRole('searchbox', { name: 'Search for a show or movie' });
+  await search.focus();
+  await search.evaluate(element => element.blur());
+  await search.focus();
+  const events = await page.evaluate(() => window.__smokeEvents.filter(({ event }) => event === 'quick_add_shown' || event === 'quick_add_focused' || event.startsWith('activation_nudge_')));
+  expect(events).toEqual([
+    { event: 'quick_add_shown', props: { title_count: 0, surface: 'home' } },
+    { event: 'quick_add_focused', props: { title_count: 0, surface: 'home' } },
+  ]);
 });
 
 test('quick-add remains after one title and disappears at five', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`${url}?titles=1`);
   await expect(page.getByRole('region', { name: 'What are you watching right now?' })).toBeVisible();
-  await expect(page.getByText('1 of 5 titles in your library')).toBeVisible();
+  await expect(page.getByText('1 title in your library')).toBeVisible();
   await page.goto(`${url}?titles=5`);
   await expect(page.locator('.discover-page h1')).toBeVisible();
   await expect(page.getByRole('region', { name: 'What are you watching right now?' })).toHaveCount(0);

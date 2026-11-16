@@ -27,9 +27,17 @@ export function hasFeltValue({ titleCount, sessionCount }) {
     || (Number.isInteger(sessionCount) && sessionCount >= 2);
 }
 
-/** @param {string} trigger @returns {'first_session' | 'titles_lt_5'} */
-export function feltValueSuppressionReason(trigger) {
-  return trigger === 'fifth_title' || trigger === 'trakt_import' ? 'titles_lt_5' : 'first_session';
+/**
+ * Describe the missing value from account state, independent of the event
+ * that requested the offer. One to four titles in a known first or later
+ * session is `titles_lt_5`; zero/unknown titles or an unknown session is
+ * `first_session`.
+ * @param {{ titleCount: number | null | undefined, sessionCount: number | null | undefined }} state
+ * @returns {'first_session' | 'titles_lt_5'}
+ */
+export function feltValueSuppressionReason({ titleCount, sessionCount }) {
+  return Number.isInteger(titleCount) && titleCount >= 1 && titleCount < 5
+    && Number.isInteger(sessionCount) && sessionCount >= 1 ? 'titles_lt_5' : 'first_session';
 }
 
 /** @param {number | null | undefined} titleCount */

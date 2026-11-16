@@ -3,14 +3,28 @@
 -- last qualifying open OR a new date in the viewer's local timezone increments.
 -- Existing profiles start at 1 with a fresh timestamp. Their deferred prompt
 -- marker stays null, so rollout cannot create a natural-moment offer.
-alter table public.profiles
-  add column session_count integer not null default 0 check (session_count >= 0),
-  add column last_session_at timestamptz,
-  add column premium_trial_prompt_deferred_at timestamptz;
+alter table public.profiles add column if not exists session_count integer;
+alter table public.profiles add column if not exists last_session_at timestamptz;
+alter table public.profiles add column if not exists premium_trial_prompt_deferred_at timestamptz;
 
-update public.profiles set session_count = 1, last_session_at = now();
+update public.profiles set session_count = 1, last_session_at = now()
+  where session_count is null;
 
-create function public.record_account_session(p_timezone text default 'UTC')
+alter table public.profiles alter column session_count set default 0;
+-- contracts: profiles.session_count (new column is backfilled and has a default before this constraint; older inserts can omit it)
+alter table public.profiles alter column session_count set not null;
+do $$
+begin
+  if not exists (
+    select 1 from pg_catalog.pg_constraint
+      where conrelid = 'public.profiles'::regclass and conname = 'profiles_session_count_check'
+  ) then
+    alter table public.profiles add constraint profiles_session_count_check check (session_count >= 0);
+  end if;
+end;
+$$;
+
+create or replace function public.record_account_session(p_timezone text default 'UTC')
 returns integer language plpgsql security definer set search_path = '' as $$
 declare
   v_now timestamptz := now();
@@ -39,7 +53,7 @@ grant execute on function public.record_account_session(text) to authenticated;
 
 -- Only an explicit suppressed onboarding or Trakt offer creates this marker.
 -- Existing profiles stay null. Claiming is atomic across devices.
-create function public.set_premium_trial_prompt_deferral(p_user_id uuid, p_deferred boolean)
+create or replace function public.set_premium_trial_prompt_deferral(p_user_id uuid, p_deferred boolean)
 returns boolean language plpgsql security definer set search_path = '' as $$
 declare
   v_updated boolean;

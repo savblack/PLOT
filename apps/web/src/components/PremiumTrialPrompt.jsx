@@ -61,7 +61,7 @@ export function TrialPromptGate({ profile, trigger, accountValue, onDone }) {
       isPremium,
       trialEligible: premium.trialEligible,
       checkoutOpen: premium.checkoutAvailable !== false,
-      titleCount, sessionCount,
+      titleCount, sessionCount, trigger, importRefreshReady: accountValue.importRefreshReady,
     });
     if (decision === 'wait') return;
     if (decision === 'suppress' && suppressed.current) return;
@@ -85,16 +85,16 @@ export function TrialPromptGate({ profile, trigger, accountValue, onDone }) {
       if (result === 'suppress') {
         suppressed.current = true;
         track(EVENTS.PREMIUM_PROMPT_SUPPRESSED, {
-          reason: feltValueSuppressionReason(trigger), title_count: titleCount,
+          reason: feltValueSuppressionReason({ titleCount, sessionCount }), title_count: titleCount,
           session_count: sessionCount, trigger,
         });
         setRevision(value => value + 1);
         return;
       }
-      if (result !== 'show' || decided.current) return;
+      if ((result !== 'show' && result !== 'show_deferred') || decided.current) return;
       decided.current = true;
       takePremiumTrialPrompt();
-      const effectiveTrigger = premiumTrialPromptMoment(trigger, suppressed.current, titleCount);
+      const effectiveTrigger = premiumTrialPromptMoment(trigger, result === 'show_deferred', titleCount);
       setShownTrigger(effectiveTrigger);
       // Seen only after a server claim succeeds, never on suppression.
       writeStorage(key, PREMIUM_TRIAL_PROMPT_SEEN);

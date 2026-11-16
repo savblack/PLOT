@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase.js';
 
 /**
@@ -17,6 +17,20 @@ export function shouldStartAccountSession(lastSessionAt, now, timezone = 'UTC') 
   try { new Intl.DateTimeFormat('en-US', { timeZone: zone }); } catch { zone = 'UTC'; }
   const day = value => new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(value);
   return day(last) !== day(current);
+}
+
+/**
+ * Revisit the server after at least a minute, only when its session boundary
+ * may have changed. The first signed-in open always checks. The server still
+ * owns the final, atomic increment.
+ * @param {number | null | undefined} lastCheckAt
+ * @param {number} now
+ * @param {string} [timezone]
+ */
+export function shouldRecheckAccountSession(lastCheckAt, now, timezone = 'UTC') {
+  if (lastCheckAt == null) return true;
+  if (!Number.isFinite(lastCheckAt) || !Number.isFinite(now) || now - lastCheckAt < 60_000) return false;
+  return shouldStartAccountSession(lastCheckAt, now, timezone);
 }
 
 /**
@@ -53,20 +67,26 @@ export function accountSessionCountForUser(result, userId) {
 }
 
 /**
- * The active edge is supplied by each platform's visible/foreground shell.
+ * The active edge and activity tick are supplied by each platform's shell.
  * @param {string | null | undefined} userId
  * @param {string | null | undefined} timezone
  * @param {boolean} active
+ * @param {number} [activityAt]
  */
-export function useAccountSession(userId, timezone, active) {
+export function useAccountSession(userId, timezone, active, activityAt = 0) {
   const [result, setResult] = useState(null);
+  const lastCheck = useRef({ userId: null, at: null });
   useEffect(() => {
     if (!userId || !active) return undefined;
+    const now = Date.now();
+    const previous = lastCheck.current.userId === userId ? lastCheck.current.at : null;
+    if (!shouldRecheckAccountSession(previous, now, timezone || 'UTC')) return undefined;
+    lastCheck.current = { userId, at: now };
     let live = true;
     void recordAccountSession(userId, timezone).then(count => {
       if (live) setResult({ userId, count });
     });
     return () => { live = false; };
-  }, [userId, timezone, active]);
+  }, [userId, timezone, active, activityAt]);
   return accountSessionCountForUser(result, userId);
 }

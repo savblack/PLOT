@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { feltValueSuppressionReason, hasFeltValue, quickAddCountAfterAdd, quickAddProgress, uniqueLibraryTitleCount } from '../../hasFeltValue.js';
-import { accountSessionCountForUser, recordAccountSession, shouldStartAccountSession } from '../../accountSession.js';
+import { accountSessionCountForUser, recordAccountSession, shouldRecheckAccountSession, shouldStartAccountSession } from '../../accountSession.js';
+import { QUICK_ADD } from '../../copy/quickAdd.js';
+import { EVENTS } from '../../analyticsEvents.js';
 
 const ready = rows => ({ items: rows, entries: rows, loading: false, error: false, loadError: false });
 const title = (tmdb_id, media_type = 'movie') => ({ tmdb_id, media_type });
@@ -25,14 +27,27 @@ test('unique count deduplicates lists and repeated history by media type plus TM
   assert.equal(uniqueLibraryTitleCount({ watchlist: { ...ready([]), error: 'failed' }, watching: ready([]), history: ready([]) }), null);
 });
 
-test('quick add progress and suppression reason', () => {
+test('quick add copy, progress and analytics event', () => {
   assert.equal(quickAddProgress(2), 2);
   assert.equal(quickAddProgress(8), 5);
   assert.equal(quickAddCountAfterAdd(4, false), 5);
   assert.equal(quickAddCountAfterAdd(4, true), 4);
-  assert.equal(feltValueSuppressionReason('onboarding'), 'first_session');
-  assert.equal(feltValueSuppressionReason('fifth_title'), 'titles_lt_5');
-  assert.equal(feltValueSuppressionReason('trakt_import'), 'titles_lt_5');
+  assert.equal(QUICK_ADD.progress(1), '1 title in your library');
+  assert.equal(QUICK_ADD.progress(3), '3 titles in your library');
+  assert.equal(QUICK_ADD.hint, 'Movies go to your Watchlist');
+  assert.equal(EVENTS.QUICK_ADD_FOCUSED, 'quick_add_focused');
+});
+
+test('suppression reason follows known session and title state', () => {
+  assert.equal(feltValueSuppressionReason({ titleCount: 0, sessionCount: 1 }), 'first_session');
+  assert.equal(feltValueSuppressionReason({ titleCount: 1, sessionCount: 1 }), 'titles_lt_5');
+  assert.equal(feltValueSuppressionReason({ titleCount: 4, sessionCount: 1 }), 'titles_lt_5');
+  assert.equal(feltValueSuppressionReason({ titleCount: 4, sessionCount: 2 }), 'titles_lt_5');
+  assert.equal(feltValueSuppressionReason({ titleCount: 0, sessionCount: 2 }), 'first_session');
+  assert.equal(feltValueSuppressionReason({ titleCount: 3, sessionCount: null }), 'first_session');
+  assert.equal(feltValueSuppressionReason({ titleCount: 3, sessionCount: 0 }), 'first_session');
+  assert.equal(feltValueSuppressionReason({ titleCount: null, sessionCount: 1 }), 'first_session');
+  assert.equal(feltValueSuppressionReason({ titleCount: 5, sessionCount: 1 }), 'first_session');
 });
 
 test('session recording asks the server and fails closed when its column or RPC is unavailable', async () => {
@@ -59,4 +74,14 @@ test('session boundary matches the SQL 30-minute or new-local-day rule', () => {
   assert.equal(shouldStartAccountSession('2026-11-16T12:59:00Z', '2026-11-16T13:00:00Z', 'Australia/Sydney'), true);
   assert.equal(shouldStartAccountSession('2026-11-16T12:59:00Z', '2026-11-16T13:00:00Z', 'UTC'), false);
   assert.equal(shouldStartAccountSession('2026-11-16T12:59:00Z', '2026-11-16T13:00:00Z', 'unknown/timezone'), false);
+});
+
+test('session recheck is throttled until a boundary could have changed', () => {
+  const start = Date.parse('2026-11-16T12:59:00Z');
+  assert.equal(shouldRecheckAccountSession(null, start), true);
+  assert.equal(shouldRecheckAccountSession(start, start + 59_999), false);
+  assert.equal(shouldRecheckAccountSession(start, start + 60_000, 'UTC'), false);
+  assert.equal(shouldRecheckAccountSession(start, start + 60_000, 'Australia/Sydney'), true);
+  assert.equal(shouldRecheckAccountSession(start, start + 30 * 60_000, 'UTC'), true);
+  assert.equal(shouldRecheckAccountSession(start, start - 1), false);
 });

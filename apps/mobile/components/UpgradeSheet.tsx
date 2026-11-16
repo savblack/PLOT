@@ -90,9 +90,9 @@ export default function UpgradeSheet({
       {content.preview && <ThemePreview family={content.preview.family} />}
 
       <View style={[styles.offer, pending && styles.pending]} pointerEvents={pending ? 'none' : 'auto'} accessibilityElementsHidden={pending} importantForAccessibility={pending ? 'no-hide-descendants' : 'auto'}>
-        <Text style={styles.title} accessibilityRole="header">{trial ? S.trialTitle : content.title}</Text>
+        <Text style={styles.title} accessibilityRole="header">{trial && reason !== 'trialAfterValue' ? S.trialTitle : content.title}</Text>
         <Text style={styles.body}>
-          {trial && <Text style={styles.bodyLead}>{content.title} </Text>}
+          {trial && reason !== 'trialAfterValue' && <Text style={styles.bodyLead}>{content.title} </Text>}
           {content.preview && <>{content.preview.line} </>}
           {content.body}
         </Text>
