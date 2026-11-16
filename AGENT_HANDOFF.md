@@ -2,7 +2,7 @@
 
 Status: active
 Branch: agent/2026-11-16-compare-picker-unify
-Updated: 2026-11-17T10:05:00Z
+Updated: 2026-11-17T10:40:00Z
 
 ## In plain words
 
@@ -99,10 +99,25 @@ Passed: `migrations:check`, `migrations:contract`, `db:block-clause`,
 `staging:test -- saved-comparisons` (22 of 22, rolled back), `check`,
 `test:unit`, `copy:check`, `core:check`, `edge:check`, mobile `typecheck`.
 
-NOT run, and required before merge: `pnpm run db:migration-test` and
-`pnpm run db:drift`. Both read production, which needs Savannah to ask for it.
-`gen:db-types` is also not run: it reads production's schema, which will not
-have the table until this merges.
+Run on 2026-11-17 with Savannah's go-ahead (both read-only on production):
+
+- `db:migration-test`: PASS. `20261117090000_saved_comparisons.sql` applied
+  cleanly to a restored copy of production; the sandbox was torn down.
+- `db:drift`: FAILED with 2 problems, neither caused by this branch. Version
+  20261117090000 is free on production and on Staging. The problems:
+  (1) Staging has not recorded `20261116213000_import_worker_saves_as_user`
+  (merged to main on 2026-11-16) and lacks its 5 functions;
+  (2) Staging carries branch-only migration 20261116120000, with 8 objects
+  production lacks (session counts, premium trial prompt deferral), which has
+  no file on main. Nothing was changed. Staging needs a deliberate apply and
+  ledger repair by whoever owns those two; that is Jacob's area.
+  Run both as `export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"` then
+  `node --env-file=.env scripts/check-migration-drift.mjs`, or
+  `set -a; . ./.env; set +a; bash scripts/db-migration-test.sh`. The bare
+  `pnpm run db:drift` does not load `.env` or find psql on this Mac.
+
+`gen:db-types` is not run: it reads production's schema, which will not have
+the table until this merges.
 
 ## Checks
 
@@ -121,7 +136,7 @@ the iPhone simulator, `test:smoke`, `test-storybook:web`.
 
 ## Approvals
 
-Given: build boards 1 and 2; sync saved comparisons across devices (2026-11-17). Still needed: running the two production-reading checks, opening a pull request, merging (which applies the migration to production).
+Given: build boards 1 and 2; sync saved comparisons across devices (2026-11-17). Run the two production-reading checks (given 2026-11-17, done). Still needed: opening a pull request, merging (which applies the migration to production).
 
 ## Next
 
