@@ -58,6 +58,8 @@ test('quick-add searches and saves a title', async ({ page }) => {
   await expect(quickAdd.getByText('Breaking Bad')).toBeVisible();
   await quickAdd.getByRole('button', { name: 'Add to watchlist' }).click();
   await expect(quickAdd.getByText('1 title in your library')).toBeVisible();
+  await expect(page.getByTestId('title-panel')).toHaveCount(0);
+  await expect(page.locator('.app-shell.panel-docked')).toHaveCount(0);
 });
 
 test('quick-add focus fires once per mount, separate from History nudge events', async ({ page }) => {

@@ -3,7 +3,7 @@
 // account, for the empty-library and quick-add smoke tests. No live accounts:
 // an in-memory Supabase with no history and no import jobs. ?titles= sets the
 // already-derived library count; ?page=history shows History.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { createRoot } from 'react-dom/client';
 import { configure } from '@plot/core/config.js';
@@ -15,6 +15,7 @@ import { HistoryPage } from '../../../src/components/HistoryView.jsx';
 import ActivationNudge from '../../../src/components/ActivationNudge.jsx';
 import { activationNudgeSources } from '@plot/core/activationNudge.js';
 import { hasFeltValue } from '@plot/core/hasFeltValue.js';
+import { notifyPendingWatchQueued, onPendingWatchQueued, shouldOpenPendingWatchPanel } from '@plot/core/watchQueued.js';
 import { _setPostHogClient } from '../../../src/lib/analytics.js';
 import '../../../src/styles/app.css';
 import '../../../src/index.css';
@@ -41,15 +42,20 @@ function Shell() {
   const [searches, setSearches] = useState(0);
   const [count, setCount] = useState(titleCount);
   const [saved, setSaved] = useState(titleCount ? [item] : []);
+  const [panelItem, setPanelItem] = useState(null);
+  useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type, source }) => {
+    if (shouldOpenPendingWatchPanel(source)) setPanelItem({ id: tmdb_id, type: media_type });
+  }), []);
   const app = {
     user, profile, uiPrefs: { prefs: {} },
     accountValue: { titleCount: count, sessionCount: 1, feltValue: hasFeltValue({ titleCount: count, sessionCount: 1 }) },
     watchlist: {
       items: saved, loading: false, error: null,
       isInList: id => saved.some(row => Number(row.tmdb_id) === Number(id)),
-      addToList: async result => {
+      addToList: async (result, opts) => {
         setSaved(rows => [...rows, { ...result, tmdb_id: result.id }]);
         setCount(value => value + 1);
+        notifyPendingWatchQueued({ tmdb_id: result.id, media_type: result.media_type, source: opts?.source });
         return true;
       },
     },
@@ -60,8 +66,9 @@ function Shell() {
   const sources = activationNudgeSources({ simklClientId: 'smoke-simkl' });
   return (
     <AppContext.Provider value={app}>
-      <AppShell currentView={view} navigateTo={setView} profile={profile} user={user} panelOpen={false} onOpenSearch={app.openSearch}>
+      <AppShell currentView={view} navigateTo={setView} profile={profile} user={user} panelOpen={!!panelItem} onOpenSearch={app.openSearch}>
         <p data-testid="searches" hidden>{searches}</p>
+        {panelItem && <aside data-testid="title-panel">{`${panelItem.type} ${panelItem.id}`}</aside>}
         {page === 'home' ? (
           <div className="discover-page"><h1 style={{ margin: '0 var(--gut) 16px' }}>Good evening, Alex</h1><HomeTopCards /></div>
         ) : (

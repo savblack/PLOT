@@ -46,8 +46,7 @@ import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 import { touchLastSeen } from '@plot/core/brevoLifecycleClient.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
 import { useUiPrefs } from '@plot/core/useUiPrefs.js';
-import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
-import { CALENDAR_SUGGESTIONS_SOURCE } from '@plot/core/upcomingSuggestions.js';
+import { onPendingWatchQueued, shouldOpenPendingWatchPanel } from '@plot/core/watchQueued.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -347,9 +346,8 @@ export default function App() {
   // Out-of-panel save (Discover card, search row, …): open the title so the
   // watch prompt can show in the same session. Skip if that title is already open.
   useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type, source }) => {
-    // Adds from the release-calendar sheet stay in that sheet. Opening the
-    // title panel here would cover it.
-    if (source === CALENDAR_SUGGESTIONS_SOURCE) return;
+    // Quick-add and calendar saves stay on their own surfaces.
+    if (!shouldOpenPendingWatchPanel(source)) return;
     const open = panelItemRef.current;
     if (open && Number(open.id) === Number(tmdb_id) && open.type === media_type) return;
     openPanel(tmdb_id, media_type, 'engagement_prompt');

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUnifiedSearch } from '@plot/core/useUnifiedSearch.js';
 import { quickAddCountAfterAdd, quickAddProgress } from '@plot/core/hasFeltValue.js';
+import { QUICK_ADD_SOURCE } from '@plot/core/watchQueued.js';
 import { QUICK_ADD } from '@plot/core/copy/quickAdd.js';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { useApp } from '../hooks/useApp.js';
@@ -31,7 +32,9 @@ export default function QuickAdd() {
     setError(false);
     let saved;
     try {
-      saved = list === 'watching' ? await watching.startWatching(item) : await watchlist.addToList(item);
+      saved = list === 'watching'
+        ? await watching.startWatching(item, { source: QUICK_ADD_SOURCE })
+        : await watchlist.addToList(item, { source: QUICK_ADD_SOURCE });
     } catch {
       setError(true);
       return;

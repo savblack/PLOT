@@ -204,6 +204,8 @@ funnel is `quick_add_shown` → `quick_add_focused` → `quick_add_title_added`.
 Shown and focused record `title_count` and `surface: home`; focused fires once
 per mount. Title added records the count after a successful one-tap save,
 `list` (`watching` or `watchlist`), and `surface: home`.
+The underlying `watchlist_saved` or `watching_started` event also carries
+`source: quick_add`.
 
 ### The empty-library nudge
 
