@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { callAuthenticatedFunction, edgeFunctionUrl } from '@plot/core/functions.js';
-import { consumeTraktReturnTo, consumeTraktState, getTraktCallbackUrl, traktErrorReturn, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
+import { consumeTraktReturnTo, consumeTraktState, getTraktCallbackUrl, traktErrorReturn, TRAKT_POPUP_FAILED_MESSAGE, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 import { CONNECT_BACK_LABELS, TRAKT_CALLBACK_PAGE } from '../copy/traktCallbackPage.js';
 import { track, EVENTS } from '../lib/analytics.js';
@@ -27,7 +27,12 @@ export default function TraktCallbackPage() {
 
     const setError = (message) => {
       setBack(traktErrorReturn(consumeTraktReturnTo()));
-      setInPopup(Boolean(window.opener && !window.opener.closed));
+      const popup = Boolean(window.opener && !window.opener.closed);
+      setInPopup(popup);
+      // Tell the page that opened this popup, which is otherwise left waiting.
+      if (popup) {
+        try { window.opener.postMessage({ type: TRAKT_POPUP_FAILED_MESSAGE }, window.location.origin); } catch { /* cross-origin opener: nothing to tell */ }
+      }
       setErrorMessage(message);
     };
 

@@ -60,6 +60,8 @@ export function consumeSimklReturnTo() {
 // The Trakt callback page posts this to the window that opened it (onboarding
 // connects in a popup so the step's picks survive).
 export const TRAKT_POPUP_MESSAGE = 'plot:trakt-connected';
+// And this when the connect failed there, so the page behind stops waiting.
+export const TRAKT_POPUP_FAILED_MESSAGE = 'plot:trakt-connect-failed';
 
 export function createTraktState(returnTo = '/settings') {
   const state = crypto.randomUUID();
