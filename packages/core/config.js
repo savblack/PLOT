@@ -23,6 +23,9 @@
  * @property {boolean} [importAnnotationsEnabled] Enable only after annotation storage and review are verified.
  * @property {boolean} [tvTimeImportEnabled] Internal preview only until saved-file validation is complete.
  * @property {boolean} [importEventsEnabled] Enable only after the event import migrations are installed.
+ * @property {boolean} [importActsForUser] Set only by the import-worker edge function, which is the
+ *   service role and has no session: import saves then name the account explicitly (importRpc.js).
+ *   Neither app sets it.
  * @property {string} simklClientId
  * @property {boolean} isDev
  * @property {Record<string, any>} [supabaseClientOptions] Optional createClient()
@@ -139,6 +142,7 @@ const defaults = {
   importAnnotationsEnabled: false,
   tvTimeImportEnabled: false,
   importEventsEnabled: false,
+  importActsForUser: false,
   trackingJobsEnabled: false,
   supabaseClientOptions: undefined,
   supabaseClient: undefined,

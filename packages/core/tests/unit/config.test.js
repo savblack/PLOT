@@ -16,6 +16,7 @@ test('getConfig starts with the documented defaults', () => {
     importAnnotationsEnabled: false,
     tvTimeImportEnabled: false,
     importEventsEnabled: false,
+    importActsForUser: false,
     trackingJobsEnabled: false,
     supabaseClientOptions: undefined,
     supabaseClient: undefined,
