@@ -54,6 +54,17 @@ reach `/onboarding/seed`.
 2. Open the pull request once that looks right. Delete this file in the last
    commit before merge.
 
+## Simulator run, 2026-11-16 (stopped at sign-up)
+
+The branch loads on the iPhone 17 Pro simulator against Staging: the dev
+build already installed there, Metro from this worktree on port 8082
+(8081 belongs to another project; leave it), opened with
+`plot://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8082`.
+The sign-up screen shows Cloudflare's "Verify you are human" box, which an
+agent must not tick. Savannah needs to create the test account in the
+simulator herself; the agent then drives setup from step 1. Also seen: that
+box is drawn on top of the Password field on the Create your account sheet.
+
 ## Open decision (Savannah)
 
 Skip on the first screen saves none of the titles already picked, on web and
