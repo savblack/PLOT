@@ -1,9 +1,9 @@
 /**
  * Shared chrome for the onboarding steps — the mobile counterpart of the
  * web app's single OnboardingFlow page (apps/web/src/pages/OnboardingFlow.jsx).
- * Mobile splits the flow across expo-router screens, so the header (wordmark,
- * progress bar, step label, back chevron) and the sticky footer (outline CTA,
- * skip link, save error) live here instead of being repeated per screen.
+ * Mobile splits the flow across expo-router screens, so the header (back
+ * chevron, wordmark, Skip, progress bar) and the footer (save error, outline
+ * CTA, an optional quiet link) live here instead of being repeated per screen.
  */
 import { ReactNode, useMemo } from 'react';
 import {
@@ -12,16 +12,36 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft } from './icons';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
+import { ONBOARDING_PROGRESS_TOTAL } from '@plot/core/onboardingSetup.js';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
 import PlotWordmark from './PlotWordmark';
 
-// Two steps on mobile: save a few (with the import sources folded into the
-// same screen) and where do you watch. The building moment that follows has
-// no header, so it is not a step the bar can show. Web still counts it
-// (ONBOARDING_PROGRESS_TOTAL in @plot/core/onboardingSetup.js) because its
-// building screen keeps the bar; the analytics step numbers are unchanged.
-export const TOTAL_STEPS = 2;
+/**
+ * The progress bar, as web's .ob-progress: three segments (save a few, where
+ * do you watch, building) and no visible label. The step count is read out
+ * to a screen reader instead. The building screen draws it too.
+ */
+export function OnboardingProgress({ step }: { step: number }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={progressStyles.bar}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={ONBOARDING_FLOW.stepLabel(step, ONBOARDING_PROGRESS_TOTAL)}
+    >
+      {Array.from({ length: ONBOARDING_PROGRESS_TOTAL }, (_, i) => (
+        <View key={i} style={[progressStyles.seg, { backgroundColor: i < step ? colors.accent : colors.borderStrong }]} />
+      ))}
+    </View>
+  );
+}
+
+const progressStyles = StyleSheet.create({
+  bar: { flexDirection: 'row', gap: 4, alignSelf: 'stretch' },
+  seg: { flex: 1, height: 3, borderRadius: 2 },
+});
 
 interface Props {
   step: number;
@@ -35,10 +55,11 @@ interface Props {
   /** Passed instead of a CTA on a screen whose rows are themselves the action. */
   hideCta?: boolean;
   saving?: boolean;
-  /** Every step but the building moment, matching web. */
+  /** Top right on every step but the building moment, whatever is picked, as web's top-bar Skip. */
   onSkip?: () => void;
-  /** Defaults to "Skip", as web's top-bar link. */
-  skipLabel?: string;
+  /** A quiet link under the CTA (the import picker's "I'll do this later"). */
+  onLater?: () => void;
+  laterLabel?: string;
   error?: string | null;
   children: ReactNode;
 }
@@ -46,7 +67,7 @@ interface Props {
 export default function OnboardingScaffold({
   step, title, subtitle, onBack, ctaLabel, onContinue,
   ctaDisabled = false, hideCta = false, saving = false, onSkip,
-  skipLabel = ONBOARDING_FLOW.skip, error, children,
+  onLater, laterLabel, error, children,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -69,19 +90,25 @@ export default function OnboardingScaffold({
         ) : <View style={styles.backBtn} />}
 
         <View style={styles.headerCenter}>
-          <PlotWordmark size={22} color={colors.textPrimary} style={styles.wordmark} />
-          <View style={styles.progress}>
-            {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-              <View
-                key={i}
-                style={[styles.progressSeg, { backgroundColor: i < step ? colors.accent : colors.border }]}
-              />
-            ))}
-          </View>
-          <Text style={styles.stepLabel}>{ONBOARDING_FLOW.stepLabel(step, TOTAL_STEPS)}</Text>
+          <PlotWordmark size={22} color={colors.textPrimary} />
         </View>
 
-        <View style={styles.backBtn} />
+        {onSkip ? (
+          <TouchableOpacity
+            onPress={onSkip}
+            disabled={saving}
+            style={styles.skipBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: saving }}
+          >
+            <Text style={styles.skipText} numberOfLines={1}>{ONBOARDING_FLOW.skip}</Text>
+          </TouchableOpacity>
+        ) : <View style={styles.skipBtn} />}
+      </View>
+
+      <View style={styles.progressWrap}>
+        <OnboardingProgress step={step} />
       </View>
 
       {/* Content */}
@@ -106,9 +133,9 @@ export default function OnboardingScaffold({
               step): the button keeps its label and dims, as when disabled. */}
           <Text style={[styles.ctaText, (saving || ctaDisabled) && styles.ctaTextDisabled]}>{ctaLabel}</Text>
         </TouchableOpacity>}
-        {onSkip && !saving ? (
-          <TouchableOpacity style={styles.skipBtn} onPress={onSkip} accessibilityRole="button">
-            <Text style={styles.skipText}>{skipLabel}</Text>
+        {onLater && laterLabel && !saving ? (
+          <TouchableOpacity style={styles.laterBtn} onPress={onLater} accessibilityRole="button">
+            <Text style={styles.laterText}>{laterLabel}</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -117,33 +144,33 @@ export default function OnboardingScaffold({
 }
 
 const CARD_MAX_W = 420;
+// Wide enough for "Skip" on one line.
+const SIDE_W = 44;
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
     maxWidth: CARD_MAX_W,
     alignSelf: 'center',
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
   },
-  backBtn: { width: 28, height: 28, marginTop: 6, alignItems: 'center', justifyContent: 'center' },
+  // Both sides are the same width so the wordmark stays centered.
+  backBtn: { width: SIDE_W, height: 28, justifyContent: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
-  wordmark: {
-    marginBottom: spacing.lg,
-  },
-  progress: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.sm, alignSelf: 'stretch', justifyContent: 'center' },
-  progressSeg: { flex: 1, maxWidth: 60, height: 3, borderRadius: 2 },
-  stepLabel: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 11,
-    letterSpacing: 0.7,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
+  skipBtn: { width: SIDE_W, height: 28, alignItems: 'flex-end', justifyContent: 'center' },
+  skipText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  progressWrap: {
+    width: '100%',
+    maxWidth: CARD_MAX_W,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   // Sized to its content rather than stretched to fill the screen, so the
   // footer below hugs whatever the step renders instead of being pinned to the
@@ -203,6 +230,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   ctaDisabled: { borderColor: colors.textMuted },
   ctaText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
   ctaTextDisabled: { color: colors.textMuted },
-  skipBtn: { paddingVertical: 4 },
-  skipText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
+  laterBtn: { paddingVertical: 4 },
+  laterText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 });

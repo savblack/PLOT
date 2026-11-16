@@ -25,6 +25,7 @@ import { CAPTCHA_SUBMIT_ATTEMPTS, captchaRetryAfterWait, captchaSubmitEnabled, c
 import { shouldMagicLinkViaBypass, shouldResendViaBypass } from '@plot/core/authBypass.js';
 import { createSignupBypassClient } from '@plot/core/signupBypassClient.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import { AUTH_PAGE, MIN_PASSWORD_LENGTH } from '@plot/core/copy/authPage.js';
 import { SHOW_APPLE_LOGIN, SHOW_GOOGLE_LOGIN } from '../../lib/launchFeatures';
 import { hasSignedInBefore } from '../../lib/signedInBefore';
@@ -200,6 +201,8 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<Mode>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Matches web's Show/Hide toggle on the same field (AuthPage.jsx).
+  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [inboxKind, setInboxKind] = useState<InboxKind>('signup');
@@ -228,6 +231,8 @@ export default function AuthScreen() {
   const [captchaHasToken, setCaptchaHasToken] = useState(false);
   const [captchaErrored, setCaptchaErrored] = useState(false);
   const [captchaInteractive, setCaptchaInteractive] = useState(false);
+  // Cloudflare's "Verify you are human" box is on screen right now.
+  const [captchaVisible, setCaptchaVisible] = useState(false);
   const [captchaWaitStart, setCaptchaWaitStart] = useState(() => Date.now());
   const [captchaNow, setCaptchaNow] = useState(() => Date.now());
   // Form token, minimum form age, and the POSTs to signup-bypass, shared with
@@ -1004,19 +1009,35 @@ export default function AuthScreen() {
                 {social && (
                   <View style={styles.inputWrap}>
                     <Text style={styles.inputLabel}>{AUTH_PAGE.passwordLabel}</Text>
-                    <TextInput
-                      style={[styles.input, passwordError ? styles.inputInvalid : null]}
-                      placeholder={mode === 'signup' ? AUTH_PAGE.passwordPlaceholder.signup : AUTH_PAGE.passwordPlaceholder.login}
-                      placeholderTextColor={PLACEHOLDER}
-                      value={password}
-                      onChangeText={(t) => { setPassword(t); setPasswordError(null); noteSignupStarted(); }}
-                      onBlur={() => { if (mode === 'signup' && password) checkPassword(); }}
-                      secureTextEntry
-                      autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                      returnKeyType="go"
-                      onSubmitEditing={handleSubmit}
-                      accessibilityLabel={AUTH_PAGE.passwordLabel}
-                    />
+                    <View style={styles.passwordWrap}>
+                      <TextInput
+                        style={[styles.input, styles.passwordInput, passwordError ? styles.inputInvalid : null]}
+                        placeholder={mode === 'signup' ? AUTH_PAGE.passwordPlaceholder.signup : AUTH_PAGE.passwordPlaceholder.login}
+                        placeholderTextColor={PLACEHOLDER}
+                        value={password}
+                        onChangeText={(t) => { setPassword(t); setPasswordError(null); noteSignupStarted(); }}
+                        onBlur={() => { if (mode === 'signup' && password) checkPassword(); }}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                        returnKeyType="go"
+                        onSubmitEditing={handleSubmit}
+                        accessibilityLabel={AUTH_PAGE.passwordLabel}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowPassword(v => !v)}
+                        style={styles.showPassword}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        accessibilityRole="button"
+                        accessibilityLabel={showPassword ? AUTH_PAGE.hidePassword : AUTH_PAGE.showPassword}
+                        accessibilityState={{ selected: showPassword }}
+                      >
+                        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <Path d={showPassword ? ICON_PATHS.eye : ICON_PATHS.eyeClosed} />
+                        </Svg>
+                      </TouchableOpacity>
+                    </View>
                     {passwordError ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{passwordError}</Text> : null}
                     {mode === 'signin' && (
                       <TouchableOpacity onPress={() => switchMode('forgot')} style={styles.forgotUnder} accessibilityRole="button">
@@ -1028,18 +1049,20 @@ export default function AuthScreen() {
               </View>
 
               {/* CTA — solid ink, like the web .auth-cta. Turnstile takes no space
-                  and ignores touches by default (see its own pointerEvents) — if
-                  Cloudflare ever decides this sign-in needs a real interactive
-                  check, it pops up over the fields above instead of permanently
-                  reserving a gap for something that's normally invisible. */}
+                  and ignores touches by default (see its own pointerEvents), so
+                  there is no permanent gap for something that's normally
+                  invisible. When Cloudflare does show its checkbox, the box
+                  moves into the layout and the sheet grows to fit it: until
+                  2026-11 it floated over the Password field instead. */}
               <View style={styles.ctaWrap}>
                 {TURNSTILE_SITE_KEY ? (
-                  <View style={styles.captcha}>
+                  <View style={captchaVisible ? styles.captchaShown : styles.captcha}>
                     <Turnstile
                       siteKey={TURNSTILE_SITE_KEY}
                       onToken={handleCaptchaToken}
                       onError={handleCaptchaError}
                       onInteractive={handleCaptchaInteractive}
+                      onVisibleChange={setCaptchaVisible}
                       resetSignal={captchaNonce}
                       executeSignal={captchaExecute}
                       start={captchaStarted}
@@ -1263,6 +1286,18 @@ const styles = StyleSheet.create({
   inputInvalid: {
     borderColor: colors.danger,
   },
+  passwordWrap: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    // Room for the eye toggle so typed text never runs under it.
+    paddingRight: 48,
+  },
+  showPassword: {
+    position: 'absolute',
+    right: spacing.lg,
+  },
   fieldError: {
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
@@ -1290,6 +1325,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     marginBottom: spacing.xs,
+    alignItems: 'center',
+  },
+  captchaShown: {
+    marginBottom: spacing.sm,
     alignItems: 'center',
   },
   cta: {

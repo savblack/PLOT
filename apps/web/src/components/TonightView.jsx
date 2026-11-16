@@ -28,7 +28,7 @@ import Segmented from './Segmented.jsx';
    "Pick one for me" and "Surprise me" run the picker on the chips' options
    and show its results here; Free viewers get one pick a day, then the
    upgrade sheet. Phone keeps the actions in a bar above the tab bar. The
-   title and subline come from the app shell. */
+   title comes from the app shell. */
 
 
 // Two arrows round: a list that keeps looking (A1).

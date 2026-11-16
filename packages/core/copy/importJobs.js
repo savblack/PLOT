@@ -16,6 +16,9 @@ export const IMPORT_JOBS = {
     queuedBody: 'Keep going. Your import will continue in the background, and we’ll let you know when it’s done.',
     connect: (source) => `Connect ${source}`,
     connecting: 'Waiting for you to finish in the other window…',
+    // The other window came back without connecting (cancelled, expired, or
+    // the service refused). Shown above the button that opens it again.
+    connectFailed: (source) => `${source} didn’t connect. Try again when you’re ready.`,
     connected: (source) => `${source} is connected.`,
     startImport: 'Import my history',
     startPlexImport: 'Import from this profile',
@@ -29,6 +32,12 @@ export const IMPORT_JOBS = {
     imdbListWatchlistNote: 'Adds these titles to your Plot watchlist',
     imdbListOther: 'No, another list',
     imdbListOtherNote: 'Adds them to a Plot list called IMDb list',
+    // Asked when a Letterboxd file could be watched.csv or watchlist.csv: the
+    // two share one layout, so a renamed file cannot say which it is. The
+    // "yes" answer reuses imdbListWatchlist and its note.
+    letterboxdListQuestion: 'Is this your Letterboxd watchlist?',
+    letterboxdListWatched: 'No, films I’ve watched',
+    letterboxdListWatchedNote: 'Marks these films watched in Plot',
     plexProfile: 'Profile',
     plexOwned: 'Owned',
     plexShared: 'Shared with you',

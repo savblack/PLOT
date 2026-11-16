@@ -4,7 +4,6 @@ import { useRouter, type Href } from 'expo-router';
 import { personName, tileMode, tileShowsCount } from '@plot/core/watchTogether.js';
 import { useWatchTogether, useWatchTogetherStatus, useMutualFollow } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
-import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { fontFamily, fontSize, spacing } from '../../lib/tokens';
@@ -15,6 +14,7 @@ import UpgradeSheet from '../UpgradeSheet';
 import { AcceptSheet } from './AcceptSheet';
 import { ShareListSheet } from './ShareListSheet';
 import Button from '../Button';
+import PremiumMark from '../PremiumMark';
 import { ErrorNote, Note, SectionLabel, openPremium } from './WatchChrome';
 import { WtPerson, asResult, errorText } from './watchModel';
 
@@ -80,7 +80,7 @@ export function WatchTogetherTile({ person, onChange }: {
     <View style={{ gap: spacing.sm, paddingVertical: spacing.md }} accessibilityLabel={T.tile.kicker}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <SectionLabel>{T.tile.kicker}</SectionLabel>
-        {mode === 'free' && <SectionLabel>{PLANS_PAGE.premium.name}</SectionLabel>}
+        {mode === 'free' && <PremiumMark />}
         {mode === 'pending' && <SectionLabel>{T.tile.requestSent}</SectionLabel>}
         {mode === 'paired' && <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.accent }}>{T.tile.watchingTogether}</Text>}
       </View>

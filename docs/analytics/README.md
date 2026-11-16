@@ -596,6 +596,13 @@ Opening the export page and then leaving is not abandonment: that is the
 path the link is for. A file that fails to parse is `import_failed`, and the
 reminder stays until a file is accepted or they dismiss it.
 
+A connect that does not land (Trakt, Plex or Simkl: cancelled, expired,
+refused, or the popup closed) is `import_failed` with `reason:
+connection_failed`, from the import page and from the connect dialog that
+setup and Settings share (`useImportStart`'s `failConnect`, web). It fires once
+per failed attempt, when the dialog stops waiting. Read it against
+`trakt_connect_started` / `simkl_connect_started` and the `*_connected` events.
+
 ## Episode alerts (title panel)
 
 The Episode alerts card on a followed TV show's title panel.
@@ -737,7 +744,8 @@ follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
 ### `load_failed`
 
 A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
-`watching`, `favourites`, `smart_list`, `episode_search`, `critic_score`) fires `load_failed` via `reportLoadFailure()`, with
+`watching`, `favourites`, `smart_list`, `episode_search`, `critic_score`,
+`onboarding_services`, `onboarding_trending`, `onboarding_search`) fires `load_failed` via `reportLoadFailure()`, with
 the same `error_kind` / `error_code` / `http_status` props. It is a separate
 event on purpose: a page that fails to load is not a failed user action, and
 counting it as `action_failed` would skew every failed-write rate.

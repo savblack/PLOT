@@ -9,6 +9,7 @@ import { useMemo, type ReactNode } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
+import { importListChoiceOptions } from '@plot/core/importJobs.js';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -179,15 +180,15 @@ export default function ImportSourceSheet({ start, onContinue, continueLabel = I
         ) : (
           <TouchableOpacity style={styles.drop} onPress={() => { void start.chooseFile(); }} disabled={uploading} accessibilityRole="button" accessibilityState={{ busy: uploading, disabled: uploading }}>
             {uploading ? <Spinner /> : <UploadIcon color={colors.textSecondary} />}
-            <Text style={styles.dropTitle}>{uploading ? I.uploading : S.dropTitle}</Text>
+            <Text style={styles.dropTitle}>{uploading ? I.uploading : S.chooseTitle}</Text>
             <Text style={styles.dropHint}>{S.dropFormats(src.formats)}</Text>
           </TouchableOpacity>
         )}
         {ready && !uploading && start.listChoiceNeeded ? (
           <View style={{ gap: spacing.sm }}>
-            <Text style={styles.label}>{I.imdbListQuestion}</Text>
-            <View style={styles.radios} accessibilityRole="radiogroup" accessibilityLabel={I.imdbListQuestion}>
-              {([['watchlist', I.imdbListWatchlist, I.imdbListWatchlistNote], ['list', I.imdbListOther, I.imdbListOtherNote]] as const).map(([id, label, note]) => {
+            <Text style={styles.label}>{importListChoiceOptions(start.source).question}</Text>
+            <View style={styles.radios} accessibilityRole="radiogroup" accessibilityLabel={importListChoiceOptions(start.source).question}>
+              {importListChoiceOptions(start.source).options.map(({ id, label, note }) => {
                 const on = start.listChoice === id;
                 return (
                   <TouchableOpacity key={id} style={[styles.radio, on && styles.radioOn]} onPress={() => start.chooseList(id)} accessibilityRole="radio" accessibilityState={{ checked: on }}>

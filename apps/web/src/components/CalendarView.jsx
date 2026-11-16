@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { calendarSuggestRequested } from '@plot/core/upcomingSuggestions.js';
 import { useApp } from '../hooks/useApp.js';
-import { localDateStr, todayLongLabel } from '../utils/date.js';
+import { localDateStr } from '../utils/date.js';
 import { msUntilNextLocalMidnight, filterCalendarEvents, groupCalendarEventsByDay } from '../utils/calendar.js';
 import { useCalendar } from '../hooks/useCalendar.js';
 import { useFilteredUpcoming } from '../hooks/useFilteredUpcoming.js';
@@ -135,25 +135,10 @@ export default function CalendarView() {
   }, []);
 
   /* ── Back to today: panel to this month, page to the top ── */
-  const goToToday = () => {
-    setPanelStart(monthOf(new Date()));
-    const scroller = document.querySelector('.app-main');
-    (scroller ?? window).scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   return (
     <div>
-      {/* ── Heading row: today's date under the page title, the scope toggle on the right ── */}
+      {/* ── Heading row: the scope toggle on the right of the page title ── */}
       <div className="page-toolbar cal-toolbar cal-toolbar--search">
-        <span
-          className="page-toolbar-date page-toolbar-date--clickable"
-          onClick={goToToday}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToToday(); } }}
-        >
-          {todayLongLabel()}
-        </span>
         <div className="page-toolbar-controls cal-toolbar-controls">
           <button type="button" className="btn btn-primary btn-sm cal-suggest-btn" onClick={openSuggest}>
             {CALENDAR_VIEW.suggest.open}

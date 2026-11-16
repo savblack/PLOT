@@ -2,8 +2,10 @@
  * Onboarding step 1: save a few titles (mirrors web's "seed" step).
  * A "trending this week" poster grid, prefilled before the user searches, with
  * a "Switching apps?" row that opens the import-source picker in place of the
- * grid (web navigates to a separate screen; mobile folds it in so the step
- * count stays at two). The sources are two lanes of tiles; a picked source
+ * grid (web navigates to a separate screen; mobile folds it in, and the row
+ * itself is the way back, where web has a Back button). While the sources show
+ * the row reads "Switching apps?" and nothing more. The sources are two
+ * lanes of tiles; a picked source
  * opens its sheet (components/ImportSourceSheet.tsx): the file is uploaded,
  * or the account connected, and the import runs in the background while
  * setup continues. A second source can be queued behind the first. Picks are
@@ -23,23 +25,26 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { TextLink } from '../../components/Button';
 import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
 import { useAppData } from '../../contexts/AppDataContext';
-import { IMPORT_SOURCES } from '@plot/core/onboardingSetup.js';
+import { ONBOARDING_PROGRESS, findImportSource } from '@plot/core/onboardingSetup.js';
+import { loadSeedTrending, searchSeedTitles } from '@plot/core/onboardingSeed.js';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { importSourceName } from '@plot/core/importJobs.js';
 import { useImportStart } from '../../hooks/useImportStart';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 import SearchField from '../../components/SearchField';
+import Svg, { Path } from 'react-native-svg';
+import { ICON_PATHS } from '@plot/core/icons.js';
+import { IconChevronRight } from '../../components/icons';
 import ImportSourceIcon from '../../components/ImportSourceIcon';
 import ImportSourceLanes, { ImportPill } from '../../components/ImportSourceLanes';
 import ImportSourceSheet from '../../components/ImportSourceSheet';
 
 const F = ONBOARDING_FLOW;
 
-// Four columns, same as web — the flow is capped at the web card width (420),
-// so the poster size matches between platforms on a phone-width screen.
-const COLUMNS = 4;
-// Web shows 48 trending titles; the grid scrolls, so this is just how deep it goes.
-const TRENDING_COUNT = 24;
+// Three across, as web's grid below 768px.
+const COLUMNS = 3;
+// The three marks on the "Switching apps?" row, the same three as web.
+const SWITCH_MARKS = ['letterboxd', 'netflix', 'trakt'];
 const CONTENT_W = Math.min(Dimensions.get('window').width, 420) - spacing.xl * 2;
 const CARD_W = (CONTENT_W - spacing.sm * (COLUMNS - 1)) / COLUMNS;
 
@@ -49,7 +54,8 @@ const GRID_MAX_H = Math.round(Dimensions.get('window').height * 0.42);
 const LANES_MAX_H = Math.round(Dimensions.get('window').height * 0.5);
 
 // Web tints the selected poster with the light-theme accent at 30% in both
-// themes and stamps a white tick, so the same literal is used here.
+// themes, so the same literal is used here. The bookmark on top is white,
+// outline until picked and solid after, as web's .ob-poster-mark.
 const SELECTED_TINT = 'rgba(224,85,120,0.3)';
 
 // Placeholder posters while trending loads: two rows in the grid's own shape.
@@ -64,8 +70,6 @@ interface SearchResult {
   release_date?: string | null;
   first_air_date?: string | null;
 }
-
-const keep = (r: SearchResult) => (r.media_type === 'tv' || r.media_type === 'movie') && !!r.poster_path;
 
 export default function Seed() {
   const router  = useRouter();
@@ -100,23 +104,12 @@ export default function Seed() {
   useEffect(() => {
     let alive = true;
     setTrendingFailed(false);
-    tmdb.getTrending('all', 'week').then((data: any) => {
+    // A failed load comes back as `ok: false`, never a throw (onboardingSeed.js).
+    loadSeedTrending(tmdb).then((load: { ok: boolean; items: SearchResult[] }) => {
       if (!alive) return;
-      // getTrending fetches several pages and a title can land on two of them.
-      const seen = new Set<string>();
-      const list = (data?.results ?? []).filter(keep).filter((r: SearchResult) => {
-        const k = `${r.media_type}-${r.id}`;
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      }).slice(0, TRENDING_COUNT);
-      setTrending(list);
-      setFlowTrending(list);
-    }).catch((e: unknown) => {
-      if (!alive) return;
-      console.warn('[onboarding seed] trending prefill failed', e);
-      setTrending([]);
-      setTrendingFailed(true);
+      setTrending(load.items);
+      setTrendingFailed(!load.ok);
+      if (load.ok) setFlowTrending(load.items);
     });
     return () => { alive = false; };
   }, [setFlowTrending, trendingTry]);
@@ -130,18 +123,14 @@ export default function Seed() {
     setSearching(true);
     setSearchFailed(false);
     const t = setTimeout(async () => {
-      try {
-        const data = await tmdb.search(q);
-        if (!alive) return;
-        setResults((data?.results ?? []).filter(keep).slice(0, 24));
-      } catch (e: unknown) {
-        if (!alive) return;
-        console.warn('[onboarding seed] search failed', e);
-        setResults([]);
-        setSearchFailed(true);
-      } finally {
-        if (alive) setSearching(false);
-      }
+      // `ok: false` is a search that never reached TMDB. It used to read as
+      // "No titles found." here, because a failed search resolves to nothing
+      // rather than throwing.
+      const load: { ok: boolean; items: SearchResult[] } = await searchSeedTitles(tmdb, q);
+      if (!alive) return;
+      setResults(load.items);
+      setSearchFailed(!load.ok);
+      setSearching(false);
     }, 350);
     return () => { alive = false; clearTimeout(t); };
   }, [query, searchTry]);
@@ -158,11 +147,12 @@ export default function Seed() {
   const isSelected = (item: SearchResult) => selected.some(i => i.id === item.id);
   const count = selected.length;
 
-  // Skip saves nothing and goes straight to Home. It is only offered while
-  // nothing is picked: once a poster is selected, Continue is the way on, so a
-  // pick can never be thrown away by the quieter button.
+  // Skip saves nothing and goes straight to Home: titles already picked are
+  // forgotten, on purpose (decided 2026-11-16). It is offered whatever is
+  // picked and from the import sources too, exactly as web's top-bar Skip
+  // (skipToHome in apps/web/src/pages/OnboardingFlow.jsx).
   const skip = async () => {
-    flow.completeStep('seed', { skipped: true });
+    flow.completeStep(showSources ? 'import' : 'seed', { skipped: true });
     const ok = await flow.save({ skipSeeds: true, skipServices: true });
     if (ok) router.replace('/(app)');
   };
@@ -175,9 +165,14 @@ export default function Seed() {
     start.pick(id);
   };
 
+  // With an import queued the row still opens the sources, to add another
+  // (web reaches its import step from "save a few" the same way). Closing
+  // them only forgets the picked source while nothing has been queued.
   const toggleSources = () => {
-    if (queued) return;
-    if (showSources) flow.setImportSource(null);
+    if (showSources) {
+      start.close();
+      if (!queued) flow.setImportSource(null);
+    }
     setShowSources(v => !v);
   };
 
@@ -197,7 +192,7 @@ export default function Seed() {
   // and it made a two-of-two flow feel like three screens.
   return (
     <OnboardingScaffold
-      step={1}
+      step={ONBOARDING_PROGRESS.seed}
       title={showSources ? (queued ? F.importSources.addAnotherTitle : F.importSources.title) : F.seed.title(flow.firstName)}
       subtitle={showSources ? (queued ? '' : F.importSources.subtitle) : F.seed.subtitle}
       ctaLabel={showSources ? F.continueArrow : count === 0 ? F.seed.tapAFew : F.seed.continueWith(count)}
@@ -205,24 +200,25 @@ export default function Seed() {
       hideCta={showSources && !queued}
       onContinue={showSources ? continueFromImport : () => { flow.completeStep('seed'); router.push('/onboarding/services'); }}
       saving={flow.saving}
-      onSkip={showSources ? (queued ? undefined : laterFromImport) : count === 0 ? skip : undefined}
-      skipLabel={showSources ? F.importSources.later : undefined}
+      onSkip={skip}
+      onLater={showSources && !queued ? laterFromImport : undefined}
+      laterLabel={F.importSources.later}
       error={flow.saveError}
     >
       <TouchableOpacity
         style={styles.switchRow}
         onPress={toggleSources}
-        disabled={queued}
         accessibilityRole="button"
-        accessibilityState={{ expanded: showSources, disabled: queued }}
+        accessibilityState={{ expanded: showSources }}
       >
         <View style={styles.switchMarks}>
-          {IMPORT_SOURCES.slice(0, 3).map(src => <ImportSourceIcon key={src.id} id={src.id} size={26} />)}
+          {SWITCH_MARKS.map(id => findImportSource(id)).filter(src => !!src).map(src => <ImportSourceIcon key={src.id} id={src.id} size={26} />)}
         </View>
         <Text style={styles.switchText}>
-          <Text style={styles.switchLead}>{F.seed.switchingLead}</Text>{' '}
-          {showSources ? F.seed.switchingBack : F.seed.switchingBody}
+          <Text style={styles.switchLead}>{F.seed.switchingLead}</Text>
+          {showSources ? null : ` ${F.seed.switchingBody}`}
         </Text>
+        <IconChevronRight size={18} color={colors.textMuted} />
       </TouchableOpacity>
 
       <ImportPill pill={start.pill} />
@@ -251,10 +247,6 @@ export default function Seed() {
             <InlineError message={F.seed.trendingError} onRetry={retryTrending} styles={styles} />
           ) : null}
 
-          {!hasQuery && !trendingFailed && (
-            <Text style={styles.gridLabel}>{F.step2.trendingThisWeek}</Text>
-          )}
-
           {/* Poster grid: trending until the user searches, then results */}
           <FlatList
             data={gridItems}
@@ -281,11 +273,12 @@ export default function Seed() {
                       ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
                       : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
                     }
-                    {active && (
-                      <View style={styles.cardCheck}>
-                        <Text style={styles.cardCheckMark}>✓</Text>
-                      </View>
-                    )}
+                    {active && <View style={styles.cardTint} />}
+                    <View style={styles.cardMark}>
+                      <Svg width={15} height={15} viewBox="0 0 24 24" fill={active ? '#fff' : 'none'} stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                        <Path d={ICON_PATHS.bookmark} />
+                      </Svg>
+                    </View>
                   </View>
                 </TouchableOpacity>
               );
@@ -293,12 +286,11 @@ export default function Seed() {
             columnWrapperStyle={styles.row}
             showsVerticalScrollIndicator={false}
             style={styles.grid}
-            // Mobile-only fallback: web leaves the grid blank, but on a phone the
-            // grid is the whole screen, so say why it's empty. Failures are the
-            // inline errors above.
+            // A search that worked and matched nothing says so, as on web.
+            // Failures are the inline errors above.
             ListEmptyComponent={
               hasQuery && !searching && !searchFailed
-                ? <Text style={styles.empty}>No titles found.</Text>
+                ? <Text style={styles.empty}>{F.seed.noResults}</Text>
                 : undefined
             }
           />
@@ -327,13 +319,13 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   note:        { marginTop: spacing.lg, marginBottom: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted, textAlign: 'center' },
   inlineError: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, marginBottom: spacing.sm, borderRadius: radii.md, backgroundColor: colors.dangerDim },
   inlineErrorText:  { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
-  gridLabel:   { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.7, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: spacing.sm },
   grid:        { maxHeight: GRID_MAX_H, marginBottom: spacing.md },
   row:         { gap: spacing.sm, marginBottom: spacing.sm },
   card:        { width: CARD_W, aspectRatio: 2 / 3, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceRaised, borderWidth: 2, borderColor: 'transparent' },
   cardSkeleton:{ backgroundColor: colors.surfaceSunken },
   cardActive:  { borderColor: colors.accent },
-  cardCheck:   { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: SELECTED_TINT, alignItems: 'center', justifyContent: 'center' },
-  cardCheckMark: { color: '#fff', fontSize: 22, fontFamily: fontFamily.sansBold },
+  cardTint:    { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: SELECTED_TINT },
+  // The shadow is the legibility case over artwork, as on web's mark.
+  cardMark:    { position: 'absolute', top: 6, right: 6, width: 28, height: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.65, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
   empty:       { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.xl },
 });

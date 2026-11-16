@@ -58,12 +58,13 @@ for (const connected of [false, true]) test(`Free imports offer Plex source sele
   await page.getByRole('button', { name: /Plex Connected account/ }).click();
   if (connected) {
     const importButton = page.getByRole('button', { name: 'Import from Plex', exact: true });
-    await expect(importButton).toBeDisabled();
-    await page.getByRole('button', { name: /Choose.*server|Choose.*profile/i }).click();
-    await page.getByRole('button', { name: 'My server', exact: true }).click();
-    await page.getByRole('button', { name: 'My profile', exact: true }).click();
+    // One server with one profile: the page loads the list and picks both
+    // itself (the select-source mock above checks which), so Import is ready
+    // without the person finding the "choose" link. Someone who connected
+    // and saw a disabled button here left without importing.
     await expect(page.getByRole('status')).toContainText('Server and profile selected');
     await expect(importButton).toBeEnabled();
+    await expect(page.getByRole('button', { name: /Choose.*server|Choose.*profile/i })).toBeVisible();
   } else {
     await expect(page.getByRole('button', { name: 'Connect Plex to import' })).toBeVisible();
   }

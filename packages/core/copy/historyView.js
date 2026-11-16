@@ -3,7 +3,6 @@
 
 export const HISTORY_VIEW = {
   title: 'History',
-  subtitle: 'Everything you have marked watched, newest first',
   searchPlaceholder: 'Search your history',
   yearSoFar: (year) => `${year} so far`,
   yearCardTitle: (year) => `${year}`,

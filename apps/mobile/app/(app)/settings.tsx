@@ -19,6 +19,7 @@ import { TextInput } from '../../components/TextInput';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line } from 'react-native-svg';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import { IconChevronRight, IconClose, IconCheck } from '../../components/icons';
 import PageSheet from '../../components/PageSheet';
 import Button, { TextLink } from '../../components/Button';
@@ -62,7 +63,7 @@ import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
 import { registerPushToken, unregisterPushToken } from '../../lib/pushNotifications';
 import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
 import { ALERT_EMAIL } from '@plot/core/copy/alertEmail.js';
-import { ALERT_EMAIL_ENABLED } from '@plot/core/features.js';
+import { ALERT_EMAIL_ENABLED, GUIDE_ENABLED } from '@plot/core/features.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -1461,7 +1462,7 @@ export default function SettingsScreen() {
             trailing={<Toggle value={isPublic} onValueChange={toggleVisibility} accessibilityLabel={SETTINGS_VIEW.page.privacyLabel} />}
           />
           <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></Svg>}
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d={ICON_PATHS.bookmark}/></Svg>}
             label={PROFILE_PRIVACY.watchlist.heading}
             value={PROFILE_PRIVACY.watchlist.option[watchlistVisibility]}
             onPress={() => router.push('/(app)/watchlist-visibility')}
@@ -1484,7 +1485,7 @@ export default function SettingsScreen() {
             edit
             onPress={() => setShowProviders(true)}
           />
-          {broadcastPreferences.loading ? (
+          {!GUIDE_ENABLED ? null : broadcastPreferences.loading ? (
             <SettingsRow
               icon={<BroadcastIcon />}
               label={BROADCAST_GUIDE.region}
@@ -1755,7 +1756,7 @@ export default function SettingsScreen() {
       {showRegion && (
         <RegionModal current={region} onSave={saveRegion} onClose={() => setShowRegion(false)} />
       )}
-      {showBroadcast && <BroadcastRegionSheet onClose={() => setShowBroadcast(false)} />}
+      {GUIDE_ENABLED && showBroadcast && <BroadcastRegionSheet onClose={() => setShowBroadcast(false)} />}
       {showTimezone && (
         <TimezoneModal current={timezone} onSave={saveTimezone} onClose={() => setShowTimezone(false)} />
       )}

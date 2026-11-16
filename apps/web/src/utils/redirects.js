@@ -60,6 +60,8 @@ export function consumeSimklReturnTo() {
 // The Trakt callback page posts this to the window that opened it (onboarding
 // connects in a popup so the step's picks survive).
 export const TRAKT_POPUP_MESSAGE = 'plot:trakt-connected';
+// And this when the connect failed there, so the page behind stops waiting.
+export const TRAKT_POPUP_FAILED_MESSAGE = 'plot:trakt-connect-failed';
 
 export function createTraktState(returnTo = '/settings') {
   const state = crypto.randomUUID();
@@ -78,6 +80,49 @@ export function consumeTraktReturnTo() {
   const returnTo = sessionStorage.getItem('plot_trakt_oauth_return_to');
   sessionStorage.removeItem('plot_trakt_oauth_return_to');
   return returnTo?.startsWith('/') ? returnTo : '/settings';
+}
+
+// Where a connect error page (Trakt, Simkl) offers to go back to: the page
+// the connect was started from, so someone part-way through setup is not
+// sent to Settings or Import. Only the three pages that start a connect are
+// accepted; anything else (including a missing address) gets the service's
+// own fallback.
+const CONNECT_ERROR_RETURNS = [['/onboarding', 'setup'], ['/import', 'import'], ['/settings', 'settings']];
+
+/**
+ * @typedef {{ href: string, place: 'setup' | 'import' | 'settings' }} ConnectErrorReturn
+ */
+
+/**
+ * @param {string | null | undefined} returnTo the stored return address
+ * @param {ConnectErrorReturn} fallback
+ * @returns {ConnectErrorReturn}
+ */
+function connectErrorReturn(returnTo, fallback) {
+  const path = typeof returnTo === 'string' ? returnTo : '';
+  for (const [base, place] of CONNECT_ERROR_RETURNS) {
+    if (path === base || path.startsWith(`${base}?`)) return { href: path, place: /** @type {ConnectErrorReturn['place']} */ (place) };
+  }
+  return fallback;
+}
+
+/**
+ * Trakt connects started from Settings before setup and Import offered it,
+ * so Settings is its fallback.
+ * @param {string | null | undefined} returnTo the stored return address
+ * @returns {ConnectErrorReturn}
+ */
+export function traktErrorReturn(returnTo) {
+  return connectErrorReturn(returnTo, { href: '/settings', place: 'settings' });
+}
+
+/**
+ * Simkl only connects from an import, so Import is its fallback.
+ * @param {string | null | undefined} returnTo the stored return address
+ * @returns {ConnectErrorReturn}
+ */
+export function simklErrorReturn(returnTo) {
+  return connectErrorReturn(returnTo, { href: '/import?source=simkl', place: 'import' });
 }
 
 export function buildTraktAuthorizeUrl(clientId, state) {

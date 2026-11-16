@@ -7,8 +7,8 @@
 // job itself runs server side (packages/core/importJobs.js); this only
 // enqueues it and watches the account's jobs so tiles and the pill can show
 // what is running and what waits.
-import { useCallback, useEffect, useState } from 'react';
-import { createImportReporter } from '@plot/core/importPipeline.js';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createImportReporter, IMPORT_FAILURE_REASONS } from '@plot/core/importPipeline.js';
 import { rememberLetterboxdImport, clearLetterboxdImport } from '../utils/letterboxdImportPrompt.js';
 import { startFileImport, startConnectionImport, useImportJobs, importJobActive, importSourceName, importPillFor, importListChoiceNeeded } from '@plot/core/importJobs.js';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
@@ -18,7 +18,7 @@ import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { useTraktSync } from './useTraktSync.js';
 import { useMediaSync } from './useMediaSync.js';
 import { useSimklSync } from './useSimklSync.js';
-import { buildTraktAuthorizeUrl, createTraktState, redirectToExternal, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
+import { buildTraktAuthorizeUrl, createTraktState, redirectToExternal, TRAKT_POPUP_FAILED_MESSAGE, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
 
 // A quick row count for the receipt under the drop zone: text exports only,
 // and only when they are small enough to read on the main thread.
@@ -60,9 +60,10 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
   const [error, setError] = useState(null);
   const [pendingFiles, setPendingFiles] = useState(null);
   const [pendingRows, setPendingRows] = useState(null);
-  // An IMDb list file: is it the watchlist? null until the person answers.
+  // A file that cannot say what it is (an IMDb list, or a renamed Letterboxd
+  // watched/watchlist file). null until the person answers.
   const [listChoiceNeeded, setListChoiceNeeded] = useState(false);
-  const [listChoice, setListChoice] = useState(/** @type {'watchlist' | 'list' | null} */ (null));
+  const [listChoice, setListChoice] = useState(/** @type {import('@plot/core/importJobs.js').ImportListChoice | null} */ (null));
 
   const jobs = useImportJobs(userId, { history });
   const trakt = useTraktSync(userId);
@@ -72,14 +73,39 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
 
   const connection = source === 'trakt' ? trakt : source === 'plex' ? plex : source === 'simkl' ? simkl : null;
   const loadTrakt = trakt.loadIntegration;
-  const loadPlex = plex.loadIntegration;
+  // Back from Plex's approval tab (?import=plex): also pick the approval up
+  // here, in case the tab that started it is paused in the background.
+  const loadPlex = initial === 'plex' ? plex.resumePlexAuth : plex.loadIntegration;
   const loadSimkl = simkl.loadIntegration;
+  // A connect that did not land. Every way of connecting ends up waiting on
+  // something outside this page (a popup, another tab, a poll, a same-tab
+  // round trip), and none of them used to say when it gave up, so the dialog
+  // waited with no end. Back to the connect step, saying so, with its button
+  // to try again. Called from callbacks that finish later, so it reads the
+  // dialog as it is then: closed or moved on, and there is nothing to say.
+  const live = useRef({ source, phase });
+  useEffect(() => { live.current = { source, phase }; });
+  const failConnect = useCallback((id) => {
+    if (live.current.source !== id || live.current.phase !== 'connecting') return;
+    // Counted as import_failed, the same event and reason the import page
+    // uses for a connection that did not work (docs/analytics/README.md).
+    createImportReporter({ entry }).report('failed', { source: id, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
+    setError(IMPORT_JOBS.onboarding.connectFailed(importSourceName(id)));
+    setPhase('connect');
+  }, [entry]);
+
   useEffect(() => {
     if (!userId) return;
-    loadTrakt();
-    loadPlex();
-    loadSimkl();
-  }, [userId, loadTrakt, loadPlex, loadSimkl]);
+    const loads = { trakt: loadTrakt(), plex: loadPlex(), simkl: loadSimkl() };
+    // Back from a same-tab round trip (?import=<source>): the dialog opens
+    // already waiting, so it needs to hear how that trip ended. Plex still
+    // pending is being approved in its own tab; its poll decides (below).
+    if (!initial) return;
+    Promise.resolve(loads[initial]).then(data => {
+      if (data?.status === 'active' || (initial === 'plex' && data?.status === 'pending')) return;
+      failConnect(initial);
+    }, () => {});
+  }, [userId, initial, loadTrakt, loadPlex, loadSimkl, failConnect]);
 
   // A connection that lands (popup message, Plex poll, or the same-tab
   // return) moves the dialog on to "import".
@@ -87,6 +113,17 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
   useEffect(() => {
     if (connected && ['connect', 'connecting'].includes(phase)) setPhase('ready');
   }, [connected, phase]);
+  // Plex: the poll stopped. Approved or given up look the same from here
+  // until the integration is read again, so read it.
+  const plexPolling = plex.polling;
+  const wasPlexPolling = useRef(false);
+  const reloadPlex = plex.loadIntegration;
+  useEffect(() => {
+    const stopped = wasPlexPolling.current && !plexPolling;
+    wasPlexPolling.current = plexPolling;
+    if (!stopped) return;
+    Promise.resolve(reloadPlex()).then(data => { if (data?.status !== 'active') failConnect('plex'); }, () => {});
+  }, [plexPolling, reloadPlex, failConnect]);
   // Plex needs a server and profile; load the list as soon as it is connected.
   const plexChoose = plexSource.choose;
   const plexListed = !!plexSource.servers;
@@ -94,14 +131,30 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     if (source === 'plex' && connected && !plexListed) plexChoose();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- choose is recreated every render; the listed flag is the guard
   }, [source, connected, plexListed]);
+  // Trakt's popup closed. It closes itself after connecting and can report a
+  // failure, but shut with the window's own X it says nothing. Read the
+  // integration again: connected is fine, anything else did not connect.
+  const popupWatch = useRef(/** @type {ReturnType<typeof setInterval> | null} */ (null));
+  const watchTraktPopup = useCallback((popup) => {
+    if (popupWatch.current) clearInterval(popupWatch.current);
+    popupWatch.current = setInterval(() => {
+      if (!popup.closed) return;
+      clearInterval(popupWatch.current);
+      popupWatch.current = null;
+      Promise.resolve(loadTrakt()).then(data => { if (data?.status !== 'active') failConnect('trakt'); }, () => {});
+    }, 500);
+  }, [loadTrakt, failConnect]);
+  useEffect(() => () => { if (popupWatch.current) clearInterval(popupWatch.current); }, []);
   useEffect(() => {
     const onMessage = (event) => {
-      if (event.origin !== window.location.origin || event.data?.type !== TRAKT_POPUP_MESSAGE) return;
-      loadTrakt();
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === TRAKT_POPUP_MESSAGE) { loadTrakt(); return; }
+      // The popup's connect failed.
+      if (event.data?.type === TRAKT_POPUP_FAILED_MESSAGE) failConnect('trakt');
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [loadTrakt]);
+  }, [loadTrakt, failConnect]);
 
   const connectedIds = [trakt.isConnected && 'trakt', plex.isConnected && 'plex', simkl.isConnected && 'simkl'].filter(Boolean);
   const reporter = useCallback(() => createImportReporter({ entry }), [entry]);
@@ -156,8 +209,9 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     setPendingFiles(files);
     setPendingRows(null);
     countRows(files).then(count => setPendingRows(count));
-    // The header row is enough to tell an IMDb list from a ratings export.
-    if (sourceId === 'imdb' && files.length === 1) {
+    // The header row is enough to tell an IMDb list from a ratings export,
+    // or a Letterboxd watched/watchlist file from its other exports.
+    if (['imdb', 'letterboxd'].includes(sourceId) && files.length === 1) {
       files[0].slice(0, 4096).text()
         .then(head => setListChoiceNeeded(importListChoiceNeeded(sourceId, head, files[0].name)))
         .catch(() => setListChoiceNeeded(false));
@@ -184,9 +238,15 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
   }, [userId, source, phase, pendingFiles, pendingRows, listChoiceNeeded, listChoice, entry, reporter, jobs]);
 
   const connect = useCallback(() => {
+    // A retry after a failed connect: the old message must not sit on the
+    // connected step if this one works.
+    setError(null);
     if (source === 'plex') {
       setPhase('connecting');
-      plex.startPlexAuth().then(result => { if (result?.integration?.id) plex.pollPlexAuth(result.integration.id); else setPhase('connect'); });
+      // Plex sends the approval tab back here, not to Settings: on a phone
+      // that tab is where the person ends up, and ?import=plex reopens this
+      // dialog on it, connected and ready to import.
+      plex.startPlexAuth(returnPath('plex')).then(result => { if (result?.integration?.id) plex.pollPlexAuth(result.integration.id); else setPhase('connect'); });
       return;
     }
     if (source === 'simkl') {
@@ -194,7 +254,8 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
       // back to this dialog.
       onBeforeRedirect?.();
       setPhase('connecting');
-      simkl.connect(returnPath('simkl'));
+      // false: the step before its redirect failed, so the page never left.
+      Promise.resolve(simkl.connect(returnPath('simkl'))).then(ok => { if (ok === false) failConnect('simkl'); });
       return;
     }
     const clientId = getConfig().traktClientId;
@@ -203,9 +264,9 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     // tab; ?import=trakt brings the page back to this dialog.
     const url = buildTraktAuthorizeUrl(clientId, createTraktState(returnPath('trakt')));
     const popup = window.open(url, 'plot-trakt', 'popup,width=600,height=760');
-    if (popup) setPhase('connecting');
+    if (popup) { setPhase('connecting'); watchTraktPopup(popup); }
     else { onBeforeRedirect?.(); redirectToExternal(url); }
-  }, [source, plex, simkl, returnPath, onBeforeRedirect]);
+  }, [source, plex, simkl, returnPath, onBeforeRedirect, failConnect, watchTraktPopup]);
 
   const startJob = useCallback(async () => {
     if (!source || phase !== 'ready') return;

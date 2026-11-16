@@ -17,6 +17,7 @@ import {
   UIManager, Platform, StyleSheet, Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { BookmarkGlyph } from '../../components/Icon';
 import { IconChevronDown } from '../../components/icons';
 import SectionTitle from '../../components/SectionTitle';
 import PlotWordmark from '../../components/PlotWordmark';
@@ -50,7 +51,6 @@ import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatc
 import { useContinueWatching, useRecommendationShelves } from '@plot/core/useHomeShelves.js';
 import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
 import RateCard from '../../components/RateCard';
-import TonightFab from '../../components/TonightFab';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -62,7 +62,6 @@ import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists
 import PicksCarousel from '../../components/PicksCarousel';
 import { anticipatedMoviesFrom, currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
 import { localDateStr } from '@plot/core/date.js';
-import { greetingFor } from '@plot/core/greeting.js';
 import { dedupeHomeShelves, visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
@@ -131,15 +130,6 @@ interface PlatformData {
   tv: MediaItem[];
 }
 
-// ── Bookmark SVG ─────────────────────────────────────────────────────
-function BookmarkIcon({ size = 14, color = '#fff', filled = false, strokeWidth = 2 }: { size?: number; color?: string; filled?: boolean; strokeWidth?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </Svg>
-  );
-}
-
 // ── Heart SVG — same outline/fill treatment as the web card heart ─────
 function HeartIcon({ size = 15, color = '#fff', filled = false, strokeWidth = 2.5 }: { size?: number; color?: string; filled?: boolean; strokeWidth?: number }) {
   return (
@@ -195,7 +185,7 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
               accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
               accessibilityRole="button"
             >
-              <BookmarkIcon size={16} color={saved ? colors.accent : colors.textMuted} strokeWidth={2.5} filled={saved} />
+              <BookmarkGlyph saved={saved} size={16} colors={colors} />
             </TouchableOpacity>
           </View>
         )}
@@ -230,7 +220,7 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
-          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
+          <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
@@ -299,7 +289,7 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
         accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
-        <BookmarkIcon size={13} color={saved ? colors.accent : colors.textMuted} filled={saved} />
+        <BookmarkGlyph saved={saved} size={13} colors={colors} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -336,7 +326,7 @@ function HeroCard({ item, onPress, saved, onSave, cardStyle, badge = 'TRENDING #
         accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
-        <BookmarkIcon size={16} color={saved ? colors.accent : '#fff'} filled={saved} />
+        <BookmarkGlyph saved={saved} onImage size={16} strokeWidth={2} colors={colors} />
       </TouchableOpacity>
       <View style={styles.heroContent}>
         <View style={styles.trendingBadge}>
@@ -536,7 +526,7 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
           accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
-          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
+          <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
@@ -701,11 +691,11 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
     userId,
     storage: RECS_STORAGE,
   });
-  // The line under the greeting: nights logged in the last seven days.
+  // The line that leads Home: nights logged in the last seven days.
   const weekNights = useMemo(() => nightsThisWeek(history.entries ?? []), [history.entries]);
   const bestStreak = useMemo(() => streaks(history.entries ?? []).best, [history.entries]);
-  // First run: the titles just saved in onboarding lead Home, under the greeting
-  // and the Finishing touches card. Everyone else keeps the rail at the bottom.
+  // First run: the titles just saved in onboarding lead Home, under
+  // the Finishing touches card. Everyone else keeps the rail at the bottom.
   const ft = useFinishingTouchesState(userId);
   const firstRun = ft.visible;
   // A new member's first week takes Finishing touches' place, so the two
@@ -1163,8 +1153,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           }}
       >
 
-        <Text style={styles.dateLine}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
-        <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
         {!history.loading && weekNights > 0 && (
           <TouchableOpacity
             style={styles.weekLine}
@@ -1222,7 +1210,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       </ScrollView>
       )}
 
-      {tab === 'discover' && <TonightFab />}
 
       {openCurated && (
         <CuratedListPanel
@@ -1294,7 +1281,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
 
-  dateLine: { paddingHorizontal: spacing.xl, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 
   // ── Hero ──
   hero: {
@@ -1564,8 +1550,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     marginTop: spacing.sm,
   },
 
-  // ── Greeting block ──
-  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.xs, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  // ── This week line ──
   weekLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, marginBottom: spacing.md, minHeight: 24 },
   weekDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accentSecondary },
   weekText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },

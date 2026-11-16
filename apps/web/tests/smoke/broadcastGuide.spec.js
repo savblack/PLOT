@@ -1,4 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { GUIDE_ENABLED } from '../../../../packages/core/features.js';
+
+// The guide is hidden (GUIDE_ENABLED): /guide redirects Home and Settings has
+// no TV region row, so none of this can run until the switch is back on.
+test.skip(!GUIDE_ENABLED, 'TV guide is hidden');
 
 // Match the account fixture so host timezone prompts do not obscure the Guide.
 test.use({ timezoneId: 'Australia/Sydney' });

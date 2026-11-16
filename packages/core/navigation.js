@@ -2,7 +2,7 @@ import { WATCH_TOGETHER } from './copy/watchTogether.js';
 import { PEOPLE } from './copy/people.js';
 import { BROWSE } from './copy/browse.js';
 import { COLLABORATIVE_LISTS } from './copy/collaborativeLists.js';
-import { FAVOURITES_ENABLED } from './features.js';
+import { FAVOURITES_ENABLED, GUIDE_ENABLED } from './features.js';
 
 export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
@@ -12,7 +12,8 @@ export const APP_NAV_ITEMS = [
   // the drawer and the tab bar. MY_LISTS_TABS below keeps its 'history' entry.
   { id: 'history', label: 'History', path: '/history', primary: true },
   // Own nav item on web and mobile (opened from the drawer). Not primary, so it
-  // stays out of the tab bar.
+  // stays out of the tab bar. Dropped below while the guide is hidden
+  // (GUIDE_ENABLED in features.js).
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   // New Releases: its own page on both apps. Mobile lists it in its drawer
   // (DrawerMenu.tsx) right after Guide; web's rail and phone drawer read it here.
@@ -26,7 +27,7 @@ export const APP_NAV_ITEMS = [
   { id: 'together', label: WATCH_TOGETHER.navLabel, path: '/together', primary: false, premium: true, feature: 'watchTogether' },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
-];
+].filter(item => GUIDE_ENABLED || item.id !== 'guide');
 
 export const PRIMARY_NAV_ITEMS = APP_NAV_ITEMS.filter(item => item.primary);
 

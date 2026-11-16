@@ -85,6 +85,57 @@ export function cachedProfileSkipsOnboardingGate(profile) {
 }
 
 /**
+ * What the app guard holds between session events.
+ *
+ * @typedef {{
+ *   profileDecided: boolean,
+ *   onboardingComplete: boolean,
+ *   decidedUserId: string | null,
+ * }} OnboardingGateMemory
+ */
+
+/** @type {OnboardingGateMemory} */
+export const ONBOARDING_GATE_UNDECIDED = Object.freeze({
+  profileDecided: false,
+  onboardingComplete: false,
+  decidedUserId: null,
+});
+
+/**
+ * What the guard should hold when a session arrives, and how long to keep
+ * reading the profile row.
+ *
+ * "Finished" is permanent, "not finished" is not: it stops being true the
+ * moment setup is saved. The guard used to treat both as settled, so a guard
+ * that had read "not finished" (someone opened an app page partway through
+ * setup) ignored the completion recorded on this device after the save. It
+ * sent the finished account back to /onboarding, which sent it to the app
+ * again, about twice a second, because the one read that would have
+ * corrected it was cancelled by each redirect.
+ *
+ * A recorded completion therefore wins over an earlier "not finished". A
+ * guard that already holds "finished" is left alone. Either way the row is
+ * read once more, so a later token refresh neither sits in a retry loop nor
+ * replaces the answer when the read comes back empty.
+ *
+ * @param {OnboardingGateMemory} memory
+ * @param {{ userId: string, cachedComplete: boolean }} session
+ * @returns {{ memory: OnboardingGateMemory, maxAttempts: number }}
+ */
+export function onboardingGateOnSession(memory, { userId, cachedComplete }) {
+  const decided = memory.profileDecided && memory.decidedUserId === userId;
+  if (decided && memory.onboardingComplete) return { memory, maxAttempts: 1 };
+  if (cachedComplete) {
+    return {
+      memory: { profileDecided: true, onboardingComplete: true, decidedUserId: userId },
+      maxAttempts: 1,
+    };
+  }
+  if (decided) return { memory, maxAttempts: 1 };
+  return { memory: ONBOARDING_GATE_UNDECIDED, maxAttempts: Number.POSITIVE_INFINITY };
+}
+
+/**
  * @param {{
  *   authDecided: boolean,
  *   authenticated: boolean,

@@ -3,6 +3,8 @@ import { Navigate, useLocation } from 'react-router-dom';
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import {
   cachedProfileSkipsOnboardingGate,
+  ONBOARDING_GATE_UNDECIDED,
+  onboardingGateOnSession,
   onboardingGuardDecision,
   readOnboardingUntilDecided,
 } from '@plot/core/onboardingGate.js';
@@ -11,10 +13,28 @@ import { isPreviewDeployment } from '../utils/previewDeployment.js';
 import { readCachedSession, clearCachedSession } from '../utils/sessionCache.js';
 import { loadSupabase } from '../utils/loadSupabase.js';
 
-export default function ProtectedRoute({ children, skipOnboardingCheck = false, publicPrefixes = [], quiet = false }) {
+/**
+ * The app shell and /onboarding both render this guard at the same place in
+ * the route tree, so React would keep one instance across the two and carry
+ * its answer along. The answer for one is wrong for the other: /onboarding
+ * skips the setup check, and "not finished" stops being true when setup is
+ * saved. Keying on the mode gives each its own instance, which starts from
+ * what this device has recorded (see cacheOnboardingComplete).
+ */
+export default function ProtectedRoute({ skipOnboardingCheck = false, ...props }) {
+  const skip = skipOnboardingCheck || isPreviewDeployment();
+  return <Gate key={skip ? 'skip-setup-check' : 'setup-check'} skip={skip} {...props} />;
+}
+
+/** What a fresh guard can take from the profile cached on this device. */
+function initialGate(skip) {
+  const cached = readCachedSession();
+  if (skip || !cachedProfileSkipsOnboardingGate(cached?.profile)) return ONBOARDING_GATE_UNDECIDED;
+  return { profileDecided: true, onboardingComplete: true, decidedUserId: cached?.userId ?? null };
+}
+
+function Gate({ children, skip, publicPrefixes = [], quiet = false }) {
   const location = useLocation();
-  const isPreview = isPreviewDeployment();
-  const skip = skipOnboardingCheck || isPreview;
   // This gate sits above App.jsx, so its own loading state blocks App from
   // ever mounting. A cached profile that is already finished may render the
   // app while the live row is re-read. Anything short of that stays on the
@@ -22,36 +42,27 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
   // the profile request returned, and the onboarding route does not re-check.
   const [authReady, setAuthReady] = useState(() => !!readCachedSession());
   const [authenticated, setAuthenticated] = useState(() => !!readCachedSession());
-  const [profileDecided, setProfileDecided] = useState(() => {
-    const cached = readCachedSession();
-    return skip || cachedProfileSkipsOnboardingGate(cached?.profile);
-  });
-  const [onboardingComplete, setOnboardingComplete] = useState(() => {
-    const cached = readCachedSession();
-    return !skip && cachedProfileSkipsOnboardingGate(cached?.profile);
-  });
-  const decidedUserId = useRef(
-    /** @type {string | null} */ (
-      !skip && cachedProfileSkipsOnboardingGate(readCachedSession()?.profile)
-        ? readCachedSession()?.userId ?? null
-        : null
-    ),
-  );
+  const [gate, setGate] = useState(() => initialGate(skip));
+  // The session handler below outlives renders, so it reads the gate here.
+  const gateRef = useRef(gate);
 
   useEffect(() => {
     let subscription;
     let cancelled = false;
     let generation = 0;
 
+    const commit = (next) => {
+      gateRef.current = next;
+      setGate(next);
+    };
+
     const apply = async (supabase, session) => {
       const gen = ++generation;
       const stop = () => cancelled || gen !== generation;
 
       if (!session) {
-        decidedUserId.current = null;
+        commit(ONBOARDING_GATE_UNDECIDED);
         setAuthenticated(false);
-        setOnboardingComplete(false);
-        setProfileDecided(true);
         setAuthReady(true);
         clearCachedSession();
         return;
@@ -59,24 +70,15 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
 
       setAuthenticated(true);
       setAuthReady(true);
-      if (skip) {
-        setProfileDecided(true);
-        return;
-      }
+      if (skip) return;
 
       const userId = session.user.id;
       const cached = readCachedSession();
-      const knownComplete = cached?.userId === userId && cachedProfileSkipsOnboardingGate(cached.profile);
-      const alreadyDecided = decidedUserId.current === userId;
-
-      if (knownComplete && !alreadyDecided) {
-        decidedUserId.current = userId;
-        setOnboardingComplete(true);
-        setProfileDecided(true);
-      } else if (!alreadyDecided && !knownComplete) {
-        setOnboardingComplete(false);
-        setProfileDecided(false);
-      }
+      const { memory, maxAttempts } = onboardingGateOnSession(gateRef.current, {
+        userId,
+        cachedComplete: cached?.userId === userId && cachedProfileSkipsOnboardingGate(cached.profile),
+      });
+      if (memory !== gateRef.current) commit(memory);
 
       const read = await readOnboardingUntilDecided(
         () => supabase
@@ -84,17 +86,10 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
           .select('onboarding_complete')
           .eq('id', userId)
           .maybeSingle(),
-        {
-          shouldStop: stop,
-          // A later token refresh must not sit in a retry loop, and must not
-          // replace a decision we already have when the read comes back empty.
-          maxAttempts: (alreadyDecided || knownComplete) ? 1 : Number.POSITIVE_INFINITY,
-        },
+        { shouldStop: stop, maxAttempts },
       );
       if (stop() || !read.decided) return;
-      decidedUserId.current = userId;
-      setOnboardingComplete(read.onboardingComplete);
-      setProfileDecided(true);
+      commit({ profileDecided: true, onboardingComplete: read.onboardingComplete, decidedUserId: userId });
     };
 
     loadSupabase().then(async (supabase) => {
@@ -123,8 +118,8 @@ export default function ProtectedRoute({ children, skipOnboardingCheck = false, 
   const decision = onboardingGuardDecision({
     authDecided: authReady,
     authenticated,
-    profileDecided,
-    onboardingComplete,
+    profileDecided: gate.profileDecided,
+    onboardingComplete: gate.onboardingComplete,
     skipOnboardingCheck: skip,
   });
 

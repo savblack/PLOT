@@ -4,11 +4,11 @@
 // the web app and the Storybook Content page look for copy.
 import { IMPORT_VIEW } from './importView.js';
 import { PLANS_PAGE } from './plansPage.js';
+import { GUIDE_ENABLED } from '../features.js';
 
 export const SETTINGS_VIEW = {
   page: {
     title: 'Settings',
-    subtitle: 'Make Plot feel like yours.',
     navigation: 'Settings sections',
     search: 'Find a setting…',
     noResults: 'No matching settings. Try another word.',
@@ -270,7 +270,6 @@ export const SETTINGS_VIEW = {
       back: 'Settings',
       intro: 'How Plot looks on this browser. Every theme comes in light and dark and follows the Light, Dark and System setting. The default is free; Premium themes change the paper, the ink and the accent, never what anything means.',
       free: 'Free',
-      premium: 'Premium',
       inUse: 'In use',
       applyLabel: (name) => `Use ${name}`,
       lockedNote: 'Premium themes are part of Premium. You can look here, and the default stays free in light, dark and system.',
@@ -413,7 +412,8 @@ export const SETTINGS_VIEW = {
     tmdbName: 'TMDB',
     tmdbNotice: 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
     tvmazeName: 'TVmaze',
-    tvmazeNotice: 'Episode air dates and the TV guide use the TVmaze API.',
+    // Names the TV guide only while it is shown (GUIDE_ENABLED in features.js).
+    tvmazeNotice: GUIDE_ENABLED ? 'Episode air dates and the TV guide use the TVmaze API.' : 'Episode air dates use the TVmaze API.',
     omdbName: 'OMDb',
     omdbNotice: 'Critic scores are retrieved through the OMDb API.',
   },

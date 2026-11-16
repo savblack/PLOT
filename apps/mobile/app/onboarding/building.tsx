@@ -3,6 +3,8 @@
  * then the wordmark and the building lines, one at a time. Held only as
  * long as the save takes, with a short floor so the shelf can fill, then Home
  * fades in. Timing and shelf order come from @plot/core, shared with web.
+ * The wordmark and the full progress bar stay at the top, as on web; there
+ * is no Skip and no way back.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
@@ -10,13 +12,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ONBOARDING_FLOW } from '@plot/core/copy/onboardingFlow.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
-import { BUILDING_FADE_MS, BUILDING_LINE_MS, BUILDING_MIN_MS, BUILDING_SHELF_SIZE, buildingLines, buildingShelf } from '@plot/core/onboardingSetup.js';
+import { BUILDING_FADE_MS, BUILDING_LINE_MS, BUILDING_MIN_MS, BUILDING_SHELF_SIZE, ONBOARDING_PROGRESS, buildingLines, buildingShelf } from '@plot/core/onboardingSetup.js';
 import { useImportJobs, importSourceName } from '@plot/core/importJobs.js';
 import { useAppData } from '../../contexts/AppDataContext';
 import { posterUrl, Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
 import PlotWordmark from '../../components/PlotWordmark';
+import { OnboardingProgress } from '../../components/OnboardingScaffold';
 
 const F = ONBOARDING_FLOW;
 // Each poster lands this long after the one before; the shelf is full by ~0.75s.
@@ -118,6 +121,11 @@ export default function Building() {
 
   return (
     <Animated.View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom, opacity: fade }]}>
+      <View style={styles.header}>
+        <View style={styles.headerMark}><PlotWordmark size={22} color={colors.textPrimary} /></View>
+        <OnboardingProgress step={ONBOARDING_PROGRESS.building} />
+      </View>
+      <View style={styles.body}>
       <View style={styles.shelf} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         {SLOT_KEYS.map((i) => {
           // Empty slots stay as quiet tiles, so the shelf is always two full rows.
@@ -153,12 +161,17 @@ export default function Building() {
           <Animated.Text style={[styles.line, { opacity: breathe }]}>{lines[lineIndex]}</Animated.Text>
         </View>
       </Animated.View>
+      </View>
     </Animated.View>
   );
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  screen: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xl, backgroundColor: colors.bg },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  // The same header as the steps before it (OnboardingScaffold), without Back or Skip.
+  header: { width: '100%', maxWidth: 420, alignSelf: 'center', alignItems: 'center', gap: spacing.lg, paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
+  headerMark: { height: 28, justifyContent: 'center' },
+  body: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xl },
   // Two rows of three, as web's .ob-shelf.
   shelf: { width: 3 * 88 + 2 * 10, flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   card: { width: 88, aspectRatio: 2 / 3, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken },

@@ -8,18 +8,24 @@
 //
 // Add an icon here when a second surface needs it. Do not redraw one inline.
 
-/** @typedef {'bookmark' | 'heart' | 'check' | 'spark'} IconName */
+/** @typedef {'bookmark' | 'heart' | 'check' | 'spark' | 'eye' | 'eyeClosed'} IconName */
 
 /** @type {Record<IconName, string>} */
 export const ICON_PATHS = {
-  // Save to the watchlist. Outline when not saved, solid when saved. It never
-  // turns into another glyph.
+  // Save to the watchlist. Outline when not saved, solid when saved, in the
+  // color it already is: white on artwork, the text color elsewhere. The one
+  // exception is the title page's pill, which reads "In watchlist" with a tick
+  // once saved (Nov 16, 2026).
   bookmark: 'M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z',
   heart: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z',
   check: 'M4 12l5 5L20 6',
   // Premium. The one marker for a Premium feature. The padlock is not used
   // for Premium: it means private (notes, privacy).
   spark: 'M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z',
+  // The password field's reveal toggle. The eye shows the field's state:
+  // open while the password is readable, closed while it is dots.
+  eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  eyeClosed: 'M2 10c2.6 3.6 6 5.4 10 5.4s7.4-1.8 10-5.4 M4.6 13.4 2.8 15.6 M8.6 15.2 7.8 18 M15.4 15.2l.8 2.8 M19.4 13.4l1.8 2.2',
 };
 
 /** Icons that read as a shape and can be drawn solid. A line icon (check) cannot. */

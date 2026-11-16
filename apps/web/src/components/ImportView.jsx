@@ -9,7 +9,7 @@ import { useApp } from '../hooks/useApp.js';
 import { markImportDone } from '../utils/finishingTouchesState.js';
 import { clearLetterboxdImport, rememberLetterboxdImport } from '../utils/letterboxdImportPrompt.js';
 import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
-import { readImportJob, readImportJobReview, finishImportJobReview, importSourceName, importListChoiceNeeded, importFileNameForListChoice } from '@plot/core/importJobs.js';
+import { readImportJob, readImportJobReview, finishImportJobReview, importSourceName, importListChoiceNeeded, importFileNameForListChoice, importListChoiceOptions } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { tmdb } from '@plot/core/tmdb.js';
 import { importReportMessages, importListSelections, importListResultMessage } from '@plot/core/importDocument.js';
@@ -213,7 +213,8 @@ function AccountImportView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const plex = useMediaSync(user?.id);
-  const plexSource = usePlexSource(user?.id);
+  // autoPick: the only server and its only profile are chosen for the person.
+  const plexSource = usePlexSource(user?.id, { autoPick: true });
   const trakt = useTraktSync(user?.id);
   const simkl = useSimklSync(user?.id);
   const availablePlatforms = useMemo(
@@ -224,7 +225,9 @@ function AccountImportView() {
     }),
     [],
   );
-  const loadPlexIntegration = plex.loadIntegration;
+  // Back from Plex's approval tab (?source=plex): also pick the approval up
+  // here, in case the tab that started it is paused in the background.
+  const loadPlexIntegration = searchParams.get('source') === 'plex' ? plex.resumePlexAuth : plex.loadIntegration;
   const loadTraktIntegration = trakt.loadIntegration;
   const loadSimklIntegration = simkl.loadIntegration;
   // ?source= opens straight on that platform's source step. Onboarding's
@@ -300,6 +303,17 @@ function AccountImportView() {
     loadSimklIntegration();
   }, [loadPlexIntegration, loadTraktIntegration, loadSimklIntegration]);
 
+  // Plex needs a server and profile before Import is enabled. Load the list
+  // as soon as Plex is connected, as the import dialog does, instead of
+  // waiting for the person to find the "choose" link.
+  const plexConnected = plex.isConnected;
+  const choosePlexSource = plexSource.choose;
+  const plexListed = !!plexSource.servers || !!plexSource.error;
+  useEffect(() => {
+    if (platform?.id === 'plex' && plexConnected && !plexListed) choosePlexSource();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- choose is recreated every render; the listed flag is the guard
+  }, [platform, plexConnected, plexListed]);
+
   useEffect(() => {
     const onStep = step === 2 && platform?.id === 'letterboxd';
     if (!onStep || !user?.id) return undefined;
@@ -343,14 +357,17 @@ function AccountImportView() {
 
   const handleConnect = useCallback(async () => {
     if (platform?.id === 'plex') {
-      const result = await plex.startPlexAuth();
+      // Plex sends its approval tab back to this step, keeping where the
+      // import began (?from=) for the import events.
+      const from = searchParams.get('from');
+      const result = await plex.startPlexAuth(`/import?source=plex${from ? `&from=${encodeURIComponent(from)}` : ''}`);
       if (result?.integration?.id) plex.pollPlexAuth(result.integration.id);
     } else if (platform?.id === 'trakt') {
       trakt.connect('/import?source=trakt');
     } else if (platform?.id === 'simkl') {
       simkl.connect();
     }
-  }, [platform, plex, trakt, simkl]);
+  }, [platform, plex, trakt, simkl, searchParams]);
 
   const handleConnectionImport = useCallback(async () => {
     if (!connection || !platform) return;
@@ -375,15 +392,17 @@ function AccountImportView() {
     setPendingListFiles(null);
     let picked = Array.from(files);
     // IMDb exports the watchlist and every other list in one layout under a
-    // random name: ask, then read the file under the answer's name, exactly
-    // as the background import sheet does.
-    if (platform.id === 'imdb' && picked.length === 1) {
+    // random name, and a renamed Letterboxd watched.csv or watchlist.csv
+    // cannot say which it is: ask, then read the file under the answer's
+    // name, exactly as the background import sheet does.
+    if (['imdb', 'letterboxd'].includes(platform.id) && picked.length === 1) {
       if (!listChoice) {
         const head = await picked[0].slice(0, 4096).text().catch(() => '');
-        if (importListChoiceNeeded('imdb', head, picked[0].name)) { setPendingListFiles(picked); return; }
+        if (importListChoiceNeeded(platform.id, head, picked[0].name)) { setPendingListFiles(picked); return; }
       } else {
         const file = picked[0];
-        picked = [{ name: importFileNameForListChoice(listChoice), size: file.size, text: () => file.text(), arrayBuffer: () => file.arrayBuffer() }];
+        const name = importFileNameForListChoice(listChoice, platform.id);
+        if (name) picked = [{ name, size: file.size, text: () => file.text(), arrayBuffer: () => file.arrayBuffer() }];
       }
     }
     let parsed;
@@ -649,10 +668,9 @@ function AccountImportView() {
 
           {pendingListFiles && (
             <div className="isp-plex" style={{ marginBottom: '1.25rem' }}>
-              <div className="isp-lbl" id="import-list-choice">{IMPORT_JOBS.onboarding.imdbListQuestion}</div>
+              <div className="isp-lbl" id="import-list-choice">{importListChoiceOptions(platform.id).question}</div>
               <div className="isp-radios" role="radiogroup" aria-labelledby="import-list-choice">
-                {[['watchlist', IMPORT_JOBS.onboarding.imdbListWatchlist, IMPORT_JOBS.onboarding.imdbListWatchlistNote],
-                  ['list', IMPORT_JOBS.onboarding.imdbListOther, IMPORT_JOBS.onboarding.imdbListOtherNote]].map(([id, label, note]) => (
+                {importListChoiceOptions(platform.id).options.map(({ id, label, note }) => (
                   <button type="button" role="radio" aria-checked={false} key={id} className="isp-radio" onClick={() => handleFile(pendingListFiles, id)}>
                     <i aria-hidden="true" /><span className="isp-radio-copy"><span>{label}</span><small>{note}</small></span>
                   </button>

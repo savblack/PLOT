@@ -275,6 +275,25 @@ test('Letterboxd ratings and watched files share a watched identity without usin
   expect(JSON.parse(await page.getByTestId('saved-events').textContent())).toHaveLength(1);
 });
 
+test('a Letterboxd watched file under any other name asks which it is, then imports as watched films', async ({ page }) => {
+  const { readFileSync } = await import('node:fs');
+  const { Buffer } = await import('node:buffer');
+  const movie = JSON.parse(readFileSync(file, 'utf8'))[1].movie;
+  const csv = `Date,Name,Year,Letterboxd URI\n2024-01-02,${movie.title},${movie.year},https://boxd.it/synthetic-renamed`;
+  await page.goto('/tests/smoke/fixtures/history-import.html');
+  await page.getByRole('button', { name: 'Letterboxd ZIP export' }).click();
+  await page.locator('input[type=file]').setInputFiles({ name: 'export (2).csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  // No refusal: the page asks, because watched.csv and watchlist.csv look the same inside.
+  await expect(page.getByText('Is this your Letterboxd watchlist?')).toBeVisible();
+  await expect(page.getByText(/can’t tell whether this Letterboxd file/)).toHaveCount(0);
+  await page.getByRole('radio', { name: /No, films I’ve watched/ }).click();
+  await page.getByRole('button', { name: 'Import →', exact: true }).click();
+  await expect(page.getByText('1 entry added · 0 duplicates skipped · 0 not confirmed')).toBeVisible();
+  const events = JSON.parse(await page.getByTestId('saved-events').textContent());
+  expect(events).toHaveLength(1);
+  expect(events[0].watched_at).toBeNull();
+});
+
 test('Letterboxd ZIP omits overlapping summaries without blocking distinct diary watches', async ({ page }) => {
   const { readFileSync } = await import('node:fs');
   const { Buffer } = await import('node:buffer');
