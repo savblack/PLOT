@@ -205,8 +205,7 @@ export default function YourPeopleScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
       >
-        <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }}>{P.page.subtitle}</Text>
-        <ChipRow style={{ marginTop: spacing.md }}>
+        <ChipRow>
           {(['date', 'person'] as const).map(id => (
             <Chip key={id} label={id === 'date' ? P.page.byDate : P.page.byPerson} selected={view === id} onPress={() => setView(id)} />
           ))}

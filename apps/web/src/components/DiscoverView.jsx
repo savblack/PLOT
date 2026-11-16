@@ -6,7 +6,6 @@ import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
-import { todayLongLabel } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import ScrollRail from './ScrollRail.jsx';
@@ -182,15 +181,13 @@ export function HomePageNav({ sections }) {
   );
 }
 
-/* The date heads the New Releases header row; Home passes showDate={false}
-   and carries no date. Search lives in the
+/* The Home and New Releases header row. Search lives in the
    sidebar (and the phone header's icon), which opens the same palette, so the
    row carries no second search box. The grouped filter is retained only as
    the mobile bottom sheet; the desktop trigger is hidden. */
-export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres = [], showDate = true }) {
+export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres = [] }) {
   return (
     <div className="page-toolbar">
-      {showDate && <span className="page-toolbar-date">{todayLongLabel()}</span>}
       <div className="home-toolbar-actions">
         <GroupedFilterMenu
           mobileControls
@@ -864,7 +861,6 @@ export default function DiscoverView() {
         genreFilters={genreFilters}
         setGenreFilters={setGenreFilters}
         genres={genres}
-        showDate={false}
       />
       <HomeTopCards />
       <DiscoverContent

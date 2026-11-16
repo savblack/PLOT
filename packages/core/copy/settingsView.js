@@ -8,7 +8,6 @@ import { PLANS_PAGE } from './plansPage.js';
 export const SETTINGS_VIEW = {
   page: {
     title: 'Settings',
-    subtitle: 'Make Plot feel like yours.',
     navigation: 'Settings sections',
     search: 'Find a setting…',
     noResults: 'No matching settings. Try another word.',
