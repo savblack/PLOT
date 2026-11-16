@@ -27,7 +27,7 @@ has it off, so no test saw it.
 
 ## Done (unverified against a database)
 
-- supabase/migrations/20261116120000_import_worker_saves_as_user.sql: additive
+- supabase/migrations/20261116213000_import_worker_saves_as_user.sql: additive
   `<name>_as(p_user, ...)` functions, service role only, that run the existing
   functions for a named account. Nothing existing is redefined.
 - packages/core/importRpc.js + importPipeline.js, importLists.js,

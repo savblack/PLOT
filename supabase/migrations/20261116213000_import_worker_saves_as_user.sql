@@ -103,8 +103,10 @@ $$;
 -- transaction-local settings with it, so a failed call cannot leave the
 -- account named.
 
-revoke all on function public.import_act_as_user(uuid) from public, anon, authenticated;
-revoke all on function public.import_act_as_restore(jsonb) from public, anon, authenticated;
+-- service_role is named too: Supabase's default privileges grant it every new
+-- function in public, and these two are not for calling on their own.
+revoke all on function public.import_act_as_user(uuid) from public, anon, authenticated, service_role;
+revoke all on function public.import_act_as_restore(jsonb) from public, anon, authenticated, service_role;
 revoke all on function public.import_watch_events_as(uuid, jsonb) from public, anon, authenticated;
 revoke all on function public.import_saved_list_as(uuid, jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.import_saved_annotations_as(uuid, jsonb) from public, anon, authenticated;

@@ -10,7 +10,7 @@ import { supabase } from './supabase.js';
  * role: it has no session, so those functions refuse it. It sets
  * `importActsForUser`, and the call goes to the `<name>_as` variant, which
  * takes the account explicitly, is granted to the service role only, and runs
- * the same SQL (migration 20261116120000).
+ * the same SQL (migration 20261116213000).
  *
  * @param {'import_watch_events' | 'import_saved_list' | 'import_saved_annotations'} name
  * @param {Record<string, unknown>} args
