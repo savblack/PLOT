@@ -11,7 +11,7 @@
  * is labelled.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import Chip from './Chip';
 import CollapsibleSection from './CollapsibleSection';
@@ -26,6 +26,7 @@ import { DRILLDOWN_STATS, type Drilldown } from '@plot/core/historyDrilldown.js'
 import { HISTORY_VIEW as T } from '@plot/core/copy/historyView.js';
 import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
 import EmptyState from './EmptyState';
+import Button from './Button';
 
 export interface MonthGroup {
   key: string;
@@ -129,13 +130,7 @@ function HistoryComparePrompt() {
     <View style={styles.prompt}>
       <Text style={styles.promptTitle}>{TASTE_OVERLAP.historyPromptTitle}</Text>
       <Text style={styles.promptBody}>{TASTE_OVERLAP.historyPromptBody}</Text>
-      <TouchableOpacity
-        style={styles.promptBtn}
-        accessibilityRole="button"
-        onPress={() => router.push('/(app)/compare' as Href)}
-      >
-        <Text style={styles.promptBtnText}>{TASTE_OVERLAP.compareTaste}</Text>
-      </TouchableOpacity>
+      <Button variant="outline" size="sm" label={TASTE_OVERLAP.compareTaste} onPress={() => router.push('/(app)/compare' as Href)} />
     </View>
   );
 }
@@ -159,14 +154,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   promptTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
   promptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted },
-  promptBtn: {
-    alignSelf: 'flex-start',
-    minHeight: 36,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.textPrimary,
-  },
-  promptBtnText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
 });

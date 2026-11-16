@@ -47,6 +47,8 @@ import ListRow from '../../components/ListRow';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { cardMetaLine } from '@plot/core/media.js';
+import { PosterCaption, posterColumnWidth } from '../../components/PosterCard';
+import EmptyState from '../../components/EmptyState';
 import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, fetchHomeTitle, type ContinueWatchingItem } from '../../components/people/HomeShelves';
 import { useContinueWatching, useRecommendationShelves } from '@plot/core/useHomeShelves.js';
 import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
@@ -85,7 +87,7 @@ const RECS_STORAGE = {
   getItem: (key: string) => AsyncStorage.getItem(key),
   setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
 };
-const CARD_W   = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
+const CARD_W   = posterColumnWidth(SCREEN_W);
 const BINGE_W  = SCREEN_W * 0.62;
 const BINGE_H  = BINGE_W * 0.56;
 
@@ -223,7 +225,7 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
+      <PosterCaption title={title} meta={cardMetaLine(item)} />
     </TouchableOpacity>
   );
 }
@@ -529,7 +531,7 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
           <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
+      <PosterCaption title={title} meta={cardMetaLine(item)} />
     </TouchableOpacity>
   );
 }
@@ -572,14 +574,10 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
     return (
       <>
       {afterCinema}
-      <View style={styles.section}>
-        <Text style={styles.emptyTitle}>Nothing new</Text>
-        <Text style={styles.emptyBody}>
-          {typeFilters.length < ALL_TYPES.length || genreFilters.length
-            ? 'Nothing matches right now. Try widening your filters.'
-            : 'Nothing has landed in the last 30 days. Check back soon.'}
-        </Text>
-      </View>
+      <EmptyState
+        title={DISCOVER_VIEW.newReleasesEmpty.title}
+        body={typeFilters.length < ALL_TYPES.length || genreFilters.length ? DISCOVER_VIEW.newReleasesEmpty.filtered : DISCOVER_VIEW.newReleasesEmpty.none}
+      />
       </>
     );
   }
@@ -1356,7 +1354,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderRadius: radii.md,
     overflow: 'hidden',
     backgroundColor: colors.surfaceSunken,
-    marginBottom: spacing.sm,
   },
   // Naked corner icons over the poster — same treatment as the web card
   // buttons (no pill, no circle; a drop shadow keeps them legible on light
@@ -1377,12 +1374,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   cardActionBtnLeft: {
     right: undefined,
     left: 3,
-  },
-  cardTitle: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    lineHeight: 16,
   },
 
   // ── Binge cards ──
@@ -1559,16 +1550,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
   upNextEmptyRow: { flexDirection: 'row', gap: spacing.md },
   customize: { alignSelf: 'center', marginTop: spacing.xl },
-  emptyTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  emptyBody: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
 });

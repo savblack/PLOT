@@ -70,6 +70,13 @@ export const DISCOVER_VIEW = {
     pinGone: 'No longer available',
     pinCancel: 'Cancel',
   },
+  // New Releases with nothing to show. ("Nothing new" also titles the import
+  // summary in importView.js; a different concept that shares the words.)
+  newReleasesEmpty: {
+    title: 'Nothing new',
+    filtered: 'Nothing matches right now. Try widening your filters.',
+    none: 'Nothing has landed in the last 30 days. Check back soon.',
+  },
   // Home's saved-titles shelf: the bottom of mobile Home, and the top of web
   // Home during the first run.
   savedToWatch: 'Saved to watch',

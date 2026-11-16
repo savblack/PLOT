@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
-import { Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { PosterCaption, posterColumnWidth } from '../../components/PosterCard';
+import { cardMetaLine } from '@plot/core/media.js';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft } from '../../components/icons';
@@ -13,8 +15,9 @@ import { BROWSE } from '@plot/core/copy/browse.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
+import { EmptyNote } from '../../components/EmptyState';
 
-const CARD_W = (Dimensions.get('window').width - spacing.xl * 2 - spacing.md * 2) / 3;
+const CARD_W = posterColumnWidth();
 
 interface BrowseItem {
   id: number;
@@ -62,14 +65,14 @@ export default function BrowseScreen() {
         </Text>
       </View>
       <View style={{ paddingHorizontal: spacing.xl }}>
-        {!browse && <Text style={note}>{BROWSE.empty}</Text>}
+        {!browse && <EmptyNote>{BROWSE.empty}</EmptyNote>}
         {browse && error && (
           <TouchableOpacity onPress={retry} accessibilityRole="button">
             <Text style={note}>{BROWSE.loadError}. {BROWSE.retry}</Text>
           </TouchableOpacity>
         )}
         {browse && !error && items === null && <Loader fill={false} />}
-        {browse && !error && items?.length === 0 && <Text style={note}>{BROWSE.empty}</Text>}
+        {browse && !error && items?.length === 0 && <EmptyNote>{BROWSE.empty}</EmptyNote>}
         {!!items?.length && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
             {items.map(item => {
@@ -86,7 +89,7 @@ export default function BrowseScreen() {
                   <View style={{ width: CARD_W, height: CARD_W * 1.5, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken }}>
                     {uri ? <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : null}
                   </View>
-                  <Text numberOfLines={2} style={{ marginTop: spacing.xs, fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary }}>{title}</Text>
+                  <PosterCaption title={title} meta={cardMetaLine(item)} />
                 </TouchableOpacity>
               );
             })}

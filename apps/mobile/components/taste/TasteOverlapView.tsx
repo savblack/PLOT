@@ -30,6 +30,7 @@ import TasteShareSheet from './TasteShareSheet';
 import Button from '../Button';
 import { Tag } from '../Chip';
 import PremiumMark from '../PremiumMark';
+import { EmptyNote } from '../EmptyState';
 
 type TasteModel = TasteOverlapModel;
 
@@ -371,7 +372,7 @@ function OverlapBody({
             <View style={styles.legendItem}><View style={[styles.swatch, { backgroundColor: colors.accentSecondaryFill }]} /><Text style={styles.legendText}>{name}</Text></View>
           </View>
         </View>
-        {o.genres.length === 0 ? <Text style={styles.empty}>{T.noGenres}</Text> : o.genres.map(g => (
+        {o.genres.length === 0 ? <EmptyNote>{T.noGenres}</EmptyNote> : o.genres.map(g => (
           <View key={g.id} style={styles.genre}>
             <View style={styles.genreRow}>
               <Text style={styles.genreName}>{genreName.get(g.id) || '…'}</Text>
@@ -398,7 +399,7 @@ function OverlapBody({
 
       <View style={styles.section}>
         <Text style={styles.h2}>{T.bothLoved}</Text>
-        {o.loved.length === 0 ? <Text style={styles.empty}>{T.bothLovedEmpty}</Text> : (
+        {o.loved.length === 0 ? <EmptyNote>{T.bothLovedEmpty}</EmptyNote> : (
           <View style={styles.loved}>
             {o.loved.map(title => (
               <TouchableOpacity
@@ -417,7 +418,7 @@ function OverlapBody({
 
       <View style={styles.card}>
         <Text style={styles.h2}>{T.disagree}</Text>
-        {o.disagree.length === 0 ? <Text style={styles.empty}>{T.disagreeEmpty}</Text> : o.disagree.map((title, index) => (
+        {o.disagree.length === 0 ? <EmptyNote>{T.disagreeEmpty}</EmptyNote> : o.disagree.map((title, index) => (
           <TouchableOpacity
             key={`${title.media_type}:${title.tmdb_id}`}
             style={[styles.disagree, index > 0 && styles.disagreeBorder]}

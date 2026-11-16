@@ -29,6 +29,7 @@ import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { HOME_SHELF_LABELS } from '../../lib/homeShelves';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
+import { EmptyNote } from '../../components/EmptyState';
 
 const C = DISCOVER_VIEW.customize;
 
@@ -88,7 +89,7 @@ export default function HomeLayoutScreen() {
 
         <Text style={styles.heading} accessibilityRole="header">{C.pinsTitle}</Text>
         <Text style={styles.sub}>{premium ? C.pinsBody : C.pinsLocked}</Text>
-        {premium && layout.pins.length === 0 ? <Text style={styles.empty}>{C.pinsEmpty}</Text> : null}
+        {premium && layout.pins.length === 0 ? <EmptyNote>{C.pinsEmpty}</EmptyNote> : null}
         {premium && layout.pins.length > 0 ? (
           <ReorderRows
             rows={layout.pins.map((p: { kind: string; id: string }) => ({ id: `${p.kind}:${p.id}`, label: pinLabel(p, { lists, follows: people.follows }) ?? C.pinGone }))}

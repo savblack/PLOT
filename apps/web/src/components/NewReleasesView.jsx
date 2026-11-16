@@ -9,6 +9,7 @@ import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import EmptyState from './EmptyState.jsx';
+import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { DiscoverToolbar, PlatformCharts, RailSection, RankedCard } from './DiscoverView.jsx';
 import SideFilters from './SideFilters.jsx';
 
@@ -64,7 +65,7 @@ function NewReleasesContent({ openPanel, watchlist, rails, loading, platformList
 
   if (!rails.length && !platformList.length) {
     return (
-      <EmptyState className="empty-state--below" title="Nothing new" body="Nothing matches right now. Try widening your filters." />
+      <EmptyState className="empty-state--below" title={DISCOVER_VIEW.newReleasesEmpty.title} body={DISCOVER_VIEW.newReleasesEmpty.filtered} />
     );
   }
 
