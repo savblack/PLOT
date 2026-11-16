@@ -53,6 +53,8 @@ export const FAILED_ACTIONS = Object.freeze({
   BLOCK:                   'block',
   UNBLOCK:                 'unblock',
   REPORT:                  'report',
+  // The x on a saved comparison (useSavedComparisons.js).
+  SAVED_COMPARISON_REMOVE: 'saved_comparison_remove',
   // Reverting an earlier removal from the undo toast (undo.js).
   UNDO:                    'undo',
   // Watch together (useWatchTogether.js). Only unexpected failures: the

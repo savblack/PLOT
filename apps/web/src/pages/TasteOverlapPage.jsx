@@ -6,7 +6,6 @@ import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
 import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 import { track } from '../lib/analytics.js';
-import { DEVICE_STORAGE } from '../utils/deviceStorage.js';
 import { MIN_SHARED_RATINGS } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
@@ -302,13 +301,13 @@ export default function TasteOverlapPage() {
   const { genres } = useGenres();
   const genreName = useMemo(() => new Map(genres.map(g => [g.id, g.name])), [genres]);
   const navigate = useNavigate();
-  const { saved, save, remove } = useSavedComparisons(user?.id, DEVICE_STORAGE);
+  const { saved, save, remove } = useSavedComparisons(user?.id);
 
   // A comparison that loaded is saved to "Your comparisons"; one the server
   // now refuses (blocked, gone private, deleted) leaves it.
   useEffect(() => {
     if (overlap && target) save(target);
-    else if (error === 'not_found' || error === 'not_visible') remove(username);
+    else if (error === 'not_found' || error === 'not_visible') void remove(username);
   }, [overlap, target, error, username, save, remove]);
 
   if (!user) return <LoginRedirect />;
@@ -319,8 +318,8 @@ export default function TasteOverlapPage() {
     else navigate(`/u/${handle}/compare`);
   };
   const forget = (handle) => {
-    track(EVENTS.SAVED_COMPARISON_REMOVED);
-    remove(handle);
+    // Counted once the server has taken it off; a refusal is action_failed, from core.
+    remove(handle).then(ok => { if (ok) track(EVENTS.SAVED_COMPARISON_REMOVED); });
   };
 
   return (

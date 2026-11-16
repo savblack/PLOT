@@ -1,20 +1,20 @@
 // The people you have run a comparison with, kept so you can get back to one
-// without searching again. Only WHO and WHEN are kept: a name, a handle, a
-// photo URL and a time. Never the comparison itself, which holds another
-// person's history and must not outlive the session (see lastResult in
-// useTasteOverlap.js). Opening a saved person always asks the server again, so
-// a block, a profile gone private or a lapsed Premium is still enforced there.
+// without searching again. Only WHO and WHEN are kept. Never the comparison
+// itself, which holds another person's history and must not outlive the
+// session (see lastResult in useTasteOverlap.js). Opening a saved person
+// always asks the server again, so a block, a profile gone private or a lapsed
+// Premium is still enforced there.
 //
-// The list lives on the device (localStorage on web, AsyncStorage on mobile),
-// per signed-in viewer. It does not follow you to another device.
+// The list lives in the saved_comparisons table (migration 20261117090000), so
+// it follows the viewer to every device. These helpers only keep the copy on
+// screen in step while a save or a removal is on its way to the server.
 
+/** As many as list_saved_comparisons() returns. */
 export const SAVED_COMPARISONS_MAX = 12;
-
-/** @param {string} viewerId */
-export const savedComparisonsKey = (viewerId) => `plot-saved-comparisons:${viewerId}`;
 
 /**
  * @typedef {object} SavedComparison
+ * @property {string | null} id  the person's profile id; null only for a row added on screen before the server has answered
  * @property {string} username
  * @property {string | null} display_name
  * @property {string | null} avatar_url
@@ -24,33 +24,16 @@ export const savedComparisonsKey = (viewerId) => `plot-saved-comparisons:${viewe
 const sameHandle = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase();
 
 /**
- * Whatever storage held, as a clean list. Anything malformed is dropped.
- * @param {string | null | undefined} raw
- * @returns {SavedComparison[]}
- */
-export function parseSavedComparisons(raw) {
-  let value;
-  try { value = JSON.parse(raw || '[]'); } catch { return []; }
-  if (!Array.isArray(value)) return [];
-  return value.flatMap(row => (row && typeof row.username === 'string' && row.username ? [{
-    username: row.username,
-    display_name: typeof row.display_name === 'string' ? row.display_name : null,
-    avatar_url: typeof row.avatar_url === 'string' ? row.avatar_url : null,
-    compared_at: typeof row.compared_at === 'string' ? row.compared_at : '',
-  }] : [])).slice(0, SAVED_COMPARISONS_MAX);
-}
-
-/**
  * The list with `person` moved to the top, newest first, capped.
  * @param {SavedComparison[]} list
- * @param {{ username?: string | null, display_name?: string | null, avatar_url?: string | null } | null | undefined} person
+ * @param {{ id?: string | null, username?: string | null, display_name?: string | null, avatar_url?: string | null } | null | undefined} person
  * @param {string} [at]
  * @returns {SavedComparison[]}
  */
 export function withSavedComparison(list, person, at = new Date().toISOString()) {
   if (!person?.username) return list;
   return [
-    { username: person.username, display_name: person.display_name || null, avatar_url: person.avatar_url || null, compared_at: at },
+    { id: person.id || null, username: person.username, display_name: person.display_name || null, avatar_url: person.avatar_url || null, compared_at: at },
     ...list.filter(row => !sameHandle(row.username, person.username)),
   ].slice(0, SAVED_COMPARISONS_MAX);
 }
@@ -62,4 +45,13 @@ export function withSavedComparison(list, person, at = new Date().toISOString())
  */
 export function withoutSavedComparison(list, username) {
   return list.filter(row => !sameHandle(row.username, username));
+}
+
+/**
+ * @param {SavedComparison[]} list
+ * @param {string | null | undefined} username
+ * @returns {SavedComparison | undefined}
+ */
+export function findSavedComparison(list, username) {
+  return list.find(row => sameHandle(row.username, username));
 }

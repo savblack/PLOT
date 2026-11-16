@@ -11,7 +11,6 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTasteOverlap, useExampleOverlap } from '@plot/core/useTasteOverlap.js';
 import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
-import { deviceStorage } from '../../lib/storage';
 import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent, EXAMPLE_SHARED_WATCHLIST, exampleGenreNames } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
@@ -37,6 +36,7 @@ import { EmptyNote } from '../EmptyState';
 type TasteModel = TasteOverlapModel;
 
 type TasteTarget = {
+  id?: string | null;
   username: string;
   display_name?: string | null;
   avatar_url?: string | null;
@@ -84,7 +84,7 @@ export default function TasteOverlapScreen() {
   const { genres } = useGenres();
   const genreName = useMemo(() => genreMap(genres), [genres]);
   const { open } = useMediaPanel();
-  const { save, remove } = useSavedComparisons(userId, deviceStorage);
+  const { save, remove } = useSavedComparisons(userId);
   const shown = asTarget(target);
   const shownHandle = overlap && shown ? shown.username : null;
 
@@ -92,7 +92,7 @@ export default function TasteOverlapScreen() {
   // the server now refuses (blocked, gone private, deleted) leaves it.
   useEffect(() => {
     if (shownHandle && shown) save(shown);
-    else if (error === 'not_found' || error === 'not_visible') remove(username);
+    else if (error === 'not_found' || error === 'not_visible') void remove(username);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `shown` is rebuilt every render; its handle is the change that matters
   }, [shownHandle, overlap, error, username, save, remove]);
 

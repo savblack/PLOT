@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  SAVED_COMPARISONS_MAX, parseSavedComparisons, withSavedComparison, withoutSavedComparison,
+  SAVED_COMPARISONS_MAX, findSavedComparison, withSavedComparison, withoutSavedComparison,
 } from '../../savedComparisons.js';
 
 const person = (username, extra = {}) => ({ username, display_name: username.toUpperCase(), avatar_url: null, ...extra });
@@ -17,7 +17,8 @@ test('a comparison goes to the top and never appears twice', () => {
 
 test('only who and when are kept, never the comparison', () => {
   const [row] = withSavedComparison([], { ...person('sam'), id: 'x', is_public: true, overlap: { match: 82 } });
-  assert.deepEqual(Object.keys(row).sort(), ['avatar_url', 'compared_at', 'display_name', 'username']);
+  assert.deepEqual(Object.keys(row).sort(), ['avatar_url', 'compared_at', 'display_name', 'id', 'username']);
+  assert.equal(row.id, 'x');
 });
 
 test('the list is capped and a person with no handle is ignored', () => {
@@ -35,11 +36,8 @@ test('removing ignores case and leaves everyone else', () => {
   assert.equal(withoutSavedComparison(list, 'nobody').length, 2);
 });
 
-test('storage that is empty, broken or the wrong shape reads as no comparisons', () => {
-  assert.deepEqual(parseSavedComparisons(null), []);
-  assert.deepEqual(parseSavedComparisons('{not json'), []);
-  assert.deepEqual(parseSavedComparisons('{"username":"sam"}'), []);
-  assert.deepEqual(parseSavedComparisons(JSON.stringify([{ username: 'sam', display_name: 4 }, { nope: true }, null])), [
-    { username: 'sam', display_name: null, avatar_url: null, compared_at: '' },
-  ]);
+test('a saved person is found by handle whatever its case', () => {
+  const list = withSavedComparison([], { ...person('sam'), id: 'x' });
+  assert.equal(findSavedComparison(list, 'SAM')?.id, 'x');
+  assert.equal(findSavedComparison(list, 'jo'), undefined);
 });

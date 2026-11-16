@@ -15,7 +15,6 @@ import { IconClose, IconRefresh } from '../../components/icons';
 import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 import { track } from '../../lib/analytics';
-import { deviceStorage } from '../../lib/storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PlotLoader from '@plot/ui/PlotLoader';
 import { useCompareCandidates } from '@plot/core/useTasteOverlap.js';
@@ -59,7 +58,7 @@ export default function ComparePickerScreen() {
   const { following, results, loadingFollowing, searching, isSearching } = useCompareCandidates(userId, query);
   const list = asCandidates(isSearching ? results : following);
   const busy = isSearching ? searching : loadingFollowing;
-  const { saved, remove, reload } = useSavedComparisons(userId, deviceStorage);
+  const { saved, remove, reload } = useSavedComparisons(userId);
   // This screen stays mounted under the comparison, which is what saves a
   // person, so read the list again each time it comes back into view.
   useFocusEffect(useCallback(() => { void reload(); }, [reload]));
@@ -142,7 +141,7 @@ export default function ComparePickerScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.savedBtn}
-                      onPress={() => { track(EVENTS.SAVED_COMPARISON_REMOVED); remove(person.username); }}
+                      onPress={() => { void remove(person.username).then((ok: boolean) => { if (ok) track(EVENTS.SAVED_COMPARISON_REMOVED); }); }}
                       accessibilityRole="button"
                       accessibilityLabel={T.removeComparison(name)}
                     >

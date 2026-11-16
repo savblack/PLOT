@@ -2,7 +2,7 @@
 
 Status: active
 Branch: agent/2026-11-16-compare-picker-unify
-Updated: 2026-11-16T13:40:00Z
+Updated: 2026-11-17T09:40:00Z
 
 ## In plain words
 
@@ -72,6 +72,34 @@ match other pages, on web and mobile.
   needs Savannah's yes. Cost: the list does not follow her to another device,
   and a saved name stays visible after a block until that row is opened.
 
+## Fifth round (2026-11-17): saved comparisons sync across devices
+
+Savannah chose "Sync across devices", so the device-storage version above is
+replaced. THIS BRANCH NOW CARRIES A MIGRATION. It applies to production the
+moment the branch merges to `main`, so merging needs her explicit yes.
+
+- `supabase/migrations/20261117090000_saved_comparisons.sql`: new table
+  `saved_comparisons` (viewer, target, compared_at), RLS on, no policies, no
+  grants. Three security definer functions are the only way in:
+  `list_saved_comparisons()` (carries `private.not_blocked`),
+  `save_comparison(uuid)`, `remove_saved_comparison(uuid)`. Expand only.
+- `list_saved_comparisons` added to BLOCK_FILTERED in `scripts/check-block-clause.mjs`.
+- `scripts/staging-saved-comparisons-test.sql`: 15 checks from four viewpoints.
+- `useSavedComparisons(viewerId)` now calls those functions. A failed remove
+  reports `action_failed` with action `saved_comparison_remove`.
+  `importEngine.generated.js` regenerated because `actionFailures.js` changed.
+- Device storage adapters removed (`apps/web/src/utils/deviceStorage.js`,
+  `deviceStorage` in `apps/mobile/lib/storage.ts`).
+
+Passed: `migrations:check`, `migrations:contract`, `db:block-clause`,
+`staging:test -- saved-comparisons` (15 of 15, rolled back), `check`,
+`test:unit`, `copy:check`, `core:check`, `edge:check`, mobile `typecheck`.
+
+NOT run, and required before merge: `pnpm run db:migration-test` and
+`pnpm run db:drift`. Both read production, which needs Savannah to ask for it.
+`gen:db-types` is also not run: it reads production's schema, which will not
+have the table until this merges.
+
 ## Checks
 
 Passed: `pnpm run check`, `pnpm run test:unit`, `pnpm run copy:check`,
@@ -89,7 +117,7 @@ the iPhone simulator, `test:smoke`, `test-storybook:web`.
 
 ## Approvals
 
-Given: build boards 1 and 2. Still needed: opening a pull request, merging.
+Given: build boards 1 and 2; sync saved comparisons across devices (2026-11-17). Still needed: running the two production-reading checks, opening a pull request, merging (which applies the migration to production).
 
 ## Next
 
