@@ -113,11 +113,11 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   const isListDetail = currentView?.startsWith('my-lists/');
 
   // At sidebar widths there is no header at all — the brand, search and
-  // notifications live in the sidebar, and the title moves into the content
-  // column as .app-page-heading so it shares a left edge with the section
-  // headers below it. Home's VIEW_TITLES entry is the brand ("Plot"), which the
-  // sidebar already shows, so prefer the nav item's own label here and fall
-  // back to the shared titles.
+  // notifications live in the sidebar. The title is still the page's h1
+  // (.app-page-heading), but visually hidden there: the sidebar's active row
+  // names the page, so the content starts at the top. Home's VIEW_TITLES
+  // entry is the brand ("Plot"), which the sidebar already shows, so prefer
+  // the nav item's own label here and fall back to the shared titles.
   //
   // Profile sub-pages (u/:username/compare, /history, ...) keep the handle as
   // their title: the page under it names the section. Taking only the second
@@ -187,8 +187,8 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             and the scrollbar keep the viewport edges; the content itself rides
             in a centred column. */}
         <div className="app-main-inner">
-          {/* Sidebar widths only — below them the header above carries the
-              title and this is display: none. */}
+          {/* Sidebar widths only, and for screen readers only — below them
+              the header above carries the title and this is display: none. */}
           {!isListDetail && <h1 className="app-page-heading">{desktopTitle}</h1>}
           {children}
         </div>

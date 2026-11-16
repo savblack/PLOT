@@ -119,22 +119,13 @@ svg { stroke-width: 1.5; }
   margin-inline: auto;
 }
 
-/* Desktop page title. Sits inside the content column rather than in a bar of
-   its own, so it shares --gut with every section header below it. The two used
-   to be measured from different origins — the header padded from the window,
-   the sections from the centred column — and so never lined up. Hidden below
-   the sidebar breakpoint, where the app header still carries the title. */
+/* Desktop page title. Not shown: the sidebar's active row already names the
+   page, so the content starts at the top of the column. The h1 stays in the
+   markup for screen readers and the document outline (visually hidden at
+   sidebar widths, below). Hidden outright below the sidebar breakpoint, where
+   the app header still carries the title. */
 .app-page-heading {
   display: none;
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: var(--font-display-tracking);
-  font-size: 2rem;
-  line-height: 1;
-  color: var(--text-primary);
-  margin: 0 0 1.5rem;
-  padding: 1.75rem var(--gut) 0;
-  user-select: none;
 }
 
 /* The sticky sub-tab bars are chrome, not content: they pin under the header
@@ -361,10 +352,22 @@ svg { stroke-width: 1.5; }
     border-bottom: none;
   }
 
+  /* Visually hidden, same recipe as .sr-only (base.css). */
   .app-page-heading {
     display: block;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
+  /* The top of every page, now that no heading opens it. */
+  .app-main-inner { padding-top: 1.25rem; }
 }
 
 .app-sidebar-brand {
@@ -2628,12 +2631,9 @@ svg { stroke-width: 1.5; }
 .mylists-stream .top5 { margin-inline: calc(-1 * var(--gut)); padding-inline: var(--gut); }
 
 @media (min-width: 1024px) {
-  /* Match Calendar's heading row: the search sits on the heading's line, on
-     the right. */
+  /* Match Calendar's top row: the search sits on the right. */
   .mylists-page .hist-toolbar {
     justify-content: flex-end;
-    margin-top: calc(-1 * (2rem + 1.5rem));
-    min-height: 3.5rem;
     padding: 0;
     margin-bottom: 1.5rem;
   }
@@ -2651,12 +2651,9 @@ svg { stroke-width: 1.5; }
 /* ── A list's own page: optional filters + responsive collection ── */
 .list-page { display: flex; flex-direction: column; padding: 0 var(--gut) 3rem; }
 .list-page-back { margin-bottom: 6px; }
-/* Sidebar widths have no header above the page, so the page brings its own
-   top space. Its back control is the BackLink in ListPage.jsx: the shell must
-   not draw a second one (tests/unit/oneBackControl.test.js). */
-@media (min-width: 1024px) {
-  .list-page { padding-top: 1rem; }
-}
+/* At sidebar widths the top space comes from .app-main-inner, as on every
+   page. The back control is the BackLink in ListPage.jsx: the shell must not
+   draw a second one (tests/unit/oneBackControl.test.js). */
 .list-page-head {
   display: flex; align-items: center; justify-content: space-between; gap: 2rem;
   padding: 0 0 26px;
@@ -5228,11 +5225,8 @@ a.provider-chip--link:hover {
   .home-side > .home-filter-card { display: none; }
 }
 
-/* The row under a page heading: today's date on the left, that page's
-   controls on the right (Home's filter; Calendar's scope toggle). Below
-   sidebar widths it is a plain row under the header; at sidebar widths it is
-   pulled up onto the page heading's line so the page does not spend a row on
-   one control. */
+/* The first row of a page: that page's controls on the right (Home's
+   filter; Calendar's scope toggle). */
 .page-toolbar {
   display: flex;
   justify-content: flex-end;
@@ -5247,16 +5241,13 @@ a.provider-chip--link:hover {
   flex-shrink: 0;
 }
 @media (min-width: 1024px) {
-  /* .app-page-heading: 1.75rem top padding, 2rem line, 1.5rem bottom margin.
-     Pull the row up over that bottom margin so the date lands directly under
-     the heading and the pill centres on the heading + date block. */
+  /* The first row of the page. A row with no desktop control (Home, New
+     Releases) takes no height at all. */
   .page-toolbar {
-    margin-top: calc(-1 * (2rem + 1.5rem));
-    min-height: 3.5rem;
     padding: 0 var(--gut);
-    margin-bottom: 1.5rem;
     align-items: center;
   }
+  .page-toolbar:has(.page-toolbar-controls) { margin-bottom: 1.5rem; }
 }
 
 /* Labelled variant of the filter trigger: an outlined pill, icon + summary. */
@@ -6435,8 +6426,6 @@ a.provider-chip--link:hover {
 @media (min-width: 1024px) {
   .hist-toolbar--heading {
     justify-content: flex-end;
-    min-height: 3.5rem;
-    margin-top: calc(-1 * (2rem + 1.5rem));
     margin-bottom: 1.5rem;
     padding: 0;
   }
