@@ -26,6 +26,7 @@ import { PosterArt, PosterCaption, posterColumnWidth } from '../PosterCard';
 import { normalizeHomeLayout } from '@plot/core/homeLayout.js';
 import { usePinnedShelves } from '@plot/core/usePinnedShelves.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
+import { EmptyNote } from '../EmptyState';
 
 const CARD_W = posterColumnWidth();
 
@@ -234,7 +235,7 @@ export function YourPeopleShelf() {
         )}
       />
       {items.length === 0 ? (
-        <Text style={{ paddingHorizontal: spacing.xl, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{P.shelf.empty}</Text>
+        <EmptyNote style={{ paddingHorizontal: spacing.xl }}>{P.shelf.empty}</EmptyNote>
       ) : (
         <PosterRail
           data={items}

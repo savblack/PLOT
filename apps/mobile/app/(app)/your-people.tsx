@@ -28,6 +28,7 @@ import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { FollowPill, PeopleChip, PersonFace } from '../../components/people/FollowControls';
 import { useFollowPerson } from '../../components/people/useFollowPerson';
+import { EmptyNote } from '../../components/EmptyState';
 
 const TYPE_ROWS = [
   { id: 'tv', label: MEDIA.tv },
@@ -254,10 +255,10 @@ export default function YourPeopleScreen() {
         <View style={{ marginTop: spacing.lg }}>
           {busy && sections.length === 0 && <Loader fill={false} />}
           {!busy && people.follows.length === 0 && (
-            <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{P.page.empty}</Text>
+            <EmptyNote>{P.page.empty}</EmptyNote>
           )}
           {!busy && people.follows.length > 0 && sections.length === 0 && (
-            <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{P.page.nothing}</Text>
+            <EmptyNote>{P.page.nothing}</EmptyNote>
           )}
           {sections.map(section => (
             <View key={section.key} style={{ marginBottom: spacing.lg }}>

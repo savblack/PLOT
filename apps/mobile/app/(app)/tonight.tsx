@@ -246,10 +246,7 @@ function CardEntrance({ reveal, index, reduceMotion, children }: { reveal: boole
 function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { picker: Picker; onOpen: (i: PickerCandidate) => void; styles: Styles; colors: Palette; reduceMotion: boolean; reveal: boolean }) {
   if (picker.phase !== 'results') {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>{picker.phase === 'error' ? T.loadError : T.emptyTitle}</Text>
-        {picker.phase === 'empty' && <Text style={styles.emptyBody}>{T.emptyBody}</Text>}
-      </View>
+      <EmptyState title={picker.phase === 'error' ? T.loadError : T.emptyTitle} body={picker.phase === 'empty' ? T.emptyBody : undefined} />
     );
   }
   const [top, ...rest] = picker.results;
@@ -589,7 +586,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   savedMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
   savedRemove: { width: 40, height: 40, marginTop: 4, alignItems: 'center', justifyContent: 'center', borderRadius: radii.pill },
 
-  empty: { alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
-  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary, textAlign: 'center' },
-  emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, maxWidth: 280 },
 });

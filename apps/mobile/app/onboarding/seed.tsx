@@ -38,6 +38,7 @@ import { IconChevronRight } from '../../components/icons';
 import ImportSourceIcon from '../../components/ImportSourceIcon';
 import ImportSourceLanes, { ImportPill } from '../../components/ImportSourceLanes';
 import ImportSourceSheet from '../../components/ImportSourceSheet';
+import { EmptyNote } from '../../components/EmptyState';
 
 const F = ONBOARDING_FLOW;
 
@@ -290,7 +291,7 @@ export default function Seed() {
             // Failures are the inline errors above.
             ListEmptyComponent={
               hasQuery && !searching && !searchFailed
-                ? <Text style={styles.empty}>{F.seed.noResults}</Text>
+                ? <EmptyNote style={{ textAlign: 'center', paddingVertical: spacing.xl }}>{F.seed.noResults}</EmptyNote>
                 : undefined
             }
           />

@@ -31,6 +31,7 @@ import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import ModalHeader from './ModalHeader';
+import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { clearLetterboxdImport, rememberLetterboxdImport } from '../lib/letterboxdImportPrompt';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -492,7 +493,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
 
         {/* Header: the shared sheet top bar, with a back chevron between steps */}
         <ModalHeader
-          title="Import Watch History"
+          title={SETTINGS_VIEW.integrations.importWatchHistoryLabel}
           actionLabel={COMMON.cancel}
           onAction={onClose}
           onBack={step !== 'pick-platform' && step !== 'done' ? reset : undefined}

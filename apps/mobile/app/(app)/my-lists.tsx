@@ -48,6 +48,7 @@ import { filterByType } from '@plot/core/mediaFilters.js';
 import { filterByWatchStatus, isFinishedStatus, listProgress, listWatchStatus, LIST_STATUS_FILTER_IDS, type ListWatchStatus } from '@plot/core/listWatchStatus.js';
 import WatchStatusChip from '../../components/WatchStatusChip';
 import { PosterCaption, POSTER_GAP, posterColumnWidth } from '../../components/PosterCard';
+import { EmptyNote } from '../../components/EmptyState';
 import { cardMetaLine } from '@plot/core/media.js';
 import { myListsSearchSources, searchCollectionTitles, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '@plot/core/date.js';
@@ -1400,7 +1401,7 @@ function CustomListCard({
       {open && (
         items.length === 0 ? (
           <TouchableOpacity style={styles.empty} onPress={onAddItem}>
-            <Text style={styles.emptyBody}>{(list.items?.length || 0) === 0 ? CUSTOM_LISTS.listEmptyTap : CUSTOM_LISTS.noMatchingTitles}</Text>
+            <EmptyNote>{(list.items?.length || 0) === 0 ? CUSTOM_LISTS.listEmptyTap : CUSTOM_LISTS.noMatchingTitles}</EmptyNote>
           </TouchableOpacity>
         ) : view === 'rows' ? (
           <View>

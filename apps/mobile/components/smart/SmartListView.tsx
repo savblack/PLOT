@@ -50,6 +50,7 @@ import {
   asCatalog, asMatches, asRules, asSmartRow,
   type SmartMatch, type SmartRules,
 } from '../../lib/smartListModel';
+import { EmptyNote } from '../EmptyState';
 
 const NONE: never[] = [];
 
@@ -323,12 +324,12 @@ function Matches({
   if (smart.error) {
     return (
       <View style={styles.locked}>
-        <Text style={styles.lockedBody}>{SMART_LISTS.loadFailed}</Text>
+        <EmptyNote>{SMART_LISTS.loadFailed}</EmptyNote>
         <Button size="sm" label={SMART_LISTS.retry} onPress={smart.retry} />
       </View>
     );
   }
-  if (items.length === 0) return <Text style={styles.lockedBody}>{SMART_LISTS.empty}</Text>;
+  if (items.length === 0) return <EmptyNote>{SMART_LISTS.empty}</EmptyNote>;
 
   const grid = (rows: SmartMatch[]) => (
     <View style={styles.grid}>

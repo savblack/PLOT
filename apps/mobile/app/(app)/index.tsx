@@ -47,6 +47,7 @@ import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { cardMetaLine } from '@plot/core/media.js';
 import { PosterCaption, posterColumnWidth } from '../../components/PosterCard';
+import EmptyState from '../../components/EmptyState';
 import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
 import { useContinueWatching } from '@plot/core/useHomeShelves.js';
 import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
@@ -567,14 +568,10 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
     return (
       <>
       {afterCinema}
-      <View style={styles.section}>
-        <Text style={styles.emptyTitle}>Nothing new</Text>
-        <Text style={styles.emptyBody}>
-          {typeFilters.length < ALL_TYPES.length || genreFilters.length
-            ? 'Nothing matches right now. Try widening your filters.'
-            : 'Nothing has landed in the last 30 days. Check back soon.'}
-        </Text>
-      </View>
+      <EmptyState
+        title={DISCOVER_VIEW.newReleasesEmpty.title}
+        body={typeFilters.length < ALL_TYPES.length || genreFilters.length ? DISCOVER_VIEW.newReleasesEmpty.filtered : DISCOVER_VIEW.newReleasesEmpty.none}
+      />
       </>
     );
   }
@@ -1472,16 +1469,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
   upNextEmptyRow: { flexDirection: 'row', gap: spacing.md },
   customize: { alignSelf: 'center', marginTop: spacing.xl },
-  emptyTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  emptyBody: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
 });

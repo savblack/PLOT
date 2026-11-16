@@ -15,6 +15,7 @@ import { BROWSE } from '@plot/core/copy/browse.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
+import { EmptyNote } from '../../components/EmptyState';
 
 const CARD_W = posterColumnWidth();
 
@@ -64,14 +65,14 @@ export default function BrowseScreen() {
         </Text>
       </View>
       <View style={{ paddingHorizontal: spacing.xl }}>
-        {!browse && <Text style={note}>{BROWSE.empty}</Text>}
+        {!browse && <EmptyNote>{BROWSE.empty}</EmptyNote>}
         {browse && error && (
           <TouchableOpacity onPress={retry} accessibilityRole="button">
             <Text style={note}>{BROWSE.loadError}. {BROWSE.retry}</Text>
           </TouchableOpacity>
         )}
         {browse && !error && items === null && <Loader fill={false} />}
-        {browse && !error && items?.length === 0 && <Text style={note}>{BROWSE.empty}</Text>}
+        {browse && !error && items?.length === 0 && <EmptyNote>{BROWSE.empty}</EmptyNote>}
         {!!items?.length && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
             {items.map(item => {

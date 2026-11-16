@@ -14,6 +14,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests, FollowRequester } from '../../hooks/useFollowRequests';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
+import EmptyState from '../../components/EmptyState';
 import { Avatar } from '../../components/Avatar';
 import UserModerationMenu from '../../components/UserModerationMenu';
 import { useBlocks } from '@plot/core/useBlocks.js';
@@ -44,7 +45,7 @@ export default function RequestsScreen() {
         {loading ? (
           <Loader fill={false} />
         ) : requests.length === 0 ? (
-          <Text style={styles.empty}>No pending requests.{'\n'}When someone asks to follow you, they'll show up here.</Text>
+          <EmptyState title={PROFILE_PRIVACY.followRequestsEmptyTitle} body={PROFILE_PRIVACY.followRequestsEmptyBody} />
         ) : (
           requests.map((r: FollowRequester) => (
             <RequestRow key={r.follower_id} req={r} onApprove={() => approve(r.follower_id)} onDecline={() => decline(r.follower_id)} colors={colors} styles={styles} viewerId={userId} blocks={blocks} />
@@ -93,7 +94,6 @@ function RequestRow({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   intro: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 21, marginVertical: spacing.lg },
-  empty: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', lineHeight: 22, paddingVertical: spacing.xxl },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   rowId: { flex: 1, minWidth: 0 },
   rowName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
