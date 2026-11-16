@@ -2,7 +2,7 @@
 
 Status: active
 Branch: agent/2026-11-16-compare-picker-unify
-Updated: 2026-11-17T09:40:00Z
+Updated: 2026-11-17T10:05:00Z
 
 ## In plain words
 
@@ -84,7 +84,11 @@ moment the branch merges to `main`, so merging needs her explicit yes.
   `list_saved_comparisons()` (carries `private.not_blocked`),
   `save_comparison(uuid)`, `remove_saved_comparison(uuid)`. Expand only.
 - `list_saved_comparisons` added to BLOCK_FILTERED in `scripts/check-block-clause.mjs`.
-- `scripts/staging-saved-comparisons-test.sql`: 15 checks from four viewpoints.
+- `scripts/staging-saved-comparisons-test.sql`: 22 checks from four viewpoints.
+- Independent agent review done (2026-11-17). One finding applied:
+  `save_comparison` now requires `public.can_view_profile(p_target)`, so it
+  cannot turn an arbitrary id into a name. Test extended for the blocker's
+  side, a private unfollowed profile, the 12-row cap and service_role.
 - `useSavedComparisons(viewerId)` now calls those functions. A failed remove
   reports `action_failed` with action `saved_comparison_remove`.
   `importEngine.generated.js` regenerated because `actionFailures.js` changed.
@@ -92,7 +96,7 @@ moment the branch merges to `main`, so merging needs her explicit yes.
   `deviceStorage` in `apps/mobile/lib/storage.ts`).
 
 Passed: `migrations:check`, `migrations:contract`, `db:block-clause`,
-`staging:test -- saved-comparisons` (15 of 15, rolled back), `check`,
+`staging:test -- saved-comparisons` (22 of 22, rolled back), `check`,
 `test:unit`, `copy:check`, `core:check`, `edge:check`, mobile `typecheck`.
 
 NOT run, and required before merge: `pnpm run db:migration-test` and

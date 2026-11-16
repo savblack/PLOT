@@ -26,6 +26,8 @@ begin;
 set local request.jwt.claims = '{"role":"service_role"}';
 delete from public.saved_comparisons where viewer_id in (:A, :B, :C) or target_id in (:A, :B, :C);
 delete from public.user_blocks where :A in (blocker_id, blocked_id) or :C in (blocker_id, blocked_id);
+delete from public.follows where (follower_id, following_id) in ((:A, :C), (:C, :A));
+update public.profiles set is_public = true where id = :C;
 
 \echo '=== A saves C ==='
 set local role authenticated;
@@ -93,8 +95,63 @@ select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  A cannot save so
   from public.saved_comparisons where viewer_id = :A;
 
 \echo ''
-\echo '=== remove ==='
+\echo '=== A blocks C, then unblocks ==='
 delete from public.user_blocks where blocker_id = :C and blocked_id = :A;
+insert into public.saved_comparisons (viewer_id, target_id) values (:A, :C);
+insert into public.user_blocks (blocker_id, blocked_id) values (:A, :C);
+set local role authenticated;
+set local request.jwt.claims = :A_CLAIMS;
+select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  A blocking C hides C from A''s own list'
+  from public.list_saved_comparisons();
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+delete from public.user_blocks where blocker_id = :A and blocked_id = :C;
+set local role authenticated;
+set local request.jwt.claims = :A_CLAIMS;
+select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  the row is back once the block is lifted'
+  from public.list_saved_comparisons();
+
+\echo ''
+\echo '=== C is private and A does not follow them ==='
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+delete from public.saved_comparisons where viewer_id = :A;
+update public.profiles set is_public = false where id = :C;
+set local role authenticated;
+set local request.jwt.claims = :A_CLAIMS;
+select public.save_comparison(:C);
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+select case when count(*) = 0 then 'PASS' else 'FAIL' end || '  a profile A cannot read is not saved'
+  from public.saved_comparisons where viewer_id = :A;
+update public.profiles set is_public = true where id = :C;
+
+\echo ''
+\echo '=== only the newest 12 are kept ==='
+-- Twelve older rows written directly, then one real save on top.
+insert into public.saved_comparisons (viewer_id, target_id, compared_at)
+select :A::uuid, u.id, now() - (row_number() over (order by u.id)) * interval '1 day'
+  from auth.users u
+ where u.id not in (:A, :C)
+ order by u.id
+ limit 12;
+select case when count(*) = 12 then 'PASS' else 'FAIL' end || '  Staging has twelve other accounts to fill the list with'
+  from public.saved_comparisons where viewer_id = :A;
+set local role authenticated;
+set local request.jwt.claims = :A_CLAIMS;
+select public.save_comparison(:C);
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+select case when count(*) = 12 and bool_or(target_id = :C) then 'PASS' else 'FAIL' end
+       || '  a thirteenth save keeps twelve rows, the new one among them'
+  from public.saved_comparisons where viewer_id = :A;
+select case when min(compared_at) > now() - interval '12 days' then 'PASS' else 'FAIL' end
+       || '  the oldest row is the one that went'
+  from public.saved_comparisons where viewer_id = :A;
+delete from public.saved_comparisons where viewer_id = :A;
+
+\echo ''
+\echo '=== remove ==='
 set local role authenticated;
 set local request.jwt.claims = :A_CLAIMS;
 select public.save_comparison(:C);
@@ -113,6 +170,9 @@ select case when not has_function_privilege('anon', 'public.list_saved_compariso
              and not has_function_privilege('anon', 'public.save_comparison(uuid)', 'execute')
              and not has_function_privilege('anon', 'public.remove_saved_comparison(uuid)', 'execute')
             then 'PASS' else 'FAIL' end || '  anon may call none of them';
+select case when has_function_privilege('service_role', 'public.list_saved_comparisons()', 'execute')
+             and has_table_privilege('service_role', 'public.saved_comparisons', 'select')
+            then 'PASS' else 'FAIL' end || '  service_role keeps its access';
 
 rollback;
 \echo 'rolled back'

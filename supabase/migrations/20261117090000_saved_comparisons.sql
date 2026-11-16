@@ -47,9 +47,12 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Called by the app when a comparison has loaded. Saving again moves the
--- person to the top. A blocked or missing account is skipped without an
--- error, because the caller is a background save, not a button. Only the
--- newest 12 are kept, the same number the list shows.
+-- person to the top. Only a profile the caller can already read is saved
+-- (can_view_profile: public or an accepted follow, never across a block), the
+-- same test taste_overlap() applies, so this cannot be used to turn an
+-- arbitrary id into a name. Anything else is skipped without an error,
+-- because the caller is a background save, not a button. Only the newest 12
+-- are kept, the same number the list shows.
 create or replace function public.save_comparison(p_target uuid)
 returns void
 language plpgsql security definer set search_path = '' as $$
@@ -57,7 +60,7 @@ declare
   v_me uuid := auth.uid();
 begin
   if v_me is null then raise exception 'not_authenticated'; end if;
-  if p_target is null or p_target = v_me or not private.not_blocked(p_target) then return; end if;
+  if p_target is null or p_target = v_me or not public.can_view_profile(p_target) then return; end if;
 
   begin
     insert into public.saved_comparisons (viewer_id, target_id)
