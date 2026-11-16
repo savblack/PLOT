@@ -12,11 +12,12 @@ export const COLLAPSED_KEYWORD_CHIPS = 4;
  * @template T
  * @param {T[]} keywords
  * @param {boolean} expanded
+ * @param {number} [limit] How many show while collapsed. A narrower row passes fewer.
  * @returns {{ visible: T[], hidden: number }}
  */
-export function collapseKeywords(keywords, expanded) {
-  if (expanded || keywords.length <= COLLAPSED_KEYWORD_CHIPS) return { visible: keywords, hidden: 0 };
-  return { visible: keywords.slice(0, COLLAPSED_KEYWORD_CHIPS), hidden: keywords.length - COLLAPSED_KEYWORD_CHIPS };
+export function collapseKeywords(keywords, expanded, limit = COLLAPSED_KEYWORD_CHIPS) {
+  if (expanded || keywords.length <= limit) return { visible: keywords, hidden: 0 };
+  return { visible: keywords.slice(0, limit), hidden: keywords.length - limit };
 }
 
 /**

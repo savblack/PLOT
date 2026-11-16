@@ -78,6 +78,11 @@ import { clearUndo } from '@plot/core/undo.js';
 import Icon from './Icon.jsx';
 import { Tag } from './Chip.jsx';
 
+// Keyword chips shown before "+N more". Web only: here they share the narrow
+// column beside the poster. Mobile gives them a full-width row and keeps
+// core's default.
+const WEB_COLLAPSED_KEYWORDS = 3;
+
 /* ── Close icon ── */
 function CloseIcon() {
   return (
@@ -1507,7 +1512,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
     : (details?.created_by || [])[0]?.name;
   const genreChips = (details?.genres || []).slice(0, 2);
-  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, itemType), keywordsOpen);
+  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, itemType), keywordsOpen, WEB_COLLAPSED_KEYWORDS);
   // Without onBrowse (Storybook) the chips stay plain labels.
   const browse = (kind, id, name, path) => {
     track(EVENTS.BROWSE_TAPPED, browseTapProps({ kind, id, name, mediaType: itemType, source: 'title_panel' }));
@@ -1785,23 +1790,22 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     ) : <Tag tone="sage" key={g.id} label={g.name} />)}
                   </div>
                 )}
+                {/* Keywords sit beside the poster, under the genres. Three show
+                    before "+N more" so the column stays about one row deep. */}
+                {onBrowse && keywordChips.length > 0 && (
+                  <div className="panel-genres panel-keywords" role="group" aria-label={BROWSE.keywordsLabel}>
+                    {keywordChips.map(k => (
+                      <button type="button" className="panel-tag-link" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
+                        onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}><Tag label={k.name} /></button>
+                    ))}
+                    {(hiddenKeywords > 0 || keywordsOpen) && (
+                      <button type="button" className="panel-tag-link" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
+                        <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-              {/* Keywords run the full width under the poster, so a long list
-                  never stacks in the narrow column beside it. Genres stay in that
-                  column, under the rating, where two short tags fit. */}
-              {onBrowse && keywordChips.length > 0 && (
-                <div className="panel-genres panel-keywords panel-head-tags" role="group" aria-label={BROWSE.keywordsLabel}>
-                  {keywordChips.map(k => (
-                    <button type="button" className="panel-tag-link" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
-                      onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}><Tag label={k.name} /></button>
-                  ))}
-                  {(hiddenKeywords > 0 || keywordsOpen) && (
-                    <button type="button" className="panel-tag-link" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
-                      <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* ── Actions ──
