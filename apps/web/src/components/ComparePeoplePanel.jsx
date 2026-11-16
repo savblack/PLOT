@@ -92,7 +92,6 @@ export function ComparePeopleCard({ query, onQuery, people, busy, isSearching, s
             {people.map(p => <PersonRow key={p.id} person={p} selected={!!selectedUsername && p.username === selectedUsername} />)}
           </ul>
         )}
-        <p className="to-privacy">{T.privacyNote}</p>
       </div>
     </aside>
   );

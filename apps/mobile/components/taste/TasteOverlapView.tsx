@@ -9,8 +9,8 @@ import Svg, { Circle, Text as SvgText, Path } from 'react-native-svg';
 import { IconChevronLeft, IconChevronDown } from '../icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
-import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent, EXAMPLE_OVERLAP, exampleGenreNames } from '@plot/core/tasteOverlap.js';
+import { useTasteOverlap, useExampleOverlap } from '@plot/core/useTasteOverlap.js';
+import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent, EXAMPLE_SHARED_WATCHLIST, exampleGenreNames } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -320,10 +320,13 @@ function WatchlistOverlap({
 
 /**
  * The sample comparison the picker shows before anyone is chosen: the same
- * cards as a real one, from EXAMPLE_OVERLAP, stopping before the titles.
+ * cards as a real one between two full profiles, minus Share. Its titles are
+ * this week's trending ones, so they open like any other.
  */
 export function TasteOverlapExample() {
   const { colors } = useTheme();
+  const overlap = useExampleOverlap();
+  const { open } = useMediaPanel();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const genreName = useMemo(() => exampleGenreNames(T.exampleGenres), []);
   return (
@@ -332,10 +335,10 @@ export function TasteOverlapExample() {
       styles={styles}
       colors={colors}
       name={T.exampleName}
-      overlap={EXAMPLE_OVERLAP as unknown as TasteModel}
-      sharedWatchlist={null}
+      overlap={overlap as unknown as TasteModel}
+      sharedWatchlist={EXAMPLE_SHARED_WATCHLIST}
       genreName={genreName}
-      onOpen={() => {}}
+      onOpen={(id, mediaType) => open(id, mediaType === 'tv' ? 'tv' : 'movie')}
       onShare={() => {}}
     />
   );
@@ -344,7 +347,7 @@ export function TasteOverlapExample() {
 function OverlapBody({
   styles, colors, name, overlap, sharedWatchlist, genreName, onOpen, onShare, onWatchTogether, example = false,
 }: {
-  /** The picker's sample: no titles, no share. */
+  /** The picker's sample: a title section only once it has titles, and no share. */
   example?: boolean;
   styles: ReturnType<typeof makeStyles>;
   colors: Palette;
@@ -422,7 +425,7 @@ function OverlapBody({
         </View>
       </View>
 
-      {!example && (<>
+      {(!example || o.loved.length > 0) && (
       <View style={styles.section}>
         <Text style={styles.h2}>{T.bothLoved}</Text>
         {o.loved.length === 0 ? <EmptyNote>{T.bothLovedEmpty}</EmptyNote> : (
@@ -441,7 +444,9 @@ function OverlapBody({
           </View>
         )}
       </View>
+      )}
 
+      {(!example || o.disagree.length > 0) && (
       <View style={styles.card}>
         <Text style={styles.h2}>{T.disagree}</Text>
         {o.disagree.length === 0 ? <EmptyNote>{T.disagreeEmpty}</EmptyNote> : o.disagree.map((title, index) => (
@@ -461,6 +466,7 @@ function OverlapBody({
           </TouchableOpacity>
         ))}
       </View>
+      )}
 
       {sharedWatchlist != null && sharedWatchlist > 0 && (
         <WatchlistOverlap
@@ -471,8 +477,7 @@ function OverlapBody({
         />
       )}
 
-      <Button variant="primary" label={T.share} onPress={onShare} style={styles.primary} />
-      </>)}
+      {!example && <Button variant="primary" label={T.share} onPress={onShare} style={styles.primary} />}
     </>
   );
 }

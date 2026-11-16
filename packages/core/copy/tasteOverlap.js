@@ -78,11 +78,11 @@ export const TASTE_OVERLAP = {
   followNobodyTitle: 'No one to compare with yet',
   followNobody: 'Follow people to compare with them, or search for a public profile.',
   noResults: 'No one found.',
-  privacyNote: 'Taste overlap only uses what they already show you on their profile: watch history and ratings. Private profiles need an accepted follow first.',
 
   // The sample comparison the picker shows until someone is chosen. The
   // numbers are in @plot/core/tasteOverlap.js (EXAMPLE_OVERLAP); the person
   // and the genres are made up, so their names live here with the other copy.
+  // Its titles are this week's trending ones, fetched, never typed in.
   exampleTag: 'Sample',
   exampleName: 'Maya',
   exampleNote: 'This is a sample. Pick someone to see your own match.',

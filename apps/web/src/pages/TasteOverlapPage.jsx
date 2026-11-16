@@ -198,7 +198,8 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
           </section>
         </div>
 
-        {!example && (<>
+        {/* The sample shows a title section only once it has titles for it. */}
+        {(!example || o.loved.length > 0) && (
         <section className="to-section">
           <h2 className="to-h2">{T.bothLoved}</h2>
           {o.loved.length === 0 ? <p className="to-empty">{T.bothLovedEmpty}</p> : (
@@ -213,7 +214,9 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
             </ul>
           )}
         </section>
+        )}
 
+        {(!example || o.disagree.length > 0) && (
         <section className="to-card">
           <h2 className="to-h2">{T.disagree}</h2>
           {o.disagree.length === 0 ? <p className="to-empty">{T.disagreeEmpty}</p> : (
@@ -233,8 +236,9 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
             </ul>
           )}
         </section>
+        )}
 
-        {sharedWatchlist > 0 && (SHOW_WATCH_TOGETHER ? (
+        {sharedWatchlist > 0 && (SHOW_WATCH_TOGETHER && !example ? (
           <Link className="to-watchlist" to={watchTogetherPath(target.username)}>
             <WatchlistRowText count={sharedWatchlist} cta />
             <svg className="to-watchlist-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
@@ -245,10 +249,12 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
           </div>
         ))}
 
+        {/* A sample is nobody's match to share. */}
+        {!example && (
         <div className="to-share-row">
           <button type="button" className="btn btn-primary" onClick={() => setSharing(true)}>{T.share}</button>
         </div>
-        </>)}
+        )}
       </>
     );
   }

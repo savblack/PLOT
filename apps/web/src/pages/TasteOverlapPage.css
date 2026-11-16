@@ -2,17 +2,16 @@
    the other person the secondary green, matching the design canvas. */
 
 /* Two columns: the people panel, then the comparison (or its sample). The
-   panel is the same .hist-card the other side columns use, a little wider
-   than .cal-side because its rows carry a name, a handle and a status. */
+   panel is the same .hist-card at the same width and gap as every other side
+   column (.cal-side inside .cal-body: 264px, 72px). */
 .to-layout {
   box-sizing: border-box;
   display: flex;
   align-items: flex-start;
-  gap: 48px;
+  gap: 72px;
   padding: 0 var(--gut, 16px) 3rem;
 }
-.to-side { width: 340px; flex-shrink: 0; position: sticky; top: 1rem; font-family: var(--font-sans); color: var(--text-primary); }
-.to-side-card { padding: 16px; }
+.to-side { width: 264px; flex-shrink: 0; position: sticky; top: 1rem; font-family: var(--font-sans); color: var(--text-primary); }
 .to-side .search-field { width: 100%; box-sizing: border-box; }
 /* The page-sized empty state would dwarf the card. */
 .to-side .empty-state { padding: 1.25rem 0.5rem; gap: 0.5rem; }
@@ -175,7 +174,7 @@
 
 /* Loved */
 /* As many as fit: the column is wider beside the people panel than it was alone. */
-.to-loved { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
+.to-loved { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.6rem; }
 @media (max-width: 520px) { .to-loved { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .to-loved-btn {
   width: 100%; padding: 0; border: 0; background: none; color: inherit; cursor: pointer;
@@ -244,6 +243,5 @@ a.to-pick-row:hover { background: var(--surface-sunken); }
   background: var(--surface-sunken); padding: 0.35rem 0.65rem; border-radius: var(--radius-pill);
   white-space: nowrap;
 }
-.to-privacy { margin: 0; padding: 12px 4px 0; border-top: 1px solid var(--border); font-size: 0.75rem; line-height: 1.5; color: var(--text-muted); }
 
 .to-chip .premium-mark { margin-left: 5px; }

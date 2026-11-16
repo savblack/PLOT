@@ -99,8 +99,6 @@ export default function ComparePickerScreen() {
               ))}
             </View>
           )}
-
-          <Text style={styles.privacy}>{T.privacyNote}</Text>
         </View>
 
         <View style={styles.exampleHead}>
@@ -176,10 +174,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   loader: { paddingVertical: spacing.xl, alignItems: 'center' },
   // The page-sized empty state would dwarf the card.
   empty: { paddingVertical: spacing.md, paddingHorizontal: 0 },
-  privacy: {
-    paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
-    fontFamily: fontFamily.sans, fontSize: 12, lineHeight: 18, color: colors.textMuted,
-  },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },

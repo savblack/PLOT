@@ -198,8 +198,9 @@ export function tasteOverlap(mineRows, theirRows, { lovedLimit = 3, disagreeLimi
 /**
  * A made-up comparison for the picker to show before anyone is chosen, in the
  * shape tasteOverlap() returns. Genre ids are 1-based positions in
- * TASTE_OVERLAP.exampleGenres, never TMDB ids, and there are no titles: a
- * sample must not name or draw a real film nobody looked up.
+ * TASTE_OVERLAP.exampleGenres, never TMDB ids, and it carries no titles: a
+ * sample must not name or draw a film nobody looked up. exampleOverlap() adds
+ * titles that came from a TMDB response.
  */
 export const EXAMPLE_OVERLAP = Object.freeze({
   watched: { mine: 212, theirs: 164, both: 88 },
@@ -216,6 +217,36 @@ export const EXAMPLE_OVERLAP = Object.freeze({
   loved: [],
   disagree: [],
 });
+
+/** How many titles the sample says are on both watchlists. */
+export const EXAMPLE_SHARED_WATCHLIST = 14;
+
+// Made-up ratings (10-point, as stored) for the sample's titles, in order:
+// six both people loved, then three they disagree on.
+const EXAMPLE_LOVED = [[10, 9], [9, 10], [9, 9], [8, 10], [10, 8], [8, 9]];
+const EXAMPLE_DISAGREE = [[9, 3], [4, 10], [8, 2]];
+
+/**
+ * The sample comparison with "You both loved" and "Where you disagree" filled
+ * in, so it shows everything a real one between two full profiles would.
+ * `titles` must come from a TMDB response (the picker passes this week's
+ * trending list); the ratings laid over them are invented. With too few
+ * titles a section stays empty and the views leave it out.
+ *
+ * @param {Array<{ tmdb_id: number, media_type: string, title: string, poster_path: string | null }>} [titles]
+ */
+export function exampleOverlap(titles = []) {
+  const usable = titles.filter(t => t && t.tmdb_id != null && t.title && t.poster_path);
+  const rate = (pairs, offset) => pairs.flatMap(([mine, theirs], i) => {
+    const t = usable[offset + i];
+    return t ? [{ tmdb_id: t.tmdb_id, media_type: t.media_type || 'movie', title: t.title, poster_path: t.poster_path, mine, theirs }] : [];
+  });
+  return {
+    ...EXAMPLE_OVERLAP,
+    loved: rate(EXAMPLE_LOVED, 0),
+    disagree: rate(EXAMPLE_DISAGREE, EXAMPLE_LOVED.length),
+  };
+}
 
 /**
  * Genre names for EXAMPLE_OVERLAP, keyed the way the comparison views expect.

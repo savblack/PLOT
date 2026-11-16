@@ -2,7 +2,7 @@
 
 Status: active
 Branch: agent/2026-11-16-compare-picker-unify
-Updated: 2026-11-16T12:10:00Z
+Updated: 2026-11-16T12:45:00Z
 
 ## In plain words
 
@@ -35,6 +35,16 @@ match other pages, on web and mobile.
   `TasteOverlapExample` exported from `components/taste/TasteOverlapView.tsx`.
 - Stories: PickerFollowingNobody, PickerWithPeople, WithPeoplePanel.
 
+## Second round (2026-11-16, Savannah's notes)
+
+- Left panel is now 264px with a 72px gap, the same as `.cal-side` in `.cal-body`.
+- The privacy note is deleted on web and mobile, with its copy key.
+- The sample now shows everything a full comparison does except Share: "You
+  both loved", "Where you disagree" and the shared-watchlist row.
+  `exampleOverlap(titles)` in core lays invented ratings over titles from
+  `tmdb.getTrending('all', 'week')` (`useExampleOverlap`), so no id is typed in.
+  If that request fails, the two title sections are left out.
+
 ## Checks
 
 Passed: `pnpm run check`, `pnpm run test:unit`, `pnpm run copy:check`,
@@ -48,6 +58,7 @@ the iPhone simulator, `test:smoke`, `test-storybook:web`.
   "Compare". Left alone because PRs 1724 and 1725 are editing AppShell.jsx.
 - Mobile comparison screen still has its own round back button and
   "Taste overlap" heading. Not asked for; the match card stays stacked on a phone.
+- The sample's posters change weekly with TMDB trending; a fixed set would need titles resolved by search.
 - Wording differs from the mockup: tag is "Sample" and the empty-state button
   is "Search people", because "Example" and "Find people" already belong to
   other copy modules.

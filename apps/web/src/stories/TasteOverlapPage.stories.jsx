@@ -1,7 +1,7 @@
 import resolvedTitles from './profileTitles.fixture.json';
 import { MemoryRouter } from 'react-router-dom';
 import { AppContext } from '../hooks/useApp.js';
-import { tasteOverlap, EXAMPLE_OVERLAP, exampleGenreNames } from '@plot/core/tasteOverlap.js';
+import { tasteOverlap, exampleOverlap, exampleGenreNames, EXAMPLE_SHARED_WATCHLIST } from '@plot/core/tasteOverlap.js';
 import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
 import { ComparePeopleCard } from '../components/ComparePeoplePanel.jsx';
 import { TasteOverlapView } from '../pages/TasteOverlapPage.jsx';
@@ -63,7 +63,9 @@ const panel = (extra) => (
 );
 const example = {
   example: true, target: { username: '', display_name: TASTE_OVERLAP.exampleName, is_public: true },
-  overlap: EXAMPLE_OVERLAP, genreName: exampleGenreNames(TASTE_OVERLAP.exampleGenres), sharedWatchlist: null,
+  // The app passes this week's trending titles; the story reuses the resolved fixture.
+  overlap: exampleOverlap([...resolvedTitles, ...resolvedTitles.slice(0, 3)]), genreName: exampleGenreNames(TASTE_OVERLAP.exampleGenres),
+  sharedWatchlist: EXAMPLE_SHARED_WATCHLIST,
 };
 
 export const Populated = {};
