@@ -7,6 +7,9 @@ import PlotLogo from '../components/PlotLogo.jsx';
 import { TRAKT_CALLBACK_PAGE } from '../copy/traktCallbackPage.js';
 import { track, EVENTS } from '../lib/analytics.js';
 
+// One style for the link and the popup's button, so they look the same.
+const BACK_STYLE = { color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' };
+
 const BACK_LABELS = {
   setup: TRAKT_CALLBACK_PAGE.backToSetup,
   import: TRAKT_CALLBACK_PAGE.backToImport,
@@ -98,8 +101,8 @@ export default function TraktCallbackPage() {
         <PlotLogo style={{ fontSize: '2rem' }} />
         <p style={{ color: '#c0392b', fontSize: '0.95rem', maxWidth: 360 }}>{error}</p>
         {inPopup
-          ? <button type="button" onClick={() => window.close()} style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem', background: 'none', border: 0, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>{TRAKT_CALLBACK_PAGE.closeWindow}</button>
-          : <a href={back.href} style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>{BACK_LABELS[back.place]}</a>}
+          ? <button type="button" onClick={() => window.close()} style={{ ...BACK_STYLE, background: 'none', border: 0, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>{TRAKT_CALLBACK_PAGE.closeWindow}</button>
+          : <a href={back.href} style={BACK_STYLE}>{BACK_LABELS[back.place]}</a>}
       </div>
     );
   }
