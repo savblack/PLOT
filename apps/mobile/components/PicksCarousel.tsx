@@ -101,7 +101,7 @@ export default function PicksCarousel({ children, cardWidth, inView = true }: {
 }
 
 const makeStyles = (colors: Palette) => StyleSheet.create({
-  controls: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.sm },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.sm },
   dots: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.borderStrong },
   dotActive: { width: 18, backgroundColor: colors.accent },
