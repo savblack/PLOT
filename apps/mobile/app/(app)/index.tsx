@@ -23,6 +23,7 @@ import PlotWordmark from '../../components/PlotWordmark';
 import { TextLink } from '../../components/Button';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
 import { useNewReleases, prepareNewReleaseGenreRails } from '@plot/core/useNewReleases.js';
@@ -80,6 +81,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const SCREEN_W = Dimensions.get('window').width;
+// The day's recommendation shelves are kept here, so Home asks TMDB once a day.
+const RECS_STORAGE = {
+  getItem: (key: string) => AsyncStorage.getItem(key),
+  setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
+};
 const CARD_W   = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
 const BINGE_W  = SCREEN_W * 0.62;
 const BINGE_H  = BINGE_W * 0.56;
@@ -692,6 +698,8 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
     fetchDetails: fetchHomeTitle,
     today: localDateStr(),
     enabled: !history.loading,
+    userId,
+    storage: RECS_STORAGE,
   });
   // The line under the greeting: nights logged in the last seven days.
   const weekNights = useMemo(() => nightsThisWeek(history.entries ?? []), [history.entries]);

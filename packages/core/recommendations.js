@@ -15,8 +15,14 @@
 //      Three favorites pointing at the same show beats one.
 //
 // Anything already in history, on the watchlist or being watched is left
-// out. Pure functions here; fetching is useRecommendationShelves in
-// useHomeShelves.js. Rendering is per app.
+// out, and so is anything first released more than RECENT_YEARS ago: the
+// shelves recommend recent titles only (Savannah, 16 Nov 2026). Seeds can be
+// any age; only what is recommended has to be recent.
+//
+// Cost: the finished shelves are kept on the device for the day
+// (dailyRecs*), so the seed details calls run at most once per device per
+// day. Pure functions here; fetching and storage are useRecommendationShelves
+// in useHomeShelves.js. Rendering is per app.
 
 import { KIDS_GENRE_IDS } from './tmdb.js';
 import { recommendationsFromDetails, tmdbIdFromItem, mediaTypeFromItem } from './media.js';
@@ -39,6 +45,8 @@ const UNRATED_WEIGHT = 0.45;
 const HALF_LIFE_DAYS = 180;
 /** Weight of the genre bonus relative to one seed's full vote. */
 const GENRE_BONUS = 0.35;
+/** Recommended titles must have first come out within this many years. */
+export const RECENT_YEARS = 10;
 
 /**
  * @typedef {{ tmdb_id: number | string, media_type: string, title?: string | null,
@@ -125,15 +133,41 @@ function allowsKids(seeds) {
 }
 
 /**
- * One details payload's recommendations, cleaned: no owned titles, no
- * kids titles unless allowed.
+ * The earliest release date a recommendation may have: today, RECENT_YEARS
+ * years back (YYYY-MM-DD, so it compares as a string).
+ * @param {string} today YYYY-MM-DD
+ */
+export function recentCutoff(today) {
+  const year = Number(String(today).slice(0, 4));
+  return Number.isFinite(year) && year > 0 ? `${year - RECENT_YEARS}${String(today).slice(4, 10)}` : '';
+}
+
+/**
+ * Whether a TMDB item first came out on or after the cutoff. A show counts by
+ * its first air date, so a long-running series that began before the cutoff
+ * is left out. An item with no date is left out too: it is usually unreleased
+ * or a stub.
+ * @param {{ release_date?: string, first_air_date?: string }} item
+ * @param {string} cutoff YYYY-MM-DD, or '' for no cutoff
+ */
+export function isRecentRelease(item, cutoff) {
+  if (!cutoff) return true;
+  const date = item?.release_date || item?.first_air_date || '';
+  return /^\d{4}-\d{2}-\d{2}/.test(date) && date >= cutoff;
+}
+
+/**
+ * One details payload's recommendations, cleaned: no owned titles, nothing
+ * older than the cutoff, no kids titles unless allowed.
  * @param {any} details
  * @param {Set<string>} owned
  * @param {boolean} kidsOk
+ * @param {string} cutoff
  */
-function usableRecs(details, owned, kidsOk) {
+function usableRecs(details, owned, kidsOk, cutoff) {
   return recommendationsFromDetails(details, { limit: 40 })
     .filter(item => !owned.has(itemKey(item)))
+    .filter(item => isRecentRelease(item, cutoff))
     .filter(item => kidsOk || !(item.genre_ids || []).some(id => KIDS_GENRE_IDS.has(id)));
 }
 
@@ -153,9 +187,10 @@ function dayIndex(today) {
  */
 export function becauseYouWatched(seeds, detailsByKey, { owned, today, limit = SHELF_LIMIT }) {
   const kidsOk = allowsKids(seeds);
+  const cutoff = recentCutoff(today);
   const candidates = [];
   for (const seed of seeds) {
-    const items = usableRecs(detailsByKey.get(seed.key), owned, kidsOk);
+    const items = usableRecs(detailsByKey.get(seed.key), owned, kidsOk, cutoff);
     if (items.length >= MIN_BECAUSE_ITEMS) candidates.push({ seed, items: items.slice(0, limit) });
     if (candidates.length >= BECAUSE_ROTATION) break;
   }
@@ -169,14 +204,15 @@ export function becauseYouWatched(seeds, detailsByKey, { owned, today, limit = S
  * most to put it here, so an app can say why.
  * @param {Seed[]} seeds
  * @param {Map<string, any>} detailsByKey
- * @param {{ owned: Set<string>, exclude?: Set<string>, limit?: number }} opts
+ * @param {{ owned: Set<string>, today: string, exclude?: Set<string>, limit?: number }} opts
  *   `exclude` holds keys another shelf already shows.
  * @returns {any[]}
  */
-export function recommendedForYou(seeds, detailsByKey, { owned, exclude = new Set(), limit = SHELF_LIMIT }) {
+export function recommendedForYou(seeds, detailsByKey, { owned, today, exclude = new Set(), limit = SHELF_LIMIT }) {
   const usable = seeds.filter(s => detailsByKey.get(s.key));
   if (usable.length < MIN_FOR_YOU_SEEDS) return [];
   const kidsOk = allowsKids(seeds);
+  const cutoff = recentCutoff(today);
 
   // The viewer's genre profile, from the seeds, as shares that sum to 1.
   const genreWeight = new Map();
@@ -189,7 +225,7 @@ export function recommendedForYou(seeds, detailsByKey, { owned, exclude = new Se
   /** @type {Map<string, { item: any, score: number, seeds: number, top: { title: string, vote: number } }>} */
   const pool = new Map();
   for (const seed of usable) {
-    const recs = usableRecs(detailsByKey.get(seed.key), owned, kidsOk);
+    const recs = usableRecs(detailsByKey.get(seed.key), owned, kidsOk, cutoff);
     recs.forEach((item, i) => {
       const key = itemKey(item);
       if (exclude.has(key)) return;
@@ -215,4 +251,83 @@ export function recommendedForYou(seeds, detailsByKey, { owned, exclude = new Se
     || (b.item.vote_count || 0) - (a.item.vote_count || 0)
     || itemKey(a.item).localeCompare(itemKey(b.item)));
   return ranked.slice(0, limit).map(entry => ({ ...entry.item, _because: entry.top.title }));
+}
+
+/* ── Kept for the day ──────────────────────────────────────────────────────
+   The finished shelves are stored on the device, per account, for the
+   calendar day they were built. Only the fields a poster card reads are kept,
+   so a stored day is a few kilobytes. Owned titles are filtered again when
+   the shelves are drawn (filterOwnedShelves), so a title saved or watched
+   later the same day still drops out straight away. */
+
+const STORED_FIELDS = ['id', 'media_type', 'title', 'name', 'poster_path', 'backdrop_path',
+  'release_date', 'first_air_date', 'genre_ids', 'vote_average', 'vote_count', 'original_language', '_because'];
+
+/** Storage key for one account's stored shelves. @param {string} userId */
+export const dailyRecsKey = (userId) => `plot:home-recs:v1:${userId}`;
+
+/** @param {any} item */
+function slimItem(item) {
+  /** @type {Record<string, any>} */
+  const out = {};
+  for (const field of STORED_FIELDS) if (item?.[field] != null) out[field] = item[field];
+  return out;
+}
+
+/**
+ * @typedef {{ because: { seed: Seed, items: any[] } | null, forYou: any[] }} RecShelves
+ */
+
+/**
+ * The string to store, or null when there is nothing worth keeping. An empty
+ * result is never stored: a new account that logs its first titles today
+ * should get shelves today, not tomorrow.
+ * @param {RecShelves} shelves
+ * @param {string} today YYYY-MM-DD
+ * @returns {string | null}
+ */
+export function serializeDailyRecs(shelves, today) {
+  const because = shelves?.because?.items?.length ? shelves.because : null;
+  const forYou = shelves?.forYou ?? [];
+  if (!because && !forYou.length) return null;
+  return JSON.stringify({
+    v: 1,
+    day: today,
+    because: because && { seed: because.seed, items: because.items.map(slimItem) },
+    forYou: forYou.map(slimItem),
+  });
+}
+
+/**
+ * Stored shelves, if they were built today; otherwise null (fetch again).
+ * @param {string | null | undefined} raw
+ * @param {string} today YYYY-MM-DD
+ * @returns {RecShelves | null}
+ */
+export function parseDailyRecs(raw, today) {
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw);
+    if (data?.v !== 1 || data.day !== today) return null;
+    const because = data.because && Array.isArray(data.because.items) && data.because.seed?.title
+      ? data.because : null;
+    return { because, forYou: Array.isArray(data.forYou) ? data.forYou : [] };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Drop titles the viewer has come to own since the shelves were built.
+ * @param {RecShelves} shelves
+ * @param {Set<string>} owned
+ * @returns {RecShelves}
+ */
+export function filterOwnedShelves(shelves, owned) {
+  const keep = (item) => !owned.has(itemKey(item));
+  const items = shelves.because?.items.filter(keep) ?? [];
+  return {
+    because: shelves.because && items.length ? { seed: shelves.because.seed, items } : null,
+    forYou: shelves.forYou.filter(keep),
+  };
 }

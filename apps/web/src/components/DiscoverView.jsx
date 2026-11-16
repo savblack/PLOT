@@ -56,6 +56,7 @@ import { greetingFor } from '@plot/core/greeting.js';
 import HomeTopCards from './HomeTopCards.jsx';
 import { useFirstRun } from '../hooks/useFirstRun.js';
 import { oncePerSession } from '@plot/core/oncePerSession.js';
+import { readStorage, writeStorage } from '../utils/storage.js';
 import { track, EVENTS } from '../lib/analytics.js';
 import { ContinueCard, PeopleInvite, PeopleShelfCard } from './HomeShelves.jsx';
 import { useFollowPerson } from '../hooks/useFollowPerson.jsx';
@@ -668,6 +669,8 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     fetchDetails: getTitleDetails,
     today: todayStr,
     enabled: !history.loading,
+    userId: user?.id,
+    storage: RECS_STORAGE,
   });
   const becauseCount = recs.because?.items.length ?? 0;
   const forYouCount = recs.forYou.length;
@@ -874,6 +877,8 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
 }
 
 const getTVDetails = (id) => tmdb.getTVDetails(id);
+// The day's recommendation shelves are kept here, so Home asks TMDB once a day.
+const RECS_STORAGE = { getItem: (k) => readStorage(k), setItem: writeStorage };
 const getTitleDetails = (type, id) => (type === 'tv' ? tmdb.getTVDetails(id) : tmdb.getMovieDetails(id));
 
 /* ═══════════════════════════════════════
