@@ -93,5 +93,14 @@ export const DISCOVER_VIEW = {
     body: 'Save three titles to build your plot. Start with what\u2019s trending.',
     searchLink: 'Search for something else',
   },
+  // Home's recommendation shelves (recommendations.js). Built from TMDB's
+  // per-title recommendations and the viewer's history, no AI.
+  recommendations: {
+    becauseTitle: (title) => `Because you watched ${title}`,
+    // The shelf's name where the title does not fit: Customize Home, the page nav.
+    becauseName: 'Because you watched',
+    forYouTitle: 'Recommended for you',
+    forYouSubtitle: 'Based on what you’ve watched and rated',
+  },
   // The round floating entry to Just Decide, bottom right above the tab bar.
 };

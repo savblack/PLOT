@@ -136,7 +136,6 @@ svg { stroke-width: 1.5; }
   padding: 1.75rem var(--gut) 0;
   user-select: none;
 }
-.app-page-breadcrumb { display: none; }
 
 /* The sticky sub-tab bars are chrome, not content: they pin under the header
    and carry its fill and hairline, so stopping them at the column edge left a
@@ -366,19 +365,6 @@ svg { stroke-width: 1.5; }
     display: block;
   }
 
-  .app-page-breadcrumb {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin: 1.25rem var(--gut) 0;
-    color: var(--accent-text);
-    font-size: .8rem;
-    font-weight: 600;
-    text-decoration: none;
-  }
-  .app-page-breadcrumb span { font-size: 1.25rem; line-height: 1; }
-  .app-page-breadcrumb + .app-page-heading { padding-top: .75rem; }
-  .app-page-breadcrumb + .list-page { padding-top: .75rem; }
 }
 
 .app-sidebar-brand {
@@ -2663,9 +2649,12 @@ svg { stroke-width: 1.5; }
 
 /* ── A list's own page: optional filters + responsive collection ── */
 .list-page { display: flex; flex-direction: column; padding: 0 var(--gut) 3rem; }
-.list-page-back--mobile { margin-bottom: 6px; }
+.list-page-back { margin-bottom: 6px; }
+/* Sidebar widths have no header above the page, so the page brings its own
+   top space. Its back control is the BackLink in ListPage.jsx: the shell must
+   not draw a second one (tests/unit/oneBackControl.test.js). */
 @media (min-width: 1024px) {
-  .list-page-back--mobile { display: none; }
+  .list-page { padding-top: 1rem; }
 }
 .list-page-head {
   display: flex; align-items: center; justify-content: space-between; gap: 2rem;

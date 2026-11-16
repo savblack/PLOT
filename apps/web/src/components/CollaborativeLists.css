@@ -87,7 +87,7 @@
    field only opens from the search button (A8, with search in place of the
    invite icon). */
 @media (max-width: 599px) {
-  .list-page--shared .list-page-back--mobile { display: none; }
+  .list-page--shared .list-page-back { display: none; }
   .list-page--shared .list-page-head { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding-bottom: 14px; }
   .list-page--shared .list-page-bar-back {
     display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-left: -8px;

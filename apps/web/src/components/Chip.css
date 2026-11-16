@@ -12,6 +12,9 @@
 .pick-chip:hover:not(:disabled) { color: var(--text-primary); }
 .pick-chip.is-on { background: var(--accent-fill); color: var(--on-accent-fill); }
 .pick-chip.is-on:hover:not(:disabled) { background: var(--accent-fill-hover); color: var(--on-accent-fill); }
+/* Chosen, but only the row's "any": the segmented switch's chosen look, no pink. */
+.pick-chip.is-on.is-quiet,
+.pick-chip.is-on.is-quiet:hover:not(:disabled) { background: var(--surface); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--border-strong); }
 .pick-chip:disabled { opacity: 0.45; cursor: default; }
 .pick-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pick-chip svg { width: 14px; height: 14px; flex-shrink: 0; }
