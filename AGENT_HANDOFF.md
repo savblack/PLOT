@@ -5,7 +5,7 @@ The search box (Cmd/Ctrl+K) now has a "Search in:" row: Everywhere, Home, Calend
 Status: paused
 Branch: agent/2026-11-16-search-in-place
 Worktree: ~/Developer/PLOT-worktrees/2026-11-16-search-in-place
-Updated: 2026-11-16T09:40:00Z
+Updated: 2026-11-16T10:05:00Z
 Owner: Hailey (product). Requested by Savannah in Claude Code.
 
 ## Goal
@@ -37,8 +37,9 @@ Let people search titles within one page (Home, Calendar, My Lists, History) fro
 ## Next
 
 1. Savannah tries it signed in on the web app.
-2. Open the PR (run `/unslop`, `/before-and-after`), with a mobile parity issue: mobile search has not adopted the palette, so it has no "Search in" row.
-3. Delete this file in the last commit before merge.
+2. Open the PR (run `/unslop`, `/before-and-after`) and link the mobile parity issue: https://github.com/savblack/PLOT/issues/1719
+3. Savannah's direction (2026-11-16): search lives only in the web side nav and the mobile top-left icon. In-page title search bars are to be retired on both apps. Not started. The issue lists every bar, the ones recommended to keep (settings, find friends, pickers, episode search), and the gaps to close first (no single-list or Guide place; page bars filter in place, the palette does not).
+4. Delete this file in the last commit before merge.
 
 ## Approvals
 
