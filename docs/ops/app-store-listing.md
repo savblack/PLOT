@@ -78,7 +78,7 @@ REMEMBER WHAT YOU WATCHED
 Mark films and episodes as watched, rate them out of five, and keep a private note or a review. Your history builds into stats about how you actually watch.
 
 KNOW WHAT'S ON
-Discover what's trending, see new releases and what's coming up, and check the TV guide. Streaming alerts tell you when something on your watchlist arrives on a service you use, for free.
+Discover what's trending, and see new releases and what's coming up. Streaming alerts tell you when something on your watchlist arrives on a service you use, for free.
 
 NEVER MISS A RELEASE
 A calendar of upcoming films and episodes, built from your watchlist and the shows you follow.

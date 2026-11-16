@@ -4,6 +4,7 @@
 // the web app and the Storybook Content page look for copy.
 import { IMPORT_VIEW } from './importView.js';
 import { PLANS_PAGE } from './plansPage.js';
+import { GUIDE_ENABLED } from '../features.js';
 
 export const SETTINGS_VIEW = {
   page: {
@@ -412,7 +413,8 @@ export const SETTINGS_VIEW = {
     tmdbName: 'TMDB',
     tmdbNotice: 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
     tvmazeName: 'TVmaze',
-    tvmazeNotice: 'Episode air dates and the TV guide use the TVmaze API.',
+    // Names the TV guide only while it is shown (GUIDE_ENABLED in features.js).
+    tvmazeNotice: GUIDE_ENABLED ? 'Episode air dates and the TV guide use the TVmaze API.' : 'Episode air dates use the TVmaze API.',
     omdbName: 'OMDb',
     omdbNotice: 'Critic scores are retrieved through the OMDb API.',
   },

@@ -62,7 +62,7 @@ import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
 import { registerPushToken, unregisterPushToken } from '../../lib/pushNotifications';
 import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
 import { ALERT_EMAIL } from '@plot/core/copy/alertEmail.js';
-import { ALERT_EMAIL_ENABLED } from '@plot/core/features.js';
+import { ALERT_EMAIL_ENABLED, GUIDE_ENABLED } from '@plot/core/features.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
 import { useBlocks } from '@plot/core/useBlocks.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -1484,7 +1484,7 @@ export default function SettingsScreen() {
             edit
             onPress={() => setShowProviders(true)}
           />
-          {broadcastPreferences.loading ? (
+          {!GUIDE_ENABLED ? null : broadcastPreferences.loading ? (
             <SettingsRow
               icon={<BroadcastIcon />}
               label={BROADCAST_GUIDE.region}
@@ -1755,7 +1755,7 @@ export default function SettingsScreen() {
       {showRegion && (
         <RegionModal current={region} onSave={saveRegion} onClose={() => setShowRegion(false)} />
       )}
-      {showBroadcast && <BroadcastRegionSheet onClose={() => setShowBroadcast(false)} />}
+      {GUIDE_ENABLED && showBroadcast && <BroadcastRegionSheet onClose={() => setShowBroadcast(false)} />}
       {showTimezone && (
         <TimezoneModal current={timezone} onSave={saveTimezone} onClose={() => setShowTimezone(false)} />
       )}
