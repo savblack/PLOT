@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   loadWatchlistPool, loadDiscoverPage, loadWatchedIds,
   pickerProviderIds, resolveKeywordGenres, isKeywordGenre,
+  PICKER_RUNTIMES, PICKER_EPISODE_RUNTIMES, PICKER_ERAS, PICKER_MIN_SCORES,
 } from './tonightPicker.js';
 import { TONIGHT_PICKER } from './copy/tonightPicker.js';
 
@@ -98,6 +99,94 @@ export function toggleChip(chip, o) {
   }
 }
 
+// Nov 16: the card's labelled rows. Every choice is on the card: a row of
+// moods (any number), then one-of rows for score, length and release, all
+// setting the picker options the questions used to.
+
+/**
+ * Genres behind each mood chip, per type. The sets do not overlap, so one
+ * chip never lights another. Negative ids are keyword-backed show genres.
+ */
+export const MOOD_GENRES = {
+  funny: { movie: [35], tv: [35] },
+  romantic: { movie: [10749], tv: [-10749] },
+  gripping: { movie: [53, 80, 9648], tv: [80, 9648, -53] },
+  scary: { movie: [27], tv: [-27] },
+  moving: { movie: [18], tv: [18] },
+  adventurous: { movie: [12, 28], tv: [10759] },
+  mindBending: { movie: [878], tv: [10765] },
+  trueStory: { movie: [99], tv: [99] },
+  animated: { movie: [16], tv: [16] },
+};
+
+/** @typedef {keyof typeof MOOD_GENRES} Mood */
+
+/** Mood chips, in the order the row shows them. */
+export const MOODS = /** @type {Mood[]} */ (Object.keys(MOOD_GENRES));
+
+/**
+ * @param {Mood} mood
+ * @param {PickerOptions} o
+ */
+export function moodOn(mood, o) {
+  return hasAll(o.genreIds, MOOD_GENRES[mood][o.mediaType]);
+}
+
+/**
+ * The options after tapping a mood chip.
+ * @param {Mood} mood
+ * @param {PickerOptions} o
+ * @returns {PickerOptions}
+ */
+export function toggleMood(mood, o) {
+  const ids = MOOD_GENRES[mood][o.mediaType];
+  return {
+    ...o,
+    genreIds: moodOn(mood, o) ? o.genreIds.filter(id => !ids.includes(id)) : [...new Set([...o.genreIds, ...ids])],
+  };
+}
+
+/**
+ * The one-of rows. Each choice sets a single picker option; "any" comes first.
+ * @typedef {{ id: 'score'|'length'|'era', label: string, key: keyof PickerOptions, choices: Array<{ value: any, label: string }> }} MoodRow
+ */
+
+/**
+ * @param {'movie'|'tv'} mediaType
+ * @returns {MoodRow[]}
+ */
+export function moodRows(mediaType) {
+  const T = TONIGHT_PICKER;
+  const anyFirst = (list) => [null, ...list.filter(v => v != null)];
+  const length = mediaType === 'tv'
+    ? { id: 'length', label: T.episodeLabel, key: 'maxEpisodeRuntime', choices: anyFirst(PICKER_EPISODE_RUNTIMES).map(v => ({ value: v, label: T.episodeRuntime(v) })) }
+    : { id: 'length', label: T.steps.length.shortTitle, key: 'maxRuntime', choices: anyFirst(PICKER_RUNTIMES).map(v => ({ value: v, label: T.runtimes(v) })) };
+  return /** @type {MoodRow[]} */ ([
+    { id: 'score', label: T.scoreLabel, key: 'minScore', choices: PICKER_MIN_SCORES.map(v => ({ value: v, label: T.score(v) })) },
+    length,
+    { id: 'era', label: T.eraLabel, key: 'era', choices: PICKER_ERAS.map(e => ({ value: e.id, label: T.eras[e.id] })) },
+  ]);
+}
+
+/**
+ * Whether the card has anything for "Clear all" to clear.
+ * @param {PickerOptions} o
+ */
+export function moodFiltersOn(o) {
+  return o.genreIds.length > 0 || o.minScore != null || o.maxRuntime != null || o.maxEpisodeRuntime != null
+    || o.era !== 'any' || o.onlyServices || o.onlyWatchlist;
+}
+
+/**
+ * The options with the card's rows back to "any". Movie or show, the kids
+ * filter and the language stay as they are.
+ * @param {PickerOptions} o
+ * @returns {PickerOptions}
+ */
+export function clearMoodFilters(o) {
+  return { ...o, genreIds: [], minScore: null, maxRuntime: null, maxEpisodeRuntime: null, era: 'any', onlyServices: false, onlyWatchlist: false };
+}
+
 /**
  * The label for a chip, from the copy catalog.
  * @param {ShelfChip} chip
@@ -136,8 +225,8 @@ export function buildShelves({ watchlist, services, options, hasServices, premiu
   if (!chipOn('short', options)) {
     shelves.push({ id: 'short', title: S.short[type], note: S.shortNote[type], items: cap(watchlist.filter(isShort)) });
   }
-  const genreChipOn = chipOn('light', options) || chipOn('gripping', options);
-  if (!genreChipOn) {
+  // Any chosen genre already narrows every shelf, so the two mood shelves go.
+  if (!options.genreIds.length) {
     shelves.push({ id: 'light', title: S.light, items: cap(watchlist.filter(c => inGenres(c, SHELF_GENRES.light[type]))) });
     shelves.push({ id: 'gripping', title: S.gripping, items: cap(watchlist.filter(c => inGenres(c, SHELF_GENRES.gripping[type]))) });
   }

@@ -209,6 +209,20 @@ export const TONIGHT_PICKER = {
     services: 'My services',
     more: 'More filters',
     fewer: 'Fewer filters',
+    // Nov 16: the card's labelled rows (tonightShelves.js MOODS, moodRows).
+    rows: { mood: 'Mood', where: 'Where', other: 'Other' },
+    moods: {
+      funny: 'Funny',
+      romantic: 'Romantic',
+      gripping: 'Gripping',
+      scary: 'Scary',
+      moving: 'Moving',
+      adventurous: 'Adventurous',
+      mindBending: 'Mind-bending',
+      trueStory: 'True story',
+      animated: 'Animated',
+    },
+    clearAll: 'Clear all',
   },
   shelves: {
     watchlist: 'From your watchlist',

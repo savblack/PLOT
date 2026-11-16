@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chipOn, toggleChip, buildShelves, chipLabel, SHELF_GENRES, SHORT_LIMIT, SHELF_SIZE } from '../../tonightShelves.js';
-import { defaultPickerOptions } from '../../tonightPicker.js';
+import {
+  chipOn, toggleChip, buildShelves, chipLabel, SHELF_GENRES, SHORT_LIMIT, SHELF_SIZE,
+  MOODS, MOOD_GENRES, moodOn, toggleMood, moodRows, moodFiltersOn, clearMoodFilters,
+} from '../../tonightShelves.js';
+import { defaultPickerOptions, PICKER_ERAS, PICKER_MIN_SCORES, PICKER_RUNTIMES, PICKER_EPISODE_RUNTIMES } from '../../tonightPicker.js';
 import { TONIGHT_PICKER } from '../../copy/tonightPicker.js';
 
 const S = TONIGHT_PICKER.shelves;
@@ -69,4 +72,54 @@ test('only-my-watchlist switch: toggles the option and drops the services shelf'
   const shelves = buildShelves({ watchlist: [movie(1)], services: [movie(9)], options: o, hasServices: true, premium: true });
   assert.deepEqual(shelves.map(s => s.id), ['watchlist', 'short']);
   assert.equal(chipLabel('watchlist', 'movie'), TONIGHT_PICKER.onlyWatchlist);
+});
+
+test('each mood chip toggles only its own genres, for movies and shows', () => {
+  for (const mediaType of ['movie', 'tv']) {
+    const base = { ...defaultPickerOptions(), mediaType };
+    for (const mood of MOODS) {
+      const on = toggleMood(mood, base);
+      assert.deepEqual(on.genreIds, MOOD_GENRES[mood][mediaType], `${mood} ${mediaType}`);
+      // No other chip lights up: the genre sets do not overlap.
+      assert.deepEqual(MOODS.filter(m => moodOn(m, on)), [mood], `${mood} ${mediaType} alone`);
+      assert.deepEqual(toggleMood(mood, on).genreIds, [], `${mood} ${mediaType} back`);
+    }
+  }
+  const two = toggleMood('scary', toggleMood('funny', defaultPickerOptions()));
+  assert.deepEqual(toggleMood('funny', two).genreIds, MOOD_GENRES.scary.movie);
+  assert.ok(MOODS.every(m => TONIGHT_PICKER.chips.moods[m]), 'every mood has a label');
+});
+
+test('the one-of rows offer every picker value, any first, with a label', () => {
+  const values = (rows, id) => rows.find(r => r.id === id).choices.map(c => c.value);
+  const movie = moodRows('movie');
+  const tv = moodRows('tv');
+  assert.deepEqual(values(movie, 'score'), PICKER_MIN_SCORES);
+  assert.deepEqual(values(movie, 'era'), PICKER_ERAS.map(e => e.id));
+  assert.deepEqual(values(movie, 'length'), [null, ...PICKER_RUNTIMES.filter(Boolean)]);
+  assert.deepEqual(values(tv, 'length'), [null, ...PICKER_EPISODE_RUNTIMES.filter(Boolean)]);
+  assert.equal(movie.find(r => r.id === 'length').key, 'maxRuntime');
+  assert.equal(tv.find(r => r.id === 'length').key, 'maxEpisodeRuntime');
+  const defaults = defaultPickerOptions();
+  for (const row of [...movie, ...tv]) {
+    assert.ok(row.label, row.id);
+    assert.ok(row.choices.every(c => typeof c.label === 'string' && c.label), `${row.id} labels`);
+    // The default answer is always one of the choices, so a row never shows nothing chosen.
+    assert.ok(row.choices.some(c => c.value === defaults[row.key]), `${row.id} default`);
+  }
+});
+
+test('clear all resets the rows and keeps type, kids filter and language', () => {
+  const base = { ...defaultPickerOptions(), mediaType: 'tv', hideKids: false, language: 'fr' };
+  assert.equal(moodFiltersOn(base), false);
+  const busy = { ...toggleMood('moving', base), minScore: 8, maxEpisodeRuntime: 30, era: '1990s', onlyServices: true, onlyWatchlist: true };
+  assert.equal(moodFiltersOn(busy), true);
+  assert.deepEqual(clearMoodFilters(busy), base);
+});
+
+test('any chosen mood drops the light and gripping shelves', () => {
+  const watchlist = [movie(1, { genre_ids: [18, 35] }), movie(2, { genre_ids: [18, 53] })];
+  const options = toggleMood('moving', defaultPickerOptions());
+  const shelves = buildShelves({ watchlist, services: [], options, hasServices: false, premium: true });
+  assert.deepEqual(shelves.map(s => s.id), ['watchlist', 'short']);
 });
