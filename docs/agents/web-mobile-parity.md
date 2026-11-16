@@ -76,7 +76,8 @@ sign-up: the seed grid, the Switching apps? row into import and services, the
 building fan and fade into Home, then the card (tiles tick from real data;
 Import opens the existing import modal on the chosen source).
 Differences from web that are deliberate: the card starts collapsed (web opens
-it on wide screens only), the grid loads 24 trending titles rather than 48,
+it on wide screens only), the import sources open in place of the poster grid
+rather than on their own screen (the "Switching apps?" row is the way back),
 Following a person still hits the Free-tier upgrade sheet through
 `useFollowPerson`, and there is no saved-title shortcut or checkout intent
 (neither exists on mobile).
