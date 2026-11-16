@@ -18,11 +18,14 @@ import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 
 export const CHIP_H = { md: 34, sm: 28 } as const;
 
-export default function Chip({ label, selected = false, onPress, size = 'md', icon, disabled = false, accessibilityLabel, accessibilityRole = 'button', style }: {
+export default function Chip({ label, selected = false, onPress, size = 'md', quiet = false, icon, disabled = false, accessibilityLabel, accessibilityRole = 'button', style }: {
   label: string;
   selected?: boolean;
   onPress: () => void;
   size?: 'md' | 'sm';
+  /** Chosen, but it is the row's "any": drawn like a segmented switch's chosen
+   *  option, so the pink is left for a real choice. */
+  quiet?: boolean;
   /** A small glyph before the label. */
   icon?: ReactNode;
   disabled?: boolean;
@@ -42,10 +45,10 @@ export default function Chip({ label, selected = false, onPress, size = 'md', ic
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={accessibilityRole === 'checkbox' ? { checked: selected, disabled } : { selected, disabled }}
-      style={[styles.chip, styles[size], selected && styles.on, disabled && styles.off, style]}
+      style={[styles.chip, styles[size], selected && (quiet ? styles.onQuiet : styles.on), disabled && styles.off, style]}
     >
       {icon}
-      <Text style={[styles.label, size === 'sm' && styles.labelSm, selected && styles.labelOn]} numberOfLines={1}>{label}</Text>
+      <Text style={[styles.label, size === 'sm' && styles.labelSm, selected && (quiet ? styles.labelOnQuiet : styles.labelOn)]} numberOfLines={1}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -73,6 +76,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   md: { minHeight: CHIP_H.md, paddingHorizontal: spacing.md },
   sm: { minHeight: CHIP_H.sm, paddingHorizontal: 10 },
   on: { backgroundColor: colors.accentFill },
+  onQuiet: { backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong },
+  labelOnQuiet: { color: colors.textPrimary },
   off: { opacity: 0.45 },
   label: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
   labelSm: { fontSize: fontSize.xs },

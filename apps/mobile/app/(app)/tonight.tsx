@@ -14,8 +14,8 @@ import ScreenHeaderBar, { SCREEN_HEADER_H } from '../../components/ScreenHeaderB
 import CollapsibleSection from '../../components/CollapsibleSection';
 import Button, { TextLink } from '../../components/Button';
 import Chip, { Tag } from '../../components/Chip';
-import Toggle from '../../components/Toggle';
-import { useEffect, useMemo, useState } from 'react';
+import BottomSheet from '../../components/BottomSheet';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Animated, Easing, AccessibilityInfo,
 } from 'react-native';
@@ -25,7 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { IconClose, IconCheck } from '../../components/icons';
+import { IconClose, IconCheck, IconChevronRight } from '../../components/icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -33,13 +33,17 @@ import {
   useTonightPicker, pickerTimeOfDay, savedSearchDate, PICKER_LANGUAGES, pickResultMeta,
   type PickerCandidate,
 } from '@plot/core/tonightPicker.js';
-import { useTonightShelves, TYPE_CHIPS, MOOD_CHIPS, SWITCH_CHIPS, chipOn, chipLabel, toggleChip, type ShelfChip } from '@plot/core/tonightShelves.js';
+import {
+  useTonightShelves, TYPE_CHIPS, SWITCH_CHIPS, MOODS, chipOn, chipLabel, toggleChip,
+  moodOn, toggleMood, moodRows, moodFiltersOn, clearMoodFilters, activeMoodChoices,
+} from '@plot/core/tonightShelves.js';
 import EmptyState from '../../components/EmptyState';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { imageScrimStops } from '@plot/core/tokens.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { titleForView } from '@plot/core/navigation.js';
 import { TONIGHT_PICKER as T } from '@plot/core/copy/tonightPicker.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { Palette, fontFamily, fontSize, radii, spacing, posterUrl, backdropUrl } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
@@ -72,61 +76,101 @@ function useReduceMotion() {
   return reduce;
 }
 
-/* The request, as one card (Nov 14, round 3A, like web): movie or show, mood
-   chips, three switches and one pink button. Surprise me and the rarer
-   filters (kids, language) are quiet links, so Pick is the only filled button. */
+/* The request, as one card (Nov 16, labelled rows, like web). A phone has no
+   room for every row, so the moods swipe sideways on the card and the one-of
+   rows (score, length, release, where, kids, language) sit in a Filters
+   sheet opened from the button beside Movies / Shows. Whatever is set there
+   shows under the moods as chips that clear on a tap. Pick is the only
+   filled button. Web draws every row on the card (TonightView.jsx). */
 function MoodCard({ picker, premium, styles, colors }: { picker: Picker; premium: boolean; styles: Styles; colors: Palette }) {
-  const [more, setMore] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const { options, setOption } = picker;
-  const apply = (chip: ShelfChip) => {
-    const next = toggleChip(chip, options) as Record<string, unknown>;
+  const set = (next: unknown) => {
+    const to = next as Record<string, unknown>;
     const cur = options as unknown as Record<string, unknown>;
-    for (const key of Object.keys(next)) if (next[key] !== cur[key]) setOption(key as keyof typeof options, next[key] as never);
+    for (const key of Object.keys(to)) if (to[key] !== cur[key]) setOption(key as keyof typeof options, to[key] as never);
   };
-  const switches = SWITCH_CHIPS.filter(c => (c !== 'services' || picker.hasServices) && (c !== 'watchlist' || picker.hasWatchlist));
-  const row = (label: string, value: boolean, onChange: () => void) => (
-    <View style={styles.filterRow} key={label}>
-      <Text style={[styles.filterLabel, { flex: 1 }]}>{label}</Text>
-      <Toggle value={value} onValueChange={onChange} accessibilityLabel={label} />
+  const where = SWITCH_CHIPS.filter(c => (c === 'services' && picker.hasServices) || (c === 'watchlist' && picker.hasWatchlist));
+  const whereOn = where.filter(c => chipOn(c, options));
+  const active = activeMoodChoices(options);
+  // One plain line for what the sheet has set, so the card keeps its size.
+  const filterSummary = [...active.map(a => a.summary), ...whereOn.map(c => T.summary[c as 'services' | 'watchlist'])].join(', ') || T.filtersNone;
+  const locked = !premium && !picker.freePickLeft;
+  const sheetRow = (label: string, children: ReactNode) => (
+    <View style={styles.sheetRow} key={label}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      {children}
     </View>
   );
-  const locked = !premium && !picker.freePickLeft;
   return (
     <View style={styles.moodCard}>
       <Text style={styles.moodTitle} accessibilityRole="header">{T.moodTitle}</Text>
-      <View style={{ flexDirection: 'row', gap: spacing.sm }} accessibilityRole="radiogroup">
-        {TYPE_CHIPS.map(c => <Chip key={c} label={chipLabel(c, options.mediaType)} selected={chipOn(c, options)} onPress={() => apply(c)} accessibilityRole="radio" />)}
+      <View style={styles.typeRail} accessibilityRole="radiogroup" accessibilityLabel={T.steps.type.shortTitle}>
+        {TYPE_CHIPS.map(c => {
+          const on = chipOn(c, options);
+          return (
+            <TouchableOpacity key={c} style={[styles.typeTab, on && styles.typeTabOn]} onPress={() => set(toggleChip(c, options))}
+              accessibilityRole="radio" accessibilityState={{ checked: on }} activeOpacity={0.8}>
+              <Text style={[styles.typeTabText, on && styles.typeTabTextOn]}>{chipLabel(c, options.mediaType)}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }} accessibilityLabel={T.chips.label}>
-        {MOOD_CHIPS.map(c => <Chip key={c} size="sm" label={chipLabel(c, options.mediaType)} selected={chipOn(c, options)} onPress={() => apply(c)} />)}
-      </View>
-      <View>{switches.map(c => row(chipLabel(c, options.mediaType), chipOn(c, options), () => apply(c)))}</View>
-      <Button
-        variant="primary"
-        flex
-        label={T.pickForMe}
-        onPress={() => picker.go(premium ? 'five' : 'surprise')}
-        icon={locked ? <PremiumMark color={colors.onAccentFill} size={16} /> : undefined}
-        accessibilityLabel={locked ? `${T.pickForMe}, ${T.gate.locked}` : picker.freePickLeft ? `${T.pickForMe}. ${T.freePickNote}` : undefined}
-      />
-      {picker.freePickLeft && <Text style={styles.freeNote}>{T.freePickNote}</Text>}
-      <View style={{ flexDirection: 'row', gap: spacing.lg }}>
-        <TextLink quiet label={T.surpriseMe} onPress={() => picker.go('surprise')} />
-        <TextLink quiet label={more ? T.fewerOptions : T.moreOptions} onPress={() => setMore(v => !v)} />
-      </View>
-      {more && (
-        <View>
-          {row(T.hideKids, options.hideKids, () => setOption('hideKids', !options.hideKids))}
-          <View style={[styles.filterRow, { flexDirection: 'column', alignItems: 'stretch', gap: spacing.sm, paddingVertical: spacing.md }]}>
-            <Text style={styles.filterLabel}>{T.languageLabel}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-              {PICKER_LANGUAGES.map(code => (
-                <Chip key={String(code)} label={T.languages[(code ?? 'any') as keyof typeof T.languages]} selected={options.language === code} onPress={() => setOption('language', code)} accessibilityRole="radio" />
-              ))}
-            </ScrollView>
-          </View>
+      <View style={styles.sheetRow}>
+        <Text style={styles.rowLabel}>{T.chips.rows.mood}</Text>
+        <View style={styles.chipWrap}>
+          {MOODS.map(m => <Chip key={m} size="sm" label={T.chips.moods[m]} selected={moodOn(m, options)} onPress={() => set(toggleMood(m, options))} accessibilityRole="checkbox" />)}
         </View>
-      )}
+      </View>
+      <TouchableOpacity style={styles.filtersLine} onPress={() => setSheet(true)} accessibilityRole="button"
+        accessibilityLabel={`${T.filtersTitle}: ${filterSummary}. ${T.changeOptions}`} activeOpacity={0.7}>
+        <Text style={styles.filtersText} numberOfLines={1}>
+          <Text style={styles.filtersLabel}>{T.filtersTitle}{'  '}</Text>{filterSummary}
+        </Text>
+        <Text style={styles.filtersEdit}>{T.changeOptions}</Text>
+        <IconChevronRight size={14} color={colors.textSecondary} />
+      </TouchableOpacity>
+      <View style={styles.pickRow}>
+        <Button
+          variant="primary"
+          label={T.pickForMe}
+          onPress={() => picker.go(premium ? 'five' : 'surprise')}
+          icon={locked ? <PremiumMark color={colors.onAccentFill} size={16} /> : undefined}
+          accessibilityLabel={locked ? `${T.pickForMe}, ${T.gate.locked}` : picker.freePickLeft ? `${T.pickForMe}. ${T.freePickNote}` : undefined}
+        />
+        <TextLink quiet label={T.surpriseMe} onPress={() => picker.go('surprise')} />
+      </View>
+      {picker.freePickLeft && <Text style={styles.freeNote}>{T.freePickNote}</Text>}
+
+      <BottomSheet visible={sheet} onClose={() => setSheet(false)} title={T.filtersTitle} closeLabel={COMMON.done}>
+        {moodRows(options.mediaType).map(row => sheetRow(row.label, (
+          <View style={styles.chipWrap} accessibilityRole="radiogroup" accessibilityLabel={row.label}>
+            {row.choices.map((choice, i) => (
+              <Chip key={String(choice.value)} size="sm" label={choice.label} quiet={i === 0} accessibilityRole="radio"
+                selected={(options as unknown as Record<string, unknown>)[row.key] === choice.value}
+                onPress={() => setOption(row.key, choice.value as never)} />
+            ))}
+          </View>
+        )))}
+        {where.length > 0 && sheetRow(T.chips.rows.where, (
+          <View style={styles.chipWrap}>
+            {where.map(c => <Chip key={c} size="sm" label={T.summary[c as 'services' | 'watchlist']} selected={chipOn(c, options)} onPress={() => set(toggleChip(c, options))} accessibilityRole="checkbox" />)}
+          </View>
+        ))}
+        {sheetRow(T.chips.rows.other, (
+          <View style={styles.chipWrap}>
+            <Chip size="sm" label={T.hideKids} selected={options.hideKids} onPress={() => setOption('hideKids', !options.hideKids)} accessibilityRole="checkbox" />
+          </View>
+        ))}
+        {sheetRow(T.languageLabel, (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} accessibilityRole="radiogroup">
+            {PICKER_LANGUAGES.map(code => (
+              <Chip key={String(code)} size="sm" label={T.languages[(code ?? 'any') as keyof typeof T.languages]} quiet={code == null} selected={options.language === code} onPress={() => setOption('language', code)} accessibilityRole="radio" />
+            ))}
+          </ScrollView>
+        ))}
+        {moodFiltersOn(options) && <TextLink quiet label={T.chips.clearAll} onPress={() => set(clearMoodFilters(options))} />}
+      </BottomSheet>
     </View>
   );
 }
@@ -171,7 +215,7 @@ function Finding({ picker, styles, reduceMotion }: { picker: Picker; styles: Sty
 /* Fade from 1 to 0 (out) or 0 to 1 (in) after a delay. Opacity only; RN has
    no cheap blur, so the dissolve here is a straight fade. */
 function Dissolve({ out = false, delay = 0, duration = 500, reduceMotion, style, children }: {
-  out?: boolean; delay?: number; duration?: number; reduceMotion: boolean; style?: object; children: React.ReactNode;
+  out?: boolean; delay?: number; duration?: number; reduceMotion: boolean; style?: object; children: ReactNode;
 }) {
   const [v] = useState(() => new Animated.Value(reduceMotion ? (out ? 0 : 1) : (out ? 1 : 0)));
   useEffect(() => {
@@ -183,7 +227,7 @@ function Dissolve({ out = false, delay = 0, duration = 500, reduceMotion, style,
   return <Animated.View pointerEvents={out ? 'none' : 'auto'} style={[style, { opacity: v }]}>{children}</Animated.View>;
 }
 
-function Reveal({ index, reduceMotion, children }: { index: number; reduceMotion: boolean; children: React.ReactNode }) {
+function Reveal({ index, reduceMotion, children }: { index: number; reduceMotion: boolean; children: ReactNode }) {
   const [reveal] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
   useEffect(() => {
     reveal.stopAnimation();
@@ -234,7 +278,7 @@ function SavedSearches({ picker, styles, colors }: { picker: Picker; styles: Sty
 }
 
 // Cards after a pick fade in one by one; otherwise the usual entrance.
-function CardEntrance({ reveal, index, reduceMotion, children }: { reveal: boolean; index: number; reduceMotion: boolean; children: React.ReactNode }) {
+function CardEntrance({ reveal, index, reduceMotion, children }: { reveal: boolean; index: number; reduceMotion: boolean; children: ReactNode }) {
   return reveal
     ? <Dissolve delay={600 + index * 250} duration={450} reduceMotion={reduceMotion}>{children}</Dissolve>
     : <Reveal index={index + 1} reduceMotion={reduceMotion}>{children}</Reveal>;
@@ -521,11 +565,26 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
 
 
 
-  filterRow: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 52,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
+  // Movie or show: the segmented rail from Settings > Appearance, sized to its two words.
+  typeRail: {
+    flexDirection: 'row', alignSelf: 'flex-start', gap: spacing.xs, padding: 3,
+    backgroundColor: colors.surfaceSunken, borderRadius: radii.pill,
   },
-  filterLabel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary },
+  typeTab: { paddingVertical: 6, paddingHorizontal: spacing.lg, borderRadius: radii.pill },
+  typeTabOn: { backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong },
+  typeTabText: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
+  typeTabTextOn: { color: colors.textPrimary },
+  filtersLine: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44,
+    borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
+  },
+  filtersText: { flex: 1, minWidth: 0, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary },
+  filtersLabel: { color: colors.textMuted },
+  filtersEdit: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
+  pickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  sheetRow: { gap: spacing.sm },
+  rowLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 
 
   bar: {
@@ -552,7 +611,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   cardTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   cardMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
 
-  freeNote: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
+  freeNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   locked: { position: 'relative', minHeight: 640 },
   placeholderLine: { height: 14, width: '80%', borderRadius: radii.pill, backgroundColor: colors.borderStrong },
   unlock: {

@@ -45,8 +45,12 @@ test('pickerDrawPayload reports the shape of the request, not the genres', () =>
     // Asked for, but the viewer has no services, so the filter did nothing.
     only_services: false,
     genre_count: 2,
+    min_score: null, max_minutes: null, era: 'any',
   });
   assert.ok(!JSON.stringify(payload).includes('18'));
+  // The one-of rows: score, length for the chosen type, and era.
+  const rows = pickerDrawPayload({ ...options, minScore: 7, maxEpisodeRuntime: 30, maxRuntime: 120, era: '1990s' }, { mode: 'five', resultCount: 3, reroll: false, hasServices: true });
+  assert.deepEqual([rows.min_score, rows.max_minutes, rows.era], [7, 30, '1990s']);
 });
 
 test('the Tonight events are in the catalog', () => {
