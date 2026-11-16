@@ -23,6 +23,9 @@ export default defineConfig({
       VITE_TMDB_PROXY_URL: 'https://placeholder.invalid',
       VITE_SIMKL_CLIENT_ID: 'placeholder-simkl-client-id',
       VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: '',
+      // onboarding-gate.spec.js opens the server under a name that is not a
+      // preview host, so ProtectedRoute runs its real setup check.
+      __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: 'plot-gate.test',
     },
     // Vite preview ignores the Cloudflare SPA fallback (see assets.
     // not_found_handling in wrangler.toml), so deep links 404 under it.
