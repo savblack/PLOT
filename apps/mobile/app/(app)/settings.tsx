@@ -19,6 +19,7 @@ import { TextInput } from '../../components/TextInput';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Circle, Rect, Line } from 'react-native-svg';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import { IconChevronRight, IconClose, IconCheck } from '../../components/icons';
 import PageSheet from '../../components/PageSheet';
 import Button, { TextLink } from '../../components/Button';
@@ -1461,7 +1462,7 @@ export default function SettingsScreen() {
             trailing={<Toggle value={isPublic} onValueChange={toggleVisibility} accessibilityLabel={SETTINGS_VIEW.page.privacyLabel} />}
           />
           <SettingsRow
-            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></Svg>}
+            icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d={ICON_PATHS.bookmark}/></Svg>}
             label={PROFILE_PRIVACY.watchlist.heading}
             value={PROFILE_PRIVACY.watchlist.option[watchlistVisibility]}
             onPress={() => router.push('/(app)/watchlist-visibility')}

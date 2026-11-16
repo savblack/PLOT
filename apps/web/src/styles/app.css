@@ -3424,9 +3424,9 @@ svg { stroke-width: 1.5; }
 .panel-pill:disabled { opacity: 0.7; cursor: default; }
 .panel-pill--primary { background: var(--accent-fill); color: var(--on-accent-fill); }
 .panel-pill--primary:hover { background: var(--accent-fill-hover); }
-/* In the watchlist: the neutral pill with the solid bookmark. Saved is shown
-   by the filled glyph, not by a colour (design audit pick 2.1). */
-.panel-pill--saved { background: var(--surface-sunken); color: var(--text-primary); }
+/* In the watchlist: the green pill with a tick, as on the iPhone (Nov 16, 2026).
+   The bookmark everywhere else stays one glyph: outline, or solid when saved. */
+.panel-pill--saved { background: var(--status-watched-dim); color: var(--status-watched); }
 .panel-pill--watching { background: var(--status-watching-dim); color: var(--status-watching); }
 .panel-pill--watched { background: var(--status-watched-dim); color: var(--status-watched); }
 .panel-pill-label { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
