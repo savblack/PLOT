@@ -185,7 +185,6 @@ function MoodCard({ picker, premium }) {
           <button type="button" className="tonight-quiet" onClick={() => set(clearMoodFilters(options))}>{T.chips.clearAll}</button>
         )}
       </div>
-      {picker.freePickLeft && <p className="tonight-hint">{T.freePickNote}</p>}
     </section>
   );
 }

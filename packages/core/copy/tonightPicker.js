@@ -184,8 +184,6 @@ export const TONIGHT_PICKER = {
     close: 'Close',
     locked: 'Premium feature',
   },
-  // Under the Go button for a Free viewer whose pick for the day is unused.
-  freePickNote: 'Free: one pick a day.',
 
   // Nov 2026: the page opens on shelves of ready answers (tonightShelves.js).
   // The chips set the same options the questions used to, and narrow every
