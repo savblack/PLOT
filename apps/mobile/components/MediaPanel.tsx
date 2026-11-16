@@ -1387,15 +1387,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         ))}
                       </View>
                     )}
-                  </View>
-                </View>
-
-                {/* Keywords run full width under the poster row, as on web, so a long
-                    list doesn't stack in the narrow column beside the poster. Genres stay
-                    in that column, under the rating, where two short tags fit. */}
-                {keywordChips.length > 0 && (
-                  <View style={styles.headTags}>
-                    <View style={styles.tagRow} accessibilityLabel={BROWSE.keywordsLabel}>
+                    {/* Keywords sit beside the poster, under the genres, as on web.
+                        Three show before "+N more" (core's collapseKeywords). */}
+                    {keywordChips.length > 0 && (
+                    <View style={styles.keywordRow} accessibilityLabel={BROWSE.keywordsLabel}>
                       {keywordChips.map(k => (
                         <TouchableOpacity
                           key={k.id}
@@ -1416,8 +1411,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         </TouchableOpacity>
                       )}
                     </View>
+                    )}
                   </View>
-                )}
+                </View>
 
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
@@ -1886,10 +1882,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
-  // Full width under the head. With the head's own marginBottom this leaves
-  // 20pt between the genres/poster and the keywords (web: .panel-head-tags).
-  headTags: { marginTop: 4, marginBottom: spacing.lg },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  // Directly under the genres; the margin matches the tag gap so the two
+  // read as consecutive rows (web: .panel-keywords).
+  keywordRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
   scoresRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     paddingBottom: spacing.lg, marginBottom: spacing.lg,

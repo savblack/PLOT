@@ -78,11 +78,6 @@ import { clearUndo } from '@plot/core/undo.js';
 import Icon from './Icon.jsx';
 import { Tag } from './Chip.jsx';
 
-// Keyword chips shown before "+N more". Web only: here they share the narrow
-// column beside the poster. Mobile gives them a full-width row and keeps
-// core's default.
-const WEB_COLLAPSED_KEYWORDS = 3;
-
 /* ── Close icon ── */
 function CloseIcon() {
   return (
@@ -1512,7 +1507,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
     : (details?.created_by || [])[0]?.name;
   const genreChips = (details?.genres || []).slice(0, 2);
-  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, itemType), keywordsOpen, WEB_COLLAPSED_KEYWORDS);
+  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, itemType), keywordsOpen);
   // Without onBrowse (Storybook) the chips stay plain labels.
   const browse = (kind, id, name, path) => {
     track(EVENTS.BROWSE_TAPPED, browseTapProps({ kind, id, name, mediaType: itemType, source: 'title_panel' }));

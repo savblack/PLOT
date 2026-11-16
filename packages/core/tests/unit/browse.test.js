@@ -54,11 +54,7 @@ test('discoverByKeyword asks TMDB for the keyword and tags media_type', async ()
 
 test('collapseKeywords shows one row and counts the rest', () => {
   const ks = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, name: `k${i}` }));
-  assert.deepEqual(collapseKeywords(ks, false), { visible: ks.slice(0, 4), hidden: 3 });
+  assert.deepEqual(collapseKeywords(ks, false), { visible: ks.slice(0, 3), hidden: 4 });
   assert.deepEqual(collapseKeywords(ks, true), { visible: ks, hidden: 0 });
-  assert.deepEqual(collapseKeywords(ks.slice(0, 4), false), { visible: ks.slice(0, 4), hidden: 0 });
-  // A narrower row (web, beside the poster) passes its own limit.
-  assert.deepEqual(collapseKeywords(ks, false, 3), { visible: ks.slice(0, 3), hidden: 4 });
-  assert.deepEqual(collapseKeywords(ks, true, 3), { visible: ks, hidden: 0 });
-  assert.deepEqual(collapseKeywords(ks.slice(0, 3), false, 3), { visible: ks.slice(0, 3), hidden: 0 });
+  assert.deepEqual(collapseKeywords(ks.slice(0, 3), false), { visible: ks.slice(0, 3), hidden: 0 });
 });
