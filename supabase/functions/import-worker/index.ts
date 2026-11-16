@@ -331,6 +331,9 @@ serve(async (req) => {
   // The bundled pipeline reads these exactly as the apps do (main.jsx / configureCore.ts).
   engine.configure({
     supabaseClient: admin,
+    // The worker is the service role: it has no session for the import
+    // writers to read the account from, so they are called by account.
+    importActsForUser: true,
     importEventsEnabled: Deno.env.get('IMPORT_EVENTS_ENABLED') === 'true',
     importAnnotationsEnabled: Deno.env.get('IMPORT_ANNOTATIONS_ENABLED') === 'true',
     tvTimeImportEnabled: Deno.env.get('TVTIME_IMPORT_ENABLED') === 'true',
