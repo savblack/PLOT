@@ -24,6 +24,15 @@ export async function writeStorage(key: string, value: string): Promise<boolean>
   }
 }
 
+/**
+ * The same storage in the getItem/setItem shape @plot/core hooks take (web
+ * hands them window.localStorage). One stable object, so a hook loads once.
+ */
+export const deviceStorage = {
+  getItem: (key: string) => readStorage(key),
+  setItem: (key: string, value: string) => writeStorage(key, value),
+};
+
 export async function removeStorage(key: string): Promise<boolean> {
   try {
     await AsyncStorage.removeItem(key);

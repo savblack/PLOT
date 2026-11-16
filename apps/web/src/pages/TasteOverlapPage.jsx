@@ -1,8 +1,12 @@
 import './TasteOverlapPage.css';
-import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
+import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
+import { EVENTS } from '@plot/core/analyticsEvents.js';
+import { track } from '../lib/analytics.js';
+import { DEVICE_STORAGE } from '../utils/deviceStorage.js';
 import { MIN_SHARED_RATINGS } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
@@ -297,8 +301,27 @@ export default function TasteOverlapPage() {
   const { loading, error, target, overlap, sharedWatchlist, retry } = useTasteOverlap(username, { enabled: !!user && premium, viewerId: user?.id });
   const { genres } = useGenres();
   const genreName = useMemo(() => new Map(genres.map(g => [g.id, g.name])), [genres]);
+  const navigate = useNavigate();
+  const { saved, save, remove } = useSavedComparisons(user?.id, DEVICE_STORAGE);
+
+  // A comparison that loaded is saved to "Your comparisons"; one the server
+  // now refuses (blocked, gone private, deleted) leaves it.
+  useEffect(() => {
+    if (overlap && target) save(target);
+    else if (error === 'not_found' || error === 'not_visible') remove(username);
+  }, [overlap, target, error, username, save, remove]);
 
   if (!user) return <LoginRedirect />;
+
+  const refresh = (handle) => {
+    track(EVENTS.SAVED_COMPARISON_REFRESHED);
+    if (handle.toLowerCase() === (username || '').toLowerCase()) retry();
+    else navigate(`/u/${handle}/compare`);
+  };
+  const forget = (handle) => {
+    track(EVENTS.SAVED_COMPARISON_REMOVED);
+    remove(handle);
+  };
 
   return (
     <TasteOverlapView
@@ -312,7 +335,7 @@ export default function TasteOverlapPage() {
       genreName={genreName}
       onRetry={retry}
       openPanel={openPanel}
-      side={<ComparePeoplePanel viewerId={user.id} selectedUsername={username} className="to-side--wide-only" />}
+      side={<ComparePeoplePanel viewerId={user.id} selectedUsername={username} saved={saved} onRefresh={refresh} onRemove={forget} className="to-side--wide-only" />}
     />
   );
 }

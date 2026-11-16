@@ -73,7 +73,12 @@ export const Populated = {};
 export const PickerFollowingNobody = { args: { ...example, side: panel({ people: [] }) } };
 export const PickerWithPeople = { args: { ...example, side: panel() } };
 // /u/sam/compare: the same two columns with Sam chosen.
-export const WithPeoplePanel = { args: { side: panel({ selectedUsername: 'sam', className: 'to-side--wide-only' }) } };
+const saved = [
+  { username: 'sam', display_name: 'Sam', avatar_url: null, compared_at: '2026-11-16T09:00:00Z' },
+  { username: 'rafao', display_name: 'Rafael Ortiz', avatar_url: null, compared_at: '2026-11-10T09:00:00Z' },
+];
+export const WithPeoplePanel = { args: { side: panel({ selectedUsername: 'sam', saved, className: 'to-side--wide-only' }) } };
+export const PickerWithSavedComparisons = { args: { ...example, side: panel({ saved }) } };
 export const PrivateFriend = { args: { target: privateTarget, sharedWatchlist: null } };
 export const NotEnoughRatings = { args: { overlap: tasteOverlap(rows(mineRatings).slice(0, 3), rows(theirRatings).slice(0, 3)) } };
 export const FreeViewer = { args: { premium: false } };

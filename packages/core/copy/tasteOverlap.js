@@ -79,6 +79,13 @@ export const TASTE_OVERLAP = {
   followNobody: 'Follow people to compare with them, or search for a public profile.',
   noResults: 'No one found.',
 
+  // Saved comparisons: the people you have already compared with.
+  savedTitle: 'Your comparisons',
+  /** @param {string} name */
+  refreshComparison: (name) => `Refresh your comparison with ${name}`,
+  /** @param {string} name */
+  removeComparison: (name) => `Remove ${name} from your comparisons`,
+
   // The sample comparison the picker shows until someone is chosen. The
   // numbers are in @plot/core/tasteOverlap.js (EXAMPLE_OVERLAP); the person
   // and the genres are made up, so their names live here with the other copy.

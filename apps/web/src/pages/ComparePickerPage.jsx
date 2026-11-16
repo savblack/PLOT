@@ -3,19 +3,26 @@
 // column. Choosing a person opens /u/:username/compare, which is the same
 // layout with the real numbers.
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LoginRedirect from '../components/LoginRedirect.jsx';
 import ComparePeoplePanel from '../components/ComparePeoplePanel.jsx';
 import { useApp } from '../hooks/useApp.js';
 import { EXAMPLE_SHARED_WATCHLIST, exampleGenreNames } from '@plot/core/tasteOverlap.js';
 import { useExampleOverlap } from '@plot/core/useTasteOverlap.js';
+import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
+import { EVENTS } from '@plot/core/analyticsEvents.js';
+import { track } from '../lib/analytics.js';
 import { TASTE_OVERLAP as T } from '../copy/tasteOverlap.js';
 import { TasteOverlapView } from './TasteOverlapPage.jsx';
+import { DEVICE_STORAGE } from '../utils/deviceStorage.js';
 
 const EXAMPLE_TARGET = { username: '', display_name: T.exampleName, avatar_url: null, is_public: true };
 
 export default function ComparePickerPage() {
   const { user, openPanel } = useApp();
   const overlap = useExampleOverlap();
+  const navigate = useNavigate();
+  const { saved, remove } = useSavedComparisons(user?.id, DEVICE_STORAGE);
   const genreName = useMemo(() => exampleGenreNames(T.exampleGenres), []);
 
   if (!user) return <LoginRedirect />;
@@ -31,7 +38,15 @@ export default function ComparePickerPage() {
       sharedWatchlist={EXAMPLE_SHARED_WATCHLIST}
       genreName={genreName}
       openPanel={openPanel}
-      side={<ComparePeoplePanel viewerId={user.id} />}
+      side={(
+        <ComparePeoplePanel
+          viewerId={user.id}
+          saved={saved}
+          // Nothing is on screen to refresh here, so refresh opens it, which asks afresh.
+          onRefresh={(handle) => { track(EVENTS.SAVED_COMPARISON_REFRESHED); navigate(`/u/${handle}/compare`); }}
+          onRemove={(handle) => { track(EVENTS.SAVED_COMPARISON_REMOVED); remove(handle); }}
+        />
+      )}
     />
   );
 }

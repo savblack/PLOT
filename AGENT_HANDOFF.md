@@ -2,7 +2,7 @@
 
 Status: active
 Branch: agent/2026-11-16-compare-picker-unify
-Updated: 2026-11-16T13:00:00Z
+Updated: 2026-11-16T13:40:00Z
 
 ## In plain words
 
@@ -52,6 +52,25 @@ match other pages, on web and mobile.
   "@handle" page title once a person is picked, the iPhone comparison screen's
   own back button and heading, and the ellipsis on a long name beside
   "Request pending".
+
+## Fourth round (2026-11-16): saved comparisons
+
+- A second left card, "Your comparisons", lists people Savannah has compared
+  with (name, @handle), each with a refresh icon and an x. Web: under the
+  people card on both Compare pages. Mobile: a card on the picker.
+- Kept on the device only (`localStorage` / AsyncStorage, key
+  `plot-saved-comparisons:<viewer id>`), who and when, never the comparison.
+  Core: `savedComparisons.js`, `useSavedComparisons.js`, tests in
+  `tests/unit/savedComparisons.test.js`. A person is saved when a comparison
+  loads and dropped when the server answers not_found or not_visible.
+- Refresh re-asks the server (retry on the open comparison, otherwise it
+  opens that comparison). Events `saved_comparison_refreshed` and
+  `saved_comparison_removed` are named in `analyticsEvents.js`, with no
+  properties. Not yet added to `docs/analytics/README.md`.
+- Decision made here, reversible: device storage instead of a database table,
+  because a table is a migration that applies to production on merge and
+  needs Savannah's yes. Cost: the list does not follow her to another device,
+  and a saved name stays visible after a block until that row is opened.
 
 ## Checks
 

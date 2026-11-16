@@ -67,6 +67,11 @@ export const EVENTS = Object.freeze({
   // instagram on web and share | save on mobile.
   SHARE_CARD_OPENED: 'share_card_opened',
   SHARE_CARD_SENT: 'share_card_sent',
+  // The saved comparisons list on Compare. `refreshed` is the refresh icon on
+  // a row (the comparison is asked for again); `removed` is the x. Neither
+  // carries who the other person is.
+  SAVED_COMPARISON_REFRESHED: 'saved_comparison_refreshed',
+  SAVED_COMPARISON_REMOVED: 'saved_comparison_removed',
   // A Premium viewer tapped a History stat tile and landed on the titles
   // behind it. Carries { stat: 'titles' | 'genre' | 'weekday', source }.
   // Fires only once the filtered list is on screen. Tier 1 at most.
