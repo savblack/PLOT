@@ -2,17 +2,14 @@
 // note markers, and the heart / bookmark toggles. Shared by the custom list and
 // smart list pages; kept out of ListSections.jsx so that file only exports
 // components (fast refresh).
-import { privateNoteKey } from '@plot/core/privateNotes.js';
+import { listCardMarkers } from '@plot/core/listCardMarkers.js';
 import { listWatchStatus } from '@plot/core/listWatchStatus.js';
 import { MEDIA } from '../copy/media.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 
 export function cardState(item, historyEntries, privateNotes, watchingItems) {
-  const id = Number(item.tmdb_id);
-  const type = item.media_type || 'movie';
   return {
-    hasPrivateNote: !!privateNotes?.rows?.[privateNoteKey(id, type)]?.note,
-    hasReview: historyEntries?.some(entry => entry.tmdb_id === id && entry.media_type === type && !!entry.note) || false,
+    ...listCardMarkers(item, historyEntries, privateNotes),
     watchStatus: listWatchStatus(item, historyEntries, watchingItems),
   };
 }

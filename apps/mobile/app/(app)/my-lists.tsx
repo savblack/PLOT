@@ -1,4 +1,5 @@
-import PrivateNote from '../../components/PrivateNote';
+import ListCardMarkers from '../../components/ListCardMarkers';
+import { listCardMarkers } from '@plot/core/listCardMarkers.js';
 import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
@@ -321,8 +322,10 @@ function episodeCode(item: { current_season?: number | null; current_episode?: n
 // core (releaseCaption), shared with web.
 
 // ── Poster grid ───────────────────────────────────────────────────────
-function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption, statusOf }: {
+function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption, statusOf, markersOf }: {
   items: any[];
+  /** The private-note and review markers (@plot/core/listCardMarkers.js). */
+  markersOf?: (item: any) => { hasPrivateNote: boolean; hasReview: boolean };
   /** Where the viewer stands with a title; finished ones grey out. */
   statusOf?: (item: any) => ListWatchStatus | null;
   onRemove?: (tmdbId: number) => void;
@@ -368,6 +371,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
             : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
           }
           {status && <View style={styles.statusChipSlot} pointerEvents="none"><WatchStatusChip status={status} /></View>}
+          {markersOf && <ListCardMarkers {...markersOf(item)} />}
           {/* The per-card ✕ and the selection circle claim the same corner —
               edit mode owns it while active, so only one is ever drawn. */}
           {onRemove && !editing && (
@@ -467,7 +471,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const insets = useSafeAreaInsets();
   const glass = useGlassOnScroll();
   const { open: openPanel } = useMediaPanel();
-  const { userId, watchlist, watching, favorites, customLists, topLists, history, profile, refreshProfile } = useAppData();
+  const { userId, watchlist, watching, favorites, customLists, topLists, history, profile, refreshProfile, privateNotes } = useAppData();
+  const markersOf = (item: any) => listCardMarkers(item, history.entries, privateNotes);
   const ui = useUiPrefs({ userId, saved: profile?.ui_prefs, onPersisted: refreshProfile });
   const fw = favoriteWords(profile?.region);
 
@@ -875,6 +880,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 items={sortedSaved}
                 sel={wantSel}
                 caption={(item) => releaseCaption(item)}
+                markersOf={markersOf}
                 onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
               />
             )}
@@ -950,6 +956,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                   items={favList}
                   sel={favSel}
                   statusOf={(item) => listWatchStatus(item, history.entries, watching.items)}
+                  markersOf={markersOf}
                   onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
                   removeLabel={`${COMMON.remove} ${fw.nounLower}`}
                   onRemove={(tmdbId) => {
@@ -1210,7 +1217,7 @@ function CustomListCard({
   const { confirm, dialog } = useDialog();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
-  const { profile, userId, customLists, history, watching } = useAppData();
+  const { profile, userId, customLists, history, watching, privateNotes } = useAppData();
   const router = useRouter();
   const [open,     setOpen]     = useState(true);
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
@@ -1413,6 +1420,7 @@ function CustomListCard({
             items={items}
             sel={sel}
             statusOf={statusOf}
+            markersOf={(item) => listCardMarkers(item, history.entries, privateNotes)}
             caption={addedCaption}
             onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
             onRemove={(tmdbId: number) => onRemoveItem(tmdbId, { undo: true })}
