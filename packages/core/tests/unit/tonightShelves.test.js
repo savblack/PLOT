@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   chipOn, toggleChip, buildShelves, chipLabel, SHELF_GENRES, SHORT_LIMIT, SHELF_SIZE,
-  MOODS, MOOD_GENRES, moodOn, toggleMood, moodRows, moodFiltersOn, clearMoodFilters,
+  MOODS, MOOD_GENRES, moodOn, toggleMood, moodRows, moodFiltersOn, clearMoodFilters, activeMoodChoices,
 } from '../../tonightShelves.js';
 import { defaultPickerOptions, PICKER_ERAS, PICKER_MIN_SCORES, PICKER_RUNTIMES, PICKER_EPISODE_RUNTIMES } from '../../tonightPicker.js';
 import { TONIGHT_PICKER } from '../../copy/tonightPicker.js';
@@ -122,4 +122,16 @@ test('any chosen mood drops the light and gripping shelves', () => {
   const options = toggleMood('moving', defaultPickerOptions());
   const shelves = buildShelves({ watchlist, services: [], options, hasServices: false, premium: true });
   assert.deepEqual(shelves.map(s => s.id), ['watchlist', 'short']);
+});
+
+test('active choices list the rows that are off any, each with its reset', () => {
+  const base = defaultPickerOptions();
+  assert.deepEqual(activeMoodChoices(base), []);
+  const busy = { ...base, minScore: 7, maxRuntime: 120 };
+  const active = activeMoodChoices(busy);
+  assert.deepEqual(active.map(a => [a.key, a.label]), [['minScore', TONIGHT_PICKER.score(7)], ['maxRuntime', TONIGHT_PICKER.runtimes(120)]]);
+  const cleared = active.reduce((o, a) => ({ ...o, [a.key]: a.reset }), busy);
+  assert.deepEqual(cleared, base);
+  // A show reads episode length, not movie length.
+  assert.deepEqual(activeMoodChoices({ ...base, mediaType: 'tv', maxEpisodeRuntime: 30 }).map(a => a.key), ['maxEpisodeRuntime']);
 });

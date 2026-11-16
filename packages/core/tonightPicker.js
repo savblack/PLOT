@@ -887,6 +887,10 @@ export function pickerDrawPayload(options, { mode, resultCount, reroll, hasServi
     only_watchlist: !!options.onlyWatchlist,
     only_services: !!(options.onlyServices && hasServices),
     genre_count: options.genreIds?.length ?? 0,
+    // The card's one-of rows (Nov 16), so their use can be counted.
+    min_score: options.minScore ?? null,
+    max_minutes: (options.mediaType === 'tv' ? options.maxEpisodeRuntime : options.maxRuntime) ?? null,
+    era: options.era ?? 'any',
   };
 }
 

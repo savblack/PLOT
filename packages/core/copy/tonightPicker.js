@@ -6,6 +6,8 @@
 // The shortlist's smart list button. Also the smart lists builder's Create
 // (copy/smartLists.js reads it from here, so the two never drift).
 const CREATE_SMART_LIST = 'Create smart list';
+// The filters sheet's title, and the phone button that opens it.
+const FILTERS = 'Filters';
 
 export const TONIGHT_PICKER = {
   // Title comes from the nav label (Just Decide); this is the page subline.
@@ -66,7 +68,7 @@ export const TONIGHT_PICKER = {
   next: 'Next',
   anyAnswer: 'Any',
 
-  filtersTitle: 'Filters',
+  filtersTitle: FILTERS,
   filtersNone: 'None',
   onlyServices: 'Only on my services',
   onlyServicesMissing: 'Add your services in Settings to use this',
@@ -223,6 +225,8 @@ export const TONIGHT_PICKER = {
       animated: 'Animated',
     },
     clearAll: 'Clear all',
+    // The phone's button for the sheet with the one-of rows; counts what is on.
+    filtersCount: (n) => (n ? `${FILTERS} · ${n}` : FILTERS),
   },
   shelves: {
     watchlist: 'From your watchlist',

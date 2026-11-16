@@ -96,7 +96,7 @@
  *   Analytics seam — fired when a written review (a history note) is saved
  *   with new text, from useHistory's two write paths. Carries a length bucket,
  *   never the text: reviews are user content.
- * @property {(payload: { action: 'drawn' | 'opened' | 'search_saved' | 'saved_search_opened', mode?: string, media_type?: string, result_count?: number, reroll?: boolean, only_watchlist?: boolean, only_services?: boolean, genre_count?: number, tmdb_id?: number, position?: number }) => void} [onTonightPicker]
+ * @property {(payload: { action: 'drawn' | 'opened' | 'search_saved' | 'saved_search_opened', mode?: string, media_type?: string, result_count?: number, reroll?: boolean, only_watchlist?: boolean, only_services?: boolean, genre_count?: number, min_score?: number|null, max_minutes?: number|null, era?: string, tmdb_id?: number, position?: number }) => void} [onTonightPicker]
  *   Analytics seam — the Tonight picker, from useTonightPicker: a draw (first
  *   spin or reroll; result_count 0 is an empty result), a pick opened, and
  *   saved searches. Picker settings are reported as shapes (counts, booleans),

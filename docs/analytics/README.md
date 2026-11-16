@@ -443,7 +443,7 @@ through the `onTonightPicker` seam, so both apps report identically:
 
 | Event | When | Props |
 |---|---|---|
-| `tonight_picks_drawn` | A draw finished (first spin or Regenerate) | `mode` (`five` / `surprise`), `media_type`, `result_count` (0 = empty), `reroll`, `only_watchlist`, `only_services`, `genre_count` |
+| `tonight_picks_drawn` | A draw finished (first spin or Regenerate) | `mode` (`five` / `surprise`), `media_type`, `result_count` (0 = empty), `reroll`, `only_watchlist`, `only_services`, `genre_count`, `min_score` (6 / 7 / 8 or null), `max_minutes` (movie length or episode length, or null), `era` (`any`, `recent`, a decade, `classic`) |
 | `tonight_pick_opened` | A result card was opened | `tmdb_id`, `media_type`, `mode`, `position` (1-based) |
 | `tonight_search_saved` / `tonight_saved_search_opened` | Saved searches | `mode`, `result_count` |
 
