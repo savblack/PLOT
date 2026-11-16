@@ -6,7 +6,7 @@ import BackBar from '../../components/BackBar';
 import Loader from '../../components/Loader';
 import { useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -17,8 +17,9 @@ import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
 import { Avatar } from '../../components/Avatar';
 import UserModerationMenu from '../../components/UserModerationMenu';
 import { useBlocks } from '@plot/core/useBlocks.js';
-import { Palette, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
+import { Palette, fontFamily, fontSize, spacing } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
+import Button from '../../components/Button';
 
 export default function RequestsScreen() {
   const { colors } = useTheme();
@@ -75,12 +76,8 @@ function RequestRow({
         <Text style={styles.rowHandle} numberOfLines={1}>@{req.username}</Text>
       </View>
       <View style={styles.rowActions}>
-        <TouchableOpacity style={styles.approveBtn} onPress={onApprove} activeOpacity={0.8}>
-          <Text style={styles.approveText}>Approve</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.declineBtn} onPress={onDecline} activeOpacity={0.8}>
-          <Text style={styles.declineText}>Decline</Text>
-        </TouchableOpacity>
+        <Button variant="primary" size="sm" label="Approve" onPress={onApprove} />
+        <Button size="sm" label="Decline" onPress={onDecline} />
         <UserModerationMenu
           targetId={req.follower_id}
           targetName={name}
@@ -101,9 +98,5 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   rowId: { flex: 1, minWidth: 0 },
   rowName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
   rowHandle: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted, marginTop: 1 },
-  rowActions: { flexDirection: 'row', gap: spacing.sm, flexShrink: 0 },
-  approveBtn: { minHeight: 38, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radii.pill, backgroundColor: colors.textPrimary },
-  approveText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.bg },
-  declineBtn: { minHeight: 38, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  declineText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textSecondary },
+  rowActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
 });
