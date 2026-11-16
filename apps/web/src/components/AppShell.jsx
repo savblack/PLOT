@@ -1,11 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { preloadAppViews } from '../routeChunks.js';
 import { APP_NAV_ITEMS, isActiveView, sidebarNavItems, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
-import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import AppSidebar from './AppSidebar.jsx';
 import GoPremiumLink from './GoPremiumLink.jsx';
@@ -190,7 +189,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         <div className="app-main-inner">
           {/* Sidebar widths only — below them the header above carries the
               title and this is display: none. */}
-          {isListDetail && <Link className="app-page-breadcrumb" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>}
           {!isListDetail && <h1 className="app-page-heading">{desktopTitle}</h1>}
           {children}
         </div>
