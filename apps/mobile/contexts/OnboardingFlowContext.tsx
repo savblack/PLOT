@@ -1,10 +1,10 @@
 /**
  * State shared by the onboarding screens: the mobile counterpart of the state
  * apps/web/src/pages/OnboardingFlow.jsx keeps in one component. Mobile splits
- * the flow across expo-router screens (seed → services → building), so
+ * the flow across expo-router screens (seed → services), so
  * the picks, the region and the one save at the end live here.
  *
- * The save runs behind the building moment. It flips onboarding_complete first
+ * The save runs from the services step. It flips onboarding_complete first
  * and refreshes the root layout's cached copy before anyone navigates, for the
  * reason written up in contexts/OnboardingContext.tsx.
  */
@@ -56,9 +56,6 @@ interface OnboardingFlow {
   /** The region's services as the services step loaded them. */
   services: PickedService[];
   setServices: (list: PickedService[]) => void;
-  /** This week's trending titles, kept for the building moment's poster fan. */
-  trending: PickedTitle[];
-  setTrending: (list: PickedTitle[]) => void;
   /** Reports a finished step to the funnel. */
   completeStep: (name: OnboardingStep, opts?: { skipped?: boolean }) => void;
   /** Saves everything and leaves onboarding. Resolves false (with `saveError` set) when the write failed. */
@@ -87,7 +84,6 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
   const regionTouched = useRef(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
   const [services, setServicesState] = useState<PickedService[]>([]);
-  const [trending, setTrending] = useState<PickedTitle[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -202,8 +198,8 @@ export function OnboardingFlowProvider({ children }: { children: ReactNode }) {
   // doesn't remount a screen's effects.
   const value = useMemo<OnboardingFlow>(() => ({
     firstName, seeds, toggleSeed, importSource, setImportSource, importJob, setImportJob, region, setRegion,
-    selectedServiceIds, toggleService, services, setServices, trending, setTrending, completeStep, save, saving, saveError,
-  }), [firstName, seeds, toggleSeed, importSource, importJob, region, setRegion, selectedServiceIds, toggleService, services, setServices, trending, completeStep, save, saving, saveError]);
+    selectedServiceIds, toggleService, services, setServices, completeStep, save, saving, saveError,
+  }), [firstName, seeds, toggleSeed, importSource, importJob, region, setRegion, selectedServiceIds, toggleService, services, setServices, completeStep, save, saving, saveError]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

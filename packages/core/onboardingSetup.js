@@ -1,18 +1,20 @@
 // Pure helpers for the onboarding flow (save a few, the switching-apps branch,
-// where do you watch, then the building moment). Rendering stays per app.
+// where do you watch, then Home). Rendering stays per app.
 
 import { ONBOARDING_FLOW } from './copy/onboardingFlow.js';
 
-/** @typedef {'seed' | 'import' | 'services' | 'building'} OnboardingStep */
+/** @typedef {'seed' | 'import' | 'services'} OnboardingStep */
 
 /**
- * The progress bar has three parts. The switching-apps branch is part of the
- * first step, so it shows the same progress as "save a few".
+ * The progress bar has two parts. The switching-apps branch is part of the
+ * first step, so it shows the same progress as "save a few". There was a
+ * third, the building moment, until it was removed on 2026-11-16: the save
+ * now runs on the services step and Home opens as soon as it lands.
  *
  * @type {Record<OnboardingStep, number>}
  */
-export const ONBOARDING_PROGRESS = { seed: 1, import: 1, services: 2, building: 3 };
-export const ONBOARDING_PROGRESS_TOTAL = 3;
+export const ONBOARDING_PROGRESS = { seed: 1, import: 1, services: 2 };
+export const ONBOARDING_PROGRESS_TOTAL = 2;
 
 /**
  * The switching-apps sources, in two lanes. Ids are the import page's platform
@@ -92,44 +94,4 @@ export function topRegionServices(results, limit = ONBOARDING_SERVICE_COUNT) {
     .sort((a, b) => (a.display_priority ?? 999) - (b.display_priority ?? 999))
     .slice(0, limit)
     .map(p => ({ id: p.provider_id, name: p.provider_name, logo_path: p.logo_path ?? null }));
-}
-
-/**
- * The building moment's timing, shared so web and mobile hold the screen for
- * the same length. The screen leaves as soon as the save finishes, but never
- * before the shelf has filled (MIN), then fades into Home (FADE).
- */
-export const BUILDING_MIN_MS = 1100;
-export const BUILDING_FADE_MS = 250;
-/** Posters on the building shelf: two rows of three. */
-export const BUILDING_SHELF_SIZE = 6;
-/** Each building line shows this long before the next; the last one stays. */
-export const BUILDING_LINE_MS = 1000;
-
-/**
- * The building moment's lines, shown one at a time. While a background import
- * runs, `importLine` replaces the first.
- *
- * @param {boolean} hasServices
- * @param {string | null} [importLine]
- * @returns {string[]}
- */
-export function buildingLines(hasServices, importLine = null) {
-  const [first, ...rest] = ONBOARDING_FLOW.building.lines;
-  return [importLine || (hasServices ? first : ONBOARDING_FLOW.building.noServicesFirstLine), ...rest];
-}
-
-/**
- * The building moment's shelf, in the order the posters land. Their picks go
- * first, in the order they picked them; trending titles they didn't pick fill
- * the rest, so one or two picks still make a full shelf.
- *
- * @template {{ id: number }} T
- * @param {T[]} picks
- * @param {T[]} trending
- * @returns {T[]} up to BUILDING_SHELF_SIZE
- */
-export function buildingShelf(picks, trending) {
-  const picked = new Set(picks.map(p => p.id));
-  return [...picks, ...trending.filter(t => !picked.has(t.id))].slice(0, BUILDING_SHELF_SIZE);
 }

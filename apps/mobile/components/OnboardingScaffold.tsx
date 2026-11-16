@@ -18,9 +18,9 @@ import { useTheme } from '../contexts/ThemeContext';
 import PlotWordmark from './PlotWordmark';
 
 /**
- * The progress bar, as web's .ob-progress: three segments (save a few, where
- * do you watch, building) and no visible label. The step count is read out
- * to a screen reader instead. The building screen draws it too.
+ * The progress bar, as web's .ob-progress: two segments (save a few, where
+ * do you watch) and no visible label. The step count is read out to a screen
+ * reader instead.
  */
 export function OnboardingProgress({ step }: { step: number }) {
   const { colors } = useTheme();
@@ -55,7 +55,7 @@ interface Props {
   /** Passed instead of a CTA on a screen whose rows are themselves the action. */
   hideCta?: boolean;
   saving?: boolean;
-  /** Top right on every step but the building moment, whatever is picked, as web's top-bar Skip. */
+  /** Top right on every step, whatever is picked, as web's top-bar Skip. */
   onSkip?: () => void;
   /** A quiet link under the CTA (the import picker's "I'll do this later"). */
   onLater?: () => void;

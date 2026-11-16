@@ -55,7 +55,7 @@ stale; run `pnpm run import-engine` after touching the import pipeline.
   two lanes of source tiles (`components/ImportSourceLanes.jsx`), a sheet or
   dialog per source (`components/ImportSourceDialog.jsx`), state in
   `hooks/useImportStart.js`. A second pick queues; the pill above the next
-  steps and the first line of the building moment follow the running job.
+  step follows the running job.
   Mobile mirrors it in `apps/mobile/app/onboarding/seed.tsx` with
   `components/ImportSourceLanes.tsx` and `hooks/useImportStart.ts`.
 - Settings › Connections › Your sources (`components/SettingsSources.jsx`):

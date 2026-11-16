@@ -8,7 +8,7 @@ import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { COMMON } from '../copy/common.js';
 import { REGIONS } from '@plot/core/regions.js';
-import { BUILDING_SHELF_SIZE, ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL, findImportSource } from '@plot/core/onboardingSetup.js';
+import { ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL, findImportSource } from '@plot/core/onboardingSetup.js';
 import { importSourceName } from '@plot/core/importJobs.js';
 import ImportSourceLanes, { ImportPill } from '../components/ImportSourceLanes.jsx';
 import ImportSourceDialog from '../components/ImportSourceDialog.jsx';
@@ -56,10 +56,9 @@ function Progress({ step }) {
  *               selectedIds: number[], onToggle: (id: number) => void, region: string, editingRegion: boolean,
  *               onEditRegion: () => void, onRegion: (code: string) => void, onRegionDone: () => void,
  *               onContinue: () => void },
- *   building: { leaving: boolean, shelf: any[], lines: string[], lineIndex: number },
  * }} props
  */
-export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, importStep, services, building }) {
+export default function OnboardingScreen({ step, firstName, saving, saveError, canGoBack, onBack, onSkip, seed, importStep, services }) {
   const regionName = REGIONS.find(r => r.code === services.region)?.name || services.region;
   const columnClass = step === 'seed' ? 'ob-column ob-column--wide' : step === 'services' ? 'ob-column ob-column--services' : step === 'import' ? 'ob-column ob-column--import' : 'ob-column';
 
@@ -67,9 +66,7 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
     <div className={`ob-page${step === 'seed' ? ' ob-page--fixed' : ''}`}>
       <div className="ob-topbar">
         <div className="ob-topbar-logo"><PlotLogo /></div>
-        {step !== 'building' && (
-          <button type="button" className="ob-skip" disabled={saving} onClick={onSkip}>{F.skip}</button>
-        )}
+        <button type="button" className="ob-skip" disabled={saving} onClick={onSkip}>{F.skip}</button>
       </div>
 
       <div className={columnClass}>
@@ -226,29 +223,6 @@ export default function OnboardingScreen({ step, firstName, saving, saveError, c
           </>
         )}
 
-        {/* ── 3 · Building your Plot ── */}
-        {step === 'building' && (
-          <div className={`ob-building${building.leaving ? ' is-leaving' : ''}`}>
-            <div className="ob-shelf" aria-hidden="true">
-              {/* Picks land one after another; empty slots stay as quiet tiles so the shelf is always two full rows. */}
-              {Array.from({ length: BUILDING_SHELF_SIZE }, (_, i) => {
-                const item = building.shelf[i];
-                return (
-                  <div key={item?.id ?? `empty-${i}`} className="ob-shelf-card" style={{ animationDelay: `${i * 60}ms, ${750 + (i % 3) * 180 + Math.floor(i / 3) * 60}ms` }}>
-                    {item?.poster_path && <img src={posterUrl(item.poster_path, 'w185')} alt="" />}
-                  </div>
-                );
-              })}
-            </div>
-            <h1 className="ob-building-title">{F.building.heading} <PlotLogo style={{ fontSize: 30 }} /></h1>
-            <div className="ob-lines" role="status">
-              <span className="sr-only">{F.building.status}</span>
-              {building.lines.map((text, i) => (
-                <p key={text} className={`ob-line${i === building.lineIndex ? ' is-on' : ''}`} aria-hidden="true">{text}</p>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ export const ONBOARDING_FLOW = {
     remove: 'Remove',
   },
   // ── Web onboarding, redesigned (Oct 2026): save a few (with a switching-apps
-  // branch), where do you watch, then a short building moment into Home. The
+  // branch), where do you watch, then Home. The
   // name now comes from the sign-in provider, so nothing here asks for it.
   // Mobile runs the same flow (app/onboarding/*); only `step2`'s search and
   // add/remove strings above are still read, by both apps.
@@ -132,15 +132,6 @@ export const ONBOARDING_FLOW = {
     changeRegion: 'Change',
     regionLabel: 'Region',
     loadError: 'We couldn’t load services right now. You can set them later in Settings.',
-  },
-  building: {
-    // "Building your" then the wordmark, set in Gabarito.
-    heading: 'Building your',
-    status: 'Building your Plot',
-    // Under the heading, one at a time, while the save runs.
-    lines: ['Checking your platforms…', 'Reading the reviews…', 'Popping the popcorn…', 'Raising the curtain…'],
-    // Line one when they skipped services.
-    noServicesFirstLine: 'Checking every platform…',
   },
   skip: 'Skip',
   stepLabel: (step, total) => `Step ${step} of ${total}`,
