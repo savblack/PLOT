@@ -3,6 +3,7 @@ import { StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import Svg, { Path, Rect, Line, Polyline, Circle } from 'react-native-svg';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { spacing } from '../../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
@@ -33,7 +34,7 @@ function IconCalendar({ color }: { color: any }) {
 function IconLists({ color }: { color: any }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+      <Path d={ICON_PATHS.bookmark} />
     </Svg>
   );
 }

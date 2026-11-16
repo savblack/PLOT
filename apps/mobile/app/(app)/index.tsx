@@ -17,6 +17,7 @@ import {
   UIManager, Platform, StyleSheet, Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { BookmarkGlyph } from '../../components/Icon';
 import { IconChevronDown } from '../../components/icons';
 import SectionTitle from '../../components/SectionTitle';
 import PlotWordmark from '../../components/PlotWordmark';
@@ -124,15 +125,6 @@ interface PlatformData {
   tv: MediaItem[];
 }
 
-// ── Bookmark SVG ─────────────────────────────────────────────────────
-function BookmarkIcon({ size = 14, color = '#fff', filled = false, strokeWidth = 2 }: { size?: number; color?: string; filled?: boolean; strokeWidth?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </Svg>
-  );
-}
-
 // ── Heart SVG — same outline/fill treatment as the web card heart ─────
 function HeartIcon({ size = 15, color = '#fff', filled = false, strokeWidth = 2.5 }: { size?: number; color?: string; filled?: boolean; strokeWidth?: number }) {
   return (
@@ -188,7 +180,7 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
               accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
               accessibilityRole="button"
             >
-              <BookmarkIcon size={16} color={saved ? colors.accent : colors.textMuted} strokeWidth={2.5} filled={saved} />
+              <BookmarkGlyph saved={saved} size={16} colors={colors} />
             </TouchableOpacity>
           </View>
         )}
@@ -223,7 +215,7 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
-          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
+          <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
@@ -292,7 +284,7 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
         accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
-        <BookmarkIcon size={13} color={saved ? colors.accent : colors.textMuted} filled={saved} />
+        <BookmarkGlyph saved={saved} size={13} colors={colors} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -329,7 +321,7 @@ function HeroCard({ item, onPress, saved, onSave, cardStyle, badge = 'TRENDING #
         accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
-        <BookmarkIcon size={16} color={saved ? colors.accent : '#fff'} filled={saved} />
+        <BookmarkGlyph saved={saved} onImage size={16} strokeWidth={2} colors={colors} />
       </TouchableOpacity>
       <View style={styles.heroContent}>
         <View style={styles.trendingBadge}>
@@ -529,7 +521,7 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
           accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
-          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
+          <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
