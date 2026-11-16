@@ -389,7 +389,6 @@
 .tonight-lang { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
 .tonight-lang .tonight-select { font-size: 13px; padding: 4px 0; text-align: left; color: var(--text-primary); }
 .tonight-mood-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-top: 14px; border-top: 1px solid var(--border); }
-.tonight-mood-card .tonight-hint { margin: 0; }
 /* Between phone and desktop the card is wide, so the label sits beside its chips. */
 @media (min-width: 600px) and (max-width: 1023px) {
   .tonight-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; }

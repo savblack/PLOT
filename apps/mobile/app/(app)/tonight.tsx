@@ -136,11 +136,10 @@ function MoodCard({ picker, premium, styles, colors }: { picker: Picker; premium
           label={T.pickForMe}
           onPress={() => picker.go(premium ? 'five' : 'surprise')}
           icon={locked ? <PremiumMark color={colors.onAccentFill} size={16} /> : undefined}
-          accessibilityLabel={locked ? `${T.pickForMe}, ${T.gate.locked}` : picker.freePickLeft ? `${T.pickForMe}. ${T.freePickNote}` : undefined}
+          accessibilityLabel={locked ? `${T.pickForMe}, ${T.gate.locked}` : undefined}
         />
         <TextLink quiet label={T.surpriseMe} onPress={() => picker.go('surprise')} />
       </View>
-      {picker.freePickLeft && <Text style={styles.freeNote}>{T.freePickNote}</Text>}
 
       <BottomSheet visible={sheet} onClose={() => setSheet(false)} title={T.filtersTitle} closeLabel={COMMON.done}>
         {moodRows(options.mediaType).map(row => sheetRow(row.label, (
@@ -611,7 +610,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   cardTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   cardMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textSecondary },
 
-  freeNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   locked: { position: 'relative', minHeight: 640 },
   placeholderLine: { height: 14, width: '80%', borderRadius: radii.pill, backgroundColor: colors.borderStrong },
   unlock: {
