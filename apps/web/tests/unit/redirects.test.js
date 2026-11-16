@@ -6,6 +6,7 @@ import {
   getAuthCallbackUrl,
   getTraktCallbackUrl,
   redirectToExternal,
+  traktErrorReturn,
 } from '../../src/utils/redirects.js';
 
 test('getAppUrl builds paths from an explicit callback base', () => {
@@ -50,4 +51,22 @@ test('redirectToExternal delegates navigation to the browser shell', () => {
 
   delete globalThis.window;
   delete globalThis.document;
+});
+
+test('traktErrorReturn goes back to the page the connect started on', () => {
+  assert.deepEqual(traktErrorReturn('/onboarding?import=trakt'), { href: '/onboarding?import=trakt', place: 'setup' });
+  assert.deepEqual(traktErrorReturn('/import?source=trakt'), { href: '/import?source=trakt', place: 'import' });
+  assert.deepEqual(traktErrorReturn('/settings?section=connections&import=trakt'), { href: '/settings?section=connections&import=trakt', place: 'settings' });
+  assert.deepEqual(traktErrorReturn('/settings'), { href: '/settings', place: 'settings' });
+});
+
+test('traktErrorReturn falls back to Settings for a missing or unexpected address', () => {
+  const settings = { href: '/settings', place: 'settings' };
+  assert.deepEqual(traktErrorReturn(null), settings);
+  assert.deepEqual(traktErrorReturn(undefined), settings);
+  assert.deepEqual(traktErrorReturn('/home'), settings);
+  assert.deepEqual(traktErrorReturn('/onboardingx'), settings);
+  // A protocol-relative address would leave the site if used as a link.
+  assert.deepEqual(traktErrorReturn('//example.invalid/onboarding'), settings);
+  assert.deepEqual(traktErrorReturn('https://example.invalid/settings'), settings);
 });

@@ -130,3 +130,16 @@ for (const { name, path, exchange, back } of IMPORT_RETURNS) {
     expect(paths.filter(visited => visited === '/onboarding')).toEqual([]);
   });
 }
+
+// The Trakt error page used to link to Settings whatever page the connect
+// started on, so a failed connect during setup pointed a new account at
+// Settings. It now links back to the page that started it.
+test('a failed Trakt connect started in setup links back to setup', async ({ page, baseURL }) => {
+  await setup(page);
+  await page.addInitScript(() => sessionStorage.setItem('plot_trakt_oauth_return_to', '/onboarding?import=trakt'));
+  await page.goto(gateUrl(baseURL, '/auth/trakt'));
+  const back = page.getByRole('link', { name: TRAKT_CALLBACK_PAGE.backToSetup, exact: true });
+  await expect(back).toHaveAttribute('href', '/onboarding?import=trakt');
+  await back.click();
+  await expect(page).toHaveURL(/\/onboarding\?import=trakt$/);
+});
