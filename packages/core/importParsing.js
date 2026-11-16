@@ -422,6 +422,22 @@ export function namesWatchlist(fileName) {
   return /watch[\s_-]?list/.test(originalExportName(fileName));
 }
 
+/** The name says watched ("watched.csv", "letterboxd-watched-2026.csv").
+ * @param {string} fileName
+ */
+export function namesWatched(fileName) {
+  return /watched/.test(originalExportName(fileName));
+}
+
+/** Letterboxd's watched.csv and watchlist.csv share this exact header, so
+ * the content cannot say which of the two a file is.
+ * @param {string} text the file's text, or at least its first line
+ */
+export function isLetterboxdFilmList(text) {
+  const [header = []] = parseCSV(String(text).replace(/^\uFEFF/, '').split('\n', 1)[0]);
+  return header.join(',') === 'Date,Name,Year,Letterboxd URI';
+}
+
 /** IMDb's list layout (watchlist and every other list) leads with Position.
  * @param {string} text
  */
@@ -492,7 +508,7 @@ export function parseLetterboxdList(text, fileName = '', { onLeftOut = (_reason)
     // watched.csv and watchlist.csv have the same columns and the same kind of
     // rows, so the content cannot say which one this is. A name with neither
     // word must not be guessed into watches (or out of them).
-    if (fileName && header.join(',') === 'Date,Name,Year,Letterboxd URI' && !/watched/.test(originalExportName(fileName))) throw new Error(IMPORT_VIEW.letterboxdWatchedOrWatchlist);
+    if (fileName && header.join(',') === 'Date,Name,Year,Letterboxd URI' && !namesWatched(fileName)) throw new Error(IMPORT_VIEW.letterboxdWatchedOrWatchlist);
     return null;
   }
   // A list row is matched by title and year, so a film without a year yet

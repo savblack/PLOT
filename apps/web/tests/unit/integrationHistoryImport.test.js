@@ -62,7 +62,17 @@ test('both import surfaces offer Plex and Trakt, and sync UI is Premium-gated', 
   assert.match(webSettings, /premium\.isPremium/);
   assert.match(webSettings, /onPremiumGate/);
   assert.match(read('../../src/components/SettingsView.jsx'), /setPremiumGate\('autoImport'\)/);
-  assert.match(webSettings, /startPlexAuth\(\)/);
+  // Plex sends its approval tab back to the import that started it, never to
+  // plain Settings: on a phone that tab is the one left in front, and a
+  // connected account that lands on Settings never imports.
+  assert.match(webSettings, /startPlexAuth\(returnPath\('plex'\)\)/);
+  assert.match(webImport, /startPlexAuth\(`\/import\?source=plex/);
+  assert.match(webPlex, /forwardUrl: `\$\{window\.location\.origin\}\$\{path\}`/);
+  // The returning tab picks up an approval the first tab has not, and the
+  // /import page loads the server list itself once Plex is connected.
+  assert.match(webPlex, /resumePlexAuth/);
+  assert.match(webSettings, /initial === 'plex' \? plex\.resumePlexAuth/);
+  assert.match(webImport, /usePlexSource\(user\?\.id, \{ autoPick: true \}\)/);
   assert.match(webSettings, /buildTraktAuthorizeUrl/);
   // Mobile: the same shape. No Premium gate on connecting; the automatic
   // toggle sends Free to the Premium section.

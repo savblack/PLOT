@@ -33,21 +33,38 @@ export function useMediaSync(userId) {
     return data;
   }, [userId]);
 
-  const pollPlexAuth = useCallback(() => {
+  // `resumed`: this tab did not start the approval (see resumePlexAuth), so
+  // it leaves plex_connected to the tab that did and the connect counts once.
+  const pollPlexAuth = useCallback((_integrationId, { resumed = false } = {}) => {
     stopPoll.current?.();
     setPolling(true);
     setError(null);
     stopPoll.current = pollPlexAuthorization({
       request: () => callSync('poll-auth'),
-      onAuthorized: () => { setPolling(false); track(EVENTS.PLEX_CONNECTED, {}); void loadIntegration(); },
-      onError: message => { setPolling(false); setError(message); },
+      onAuthorized: () => { setPolling(false); if (!resumed) track(EVENTS.PLEX_CONNECTED, {}); void loadIntegration(); },
+      // A resumed poll that finds an old, abandoned approval says nothing:
+      // the person did not just try to connect on this tab.
+      onError: message => { setPolling(false); if (!resumed) setError(message); },
     });
   }, [loadIntegration]);
+
+  // The tab Plex sends back after approval is a new one on a phone, and the
+  // tab that was polling is behind it, where the browser may have paused it.
+  // If the approval is still waiting to be picked up, pick it up here.
+  const resumePlexAuth = useCallback(async () => {
+    const data = await loadIntegration();
+    if (data?.status === 'pending') pollPlexAuth(data.id, { resumed: true });
+    return data;
+  }, [loadIntegration, pollPlexAuth]);
   const stopPolling = useCallback(() => { authRequest.current++; stopPoll.current?.(); stopPoll.current = null; setPolling(false); }, []);
   useEffect(() => () => stopPolling(), [stopPolling, userId]);
 
   // DOM-specific opening; native uses Linking with the same polling protocol.
-  const startPlexAuth = useCallback(async () => {
+  // `returnPath` is where Plex sends the approval tab once the person says
+  // yes. On a phone that tab stays in front, so an import must pass the path
+  // that reopens its own import step; landing on Settings instead left a
+  // connected account that never imported.
+  const startPlexAuth = useCallback(async (returnPath = '/settings') => {
     setError(null);
     const requestId = ++authRequest.current;
     const popup = window.open('about:blank', '_blank');
@@ -55,7 +72,8 @@ export function useMediaSync(userId) {
     popup.opener = null;
     setPolling(true);
     try {
-      const result = await callSync('start-auth', { forwardUrl: `${window.location.origin}/settings` });
+      const path = typeof returnPath === 'string' && returnPath.startsWith('/') && !returnPath.startsWith('//') ? returnPath : '/settings';
+      const result = await callSync('start-auth', { forwardUrl: `${window.location.origin}${path}` });
       if (requestId !== authRequest.current) { popup.close(); return null; }
       if (result?.authUrl?.startsWith('https://app.plex.tv/') && result?.integration?.id) {
         popup.location.replace(result.authUrl);
@@ -118,6 +136,7 @@ export function useMediaSync(userId) {
     loadIntegration,
     startPlexAuth,
     pollPlexAuth,
+    resumePlexAuth,
     sync,
     importHistory,
     disconnect,

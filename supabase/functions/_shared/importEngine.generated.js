@@ -1183,6 +1183,9 @@ function originalExportName(fileName) {
 function namesWatchlist(fileName) {
   return /watch[\s_-]?list/.test(originalExportName(fileName));
 }
+function namesWatched(fileName) {
+  return /watched/.test(originalExportName(fileName));
+}
 function isImdbListExport(text) {
   const [headers = []] = parseCSV(text.replace(/^\uFEFF/, "").split("\n", 1)[0]);
   return headers.includes("Position") && headers.includes("Const");
@@ -1251,7 +1254,7 @@ function parseLetterboxdList(text, fileName = "", { onLeftOut = (_reason) => {
     destination = { kind: "watchlist", key: "letterboxd:watchlist", name: "Watchlist" };
     items = rows.slice(first + 1);
   } else {
-    if (fileName && header.join(",") === "Date,Name,Year,Letterboxd URI" && !/watched/.test(originalExportName(fileName))) throw new Error(IMPORT_VIEW.letterboxdWatchedOrWatchlist);
+    if (fileName && header.join(",") === "Date,Name,Year,Letterboxd URI" && !namesWatched(fileName)) throw new Error(IMPORT_VIEW.letterboxdWatchedOrWatchlist);
     return null;
   }
   return items.filter((row) => row.some((value) => value.trim())).flatMap((row) => {
@@ -2089,7 +2092,7 @@ function letterboxdFileName(fileName, text) {
   const [header = []] = parseCSV(text.replace(/^\uFEFF/, "").split("\n", 1)[0]);
   if (header.join(",") !== "Date,Name,Year,Letterboxd URI") return fileName;
   if (namesWatchlist(original)) return "watchlist.csv";
-  if (/watched/.test(original)) return "watched.csv";
+  if (namesWatched(original)) return "watched.csv";
   return fileName;
 }
 function importReportMessages(document) {

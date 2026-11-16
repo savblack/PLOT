@@ -4,6 +4,7 @@
 // from hooks/useImportStart.js; onboarding and Settings both render this.
 import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
+import { importListChoiceOptions } from '@plot/core/importJobs.js';
 import { ONBOARDING_FLOW } from '../copy/onboardingFlow.js';
 import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { COMMON } from '../copy/common.js';
@@ -43,15 +44,13 @@ function ReadsList({ id }) {
   );
 }
 
-/** An IMDb list file: the watchlist, or another list? Asked before upload. */
+/** A file that cannot say what it is (an IMDb list, or a renamed Letterboxd
+ * watched/watchlist file): asked before upload. */
 function ListChoice({ start }) {
-  const options = [
-    { id: 'watchlist', label: I.imdbListWatchlist, note: I.imdbListWatchlistNote },
-    { id: 'list', label: I.imdbListOther, note: I.imdbListOtherNote },
-  ];
+  const { question, options } = importListChoiceOptions(start.source);
   return (
     <div className="isp-plex">
-      <div className="isp-lbl" id="isp-list-choice">{I.imdbListQuestion}</div>
+      <div className="isp-lbl" id="isp-list-choice">{question}</div>
       <div className="isp-radios" role="radiogroup" aria-labelledby="isp-list-choice">
         {options.map(option => {
           const on = start.listChoice === option.id;

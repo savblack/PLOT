@@ -60,9 +60,10 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
   const [error, setError] = useState(null);
   const [pendingFiles, setPendingFiles] = useState(null);
   const [pendingRows, setPendingRows] = useState(null);
-  // An IMDb list file: is it the watchlist? null until the person answers.
+  // A file that cannot say what it is (an IMDb list, or a renamed Letterboxd
+  // watched/watchlist file). null until the person answers.
   const [listChoiceNeeded, setListChoiceNeeded] = useState(false);
-  const [listChoice, setListChoice] = useState(/** @type {'watchlist' | 'list' | null} */ (null));
+  const [listChoice, setListChoice] = useState(/** @type {import('@plot/core/importJobs.js').ImportListChoice | null} */ (null));
 
   const jobs = useImportJobs(userId, { history });
   const trakt = useTraktSync(userId);
@@ -72,7 +73,9 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
 
   const connection = source === 'trakt' ? trakt : source === 'plex' ? plex : source === 'simkl' ? simkl : null;
   const loadTrakt = trakt.loadIntegration;
-  const loadPlex = plex.loadIntegration;
+  // Back from Plex's approval tab (?import=plex): also pick the approval up
+  // here, in case the tab that started it is paused in the background.
+  const loadPlex = initial === 'plex' ? plex.resumePlexAuth : plex.loadIntegration;
   const loadSimkl = simkl.loadIntegration;
   useEffect(() => {
     if (!userId) return;
@@ -156,8 +159,9 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     setPendingFiles(files);
     setPendingRows(null);
     countRows(files).then(count => setPendingRows(count));
-    // The header row is enough to tell an IMDb list from a ratings export.
-    if (sourceId === 'imdb' && files.length === 1) {
+    // The header row is enough to tell an IMDb list from a ratings export,
+    // or a Letterboxd watched/watchlist file from its other exports.
+    if (['imdb', 'letterboxd'].includes(sourceId) && files.length === 1) {
       files[0].slice(0, 4096).text()
         .then(head => setListChoiceNeeded(importListChoiceNeeded(sourceId, head, files[0].name)))
         .catch(() => setListChoiceNeeded(false));
@@ -186,7 +190,10 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
   const connect = useCallback(() => {
     if (source === 'plex') {
       setPhase('connecting');
-      plex.startPlexAuth().then(result => { if (result?.integration?.id) plex.pollPlexAuth(result.integration.id); else setPhase('connect'); });
+      // Plex sends the approval tab back here, not to Settings: on a phone
+      // that tab is where the person ends up, and ?import=plex reopens this
+      // dialog on it, connected and ready to import.
+      plex.startPlexAuth(returnPath('plex')).then(result => { if (result?.integration?.id) plex.pollPlexAuth(result.integration.id); else setPhase('connect'); });
       return;
     }
     if (source === 'simkl') {
