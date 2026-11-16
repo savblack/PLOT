@@ -736,7 +736,8 @@ follow buttons go through core too (`clearSavedAndWatching`, `followUser` /
 ### `load_failed`
 
 A failed library read (`resource`: `watchlist`, `history`, `custom_lists`,
-`watching`, `favourites`, `smart_list`, `episode_search`, `critic_score`) fires `load_failed` via `reportLoadFailure()`, with
+`watching`, `favourites`, `smart_list`, `episode_search`, `critic_score`,
+`onboarding_services`, `onboarding_trending`, `onboarding_search`) fires `load_failed` via `reportLoadFailure()`, with
 the same `error_kind` / `error_code` / `http_status` props. It is a separate
 event on purpose: a page that fails to load is not a failed user action, and
 counting it as `action_failed` would skew every failed-write rate.

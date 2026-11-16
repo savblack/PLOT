@@ -139,6 +139,19 @@
 .ob-search input:focus-visible { border-color: var(--accent); }
 .ob-search-icon { position: absolute; left: 14px; top: 14px; width: 16px; height: 16px; color: var(--text-muted); pointer-events: none; }
 .ob-search .search-input-clear { position: absolute; right: 8px; top: 8px; }
+/* A failed search or trending load: one line and Retry, under the search field. */
+.ob-load-error {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 10px auto 0; width: 100%; max-width: 560px; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface);
+  font-size: 13.5px; color: var(--text-primary);
+}
+.ob-load-error button {
+  flex: none; border: none; background: none; padding: 4px 0; margin: 0;
+  color: var(--accent-text); font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer;
+}
+.ob-load-error button:hover { text-decoration: underline; }
+.ob-empty { margin: 0; padding: 32px 0; font-size: 13.5px; color: var(--text-muted); text-align: center; }
 
 .ob-grid {
   display: grid;

@@ -2464,6 +2464,9 @@ var FAILED_LOADS = Object.freeze({
   TONIGHT_PICKS: "tonight_picks",
   SMART_LIST: "smart_list",
   ONBOARDING_SERVICES: "onboarding_services",
+  // Step 1's trending grid and its search (onboardingSeed.js).
+  ONBOARDING_TRENDING: "onboarding_trending",
+  ONBOARDING_SEARCH: "onboarding_search",
   // Seasons the episode title search could not load (episodeSearch.js).
   EPISODE_SEARCH: "episode_search",
   // The critic-score lookup (Rotten Tomatoes % and OMDb awards) failed

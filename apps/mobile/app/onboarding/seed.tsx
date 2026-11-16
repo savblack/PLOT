@@ -3,7 +3,8 @@
  * A "trending this week" poster grid, prefilled before the user searches, with
  * a "Switching apps?" row that opens the import-source picker in place of the
  * grid (web navigates to a separate screen; mobile folds it in, and the row
- * itself is the way back, where web has a Back button). The sources are two
+ * itself is the way back, where web has a Back button). While the sources show
+ * the row reads "Switching apps?" and nothing more. The sources are two
  * lanes of tiles; a picked source
  * opens its sheet (components/ImportSourceSheet.tsx): the file is uploaded,
  * or the account connected, and the import runs in the background while
@@ -25,6 +26,7 @@ import { TextLink } from '../../components/Button';
 import { useOnboardingFlow } from '../../contexts/OnboardingFlowContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { ONBOARDING_PROGRESS, findImportSource } from '@plot/core/onboardingSetup.js';
+import { loadSeedTrending, searchSeedTitles } from '@plot/core/onboardingSeed.js';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 import { importSourceName } from '@plot/core/importJobs.js';
 import { useImportStart } from '../../hooks/useImportStart';
@@ -40,8 +42,6 @@ const F = ONBOARDING_FLOW;
 
 // Three across, as web's grid below 768px.
 const COLUMNS = 3;
-// The same depth as web's grid.
-const TRENDING_COUNT = 48;
 // The three marks on the "Switching apps?" row, the same three as web.
 const SWITCH_MARKS = ['letterboxd', 'netflix', 'trakt'];
 const CONTENT_W = Math.min(Dimensions.get('window').width, 420) - spacing.xl * 2;
@@ -69,8 +69,6 @@ interface SearchResult {
   release_date?: string | null;
   first_air_date?: string | null;
 }
-
-const keep = (r: SearchResult) => (r.media_type === 'tv' || r.media_type === 'movie') && !!r.poster_path;
 
 export default function Seed() {
   const router  = useRouter();
@@ -105,23 +103,12 @@ export default function Seed() {
   useEffect(() => {
     let alive = true;
     setTrendingFailed(false);
-    tmdb.getTrending('all', 'week').then((data: any) => {
+    // A failed load comes back as `ok: false`, never a throw (onboardingSeed.js).
+    loadSeedTrending(tmdb).then((load: { ok: boolean; items: SearchResult[] }) => {
       if (!alive) return;
-      // getTrending fetches several pages and a title can land on two of them.
-      const seen = new Set<string>();
-      const list = (data?.results ?? []).filter(keep).filter((r: SearchResult) => {
-        const k = `${r.media_type}-${r.id}`;
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      }).slice(0, TRENDING_COUNT);
-      setTrending(list);
-      setFlowTrending(list);
-    }).catch((e: unknown) => {
-      if (!alive) return;
-      console.warn('[onboarding seed] trending prefill failed', e);
-      setTrending([]);
-      setTrendingFailed(true);
+      setTrending(load.items);
+      setTrendingFailed(!load.ok);
+      if (load.ok) setFlowTrending(load.items);
     });
     return () => { alive = false; };
   }, [setFlowTrending, trendingTry]);
@@ -135,18 +122,14 @@ export default function Seed() {
     setSearching(true);
     setSearchFailed(false);
     const t = setTimeout(async () => {
-      try {
-        const data = await tmdb.search(q);
-        if (!alive) return;
-        setResults((data?.results ?? []).filter(keep).slice(0, 24));
-      } catch (e: unknown) {
-        if (!alive) return;
-        console.warn('[onboarding seed] search failed', e);
-        setResults([]);
-        setSearchFailed(true);
-      } finally {
-        if (alive) setSearching(false);
-      }
+      // `ok: false` is a search that never reached TMDB. It used to read as
+      // "No titles found." here, because a failed search resolves to nothing
+      // rather than throwing.
+      const load: { ok: boolean; items: SearchResult[] } = await searchSeedTitles(tmdb, q);
+      if (!alive) return;
+      setResults(load.items);
+      setSearchFailed(!load.ok);
+      setSearching(false);
     }, 350);
     return () => { alive = false; clearTimeout(t); };
   }, [query, searchTry]);
@@ -163,7 +146,8 @@ export default function Seed() {
   const isSelected = (item: SearchResult) => selected.some(i => i.id === item.id);
   const count = selected.length;
 
-  // Skip saves nothing and goes straight to Home. It is offered whatever is
+  // Skip saves nothing and goes straight to Home: titles already picked are
+  // forgotten, on purpose (decided 2026-11-16). It is offered whatever is
   // picked and from the import sources too, exactly as web's top-bar Skip
   // (skipToHome in apps/web/src/pages/OnboardingFlow.jsx).
   const skip = async () => {
@@ -230,8 +214,8 @@ export default function Seed() {
           {SWITCH_MARKS.map(id => findImportSource(id)).filter(src => !!src).map(src => <ImportSourceIcon key={src.id} id={src.id} size={26} />)}
         </View>
         <Text style={styles.switchText}>
-          <Text style={styles.switchLead}>{F.seed.switchingLead}</Text>{' '}
-          {showSources ? F.seed.switchingBack : F.seed.switchingBody}
+          <Text style={styles.switchLead}>{F.seed.switchingLead}</Text>
+          {showSources ? null : ` ${F.seed.switchingBody}`}
         </Text>
         <IconChevronRight size={18} color={colors.textMuted} />
       </TouchableOpacity>
@@ -301,9 +285,8 @@ export default function Seed() {
             columnWrapperStyle={styles.row}
             showsVerticalScrollIndicator={false}
             style={styles.grid}
-            // Mobile-only fallback: web leaves the grid blank, but on a phone the
-            // grid is the whole screen, so say why it's empty. Failures are the
-            // inline errors above.
+            // A search that worked and matched nothing says so, as on web.
+            // Failures are the inline errors above.
             ListEmptyComponent={
               hasQuery && !searching && !searchFailed
                 ? <Text style={styles.empty}>{F.seed.noResults}</Text>
