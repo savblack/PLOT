@@ -4,6 +4,8 @@ import {
   authCallbackRoute,
   cachedProfileSkipsOnboardingGate,
   interpretOnboardingProfile,
+  ONBOARDING_GATE_UNDECIDED,
+  onboardingGateOnSession,
   onboardingGuardDecision,
   previousOnboardingComplete,
   readOnboardingUntilDecided,
@@ -173,4 +175,60 @@ test('onboarding_completed fires only the first time setup is saved', () => {
     shouldTrackOnboardingCompleted(previousOnboardingComplete({ data: { onboarding_complete: true }, error: null })),
     false,
   );
+});
+
+function decisionFor(memory) {
+  return onboardingGuardDecision({
+    authDecided: true,
+    authenticated: true,
+    profileDecided: memory.profileDecided,
+    onboardingComplete: memory.onboardingComplete,
+  });
+}
+
+test('a completion recorded on this device replaces an earlier "not finished"', () => {
+  // The loop: an app page was opened partway through setup, so the guard had
+  // read "not finished" for this account. After the save it kept that answer,
+  // and /onboarding (which reads the row itself) kept sending the account
+  // back to the app.
+  const readNotFinished = { profileDecided: true, onboardingComplete: false, decidedUserId: 'u1' };
+  assert.equal(decisionFor(readNotFinished), 'onboarding');
+
+  const next = onboardingGateOnSession(readNotFinished, { userId: 'u1', cachedComplete: true });
+
+  assert.equal(decisionFor(next.memory), 'app');
+  assert.equal(next.memory.decidedUserId, 'u1');
+  // Still re-read once; the row stays the authority.
+  assert.equal(next.maxAttempts, 1);
+});
+
+test('a first session with a recorded completion opens the app while it re-reads', () => {
+  const next = onboardingGateOnSession(ONBOARDING_GATE_UNDECIDED, { userId: 'u1', cachedComplete: true });
+  assert.equal(decisionFor(next.memory), 'app');
+  assert.equal(next.maxAttempts, 1);
+});
+
+test('a first session with nothing recorded waits for the row', () => {
+  const next = onboardingGateOnSession(ONBOARDING_GATE_UNDECIDED, { userId: 'u1', cachedComplete: false });
+  assert.equal(decisionFor(next.memory), 'loading');
+  assert.equal(next.maxAttempts, Number.POSITIVE_INFINITY);
+});
+
+test('a token refresh keeps the answer the guard already has', () => {
+  const finished = { profileDecided: true, onboardingComplete: true, decidedUserId: 'u1' };
+  const afterRefresh = onboardingGateOnSession(finished, { userId: 'u1', cachedComplete: false });
+  assert.equal(afterRefresh.memory, finished);
+  assert.equal(afterRefresh.maxAttempts, 1);
+
+  const notFinished = { profileDecided: true, onboardingComplete: false, decidedUserId: 'u1' };
+  const stillSettingUp = onboardingGateOnSession(notFinished, { userId: 'u1', cachedComplete: false });
+  assert.equal(stillSettingUp.memory, notFinished);
+  assert.equal(stillSettingUp.maxAttempts, 1);
+});
+
+test('an answer for one account is not reused for another', () => {
+  const finished = { profileDecided: true, onboardingComplete: true, decidedUserId: 'u1' };
+  const next = onboardingGateOnSession(finished, { userId: 'u2', cachedComplete: false });
+  assert.equal(decisionFor(next.memory), 'loading');
+  assert.equal(next.maxAttempts, Number.POSITIVE_INFINITY);
 });
