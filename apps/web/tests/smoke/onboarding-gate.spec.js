@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { ONBOARDING_FLOW as COPY } from '@plot/core/copy/onboardingFlow.js';
+import { TRAKT_CALLBACK_PAGE } from '../../src/copy/traktCallbackPage.js';
 
 // ProtectedRoute skips its setup check on preview hosts, and 127.0.0.1 is
 // one, so the other smoke tests never run the real gate. This file reaches
@@ -9,7 +10,7 @@ test.use({ launchOptions: { args: [`--host-resolver-rules=MAP ${GATE_HOST} 127.0
 
 const userId = '00000000-0000-4000-8000-000000000724';
 
-async function setup(page) {
+async function setup(page, { exchange = 'works' } = {}) {
   const profile = { id: userId, username: 'onboarding-gate-test', onboarding_complete: false, region: 'US', timezone: 'America/New_York', streaming_providers: [], genres: [] };
   await page.addInitScript(({ userId }) => {
     const user = { id: userId, aud: 'authenticated', role: 'authenticated', email: 'onboarding-gate@example.invalid', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() };
@@ -25,6 +26,7 @@ async function setup(page) {
       if (request.method() === 'PATCH' || request.method() === 'POST') Object.assign(profile, request.postDataJSON());
       return route.fulfill({ json: profile });
     }
+    if (url.includes('/functions/v1/')) return exchange === 'fails' ? route.fulfill({ status: 500, json: { error: 'exchange failed' } }) : route.fulfill({ json: { ok: true } });
     if (url.includes('/rest/v1/lists')) return route.fulfill({ json: { id: 'gate-list', user_id: userId, name: '__watchlist__' } });
     return route.fulfill({ json: [] });
   });
@@ -84,3 +86,47 @@ test('finishing setup does not pass back through onboarding', async ({ page, bas
   await page.waitForTimeout(1000);
   expect(paths.filter(path => path === '/onboarding')).toEqual([]);
 });
+
+// Connecting Trakt or Simkl leaves setup for the other site and comes back
+// through /auth/trakt or /auth/simkl. When that goes wrong, or the stored
+// return address is lost, the way back is an app page (/import, /settings),
+// which sends an unfinished account to /onboarding: the "app page opened
+// first" shape above, reached without typing a URL. This is the path the
+// person who looped on 2026-11-10 took (/auth/simkl, then /import).
+const STATE = 'gate-oauth-state';
+const IMPORT_RETURNS = [
+  { name: 'Simkl cancelled (no code)', path: '/auth/simkl', back: 'Back to import' },
+  { name: 'Simkl link expired (state does not match)', path: '/auth/simkl?code=c&state=stale', back: 'Back to import' },
+  { name: 'Simkl exchange fails', path: `/auth/simkl?code=c&state=${STATE}`, exchange: 'fails', back: 'Back to import' },
+  { name: 'Simkl connects, return address lost', path: `/auth/simkl?code=c&state=${STATE}` },
+  { name: 'Trakt cancelled (no code)', path: '/auth/trakt', back: TRAKT_CALLBACK_PAGE.backToSettings },
+  { name: 'Trakt link expired (state does not match)', path: '/auth/trakt?code=c&state=stale', back: TRAKT_CALLBACK_PAGE.backToSettings },
+  { name: 'Trakt exchange fails', path: `/auth/trakt?code=c&state=${STATE}`, exchange: 'fails', back: TRAKT_CALLBACK_PAGE.backToSettings },
+  { name: 'Trakt connects, return address lost', path: `/auth/trakt?code=c&state=${STATE}` },
+];
+
+for (const { name, path, exchange, back } of IMPORT_RETURNS) {
+  test(`finishing setup after an import return stays out of onboarding: ${name}`, async ({ page, baseURL }) => {
+    const profile = await setup(page, { exchange });
+    await page.addInitScript(({ state }) => {
+      // Only the callback pages read these, once, so setting them on every
+      // load is harmless. No return address is stored: that is the lost case.
+      sessionStorage.setItem('plot_simkl_oauth_state', state);
+      sessionStorage.setItem('plot_trakt_oauth_state', state);
+    }, { state: STATE });
+    await page.goto(gateUrl(baseURL, path));
+    if (back) await page.getByRole('link', { name: back, exact: true }).click();
+    await expect(page).toHaveURL(/\/onboarding$/);
+    const skip = page.getByRole('button', { name: COPY.skip, exact: true });
+    await expect(skip).toBeEnabled();
+
+    const paths = recordPaths(page);
+    await skip.click();
+    // The app page they were sent back from is where setup hands them on.
+    await expect(page).not.toHaveURL(/\/onboarding/);
+    expect(profile.onboarding_complete).toBe(true);
+    await page.waitForTimeout(1500);
+    await expect(page).not.toHaveURL(/\/onboarding/);
+    expect(paths.filter(visited => visited === '/onboarding')).toEqual([]);
+  });
+}
