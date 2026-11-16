@@ -16,12 +16,10 @@ import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Rect } from 'react-native-svg';
 import { IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
-import SearchField, { SEARCH_FIELD_H } from '../../components/SearchField';
 import Button, { TextLink } from '../../components/Button';
 import { Tag } from '../../components/Chip';
 import { useDialog } from '../../components/Dialog';
 import BottomSheet from '../../components/BottomSheet';
-import SectionTitle from '../../components/SectionTitle';
 import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
@@ -42,7 +40,6 @@ import KebabMenu, { KebabMenuItem } from '../../components/KebabMenu';
 import SearchPickModal from '../../components/SearchPickModal';
 import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
-import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
 import { filterByWatchStatus, isFinishedStatus, listProgress, listWatchStatus, LIST_STATUS_FILTER_IDS, type ListWatchStatus } from '@plot/core/listWatchStatus.js';
@@ -50,7 +47,7 @@ import WatchStatusChip from '../../components/WatchStatusChip';
 import { PosterCaption, POSTER_GAP, posterColumnWidth } from '../../components/PosterCard';
 import { EmptyNote } from '../../components/EmptyState';
 import { cardMetaLine } from '@plot/core/media.js';
-import { myListsSearchSources, searchCollectionTitles, wantToWatchItems } from '@plot/core/listCollections.js';
+import { wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '@plot/core/date.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { EVENTS, track } from '../../lib/analytics';
@@ -127,18 +124,6 @@ const TYPE_OPTIONS = [
   { id: 'cinema', label: 'Cinema' },
 ];
 
-// A title the My Lists search can open. History is not one of these:
-// on web it left this page and keeps its own search.
-type ListedTitle = {
-  tmdb_id?: number | string;
-  id?: number | string;
-  media_type?: string;
-  title?: string;
-  name?: string;
-  poster_path?: string | null;
-  rank?: number;
-  _cinema?: boolean;
-};
 
 // Tab list comes from the shared nav definition so web and mobile can't
 // diverge on which tabs exist or their order. Favourites is region-spelled
@@ -567,10 +552,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     }
     setShowCreateList(true);
   };
-  const [listQuery, setListQuery] = useState('');
-  // The page's own search field stays out of the header until asked for: the
-  // header's search button opens it here, and closing it clears the query.
-  const [searchOpen, setSearchOpen] = useState(false);
   const requestSmartCreate = async () => {
     setRulesKept(false);
     const stored = await readStorage(smartListDraftKey(userId));
@@ -633,26 +614,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     || (favorites.favorites?.length ?? 0) > 0;
   const want = wantToWatchItems(watchlist.items, watching.items, localDateStr());
   const sortedSaved = byType(want);
-
-  // While the field has text, the sections below are replaced by one result
-  // grid. The type filter still narrows it. A blank field (including spaces)
-  // leaves the page as it was.
-  const searching = listQuery.trim().length > 0;
-  const searchResults: ListedTitle[] = searching
-    ? searchCollectionTitles(
-        myListsSearchSources({
-          watching: watching.items,
-          topMovies: topLists.lists.movies,
-          topTv: topLists.lists.tv,
-          collections: [
-            want,
-            favorites.favorites,
-            ...(customLists.lists as { items?: ListedTitle[] }[]).map(list => [...(list.items || [])].reverse()),
-          ],
-        }).map(items => (filterByType(items, typeFilters) ?? []) as ListedTitle[]),
-        listQuery,
-      )
-    : [];
 
   // Watching items are always TV (episode progress); type them so the Movies filter excludes them.
   const watchingList = byType(sortedWatching.map((i: any) => ({ ...i, media_type: 'tv' })));
@@ -739,12 +700,11 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const inOrder = (nodes: Record<string, ReactNode>) => sectionOrder.map(id => <Fragment key={id}>{nodes[id]}</Fragment>);
 
   const listTabs = TABS.filter(t => t.id !== 'history').map(t => ({ id: t.id, label: t.label ?? fw.plural }));
-  const searchPlaceholder = isHistory ? HISTORY_VIEW.searchPlaceholder : CUSTOM_LISTS.searchPlaceholder;
-  const searchShown = searchOpen || listQuery.length > 0;
-  // The title bar alone, as on Home, Calendar and Settings, plus the search
-  // field while it is open. The page's other controls live in the page: the
-  // filter in the bar, Customize at the foot of the All view.
-  const HEADER_H = insets.top + (searchShown ? SCREEN_HEADER_H + SEARCH_FIELD_H + spacing.sm : SCREEN_HEADER_H);
+  // The title bar alone, as on Home, Calendar and Settings. The page's other
+  // controls live in the page: the filter in the bar, Customize at the foot
+  // of the All view. Search is the header's button, which opens the app's one
+  // search screen ("Search in: My Lists" narrows it to this page).
+  const HEADER_H = insets.top + SCREEN_HEADER_H;
 
   return (
     <View style={styles.screen}>
@@ -758,23 +718,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         onScroll={glass.onScroll}
       >
 
-        {searching ? (
-          <View>
-            <SectionTitle style={styles.searchHeading}>{CUSTOM_LISTS.searchResults}</SectionTitle>
-            <Text accessibilityLiveRegion="polite" style={styles.searchStatus}>
-              {searchResults.length ? CUSTOM_LISTS.searchCount(searchResults.length) : CUSTOM_LISTS.noSearchResults}
-            </Text>
-            <PosterGrid
-              items={searchResults}
-              onPress={(item) => {
-                const id = Number(item.tmdb_id ?? item.id);
-                if (!Number.isFinite(id)) return;
-                openPanel(id, item.media_type === 'tv' ? 'tv' : 'movie');
-              }}
-            />
-          </View>
-        ) : (
-        <>
         {/* One list or one section on its own: a way back to the whole page,
             as web's list page has. */}
         {!isHistory && (openList || !isAll) && (
@@ -786,12 +729,12 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         {openList && !isHistory ? renderListCard(openList) : null}
         {/* Each section is a keyed piece so the viewer's saved order can place it
             (ui_prefs.myLists, shared with web). */}
-        {!isHistory && isAll && !openList && !searching && nudgeVisible && !startedLists ? (
+        {!isHistory && isAll && !openList && nudgeVisible && !startedLists ? (
           <ActivationNudge onImport={setImportSource} />
         ) : !openList || isHistory ? inOrder({
           watching: (<>
         {/* ── Watching ── */}
-        {showWatching && (watchingList.length > 0 || (isAll && !searching)) && (
+        {showWatching && (watchingList.length > 0 || isAll) && (
           <CollapsibleSection
             id="watching"
             label="Watching"
@@ -1102,11 +1045,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             onClose={() => setImportSource(null)}
           />
         )}
-        </>
-        )}
 
         {/* Customize sits at the foot of the page, where Home has it. */}
-        {!isHistory && isAll && !openList && !searching && (
+        {!isHistory && isAll && !openList && (
           <TextLink quiet label={DISCOVER_VIEW.customize.action} accessibilityLabel={CUSTOM_LISTS.sections.title} onPress={() => router.push('/(app)/my-lists-layout' as Href)} style={styles.customize} />
         )}
       </ScrollView>
@@ -1115,8 +1056,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
       <GlassHeader scrollY={glass.scrollY} height={HEADER_H}>
         <ScreenHeaderBar
           title={mode === 'history' ? 'History' : 'My Lists'}
-          searchLabel={searchPlaceholder}
-          onSearchPress={() => { if (searchShown) { setListQuery(''); setSearchOpen(false); } else setSearchOpen(true); }}
           // The filter sits in the title bar, after the bell, where Home has
           // its filter: the same control in the same place on every page.
           rightExtra={
@@ -1145,15 +1084,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 />
           }
         />
-        {searchShown && (
-        <SearchField
-          style={styles.listSearch}
-          value={listQuery}
-          onChangeText={setListQuery}
-          placeholder={searchPlaceholder}
-          autoFocus
-        />
-        )}
       </GlassHeader>
 
       {/* Modals */}
@@ -1448,18 +1378,6 @@ function CustomListCard({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
-  listSearch: { marginHorizontal: spacing.xl, marginBottom: spacing.sm },
-  searchHeading: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-  },
-  searchStatus: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xs,
-  },
 
   publicBadge: { marginLeft: spacing.sm, alignSelf: 'center' },
 

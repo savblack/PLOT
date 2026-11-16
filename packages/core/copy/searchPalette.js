@@ -1,6 +1,6 @@
 // The search palette: one box that finds titles, franchises, people and
 // friends. Web renders it as a command palette (Cmd/Ctrl+K, or the Search
-// item); mobile has not adopted it yet and still reads MEDIA.searchPlaceholder.
+// item); mobile as its search screen, opened from the header's search button.
 export const SEARCH_PALETTE = {
   placeholder: 'Search titles, people and friends…',
   label: 'Search Plot',

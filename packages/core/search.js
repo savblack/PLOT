@@ -608,3 +608,55 @@ export function placeSearchRows(place, sources = {}) {
   }
   return [];
 }
+
+/**
+ * The lists My Lists holds, in the page's own order, as `placeSearchRows`
+ * takes them for the "lists" place: Watching, the two Top 5s, the watchlist,
+ * favorites, then every custom list. Shared so web and mobile search the
+ * same lists under the same names. Each app passes the labels it shows.
+ *
+ * Favorites carry no name: theirs is spelled per region at the call site,
+ * and the row's kind label is enough.
+ *
+ * @param {{
+ *   watching?: any[], topMovies?: any[], topTv?: any[],
+ *   want?: any[], favorites?: any[] | null,
+ *   customLists?: { name: string, items?: any[] }[],
+ *   labels?: { top?: string, want?: string },
+ *   topSize?: number,
+ * }} sources `want` is wantToWatchItems(); `favorites` is null when the
+ *   feature is off; `topSize` is TOP_LIST_SIZE.
+ * @returns {{ name: string, items?: any[], status?: LibraryRow['status'], mediaType?: string }[]}
+ */
+export function listsPlaceSources({ watching, topMovies, topTv, want, favorites, customLists, labels = {}, topSize = 5 } = {}) {
+  const top = (items, mediaType) => ({
+    name: labels.top || '',
+    mediaType,
+    items: (items || []).filter(item => item.rank <= topSize),
+  });
+  return [
+    { name: '', status: 'watching', mediaType: 'tv', items: watching },
+    top(topMovies, 'movie'),
+    top(topTv, 'tv'),
+    { name: labels.want || '', items: want },
+    ...(favorites ? [{ name: '', items: favorites }] : []),
+    ...(customLists || []).map(list => ({ name: list.name, items: list.items })),
+  ];
+}
+
+/**
+ * Home's shelves as `placeSearchRows` takes them for the "home" place: what
+ * the viewer is watching, then the Discover shelves (loadDiscoverData).
+ *
+ * @param {any} discover loadDiscoverData()'s result, or its `onPrimary` half.
+ * @param {any[]} [watching]
+ * @returns {any[][]}
+ */
+export function homePlaceShelves(discover, watching = []) {
+  const d = discover || {};
+  return [
+    (watching || []).map(item => ({ ...item, id: item.tmdb_id, media_type: 'tv' })),
+    ...[[d.hero], d.hotRail, d.weekly, d.bingedShows, d.cinemaMovies, d.anticipatedMovies]
+      .map(shelf => (shelf || []).filter(Boolean)),
+  ];
+}

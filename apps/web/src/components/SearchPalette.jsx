@@ -5,7 +5,7 @@ import { useApp } from '../hooks/useApp.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useUnifiedSearch } from '@plot/core/useUnifiedSearch.js';
-import { describeSearchResult, placeSearchRows, pushRecentSearch, SEARCH_PLACES } from '@plot/core/search.js';
+import { describeSearchResult, homePlaceShelves, listsPlaceSources, placeSearchRows, pushRecentSearch, SEARCH_PLACES } from '@plot/core/search.js';
 import { loadDiscoverData } from '@plot/core/useDiscover.js';
 import { loadSmartListTitles } from '@plot/core/smartLists.js';
 import { pickerProviderIds } from '@plot/core/tonightPicker.js';
@@ -35,9 +35,9 @@ import './SearchPalette.css';
 
 /* Web-only rendering: a command palette over whatever is on screen, opened by
    Cmd/Ctrl+K or the Search nav item. The fetching and merging live in
-   @plot/core/useUnifiedSearch.js so mobile can render the same results in its
-   own way; mobile still has the tabbed screen, see the parity issue in the PR
-   that introduced this file. */
+   @plot/core/useUnifiedSearch.js, and which titles a "Search in" place holds
+   in @plot/core/search.js, so mobile renders the same results in its own way
+   (apps/mobile/app/(app)/search.tsx). */
 
 const RECENT_KEY = 'plot_recent_searches';
 const readRecent = () => {
@@ -166,17 +166,13 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
   // Home's shelves, loaded the first time Home is picked.
   const hideKids = !(profile?.include_kids_content ?? true);
   const [shelves, setShelves] = useState(null);
+  const shelvesAsked = useRef(false);
   useEffect(() => {
-    if (place !== 'home' || shelves) return undefined;
-    let cancelled = false;
-    const keep = (data) => {
-      if (cancelled) return;
-      setShelves([[data.hero], data.hotRail, data.weekly, data.bingedShows, data.cinemaMovies, data.anticipatedMovies]
-        .map(shelf => (shelf || []).filter(Boolean)));
-    };
-    loadDiscoverData({ hideKids, onPrimary: keep }).then(keep).catch(() => { if (!cancelled) setShelves([]); });
-    return () => { cancelled = true; };
-  }, [place, shelves, hideKids]);
+    if (place !== 'home' || shelvesAsked.current) return;
+    shelvesAsked.current = true;
+    // The first shelves arrive early (onPrimary); the cinema shelves follow.
+    loadDiscoverData({ hideKids, onPrimary: setShelves }).then(setShelves).catch(() => setShelves({}));
+  }, [place, hideKids]);
 
   // Smart lists find their titles when asked, so they are loaded the first
   // time Smart lists is picked: each list's matches as opening it shows them.
@@ -203,30 +199,21 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
 
   const placeRows = useMemo(() => {
     if (place === 'lists') {
-      const top = (items, mediaType) => ({
-        name: TOP_LABEL,
-        mediaType,
-        items: (items || []).filter(item => item.rank <= TOP_LIST_SIZE),
-      });
-      // The same lists, in the same order, as the My Lists page.
-      return placeSearchRows('lists', { lists: [
-        { name: '', status: 'watching', mediaType: 'tv', items: watching?.items },
-        top(topLists?.lists?.movies, 'movie'),
-        top(topLists?.lists?.tv, 'tv'),
-        { name: CUSTOM_LISTS.wantToWatch, items: wantToWatchItems(watchlist?.items || [], watching?.items || [], localDateStr()) },
-        ...(FAVOURITES_ENABLED ? [{ name: '', items: favorites?.favorites }] : []),
-        ...(customLists?.lists || []).map(list => ({ name: list.name, items: list.items })),
-      ] });
+      return placeSearchRows('lists', { lists: listsPlaceSources({
+        watching: watching?.items,
+        topMovies: topLists?.lists?.movies,
+        topTv: topLists?.lists?.tv,
+        want: wantToWatchItems(watchlist?.items || [], watching?.items || [], localDateStr()),
+        favorites: FAVOURITES_ENABLED ? favorites?.favorites : null,
+        customLists: customLists?.lists,
+        labels: { top: TOP_LABEL, want: CUSTOM_LISTS.wantToWatch },
+        topSize: TOP_LIST_SIZE,
+      }) });
     }
     if (place === 'smart') return placeSearchRows('smart', { lists: smartTitles || NO_ROWS });
     if (place === 'history') return placeSearchRows('history', { history: history?.entries });
     if (place === 'calendar') return placeSearchRows('calendar', { calendarEvents: calendar.events, todayStr: localDateStr() });
-    if (place === 'home') {
-      return placeSearchRows('home', { shelves: [
-        (watching?.items || []).map(item => ({ ...item, id: item.tmdb_id, media_type: 'tv' })),
-        ...(shelves || []),
-      ] });
-    }
+    if (place === 'home') return placeSearchRows('home', { shelves: homePlaceShelves(shelves, watching?.items) });
     return NO_ROWS;
   }, [place, watching?.items, watchlist?.items, topLists?.lists, favorites?.favorites, customLists?.lists, history?.entries, calendar.events, shelves, smartTitles]);
   // The page's titles are still arriving, so "nothing matches" would be a lie.

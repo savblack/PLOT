@@ -2,10 +2,10 @@
 
 The search box (Cmd/Ctrl+K) now has a "Search in:" row: Everywhere, Home, Calendar, My Lists, History. Picking a page searches only the titles on that page, straight from what the app already has loaded. Web only so far. Savannah needs to try it signed in and say whether to open a pull request.
 
-Status: paused
+Status: paused (pull request open, waiting on Savannah)
 Branch: agent/2026-11-16-search-in-place
 Worktree: ~/Developer/PLOT-worktrees/2026-11-16-search-in-place
-Updated: 2026-11-16T11:15:00Z
+Updated: 2026-11-16T12:10:00Z
 Owner: Hailey (product). Requested by Savannah in Claude Code.
 
 ## Goal
@@ -36,6 +36,16 @@ Let people search titles within one page (Home, Calendar, My Lists, History) fro
 - Limit: a discover smart list is searched on its first page of matches only, not "load more".
 - Tests: `smartLists.test.js` (loader), `search.test.js` (rows), story `SearchInSmartLists`.
 - `origin/main` merged in at this point (brings the hidden Guide). After the merge: `pnpm run check`, `test:unit`, `copy:check`, `core:check` passed; story tests for SearchPalette, MyListsView, CollaborativeLists passed (18).
+
+## Mobile (Savannah asked, 2026-11-16), closes issue 1719
+
+- `apps/mobile/app/(app)/search.tsx` already used `useUnifiedSearch`; it now has the "Search in" row and gathers each place's rows. Calendar events come from a small `CalendarSource` component mounted only while Calendar is picked, because `useCalendarEvents` has no off switch.
+- `apps/mobile/app/(app)/my-lists.tsx`: its own search field and results grid are gone. The header search button now opens the search screen like every other page.
+- Shared with web, new in core: `listsPlaceSources`, `homePlaceShelves` (`packages/core/search.js`). Web's palette now calls them too. Also fixed web's Home place dropping the later cinema shelves.
+- Left alone on mobile (task pickers): settings, your-people, compare, onboarding seed, MediaPanel episode search, SearchPickModal, Watch Together. Guide is hidden.
+- Run in the iOS simulator (iPhone 17 Pro, Staging account): the row draws, My Lists selects, typing "link" listed LINK CLICK with "Watchlist"; My Lists page draws with no search field. Not run: Home, Calendar, History, Smart lists places on device; opening a result; dark theme; VoiceOver.
+- Simulator notes: the screen shows one action behind each tap, and typed text can drop characters or open the dev menu on "d". Metro for this worktree is launch config `mobile-metro-search` (port 8097).
+- Checks: `pnpm run check`, `test:unit`, `copy:check`, `core:check`, `pnpm --filter @plot/mobile run typecheck` passed; SearchPalette story tests passed (3).
 
 ## Checks
 

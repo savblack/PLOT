@@ -10,6 +10,8 @@ import {
   describeSearchResult,
   MIN_RATED_VOTES,
   placeSearchRows,
+  listsPlaceSources,
+  homePlaceShelves,
   matchLibrary,
   LIBRARY_MATCH_LIMIT,
   SEARCH_PLACES,
@@ -333,4 +335,29 @@ test('a place search matches through matchLibrary, one row per title, up to the 
   assert.equal(found[0].data.date, '2026-11-17');
   assert.ok(PLACE_MATCH_LIMIT > LIBRARY_MATCH_LIMIT);
   assert.deepEqual(SEARCH_PLACES, ['everywhere', 'home', 'calendar', 'lists', 'smart', 'history']);
+});
+
+test('listsPlaceSources: My Lists order, Top 5 capped, favorites only when on', () => {
+  const lists = listsPlaceSources({
+    watching: [{ tmdb_id: 'fx-w', title: 'Quiet Days' }],
+    topMovies: [{ tmdb_id: 'fx-t1', title: 'One', rank: 1 }, { tmdb_id: 'fx-t6', title: 'Six', rank: 6 }],
+    topTv: [],
+    want: [{ tmdb_id: 'fx-s', title: 'Saved' }],
+    favorites: null,
+    customLists: [{ name: 'Rainy Sunday', items: [{ tmdb_id: 'fx-c', title: 'Custom' }] }],
+    labels: { top: 'Top 5', want: 'Watchlist' },
+    topSize: 5,
+  });
+  assert.deepEqual(lists.map(l => [l.name, (l.items || []).length]), [['', 1], ['Top 5', 1], ['Top 5', 0], ['Watchlist', 1], ['Rainy Sunday', 1]]);
+  const rows = placeSearchRows('lists', { lists });
+  assert.deepEqual(rows.map(r => [r.title, r.where, r.media_type]), [
+    ['Quiet Days', '', 'tv'], ['One', 'Top 5', 'movie'], ['Saved', 'Watchlist', 'movie'], ['Custom', 'Rainy Sunday', 'movie'],
+  ]);
+  assert.equal(listsPlaceSources({ favorites: [{ tmdb_id: 'fx-f', title: 'Fav' }] }).length, 5);
+});
+
+test('homePlaceShelves: watching first, then the Discover shelves, gaps tolerated', () => {
+  const shelves = homePlaceShelves({ hero: { id: 'fx-h', title: 'Hero' }, hotRail: [{ id: 'fx-r', name: 'Rail', media_type: 'tv' }], weekly: null }, [{ tmdb_id: 'fx-w', title: 'Quiet Days' }]);
+  assert.deepEqual(placeSearchRows('home', { shelves }).map(r => [r.tmdb_id, r.media_type]), [['fx-w', 'tv'], ['fx-h', 'movie'], ['fx-r', 'tv']]);
+  assert.deepEqual(placeSearchRows('home', { shelves: homePlaceShelves(null) }), []);
 });
