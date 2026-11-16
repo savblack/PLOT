@@ -61,7 +61,6 @@ import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists
 import PicksCarousel from '../../components/PicksCarousel';
 import { anticipatedMoviesFrom, currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
 import { localDateStr } from '@plot/core/date.js';
-import { greetingFor } from '@plot/core/greeting.js';
 import { dedupeHomeShelves, visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
@@ -675,11 +674,11 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   const router = useRouter();
   // Up next: the shows with an episode out, then the saved titles, one shelf.
   const continueWatching = useContinueWatching(watching.items ?? [], fetchContinueWatchingTv);
-  // The line under the greeting: nights logged in the last seven days.
+  // The line that leads Home: nights logged in the last seven days.
   const weekNights = useMemo(() => nightsThisWeek(history.entries ?? []), [history.entries]);
   const bestStreak = useMemo(() => streaks(history.entries ?? []).best, [history.entries]);
-  // First run: the titles just saved in onboarding lead Home, under the greeting
-  // and the Finishing touches card. Everyone else keeps the rail at the bottom.
+  // First run: the titles just saved in onboarding lead Home, under
+  // the Finishing touches card. Everyone else keeps the rail at the bottom.
   const ft = useFinishingTouchesState(userId);
   const firstRun = ft.visible;
   // A new member's first week takes Finishing touches' place, so the two
@@ -1073,8 +1072,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           }}
       >
 
-        <Text style={styles.dateLine}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
-        <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
         {!history.loading && weekNights > 0 && (
           <TouchableOpacity
             style={styles.weekLine}
@@ -1203,7 +1200,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
 
-  dateLine: { paddingHorizontal: spacing.xl, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 
   // ── Hero ──
   hero: {
@@ -1473,8 +1469,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     marginTop: spacing.sm,
   },
 
-  // ── Greeting block ──
-  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.xs, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  // ── This week line ──
   weekLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, marginBottom: spacing.md, minHeight: 24 },
   weekDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accentSecondary },
   weekText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },

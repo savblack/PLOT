@@ -9,7 +9,6 @@ const CREATE_SMART_LIST = 'Create smart list';
 
 export const TONIGHT_PICKER = {
   // Title comes from the nav label (Just Decide); this is the page subline.
-  subtitle: 'Less deciding. More watching.',
   progress: (step, total) => `Question ${step} of ${total}`,
 
   steps: {

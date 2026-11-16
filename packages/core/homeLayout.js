@@ -1,6 +1,6 @@
 /* Home layout: which shelves show on Home, and in what order.
  *
- * Plot's Home is opinionated on purpose: the greeting, the Up next card, On
+ * Plot's Home is opinionated on purpose: the Up next card, On
  * this day and the first-run Saved shelf are fixed. Everything below them is
  * a shelf the viewer may reorder or hide. The ids here are shared by web and
  * mobile so one saved layout applies on both; a platform that does not render
