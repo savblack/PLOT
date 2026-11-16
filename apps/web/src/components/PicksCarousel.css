@@ -20,7 +20,7 @@
   .picks-slide .discover-hero-overlay { padding-bottom: 4.1rem; }
   .picks-slide .curated-hero .discover-hero-overlay { padding-bottom: 1rem; }
 }
-.picks-controls { display: flex; align-items: center; margin-top: 0.6rem; }
+.picks-controls { display: flex; align-items: center; justify-content: center; margin-top: 0.6rem; }
 .picks-dots { display: flex; gap: 6px; }
 .picks-dot { width: 7px; height: 7px; padding: 0; border: 0; border-radius: var(--radius-pill); background: var(--border-strong); cursor: pointer; transition: width 0.2s var(--ease), background 0.2s var(--ease); }
 .picks-dot.is-active { width: 18px; background: var(--accent); }
