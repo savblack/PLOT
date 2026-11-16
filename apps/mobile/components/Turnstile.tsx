@@ -19,6 +19,12 @@ export interface TurnstileProps {
    * return a token until the person taps it.
    */
   onInteractive?: () => void;
+  /**
+   * Cloudflare's box is on screen (true) or gone again (false). The auth
+   * screen uses it to make room above the button, so the box never sits on
+   * top of a field.
+   */
+  onVisibleChange?: (visible: boolean) => void;
   resetSignal?: number;
   /**
    * Bump to run a fresh challenge now. The widget already runs when the
@@ -110,6 +116,7 @@ export default function Turnstile({
   onToken,
   onError,
   onInteractive,
+  onVisibleChange,
   resetSignal = 0,
   executeSignal = 0,
   baseUrl = 'https://app.theplot.tv',
@@ -161,7 +168,10 @@ export default function Turnstile({
               onToken(null);
               onError?.();
             } else if (m?.type === 'interactive') onInteractive?.();
-            else if (m?.type === 'visible') setVisible(!!m.value);
+            else if (m?.type === 'visible') {
+              setVisible(!!m.value);
+              onVisibleChange?.(!!m.value);
+            }
           } catch { /* ignore non-JSON messages */ }
         }}
         style={styles.webview}

@@ -74,3 +74,14 @@ done.
 ## Approvals
 
 Given: change the iPhone flow to match web. Still needed: merge.
+
+## Captcha box over the Password field, fixed 2026-11-16
+
+Savannah confirmed the overlap happens on iPhone and asked for a fix. It rides on this branch (same simulator session); it is a second, separate commit and can be split into its own PR if she prefers.
+
+- Cause: `styles.captcha` in `apps/mobile/app/(auth)/index.tsx` was `position: 'absolute'; bottom: '100%'`, so the box floated over whatever sat above the button.
+- Fix: `components/Turnstile.tsx` reports `onVisibleChange`; the auth screen swaps to `styles.captchaShown` (in the layout, sheet grows by the box's 70pt) while the box is showing. No gap when it is hidden, as before.
+- Checked on iPhone 17 Pro simulator, Staging: sign-in and sign-up sheets both show the box between the fields and the button, Password field and "Forgot password?" fully visible. Not checked: the box disappearing after a tick (I cannot tick it), forgot-password and magic-link sheets.
+- Checks: mobile `typecheck` pass; ESLint on the two files 0 errors, 5 warnings, same as before the change.
+- Metro note: `CI=1` turns file watching off. After an edit, stop Metro and start it again (`--clear`), or the simulator keeps the old code.
+- Still needed from Savannah: create the Staging test account in the simulator so the setup flow can be walked.
