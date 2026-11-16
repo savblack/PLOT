@@ -427,9 +427,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     );
   };
 
-  const allCollections = [...collections, ...smartCollections, ...sharedCollections];
-  const titles = allCollections.reduce((n, c) => n + c.items.length, 0);
-
   // The sections, in the viewer's order. Each is wrapped in a fold below, so
   // its heading folds it shut. Shared is only there with Watch together.
   const sectionLabels = {
@@ -490,7 +487,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   return (
     <div className="hist-page mylists-page">
       <div className="hist-toolbar">
-        <span className="hist-toolbar-sub">{CUSTOM_LISTS.summary(allCollections.length, titles)}</span>
         <div className="hist-toolbar-controls">
           {/* At sidebar widths the column carries the filters; below it, the
               pill and its sheet are how a phone reaches them. */}

@@ -8,7 +8,7 @@
 // enqueues it and watches the account's jobs so tiles and the pill can show
 // what is running and what waits.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createImportReporter } from '@plot/core/importPipeline.js';
+import { createImportReporter, IMPORT_FAILURE_REASONS } from '@plot/core/importPipeline.js';
 import { rememberLetterboxdImport, clearLetterboxdImport } from '../utils/letterboxdImportPrompt.js';
 import { startFileImport, startConnectionImport, useImportJobs, importJobActive, importSourceName, importPillFor, importListChoiceNeeded } from '@plot/core/importJobs.js';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
@@ -87,9 +87,12 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
   useEffect(() => { live.current = { source, phase }; });
   const failConnect = useCallback((id) => {
     if (live.current.source !== id || live.current.phase !== 'connecting') return;
+    // Counted as import_failed, the same event and reason the import page
+    // uses for a connection that did not work (docs/analytics/README.md).
+    createImportReporter({ entry }).report('failed', { source: id, reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
     setError(IMPORT_JOBS.onboarding.connectFailed(importSourceName(id)));
     setPhase('connect');
-  }, []);
+  }, [entry]);
 
   useEffect(() => {
     if (!userId) return;
@@ -128,6 +131,20 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     if (source === 'plex' && connected && !plexListed) plexChoose();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- choose is recreated every render; the listed flag is the guard
   }, [source, connected, plexListed]);
+  // Trakt's popup closed. It closes itself after connecting and can report a
+  // failure, but shut with the window's own X it says nothing. Read the
+  // integration again: connected is fine, anything else did not connect.
+  const popupWatch = useRef(/** @type {ReturnType<typeof setInterval> | null} */ (null));
+  const watchTraktPopup = useCallback((popup) => {
+    if (popupWatch.current) clearInterval(popupWatch.current);
+    popupWatch.current = setInterval(() => {
+      if (!popup.closed) return;
+      clearInterval(popupWatch.current);
+      popupWatch.current = null;
+      Promise.resolve(loadTrakt()).then(data => { if (data?.status !== 'active') failConnect('trakt'); }, () => {});
+    }, 500);
+  }, [loadTrakt, failConnect]);
+  useEffect(() => () => { if (popupWatch.current) clearInterval(popupWatch.current); }, []);
   useEffect(() => {
     const onMessage = (event) => {
       if (event.origin !== window.location.origin) return;
@@ -247,9 +264,9 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     // tab; ?import=trakt brings the page back to this dialog.
     const url = buildTraktAuthorizeUrl(clientId, createTraktState(returnPath('trakt')));
     const popup = window.open(url, 'plot-trakt', 'popup,width=600,height=760');
-    if (popup) setPhase('connecting');
+    if (popup) { setPhase('connecting'); watchTraktPopup(popup); }
     else { onBeforeRedirect?.(); redirectToExternal(url); }
-  }, [source, plex, simkl, returnPath, onBeforeRedirect, failConnect]);
+  }, [source, plex, simkl, returnPath, onBeforeRedirect, failConnect, watchTraktPopup]);
 
   const startJob = useCallback(async () => {
     if (!source || phase !== 'ready') return;

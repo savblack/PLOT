@@ -12,8 +12,10 @@
 
 /** @type {Record<IconName, string>} */
 export const ICON_PATHS = {
-  // Save to the watchlist. Outline when not saved, solid when saved. It never
-  // turns into another glyph.
+  // Save to the watchlist. Outline when not saved, solid when saved, in the
+  // color it already is: white on artwork, the text color elsewhere. The one
+  // exception is the title page's pill, which reads "In watchlist" with a tick
+  // once saved (Nov 16, 2026).
   bookmark: 'M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z',
   heart: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z',
   check: 'M4 12l5 5L20 6',

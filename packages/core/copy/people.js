@@ -72,7 +72,6 @@ export const PEOPLE = Object.freeze({
 
   page: Object.freeze({
     title: 'Your people',
-    subtitle: 'New and upcoming work from the people you follow',
     byDate: 'By date',
     byPerson: 'By person',
     followingTitle: 'Following',

@@ -67,8 +67,6 @@ export const CUSTOM_LISTS = Object.freeze({
   watchingEmptyNote: 'What are you watching now?',
   viewMore: count => `View ${count} more`,
   viewLess: 'View less',
-  summary: (lists, titles) =>
-    `${lists} ${lists === 1 ? 'list' : 'lists'} · ${titles} ${titles === 1 ? 'title' : 'titles'}`,
   // The undo toast after creating a list (copy/undo.js adds the full stop).
   created: 'List created',
   limitMessage: `You can create up to ${FREE_CUSTOM_LIST_CAP} custom lists for free. Plot Premium has unlimited custom lists.`,

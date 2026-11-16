@@ -5,7 +5,6 @@ import {
   noteImportFinished, parseFinishingTouches, serialiseFinishingTouches, startFinishingTouches,
   ACTIVE_DAYS, HIDE_DAYS,
 } from '../../finishingTouches.js';
-import { greetingFor, partOfDay } from '../../greeting.js';
 import {
   ONBOARDING_PROGRESS, ONBOARDING_PROGRESS_TOTAL, firstNameFromAuthUser, topRegionServices,
 } from '../../onboardingSetup.js';
@@ -86,18 +85,6 @@ test('stored state round-trips, and junk reads as no card', () => {
   assert.equal(parseFinishingTouches(null), null);
   assert.equal(parseFinishingTouches('not json'), null);
   assert.equal(parseFinishingTouches('{"startedAt":"yesterday"}'), null);
-});
-
-test('greeting follows the time of day and reads without a name', () => {
-  assert.equal(partOfDay(7), 'morning');
-  assert.equal(partOfDay(13), 'afternoon');
-  assert.equal(partOfDay(19), 'evening');
-  assert.equal(partOfDay(23), 'late');
-  assert.equal(partOfDay(3), 'late');
-  assert.equal(greetingFor({ name: 'Sam', date: new Date(2026, 9, 3, 19) }), 'Good evening, Sam');
-  assert.equal(greetingFor({ name: 'Sam', date: new Date(2026, 9, 3, 1) }), 'Up late, Sam?');
-  assert.equal(greetingFor({ name: '', date: new Date(2026, 9, 3, 1) }), 'Up late?');
-  assert.equal(greetingFor({ date: new Date(2026, 9, 3, 9) }), 'Good morning');
 });
 
 test('first name comes from the sign-in provider when it has one', () => {

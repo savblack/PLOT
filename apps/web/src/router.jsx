@@ -4,6 +4,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import LoadingSpinner from './components/LoadingSpinner.jsx';
 import { SHOW_PRICING_PAGE, SHOW_WATCH_TOGETHER } from './launchFeatures.js';
+import { GUIDE_ENABLED } from '@plot/core/features.js';
 import {
   loadDiscoverView, loadTonightView, loadGuideView, loadCalendarView, loadMyListsView,
   loadHistoryView, loadListPage, loadSearchView, loadSettingsView,
@@ -152,7 +153,8 @@ const router = createBrowserRouter([
       { path: 'home',     element: wrap(<HomeRoute />) },
       { path: 'new-releases', element: wrap(<NewReleasesView />) },
       { path: 'tonight',  element: wrap(<TonightView />) },
-      { path: 'guide',    element: wrap(<GuideView />) },
+      // Hidden while GUIDE_ENABLED is off: an old link or bookmark lands on Home.
+      { path: 'guide',    element: GUIDE_ENABLED ? wrap(<GuideView />) : <Navigate to="/home" replace /> },
       { path: 'calendar', element: wrap(<CalendarView />) },
       { path: 'watching', element: <Navigate to="/my-lists" replace /> },
       { path: 'list',     element: <Navigate to="/my-lists" replace /> },

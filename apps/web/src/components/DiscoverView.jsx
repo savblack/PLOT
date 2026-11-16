@@ -6,7 +6,6 @@ import { useApp } from '../hooks/useApp.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
 import { displayBackdropPath, displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
-import { todayLongLabel } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import ScrollRail from './ScrollRail.jsx';
@@ -52,7 +51,6 @@ import { usePeopleFeed, usePeopleFollows } from '@plot/core/usePeopleFollows.js'
 import { feedItems } from '@plot/core/peopleFeed.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { PEOPLE } from '@plot/core/copy/people.js';
-import { greetingFor } from '@plot/core/greeting.js';
 import HomeTopCards from './HomeTopCards.jsx';
 import { useFirstRun } from '../hooks/useFirstRun.js';
 import { oncePerSession } from '@plot/core/oncePerSession.js';
@@ -183,14 +181,13 @@ export function HomePageNav({ sections }) {
   );
 }
 
-/* The date heads the Home and New Releases header row. Search lives in the
+/* The Home and New Releases header row. Search lives in the
    sidebar (and the phone header's icon), which opens the same palette, so the
    row carries no second search box. The grouped filter is retained only as
    the mobile bottom sheet; the desktop trigger is hidden. */
 export function DiscoverToolbar({ typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres = [] }) {
   return (
     <div className="page-toolbar">
-      <span className="page-toolbar-date">{todayLongLabel()}</span>
       <div className="home-toolbar-actions">
         <GroupedFilterMenu
           mobileControls
@@ -865,8 +862,6 @@ export default function DiscoverView() {
         setGenreFilters={setGenreFilters}
         genres={genres}
       />
-      {/* The greeting leads. Every card sits under it. */}
-      <h1 className="home-greeting">{greetingFor({ name: profile?.first_name })}</h1>
       <HomeTopCards />
       <DiscoverContent
         openPanel={openPanel}

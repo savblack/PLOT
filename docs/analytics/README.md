@@ -595,6 +595,13 @@ Opening the export page and then leaving is not abandonment: that is the
 path the link is for. A file that fails to parse is `import_failed`, and the
 reminder stays until a file is accepted or they dismiss it.
 
+A connect that does not land (Trakt, Plex or Simkl: cancelled, expired,
+refused, or the popup closed) is `import_failed` with `reason:
+connection_failed`, from the import page and from the connect dialog that
+setup and Settings share (`useImportStart`'s `failConnect`, web). It fires once
+per failed attempt, when the dialog stops waiting. Read it against
+`trakt_connect_started` / `simkl_connect_started` and the `*_connected` events.
+
 ## Episode alerts (title panel)
 
 The Episode alerts card on a followed TV show's title panel.

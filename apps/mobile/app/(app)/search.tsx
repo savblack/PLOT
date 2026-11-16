@@ -9,6 +9,7 @@ import { TextInput } from '../../components/TextInput';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import Svg, { Path } from 'react-native-svg';
 import { IconSearch, IconChevronLeft, IconClose } from '../../components/icons';
 import Chip from '../../components/Chip';
@@ -303,8 +304,8 @@ export default function SearchScreen() {
                   </View>
                 )}
                 {inList && (
-                  <Svg width={14} height={14} viewBox="0 0 24 24" fill={colors.accent} stroke={colors.accent} strokeWidth={1.5} accessibilityLabel={MEDIA.saveToWatchlist}>
-                    <Path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v16l-6-3.75L6 20.5v-16Z" />
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill={colors.textPrimary} stroke={colors.textPrimary} strokeWidth={1.5} accessibilityLabel={MEDIA.saveToWatchlist}>
+                    <Path d={ICON_PATHS.bookmark} />
                   </Svg>
                 )}
                 <Text style={[styles.kind, facts.own && styles.kindOwn]}>{facts.kindLabel}</Text>

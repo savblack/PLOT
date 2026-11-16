@@ -111,12 +111,6 @@ export function relativeTime(iso, now = Date.now(), region = null) {
   return new Date(iso).toLocaleDateString(dateLocaleForRegion(region), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-/** Today, written out in US order ("Tuesday, September 15"). The line under
- *  the Home, New Releases and Calendar page headings. Fixed to en-US rather than
- *  the device locale, which put the day first on non-US devices. */
-export function todayLongLabel(now = new Date()) {
-  return now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-}
 
 /** "October" while the year is the current one, "January 2027" once it is not.
  *  Month headings in the Calendar stream and its mini months. */
