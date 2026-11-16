@@ -277,6 +277,11 @@ test('placeSearchRows: lists carry the list name, status and a forced media type
   ]);
 });
 
+test('placeSearchRows: smart lists carry the smart list name', () => {
+  const rows = placeSearchRows('smart', { lists: [{ name: 'Short thrillers', items: [{ tmdb_id: 'fx-s', media_type: 'movie', title: 'Quiet Hour' }] }] });
+  assert.deepEqual(rows, [{ where: 'Short thrillers', media_type: 'movie', tmdb_id: 'fx-s', title: 'Quiet Hour', poster_path: null }]);
+});
+
 test('placeSearchRows: history rows are all watched', () => {
   const [row] = placeSearchRows('history', { history: [{ tmdb_id: 'fx-a', media_type: 'tv', title: 'Quiet Days' }] });
   assert.equal(row.status, 'watched');
@@ -327,5 +332,5 @@ test('a place search matches through matchLibrary, one row per title, up to the 
   assert.equal(found.length, 1);
   assert.equal(found[0].data.date, '2026-11-17');
   assert.ok(PLACE_MATCH_LIMIT > LIBRARY_MATCH_LIMIT);
-  assert.deepEqual(SEARCH_PLACES, ['everywhere', 'home', 'calendar', 'lists', 'history']);
+  assert.deepEqual(SEARCH_PLACES, ['everywhere', 'home', 'calendar', 'lists', 'smart', 'history']);
 });

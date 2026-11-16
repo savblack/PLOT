@@ -7,6 +7,11 @@ import { useGenres } from '../hooks/useGenres.js';
 import { useUnifiedSearch } from '@plot/core/useUnifiedSearch.js';
 import { describeSearchResult, placeSearchRows, pushRecentSearch, SEARCH_PLACES } from '@plot/core/search.js';
 import { loadDiscoverData } from '@plot/core/useDiscover.js';
+import { loadSmartListTitles } from '@plot/core/smartLists.js';
+import { pickerProviderIds } from '@plot/core/tonightPicker.js';
+import { isPremiumProfile } from '@plot/core/premium.js';
+import { DEFAULT_REGION } from '@plot/core/regions.js';
+import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
 import { wantToWatchItems, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
 import { APP_NAV_ITEMS, MY_LISTS_TABS } from '@plot/core/navigation.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
@@ -49,6 +54,7 @@ const STATUS_LABEL = {
 const NAV_ID = { home: 'home', calendar: 'calendar', lists: 'my-lists', history: 'history' };
 const placeLabel = (place) => (place === 'everywhere'
   ? SEARCH_PALETTE.everywhere
+  : place === 'smart' ? SMART_LISTS.section
   : APP_NAV_ITEMS.find(item => item.id === NAV_ID[place])?.label || place);
 const TOP_LABEL = MY_LISTS_TABS.find(tab => tab.id === 'top10')?.label;
 const NO_ROWS = [];
@@ -172,6 +178,29 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
     return () => { cancelled = true; };
   }, [place, shelves, hideKids]);
 
+  // Smart lists find their titles when asked, so they are loaded the first
+  // time Smart lists is picked: each list's matches as opening it shows them.
+  // Premium only, like the lists themselves; with none, the chip is not shown.
+  const smartLists = isPremiumProfile(profile) ? customLists?.smartLists : null;
+  const hasSmartLists = (smartLists?.length ?? 0) > 0;
+  const smartReady = listsReady && !history?.loading;
+  const [smartTitles, setSmartTitles] = useState(null);
+  useEffect(() => {
+    if (place !== 'smart' || smartTitles || !smartReady || !hasSmartLists) return undefined;
+    let cancelled = false;
+    loadSmartListTitles({
+      lists: smartLists,
+      watchlistItems: watchlist?.items,
+      historyEntries: history?.entries,
+      providerIds: pickerProviderIds(profile?.streaming_providers),
+      region: profile?.region || DEFAULT_REGION,
+      hideKids,
+    }).then(found => { if (!cancelled) setSmartTitles(found); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loaded once per open, from what the lists hold at that moment
+  }, [place, smartTitles, smartReady, hasSmartLists]);
+  const places = useMemo(() => SEARCH_PLACES.filter(id => id !== 'smart' || hasSmartLists), [hasSmartLists]);
+
   const placeRows = useMemo(() => {
     if (place === 'lists') {
       const top = (items, mediaType) => ({
@@ -189,6 +218,7 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
         ...(customLists?.lists || []).map(list => ({ name: list.name, items: list.items })),
       ] });
     }
+    if (place === 'smart') return placeSearchRows('smart', { lists: smartTitles || NO_ROWS });
     if (place === 'history') return placeSearchRows('history', { history: history?.entries });
     if (place === 'calendar') return placeSearchRows('calendar', { calendarEvents: calendar.events, todayStr: localDateStr() });
     if (place === 'home') {
@@ -198,9 +228,9 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
       ] });
     }
     return NO_ROWS;
-  }, [place, watching?.items, watchlist?.items, topLists?.lists, favorites?.favorites, customLists?.lists, history?.entries, calendar.events, shelves]);
+  }, [place, watching?.items, watchlist?.items, topLists?.lists, favorites?.favorites, customLists?.lists, history?.entries, calendar.events, shelves, smartTitles]);
   // The page's titles are still arriving, so "nothing matches" would be a lie.
-  const placeLoading = (place === 'calendar' && calendar.loading) || (place === 'home' && !shelves);
+  const placeLoading = (place === 'calendar' && calendar.loading) || (place === 'home' && !shelves) || (place === 'smart' && !smartTitles);
 
   // The viewer's own titles, tagged with where they sit. Priority order:
   // something you are mid-way through beats something you only saved.
@@ -364,7 +394,7 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
         {user && (
           <div className="search-palette-places" role="radiogroup" aria-labelledby="search-palette-places-label">
             <span id="search-palette-places-label" className="search-palette-places-label">{SEARCH_PALETTE.searchIn}</span>
-            {SEARCH_PLACES.map(id => (
+            {places.map(id => (
               <Chip
                 key={id}
                 size="sm"

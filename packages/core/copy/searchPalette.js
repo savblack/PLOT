@@ -20,6 +20,7 @@ export const SEARCH_PALETTE = {
     home: 'Only the titles on your Home shelves right now.',
     calendar: 'Only titles with upcoming dates in your Calendar.',
     lists: 'Only titles saved in your lists.',
+    smart: 'Only titles your smart lists have found.',
     history: 'Only titles you have watched.',
   },
   noneIn: (place) => `Nothing in ${place} matches. Try a different spelling, or search everywhere.`,

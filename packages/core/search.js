@@ -542,11 +542,11 @@ export function pushRecentSearch(recent = [], term = '') {
  * the others only match titles the viewer already has on that page, so they
  * answer from memory and never ask TMDB.
  *
- * @typedef {'everywhere'|'home'|'calendar'|'lists'|'history'} SearchPlace
+ * @typedef {'everywhere'|'home'|'calendar'|'lists'|'smart'|'history'} SearchPlace
  */
 
 /** In the order the chips are shown. */
-export const SEARCH_PLACES = /** @type {SearchPlace[]} */ (['everywhere', 'home', 'calendar', 'lists', 'history']);
+export const SEARCH_PLACES = /** @type {SearchPlace[]} */ (['everywhere', 'home', 'calendar', 'lists', 'smart', 'history']);
 
 /** A page can hold many matches; the unified list only leads with three. */
 export const PLACE_MATCH_LIMIT = 30;
@@ -566,6 +566,8 @@ const placeRow = (item, extra = {}) => ({
  *
  * - `lists`: every list on My Lists, in page order. `where` is the list's
  *   name, so a match says which list it is in.
+ * - `smart`: every smart list's matches (loadSmartListTitles), in the same
+ *   shape as `lists`. Each app offers it only when the viewer has smart lists.
  * - `history`: everything watched.
  * - `calendar`: dated events from today on. `date` is the event's day and
  *   `where` its label ("Streaming", "S2 E4"). Reminders have no TMDB title
@@ -583,7 +585,7 @@ const placeRow = (item, extra = {}) => ({
  * @returns {(LibraryRow & { where?: string, date?: string })[]}
  */
 export function placeSearchRows(place, sources = {}) {
-  if (place === 'lists') {
+  if (place === 'lists' || place === 'smart') {
     return (sources.lists || []).flatMap(list => (list.items || []).map(item => placeRow(item, {
       where: list.name,
       ...(list.status ? { status: list.status } : {}),
