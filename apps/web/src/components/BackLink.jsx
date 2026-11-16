@@ -6,7 +6,9 @@
 // panel or dialog closes with an X in its top right corner instead; this is
 // only for pages.
 //
-// Web only: mobile gets its back control from the native stack header.
+// Web only (it renders a react-router Link). Mobile hides the native stack
+// header on every screen, so each screen draws its own back control, most of
+// them with apps/mobile/components/BackBar.tsx. One per screen there too.
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IconChevronLeft } from './navIcons.jsx';
 import './BackLink.css';
