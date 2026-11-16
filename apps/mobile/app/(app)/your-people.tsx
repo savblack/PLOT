@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { BookmarkGlyph } from '../../components/Icon';
 import { IconCheck } from '../../components/icons';
 import SearchField from '../../components/SearchField';
 import Button from '../../components/Button';
@@ -28,6 +28,7 @@ import { useMediaPanel } from '../../contexts/MediaPanelContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { FollowPill, PeopleChip, PersonFace } from '../../components/people/FollowControls';
 import { useFollowPerson } from '../../components/people/useFollowPerson';
+import { EmptyNote } from '../../components/EmptyState';
 
 const TYPE_ROWS = [
   { id: 'tv', label: MEDIA.tv },
@@ -53,14 +54,6 @@ function whenLine(item: FeedItem, today: string) {
   if (item.date >= today) return weekdayDayMonth(item.date);
   if (item.mediaType === 'tv' && item.premiereDrop === 1) return P.page.weeklySince(shortDayMonth(item.date));
   return P.page.since(shortDayMonth(item.date));
-}
-
-function BookmarkIcon({ color }: { color: string }) {
-  return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round">
-      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </Svg>
-  );
 }
 
 function FeedRow({ item, today, saved, onSave, onOpen }: {
@@ -101,8 +94,8 @@ function FeedRow({ item, today, saved, onSave, onOpen }: {
           accessibilityLabel={saved ? P.page.saved : P.page.save}
           style={{ minHeight: 32, paddingHorizontal: spacing.sm, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 4 }}
         >
-          <BookmarkIcon color={saved ? colors.accent : colors.textPrimary} />
-          <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: saved ? colors.accent : colors.textPrimary }}>{saved ? P.page.saved : P.page.save}</Text>
+          <BookmarkGlyph saved={saved} size={14} colors={colors} />
+          <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }}>{saved ? P.page.saved : P.page.save}</Text>
         </TouchableOpacity>
       )}
     />
@@ -205,8 +198,7 @@ export default function YourPeopleScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
       >
-        <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary }}>{P.page.subtitle}</Text>
-        <ChipRow style={{ marginTop: spacing.md }}>
+        <ChipRow>
           {(['date', 'person'] as const).map(id => (
             <Chip key={id} label={id === 'date' ? P.page.byDate : P.page.byPerson} selected={view === id} onPress={() => setView(id)} />
           ))}
@@ -263,10 +255,10 @@ export default function YourPeopleScreen() {
         <View style={{ marginTop: spacing.lg }}>
           {busy && sections.length === 0 && <Loader fill={false} />}
           {!busy && people.follows.length === 0 && (
-            <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{P.page.empty}</Text>
+            <EmptyNote>{P.page.empty}</EmptyNote>
           )}
           {!busy && people.follows.length > 0 && sections.length === 0 && (
-            <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{P.page.nothing}</Text>
+            <EmptyNote>{P.page.nothing}</EmptyNote>
           )}
           {sections.map(section => (
             <View key={section.key} style={{ marginBottom: spacing.lg }}>

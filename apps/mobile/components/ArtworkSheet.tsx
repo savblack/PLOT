@@ -19,6 +19,7 @@ import { useDialog } from './Dialog';
 import Loader from './Loader';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import { backdropUrl, fontFamily, fontSize, logoUrl, Palette, posterUrl, profileUrl, radii, spacing } from '../lib/tokens';
+import { EmptyNote } from './EmptyState';
 
 type ArtworkKind = 'poster' | 'backdrop' | 'logo' | 'profile';
 
@@ -168,7 +169,7 @@ export default function CustomizeArtwork({
                           />
                         ))}
                       </ScrollView>
-                      {section.options.length === 0 ? <Text style={styles.empty}>{ARTWORK.empty}</Text> : null}
+                      {section.options.length === 0 ? <EmptyNote>{ARTWORK.empty}</EmptyNote> : null}
                     </View>
                   );
                 })}

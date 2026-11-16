@@ -3,7 +3,7 @@
    .cal-side / .cal-stream / .hist-card / .cal-filter-row, the same classes the
    Calendar, Guide and History use. Only what is settings-specific lives here. */
 
-/* The page title and subtitle come from .app-page-heading in AppShell, so the
+/* The page title comes from .app-page-heading in AppShell, so the
    toolbar carries the search alone. */
 .settings-toolbar { justify-content: flex-end; }
 .settings-page p { color: var(--text-secondary); line-height: 1.6; }

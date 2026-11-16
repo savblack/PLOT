@@ -167,7 +167,7 @@
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   stroke-width: 1.5;
 }
 .search-palette-kind {

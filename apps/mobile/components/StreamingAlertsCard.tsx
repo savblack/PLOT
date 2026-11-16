@@ -79,17 +79,16 @@ export default function StreamingAlertsCard({ movie }: { movie: { id: number; ti
     if (mute.muted) hint = A.card.muted;
     const on = !mute.muted;
     action = (
-      <TouchableOpacity
+      <Button
+        variant="outline"
+        size="sm"
+        label={on ? A.card.on : A.card.off}
+        icon={<BellIcon on={on} color={on ? colors.accentText : colors.textPrimary} />}
         onPress={() => { void mute.toggle(); }}
         disabled={mute.busy}
-        accessibilityRole="button"
-        accessibilityState={{ selected: on, disabled: mute.busy }}
+        selected={on}
         accessibilityLabel={on ? A.card.muteLabel : A.card.unmuteLabel}
-        style={[styles.pill, mute.busy && styles.busy]}
-      >
-        <BellIcon on={on} color={on ? colors.accentText : colors.textPrimary} />
-        <Text style={[styles.pillText, on && { color: colors.accentText }]}>{on ? A.card.on : A.card.off}</Text>
-      </TouchableOpacity>
+      />
     );
   }
 

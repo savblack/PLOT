@@ -23,6 +23,7 @@ import { track, EVENTS } from '../lib/analytics';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
+import Button from './Button';
 
 const storage = {
   readSeen: async (id: string) => (await AsyncStorage.getItem(episodeAlertsPromptStorageKey(id))) === '1',
@@ -66,14 +67,7 @@ export function EpisodeAlertsPromptToast({ placement = 'tabs' }: { placement?: '
         style={[styles.toast, { backgroundColor: colors.surfaceRaised, borderColor: failed ? colors.dangerBorder : colors.borderStrong }]}
       >
         <Text style={[styles.message, { color: colors.textPrimary }]}>{failed ? T.error : T.promptQuestion}</Text>
-        <TouchableOpacity
-          onPress={turnOn}
-          disabled={busy}
-          style={[styles.action, { borderColor: colors.borderStrong }]}
-          accessibilityRole="button"
-        >
-          <Text style={[styles.actionText, { color: colors.textPrimary }]}>{busy ? COMMON.saving : T.promptAction}</Text>
-        </TouchableOpacity>
+        <Button variant="outline" size="sm" label={busy ? COMMON.saving : T.promptAction} onPress={turnOn} disabled={busy} />
         <TouchableOpacity
           onPress={dismiss}
           style={styles.close}
@@ -106,7 +100,5 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   message: { flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 18 },
-  action: { paddingHorizontal: spacing.md, paddingVertical: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: radii.pill },
-  actionText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm },
   close: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
 });

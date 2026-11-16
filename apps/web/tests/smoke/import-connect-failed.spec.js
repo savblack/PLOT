@@ -79,6 +79,23 @@ test('Trakt: a failed connect in the popup takes setup out of waiting', async ({
   await again.close();
 });
 
+// Shut with the window's own X before Trakt sends them back: no page of
+// ours ever loads in the popup, so nothing can report it. The dialog notices
+// the window is gone.
+test('Trakt: closing the popup without finishing takes setup out of waiting', async ({ page, context }) => {
+  await midSetup(page);
+  // Stands in for trakt.tv's sign-in page, which just sits there.
+  await context.route('https://trakt.tv/**', route => route.fulfill({ contentType: 'text/html', body: '<p>Sign in to Trakt</p>' }));
+  await openSource(page, 'Trakt');
+  const { waiting, failed, connect } = dialogParts(page, 'Trakt');
+  const [popup] = await Promise.all([page.waitForEvent('popup'), connect.click()]);
+  await expect(waiting).toBeVisible();
+  await popup.close();
+  await expect(failed).toBeVisible();
+  await expect(waiting).toHaveCount(0);
+  await expect(connect).toBeVisible();
+});
+
 // The error pages' "Back to setup" link, and a blocked popup's same-tab
 // fallback, come back as ?import=<source> with nothing connected.
 for (const [id, name] of [['trakt', 'Trakt'], ['simkl', 'Simkl'], ['plex', 'Plex']]) {

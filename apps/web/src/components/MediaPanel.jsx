@@ -1814,7 +1814,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 className={`panel-pill${inList ? ' panel-pill--saved' : ' panel-pill--primary'}`}
                 onClick={handleSaveFromPanel}
               >
-                <Icon name="bookmark" filled={inList} size={15} />
+                {inList ? <Icon name="check" size={14} strokeWidth={2.4} /> : <Icon name="bookmark" size={15} />}
                 <span className="panel-pill-label">{inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}</span>
               </button>
 

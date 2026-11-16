@@ -35,9 +35,9 @@ export default {
   // Keep them in Storybook without treating changing external content as a visual baseline.
   parameters: { layout: 'fullscreen', chromatic: { disableSnapshot: true } },
   decorators: [
-    (Story) => (
+    (Story, { parameters }) => (
       <MemoryRouter>
-        <AppContext.Provider value={app}>
+        <AppContext.Provider value={{ ...app, ...parameters.app }}>
           <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
             <Story />
           </div>
@@ -61,4 +61,10 @@ export const WithProviders = {
 /** Movie with rent/buy offers. */
 export const Movie = {
   args: { itemId: 438631, itemType: 'movie' },
+};
+
+/** The same movie once saved: the green "In watchlist" pill with a tick. */
+export const InWatchlist = {
+  args: { itemId: 438631, itemType: 'movie' },
+  parameters: { app: { watchlist: { ...app.watchlist, isInList: () => true } } },
 };

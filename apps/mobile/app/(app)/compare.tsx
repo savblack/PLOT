@@ -16,6 +16,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { fontFamily, spacing, radii, type Palette } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
+import { EmptyNote } from '../../components/EmptyState';
 
 type Candidate = {
   id: string;
@@ -84,7 +85,7 @@ export default function ComparePickerScreen() {
         {busy ? (
           <View style={styles.loader}><PlotLoader /></View>
         ) : list.length === 0 ? (
-          <Text style={styles.empty}>{isSearching ? T.noResults : T.followNobody}</Text>
+          <EmptyNote>{isSearching ? T.noResults : T.followNobody}</EmptyNote>
         ) : list.map(person => (
           <PersonRow key={person.id} person={person} colors={colors} styles={styles} />
         ))}

@@ -33,10 +33,12 @@ import { useImportStart } from '../../hooks/useImportStart';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 import SearchField from '../../components/SearchField';
 import Svg, { Path } from 'react-native-svg';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import { IconChevronRight } from '../../components/icons';
 import ImportSourceIcon from '../../components/ImportSourceIcon';
 import ImportSourceLanes, { ImportPill } from '../../components/ImportSourceLanes';
 import ImportSourceSheet from '../../components/ImportSourceSheet';
+import { EmptyNote } from '../../components/EmptyState';
 
 const F = ONBOARDING_FLOW;
 
@@ -275,7 +277,7 @@ export default function Seed() {
                     {active && <View style={styles.cardTint} />}
                     <View style={styles.cardMark}>
                       <Svg width={15} height={15} viewBox="0 0 24 24" fill={active ? '#fff' : 'none'} stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                        <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                        <Path d={ICON_PATHS.bookmark} />
                       </Svg>
                     </View>
                   </View>
@@ -289,7 +291,7 @@ export default function Seed() {
             // Failures are the inline errors above.
             ListEmptyComponent={
               hasQuery && !searching && !searchFailed
-                ? <Text style={styles.empty}>{F.seed.noResults}</Text>
+                ? <EmptyNote style={{ textAlign: 'center', paddingVertical: spacing.xl }}>{F.seed.noResults}</EmptyNote>
                 : undefined
             }
           />

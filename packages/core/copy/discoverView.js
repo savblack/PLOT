@@ -70,18 +70,17 @@ export const DISCOVER_VIEW = {
     pinGone: 'No longer available',
     pinCancel: 'Cancel',
   },
+  // New Releases with nothing to show. ("Nothing new" also titles the import
+  // summary in importView.js; a different concept that shares the words.)
+  newReleasesEmpty: {
+    title: 'Nothing new',
+    filtered: 'Nothing matches right now. Try widening your filters.',
+    none: 'Nothing has landed in the last 30 days. Check back soon.',
+  },
   // Home's saved-titles shelf: the bottom of mobile Home, and the top of web
   // Home during the first run.
   savedToWatch: 'Saved to watch',
-  // Home's time-of-day greeting (greeting.js picks the part of day). Reads
-  // without a name for accounts that never gave one.
-  greeting: {
-    morning: 'Good morning',
-    afternoon: 'Good afternoon',
-    evening: 'Good evening',
-    late: 'Up late',
-  },
-  // The line under the greeting: how many of the last seven days had
+  // The line that leads mobile Home: how many of the last seven days had
   // something logged, and the best run. Reads "4 nights this week · best
   // streak 9"; with no best run yet, the first half alone.
   weekLine: (nights, best) => {

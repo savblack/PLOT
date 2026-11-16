@@ -26,6 +26,7 @@ import {
 import { TextInput } from './TextInput';
 import { shouldDismissSheet, sheetDismissDuration } from '@plot/core/sheetDrag.js';
 import Svg, { Path, Line, Polyline, Circle, Polygon } from 'react-native-svg';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import { IconChevronDown, IconChevronUp, IconClose, IconCheck as CheckGlyph, IconPlus as PlusGlyph } from './icons';
 import RetryButton from './RetryButton';
 import BottomSheet from './BottomSheet';
@@ -169,7 +170,7 @@ function IconBookmark({ saved }: { saved: boolean }) {
   const ink = saved ? colors.statusWatched : colors.onAccentFill;
   return (
     <Svg width={15} height={15} viewBox="0 0 24 24" fill={saved ? ink : 'none'} stroke={ink} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+      <Path d={ICON_PATHS.bookmark} />
     </Svg>
   );
 }

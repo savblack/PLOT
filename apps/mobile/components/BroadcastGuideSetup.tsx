@@ -11,6 +11,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { fontFamily } from '../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../lib/tabBar';
+import Button from './Button';
 
 export default function BroadcastGuideSetup({ preferences, profileRegion }: {
   preferences: ReturnType<typeof useAppData>['broadcastPreferences'];
@@ -60,11 +61,7 @@ export default function BroadcastGuideSetup({ preferences, profileRegion }: {
       {notice && <Text accessibilityLiveRegion="polite" style={{ color: colors.textSecondary, fontFamily: fontFamily.sans, fontSize: 13, lineHeight: 20 }}>{notice}</Text>}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <Text style={{ color: colors.textMuted, fontFamily: fontFamily.sans, fontSize: 12 }}>{COPY.setup.hint}</Text>
-        <Pressable accessibilityRole="button" accessibilityState={{ disabled: !setup.canSave, busy: preferences.saving }} disabled={!setup.canSave} onPress={() => { void setup.save(); }}
-          style={{ marginLeft: 'auto', minHeight: 44, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 999, backgroundColor: colors.accentFill, opacity: setup.canSave ? 1 : 0.5, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Text style={{ color: colors.onAccentFill, fontFamily: fontFamily.sansMedium, fontSize: 13 }}>{preferences.saving ? COPY.saving : COPY.setup.submit}</Text>
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.onAccentFill} strokeWidth={1.5} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Path d="M4 12h16m-6-6 6 6-6 6" /></Svg>
-        </Pressable>
+        <Button variant="primary" label={preferences.saving ? COPY.saving : COPY.setup.submit} onPress={() => { void setup.save(); }} disabled={!setup.canSave} style={{ marginLeft: 'auto' }} />
       </View>
       {setup.error && <Text accessibilityRole="alert" style={{ color: colors.danger, fontFamily: fontFamily.sans, fontSize: 13, lineHeight: 20 }}>{COPY.saveError}</Text>}
     </View>

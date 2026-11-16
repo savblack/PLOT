@@ -9,7 +9,7 @@ import { arrangeByMyListsOrder, normalizeUiPrefs } from '@plot/core/uiPrefs.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import {
   View, Text, ScrollView, FlatList, Image, TouchableOpacity,
-  Modal, StyleSheet, Dimensions, Alert,
+  StyleSheet, Dimensions, Alert,
 } from 'react-native';
 import { TextInput } from '../../components/TextInput';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
@@ -20,7 +20,7 @@ import SearchField, { SEARCH_FIELD_H } from '../../components/SearchField';
 import Button, { TextLink } from '../../components/Button';
 import { Tag } from '../../components/Chip';
 import { useDialog } from '../../components/Dialog';
-import { SheetActions } from '../../components/BottomSheet';
+import BottomSheet from '../../components/BottomSheet';
 import SectionTitle from '../../components/SectionTitle';
 import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -47,6 +47,9 @@ import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
 import { filterByWatchStatus, isFinishedStatus, listProgress, listWatchStatus, LIST_STATUS_FILTER_IDS, type ListWatchStatus } from '@plot/core/listWatchStatus.js';
 import WatchStatusChip from '../../components/WatchStatusChip';
+import { PosterCaption, POSTER_GAP, posterColumnWidth } from '../../components/PosterCard';
+import { EmptyNote } from '../../components/EmptyState';
+import { cardMetaLine } from '@plot/core/media.js';
 import { myListsSearchSources, searchCollectionTitles, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '@plot/core/date.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
@@ -93,7 +96,7 @@ import ImportHistoryModal from '../../components/ImportHistoryModal';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
 const SCREEN_W = Dimensions.get('window').width;
-const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
+const POSTER_W = posterColumnWidth(SCREEN_W);
 const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collapses in a flex-wrap row on Fabric)
 
 
@@ -394,8 +397,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
             />
           )}
         </TouchableOpacity>
-        <Text style={[styles.posterTitle, finished && styles.finishedTitle]} numberOfLines={1}>{title}</Text>
-        {!!byline && <Text style={styles.posterCaption} numberOfLines={2}>{byline}</Text>}
+        <PosterCaption title={title} meta={byline ?? cardMetaLine(item)} dimmed={finished} />
       </View>
     );
   };
@@ -438,9 +440,12 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
     }
   };
   return (
-    <Modal visible animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
-      <View style={styles.createModal}>
-        <Text style={styles.createModalTitle}>New list</Text>
+    <BottomSheet
+      visible
+      onClose={onClose}
+      title="New list"
+      footer={<Button variant="primary" label="Create" onPress={submit} disabled={busy || !name.trim()} busy={busy} />}
+    >
         <TextInput
           style={styles.createModalInput}
           placeholder="List name…"
@@ -452,13 +457,8 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
           editable={!busy}
           onSubmitEditing={submit}
         />
-        {!!error && <Text accessibilityRole="alert" style={{ color: colors.textSecondary, marginBottom: spacing.sm }}>{error}</Text>}
-        <SheetActions>
-          <Button variant="primary" flex label="Create" onPress={submit} disabled={busy || !name.trim()} />
-          <Button flex label={COMMON.cancel} onPress={onClose} />
-        </SheetActions>
-      </View>
-    </Modal>
+        {!!error && <Text accessibilityRole="alert" style={{ color: colors.textSecondary }}>{error}</Text>}
+    </BottomSheet>
   );
 }
 
@@ -1401,7 +1401,7 @@ function CustomListCard({
       {open && (
         items.length === 0 ? (
           <TouchableOpacity style={styles.empty} onPress={onAddItem}>
-            <Text style={styles.emptyBody}>{(list.items?.length || 0) === 0 ? CUSTOM_LISTS.listEmptyTap : CUSTOM_LISTS.noMatchingTitles}</Text>
+            <EmptyNote>{(list.items?.length || 0) === 0 ? CUSTOM_LISTS.listEmptyTap : CUSTOM_LISTS.noMatchingTitles}</EmptyNote>
           </TouchableOpacity>
         ) : view === 'rows' ? (
           <View>
@@ -1495,9 +1495,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     letterSpacing: 0.4,
   },
 
-  posterGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, gap: spacing.sm, paddingHorizontal: spacing.xl },
-  posterRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
-  posterCard: { height: POSTER_H, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, marginBottom: spacing.xs },
+  posterGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, columnGap: POSTER_GAP, rowGap: spacing.lg, paddingHorizontal: spacing.xl },
+  posterRow: { flexDirection: 'row', gap: POSTER_GAP, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
+  posterCard: { height: POSTER_H, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   listToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
   progressWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.surfaceSunken, overflow: 'hidden' },
@@ -1507,8 +1507,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   finishedArt: { opacity: 0.45 },
   finishedTitle: { color: colors.textMuted },
   removeBtn: { position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
-  posterTitle: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
-  posterCaption: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
   sharedLine: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
 
   empty: { padding: spacing.xl, alignItems: 'center' },
@@ -1535,8 +1533,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   customListCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   renameInput: { flex: 1, fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary, borderBottomWidth: 1, borderBottomColor: colors.accent, paddingVertical: 2 },
 
-  createModal: { flex: 1, backgroundColor: colors.bg, padding: spacing.xl, gap: spacing.lg },
-  createModalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   createModalInput: { backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
 });
 

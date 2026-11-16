@@ -143,7 +143,7 @@ export const ABOUT_PAGE = {
       },
       {
         name: "TVmaze",
-        notice: "Episode air dates and the TV guide use the TVmaze API.",
+        notice: "Episode air dates use the TVmaze API.",
       },
       {
         name: "OMDb",

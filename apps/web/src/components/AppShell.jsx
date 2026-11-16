@@ -5,10 +5,7 @@ import { APP_NAV_ITEMS, isActiveView, sidebarNavItems, titleForView } from '../n
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
-import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
-import { BROADCAST_GUIDE } from '@plot/core/copy/broadcastGuide.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
-import { TONIGHT_PICKER } from '@plot/core/copy/tonightPicker.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import AppSidebar from './AppSidebar.jsx';
 import GoPremiumLink from './GoPremiumLink.jsx';
@@ -132,11 +129,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
     ? (profile?.username && profileHandle === profile.username ? APP_SHELL.profile : `@${profileHandle}`)
     : (APP_NAV_ITEMS.find(item => item.id === currentView)?.label ?? pageTitle);
 
-  const pageSubtitle = currentView === 'settings' ? SETTINGS_VIEW.page.subtitle
-    : currentView === 'history' ? HISTORY_VIEW.subtitle
-    : currentView === 'guide' ? BROADCAST_GUIDE.subtitle
-    : currentView === 'tonight' ? TONIGHT_PICKER.subtitle : null;
-
   return (
     <div className={`app-shell${panelOpen ? ' panel-docked' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {/* ── Desktop sidebar ── */}
@@ -199,8 +191,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           {/* Sidebar widths only — below them the header above carries the
               title and this is display: none. */}
           {isListDetail && <Link className="app-page-breadcrumb" to="/my-lists"><span aria-hidden="true">‹</span> {CUSTOM_LISTS.backToMyLists}</Link>}
-          {!isListDetail && <h1 className={`app-page-heading${pageSubtitle ? ' app-page-heading--with-subtitle' : ''}${currentView === 'guide' ? ' app-page-heading--guide' : ''}`}>{desktopTitle}</h1>}
-          {pageSubtitle && <p className={`app-page-subtitle${currentView === 'tonight' ? ' app-page-subtitle--desktop-only' : ''}`}>{pageSubtitle}</p>}
+          {!isListDetail && <h1 className="app-page-heading">{desktopTitle}</h1>}
           {children}
         </div>
       </main>
