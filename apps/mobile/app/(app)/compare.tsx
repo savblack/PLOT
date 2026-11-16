@@ -102,8 +102,10 @@ export default function ComparePickerScreen() {
         </View>
 
         <View style={styles.exampleHead}>
-          <Tag label={T.exampleTag} style={styles.exampleTag} />
-          <Text style={styles.h2} accessibilityRole="header">{T.youAnd(T.exampleName)}</Text>
+          <View style={styles.exampleRow}>
+            <Text style={styles.h2} accessibilityRole="header">{T.youAnd(T.exampleName)}</Text>
+            <Tag label={T.exampleTag} />
+          </View>
           <Text style={styles.note}>{T.exampleNote}</Text>
         </View>
         <TasteOverlapExample />
@@ -183,7 +185,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   detail: { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textMuted, marginTop: 2 },
   action: { alignSelf: 'center' },
   exampleHead: { gap: 6, marginTop: spacing.sm },
-  exampleTag: { alignSelf: 'flex-start' },
-  h2: { fontFamily: fontFamily.display, fontSize: 24, lineHeight: 28, letterSpacing: -0.5, color: colors.textPrimary },
+  exampleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  h2: { flexShrink: 1, fontFamily: fontFamily.display, fontSize: 24, lineHeight: 28, letterSpacing: -0.5, color: colors.textPrimary },
   note: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 20, color: colors.textSecondary },
 });

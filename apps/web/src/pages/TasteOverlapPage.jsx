@@ -268,9 +268,10 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
         {!example && <BackLink to="/compare" label={titleForView('compare')} className="to-narrow-only" />}
 
         <header className="to-header">
-          {example && <span className="to-pill to-example-tag">{T.exampleTag}</span>}
           <div className="to-header-row">
             <h1 className="to-h1">{T.youAnd(name)}</h1>
+            {/* On the right of the heading, where a real comparison has Share. */}
+            {example && <span className="to-pill">{T.exampleTag}</span>}
             {!example && !premium && <span className="to-chip">{T.premiumChipLabel}<PremiumMark /></span>}
             {!example && premium && overlap && target && (
               <TasteShareMenu overlap={overlap} target={target} genreName={genreName} onCustomise={() => setSharing(true)} />

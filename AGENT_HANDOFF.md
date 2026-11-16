@@ -2,7 +2,7 @@
 
 Status: active
 Branch: agent/2026-11-16-compare-picker-unify
-Updated: 2026-11-16T12:45:00Z
+Updated: 2026-11-16T13:00:00Z
 
 ## In plain words
 
@@ -45,6 +45,14 @@ match other pages, on web and mobile.
   `tmdb.getTrending('all', 'week')` (`useExampleOverlap`), so no id is typed in.
   If that request fails, the two title sections are left out.
 
+## Third round (2026-11-16)
+
+- The Sample chip sits on the right of the "You and Maya" heading, web and mobile.
+- Savannah said these are fine as they are, so do not change them: the
+  "@handle" page title once a person is picked, the iPhone comparison screen's
+  own back button and heading, and the ellipsis on a long name beside
+  "Request pending".
+
 ## Checks
 
 Passed: `pnpm run check`, `pnpm run test:unit`, `pnpm run copy:check`,
@@ -54,10 +62,6 @@ the iPhone simulator, `test:smoke`, `test-storybook:web`.
 
 ## Open points
 
-- The shell title on `/u/:username/compare` still reads "@handle", not
-  "Compare". Left alone because PRs 1724 and 1725 are editing AppShell.jsx.
-- Mobile comparison screen still has its own round back button and
-  "Taste overlap" heading. Not asked for; the match card stays stacked on a phone.
 - The sample's posters change weekly with TMDB trending; a fixed set would need titles resolved by search.
 - Wording differs from the mockup: tag is "Sample" and the empty-state button
   is "Search people", because "Example" and "Find people" already belong to
