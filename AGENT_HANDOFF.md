@@ -39,15 +39,14 @@ a day per device and account.
 - `pnpm run test:unit`: passed (18 tests in `packages/core/tests/unit/recommendations.test.js`; one layout test changed to stop hardcoding a shelf position).
 - `pnpm --filter @plot/mobile run typecheck`: passed.
 - Web on Staging (localhost:5177, Savannah's Staging account): both shelves load with real titles, no console errors.
-- Daily storage and 10-year cutoff: unit tested, mobile typechecked. Not yet seen in the browser: the Staging sign-in in the browser pane expired, waiting for Savannah to sign in again.
+- Daily storage and 10-year cutoff, in Savannah's Chrome on localhost:5177 against Staging: both shelves drawn (6 and 20 titles), `plot:home-recs:v1:*` stored for 2026-11-16 (about 8 KB), stored titles dated 2017-09-06 to 2026-10-07. With the stored copy deleted, a load made 13 details requests (5 Continue watching shows + 8 seeds); with it present, a reload made 5 (Continue watching only).
 - Not done: mobile not run on the simulator; no Cloudflare preview checked.
 
 ## Next
 
-1. After Savannah signs in to localhost:5177, check Home shows both shelves, `plot:home-recs:v1:*` is in localStorage, every stored title is dated 2016-11-16 or later, and a reload sends no seed details requests.
-2. Watch the PR's checks; look at the Cloudflare preview's Home.
-3. Run mobile on the iPhone simulator and look at the two shelves.
-4. Delete this file in the last commit before merge.
+1. Watch the PR's checks; look at the Cloudflare preview's Home.
+2. Run mobile on the iPhone simulator and look at the two shelves.
+3. Delete this file in the last commit before merge.
 
 ## Approvals
 
