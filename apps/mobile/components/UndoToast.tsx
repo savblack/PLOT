@@ -8,6 +8,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useMediaPanel } from '../contexts/MediaPanelContext';
 import { fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../lib/tabBar';
+import Button from './Button';
 
 /**
  * The undo toast, mobile's half of web's UndoToast.jsx. The logic (what can
@@ -51,13 +52,7 @@ export default function UndoToast({ placement = 'tabs' }: { placement?: 'tabs' |
         <Text style={[styles.message, { color: colors.textPrimary }]}>{toast.message}</Text>
         {toast.offer ? (
           <>
-            <TouchableOpacity
-              onPress={toast.undo}
-              style={[styles.action, { borderColor: colors.borderStrong }]}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.actionText, { color: colors.textPrimary }]}>{UNDO.button}</Text>
-            </TouchableOpacity>
+            <Button variant="outline" size="sm" label={UNDO.button} onPress={toast.undo} />
             <TouchableOpacity
               onPress={toast.dismiss}
               style={styles.close}

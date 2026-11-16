@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from 'react';
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useContinueWatching, usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
 import { usePeopleFeed, usePeopleFollows } from '@plot/core/usePeopleFollows.js';
@@ -22,11 +22,13 @@ import { useFollowPerson } from './useFollowPerson';
 import { useHomePosterScale } from '../../lib/homeLook';
 import PosterRail, { useRowLayout } from '../PosterRail';
 import ListRow from '../ListRow';
+import { PosterArt, PosterCaption, posterColumnWidth } from '../PosterCard';
 import { normalizeHomeLayout } from '@plot/core/homeLayout.js';
 import { usePinnedShelves } from '@plot/core/usePinnedShelves.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
+import { EmptyNote } from '../EmptyState';
 
-const CARD_W = 112;
+const CARD_W = posterColumnWidth();
 
 const fetchTv = (id: number) => tmdb.getTVDetails(id);
 const fetchTitle = (type: 'movie' | 'tv', id: number) =>
@@ -57,14 +59,8 @@ function ShelfHeader({ title, subtitle, right }: { title: string; subtitle?: str
 }
 
 function Poster({ path }: { path?: string | null }) {
-  const { colors } = useTheme();
   const scale = useHomePosterScale();
-  const uri = posterUrl(path, 'w185');
-  return (
-    <View style={{ width: CARD_W * scale, aspectRatio: 2 / 3, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken }}>
-      {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
-    </View>
-  );
+  return <PosterArt uri={posterUrl(path, 'w185')} width={CARD_W * scale} />;
 }
 
 /**
@@ -81,15 +77,13 @@ function PosterTile({ path, title, meta, metaLines = 1, chip, onPress }: {
 }) {
   const row = useRowLayout();
   const scale = useHomePosterScale();
-  const { colors } = useTheme();
   if (row) {
     return <ListRow posterUri={posterUrl(path, 'w185')} title={title} meta={meta} onPress={onPress} trailing={chip} />;
   }
   return (
     <TouchableOpacity style={{ width: CARD_W * scale }} onPress={onPress} accessibilityRole="button" accessibilityLabel={title}>
       <Poster path={path} />
-      <Text style={{ marginTop: spacing.sm, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }} numberOfLines={2}>{title}</Text>
-      {!!meta && <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={metaLines}>{meta}</Text>}
+      <PosterCaption title={title} meta={meta} metaLines={metaLines} />
       {!!chip && <View style={{ marginTop: 6 }}>{chip}</View>}
     </TouchableOpacity>
   );
@@ -131,8 +125,7 @@ export function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
       <View style={{ height: 3, marginTop: 6, borderRadius: radii.pill, backgroundColor: colors.borderStrong, overflow: 'hidden' }}>
         <View style={{ width, height: '100%', backgroundColor: colors.accent }} />
       </View>
-      <Text style={{ marginTop: spacing.sm, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }} numberOfLines={2}>{item.title}</Text>
-      <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>{line}</Text>
+      <PosterCaption title={item.title} meta={line} />
       {item.minutesLeft != null && item.minutesLeft > 0 && (
         <Text style={{ marginTop: 2, fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }} numberOfLines={1}>
           {MEDIA_PANEL.timeLeft(formatDuration(item.minutesLeft))}
@@ -242,7 +235,7 @@ export function YourPeopleShelf() {
         )}
       />
       {items.length === 0 ? (
-        <Text style={{ paddingHorizontal: spacing.xl, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted }}>{P.shelf.empty}</Text>
+        <EmptyNote style={{ paddingHorizontal: spacing.xl }}>{P.shelf.empty}</EmptyNote>
       ) : (
         <PosterRail
           data={items}

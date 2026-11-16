@@ -35,13 +35,15 @@ import { Demo, FriendSearch } from './WatchTogetherStart';
 import { InviteLinkCard, useInviteShare } from './InviteLinkCard';
 import { AcceptSheet } from './AcceptSheet';
 import {
-  ButtonRow, ErrorNote, ListCard, Note, PersonRow, PosterThumb, SectionLabel, WatchPage, openPremium, useOpenTitle,
+  ButtonRow, ErrorNote, ListCard, Note, PersonRow, SectionLabel, WatchPage, openPremium, useOpenTitle,
 } from './WatchChrome';
+import { PosterArt, PosterCaption, posterColumnWidth } from '../PosterCard';
+import { posterUrl } from '../../lib/tokens';
 import { TogetherApi, WtPerson, WtTitle, asPeople, asResult, asTitles, errorText, sessionIdFrom, titleMeta, useTogether, useTogetherTitles } from './watchModel';
 
 const H = T.hub;
 const GROUP_ID = 'group';
-const SHELF_W = 112;
+const SHELF_W = posterColumnWidth();
 
 type InviteLink = ReturnType<typeof useInviteShare>;
 
@@ -334,7 +336,6 @@ function OnPlot({ suggested, sent, onInvite }: { suggested: WtPerson[]; sent: st
 
 /** A My Lists shelf: a collapsible section with a rail of posters, edge to edge. */
 function Shelf({ id, title, count, titles, faded = false, note, headerRight }: { id: string; title: string; count?: number; titles: WtTitle[]; faded?: boolean; note?: string; headerRight?: ReactNode }) {
-  const { colors } = useTheme();
   const openTitle = useOpenTitle();
   return (
     <CollapsibleSection id={id} label={title} count={count} headerRight={headerRight}>
@@ -351,11 +352,10 @@ function Shelf({ id, title, count, titles, faded = false, note, headerRight }: {
             onPress={() => openTitle(t)}
             accessibilityRole="button"
             accessibilityLabel={t.title || undefined}
-            style={{ width: SHELF_W, gap: spacing.xs }}
+            style={{ width: SHELF_W }}
           >
-            <PosterThumb path={t.poster_path} width={SHELF_W} height={SHELF_W * 1.5} />
-            <Text numberOfLines={1} style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary }}>{t.title || ''}</Text>
-            {!!titleMeta(t) && <Text numberOfLines={1} style={{ fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted }}>{titleMeta(t)}</Text>}
+            <PosterArt uri={posterUrl(t.poster_path, 'w185')} width={SHELF_W} style={{ height: SHELF_W * 1.5 }} />
+            <PosterCaption title={t.title || ''} meta={titleMeta(t)} />
           </TouchableOpacity>
         ))}
       </ScrollView>

@@ -100,6 +100,7 @@ import ThemeChip from '../../components/ThemeChip';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import { usePremiumCheckout } from '../../lib/usePremiumCheckout';
 import { useBillingStatus } from '@plot/core/useBillingStatus.js';
+import { EmptyNote } from '../../components/EmptyState';
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 const A = SETTINGS_VIEW.appearance;
@@ -1323,7 +1324,7 @@ export default function SettingsScreen() {
 
         {searching ? (
           <View style={styles.searchResults}>
-            {matches.length === 0 ? <Text style={styles.searchEmpty}>{SETTINGS_VIEW.page.noResults}</Text> : matches.map(item => (
+            {matches.length === 0 ? <EmptyNote>{SETTINGS_VIEW.page.noResults}</EmptyNote> : matches.map(item => (
               <TouchableOpacity key={item.id} style={styles.searchHit} onPress={() => { setQuery(''); setSection(item.id); }} accessibilityRole="button">
                 <Text style={styles.searchHitTitle}>{item.title}</Text>
                 <Text style={styles.rowDescription}>{item.description}</Text>

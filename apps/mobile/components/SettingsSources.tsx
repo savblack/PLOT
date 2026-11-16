@@ -28,6 +28,7 @@ import Button, { TextLink } from './Button';
 import ImportSourceSheet, { ImportSheet, PlexPicker, SourceTitle } from './ImportSourceSheet';
 import Toggle from './Toggle';
 import { useDialog } from './Dialog';
+import { EmptyNote } from './EmptyState';
 
 const T = SETTINGS_VIEW.sources;
 const C = IMPORT_JOBS.card;
@@ -199,7 +200,7 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
         )}
         <Text style={styles.label}>{T.history}</Text>
         <View style={styles.card}>
-          {sourceJobs.length === 0 && reviews.length === 0 && <Text style={styles.emptyLine}>{T.noHistory}</Text>}
+          {sourceJobs.length === 0 && reviews.length === 0 && <EmptyNote style={{ padding: spacing.md }}>{T.noHistory}</EmptyNote>}
           {sourceJobs.map(job => <HistoryRow key={job.id} job={job} current={current} onFinish={onFinish} onRetry={onImport} onCancel={onCancel} />)}
           {reviews.map(review => (
             <View style={styles.histRow} key={review.id}>

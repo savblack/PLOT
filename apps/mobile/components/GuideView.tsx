@@ -2,7 +2,6 @@
 // are shared with web. FlatList virtualizes large broadcast schedules.
 import { useState } from 'react';
 import { View, Text, Pressable, FlatList, ScrollView, Modal, Linking } from 'react-native';
-import { TextInput } from './TextInput';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppData } from '../contexts/AppDataContext';
@@ -15,6 +14,10 @@ import { BROADCAST_GUIDE as COPY } from '@plot/core/copy/broadcastGuide.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import BroadcastGuideSetup from './BroadcastGuideSetup';
 import ModalHeader from './ModalHeader';
+import Button from './Button';
+import Chip from './Chip';
+import SearchField from './SearchField';
+import PageSheet from './PageSheet';
 
 type Programme = { id: string; channelId: string; title: string; start: string; end: string; description?: string };
 type Channel = { id: string; name: string };
@@ -39,7 +42,8 @@ export function BroadcastAgenda({ region, preferences, endpoint = '', showHeadin
   const { market, timezone, now, date, today, data, error, loading, channels, visibleChannels, programmes } = agenda;
   const time = (stamp: string) => broadcastTime(stamp, date, timezone);
   const names = new Map<string, string>((channels as Channel[]).map(c => [c.id, c.name]));
-  const button = (label: string, onPress: () => void, active = false, disabled = false) => <Pressable accessibilityRole="button" accessibilityState={{ selected: active, disabled }} disabled={disabled} onPress={onPress} style={{ alignSelf: 'flex-start', padding: 12, borderWidth: 1, borderColor: active ? colors.accent : colors.border, borderRadius: 8, opacity: disabled ? 0.5 : 1 }}><Text style={{ color: active ? colors.accentText : colors.textPrimary }}>{label}</Text></Pressable>;
+  // Actions are the shared small button; the day and All day / Now pickers are chips.
+  const button = (label: string, onPress: () => void, disabled = false) => <Button size="sm" label={label} onPress={onPress} disabled={disabled} />;
   async function apply() {
     const ok = await preferences.save({ market_id: region, channel_ids: draft });
     setSaveError(!ok);
@@ -56,11 +60,11 @@ export function BroadcastAgenda({ region, preferences, endpoint = '', showHeadin
         {button(COPY.changeRegion, () => router.push('/settings'))}
         <Text style={{ color: colors.textMuted }}>{COPY.coverage[market.scope as keyof typeof COPY.coverage]}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-          {Array.from({ length: market.days }, (_, index) => <View key={index}>{button(index === 0 ? COPY.today : `${broadcastDayLabel(guideDay(today, index), { weekday: 'short' })} ${broadcastDayLabel(guideDay(today, index), { day: 'numeric' })}`, () => { agenda.setOffset(index); agenda.setMode('all'); }, index === agenda.offset)}</View>)}
+          {Array.from({ length: market.days }, (_, index) => <Chip key={index} label={index === 0 ? COPY.today : `${broadcastDayLabel(guideDay(today, index), { weekday: 'short' })} ${broadcastDayLabel(guideDay(today, index), { day: 'numeric' })}`} onPress={() => { agenda.setOffset(index); agenda.setMode('all'); }} selected={index === agenda.offset} />)}
         </ScrollView>
-        <View style={{ flexDirection: 'row', gap: 8 }}>{button(COPY.allDay, () => agenda.setMode('all'), agenda.mode === 'all')}{button(COPY.now, () => { agenda.setMode('now'); agenda.setOffset(0); }, agenda.mode === 'now')}</View>
-        {button(COPY.channels, () => { setDraft(visibleChannels.map((c: Channel) => c.id)); setSaveError(false); }, false, !data)}
-        <TextInput accessibilityLabel={COPY.search} placeholder={COPY.search} placeholderTextColor={colors.textMuted} value={agenda.query} onChangeText={agenda.setQuery} style={{ color: colors.textPrimary, borderWidth: 1, borderColor: colors.border, padding: 12, borderRadius: 8 }} />
+        <View style={{ flexDirection: 'row', gap: 8 }}><Chip label={COPY.allDay} onPress={() => agenda.setMode('all')} selected={agenda.mode === 'all'} /><Chip label={COPY.now} onPress={() => { agenda.setMode('now'); agenda.setOffset(0); }} selected={agenda.mode === 'now'} /></View>
+        {button(COPY.channels, () => { setDraft(visibleChannels.map((c: Channel) => c.id)); setSaveError(false); }, !data)}
+        <SearchField accessibilityLabel={COPY.search} placeholder={COPY.search} value={agenda.query} onChangeText={agenda.setQuery} />
         <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.display }}>{broadcastDayLabel(date, { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         {data && (agenda.stale || error) && <View><Text style={{ color: colors.textMuted }}>{error ? COPY.cached : COPY.stale}</Text>{button(COPY.retry, agenda.retry)}</View>}
         {data && agenda.missingChannelCount > 0 && <Text style={{ color: colors.textMuted }}>{COPY.missingChannels(agenda.missingChannelCount)}</Text>}
@@ -69,17 +73,25 @@ export function BroadcastAgenda({ region, preferences, endpoint = '', showHeadin
       renderItem={({ item }) => <Pressable accessibilityRole="button" onPress={() => setSelected(item)} style={{ paddingVertical: 18, borderBottomWidth: 1, borderColor: colors.border, gap: 6 }}><Text style={{ color: colors.textPrimary, fontFamily: fontFamily.sansBold }}>{item.title}</Text><Text style={{ color: colors.textMuted }}>{names.get(item.channelId)} · {time(item.start)}–{time(item.end)}</Text>{isOnNow(item, now) && <Text style={{ color: colors.accentText }}>{COPY.now}</Text>}</Pressable>}
       ListFooterComponent={data ? <View style={{ paddingTop: 16, gap: 8 }}>{button(`${COPY.providerLabel}: ${data.source}`, () => { void Linking.openURL(data.sourceUrl); })}<Text style={{ color: colors.textMuted }}>{COPY.updated} {new Date(data.fetchedAt).toLocaleString('en-AU', { timeZone: timezone })}</Text></View> : null}
     />
-    <Modal visible={draft !== null} animationType="slide" onRequestClose={() => { if (!preferences.saving) setDraft(null); }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20, gap: 12 }} style={{ backgroundColor: colors.bg }}>
-        <Text style={{ color: colors.textPrimary, fontFamily: fontFamily.display, fontSize: 24 }}>{COPY.channels}</Text>
-        {button(COPY.allChannels, () => setDraft(channels.map((c: Channel) => c.id)), false, preferences.saving)}
-        {button(COPY.noChannels, () => setDraft([]), false, preferences.saving)}
-        {(channels as Channel[]).map(c => <Pressable key={c.id} accessibilityRole="checkbox" accessibilityState={{ checked: draft?.includes(c.id), disabled: preferences.saving }} disabled={preferences.saving} onPress={() => setDraft(current => current?.includes(c.id) ? current.filter(id => id !== c.id) : [...(current || []), c.id])} style={{ padding: 12 }}><Text style={{ color: colors.textPrimary }}>{draft?.includes(c.id) ? '✓ ' : ''}{c.name}</Text></Pressable>)}
-        {button(preferences.saving ? COPY.saving : COPY.apply, apply, true, preferences.saving)}
-        {button(COPY.cancel, () => setDraft(null), false, preferences.saving)}
-        {saveError && <Text accessibilityRole="alert" style={{ color: colors.danger }}>{COPY.saveError}</Text>}
-      </ScrollView>
-    </Modal>
+    {draft !== null && (
+      <PageSheet
+        title={COPY.channels}
+        onClose={() => { if (!preferences.saving) setDraft(null); }}
+        closeLabel={COPY.cancel}
+        onSave={() => { void apply(); }}
+        saveLabel={COPY.apply}
+        saving={preferences.saving}
+        error={saveError ? COPY.saveError : null}
+      >
+        <ScrollView contentContainerStyle={{ paddingBottom: 24, gap: 4 }}>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+            {button(COPY.allChannels, () => setDraft(channels.map((c: Channel) => c.id)), preferences.saving)}
+            {button(COPY.noChannels, () => setDraft([]), preferences.saving)}
+          </View>
+          {(channels as Channel[]).map(c => <Pressable key={c.id} accessibilityRole="checkbox" accessibilityState={{ checked: draft?.includes(c.id), disabled: preferences.saving }} disabled={preferences.saving} onPress={() => setDraft(current => current?.includes(c.id) ? current.filter(id => id !== c.id) : [...(current || []), c.id])} style={{ paddingVertical: 12 }}><Text style={{ color: colors.textPrimary }}>{draft?.includes(c.id) ? '✓ ' : ''}{c.name}</Text></Pressable>)}
+        </ScrollView>
+      </PageSheet>
+    )}
     <Modal visible={selected !== null} animationType="slide" onRequestClose={() => setSelected(null)}>
       <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
         <ModalHeader title={selected?.title ?? ''} actionLabel={COMMON.cancel} onAction={() => setSelected(null)} />
