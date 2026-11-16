@@ -85,3 +85,25 @@ Savannah confirmed the overlap happens on iPhone and asked for a fix. It rides o
 - Checks: mobile `typecheck` pass; ESLint on the two files 0 errors, 5 warnings, same as before the change.
 - Metro note: `CI=1` turns file watching off. After an edit, stop Metro and start it again (`--clear`), or the simulator keeps the old code.
 - Still needed from Savannah: create the Staging test account in the simulator so the setup flow can be walked.
+
+## Simulator walk-through, done 2026-11-16
+
+Savannah asked for the test account and the check. iPhone 17 Pro simulator, dev build, Metro from this worktree on port 8082, Staging.
+
+How the account was made: I cannot tick Cloudflare's box, so Metro was started with `EXPO_PUBLIC_TURNSTILE_SITE_KEY=` (empty) for this run only. The app's own "no site key, no captcha" path then applies, and Staging accepted the sign-up without a token. No code or Staging setting was changed. Two Staging-only accounts now exist: `smoke-20261116@plot-staging.test` and `smoke-20261116b@plot-staging.test`. The shared throwaway password is in the macOS Keychain under `com.theplot.staging.smoke.password`.
+
+Seen and correct:
+- Step 1: wordmark centered, Skip top right, three-part bar with one part on, "Switching apps?" row with three logos and chevron, search, three-across grid that scrolls well past two rows, outline bookmark on every poster. Picking a title adds the tint, accent border and filled bookmark; the button reads "Continue with N titles".
+- Import list ("Where's your history now?"): Skip still top right, bar still one part, row flips to "Pick a few titles instead.", "I'll do this later" at the bottom goes to services.
+- Services: back chevron left, Skip right, bar two parts on. Picking Netflix shows the accent border and check.
+- Continue from services: building screen slides in with the full bar, then Home about a second later. Home shows Finishing touches 1 of 5, both picked titles under Up next, and the trial offer.
+- Account b: one title picked, Skip on step 1 goes straight to Home with "Add your first show or movie". Nothing saved, same as web.
+
+Not seen: the building screen's wordmark (it is on screen for about 1.1s, only a mid-slide frame was caught, which showed the bar), Skip on the services screen being tapped, queueing a real import and "add another", the captcha box clearing after a tick.
+
+Noticed, not changed:
+- Import list row reads "Switching apps? Pick a few titles instead." The lead no longer fits once the list is open. Shared copy (`seed.switchingLead` + `seed.switchingBack`), same before this branch.
+- "Download the file from the app, then drop it here." is web wording on a phone.
+- Once, the sign-up Email field flashed "Please enter a valid email address." on a valid address while typing was scripted; sign-up still went through. Not reproduced by hand.
+
+Next: open the PR when Savannah says so. Delete this file in the last commit before merge.
