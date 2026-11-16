@@ -213,7 +213,10 @@
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--surface); color: var(--accent-secondary);
 }
-.to-watchlist-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; font-size: 0.8rem; }
+/* The count, then the Watch Together button on the same line at the right edge.
+   The button never wraps its label; on a very narrow row it drops below the count. */
+.to-watchlist-text { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; font-size: 0.8rem; }
+.to-watchlist-text .btn { flex-shrink: 0; white-space: nowrap; }
 .to-watchlist-text strong { font-size: 0.95rem; }
 
 .to-share-row { display: flex; justify-content: center; padding-top: 0.25rem; }

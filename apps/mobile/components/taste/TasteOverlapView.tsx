@@ -642,9 +642,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   watchIcon: {
     width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,
   },
-  watchCopy: { flex: 1, gap: spacing.sm },
-  watchBtn: { alignSelf: 'flex-start' },
-  watchText: { fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.onAccentSecondaryFill },
+  // The count, then the button on the same line at the right edge.
+  watchCopy: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  watchBtn: { flexShrink: 0 },
+  watchText: { flex: 1, fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.onAccentSecondaryFill },
   primary: { alignSelf: 'center' },
   state: { alignItems: 'flex-start', gap: spacing.md, padding: 18, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   stateTitle: { fontFamily: fontFamily.display, fontSize: 22, letterSpacing: -0.4, color: colors.textPrimary },
