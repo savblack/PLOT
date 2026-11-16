@@ -15,6 +15,8 @@ import { useSmartList } from '@plot/core/useSmartList.js';
 import { useSmartListSeen } from '@plot/core/useSmartListSeen.js';
 import { isFinishedStatus, listWatchStatus } from '@plot/core/listWatchStatus.js';
 import WatchStatusChip from '../WatchStatusChip';
+import ListCardMarkers from '../ListCardMarkers';
+import { listCardMarkers } from '@plot/core/listCardMarkers.js';
 import { useGenreCatalog } from '@plot/core/useGenres.js';
 import { isSmartListPremiumError } from '@plot/core/customListCreation.js';
 import { pickerProviderIds } from '@plot/core/tonightPicker.js';
@@ -76,7 +78,7 @@ export default function SmartListView({ listId }: { listId: string }) {
   const { width } = useWindowDimensions();
   const posterW = (width - spacing.xl * 2 - spacing.sm * 2) / 3;
   const { open } = useMediaPanel();
-  const { userId, profile, watchlist, watching, history, customLists } = useAppData();
+  const { userId, profile, watchlist, watching, history, customLists, privateNotes } = useAppData();
   const catalogRaw = useGenreCatalog();
   const catalog = useMemo(() => asCatalog(catalogRaw), [catalogRaw]);
   const list = useMemo(
@@ -245,6 +247,7 @@ export default function SmartListView({ listId }: { listId: string }) {
           posterW={posterW}
           styles={styles}
           statusOf={(item) => listWatchStatus(item, history?.entries ?? NONE, watching?.items ?? NONE)}
+          markersOf={(item) => listCardMarkers(item, history?.entries, privateNotes)}
           onOpen={(item) => open(item.tmdb_id, item.media_type)}
           onUpgrade={openUpgrade}
         />
@@ -289,7 +292,7 @@ function BackBar({ onPress, color }: { onPress: () => void; color: string }) {
 }
 
 function Matches({
-  premium, smart, items, fresh, rest, since, posterW, styles, statusOf, onOpen, onUpgrade,
+  premium, smart, items, fresh, rest, since, posterW, styles, statusOf, markersOf, onOpen, onUpgrade,
 }: {
   premium: boolean;
   smart: SmartQuery;
@@ -300,6 +303,7 @@ function Matches({
   posterW: number;
   styles: ReturnType<typeof makeStyles>;
   statusOf: (item: SmartMatch) => ReturnType<typeof listWatchStatus>;
+  markersOf: (item: SmartMatch) => { hasPrivateNote: boolean; hasReview: boolean };
   onOpen: (item: SmartMatch) => void;
   onUpgrade: () => void;
 }) {
@@ -335,6 +339,7 @@ function Matches({
             <View style={[styles.poster, { width: posterW, height: posterW * 1.5 }]}>
               {uri ? <Image source={{ uri }} style={[styles.posterImage, finished && styles.posterFinished]} /> : null}
               {status && <View style={styles.statusChipSlot} pointerEvents="none"><WatchStatusChip status={status} /></View>}
+              <ListCardMarkers {...markersOf(item)} />
             </View>
             <Text style={[styles.posterTitle, finished && styles.titleFinished]} numberOfLines={2}>{item.title}</Text>
             <Text style={styles.posterMeta}>{item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}</Text>
