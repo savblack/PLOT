@@ -23,6 +23,11 @@ the last 10 years (the titles they start from can be any age). The finished
 shelves are saved on the device for the day, so Home asks TMDB at most once
 a day per device and account.
 
+Update (same day): Your people now shows for Free accounts too when they
+follow people and there is something new from them (a lapsed member keeps
+their follows). The "people to follow" suggestions stay Premium, because
+following needs Premium.
+
 ## Done
 
 - `packages/core/recommendations.js`: the rules (seed picking, both shelves, 10-year cutoff, the stored-day format). Pure, unit tested.
@@ -33,6 +38,7 @@ a day per device and account.
 - `packages/core/analyticsEvents.js` + `docs/analytics/README.md`: `recommendations_viewed`.
 - Web: `apps/web/src/components/DiscoverView.jsx` renders both; `RankedCard` takes an optional `source` so opens are counted per shelf.
 - Mobile: `apps/mobile/app/(app)/index.tsx`, `apps/mobile/lib/homeShelves.ts`, `apps/mobile/components/people/HomeShelves.tsx`.
+- Your people for everyone: `useYourPeopleShelf` in `DiscoverView.jsx` and `YourPeopleShelf` in `HomeShelves.tsx` load follows for any account. Free: shown only with feed titles. Premium: unchanged (invite when following nobody, empty line when nothing new). No database change: `person_alerts` and `people_feed` reads were never Premium-gated.
 
 ## Checks
 
@@ -42,6 +48,7 @@ a day per device and account.
 - Web on Staging (localhost:5177, Savannah's Staging account): both shelves load with real titles, no console errors.
 - Daily storage and 10-year cutoff, in Savannah's Chrome on localhost:5177 against Staging: both shelves drawn (6 and 20 titles), `plot:home-recs:v1:*` stored for 2026-11-16 (about 8 KB), stored titles dated 2017-09-06 to 2026-10-07. With the stored copy deleted, a load made 13 details requests (5 Continue watching shows + 8 seeds); with it present, a reload made 5 (Continue watching only).
 - Mobile, iPhone 17 Pro simulator, existing dev client, Metro from this worktree on port 8091 (port 8081 belonged to another project), Staging: both shelves drawn under Up next with the same titles as web; AsyncStorage holds `plot:home-recs:v1:*` for 2026-11-16 (6 + 20 titles, dated 2017-09-06 to 2026-10-07, 7,844 bytes); reopening the app drew the same shelves from it; tapping Barron's Cove in Recommended for you opened its title panel.
+- Your people for everyone: checks pass; on web, Savannah's Free Staging account (follows nobody, confirmed with a read of `person_alerts`) correctly shows no shelf. Not seen: a Free account that does follow people, since Free accounts cannot add follows and only her account was used.
 - Not done: Cloudflare preview's Home not looked at.
 
 ## Next

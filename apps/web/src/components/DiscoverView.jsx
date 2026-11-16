@@ -587,14 +587,17 @@ export function PlatformCharts({ id, platformList, openPanel, watchlist, typeFil
   );
 }
 
-/* ── Your people (Premium) ── board R2-4b, or the 4c invite for someone who
-   follows nobody yet. Free accounts never see it. Placed after Top 20 This Week. */
+/* ── Your people ── board R2-4b, or the 4c invite for someone who follows
+   nobody yet. Following is Premium, but what someone already follows (a
+   lapsed member's follows stay stored) shows for everyone, as long as there
+   is something new from them (Savannah, 16 Nov 2026). The invite, which asks
+   them to follow people, stays Premium. Placed after Top 20 This Week. */
 const byWatchedDesc = (a, b) => String(b.watched_at ?? '').localeCompare(String(a.watched_at ?? ''));
 
 function useYourPeopleShelf() {
   const { user, profile } = useApp();
   const premium = usePremium(profile);
-  const people = usePeopleFollows(premium.isPremium ? user?.id : null);
+  const people = usePeopleFollows(user?.id);
   const history = useHistory(premium.isPremium && !people.loading && people.follows.length === 0 ? user?.id : null);
   const today = localDateStr();
   const ids = useMemo(() => people.follows.map(f => f.tmdb_person_id), [people.follows]);
@@ -606,9 +609,14 @@ function useYourPeopleShelf() {
     enabled: premium.isPremium && !people.loading && people.follows.length === 0,
     exclude: followed,
   });
-  if (!premium.isPremium || people.loading) return { visible: false };
-  if (people.follows.length === 0) return { visible: suggestions.length > 0, invite: true, suggestions, today };
-  return { visible: true, invite: false, items, count: people.follows.length, today };
+  if (people.loading) return { visible: false };
+  if (people.follows.length === 0) {
+    if (!premium.isPremium) return { visible: false };
+    return { visible: suggestions.length > 0, invite: true, suggestions, today };
+  }
+  // A Free viewer sees the shelf only when it has titles; Premium keeps the
+  // "nothing new" line so the shelf they set up does not vanish.
+  return { visible: premium.isPremium || items.length > 0, invite: false, items, count: people.follows.length, today };
 }
 
 function YourPeopleSection({ shelf, openPanel }) {
