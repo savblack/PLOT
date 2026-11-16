@@ -16,6 +16,9 @@ export const IMPORT_JOBS = {
     queuedBody: 'Keep going. Your import will continue in the background, and we’ll let you know when it’s done.',
     connect: (source) => `Connect ${source}`,
     connecting: 'Waiting for you to finish in the other window…',
+    // The other window came back without connecting (cancelled, expired, or
+    // the service refused). Shown above the button that opens it again.
+    connectFailed: (source) => `${source} didn’t connect. Try again when you’re ready.`,
     connected: (source) => `${source} is connected.`,
     startImport: 'Import my history',
     startPlexImport: 'Import from this profile',

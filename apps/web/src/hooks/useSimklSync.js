@@ -27,13 +27,16 @@ export function useSimklSync(userId) {
 
   const connect = useCallback(async (returnTo) => {
     const clientId = getConfig().simklClientId;
-    if (!clientId) return setError('Simkl is not configured yet.');
+    // Resolves false when the connect could not start, so a caller that is
+    // showing "waiting" can stop.
+    if (!clientId) { setError('Simkl is not configured yet.'); return false; }
     try {
       const state = createSimklState(typeof returnTo === 'string' ? returnTo : undefined);
       const result = await callSimkl('prepare', { redirect_uri: getSimklCallbackUrl(), state });
       track(EVENTS.SIMKL_CONNECT_STARTED, {});
       redirectToExternal(result.authorizeUrl);
-    } catch (e) { setError(e.message); }
+      return true;
+    } catch (e) { setError(e.message); return false; }
   }, []);
 
   const importHistory = useCallback(async () => {
