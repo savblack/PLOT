@@ -2,7 +2,7 @@
 
 Status: active
 Branch: agent/2026-11-16-compare-picker-unify
-Updated: 2026-11-17T12:30:00Z
+Updated: 2026-11-17T13:10:00Z
 
 ## In plain words
 
@@ -152,6 +152,15 @@ SHOW_WATCH_TOGETHER is off. Event `compare_watch_together_tapped` with
 Decided 2026-11-17: the round share button stays on real comparisons only
 (web TasteShareMenu, mobile top bar). The sample keeps its Sample chip and no
 share. Do not add one.
+
+## Seventh round (2026-11-17): Compare card on Watch Together
+
+History's "Compare your taste" side card is now a shared component and also
+sits on the Watch Together page: web `components/CompareTasteCard.jsx` (last
+card in the hub's side column), mobile `components/taste/ComparePrompt.tsx`
+(under the shelf in `WatchHub`). Same wording and button as History. Checks
+pass. NOT seen on screen: there is no Storybook story for the Watch Together
+hub, so it needs a look on the Cloudflare preview.
 
 ## Next
 

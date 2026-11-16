@@ -21,6 +21,7 @@ import { Demo, FriendSearch, PersonRow } from './WatchTogetherStart.jsx';
 import { RailSection } from './DiscoverView.jsx';
 import MediaCard from './MediaCard.jsx';
 import PremiumGateButton from './PremiumGateButton.jsx';
+import CompareTasteCard from './CompareTasteCard.jsx';
 import './WatchTogetherHub.css';
 
 const H = T.hub;
@@ -236,6 +237,9 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
               )}
             </div>
           )}
+
+          {/* The other thing two people can do with their lists and ratings. */}
+          <CompareTasteCard />
         </aside>
 
         <div className="hist-stream wth-stream">

@@ -36,7 +36,7 @@ import { useTopLists } from '../hooks/useTopLists.js';
 import { useSharePreset } from '../hooks/useSharePreset.js';
 import { MEDIA } from '../copy/media.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
-import { TASTE_OVERLAP } from '../copy/tasteOverlap.js';
+import CompareTasteCard from './CompareTasteCard.jsx';
 import PremiumMark from './PremiumMark.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import ActivationNudge from './ActivationNudge.jsx';
@@ -259,19 +259,6 @@ function CrowdCard({ entries, details, openPanel, onShare, shareReady }) {
           })}
           <span className="hist-card-note">{T.crowdDisagreements}</span>
         </div>
-      </div>
-    </div>
-  );
-}
-
-/* Entry into taste overlap (Premium). Free viewers land on its upsell. */
-function CompareCard() {
-  return (
-    <div className="hist-card">
-      <span className="hist-card-label">{TASTE_OVERLAP.historyPromptTitle}</span>
-      <div className="hist-card-body">
-        <span className="hist-card-note">{TASTE_OVERLAP.historyPromptBody}</span>
-        <Link className="btn btn-sm btn-secondary" to="/compare" style={{ alignSelf: 'flex-start' }}>{TASTE_OVERLAP.compareTaste}</Link>
       </div>
     </div>
   );
@@ -549,7 +536,7 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
             onShare={canShare ? () => setShareCard(CARD_IDS.CROWD) : null} shareReady={cardReady(CARD_IDS.CROWD)} />
           <PeopleCard entries={yearEntries} details={details} openPanel={openPanel}
             onShare={canShare ? () => setShareCard(CARD_IDS.PERSON) : null} shareReady={cardReady(CARD_IDS.PERSON)} />
-          <CompareCard />
+          <CompareTasteCard />
           <Filters
             types={types} setTypes={setTypes}
             genres={genres} setGenres={setGenres} genreOptions={genreOptions}
