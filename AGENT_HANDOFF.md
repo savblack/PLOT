@@ -14,8 +14,9 @@ thing you watched and liked. "Recommended for you" pools suggestions from up to
 eight of your best-rated or most recent titles, and puts first the ones several
 of them agree on. There is no AI: it uses TMDB's own "people who liked this
 also liked" lists and simple scoring. Anything you have already watched, saved
-or are watching is left out. Both shelves are free, sit under Continue
-watching, and can be moved or hidden in Customize Home.
+or are watching is left out. Both shelves are free and can be moved or
+hidden in Customize Home. Recommended for you sits under Continue watching;
+Because you watched is last, under Most Anticipated (Savannah's call, same day).
 
 Update (same day): both shelves now only recommend titles first released in
 the last 10 years (the titles they start from can be any age). The finished
@@ -27,7 +28,7 @@ a day per device and account.
 - `packages/core/recommendations.js`: the rules (seed picking, both shelves, 10-year cutoff, the stored-day format). Pure, unit tested.
 - `packages/core/useHomeShelves.js`: `useRecommendationShelves`, shared by web and mobile. Reads the day's stored shelves first and only fetches when there are none.
 - Storage: web passes localStorage (`DiscoverView.jsx` `RECS_STORAGE`), mobile AsyncStorage (`index.tsx` `RECS_STORAGE`). Key `plot:home-recs:v1:<userId>`.
-- `packages/core/homeLayout.js`: shelf ids `because`, `forYou` after `continue`.
+- `packages/core/homeLayout.js`: shelf id `forYou` after `continue`, `because` last (after `anticipated`). Checked on web: Jump to and the page both end Most Anticipated, Because you watched.
 - `packages/core/copy/discoverView.js`: `DISCOVER_VIEW.recommendations` wording.
 - `packages/core/analyticsEvents.js` + `docs/analytics/README.md`: `recommendations_viewed`.
 - Web: `apps/web/src/components/DiscoverView.jsx` renders both; `RankedCard` takes an optional `source` so opens are counted per shelf.
