@@ -32,6 +32,15 @@
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
+# Deno otherwise reads the repo-root package.json, treats it as its own
+# workspace, and records that file's dependency ranges in deno.lock. Nothing
+# under supabase/functions imports through it (they use npm:/jsr: specifiers and
+# relative paths), so the only effect was that every Dependabot bump of eslint or
+# typescript-eslint left deno.lock behind package.json, and each local run of
+# this check then rewrote the lock and left a modified file in the checkout.
+# With this set the lock holds only what the functions resolve.
+export DENO_NO_PACKAGE_JSON=1
+
 if ! command -v deno > /dev/null 2>&1; then
   echo "deno is not installed — skipping edge function typecheck." >&2
   echo "Install it from https://deno.land, or let CI run this." >&2
