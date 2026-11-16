@@ -17,3 +17,15 @@ export const FAVOURITES_ENABLED = false;
  * true in the same change that sets the secret.
  */
 export const ALERT_EMAIL_ENABLED = false;
+
+/**
+ * GUIDE_ENABLED: the TV guide (live broadcast listings). Hidden everywhere for
+ * now: the menu item on both apps, the /guide page (it sends you Home), the
+ * "TV guide region" row in Settings > Viewing, and the mention in the credits.
+ * The guide code, saved TV regions, the broadcast_preferences table and the
+ * snapshot refresh job are all kept: flip this to true to bring it back. Two
+ * places cannot read this flag and need the same edit by hand: the TVmaze line
+ * in apps/website/about.html (and copy/about.js), and the store description in
+ * docs/ops/app-store-listing.md.
+ */
+export const GUIDE_ENABLED = false;

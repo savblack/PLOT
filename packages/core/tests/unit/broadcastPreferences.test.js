@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { configure } from '../../config.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
 import { loadBroadcastPreferences, saveBroadcastPreferences, validateBroadcastPreferences } from '../../broadcastPreferences.js';
+import { GUIDE_ENABLED } from '../../features.js';
+import { APP_NAV_ITEMS } from '../../navigation.js';
+import { SETTINGS_VIEW } from '../../copy/settingsView.js';
 import { broadcastRegionLabel, broadcastSnapshotUrl, validateGuideSnapshot, guideInMenu } from '../../broadcastGuide.js';
 
 test('a market named after its country is labeled once', () => {
@@ -43,7 +46,13 @@ test('rejects unknown markets and malformed channel IDs instead of guessing', ()
   assert.throws(() => validateGuideSnapshot({ sourceUrl: 'javascript:alert(1)' }, 'Sydney'));
 });
 
-test('Guide is in the menu only where a region has listings', () => {
+test('Guide is in no menu while it is hidden', { skip: GUIDE_ENABLED }, () => {
+  for (const region of ['AU', 'NZ', 'US', 'CA', 'GB', 'FR', null]) assert.equal(guideInMenu(region), false, String(region));
+  assert.equal(APP_NAV_ITEMS.some(item => item.id === 'guide'), false);
+  assert.doesNotMatch(SETTINGS_VIEW.credits.tvmazeNotice, /guide/i);
+});
+
+test('Guide is in the menu only where a region has listings', { skip: !GUIDE_ENABLED }, () => {
   for (const region of ['AU', 'NZ', 'US', 'CA']) assert.equal(guideInMenu(region), true, region);
   // GB's source is down; other countries have no markets at all.
   for (const region of ['GB', 'FR', 'IN']) assert.equal(guideInMenu(region), false, region);

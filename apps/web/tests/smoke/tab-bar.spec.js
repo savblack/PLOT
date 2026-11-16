@@ -48,11 +48,11 @@ test('More opens the menu with everything that is not a tab, in the saved order'
   await expect(menu).toHaveClass(/open/);
   // The saved order puts Watch together first. The tabs are not repeated here.
   // New Releases isn't in that saved order, so it comes after the items that are.
-  await expect(menu.locator('.nav-drawer-nav .nav-drawer-label')).toHaveText(['Watch Together', 'Just Decide', 'Guide', 'New Releases']);
+  await expect(menu.locator('.nav-drawer-nav .nav-drawer-label')).toHaveText(['Watch Together', 'Just Decide', 'New Releases']);
   await expect(menu.getByRole('button', { name: 'Settings' })).toBeVisible();
 
-  await menu.getByRole('button', { name: 'Guide' }).click();
-  await expect(page.getByTestId('view')).toHaveText('guide');
+  await menu.getByRole('button', { name: 'New Releases' }).click();
+  await expect(page.getByTestId('view')).toHaveText('new-releases');
   await expect(menu).not.toHaveClass(/open/);
   // No tab is marked current while a menu page is showing.
   await expect(bar.locator('[aria-current="page"]')).toHaveCount(0);

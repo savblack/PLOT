@@ -1,5 +1,6 @@
 // Broadcast schedules use absolute instants; timezone affects display and day selection only.
 import { getConfig } from './config.js';
+import { GUIDE_ENABLED } from './features.js';
 import { BROADCAST_GUIDE as BROADCAST_COPY } from './copy/broadcastGuide.js';
 import markets from './broadcastMarkets.json' with { type: 'json' };
 /** @typedef {{id: string, name: string, number?: number, network?: string, logo?: string}} BroadcastChannel */
@@ -17,9 +18,11 @@ const hasListings = (market) => !!market?.provider && !NO_LISTINGS.has(market.sc
  * TV market with listings. Today that is AU, NZ, US and CA; GB's source is
  * down and every other country has none. The page itself still opens from a
  * link (15 Nov 2026, review finding 9). Web and mobile menus both read this.
+ * Always false while the guide is hidden (GUIDE_ENABLED in features.js).
  * @param {string | null | undefined} region profile.region (ISO country)
  */
 export function guideInMenu(region) {
+  if (!GUIDE_ENABLED) return false;
   if (!region) return true;
   return GUIDE_REGIONS.some(market => market.country === region && hasListings(market));
 }
