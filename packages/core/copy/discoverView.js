@@ -95,5 +95,4 @@ export const DISCOVER_VIEW = {
     searchLink: 'Search for something else',
   },
   // The round floating entry to Just Decide, bottom right above the tab bar.
-  tonightFab: 'Just Decide',
 };

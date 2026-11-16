@@ -270,7 +270,6 @@ export const SETTINGS_VIEW = {
       back: 'Settings',
       intro: 'How Plot looks on this browser. Every theme comes in light and dark and follows the Light, Dark and System setting. The default is free; Premium themes change the paper, the ink and the accent, never what anything means.',
       free: 'Free',
-      premium: 'Premium',
       inUse: 'In use',
       applyLabel: (name) => `Use ${name}`,
       lockedNote: 'Premium themes are part of Premium. You can look here, and the default stays free in light, dark and system.',

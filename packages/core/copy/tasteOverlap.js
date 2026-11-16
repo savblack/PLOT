@@ -8,9 +8,7 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 export const TASTE_OVERLAP = {
   title: 'Taste overlap',
   loading: 'Comparing your taste',
-  premiumChip: 'Deeper stats · Premium',
-  // Web shows the Premium spark beside this instead of the word (mobile still
-  // reads premiumChip until it has the shared marker, savblack/PLOT#1503).
+  // Both apps show the Premium spark beside this instead of the word.
   premiumChipLabel: 'Deeper stats',
   /** @param {string} name */
   youAnd: (name) => `You and ${name}`,

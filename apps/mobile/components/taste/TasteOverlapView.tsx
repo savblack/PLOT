@@ -29,6 +29,7 @@ import TasteShareCard, { type TasteTheme } from './TasteShareCard';
 import TasteShareSheet from './TasteShareSheet';
 import Button from '../Button';
 import { Tag } from '../Chip';
+import PremiumMark from '../PremiumMark';
 
 type TasteModel = TasteOverlapModel;
 
@@ -189,7 +190,7 @@ function TasteOverlapBody({
           <TouchableOpacity style={styles.iconBtn} onPress={back} accessibilityRole="button" accessibilityLabel={T.back}>
             <IconChevronLeft color={colors.textPrimary} />
           </TouchableOpacity>
-          {!premium && <Tag label={T.premiumChip} style={styles.chip} />}
+          {!premium && <Tag label={T.premiumChipLabel} icon={<PremiumMark size={12} />} style={styles.chip} />}
           {premium && overlap && target ? (
             <TouchableOpacity
               style={styles.iconBtn}

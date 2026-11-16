@@ -49,7 +49,6 @@ import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatc
 import { useContinueWatching } from '@plot/core/useHomeShelves.js';
 import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
 import RateCard from '../../components/RateCard';
-import TonightFab from '../../components/TonightFab';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -1141,7 +1140,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       </ScrollView>
       )}
 
-      {tab === 'discover' && <TonightFab />}
 
       {openCurated && (
         <CuratedListPanel

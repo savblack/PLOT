@@ -6,7 +6,6 @@ import { useRef, useEffect, useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { APP_SHELL } from '@plot/core/copy/appShell.js';
-import { ICON_PATHS } from '@plot/core/icons.js';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { titleForView } from '@plot/core/navigation.js';
 import { useNotifications } from '@plot/core/useNotifications.js';
@@ -20,6 +19,7 @@ import NavGlyph, { NavIconName } from './NavIcons';
 import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 import PlotWordmark from './PlotWordmark';
 import { GoPremiumSpark, useGoPremiumLink } from './GoPremiumLink';
+import PremiumMark from './PremiumMark';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import { guideInMenu } from '@plot/core/broadcastGuide.js';
 
@@ -185,9 +185,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                     {item.label}
                   </Text>
                   {item.premium && !profile?.is_premium && (
-                    <View style={styles.premiumMark} accessibilityRole="image" accessibilityLabel={APP_SHELL.premium}>
-                      <Svg width={14} height={14} viewBox="0 0 24 24" fill={colors.accentText}><Path d={ICON_PATHS.spark} /></Svg>
-                    </View>
+                    <PremiumMark style={styles.premiumMark} />
                   )}
                 </TouchableOpacity>
               );

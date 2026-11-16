@@ -12,6 +12,7 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../../lib/tokens';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
+import PremiumMark from '../../components/PremiumMark';
 
 const A = SETTINGS_VIEW.appearance;
 
@@ -53,7 +54,7 @@ export default function ThemesScreen() {
                 ))}
               </View>
               <View style={styles.foot}>
-                <Text style={styles.meta}>{lockedFamily ? A.gallery.premium : current ? A.gallery.inUse : isPremiumFamily(id) ? A.gallery.premium : A.gallery.free}</Text>
+                {current ? <Text style={styles.meta}>{A.gallery.inUse}</Text> : isPremiumFamily(id) ? <PremiumMark /> : <Text style={styles.meta}>{A.gallery.free}</Text>}
                 {current ? null : (
                   <TextLink tone="accent" label={A.gallery.applyLabel(name)} accessibilityLabel={lockedFamily ? A.lockedTheme(name) : A.gallery.applyLabel(name)} onPress={() => pick(id)} />
                 )}
