@@ -1,6 +1,6 @@
 import './TasteOverlapPage.css';
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
 import { MIN_SHARED_RATINGS } from '@plot/core/tasteOverlap.js';
@@ -15,7 +15,9 @@ import TasteShareMenu from '../components/TasteShareMenu.jsx';
 import LoginRedirect from '../components/LoginRedirect.jsx';
 import PremiumMark from '../components/PremiumMark.jsx';
 import PremiumGateButton from '../components/PremiumGateButton.jsx';
-import Avatar from '../components/Avatar.jsx';
+import BackLink from '../components/BackLink.jsx';
+import ComparePeoplePanel from '../components/ComparePeoplePanel.jsx';
+import { titleForView } from '../navigation.js';
 
 const stars = (n) => (n == null ? '' : `${Number.isInteger(n) ? n.toFixed(0) : n.toFixed(1)}`);
 
@@ -28,8 +30,10 @@ function LoadingSkeleton() {
   return (
     <div className="to-skeleton" role="status" aria-label={T.loading}>
       <section className="to-card to-match" aria-hidden="true">
-        <span className="to-skel to-skel--kicker" />
-        <span className="to-skel to-skel--note" />
+        <span className="to-match-text">
+          <span className="to-skel to-skel--kicker" />
+          <span className="to-skel to-skel--note" />
+        </span>
         <span className="to-skel-venn"><span className="to-skel to-skel--circle" /><span className="to-skel to-skel--circle" /></span>
       </section>
       <section className="to-card" aria-hidden="true">
@@ -37,15 +41,6 @@ function LoadingSkeleton() {
         {[0, 1, 2, 3].map(i => <span key={i} className="to-skel to-skel--bar" />)}
       </section>
     </div>
-  );
-}
-
-function BackButton({ to }) {
-  const navigate = useNavigate();
-  return (
-    <button type="button" className="to-icon-btn" aria-label={T.back} onClick={() => (window.history.length > 1 ? navigate(-1) : navigate(to))}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
-    </button>
   );
 }
 
@@ -108,7 +103,7 @@ function Upsell() {
  * The comparison itself, from already-loaded data. Split from the page so
  * Storybook can render every state without a session.
  */
-export function TasteOverlapView({ username, premium, loading, error, target, overlap, sharedWatchlist, genreName, onRetry, openPanel }) {
+export function TasteOverlapView({ username, premium, loading, error, target, overlap, sharedWatchlist, genreName, onRetry, openPanel, side = null, example = false }) {
   const [sharing, setSharing] = useState(false);
   const profilePath = `/u/${username}`;
   const name = target ? (target.display_name || target.username) : `@${username}`;
@@ -135,17 +130,23 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
     body = (
       <>
         <section className="to-card to-match" aria-labelledby="to-match-kicker">
-          <span className="to-kicker" id="to-match-kicker">{T.matchKicker}</span>
-          {o.match != null ? (
-            <>
-              <span className="to-match-num">{o.match}%</span>
-              <span className="to-match-note">{T.basedOn(o.sharedRated)}</span>
-            </>
-          ) : (
-            <span className="to-match-note">{T.needMoreRatings(need)}</span>
-          )}
-          <Venn watched={o.watched} name={name} />
-          <span className="to-caption">{T.titlesWatched}</span>
+          {/* The number on the left, the circles on the right, once the card
+              is wide enough for both; stacked and centred below that. */}
+          <div className="to-match-text">
+            <span className="to-kicker" id="to-match-kicker">{T.matchKicker}</span>
+            {o.match != null ? (
+              <>
+                <span className="to-match-num">{o.match}%</span>
+                <span className="to-match-note">{T.basedOn(o.sharedRated)}</span>
+              </>
+            ) : (
+              <span className="to-match-note">{T.needMoreRatings(need)}</span>
+            )}
+          </div>
+          <div className="to-match-venn">
+            <Venn watched={o.watched} name={name} />
+            <span className="to-caption">{T.titlesWatched}</span>
+          </div>
         </section>
 
         <section className="to-card">
@@ -197,6 +198,7 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
           </section>
         </div>
 
+        {!example && (<>
         <section className="to-section">
           <h2 className="to-h2">{T.bothLoved}</h2>
           {o.loved.length === 0 ? <p className="to-empty">{T.bothLovedEmpty}</p> : (
@@ -246,34 +248,37 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
         <div className="to-share-row">
           <button type="button" className="btn btn-primary" onClick={() => setSharing(true)}>{T.share}</button>
         </div>
+        </>)}
       </>
     );
   }
 
   return (
-    <div className="to-view">
-      <div className="to-top">
-        <BackButton to={profilePath} />
-        {!premium && <span className="to-chip">{T.premiumChipLabel}<PremiumMark /></span>}
-        {premium && overlap && target
-          ? <TasteShareMenu overlap={overlap} target={target} genreName={genreName} onCustomise={() => setSharing(true)} />
-          : <span className="to-top-spacer" aria-hidden="true" />}
+    <div className={`to-layout${example ? '' : ' to-layout--compare'}`}>
+      {side}
+      <div className="to-view">
+        {/* Below the two-column width the people panel is not beside the
+            comparison, so this is the way back to it. */}
+        {!example && <BackLink to="/compare" label={titleForView('compare')} className="to-narrow-only" />}
+
+        <header className="to-header">
+          {example && <span className="to-pill to-example-tag">{T.exampleTag}</span>}
+          <div className="to-header-row">
+            <h1 className="to-h1">{T.youAnd(name)}</h1>
+            {!example && !premium && <span className="to-chip">{T.premiumChipLabel}<PremiumMark /></span>}
+            {!example && premium && overlap && target && (
+              <TasteShareMenu overlap={overlap} target={target} genreName={genreName} onCustomise={() => setSharing(true)} />
+            )}
+          </div>
+          {example && <p className="to-intro">{T.exampleNote}</p>}
+        </header>
+
+        {body}
+
+        {sharing && overlap && target && (
+          <TasteShareDialog overlap={overlap} target={target} genreName={genreName} onClose={() => setSharing(false)} />
+        )}
       </div>
-
-      <header className="to-header">
-        <h1 className="to-h1">{T.title}</h1>
-        <Link className="to-person" to="/compare" aria-label={`${T.youAnd(name)}. ${T.changePerson}`}>
-          <Avatar src={target?.avatar_url} name={name} size={32} />
-          {T.youAnd(name)}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-        </Link>
-      </header>
-
-      {body}
-
-      {sharing && overlap && target && (
-        <TasteShareDialog overlap={overlap} target={target} genreName={genreName} onClose={() => setSharing(false)} />
-      )}
     </div>
   );
 }
@@ -300,6 +305,7 @@ export default function TasteOverlapPage() {
       genreName={genreName}
       onRetry={retry}
       openPanel={openPanel}
+      side={<ComparePeoplePanel viewerId={user.id} selectedUsername={username} className="to-side--wide-only" />}
     />
   );
 }

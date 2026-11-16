@@ -1,0 +1,63 @@
+# compare-picker-unify
+
+Status: active
+Branch: agent/2026-11-16-compare-picker-unify
+Updated: 2026-11-16T12:10:00Z
+
+## In plain words
+
+The Compare page now has two columns on web: a card on the left to search for
+and pick a person, and the comparison on the right. Before anyone is picked the
+right side shows a made-up sample ("You and Maya") so the page is never blank.
+The big match number sits on the left of its card with the circles on the
+right. On iPhone the picker is the same card with the sample underneath.
+Savannah asked for this on 2026-11-16 after choosing boards 1 and 2 of the
+design canvas https://claude.ai/artifact/QRsiQgFm7spm1s3Fv6qXao. Nothing is
+merged. She needs to look at it and say whether to open a pull request.
+
+## Goal and owner
+
+Owner: Savannah (product area: Hailey). Make Compare use shared components and
+match other pages, on web and mobile.
+
+## Done
+
+- Core: `EXAMPLE_OVERLAP` and `exampleGenreNames` in `packages/core/tasteOverlap.js`;
+  sample and empty-state wording in `packages/core/copy/tasteOverlap.js`
+  (removed `pickerTitle`, `pickerIntro`, `publicProfile`, `privateApproved`, no longer shown).
+- Web: new `apps/web/src/components/ComparePeoplePanel.jsx` (SearchField,
+  EmptyState, Avatar, `.hist-card`). `TasteOverlapView` takes `side` and
+  `example`; `/compare` renders it with the sample, `/u/:username/compare`
+  with the real data and the chosen person highlighted. Round back button,
+  second heading and the "You and X" pill are gone; below 1024px the
+  comparison shows the shared BackLink to /compare.
+- Mobile: `app/(app)/compare.tsx` uses BackBar, a card, EmptyState, and
+  `TasteOverlapExample` exported from `components/taste/TasteOverlapView.tsx`.
+- Stories: PickerFollowingNobody, PickerWithPeople, WithPeoplePanel.
+
+## Checks
+
+Passed: `pnpm run check`, `pnpm run test:unit`, `pnpm run copy:check`,
+`pnpm run core:check`, `pnpm --filter @plot/mobile run typecheck`.
+Looked at in Storybook at 1280px and 375px. Not run: the signed-in web app,
+the iPhone simulator, `test:smoke`, `test-storybook:web`.
+
+## Open points
+
+- The shell title on `/u/:username/compare` still reads "@handle", not
+  "Compare". Left alone because PRs 1724 and 1725 are editing AppShell.jsx.
+- Mobile comparison screen still has its own round back button and
+  "Taste overlap" heading. Not asked for; the match card stays stacked on a phone.
+- Wording differs from the mockup: tag is "Sample" and the empty-state button
+  is "Search people", because "Example" and "Find people" already belong to
+  other copy modules.
+- No new PostHog event: the only new button focuses the search box.
+
+## Approvals
+
+Given: build boards 1 and 2. Still needed: opening a pull request, merging.
+
+## Next
+
+Show Savannah the Storybook stories or a Cloudflare preview, apply her notes,
+then open the pull request when she says so. Delete this file before merge.

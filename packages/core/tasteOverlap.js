@@ -196,6 +196,37 @@ export function tasteOverlap(mineRows, theirRows, { lovedLimit = 3, disagreeLimi
 
 
 /**
+ * A made-up comparison for the picker to show before anyone is chosen, in the
+ * shape tasteOverlap() returns. Genre ids are 1-based positions in
+ * TASTE_OVERLAP.exampleGenres, never TMDB ids, and there are no titles: a
+ * sample must not name or draw a real film nobody looked up.
+ */
+export const EXAMPLE_OVERLAP = Object.freeze({
+  watched: { mine: 212, theirs: 164, both: 88 },
+  sharedRated: 41,
+  match: 82,
+  genres: [
+    { id: 1, mine: 34, theirs: 29 },
+    { id: 2, mine: 18, theirs: 27 },
+    { id: 3, mine: 21, theirs: 12 },
+  ],
+  sharedGenreId: 1,
+  decades: { mine: 2010, theirs: 1990 },
+  critic: { mine: 3.8, theirs: 3.2, tougher: /** @type {'theirs'} */ ('theirs') },
+  loved: [],
+  disagree: [],
+});
+
+/**
+ * Genre names for EXAMPLE_OVERLAP, keyed the way the comparison views expect.
+ * @param {string[]} names TASTE_OVERLAP.exampleGenres
+ * @returns {Map<number, string>}
+ */
+export function exampleGenreNames(names) {
+  return new Map(names.map((name, index) => [index + 1, name]));
+}
+
+/**
  * Who you can compare with: anyone public, or anyone private who has accepted
  * your follow. Mirrors the RPC's visibility test; the RPC is the authority.
  * @param {{ is_public?: boolean | null, follow_status?: string | null }} person

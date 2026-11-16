@@ -10,7 +10,7 @@ import { IconChevronLeft, IconChevronDown } from '../icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
-import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent } from '@plot/core/tasteOverlap.js';
+import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent, EXAMPLE_OVERLAP, exampleGenreNames } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -318,9 +318,34 @@ function WatchlistOverlap({
   );
 }
 
+/**
+ * The sample comparison the picker shows before anyone is chosen: the same
+ * cards as a real one, from EXAMPLE_OVERLAP, stopping before the titles.
+ */
+export function TasteOverlapExample() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const genreName = useMemo(() => exampleGenreNames(T.exampleGenres), []);
+  return (
+    <OverlapBody
+      example
+      styles={styles}
+      colors={colors}
+      name={T.exampleName}
+      overlap={EXAMPLE_OVERLAP as unknown as TasteModel}
+      sharedWatchlist={null}
+      genreName={genreName}
+      onOpen={() => {}}
+      onShare={() => {}}
+    />
+  );
+}
+
 function OverlapBody({
-  styles, colors, name, overlap, sharedWatchlist, genreName, onOpen, onShare, onWatchTogether,
+  styles, colors, name, overlap, sharedWatchlist, genreName, onOpen, onShare, onWatchTogether, example = false,
 }: {
+  /** The picker's sample: no titles, no share. */
+  example?: boolean;
   styles: ReturnType<typeof makeStyles>;
   colors: Palette;
   name: string;
@@ -397,6 +422,7 @@ function OverlapBody({
         </View>
       </View>
 
+      {!example && (<>
       <View style={styles.section}>
         <Text style={styles.h2}>{T.bothLoved}</Text>
         {o.loved.length === 0 ? <EmptyNote>{T.bothLovedEmpty}</EmptyNote> : (
@@ -446,6 +472,7 @@ function OverlapBody({
       )}
 
       <Button variant="primary" label={T.share} onPress={onShare} style={styles.primary} />
+      </>)}
     </>
   );
 }
