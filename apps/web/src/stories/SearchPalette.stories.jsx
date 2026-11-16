@@ -63,3 +63,95 @@ export const Open = {
     await expect(args.onClose).toHaveBeenCalledOnce();
   },
 };
+
+/* "Search in: My Lists". Local only, so nothing is fetched: the rows come
+   from the lists below. `user` has no id, so useHistory stays idle.
+   Symbolic identifiers are local fixtures, never TMDB lookup IDs. */
+const signedInApp = {
+  ...app,
+  user: { email: 'story@example.com' },
+  watching: { items: [{ tmdb_id: 'fixture-show', title: 'Quiet Days', poster_path: null }], loading: false },
+  watchlist: {
+    items: [{ tmdb_id: 'fixture-film', media_type: 'movie', title: 'The Quiet Night', poster_path: null }],
+    loading: false,
+    isInList: () => false,
+    toggle: fn(),
+  },
+  reminders: { reminders: [], loading: false },
+  topLists: { lists: { movies: [], tv: [] } },
+  favorites: { favorites: [] },
+  customLists: { lists: [{ id: 'fixture-list', name: 'Rainy Sunday', items: [{ tmdb_id: 'fixture-film-2', media_type: 'movie', title: 'A Loud Morning', poster_path: null }] }] },
+};
+
+export const SearchInMyLists = {
+  args: { onClose: fn() },
+  render: args => (
+    <AppContext.Provider value={signedInApp}>
+      <SearchPalette {...args} />
+    </AppContext.Provider>
+  ),
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = within(body.getByRole('dialog', { name: 'Search Plot' }));
+    const input = dialog.getByRole('combobox');
+
+    // No smart lists on this account, so that place is not offered.
+    await expect(dialog.queryByRole('radio', { name: 'Smart lists' })).toBeNull();
+    await userEvent.click(dialog.getByRole('radio', { name: 'My Lists' }));
+    await expect(dialog.getByRole('radio', { name: 'My Lists' })).toBeChecked();
+    // Picking a place hands focus back to the box.
+    await expect(input).toHaveFocus();
+
+    await userEvent.type(input, 'quiet');
+    const options = await dialog.findAllByRole('option');
+    await expect(options).toHaveLength(2);
+    await expect(options[0]).toHaveTextContent('Quiet Days');
+    await expect(options[1]).toHaveTextContent('The Quiet Night');
+
+    await userEvent.clear(input);
+    await userEvent.type(input, 'loud');
+    await expect(await dialog.findByRole('option')).toHaveTextContent('Rainy Sunday');
+
+    await userEvent.clear(input);
+    await userEvent.type(input, 'zzzz');
+    await expect(await dialog.findByText(/Nothing in My Lists matches/)).toBeInTheDocument();
+  },
+};
+
+/* "Search in: Smart lists". Premium, with one smart list whose rule is "movies
+   from my watchlist", which is answered from the watchlist above without
+   asking TMDB. */
+const smartApp = {
+  ...signedInApp,
+  profile: { is_premium: true },
+  // Smart list rules read numeric ids. 900001 is a local fixture (the same one
+  // the core smart list tests use), never looked up on TMDB.
+  watchlist: {
+    ...signedInApp.watchlist,
+    items: [{ tmdb_id: 900001, media_type: 'movie', title: 'The Quiet Night', poster_path: null }],
+  },
+  customLists: {
+    ...signedInApp.customLists,
+    smartLists: [{ id: 'fixture-smart', name: 'Saved films', rules: { v: 1, source: 'watchlist', mediaType: 'movie' } }],
+  },
+};
+
+export const SearchInSmartLists = {
+  args: { onClose: fn() },
+  render: args => (
+    <AppContext.Provider value={smartApp}>
+      <SearchPalette {...args} />
+    </AppContext.Provider>
+  ),
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = within(body.getByRole('dialog', { name: 'Search Plot' }));
+    const input = dialog.getByRole('combobox');
+
+    await userEvent.click(dialog.getByRole('radio', { name: 'Smart lists' }));
+    await userEvent.type(input, 'quiet');
+    const option = await dialog.findByRole('option');
+    await expect(option).toHaveTextContent('The Quiet Night');
+    await expect(option).toHaveTextContent('Saved films');
+  },
+};

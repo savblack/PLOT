@@ -22,6 +22,11 @@ export const PROFILE_PRIVACY = {
   lockedFollow: (name) => `Follow ${name} to see their watch history, ratings and lists.`,
   lockedPending: 'Your follow request is pending. You’ll see their watches, ratings and lists once they approve it.',
   lockedSubPage: 'This profile is private.',
+  followRequestsEmptyTitle: 'No pending requests',
+  followRequestsEmptyBody: 'When someone asks to follow you, they’ll show up here.',
+  notPublicTitle: 'This profile isn’t public',
+  /** @param {string} username */
+  notPublicBody: (username) => `@${username} either doesn’t exist or hasn’t made their profile public yet.`,
   followRequestsIntro:
     'People asking to follow your private profile. Approving lets them see your watch history, ratings and any lists you share with followers. Your watchlist has its own setting in Settings.',
 

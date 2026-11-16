@@ -9,6 +9,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { tabBarBottom, TAB_BAR_HEIGHT } from '../../lib/tabBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FollowTarget } from './useFollowPerson';
+import Button from '../Button';
 
 function PlusIcon({ color }: { color: string }) {
   return (
@@ -43,30 +44,16 @@ export function FollowPill({ following, busy, name, onPress }: {
 }) {
   const { colors } = useTheme();
   return (
-    <TouchableOpacity
+    <Button
+      variant="outline"
+      size="sm"
+      label={following ? P.following : P.follow}
+      icon={following ? <TickIcon color={colors.accent} /> : <PlusIcon color={colors.textPrimary} />}
       onPress={onPress}
       disabled={busy}
-      accessibilityRole="button"
-      accessibilityState={{ selected: following, disabled: busy }}
+      selected={following}
       accessibilityLabel={following ? P.followingLabel(name) : P.followLabel(name)}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-        minHeight: 36,
-        paddingHorizontal: spacing.md,
-        borderRadius: radii.pill,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.bg,
-        opacity: busy ? 0.45 : 1,
-      }}
-    >
-      {following ? <TickIcon color={colors.accent} /> : <PlusIcon color={colors.textPrimary} />}
-      <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary }}>
-        {following ? P.following : P.follow}
-      </Text>
-    </TouchableOpacity>
+    />
   );
 }
 
@@ -195,13 +182,7 @@ export function FollowToastHost() {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radii.md, backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border }}>
         <PersonFace name={toast.name} path={toast.profilePath} size={36} />
         <Text style={{ flex: 1, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textPrimary }}>{P.toast.added(toast.name, toast.upcoming)}</Text>
-        <TouchableOpacity
-          onPress={() => { setToast(null); router.push('/(app)/your-people' as Href); }}
-          accessibilityRole="button"
-          style={{ minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Text style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary }}>{P.toast.view}</Text>
-        </TouchableOpacity>
+        <Button variant="outline" size="sm" label={P.toast.view} onPress={() => { setToast(null); router.push('/(app)/your-people' as Href); }} />
         <TouchableOpacity onPress={() => setToast(null)} accessibilityRole="button" accessibilityLabel={P.toast.dismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <IconClose size={14} color={colors.textMuted} />
         </TouchableOpacity>

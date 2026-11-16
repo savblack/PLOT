@@ -15,6 +15,10 @@ import { useSmartList } from '@plot/core/useSmartList.js';
 import { useSmartListSeen } from '@plot/core/useSmartListSeen.js';
 import { isFinishedStatus, listWatchStatus } from '@plot/core/listWatchStatus.js';
 import WatchStatusChip from '../WatchStatusChip';
+import ListCardMarkers from '../ListCardMarkers';
+import { PosterCaption, POSTER_GAP, posterColumnWidth } from '../PosterCard';
+import { cardMetaLine } from '@plot/core/media.js';
+import { listCardMarkers } from '@plot/core/listCardMarkers.js';
 import { useGenreCatalog } from '@plot/core/useGenres.js';
 import { isSmartListPremiumError } from '@plot/core/customListCreation.js';
 import { pickerProviderIds } from '@plot/core/tonightPicker.js';
@@ -46,6 +50,7 @@ import {
   asCatalog, asMatches, asRules, asSmartRow,
   type SmartMatch, type SmartRules,
 } from '../../lib/smartListModel';
+import { EmptyNote } from '../EmptyState';
 
 const NONE: never[] = [];
 
@@ -74,9 +79,9 @@ export default function SmartListView({ listId }: { listId: string }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const posterW = (width - spacing.xl * 2 - spacing.sm * 2) / 3;
+  const posterW = posterColumnWidth(width);
   const { open } = useMediaPanel();
-  const { userId, profile, watchlist, watching, history, customLists } = useAppData();
+  const { userId, profile, watchlist, watching, history, customLists, privateNotes } = useAppData();
   const catalogRaw = useGenreCatalog();
   const catalog = useMemo(() => asCatalog(catalogRaw), [catalogRaw]);
   const list = useMemo(
@@ -245,6 +250,7 @@ export default function SmartListView({ listId }: { listId: string }) {
           posterW={posterW}
           styles={styles}
           statusOf={(item) => listWatchStatus(item, history?.entries ?? NONE, watching?.items ?? NONE)}
+          markersOf={(item) => listCardMarkers(item, history?.entries, privateNotes)}
           onOpen={(item) => open(item.tmdb_id, item.media_type)}
           onUpgrade={openUpgrade}
         />
@@ -289,7 +295,7 @@ function BackBar({ onPress, color }: { onPress: () => void; color: string }) {
 }
 
 function Matches({
-  premium, smart, items, fresh, rest, since, posterW, styles, statusOf, onOpen, onUpgrade,
+  premium, smart, items, fresh, rest, since, posterW, styles, statusOf, markersOf, onOpen, onUpgrade,
 }: {
   premium: boolean;
   smart: SmartQuery;
@@ -300,6 +306,7 @@ function Matches({
   posterW: number;
   styles: ReturnType<typeof makeStyles>;
   statusOf: (item: SmartMatch) => ReturnType<typeof listWatchStatus>;
+  markersOf: (item: SmartMatch) => { hasPrivateNote: boolean; hasReview: boolean };
   onOpen: (item: SmartMatch) => void;
   onUpgrade: () => void;
 }) {
@@ -317,12 +324,12 @@ function Matches({
   if (smart.error) {
     return (
       <View style={styles.locked}>
-        <Text style={styles.lockedBody}>{SMART_LISTS.loadFailed}</Text>
+        <EmptyNote>{SMART_LISTS.loadFailed}</EmptyNote>
         <Button size="sm" label={SMART_LISTS.retry} onPress={smart.retry} />
       </View>
     );
   }
-  if (items.length === 0) return <Text style={styles.lockedBody}>{SMART_LISTS.empty}</Text>;
+  if (items.length === 0) return <EmptyNote>{SMART_LISTS.empty}</EmptyNote>;
 
   const grid = (rows: SmartMatch[]) => (
     <View style={styles.grid}>
@@ -335,9 +342,9 @@ function Matches({
             <View style={[styles.poster, { width: posterW, height: posterW * 1.5 }]}>
               {uri ? <Image source={{ uri }} style={[styles.posterImage, finished && styles.posterFinished]} /> : null}
               {status && <View style={styles.statusChipSlot} pointerEvents="none"><WatchStatusChip status={status} /></View>}
+              <ListCardMarkers {...markersOf(item)} />
             </View>
-            <Text style={[styles.posterTitle, finished && styles.titleFinished]} numberOfLines={2}>{item.title}</Text>
-            <Text style={styles.posterMeta}>{item.media_type === 'tv' ? MEDIA.series : MEDIA.movie}</Text>
+            <PosterCaption title={item.title} meta={cardMetaLine(item)} dimmed={finished} />
           </TouchableOpacity>
         );
       })}
@@ -417,14 +424,11 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   groupTitle: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary, letterSpacing: -0.5 },
   groupCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   groupNew: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.accentText },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  poster: { borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: POSTER_GAP, rowGap: spacing.lg },
+  poster: { borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   posterImage: { width: '100%', height: '100%' },
   posterFinished: { opacity: 0.45 },
-  titleFinished: { color: colors.textMuted },
   statusChipSlot: { position: 'absolute', top: 6, left: 6 },
-  posterTitle: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary, marginTop: spacing.xs },
-  posterMeta: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
   more: { alignSelf: 'center', marginTop: spacing.lg },
   note: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.md },
   locked: { gap: spacing.sm, paddingVertical: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, marginTop: spacing.md },

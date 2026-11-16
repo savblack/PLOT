@@ -460,7 +460,7 @@ through the `onTonightPicker` seam, so both apps report identically:
 
 | Event | When | Props |
 |---|---|---|
-| `tonight_picks_drawn` | A draw finished (first spin or Regenerate) | `mode` (`five` / `surprise`), `media_type`, `result_count` (0 = empty), `reroll`, `only_watchlist`, `only_services`, `genre_count` |
+| `tonight_picks_drawn` | A draw finished (first spin or Regenerate) | `mode` (`five` / `surprise`), `media_type`, `result_count` (0 = empty), `reroll`, `only_watchlist`, `only_services`, `genre_count`, `min_score` (6 / 7 / 8 or null), `max_minutes` (movie length or episode length, or null), `era` (`any`, `recent`, a decade, `classic`) |
 | `tonight_pick_opened` | A result card was opened | `tmdb_id`, `media_type`, `mode`, `position` (1-based) |
 | `tonight_search_saved` / `tonight_saved_search_opened` | Saved searches | `mode`, `result_count` |
 
@@ -590,6 +590,7 @@ the import page's `?from=` param.
 | `premium_first_week_hidden` | "Dismiss" on the first-week card | `done_count` |
 | `my_lists_layout_changed` | A My Lists section was folded, opened or moved, or the order was reset. Web and mobile both send all four actions. On mobile `collapse` and `expand` fire for the sections whose fold is saved to the profile (Watching, Top 5, Lists, Smart lists, Shared), not for Watchlist and Favorites, whose fold stays on the device, and not for its collapse-all control | `action` (`collapse` / `expand` / `reorder` / `reset`), `section` (`watching` / `top` / `lists` / `smart` / `shared`; absent on `reset`) |
 | `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
+| `recommendations_viewed` | A Home recommendation shelf had titles | `shelf` (`because` / `for_you`), `item_count`. Once per app session per shelf. On web, opens from it are `title_viewed` with source `because_you_watched` / `recommended_for_you` (mobile's panel takes no source) |
 
 `finishing_touches_hidden` had never fired because Hide for now was rendered
 only while the card was expanded. Web starts expanded at 1024px and up. Mobile
@@ -611,6 +612,13 @@ thing. Start is `import_source_selected` with `source: letterboxd`. Upload is
 Opening the export page and then leaving is not abandonment: that is the
 path the link is for. A file that fails to parse is `import_failed`, and the
 reminder stays until a file is accepted or they dismiss it.
+
+A connect that does not land (Trakt, Plex or Simkl: cancelled, expired,
+refused, or the popup closed) is `import_failed` with `reason:
+connection_failed`, from the import page and from the connect dialog that
+setup and Settings share (`useImportStart`'s `failConnect`, web). It fires once
+per failed attempt, when the dialog stops waiting. Read it against
+`trakt_connect_started` / `simkl_connect_started` and the `*_connected` events.
 
 ## Episode alerts (title panel)
 

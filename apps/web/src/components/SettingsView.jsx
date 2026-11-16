@@ -1,5 +1,6 @@
 import SettingsSources from './SettingsSources.jsx';
 import BroadcastAccountSettings from './BroadcastAccountSettings.jsx';
+import { GUIDE_ENABLED } from '@plot/core/features.js';
 // Web settings use DOM panels, browser sharing and Stripe portal redirects.
 // Shared navigation/copy lives in core; native layout parity: GitHub issue 922.
 import { SHARING } from '@plot/core/copy/sharing.js';
@@ -1822,7 +1823,7 @@ export default function SettingsView() {
       <div className="settings-group">
         <div className="settings-group-title">{SETTINGS_VIEW.page.whereYouWatch}</div>
         <SettingsPreferenceRow label={SETTINGS_VIEW.integrations.streamingPlatformsLabel} value={settingsSelectionSummary(providers)} disabled={savingProviders} onEdit={() => setShowProviders(true)} />
-        <BroadcastAccountSettings />
+        {GUIDE_ENABLED && <BroadcastAccountSettings />}
         <SettingsPreferenceRow label={SETTINGS_VIEW.page.regionLabel} value={regionName(region)} onEdit={() => { setActionError(null); setShowRegion(true); }} />
         <SettingsPreferenceRow label={SETTINGS_VIEW.page.timezoneLabel} value={timezone ? fmtTz(timezone) : COMMON.notSet} onEdit={() => setShowTimezone(true)} />
       </div>

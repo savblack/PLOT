@@ -373,20 +373,6 @@ export const PhonePeopleSheet = {
   },
 };
 
-/* The search button in the bar searches this list's titles. */
-export const PhoneInListSearch = {
-  ...phone(listPage),
-  tags: ['interaction-test'],
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    fireEvent.click(canvas.getByRole('button', { name: C.page.searchOpen }));
-    const search = canvas.getByLabelText(CUSTOM_LISTS.searchThisList, { selector: 'input' });
-    await fireEvent.input(search, { target: { value: 'after' } });
-    await waitFor(() => expect(canvas.queryAllByText('Perfect Days')).toHaveLength(0));
-    await expect(canvas.queryAllByText('Aftersun').length).toBeGreaterThan(0);
-  },
-};
-
 /* ── Existing Watch together dialogs, for checking their padding ── */
 
 export const WatchTogetherAcceptDialog = {

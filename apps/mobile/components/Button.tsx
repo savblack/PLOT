@@ -1,10 +1,12 @@
 /**
- * The app's buttons. One pill shape in four fills, per the shared design
- * system (docs/design/shared-design-system.md): no outline buttons.
+ * The app's buttons. One pill shape, per the shared design system
+ * (docs/design/shared-design-system.md):
  *
  *   primary    pink fill, charcoal label. The one action a screen or sheet
  *              is for.
  *   secondary  the deeper cream. Everything else.
+ *   outline    a 1px line and no fill, for on/off actions that sit in a row
+ *              (Follow, alerts, a source to import from). Web's .btn-ghost.
  *   ink        charcoal with a cream label, for the rare emphatic case.
  *   danger     the deeper cream with a danger label (delete, leave).
  *
@@ -18,7 +20,7 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, type Style
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ink' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ink' | 'danger';
 export type ButtonSize = 'md' | 'sm';
 
 export const BUTTON_H = { md: 44, sm: 36 } as const;
@@ -35,13 +37,15 @@ type Props = {
   flex?: boolean;
   /** A small glyph before the label. */
   icon?: ReactNode;
+  /** For an on/off button (Follow, alerts): read out as selected when on. */
+  selected?: boolean;
   accessibilityLabel?: string;
   /** Outer spacing only (margins, alignSelf). */
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
 
-export default function Button({ label, onPress, variant = 'secondary', size = 'md', disabled = false, busy = false, flex = false, icon, accessibilityLabel, style, testID }: Props) {
+export default function Button({ label, onPress, variant = 'secondary', size = 'md', disabled = false, busy = false, flex = false, icon, selected, accessibilityLabel, style, testID }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const off = disabled || busy;
@@ -53,7 +57,7 @@ export default function Button({ label, onPress, variant = 'secondary', size = '
       activeOpacity={0.75}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: off, busy }}
+      accessibilityState={{ disabled: off, busy, selected }}
       testID={testID}
       style={[styles.base, styles[size], styles[variant], flex ? styles.flex : styles.hug, disabled && styles.off, style]}
     >
@@ -97,6 +101,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1 },
   primary: { backgroundColor: colors.accentFill },
   secondary: { backgroundColor: colors.surfaceSunken },
+  outline: { borderWidth: 1, borderColor: colors.borderStrong },
   ink: { backgroundColor: colors.textPrimary },
   danger: { backgroundColor: colors.surfaceSunken },
   off: { opacity: 0.45 },

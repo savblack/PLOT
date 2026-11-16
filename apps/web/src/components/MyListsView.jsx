@@ -26,13 +26,11 @@ import { readStorage, removeStorage, writeStorage } from '../utils/storage.js';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import SmartListDialog from './SmartListDialog.jsx';
 import NewListChoice from './NewListChoice.jsx';
-import { collectionPath, customListKey, titleCount, wantToWatchItems, searchCollectionTitles, TOP_LIST_SIZE } from '@plot/core/listCollections.js';
+import { collectionPath, customListKey, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
 import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
-import SearchField from './SearchField.jsx';
-import { posterUrl } from '../utils/images.js';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
-import { CardGrid, ListCard, TypeGenreFilter } from './ListCards.jsx';
+import { TypeGenreFilter } from './ListCards.jsx';
 import {
   CreateListModal, HeaderIconButton, ListSection, NewTile, TickIcon, TopFiveSection, TrashIcon, WatchingSection,
 } from './ListSections.jsx';
@@ -182,7 +180,7 @@ function useMyListsLayout(uiPrefs) {
 /** @param {{ newCounts?: Record<string, number> | null }} props  newCounts: Storybook's "2 new" without a network */
 export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const art = useUserArtwork();
-  const { user, profile, topLists, favorites, customLists, watching, watchlist, openPanel, uiPrefs } = useApp();
+  const { user, profile, topLists, favorites, customLists, watching, watchlist, uiPrefs } = useApp();
   const layout = useMyListsLayout(uiPrefs);
   const [customizing, setCustomizing] = useState(false);
   const fw = favoriteWords(profile?.region);
@@ -203,7 +201,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
-  const [query, setQuery] = useState('');
   const [creatingShared, setCreatingShared] = useState(false);
 
   const want = useMemo(() => wantToWatchItems(watchlist.items, watching.items, localDateStr()), [watchlist.items, watching.items]);
@@ -276,13 +273,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   // leaves the other lists' counts unchanged.
   const narrowed = isTypeNarrowed(typeFilters) || genreFilters.length > 0;
   const apply = (items) => filterByTypeAndGenre(items, typeFilters, genreFilters);
-  const searching = query.trim().length > 0;
-  const searchResults = searching ? searchCollectionTitles([
-    watching.items.map(item => ({ ...item, media_type: 'tv' })),
-    ...Object.entries(topLists.lists).map(([type, items]) => items.filter(item => item.rank <= TOP_LIST_SIZE).map(item => ({ ...item, media_type: type === 'tv' ? 'tv' : 'movie' }))),
-    ...collections.map(c => c.items),
-    ...sharedCollections.map(c => c.items),
-  ].map(items => apply(items || [])), query) : [];
   const coverCount = (items, emptyLabel) => {
     if (!narrowed) return titleCount(items.length, emptyLabel);
     const n = apply(items).length;
@@ -427,9 +417,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     );
   };
 
-  const allCollections = [...collections, ...smartCollections, ...sharedCollections];
-  const titles = allCollections.reduce((n, c) => n + c.items.length, 0);
-
   // The sections, in the viewer's order. Each is wrapped in a fold below, so
   // its heading folds it shut. Shared is only there with Watch together.
   const sectionLabels = {
@@ -490,7 +477,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   return (
     <div className="hist-page mylists-page">
       <div className="hist-toolbar">
-        <span className="hist-toolbar-sub">{CUSTOM_LISTS.summary(allCollections.length, titles)}</span>
         <div className="hist-toolbar-controls">
           {/* At sidebar widths the column carries the filters; below it, the
               pill and its sheet are how a phone reaches them. */}
@@ -504,7 +490,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
               setGenreFilters={setGenreFilters}
             />
           </span>
-          <SearchField className="hist-search" value={query} onChange={setQuery} placeholder={CUSTOM_LISTS.searchPlaceholder} ariaLabel={CUSTOM_LISTS.searchPlaceholder} />
         </div>
       </div>
 
@@ -524,18 +509,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
         </aside>
 
         <div className="cal-stream mylists-stream">
-          {searching ? (
-            <div className="discover-sections">
-              <ListSection title={CUSTOM_LISTS.searchResults}>
-                <p role="status">{searchResults.length ? CUSTOM_LISTS.searchCount(searchResults.length) : CUSTOM_LISTS.noSearchResults}</p>
-                <CardGrid>
-                  {searchResults.map(item => (
-                    <ListCard key={`${item.media_type || 'movie'}:${item.tmdb_id ?? item.id}`} title={item.title || item.name} img={posterUrl(displayPosterPath(art.apply(item)), 'w185')} onOpen={() => openPanel(item.tmdb_id ?? item.id, item.media_type || 'movie')} />
-                  ))}
-                </CardGrid>
-              </ListSection>
-            </div>
-          ) : nudge.show && !startedLists ? (
+          {nudge.show && !startedLists ? (
             <ActivationNudge surface="my_lists" sources={nudge.sources} />
           ) : (
             <div className="discover-sections">

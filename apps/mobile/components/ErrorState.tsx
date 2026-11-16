@@ -20,7 +20,7 @@ export default function ErrorState({
   return (
     <View style={styles.wrap}>
       <Text style={styles.text}>{message}</Text>
-      <RetryButton onPress={onRetry} accessibilityLabel="Retry" accessibilityRole="button" />
+      <RetryButton onPress={onRetry} />
     </View>
   );
 }

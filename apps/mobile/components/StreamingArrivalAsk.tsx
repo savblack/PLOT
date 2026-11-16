@@ -3,13 +3,14 @@
 // is the opt-in the daily streaming-arrival job already reads. TV has no
 // equivalent alert, so MediaPanel only mounts this for a movie.
 import { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { enableStreamingArrivalAlert } from '@plot/core/useStreamingAlerts.js';
 import { STREAMING_ALERTS as A } from '@plot/core/copy/streamingAlerts.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { track, EVENTS } from '../lib/analytics';
 import { fontFamily, fontSize, spacing, radii, type Palette } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
+import Button from './Button';
 
 type Movie = { id: number; title?: string };
 
@@ -62,16 +63,7 @@ export default function StreamingArrivalAsk({
 
   return (
     <View style={styles.wrap}>
-      <TouchableOpacity
-        onPress={() => { void onAsk(); }}
-        disabled={busy}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: busy }}
-        accessibilityLabel={A.ask.prompt}
-        style={[styles.pill, busy && styles.busy]}
-      >
-        <Text style={styles.pillText}>{busy ? COMMON.saving : A.ask.prompt}</Text>
-      </TouchableOpacity>
+      <Button variant="outline" size="sm" label={busy ? COMMON.saving : A.ask.prompt} onPress={() => { void onAsk(); }} disabled={busy} accessibilityLabel={A.ask.prompt} />
       {failed ? <Text style={styles.error} accessibilityRole="alert">{A.error}</Text> : null}
     </View>
   );

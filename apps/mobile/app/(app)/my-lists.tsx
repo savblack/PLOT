@@ -1,4 +1,5 @@
-import PrivateNote from '../../components/PrivateNote';
+import ListCardMarkers from '../../components/ListCardMarkers';
+import { listCardMarkers } from '@plot/core/listCardMarkers.js';
 import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../../lib/share';
@@ -7,20 +8,18 @@ import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from '
 import { arrangeByMyListsOrder, normalizeUiPrefs } from '@plot/core/uiPrefs.js';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import {
-  View, Text, ScrollView, FlatList, Image, TouchableOpacity, StyleSheet, Dimensions, Alert,
+  View, Text, ScrollView, FlatList, Image, TouchableOpacity,
+  StyleSheet, Dimensions, Alert,
 } from 'react-native';
-import AppModal from '../../components/AppModal';
 import { TextInput } from '../../components/TextInput';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline, Rect } from 'react-native-svg';
 import { IconChevronLeft, IconChevronRight, IconPlus } from '../../components/icons';
-import SearchField, { SEARCH_FIELD_H } from '../../components/SearchField';
 import Button, { TextLink } from '../../components/Button';
 import { Tag } from '../../components/Chip';
 import { useDialog } from '../../components/Dialog';
-import { SheetActions } from '../../components/BottomSheet';
-import SectionTitle from '../../components/SectionTitle';
+import BottomSheet from '../../components/BottomSheet';
 import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
@@ -41,12 +40,14 @@ import KebabMenu, { KebabMenuItem } from '../../components/KebabMenu';
 import SearchPickModal from '../../components/SearchPickModal';
 import { TopTenSection } from '../../components/TopTenSection';
 import { MY_LISTS_TABS } from '@plot/core/navigation.js';
-import { HISTORY_VIEW } from '@plot/core/copy/historyView.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
 import { filterByType } from '@plot/core/mediaFilters.js';
 import { filterByWatchStatus, isFinishedStatus, listProgress, listWatchStatus, LIST_STATUS_FILTER_IDS, type ListWatchStatus } from '@plot/core/listWatchStatus.js';
 import WatchStatusChip from '../../components/WatchStatusChip';
-import { myListsSearchSources, searchCollectionTitles, wantToWatchItems } from '@plot/core/listCollections.js';
+import { PosterCaption, POSTER_GAP, posterColumnWidth } from '../../components/PosterCard';
+import { EmptyNote } from '../../components/EmptyState';
+import { cardMetaLine } from '@plot/core/media.js';
+import { wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '@plot/core/date.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { EVENTS, track } from '../../lib/analytics';
@@ -92,7 +93,7 @@ import ImportHistoryModal from '../../components/ImportHistoryModal';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
 
 const SCREEN_W = Dimensions.get('window').width;
-const POSTER_W = (SCREEN_W - spacing.xl * 2 - spacing.sm * 2) / 3;
+const POSTER_W = posterColumnWidth(SCREEN_W);
 const POSTER_H = POSTER_W * 1.5; // 2:3 — explicit height (aspectRatio collapses in a flex-wrap row on Fabric)
 
 
@@ -123,18 +124,6 @@ const TYPE_OPTIONS = [
   { id: 'cinema', label: 'Cinema' },
 ];
 
-// A title the My Lists search can open. History is not one of these:
-// on web it left this page and keeps its own search.
-type ListedTitle = {
-  tmdb_id?: number | string;
-  id?: number | string;
-  media_type?: string;
-  title?: string;
-  name?: string;
-  poster_path?: string | null;
-  rank?: number;
-  _cinema?: boolean;
-};
 
 // Tab list comes from the shared nav definition so web and mobile can't
 // diverge on which tabs exist or their order. Favourites is region-spelled
@@ -321,8 +310,10 @@ function episodeCode(item: { current_season?: number | null; current_episode?: n
 // core (releaseCaption), shared with web.
 
 // ── Poster grid ───────────────────────────────────────────────────────
-function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption, statusOf }: {
+function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, onPress, sel, caption, statusOf, markersOf }: {
   items: any[];
+  /** The private-note and review markers (@plot/core/listCardMarkers.js). */
+  markersOf?: (item: any) => { hasPrivateNote: boolean; hasReview: boolean };
   /** Where the viewer stands with a title; finished ones grey out. */
   statusOf?: (item: any) => ListWatchStatus | null;
   onRemove?: (tmdbId: number) => void;
@@ -368,6 +359,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
             : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
           }
           {status && <View style={styles.statusChipSlot} pointerEvents="none"><WatchStatusChip status={status} /></View>}
+          {markersOf && <ListCardMarkers {...markersOf(item)} />}
           {/* The per-card ✕ and the selection circle claim the same corner —
               edit mode owns it while active, so only one is ever drawn. */}
           {onRemove && !editing && (
@@ -390,8 +382,7 @@ function PosterGrid({ items, onRemove, horizontal, removeLabel = COMMON.remove, 
             />
           )}
         </TouchableOpacity>
-        <Text style={[styles.posterTitle, finished && styles.finishedTitle]} numberOfLines={1}>{title}</Text>
-        {!!byline && <Text style={styles.posterCaption} numberOfLines={2}>{byline}</Text>}
+        <PosterCaption title={title} meta={byline ?? cardMetaLine(item)} dimmed={finished} />
       </View>
     );
   };
@@ -434,9 +425,12 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
     }
   };
   return (
-    <AppModal visible animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
-      <View style={styles.createModal}>
-        <Text style={styles.createModalTitle}>New list</Text>
+    <BottomSheet
+      visible
+      onClose={onClose}
+      title="New list"
+      footer={<Button variant="primary" label="Create" onPress={submit} disabled={busy || !name.trim()} busy={busy} />}
+    >
         <TextInput
           style={styles.createModalInput}
           placeholder="List name…"
@@ -448,13 +442,8 @@ function CreateListModal({ onConfirm, onClose, onLimit }: { onConfirm: (name: st
           editable={!busy}
           onSubmitEditing={submit}
         />
-        {!!error && <Text accessibilityRole="alert" style={{ color: colors.textSecondary, marginBottom: spacing.sm }}>{error}</Text>}
-        <SheetActions>
-          <Button variant="primary" flex label="Create" onPress={submit} disabled={busy || !name.trim()} />
-          <Button flex label={COMMON.cancel} onPress={onClose} />
-        </SheetActions>
-      </View>
-    </AppModal>
+        {!!error && <Text accessibilityRole="alert" style={{ color: colors.textSecondary }}>{error}</Text>}
+    </BottomSheet>
   );
 }
 
@@ -467,7 +456,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const insets = useSafeAreaInsets();
   const glass = useGlassOnScroll();
   const { open: openPanel } = useMediaPanel();
-  const { userId, watchlist, watching, favorites, customLists, topLists, history, profile, refreshProfile } = useAppData();
+  const { userId, watchlist, watching, favorites, customLists, topLists, history, profile, refreshProfile, privateNotes } = useAppData();
+  const markersOf = (item: any) => listCardMarkers(item, history.entries, privateNotes);
   const ui = useUiPrefs({ userId, saved: profile?.ui_prefs, onPersisted: refreshProfile });
   const fw = favoriteWords(profile?.region);
 
@@ -562,10 +552,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     }
     setShowCreateList(true);
   };
-  const [listQuery, setListQuery] = useState('');
-  // The page's own search field stays out of the header until asked for: the
-  // header's search button opens it here, and closing it clears the query.
-  const [searchOpen, setSearchOpen] = useState(false);
   const requestSmartCreate = async () => {
     setRulesKept(false);
     const stored = await readStorage(smartListDraftKey(userId));
@@ -628,26 +614,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
     || (favorites.favorites?.length ?? 0) > 0;
   const want = wantToWatchItems(watchlist.items, watching.items, localDateStr());
   const sortedSaved = byType(want);
-
-  // While the field has text, the sections below are replaced by one result
-  // grid. The type filter still narrows it. A blank field (including spaces)
-  // leaves the page as it was.
-  const searching = listQuery.trim().length > 0;
-  const searchResults: ListedTitle[] = searching
-    ? searchCollectionTitles(
-        myListsSearchSources({
-          watching: watching.items,
-          topMovies: topLists.lists.movies,
-          topTv: topLists.lists.tv,
-          collections: [
-            want,
-            favorites.favorites,
-            ...(customLists.lists as { items?: ListedTitle[] }[]).map(list => [...(list.items || [])].reverse()),
-          ],
-        }).map(items => (filterByType(items, typeFilters) ?? []) as ListedTitle[]),
-        listQuery,
-      )
-    : [];
 
   // Watching items are always TV (episode progress); type them so the Movies filter excludes them.
   const watchingList = byType(sortedWatching.map((i: any) => ({ ...i, media_type: 'tv' })));
@@ -734,12 +700,11 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const inOrder = (nodes: Record<string, ReactNode>) => sectionOrder.map(id => <Fragment key={id}>{nodes[id]}</Fragment>);
 
   const listTabs = TABS.filter(t => t.id !== 'history').map(t => ({ id: t.id, label: t.label ?? fw.plural }));
-  const searchPlaceholder = isHistory ? HISTORY_VIEW.searchPlaceholder : CUSTOM_LISTS.searchPlaceholder;
-  const searchShown = searchOpen || listQuery.length > 0;
-  // The title bar alone, as on Home, Calendar and Settings, plus the search
-  // field while it is open. The page's other controls live in the page: the
-  // filter in the bar, Customize at the foot of the All view.
-  const HEADER_H = insets.top + (searchShown ? SCREEN_HEADER_H + SEARCH_FIELD_H + spacing.sm : SCREEN_HEADER_H);
+  // The title bar alone, as on Home, Calendar and Settings. The page's other
+  // controls live in the page: the filter in the bar, Customize at the foot
+  // of the All view. Search is the header's button, which opens the app's one
+  // search screen ("Search in: My Lists" narrows it to this page).
+  const HEADER_H = insets.top + SCREEN_HEADER_H;
 
   return (
     <View style={styles.screen}>
@@ -753,23 +718,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         onScroll={glass.onScroll}
       >
 
-        {searching ? (
-          <View>
-            <SectionTitle style={styles.searchHeading}>{CUSTOM_LISTS.searchResults}</SectionTitle>
-            <Text accessibilityLiveRegion="polite" style={styles.searchStatus}>
-              {searchResults.length ? CUSTOM_LISTS.searchCount(searchResults.length) : CUSTOM_LISTS.noSearchResults}
-            </Text>
-            <PosterGrid
-              items={searchResults}
-              onPress={(item) => {
-                const id = Number(item.tmdb_id ?? item.id);
-                if (!Number.isFinite(id)) return;
-                openPanel(id, item.media_type === 'tv' ? 'tv' : 'movie');
-              }}
-            />
-          </View>
-        ) : (
-        <>
         {/* One list or one section on its own: a way back to the whole page,
             as web's list page has. */}
         {!isHistory && (openList || !isAll) && (
@@ -781,12 +729,12 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
         {openList && !isHistory ? renderListCard(openList) : null}
         {/* Each section is a keyed piece so the viewer's saved order can place it
             (ui_prefs.myLists, shared with web). */}
-        {!isHistory && isAll && !openList && !searching && nudgeVisible && !startedLists ? (
+        {!isHistory && isAll && !openList && nudgeVisible && !startedLists ? (
           <ActivationNudge onImport={setImportSource} />
         ) : !openList || isHistory ? inOrder({
           watching: (<>
         {/* ── Watching ── */}
-        {showWatching && (watchingList.length > 0 || (isAll && !searching)) && (
+        {showWatching && (watchingList.length > 0 || isAll) && (
           <CollapsibleSection
             id="watching"
             label="Watching"
@@ -875,6 +823,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 items={sortedSaved}
                 sel={wantSel}
                 caption={(item) => releaseCaption(item)}
+                markersOf={markersOf}
                 onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
               />
             )}
@@ -950,6 +899,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                   items={favList}
                   sel={favSel}
                   statusOf={(item) => listWatchStatus(item, history.entries, watching.items)}
+                  markersOf={markersOf}
                   onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
                   removeLabel={`${COMMON.remove} ${fw.nounLower}`}
                   onRemove={(tmdbId) => {
@@ -1095,11 +1045,9 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
             onClose={() => setImportSource(null)}
           />
         )}
-        </>
-        )}
 
         {/* Customize sits at the foot of the page, where Home has it. */}
-        {!isHistory && isAll && !openList && !searching && (
+        {!isHistory && isAll && !openList && (
           <TextLink quiet label={DISCOVER_VIEW.customize.action} accessibilityLabel={CUSTOM_LISTS.sections.title} onPress={() => router.push('/(app)/my-lists-layout' as Href)} style={styles.customize} />
         )}
       </ScrollView>
@@ -1108,8 +1056,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
       <GlassHeader scrollY={glass.scrollY} height={HEADER_H}>
         <ScreenHeaderBar
           title={mode === 'history' ? 'History' : 'My Lists'}
-          searchLabel={searchPlaceholder}
-          onSearchPress={() => { if (searchShown) { setListQuery(''); setSearchOpen(false); } else setSearchOpen(true); }}
           // The filter sits in the title bar, after the bell, where Home has
           // its filter: the same control in the same place on every page.
           rightExtra={
@@ -1138,15 +1084,6 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
                 />
           }
         />
-        {searchShown && (
-        <SearchField
-          style={styles.listSearch}
-          value={listQuery}
-          onChangeText={setListQuery}
-          placeholder={searchPlaceholder}
-          autoFocus
-        />
-        )}
       </GlassHeader>
 
       {/* Modals */}
@@ -1210,7 +1147,7 @@ function CustomListCard({
   const { confirm, dialog } = useDialog();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { open: openPanel } = useMediaPanel();
-  const { profile, userId, customLists, history, watching } = useAppData();
+  const { profile, userId, customLists, history, watching, privateNotes } = useAppData();
   const router = useRouter();
   const [open,     setOpen]     = useState(true);
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
@@ -1394,7 +1331,7 @@ function CustomListCard({
       {open && (
         items.length === 0 ? (
           <TouchableOpacity style={styles.empty} onPress={onAddItem}>
-            <Text style={styles.emptyBody}>{(list.items?.length || 0) === 0 ? CUSTOM_LISTS.listEmptyTap : CUSTOM_LISTS.noMatchingTitles}</Text>
+            <EmptyNote>{(list.items?.length || 0) === 0 ? CUSTOM_LISTS.listEmptyTap : CUSTOM_LISTS.noMatchingTitles}</EmptyNote>
           </TouchableOpacity>
         ) : view === 'rows' ? (
           <View>
@@ -1413,6 +1350,7 @@ function CustomListCard({
             items={items}
             sel={sel}
             statusOf={statusOf}
+            markersOf={(item) => listCardMarkers(item, history.entries, privateNotes)}
             caption={addedCaption}
             onPress={(item) => item.tmdb_id && openPanel(item.tmdb_id, item.media_type === 'tv' ? 'tv' : 'movie')}
             onRemove={(tmdbId: number) => onRemoveItem(tmdbId, { undo: true })}
@@ -1440,18 +1378,6 @@ function CustomListCard({
 const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
-  listSearch: { marginHorizontal: spacing.xl, marginBottom: spacing.sm },
-  searchHeading: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-  },
-  searchStatus: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xs,
-  },
 
   publicBadge: { marginLeft: spacing.sm, alignSelf: 'center' },
 
@@ -1487,9 +1413,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     letterSpacing: 0.4,
   },
 
-  posterGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, gap: spacing.sm, paddingHorizontal: spacing.xl },
-  posterRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
-  posterCard: { height: POSTER_H, borderRadius: radii.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken, marginBottom: spacing.xs },
+  posterGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, columnGap: POSTER_GAP, rowGap: spacing.lg, paddingHorizontal: spacing.xl },
+  posterRow: { flexDirection: 'row', gap: POSTER_GAP, paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
+  posterCard: { height: POSTER_H, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   listToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
   progressWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.surfaceSunken, overflow: 'hidden' },
@@ -1499,8 +1425,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   finishedArt: { opacity: 0.45 },
   finishedTitle: { color: colors.textMuted },
   removeBtn: { position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
-  posterTitle: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
-  posterCaption: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
   sharedLine: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
 
   empty: { padding: spacing.xl, alignItems: 'center' },
@@ -1527,8 +1451,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   customListCount: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   renameInput: { flex: 1, fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textPrimary, borderBottomWidth: 1, borderBottomColor: colors.accent, paddingVertical: 2 },
 
-  createModal: { flex: 1, backgroundColor: colors.bg, padding: spacing.xl, gap: spacing.lg },
-  createModalTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },
   createModalInput: { backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, fontFamily: fontFamily.sans, fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
 });
 

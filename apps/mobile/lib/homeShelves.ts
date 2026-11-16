@@ -9,6 +9,8 @@ export const HOME_SHELF_LABELS: Record<string, string> = {
   // Mobile draws this slot as Up next (Continue watching plus the saved
   // titles, see Home); web still draws Continue watching there.
   continue: DISCOVER_VIEW.upNext,
+  because: DISCOVER_VIEW.recommendations.becauseName,
+  forYou: DISCOVER_VIEW.recommendations.forYouTitle,
   hot: 'Hot Right Now',
   weekly: 'Top 20 This Week',
   people: PEOPLE.shelf.title,

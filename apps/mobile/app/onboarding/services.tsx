@@ -1,7 +1,9 @@
 /**
  * Onboarding step 2: "Where do you watch?" The region's top subscription
  * services, multi-select, with the detected region editable. Saved to
- * profiles.streaming_providers by the one save behind the building moment.
+ * profiles.streaming_providers by the one save this step's Continue runs,
+ * after which Home opens. (A building screen sat between the two until
+ * 2026-11-16.)
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -60,10 +62,13 @@ export default function Services() {
 
   const regionName = REGIONS.find((r: { code: string }) => r.code === region)?.name || region;
 
-  // Save runs behind the building moment, which starts straight away.
-  const build = (skipped: boolean) => {
+  // The last step, as web's `finish`: the save runs with this screen still up
+  // (the scaffold holds its buttons while `saving`), and Home opens as soon as
+  // it lands. A failed save stays here and shows why.
+  const finish = async (skipped: boolean) => {
     flow.completeStep('services', { skipped });
-    router.push({ pathname: '/onboarding/building', params: { skipped: skipped ? '1' : '' } });
+    const ok = await flow.save({ skipServices: skipped });
+    if (ok) router.replace('/(app)');
   };
 
   return (
@@ -73,9 +78,9 @@ export default function Services() {
       subtitle={F.services.subtitle}
       onBack={() => router.back()}
       ctaLabel={F.continueArrow}
-      onContinue={() => build(false)}
+      onContinue={() => { void finish(false); }}
       saving={flow.saving}
-      onSkip={() => build(true)}
+      onSkip={() => { void finish(true); }}
       error={flow.saveError}
     >
       <ImportPill pill={importPillFor(jobs.current, jobs.queued)} />

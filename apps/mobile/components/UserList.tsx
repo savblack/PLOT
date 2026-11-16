@@ -9,6 +9,7 @@ import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { Avatar, ProfileBadges } from './Avatar';
 import UserModerationMenu from './UserModerationMenu';
 import { useBlocks } from '@plot/core/useBlocks.js';
+import Button from './Button';
 
 type BlocksApi = {
   isBlocked: (id: string) => boolean;
@@ -34,7 +35,6 @@ export function FollowButton({
   targetId: string; isPublic?: boolean; status?: string | null;
   viewerId?: string | null; onChange?: (s: string | null) => void;
 }) {
-  const { colors } = useTheme();
   const [status, setStatus] = useState<string | null>(initial);
   const [busy, setBusy] = useState(false);
   if (!viewerId || viewerId === targetId) return null;
@@ -63,17 +63,7 @@ export function FollowButton({
   const filled = !status;
 
   return (
-    <TouchableOpacity
-      onPress={act}
-      disabled={busy}
-      activeOpacity={0.7}
-      style={[
-        styles.followBtn,
-        { borderColor: filled ? colors.textPrimary : colors.border, opacity: busy ? 0.6 : 1 },
-      ]}
-    >
-      <Text style={[styles.followText, { color: filled ? colors.textPrimary : colors.textSecondary }]}>{label}</Text>
-    </TouchableOpacity>
+    <Button variant="outline" size="sm" label={label} onPress={act} disabled={busy} selected={!filled} />
   );
 }
 

@@ -37,8 +37,8 @@ test('move: clamps and keeps the rest in place', () => {
 
 test('nudge at the edges is a no-op', () => {
   assert.deepEqual(nudgeHomeSection(defaultHomeLayout(), 'picks', -1), defaultHomeLayout());
-  assert.deepEqual(nudgeHomeSection(defaultHomeLayout(), 'anticipated', 1), defaultHomeLayout());
-  assert.equal(nudgeHomeSection(defaultHomeLayout(), 'hot', 1).order.indexOf('hot'), 3);
+  assert.deepEqual(nudgeHomeSection(defaultHomeLayout(), HOME_SECTION_IDS.at(-1), 1), defaultHomeLayout());
+  assert.equal(nudgeHomeSection(defaultHomeLayout(), 'hot', 1).order.indexOf('hot'), HOME_SECTION_IDS.indexOf('hot') + 1);
 });
 
 test('setVisible toggles when no flag is given and keeps hidden in canonical order', () => {

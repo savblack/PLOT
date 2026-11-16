@@ -357,6 +357,44 @@ export async function loadDiscoverMatches({
   return { items, hasMore: pages.some(p => page < p.totalPages), total: pages.reduce((n, p) => n + (p.totalResults || 0), 0) };
 }
 
+/**
+ * Every smart list's matches, for searching across them (the palette's
+ * "Search in: Smart lists"). Each list is loaded the way opening it loads it:
+ * a discover list's first page, or a watchlist/history list's checked rows.
+ * One at a time, to stay inside the proxy's rate limit. A list that fails to
+ * load is returned empty rather than failing the rest.
+ *
+ * @param {{
+ *   lists: { id?: string, name: string, rules: any }[],
+ *   watchlistItems?: any[], historyEntries?: any[],
+ *   providerIds?: number[], region?: string, hideKids?: boolean,
+ *   client?: any, gapMs?: number,
+ * }} opts
+ * @returns {Promise<{ name: string, items: SmartListMatch[] }[]>}
+ */
+export async function loadSmartListTitles({
+  lists = [], watchlistItems = [], historyEntries = [],
+  providerIds = [], region = 'US', hideKids = false, client = tmdb, gapMs,
+}) {
+  const watched = watchedIdsFromHistory(historyEntries);
+  const out = [];
+  for (const list of lists) {
+    const rules = normalizeSmartListRules(list.rules);
+    let items;
+    try {
+      if (!rules) throw new Error('not a smart list');
+      const res = rules.source === 'discover'
+        ? await loadDiscoverMatches({ rules, page: 1, watched, providerIds, region, hideKids, client })
+        : await loadLibraryMatches({ rules, watchlistItems, historyEntries, watched, providerIds, region, client, ...(gapMs === undefined ? {} : { gapMs }) });
+      items = res.items;
+    } catch {
+      items = [];
+    }
+    out.push({ name: list.name, items });
+  }
+  return out;
+}
+
 /** Watched title ids per type, from history rows already loaded. @param {any[]} entries */
 export function watchedIdsFromHistory(entries) {
   const out = { movie: new Set(), tv: new Set() };

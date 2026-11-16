@@ -40,6 +40,7 @@ import { TAB_BAR_CLEARANCE } from '../../../../lib/tabBar';
 import { PUBLIC_PROFILE_PAGE } from '@plot/core/copy/publicProfilePage.js';
 import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
 import { PROFILE_PRIVACY } from '@plot/core/copy/profilePrivacy.js';
+import EmptyState from '../../../../components/EmptyState';
 import { publicProfileLayout } from '@plot/core/publicProfileLayout.js';
 import { MEDIA } from '@plot/core/copy/media.js';
 import {
@@ -126,8 +127,7 @@ export default function ProfileScreen({ usernameOverride }: { usernameOverride?:
               <Loader fill={false} />
             ) : (
               <>
-                <Text style={styles.emptyTitle}>This profile isn't public</Text>
-                <Text style={styles.emptyBody}>@{String(username).replace(/^@/, '')} either doesn't exist or hasn't made their profile public yet.</Text>
+                <EmptyState title={PROFILE_PRIVACY.notPublicTitle} body={PROFILE_PRIVACY.notPublicBody(String(username).replace(/^@/, ''))} />
               </>
             )}
           </View>
@@ -367,8 +367,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   body: { paddingHorizontal: spacing.xl },
   emptyWrap: { alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing.xxl * 2, gap: spacing.md },
-  emptyTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.textPrimary, textAlign: 'center' },
-  emptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },
   headerText: { flex: 1, minWidth: 0 },
   nameLine: { flexDirection: 'row', alignItems: 'center' },

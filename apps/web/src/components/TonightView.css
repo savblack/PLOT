@@ -377,12 +377,23 @@
   color: var(--text-primary);
   text-wrap: balance;
 }
-.tonight-mood-card .tonight-chips { padding: 0; }
-.tonight-switches { display: flex; flex-direction: column; }
-.tonight-switches .tonight-filter-row { padding: 8px 2px; border-top: 1px solid var(--border); }
-.tonight-switches .tonight-filter-row:first-child { border-top: 0; }
-.tonight-mood-pick { width: 100%; justify-content: center; }
-.tonight-mood-links { display: flex; flex-wrap: wrap; gap: 16px; }
+.tonight-mood-card .tonight-chips { padding: 0; gap: 6px; }
+/* Nov 16: labelled rows. The switch fits its two words and sits beside the
+   title when there is room, under it in the narrow desktop column. */
+.tonight-mood-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
+.tonight-type { width: max-content; }
+.tonight-rows { display: flex; flex-direction: column; }
+.tonight-row { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--border); }
+.tonight-row-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.tonight-other { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.tonight-lang { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.tonight-lang .tonight-select { font-size: 13px; padding: 4px 0; text-align: left; color: var(--text-primary); }
+.tonight-mood-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+/* Between phone and desktop the card is wide, so the label sits beside its chips. */
+@media (min-width: 600px) and (max-width: 1023px) {
+  .tonight-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .tonight-row-label { padding-top: 6px; }
+}
 .tonight-quiet {
   all: unset;
   width: max-content;

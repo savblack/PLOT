@@ -271,6 +271,11 @@ export const EVENTS = Object.freeze({
   // The Saved to watch rail on Home. Once per app session, when it is on
   // screen. `item_count`, `first_run` (true while the rail leads Home).
   SAVED_TO_WATCH_VIEWED: 'saved_to_watch_viewed',
+  // Home's recommendation shelves (recommendations.js). Once per app session
+  // per shelf, when it has titles. `shelf` ('because' / 'for_you'),
+  // `item_count`. On web, opening a title from one is title_viewed with
+  // source 'because_you_watched' or 'recommended_for_you'.
+  RECOMMENDATIONS_VIEWED: 'recommendations_viewed',
   // Marketing email consent. `source` distinguishes the Settings toggle from the
   // in-app prompt so we can tell which surface actually earns opt-ins.
   MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',

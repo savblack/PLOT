@@ -9,8 +9,8 @@
  * opens its sheet (components/ImportSourceSheet.tsx): the file is uploaded,
  * or the account connected, and the import runs in the background while
  * setup continues. A second source can be queued behind the first. Picks are
- * held in the flow context and saved to the watchlist once, behind the
- * building moment, so backing out of a later step costs nothing.
+ * held in the flow context and saved to the watchlist once, when the services
+ * step finishes, so backing out of a later step costs nothing.
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
@@ -33,10 +33,12 @@ import { useImportStart } from '../../hooks/useImportStart';
 import OnboardingScaffold from '../../components/OnboardingScaffold';
 import SearchField from '../../components/SearchField';
 import Svg, { Path } from 'react-native-svg';
+import { ICON_PATHS } from '@plot/core/icons.js';
 import { IconChevronRight } from '../../components/icons';
 import ImportSourceIcon from '../../components/ImportSourceIcon';
 import ImportSourceLanes, { ImportPill } from '../../components/ImportSourceLanes';
 import ImportSourceSheet from '../../components/ImportSourceSheet';
+import { EmptyNote } from '../../components/EmptyState';
 
 const F = ONBOARDING_FLOW;
 
@@ -97,7 +99,6 @@ export default function Seed() {
   const queued = start.jobs.length > 0;
   const running = start.current;
   const selected = flow.seeds;
-  const setFlowTrending = flow.setTrending;
 
   // Trending prefill (shown until the user searches). Retry re-runs it.
   useEffect(() => {
@@ -108,10 +109,9 @@ export default function Seed() {
       if (!alive) return;
       setTrending(load.items);
       setTrendingFailed(!load.ok);
-      if (load.ok) setFlowTrending(load.items);
     });
     return () => { alive = false; };
-  }, [setFlowTrending, trendingTry]);
+  }, [trendingTry]);
 
   // Debounced search. A failed request stops the spinner and shows an inline
   // error with Retry; the trending grid stays, so the step is still completable.
@@ -275,7 +275,7 @@ export default function Seed() {
                     {active && <View style={styles.cardTint} />}
                     <View style={styles.cardMark}>
                       <Svg width={15} height={15} viewBox="0 0 24 24" fill={active ? '#fff' : 'none'} stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                        <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                        <Path d={ICON_PATHS.bookmark} />
                       </Svg>
                     </View>
                   </View>
@@ -289,7 +289,7 @@ export default function Seed() {
             // Failures are the inline errors above.
             ListEmptyComponent={
               hasQuery && !searching && !searchFailed
-                ? <Text style={styles.empty}>{F.seed.noResults}</Text>
+                ? <EmptyNote style={{ textAlign: 'center', paddingVertical: spacing.xl }}>{F.seed.noResults}</EmptyNote>
                 : undefined
             }
           />

@@ -17,3 +17,18 @@ export const FAVOURITES_ENABLED = false;
  * true in the same change that sets the secret.
  */
 export const ALERT_EMAIL_ENABLED = false;
+
+/**
+ * GUIDE_ENABLED: the TV guide (live broadcast listings). Hidden everywhere for
+ * now: the menu item on both apps, the /guide page (it sends you Home), the
+ * "TV guide region" row in Settings > Viewing, and the mention in the credits.
+ * The guide code, saved TV regions and the broadcast_preferences table are all
+ * kept: flip this to true to bring it back. Three things cannot read this flag
+ * and need a step by hand when you do:
+ * - The listings refresh job (.github/workflows/broadcast-guide.yml) was
+ *   switched off in GitHub on 2026-11-16, so the stored listings are stale.
+ *   Turn it on first: `gh workflow enable broadcast-guide.yml`, then run it once.
+ * - The TVmaze line in apps/website/about.html (and copy/about.js).
+ * - The store description in docs/ops/app-store-listing.md.
+ */
+export const GUIDE_ENABLED = false;

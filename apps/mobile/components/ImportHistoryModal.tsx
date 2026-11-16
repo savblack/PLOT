@@ -30,6 +30,8 @@ import { readImportJobReview, finishImportJobReview, importSourceName } from '@p
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { COMMON } from '@plot/core/copy/common.js';
+import ModalHeader from './ModalHeader';
+import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { clearLetterboxdImport, rememberLetterboxdImport } from '../lib/letterboxdImportPrompt';
 import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -489,20 +491,14 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     <AppModal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.container, { paddingTop: sheetTop }]}>
 
-        {/* Header */}
-        <View style={styles.header}>
-          {step !== 'pick-platform' && step !== 'done' ? (
-            <TouchableOpacity onPress={reset} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Go back" accessibilityRole="button">
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Path d="M19 12H5M12 5l-7 7 7 7" />
-              </Svg>
-            </TouchableOpacity>
-          ) : null}
-          <Text style={styles.headerTitle} accessibilityRole="header">Import Watch History</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button">
-            <Text style={styles.cancel}>{COMMON.cancel}</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Header: the shared sheet top bar, with a back chevron between steps */}
+        <ModalHeader
+          title={SETTINGS_VIEW.integrations.importWatchHistoryLabel}
+          actionLabel={COMMON.cancel}
+          onAction={onClose}
+          onBack={step !== 'pick-platform' && step !== 'done' ? reset : undefined}
+          backLabel="Go back"
+        />
 
         {/* ── Step: pick platform ─────────────────────────────────────── */}
         {step === 'pick-platform' && (
@@ -736,14 +732,6 @@ function StatChip({ label, value, color }: { label: string; value: number; color
 const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-  },
-  headerTitle: { flex: 1, fontFamily: fontFamily.displaySemi, fontSize: fontSize.lg, color: colors.textPrimary },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  cancel: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.md, color: colors.textSecondary },
 
   body: { flex: 1, padding: spacing.xl },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md },

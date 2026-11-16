@@ -48,6 +48,7 @@ import ImportHistoryModal from './ImportHistoryModal';
 import ImportSourceIcon from './ImportSourceIcon';
 import { FollowPill, PersonFace } from './people/FollowControls';
 import { useFollowPerson } from './people/useFollowPerson';
+import { EmptyNote } from './EmptyState';
 
 type Sheet = 'friends' | 'import' | 'people' | 'progress' | null;
 
@@ -330,7 +331,7 @@ function FriendsSheet({ userId, onClose }: { userId: string; onClose: () => void
   return (
     <StepSheet title={T.friendsSheet.title} sub={T.friendsSheet.sub} onClose={onClose}>
       {rows === null ? null : rows.length === 0 ? (
-        <Text style={styles.empty}>{failed ? T.friendsSheet.loadError : T.friendsSheet.empty}</Text>
+        <EmptyNote>{failed ? T.friendsSheet.loadError : T.friendsSheet.empty}</EmptyNote>
       ) : rows.map(row => {
         const name = row.display_name || row.username;
         const s = status[row.id];
@@ -422,7 +423,7 @@ function PeopleSheet({ watchlistItems, favourites, follow, onClose }: {
     <StepSheet title={T.peopleSheet.title(favourites)} sub={T.peopleSheet.sub} onClose={onClose}>
       <Text style={styles.sheetH}>{T.peopleSheet.fromWatchlist}</Text>
       {!loading && suggestions.length === 0 ? (
-        <Text style={styles.empty}>{T.peopleSheet.empty}</Text>
+        <EmptyNote>{T.peopleSheet.empty}</EmptyNote>
       ) : suggestions.map((s: { id: number; name: string; profilePath?: string | null; kind: string; count: number; title: string }) => (
         <View key={s.id} style={styles.personRow}>
           <PersonFace name={s.name} path={s.profilePath} size={40} />
@@ -511,7 +512,7 @@ function UpToSheet({ show, watching, onClose }: {
 
   return (
     <StepSheet title={T.steps.progress.title} sub={T.steps.progress.sheetSub(title)} onClose={onClose}>
-      {failed && <Text style={styles.empty}>{MEDIA_PANEL.episodesLoadError}</Text>}
+      {failed && <EmptyNote>{MEDIA_PANEL.episodesLoadError}</EmptyNote>}
       {seasons.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.seasonRow}>
           {seasons.map(s => (
@@ -524,10 +525,10 @@ function UpToSheet({ show, watching, onClose }: {
           ))}
         </ScrollView>
       )}
-      {!!error && <Text style={styles.empty}>{error}</Text>}
-      {episodes === null && !failed ? <Text style={styles.empty}>{COMMON.loading}</Text> : null}
+      {!!error && <EmptyNote>{error}</EmptyNote>}
+      {episodes === null && !failed ? <EmptyNote>{COMMON.loading}</EmptyNote> : null}
       {episodes && episodes.length === 0 ? (
-        <Text style={styles.empty}>{epFailed ? MEDIA_PANEL.episodesLoadError : MEDIA_PANEL.noEpisodesAvailable}</Text>
+        <EmptyNote>{epFailed ? MEDIA_PANEL.episodesLoadError : MEDIA_PANEL.noEpisodesAvailable}</EmptyNote>
       ) : null}
       {episodes?.map(ep => (
         <TouchableOpacity

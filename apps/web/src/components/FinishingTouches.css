@@ -105,9 +105,7 @@
 .ft-preview-card i { width: 40px; height: 60px; flex-shrink: 0; border-radius: 6px; background: var(--surface-sunken); }
 .ft-preview-card > span { min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
 
-/* Home greeting (all accounts) and the first-run Saved to watch shelf */
-.home-greeting { margin: 4px 0 16px; padding: 0 var(--gut); font-family: var(--font-display); font-size: 28px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; color: var(--text-primary); }
-@media (min-width: 1024px) { .home-greeting { font-size: 34px; margin: 0 0 20px; } }
+/* The first-run Saved to watch shelf */
 
 @media (prefers-reduced-motion: reduce) {
   .ft-tick.is-done, .ft-ready-mark { animation: none; }

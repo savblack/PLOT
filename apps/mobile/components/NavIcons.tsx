@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
+import { ICON_PATHS } from '@plot/core/icons.js';
 
 /* Same strokes as apps/web/src/components/navIcons.jsx, drawn at the drawer
    size (18px, stroke 1.7). Follow requests reuses the two-person mark already
@@ -65,7 +66,7 @@ export default function NavGlyph({ name, color }: { name: NavIconName; color: st
     case 'lists':
       return (
         <Glyph color={color}>
-          <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          <Path d={ICON_PATHS.bookmark} />
         </Glyph>
       );
     case 'history':

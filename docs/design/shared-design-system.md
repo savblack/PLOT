@@ -221,8 +221,9 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
     `--danger-dim`, `--danger-border`
 - Components (marketing `ui.css`, app `app.css`):
   - **Buttons** are pills. Primary is the pink fill with charcoal text; secondary is the
-    deeper cream; ink is charcoal with cream text for the rare emphatic case. No outline
-    buttons.
+    deeper cream; ink is charcoal with cream text for the rare emphatic case. An outline
+    pill (1px `--border-strong`, no fill, `.btn-ghost`) is only for on/off actions in a row,
+    such as Follow and alerts (November 2026).
   - **Chips** are small pills in the deeper cream; the pink fill marks the lead or a rank,
     the sage fill with green text marks availability.
   - **Cards and panels** are the deeper cream at 20px radius with no border and no shadow.

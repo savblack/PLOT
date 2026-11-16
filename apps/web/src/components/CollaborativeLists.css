@@ -34,8 +34,7 @@
 .list-page-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .list-page-head-buttons { display: flex; align-items: center; gap: 8px; }
 .list-page-head-buttons .btn { display: inline-flex; align-items: center; white-space: nowrap; }
-.list-page-bar-back,
-.list-page-search-toggle { display: none; }
+.list-page-bar-back { display: none; }
 .list-page-lead { display: none; }
 /* The toolbar's Add (A8) only where the header's Add a title is hidden. */
 .list-page-add { display: none; }
@@ -88,7 +87,7 @@
    field only opens from the search button (A8, with search in place of the
    invite icon). */
 @media (max-width: 599px) {
-  .list-page--shared .list-page-back--mobile { display: none; }
+  .list-page--shared .list-page-back { display: none; }
   .list-page--shared .list-page-head { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding-bottom: 14px; }
   .list-page--shared .list-page-bar-back {
     display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-left: -8px;
@@ -99,9 +98,6 @@
   .list-page--shared .list-page-title { font-size: 1.35rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .list-page--shared .list-page-sub { display: none; }
   .list-page--shared .list-page-head-actions { display: contents; }
-  .list-page--shared .list-page-search-toggle { display: inline-flex; flex-shrink: 0; }
-  .list-page--shared .list-page-search { display: none; order: 10; width: 100%; margin-top: 8px; }
-  .list-page--shared.list-page--search-open .list-page-search { display: flex; }
 }
 
 /* ── New shared list (B2) ── */

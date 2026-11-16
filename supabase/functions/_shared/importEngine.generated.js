@@ -14,6 +14,7 @@ var defaults = {
   importAnnotationsEnabled: false,
   tvTimeImportEnabled: false,
   importEventsEnabled: false,
+  importActsForUser: false,
   trackingJobsEnabled: false,
   supabaseClientOptions: void 0,
   supabaseClient: void 0,
@@ -2279,6 +2280,12 @@ var supabase = (
   })
 );
 
+// packages/core/importRpc.js
+function importRpc(name, args, userId) {
+  if (!getConfig().importActsForUser) return supabase.rpc(name, args);
+  return supabase.rpc(`${name}_as`, { p_user: userId, ...args });
+}
+
 // packages/core/importAnnotations.js
 async function writeImportedAnnotations({ userId, resolved, onProgress }) {
   const matched = resolved.filter((row) => row.status === "matched");
@@ -2306,7 +2313,7 @@ async function writeImportedAnnotations({ userId, resolved, onProgress }) {
   for (let offset = 0; offset < records.length; offset += 50) {
     const batch = records.slice(offset, offset + 50);
     try {
-      const { data, error } = await supabase.rpc("import_saved_annotations", { p_records: batch });
+      const { data, error } = await importRpc("import_saved_annotations", { p_records: batch }, userId);
       if (error) failed += batch.length;
       else {
         inserted += data.inserted;
@@ -2355,7 +2362,7 @@ async function writeImportedList({ userId, resolved, onProgress }) {
         source_metadata: row.sourceMetadata || null,
         summary: { tmdb_id: row.tmdbId, media_type: row.mediaType, title: row.tmdbTitle, poster_path: row.posterPath || null }
       }));
-      const { data, error } = await supabase.rpc("import_saved_list", { p_list: destination, p_records: records });
+      const { data, error } = await importRpc("import_saved_list", { p_list: destination, p_records: records }, userId);
       if (error) failed += batch.length;
       else if (data.not_imported) return { inserted, duplicates, failed: matched.length - inserted - duplicates, notImported: data.not_imported };
       else {
@@ -2445,7 +2452,8 @@ var FAILED_ACTIONS = Object.freeze({
   WATCH_TOGETHER_VOTE: "watch_together_vote",
   // Joining a collaborative list from its invite link (useListInvites.js).
   LIST_INVITE_ACCEPT: "list_invite_accept",
-  // The delete-account request never reached the edge function (deleteAccount.js).
+  // Deleting the account failed (deleteAccount.js): the request never reached
+  // the edge function (`network`), or the function answered with an error.
   ACCOUNT_DELETE: "account_delete",
   // Auth emails that are not a sign-in or a signup, so they stay out of
   // login_submit_failed / signup_submit_failed and those funnels' rates.
@@ -2764,7 +2772,7 @@ async function writeImportSelection({ userId, resolved, summaryRows }, { onProgr
   let duplicates = 0;
   for (const batch of chunk(records, WRITE_BATCH)) {
     try {
-      const { data, error } = await supabase.rpc("import_watch_events", { p_records: batch });
+      const { data, error } = await importRpc("import_watch_events", { p_records: batch }, userId);
       if (error) failed += batch.length;
       else {
         inserted += data.inserted;

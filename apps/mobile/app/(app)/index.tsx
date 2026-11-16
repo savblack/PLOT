@@ -17,12 +17,14 @@ import {
   UIManager, Platform, StyleSheet, Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { BookmarkGlyph } from '../../components/Icon';
 import { IconChevronDown } from '../../components/icons';
 import SectionTitle from '../../components/SectionTitle';
 import PlotWordmark from '../../components/PlotWordmark';
 import { TextLink } from '../../components/Button';
 import GlassHeader, { useGlassOnScroll } from '../../components/GlassHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
 import { useNewReleases, prepareNewReleaseGenreRails } from '@plot/core/useNewReleases.js';
@@ -45,8 +47,10 @@ import ListRow from '../../components/ListRow';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { MEDIA } from '@plot/core/copy/media.js';
 import { cardMetaLine } from '@plot/core/media.js';
-import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, type ContinueWatchingItem } from '../../components/people/HomeShelves';
-import { useContinueWatching } from '@plot/core/useHomeShelves.js';
+import { PosterCaption, posterColumnWidth } from '../../components/PosterCard';
+import EmptyState from '../../components/EmptyState';
+import { ContinueWatchingCard, PinnedShelves, YourPeopleShelf, fetchContinueWatchingTv, fetchHomeTitle, type ContinueWatchingItem } from '../../components/people/HomeShelves';
+import { useContinueWatching, useRecommendationShelves } from '@plot/core/useHomeShelves.js';
 import { nightsThisWeek, streaks } from '@plot/core/historyStats.js';
 import RateCard from '../../components/RateCard';
 import { CALENDAR_VIEW } from '@plot/core/copy/calendarView.js';
@@ -60,7 +64,6 @@ import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists
 import PicksCarousel from '../../components/PicksCarousel';
 import { anticipatedMoviesFrom, currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
 import { localDateStr } from '@plot/core/date.js';
-import { greetingFor } from '@plot/core/greeting.js';
 import { dedupeHomeShelves, visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
 import FinishingTouches, { useFinishingTouchesState } from '../../components/FinishingTouches';
@@ -81,7 +84,12 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const SCREEN_W = Dimensions.get('window').width;
-const CARD_W   = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
+// The day's recommendation shelves are kept here, so Home asks TMDB once a day.
+const RECS_STORAGE = {
+  getItem: (key: string) => AsyncStorage.getItem(key),
+  setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
+};
+const CARD_W   = posterColumnWidth(SCREEN_W);
 const BINGE_W  = SCREEN_W * 0.62;
 const BINGE_H  = BINGE_W * 0.56;
 
@@ -124,15 +132,6 @@ interface PlatformData {
   logo_path?: string | null;
   movies: MediaItem[];
   tv: MediaItem[];
-}
-
-// ── Bookmark SVG ─────────────────────────────────────────────────────
-function BookmarkIcon({ size = 14, color = '#fff', filled = false, strokeWidth = 2 }: { size?: number; color?: string; filled?: boolean; strokeWidth?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </Svg>
-  );
 }
 
 // ── Heart SVG — same outline/fill treatment as the web card heart ─────
@@ -190,7 +189,7 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
               accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
               accessibilityRole="button"
             >
-              <BookmarkIcon size={16} color={saved ? colors.accent : colors.textMuted} strokeWidth={2.5} filled={saved} />
+              <BookmarkGlyph saved={saved} size={16} colors={colors} />
             </TouchableOpacity>
           </View>
         )}
@@ -225,10 +224,10 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
           accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
-          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
+          <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
+      <PosterCaption title={title} meta={cardMetaLine(item)} />
     </TouchableOpacity>
   );
 }
@@ -294,7 +293,7 @@ function ChartRow({ item, rank, saved, onSave, onPress }: {
         accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
-        <BookmarkIcon size={13} color={saved ? colors.accent : colors.textMuted} filled={saved} />
+        <BookmarkGlyph saved={saved} size={13} colors={colors} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -331,7 +330,7 @@ function HeroCard({ item, onPress, saved, onSave, cardStyle, badge = 'TRENDING #
         accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
         accessibilityRole="button"
       >
-        <BookmarkIcon size={16} color={saved ? colors.accent : '#fff'} filled={saved} />
+        <BookmarkGlyph saved={saved} onImage size={16} strokeWidth={2} colors={colors} />
       </TouchableOpacity>
       <View style={styles.heroContent}>
         <View style={styles.trendingBadge}>
@@ -531,10 +530,10 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
           accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
           accessibilityRole="button"
         >
-          <BookmarkIcon size={15} strokeWidth={2.5} filled={saved} />
+          <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
+      <PosterCaption title={title} meta={cardMetaLine(item)} />
     </TouchableOpacity>
   );
 }
@@ -577,14 +576,10 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
     return (
       <>
       {afterCinema}
-      <View style={styles.section}>
-        <Text style={styles.emptyTitle}>Nothing new</Text>
-        <Text style={styles.emptyBody}>
-          {typeFilters.length < ALL_TYPES.length || genreFilters.length
-            ? 'Nothing matches right now. Try widening your filters.'
-            : 'Nothing has landed in the last 30 days. Check back soon.'}
-        </Text>
-      </View>
+      <EmptyState
+        title={DISCOVER_VIEW.newReleasesEmpty.title}
+        body={typeFilters.length < ALL_TYPES.length || genreFilters.length ? DISCOVER_VIEW.newReleasesEmpty.filtered : DISCOVER_VIEW.newReleasesEmpty.none}
+      />
       </>
     );
   }
@@ -686,11 +681,22 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   const router = useRouter();
   // Up next: the shows with an episode out, then the saved titles, one shelf.
   const continueWatching = useContinueWatching(watching.items ?? [], fetchContinueWatchingTv);
-  // The line under the greeting: nights logged in the last seven days.
+  // Because you watched / Recommended for you, as on web (recommendations.js).
+  const recs = useRecommendationShelves({
+    history: history.entries ?? [],
+    watchlist: watchlist.items,
+    watching: watching.items,
+    fetchDetails: fetchHomeTitle,
+    today: localDateStr(),
+    enabled: !history.loading,
+    userId,
+    storage: RECS_STORAGE,
+  });
+  // The line that leads Home: nights logged in the last seven days.
   const weekNights = useMemo(() => nightsThisWeek(history.entries ?? []), [history.entries]);
   const bestStreak = useMemo(() => streaks(history.entries ?? []).best, [history.entries]);
-  // First run: the titles just saved in onboarding lead Home, under the greeting
-  // and the Finishing touches card. Everyone else keeps the rail at the bottom.
+  // First run: the titles just saved in onboarding lead Home, under
+  // the Finishing touches card. Everyone else keeps the rail at the bottom.
   const ft = useFinishingTouchesState(userId);
   const firstRun = ft.visible;
   // A new member's first week takes Finishing touches' place, so the two
@@ -709,6 +715,20 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       track(EVENTS.SAVED_TO_WATCH_VIEWED, { item_count: watchlistItems.length, first_run: firstRun });
     });
   }, [tab, ft.ready, watchlist.loading, watchlistItems.length, firstRun]);
+  const becauseCount = recs.because?.items.length ?? 0;
+  const forYouCount = recs.forYou.length;
+  useEffect(() => {
+    if (tab !== 'discover' || becauseCount === 0) return;
+    oncePerSession('recommendations_viewed_because', () => {
+      track(EVENTS.RECOMMENDATIONS_VIEWED, { shelf: 'because', item_count: becauseCount });
+    });
+  }, [tab, becauseCount]);
+  useEffect(() => {
+    if (tab !== 'discover' || forYouCount === 0) return;
+    oncePerSession('recommendations_viewed_for_you', () => {
+      track(EVENTS.RECOMMENDATIONS_VIEWED, { shelf: 'for_you', item_count: forYouCount });
+    });
+  }, [tab, forYouCount]);
   const savedIds = new Set<number>(watchlistItems.map((i: MediaItem) => i.tmdb_id ?? i.id ?? 0));
   const toggleFav = useCallback((item: MediaItem) => {
     const id = item.id ?? item.tmdb_id ?? 0;
@@ -819,10 +839,14 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   // chart keep every card but still count.
   const shown = dedupeHomeShelves(visibleHomeSections(homeLayout.layout, homeLayout.layout.order), {
     picks: [hero, ...otherPicks.map(({ item }) => item)].filter((item): item is MediaItem => !!item),
+    because: applyFilters(recs.because?.items ?? []),
+    forYou: applyFilters(recs.forYou),
     hot: applyFilters(trending.slice(1, 10)),
     weekly: applyFilters(weekly),
     anticipated: applyFilters(anticipated),
   }, { whole: ['picks', 'weekly'] });
+  const becauseRail: MediaItem[] = shown.because ?? [];
+  const forYouRail: MediaItem[] = shown.forYou ?? [];
   const hotRail = shown.hot ?? [];
   const anticipatedRail = shown.anticipated ?? [];
 
@@ -928,6 +952,52 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
     // layout calls `continue`, so the viewer's order and hide apply to it. On
     // the first run it sits above the shelves instead.
     continue: () => (firstRun ? null : upNext),
+    because: () => (
+      <>
+        {recs.because && becauseRail.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader title={DISCOVER_VIEW.recommendations.becauseTitle(recs.because.seed.title)} />
+            <PosterRail
+              data={becauseRail}
+              keyExtractor={item => `${item.media_type}-${item.id}`}
+              renderItem={({ item }) => (
+                <PosterCard
+                  item={item}
+                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                  saved={savedIds.has(item.id ?? 0)}
+                  onSave={() => handleSave(item)}
+                  isFav={favorites.isFavorite(item.id ?? 0)}
+                  onFavorite={() => toggleFav(item)}
+                />
+              )}
+            />
+          </View>
+        )}
+      </>
+    ),
+    forYou: () => (
+      <>
+        {forYouRail.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker={DISCOVER_VIEW.recommendations.forYouSubtitle} title={DISCOVER_VIEW.recommendations.forYouTitle} />
+            <PosterRail
+              data={forYouRail}
+              keyExtractor={item => `${item.media_type}-${item.id}`}
+              renderItem={({ item }) => (
+                <PosterCard
+                  item={item}
+                  onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))}
+                  saved={savedIds.has(item.id ?? 0)}
+                  onSave={() => handleSave(item)}
+                  isFav={favorites.isFavorite(item.id ?? 0)}
+                  onFavorite={() => toggleFav(item)}
+                />
+              )}
+            />
+          </View>
+        )}
+      </>
+    ),
     hot: () => (
       <>
         {hotRail.length > 0 && (
@@ -1085,8 +1155,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           }}
       >
 
-        <Text style={styles.dateLine}>{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
-        <Text style={styles.greeting} accessibilityRole="header">{greetingFor({ name: profile?.first_name })}</Text>
         {!history.loading && weekNights > 0 && (
           <TouchableOpacity
             style={styles.weekLine}
@@ -1218,7 +1286,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
 
 
-  dateLine: { paddingHorizontal: spacing.xl, fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textMuted },
 
   // ── Hero ──
   hero: {
@@ -1294,7 +1361,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderRadius: radii.md,
     overflow: 'hidden',
     backgroundColor: colors.surfaceSunken,
-    marginBottom: spacing.sm,
   },
   // Naked corner icons over the poster — same treatment as the web card
   // buttons (no pill, no circle; a drop shadow keeps them legible on light
@@ -1315,12 +1381,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   cardActionBtnLeft: {
     right: undefined,
     left: 3,
-  },
-  cardTitle: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    lineHeight: 16,
   },
 
   // ── Binge cards ──
@@ -1488,8 +1548,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     marginTop: spacing.sm,
   },
 
-  // ── Greeting block ──
-  greeting: { paddingHorizontal: spacing.xl, marginBottom: spacing.xs, fontFamily: fontFamily.display, fontSize: fontSize.xxl, letterSpacing: -0.78, color: colors.textPrimary },
+  // ── This week line ──
   weekLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, marginBottom: spacing.md, minHeight: 24 },
   weekDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accentSecondary },
   weekText: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary },
@@ -1498,16 +1557,4 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   upNextEmptyBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textSecondary },
   upNextEmptyRow: { flexDirection: 'row', gap: spacing.md },
   customize: { alignSelf: 'center', marginTop: spacing.xl },
-  emptyTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: fontSize.xl,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  emptyBody: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
 });

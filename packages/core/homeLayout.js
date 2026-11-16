@@ -1,6 +1,6 @@
 /* Home layout: which shelves show on Home, and in what order.
  *
- * Plot's Home is opinionated on purpose: the greeting, the Up next card, On
+ * Plot's Home is opinionated on purpose: the Up next card, On
  * this day and the first-run Saved shelf are fixed. Everything below them is
  * a shelf the viewer may reorder or hide. The ids here are shared by web and
  * mobile so one saved layout applies on both; a platform that does not render
@@ -20,15 +20,20 @@
 export const HOME_SECTION_IDS = Object.freeze([
   'picks',
   'continue',
+  'forYou',
   'hot',
   'weekly',
   'people',
   'anticipated',
+  'because',
 ]);
 /* New Releases, Most Binged, Now Showing and Top 10 by Platform used to be
    Home shelves too. They moved to the New Releases page (November 2026) so
    Home is five shelves that do not repeat each other. A saved layout that
-   still names them is fine: unknown ids are dropped on read. */
+   still names them is fine: unknown ids are dropped on read.
+   Recommended for you and Because you watched (recommendations.js) joined
+   in November 2026: Recommended for you after Continue watching, Because you
+   watched last, under Most Anticipated (Savannah, 16 Nov 2026). */
 
 /** What a pin can point at. `watchlist` has one fixed id; `list` is a custom list id; `person` is a TMDB person id. */
 export const PIN_KINDS = Object.freeze(['watchlist', 'list', 'person']);

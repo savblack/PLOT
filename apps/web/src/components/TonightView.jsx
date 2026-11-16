@@ -9,7 +9,6 @@ import {
 import { TONIGHT_PICKER as T } from '../copy/tonightPicker.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { posterUrl, backdropUrl } from '../utils/images.js';
-import { SettingsSwitch } from './SettingsPage.jsx';
 import SmartListDialog from './SmartListDialog.jsx';
 import { smartListRulesFromPicker } from '@plot/core/smartLists.js';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
@@ -20,7 +19,10 @@ import Chip, { ChipRow, Tag } from './Chip.jsx';
 import EmptyState from './EmptyState.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import TonightShelves, { PickForMe } from './TonightShelves.jsx';
-import { TYPE_CHIPS, MOOD_CHIPS, SWITCH_CHIPS, chipOn, chipLabel, toggleChip } from '@plot/core/tonightShelves.js';
+import {
+  TYPE_CHIPS, SWITCH_CHIPS, MOODS, chipOn, chipLabel, toggleChip,
+  moodOn, toggleMood, moodRows, moodFiltersOn, clearMoodFilters,
+} from '@plot/core/tonightShelves.js';
 import Segmented from './Segmented.jsx';
 
 /* Just Decide (Nov 2026 redesign, option D). It opens on chips and shelves
@@ -28,7 +30,7 @@ import Segmented from './Segmented.jsx';
    "Pick one for me" and "Surprise me" run the picker on the chips' options
    and show its results here; Free viewers get one pick a day, then the
    upgrade sheet. Phone keeps the actions in a bar above the tab bar. The
-   title and subline come from the app shell. */
+   title comes from the app shell. */
 
 
 // Two arrows round: a list that keeps looking (A1).
@@ -117,53 +119,72 @@ function LanguageSelect({ picker, id }) {
   );
 }
 
-/* The request, as one card (Nov 14, round 3A): movie or show, mood chips,
-   three switches and one pink button. Surprise me and the rarer filters
-   (kids, language) are quiet links, so Pick is the only filled button. */
-function MoodCard({ picker, premium }) {
-  const [more, setMore] = useState(false);
-  const { options } = picker;
-  const apply = (chip) => {
-    const next = toggleChip(chip, options);
-    for (const key of Object.keys(next)) if (next[key] !== options[key]) picker.setOption(key, next[key]);
-  };
-  const switches = SWITCH_CHIPS.filter(c => (c !== 'services' || picker.hasServices) && (c !== 'watchlist' || picker.hasWatchlist));
-  const switchRow = (label, checked, onChange) => (
-    <div className="tonight-filter-row" key={label}>
-      <span className="tonight-filter-label">{label}</span>
-      <SettingsSwitch label={label} checked={checked} onChange={onChange} />
+/* The request, as one card (Nov 16, labelled rows): movie or show beside the
+   title, then a labelled row per filter with every choice on the card, so
+   nothing hides behind a link. Pick is the only filled button; Surprise me
+   and Clear all are quiet links beside it. */
+function MoodRow({ label, radio = false, children }) {
+  return (
+    <div className="tonight-row">
+      <span className="tonight-row-label">{label}</span>
+      <ChipRow className="tonight-chips" role={radio ? 'radiogroup' : 'group'} aria-label={label}>{children}</ChipRow>
     </div>
   );
+}
+
+function MoodCard({ picker, premium }) {
+  const { options } = picker;
+  const set = (next) => {
+    for (const key of Object.keys(next)) if (next[key] !== options[key]) picker.setOption(key, next[key]);
+  };
+  const where = SWITCH_CHIPS.filter(c => (c === 'services' && picker.hasServices) || (c === 'watchlist' && picker.hasWatchlist));
   return (
     <section className="hist-card tonight-mood-card" aria-labelledby="tonight-mood-title">
-      <h2 className="tonight-mood-title" id="tonight-mood-title">{T.moodTitle}</h2>
-      <Segmented
-        ariaLabel={T.steps.type.shortTitle}
-        options={TYPE_CHIPS.map(c => ({ value: c, label: chipLabel(c, options.mediaType) }))}
-        value={options.mediaType === 'tv' ? 'shows' : 'movies'}
-        onChange={apply}
-      />
-      <ChipRow className="tonight-chips" aria-label={T.chips.label}>
-        {MOOD_CHIPS.map(c => <Chip key={c} size="sm" label={chipLabel(c, options.mediaType)} selected={chipOn(c, options)} onClick={() => apply(c)} />)}
-      </ChipRow>
-      <div className="tonight-switches">
-        {switches.map(c => switchRow(chipLabel(c, options.mediaType), chipOn(c, options), () => apply(c)))}
+      <div className="tonight-mood-head">
+        <h2 className="tonight-mood-title" id="tonight-mood-title">{T.moodTitle}</h2>
+        <Segmented
+          className="tonight-type"
+          ariaLabel={T.steps.type.shortTitle}
+          options={TYPE_CHIPS.map(c => ({ value: c, label: chipLabel(c, options.mediaType) }))}
+          value={options.mediaType === 'tv' ? 'shows' : 'movies'}
+          onChange={(c) => set(toggleChip(c, options))}
+        />
       </div>
-      <PickForMe picker={picker} premium={premium} className="tonight-mood-pick" />
-      {picker.freePickLeft && <p className="tonight-hint">{T.freePickNote}</p>}
-      <div className="tonight-mood-links">
-        <button type="button" className="tonight-quiet" onClick={() => picker.go('surprise')}>{T.surpriseMe}</button>
-        <button type="button" className="tonight-quiet" aria-expanded={more} onClick={() => setMore(v => !v)}>{more ? T.fewerOptions : T.moreOptions}</button>
-      </div>
-      {more && (
-        <div className="tonight-switches">
-          {switchRow(T.hideKids, options.hideKids, () => picker.setOption('hideKids', !options.hideKids))}
-          <div className="tonight-filter-row">
-            <label className="tonight-filter-label" htmlFor="tonight-lang">{T.languageLabel}</label>
-            <LanguageSelect picker={picker} id="tonight-lang" />
+      <div className="tonight-rows">
+        <MoodRow label={T.chips.rows.mood}>
+          {MOODS.map(m => <Chip key={m} size="sm" label={T.chips.moods[m]} selected={moodOn(m, options)} onClick={() => set(toggleMood(m, options))} />)}
+        </MoodRow>
+        {moodRows(options.mediaType).map(row => (
+          <MoodRow key={row.id} label={row.label} radio>
+            {row.choices.map((choice, i) => (
+              <Chip key={String(choice.value)} size="sm" role="radio" label={choice.label} quiet={i === 0}
+                selected={options[row.key] === choice.value} onClick={() => picker.setOption(row.key, choice.value)} />
+            ))}
+          </MoodRow>
+        ))}
+        {where.length > 0 && (
+          <MoodRow label={T.chips.rows.where}>
+            {where.map(c => <Chip key={c} size="sm" label={T.summary[c]} selected={chipOn(c, options)} onClick={() => set(toggleChip(c, options))} />)}
+          </MoodRow>
+        )}
+        <div className="tonight-row">
+          <span className="tonight-row-label">{T.chips.rows.other}</span>
+          <div className="tonight-chips tonight-other">
+            <Chip size="sm" label={T.hideKids} selected={options.hideKids} onClick={() => picker.setOption('hideKids', !options.hideKids)} />
+            <label className="tonight-lang">
+              <span>{T.languageLabel}</span>
+              <LanguageSelect picker={picker} id="tonight-lang" />
+            </label>
           </div>
         </div>
-      )}
+      </div>
+      <div className="tonight-mood-actions">
+        <PickForMe picker={picker} premium={premium} className="tonight-mood-pick" />
+        <button type="button" className="tonight-quiet" onClick={() => picker.go('surprise')}>{T.surpriseMe}</button>
+        {moodFiltersOn(options) && (
+          <button type="button" className="tonight-quiet" onClick={() => set(clearMoodFilters(options))}>{T.chips.clearAll}</button>
+        )}
+      </div>
     </section>
   );
 }

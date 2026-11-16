@@ -22,6 +22,7 @@ export default defineConfig({
       VITE_SUPABASE_ANON_KEY: 'placeholder-not-a-key',
       VITE_TMDB_PROXY_URL: 'https://placeholder.invalid',
       VITE_SIMKL_CLIENT_ID: 'placeholder-simkl-client-id',
+      VITE_TRAKT_CLIENT_ID: 'placeholder-trakt-client-id',
       VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: '',
       // onboarding-gate.spec.js opens the server under a name that is not a
       // preview host, so ProtectedRoute runs its real setup check.

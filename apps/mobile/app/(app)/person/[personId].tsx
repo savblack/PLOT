@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Dimensions, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { PosterCaption, posterColumnWidth } from '../../../components/PosterCard';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft } from '../../../components/icons';
@@ -28,7 +29,7 @@ import { FollowPill, PeopleChip } from '../../../components/people/FollowControl
 import { useFollowPerson, type FollowTarget } from '../../../components/people/useFollowPerson';
 
 const SCREEN_W = Dimensions.get('window').width;
-const CARD_W = (SCREEN_W - spacing.xl * 2 - spacing.md * 2) / 3;
+const CARD_W = posterColumnWidth(SCREEN_W);
 
 interface Credit {
   id?: number;
@@ -87,11 +88,8 @@ function CreditCard({ title, image, role, meta, onPress }: {
           </View>
         )}
       </View>
-      <Text style={{ marginTop: spacing.xs, fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.textPrimary }} numberOfLines={2}>{title}</Text>
-      {!!role && <Text style={{ fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted }} numberOfLines={2}>{role}</Text>}
-      {typeof meta === 'string'
-        ? <Text style={{ fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted }} numberOfLines={2}>{meta}</Text>
-        : <View style={{ marginTop: 2 }}>{meta}</View>}
+      <PosterCaption title={title} meta={[role, typeof meta === 'string' ? meta : null].filter(Boolean).join(' · ') || null} metaLines={2} />
+      {typeof meta !== 'string' && <View style={{ marginTop: 2 }}>{meta}</View>}
     </TouchableOpacity>
   );
 }

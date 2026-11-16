@@ -132,7 +132,6 @@ export function YourPeoplePage({ follows, items, today, loading, view, setView, 
   return (
     <div className="hist-page people-page">
       <div className="hist-toolbar people-toolbar">
-        <span className="hist-toolbar-sub">{P.page.subtitle}</span>
         <Segmented
           options={[
             { value: 'date', label: P.page.byDate },

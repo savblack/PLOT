@@ -2,7 +2,7 @@ import { buildListShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { isListShareable, listVisibility } from '@plot/core/customLists.js';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import BackLink from './BackLink.jsx';
 import { useApp } from '../hooks/useApp.js';
@@ -19,7 +19,7 @@ import { localDateStr } from '../utils/date.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListSections.jsx';
 import { SmartListSection } from './SmartListSection.jsx';
-import { IconChevronLeft, IconSearch } from './navIcons.jsx';
+import { IconChevronLeft } from './navIcons.jsx';
 import { COLLABORATIVE_LISTS } from '@plot/core/copy/collaborativeLists.js';
 import { isSharedList } from '@plot/core/sharedLists.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
@@ -36,7 +36,6 @@ const ALL_LIST_TYPES = LIST_TYPE_ROWS.map(r => r.id);
 const STATUS_OPTIONS = LIST_STATUS_FILTER_IDS.map(id => ({ id, label: MEDIA.watchStatus[id] }));
 import KebabMenu from './KebabMenu.jsx';
 import EmptyState from './EmptyState.jsx';
-import SearchField from './SearchField.jsx';
 import { useHistory } from '../hooks/useHistory.js';
 
 const GridIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>;
@@ -44,22 +43,17 @@ const RowsIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y
 const PlusIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
 const SortIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3" /></svg>;
 
-const CloseIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>;
 
 /* A shared list (PLO-525) hands the frame four more things: `sidePanel`, the
    people panel above the filters; `headerActions`, Watch together and Add a
    title at the top right; `lead`, the phone and tablet people line (A8); and
    `shared`, which on a phone turns the header into a bar with a search
    button in place of the always-open field. */
-function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, query, onQuery, view, onView, onSort, sidePanel, headerActions, lead, onAdd, shared = false, children }) {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const searchRef = useRef(null);
-  useEffect(() => { if (searchOpen) searchRef.current?.focus(); }, [searchOpen]);
+function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, view, onView, onSort, sidePanel, headerActions, lead, onAdd, shared = false, children }) {
   const side = sidePanel || filter;
-  const searching = searchOpen || query !== '';
   return (
-    <section className={`list-page list-page--${view}${shared ? ' list-page--shared' : ''}${shared && searching ? ' list-page--search-open' : ''}`}>
-      <BackLink className="list-page-back--mobile" to="/my-lists" label={CUSTOM_LISTS.backToMyLists} />
+    <section className={`list-page list-page--${view}${shared ? ' list-page--shared' : ''}`}>
+      <BackLink className="list-page-back" to="/my-lists" label={CUSTOM_LISTS.backToMyLists} />
       <header className="list-page-head">
         {shared && <Link className="list-page-bar-back" to="/my-lists" aria-label={CUSTOM_LISTS.backToMyLists}><IconChevronLeft /></Link>}
         <div className="list-page-heading">
@@ -75,20 +69,7 @@ function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, 
           )}
         </div>
         <div className="list-page-head-actions">
-          {shared && (
-            <button
-              type="button"
-              className="list-page-view list-page-search-toggle"
-              aria-label={searching ? COLLABORATIVE_LISTS.page.searchClose : COLLABORATIVE_LISTS.page.searchOpen}
-              aria-expanded={searching}
-              onClick={() => { if (searching) { setSearchOpen(false); onQuery(''); } else setSearchOpen(true); }}
-            >
-              {searching ? <CloseIcon /> : <IconSearch />}
-            </button>
-          )}
-          {/* Controls sit left of the search, as on Calendar and History. */}
           {headerActions && <div className="list-page-head-buttons">{headerActions}</div>}
-          <SearchField className="hist-search list-page-search" value={query} onChange={onQuery} placeholder={CUSTOM_LISTS.searchThisList} ariaLabel={CUSTOM_LISTS.searchThisList} inputRef={searchRef} />
         </div>
       </header>
       {lead && <div className="list-page-lead">{lead}</div>}
@@ -128,8 +109,8 @@ function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, 
    changes. It used to be built inside the page by a `useMemo` whose deps
    included `query` — which meant every keystroke produced a new function, and
    a new function is a new component *type*: React unmounts the old subtree and
-   mounts a fresh one rather than re-rendering it. The search input lives inside
-   that subtree, so it was destroyed and rebuilt on each character and focus
+   mounts a fresh one rather than re-rendering it. The list's search input (since
+   retired for the palette's "Search in") lived inside that subtree, so it was destroyed and rebuilt on each character and focus
    dropped to the body. You could type one letter at a time, clicking back into
    the field between each.
 
@@ -156,7 +137,6 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
   const [typeFilters,  setTypeFilters]  = useState(ALL_LIST_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
   const [statusFilters, setStatusFilters] = useState([]);
-  const [query, setQuery] = useState('');
   const [view, setView] = useState('auto');
   const [sort, setSort] = useState('list');
   const narrow = !useWide();
@@ -179,11 +159,6 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
   const sharedGrid = SHOW_WATCH_TOGETHER && isSharedList(list, user?.id);
   const resolvedView = view === 'auto' ? (narrow && !sharedGrid ? 'rows' : 'grid') : view;
 
-  const matchQuery = useCallback((items) => {
-    const term = query.trim().toLowerCase();
-    return term ? items.filter(item => (item.title || item.name || '').toLowerCase().includes(term)) : items;
-  }, [query]);
-
   const sortItems = useCallback((items) => sortListItems(items, sort), [sort]);
 
   // Not smart lists: their saved rules already pick a type and genres, and
@@ -196,7 +171,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
   // Only CustomListSection reads this on the page: it swaps an emptied grid for
   // "No items match". Want to Watch and Favourites return null when narrowed,
   // which here would take the header and filters with it.
-  const narrowed = typeFilters.length < ALL_LIST_TYPES.length || genreFilters.length > 0 || statusFilters.length > 0 || query.trim() !== '';
+  const narrowed = typeFilters.length < ALL_LIST_TYPES.length || genreFilters.length > 0 || statusFilters.length > 0;
 
   // What the frame needs from the page. A fresh object per render is fine —
   // it re-renders the frame, which is the point; only a changing component
@@ -235,12 +210,10 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
         />
       </>
     ) : null,
-    query,
-    onQuery: setQuery,
     view: resolvedView,
     onView: setView,
     onSort: setSort,
-  }), [showFilter, showStatus, typeFilters, genreFilters, statusFilters, genres, query, resolvedView]);
+  }), [showFilter, showStatus, typeFilters, genreFilters, statusFilters, genres, resolvedView]);
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
@@ -249,10 +222,10 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
 
   let body;
   if (key === 'want') {
-    const items = sortItems(matchQuery(filterByTypeAndGenre(want, typeFilters, genreFilters)));
+    const items = sortItems(filterByTypeAndGenre(want, typeFilters, genreFilters));
     body = <WantToWatchSection items={items} count={want.length} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
   } else if (FAVOURITES_ENABLED && key === 'favorites') {
-    body = <FavoritesSection favorites={favorites} visibleItems={sortItems(matchQuery(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters)))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
+    body = <FavoritesSection favorites={favorites} visibleItems={sortItems(filterByTypeAndGenre(favorites.favorites, typeFilters, genreFilters))} count={favorites.favorites.length} typeFilters={typeFilters} genreFilters={genreFilters} narrowed={false} Frame={Frame} pageLayout historyEntries={history.entries} />;
   } else if (smartList) {
     body = (
       <SmartListSection
@@ -261,7 +234,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
         customLists={customLists}
         historyEntries={history.entries}
         historyReady={!history.loading}
-        refine={items => sortItems(matchQuery(items))}
+        refine={sortItems}
         onDeleted={() => navigate('/my-lists')}
         Frame={Frame}
         pageLayout
@@ -274,7 +247,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
       <CustomListSection
         key={customListKey(list.id)}
         list={list}
-        visibleItems={sortItems(matchQuery(filterByWatchStatus(filterByTypeAndGenre(list.items, typeFilters, genreFilters), statusFilters, history.entries, watching.items)))}
+        visibleItems={sortItems(filterByWatchStatus(filterByTypeAndGenre(list.items, typeFilters, genreFilters), statusFilters, history.entries, watching.items))}
         count={(list.items || []).length}
         customLists={customLists}
         typeFilters={typeFilters}
