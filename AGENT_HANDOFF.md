@@ -149,11 +149,9 @@ neither has Premium. On the sample it opens the `/together` hub. Hidden when
 SHOW_WATCH_TOGETHER is off. Event `compare_watch_together_tapped` with
 `{ sample }`. Copy key `watchTogether` removed from tasteOverlap copy.
 
-Open question (asked 2026-11-17): Savannah wants "this share button as well",
-pointing at the round share icon beside "You and Sam". It already exists on a
-real comparison on web (TasteShareMenu) and mobile. The sample has the Sample
-chip there and no share, on purpose. Waiting on whether she wants one on the
-sample too.
+Decided 2026-11-17: the round share button stays on real comparisons only
+(web TasteShareMenu, mobile top bar). The sample keeps its Sample chip and no
+share. Do not add one.
 
 ## Next
 
