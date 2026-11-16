@@ -20,6 +20,7 @@ import { planHistoryImport } from './importPlan.js';
 import { buildWatchEvent, leftOutWatchSummary, possibleWatchDuplicates, needsDuplicateReview, requiresEpisodeIdentity, reviewPendingWatchSummaries } from './importEvents.js';
 import { getConfig } from './config.js';
 import { supabase } from './supabase.js';
+import { importRpc } from './importRpc.js';
 import { genreIdsFromItem } from './media.js';
 import { HISTORY_CONFLICT_TARGET } from './userMedia.js';
 import { watchedAtFor } from './importParsing.js';
@@ -514,7 +515,7 @@ export async function writeImportSelection({ userId, resolved, summaryRows }, { 
   let duplicates = 0;
   for (const batch of chunk(records, WRITE_BATCH)) {
     try {
-      const { data, error } = await supabase.rpc('import_watch_events', { p_records: batch });
+      const { data, error } = await importRpc('import_watch_events', { p_records: batch }, userId);
       if (error) failed += batch.length;
       else { inserted += data.inserted; duplicates += data.duplicates; }
     } catch { failed += batch.length; }

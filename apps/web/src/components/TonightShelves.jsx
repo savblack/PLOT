@@ -24,8 +24,7 @@ export function PickForMe({ picker, premium, className = '' }) {
   return (
     <button type="button" className={`btn btn-primary tonight-go ${className}`}
       onClick={() => picker.go(premium ? 'five' : 'surprise')}
-      aria-label={locked ? `${T.pickForMe}, ${T.gate.locked}` : picker.freePickLeft ? `${T.pickForMe}. ${T.freePickNote}` : undefined}
-      title={picker.freePickLeft ? T.freePickNote : undefined}>
+      aria-label={locked ? `${T.pickForMe}, ${T.gate.locked}` : undefined}>
       {locked && <PremiumMark className="tonight-go-mark" />}{T.pickForMe}
     </button>
   );

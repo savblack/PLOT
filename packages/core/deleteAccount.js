@@ -13,7 +13,7 @@ import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
 
 export const DELETE_ACCOUNT_NETWORK_ERROR = 'Could not reach Plot. Check your connection and try again.';
 
-/** @param {{ json: () => Promise<any>, text: () => Promise<string> }} response */
+/** @param {{ status?: number, json: () => Promise<any>, text: () => Promise<string> }} response */
 export async function parseDeleteAccountError(response) {
   let message = 'Failed to delete your account.';
 
@@ -71,6 +71,9 @@ export async function deleteAccountAndSignOut({
   }
 
   if (!response.ok) {
+    // The server refused or failed. Only the status goes out; the body's
+    // message is shown to the person and never sent (see actionFailures.js).
+    reportActionFailure(FAILED_ACTIONS.ACCOUNT_DELETE, { status: response.status });
     return {
       ok: false,
       error: await parseDeleteAccountError(response),

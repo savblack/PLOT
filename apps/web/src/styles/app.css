@@ -127,7 +127,6 @@ svg { stroke-width: 1.5; }
 .app-page-heading {
   display: none;
 }
-.app-page-breadcrumb { display: none; }
 
 /* The sticky sub-tab bars are chrome, not content: they pin under the header
    and carry its fill and hairline, so stopping them at the column edge left a
@@ -369,19 +368,6 @@ svg { stroke-width: 1.5; }
 
   /* The top of every page, now that no heading opens it. */
   .app-main-inner { padding-top: 1.25rem; }
-
-  .app-page-breadcrumb {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0 var(--gut);
-    color: var(--accent-text);
-    font-size: .8rem;
-    font-weight: 600;
-    text-decoration: none;
-  }
-  .app-page-breadcrumb span { font-size: 1.25rem; line-height: 1; }
-  .app-page-breadcrumb + .list-page { padding-top: .75rem; }
 }
 
 .app-sidebar-brand {
@@ -2664,10 +2650,10 @@ svg { stroke-width: 1.5; }
 
 /* ── A list's own page: optional filters + responsive collection ── */
 .list-page { display: flex; flex-direction: column; padding: 0 var(--gut) 3rem; }
-.list-page-back--mobile { margin-bottom: 6px; }
-@media (min-width: 1024px) {
-  .list-page-back--mobile { display: none; }
-}
+.list-page-back { margin-bottom: 6px; }
+/* At sidebar widths the top space comes from .app-main-inner, as on every
+   page. The back control is the BackLink in ListPage.jsx: the shell must not
+   draw a second one (tests/unit/oneBackControl.test.js). */
 .list-page-head {
   display: flex; align-items: center; justify-content: space-between; gap: 2rem;
   padding: 0 0 26px;

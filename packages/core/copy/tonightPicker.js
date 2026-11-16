@@ -184,8 +184,6 @@ export const TONIGHT_PICKER = {
     close: 'Close',
     locked: 'Premium feature',
   },
-  // Under the Go button for a Free viewer whose pick for the day is unused.
-  freePickNote: 'Free: one pick a day.',
 
   // Nov 2026: the page opens on shelves of ready answers (tonightShelves.js).
   // The chips set the same options the questions used to, and narrow every
@@ -209,6 +207,22 @@ export const TONIGHT_PICKER = {
     services: 'My services',
     more: 'More filters',
     fewer: 'Fewer filters',
+    // Nov 16: the card's labelled rows (tonightShelves.js MOODS, moodRows).
+    rows: { mood: 'Mood', where: 'Where', other: 'Other' },
+    moods: {
+      funny: 'Funny',
+      romantic: 'Romantic',
+      gripping: 'Gripping',
+      scary: 'Scary',
+      moving: 'Moving',
+      adventurous: 'Adventurous',
+      mindBending: 'Mind-bending',
+      trueStory: 'True story',
+      animated: 'Animated',
+    },
+    clearAll: 'Clear all',
+    // A chosen score in the phone's one-line filter summary.
+    ratedMin: (min) => `Rated ${min}+`,
   },
   shelves: {
     watchlist: 'From your watchlist',

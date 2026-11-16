@@ -1,6 +1,6 @@
 import { emit, LISTS_CHANGED_EVENT } from './events.js';
 import { getConfig } from './config.js';
-import { supabase } from './supabase.js';
+import { importRpc } from './importRpc.js';
 import { importEventIdentity } from './importEvents.js';
 
 /** List membership is deliberately separate from watch events and history.
@@ -20,7 +20,7 @@ export async function writeImportedList({ userId, resolved, onProgress }) {
       if (batch.some(row => !Number.isSafeInteger(row.tmdbId) || row.tmdbId <= 0 || !['movie','tv'].includes(row.mediaType) || !row.tmdbTitle)) throw new Error('A confirmed title is required');
       const records = batch.map(row => ({ source_key: importEventIdentity(row), note: row.listNote || null, source_rating: row.rating ?? null, source_rated_at: row.ratedAt || null, source_metadata: row.sourceMetadata || null,
         summary: { tmdb_id: row.tmdbId, media_type: row.mediaType, title: row.tmdbTitle, poster_path: row.posterPath || null } }));
-      const { data, error } = await supabase.rpc('import_saved_list', { p_list: destination, p_records: records });
+      const { data, error } = await importRpc('import_saved_list', { p_list: destination, p_records: records }, userId);
       if (error) failed += batch.length;
       else if (data.not_imported) return { inserted, duplicates, failed: matched.length - inserted - duplicates, notImported: data.not_imported };
       else { inserted += data.inserted; duplicates += data.duplicates; }

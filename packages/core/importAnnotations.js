@@ -1,5 +1,5 @@
 import { getConfig } from './config.js';
-import { supabase } from './supabase.js';
+import { importRpc } from './importRpc.js';
 import { importEventIdentity } from './importEvents.js';
 
 /** Preserve annotations without changing history, notes or list membership.
@@ -21,7 +21,7 @@ export async function writeImportedAnnotations({ userId, resolved, onProgress })
   for (let offset = 0; offset < records.length; offset += 50) {
     const batch = records.slice(offset, offset + 50);
     try {
-      const { data, error } = await supabase.rpc('import_saved_annotations', { p_records: batch });
+      const { data, error } = await importRpc('import_saved_annotations', { p_records: batch }, userId);
       if (error) failed += batch.length;
       else { inserted += data.inserted; duplicates += data.duplicates; }
     } catch { failed += batch.length; }
