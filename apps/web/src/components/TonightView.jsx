@@ -156,8 +156,8 @@ function MoodCard({ picker, premium }) {
         </MoodRow>
         {moodRows(options.mediaType).map(row => (
           <MoodRow key={row.id} label={row.label} radio>
-            {row.choices.map(choice => (
-              <Chip key={String(choice.value)} size="sm" role="radio" label={choice.label}
+            {row.choices.map((choice, i) => (
+              <Chip key={String(choice.value)} size="sm" role="radio" label={choice.label} quiet={i === 0}
                 selected={options[row.key] === choice.value} onClick={() => picker.setOption(row.key, choice.value)} />
             ))}
           </MoodRow>

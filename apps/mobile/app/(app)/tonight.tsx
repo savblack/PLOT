@@ -145,8 +145,8 @@ function MoodCard({ picker, premium, styles, colors }: { picker: Picker; premium
       <BottomSheet visible={sheet} onClose={() => setSheet(false)} title={T.filtersTitle} closeLabel={COMMON.done}>
         {moodRows(options.mediaType).map(row => sheetRow(row.label, (
           <View style={styles.chipWrap} accessibilityRole="radiogroup" accessibilityLabel={row.label}>
-            {row.choices.map(choice => (
-              <Chip key={String(choice.value)} size="sm" label={choice.label} accessibilityRole="radio"
+            {row.choices.map((choice, i) => (
+              <Chip key={String(choice.value)} size="sm" label={choice.label} quiet={i === 0} accessibilityRole="radio"
                 selected={(options as unknown as Record<string, unknown>)[row.key] === choice.value}
                 onPress={() => setOption(row.key, choice.value as never)} />
             ))}
@@ -165,7 +165,7 @@ function MoodCard({ picker, premium, styles, colors }: { picker: Picker; premium
         {sheetRow(T.languageLabel, (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} accessibilityRole="radiogroup">
             {PICKER_LANGUAGES.map(code => (
-              <Chip key={String(code)} size="sm" label={T.languages[(code ?? 'any') as keyof typeof T.languages]} selected={options.language === code} onPress={() => setOption('language', code)} accessibilityRole="radio" />
+              <Chip key={String(code)} size="sm" label={T.languages[(code ?? 'any') as keyof typeof T.languages]} quiet={code == null} selected={options.language === code} onPress={() => setOption('language', code)} accessibilityRole="radio" />
             ))}
           </ScrollView>
         ))}
