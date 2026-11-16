@@ -7,10 +7,24 @@ import { serviceKey } from '../_shared/serviceKey.ts'
 import { attachmentPathsFrom } from '../_shared/feedbackAttachments.ts'
 import { reportError } from '../_shared/posthogLog.ts'
 
+// The web app calls this from app.theplot.tv, a different origin, so a browser
+// first sends an OPTIONS preflight and then reads these headers on the answer.
+// This function had neither until 2026-11-16: the preflight got the 401 below,
+// the browser never sent the POST, and deleting an account from web failed with
+// "Failed to fetch" every time (#1711). The iPhone app sends no preflight and
+// was unaffected. Every response must carry them, errors included, or the
+// browser hides the error message from the app.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+const JSON_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+
 function jsonError(message: string, status = 500, extra: Record<string, unknown> = {}) {
   return new Response(JSON.stringify({ error: message, ...extra }), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
   })
 }
 
@@ -40,8 +54,13 @@ async function removeImportUploads(client: { storage: { from: (bucket: string) =
 }
 
 Deno.serve(async (req) => {
+  // Browsers send the preflight without a bearer token. It deletes nothing:
+  // the POST below still needs a verified user and the typed phrase.
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
+  if (req.method !== 'POST') return jsonError('Method not allowed', 405)
+
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return new Response('Unauthorized', { status: 401 })
+  if (!authHeader) return new Response('Unauthorized', { status: 401, headers: CORS_HEADERS })
 
   // Client with user context (RLS enforced)
   const supabaseClient = createClient(
@@ -51,7 +70,7 @@ Deno.serve(async (req) => {
   )
 
   const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-  if (authError || !user) return new Response('Unauthorized', { status: 401 })
+  if (authError || !user) return new Response('Unauthorized', { status: 401, headers: CORS_HEADERS })
 
   // A guessed/typed phrase alone doesn't verify identity — a valid bearer
   // token already does that. This guards against a misclick or a UI bug
@@ -138,6 +157,6 @@ Deno.serve(async (req) => {
   }
 
   return new Response(JSON.stringify({ success: true }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
   })
 })
