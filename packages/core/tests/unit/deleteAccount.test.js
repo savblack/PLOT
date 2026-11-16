@@ -161,3 +161,52 @@ test('deleteAccountAndSignOut returns a handled error when the request cannot re
     configure({ onActionFailed: undefined });
   }
 });
+
+/* A 500 from the edge function used to send nothing: the person saw an error,
+   the account stayed, and PostHog had no record of it (#1711). */
+test('deleteAccountAndSignOut reports a server error with its status and not its message', async () => {
+  const supabase = createSupabase();
+  const failures = [];
+  configure({ onActionFailed: (props) => failures.push(props) });
+
+  try {
+    const result = await deleteAccountAndSignOut({
+      supabase,
+      deleteAccountUrl: 'https://example.com/delete-account',
+      confirmationPhrase: 'delete account',
+      fetchImpl: async () => ({
+        ok: false,
+        status: 500,
+        async json() { return { error: "Could not find the table 'public.history_board' in the schema cache", table: 'history_board' }; },
+        async text() { return ''; },
+      }),
+    });
+
+    assert.equal(result.ok, false);
+    assert.match(result.error, /history_board/);
+    assert.equal(supabase.signOutCallsRef(), 0);
+    assert.deepEqual(failures, [{ action: 'account_delete', error_kind: 'server', http_status: 500 }]);
+  } finally {
+    configure({ onActionFailed: undefined });
+  }
+});
+
+test('deleteAccountAndSignOut reports nothing when the delete succeeds', async () => {
+  const supabase = createSupabase();
+  const failures = [];
+  configure({ onActionFailed: (props) => failures.push(props) });
+
+  try {
+    const result = await deleteAccountAndSignOut({
+      supabase,
+      deleteAccountUrl: 'https://example.com/delete-account',
+      confirmationPhrase: 'delete account',
+      fetchImpl: async () => ({ ok: true, status: 200, async json() { return { success: true }; }, async text() { return ''; } }),
+    });
+
+    assert.deepEqual(result, { ok: true });
+    assert.deepEqual(failures, []);
+  } finally {
+    configure({ onActionFailed: undefined });
+  }
+});
