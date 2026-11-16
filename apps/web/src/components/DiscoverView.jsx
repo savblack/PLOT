@@ -47,7 +47,7 @@ import { useCalendar } from '../hooks/useCalendar.js';
 import { localDateStr } from '../utils/date.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { usePremium } from '../hooks/usePremium.js';
-import { useContinueWatching, usePeopleSuggestions } from '@plot/core/useHomeShelves.js';
+import { useContinueWatching, usePeopleSuggestions, useRecommendationShelves } from '@plot/core/useHomeShelves.js';
 import { usePeopleFeed, usePeopleFollows } from '@plot/core/usePeopleFollows.js';
 import { feedItems } from '@plot/core/peopleFeed.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
@@ -140,6 +140,8 @@ const HOME_SECTION = {
   saved: { id: 'home-saved', label: DISCOVER_VIEW.savedToWatch, navLabel: DISCOVER_VIEW.savedToWatch },
   picks: { id: 'home-picks', label: "plot's Picks", navLabel: "Plot's Picks" },
   continue: { id: 'home-continue', label: PEOPLE.continueWatching.title, navLabel: PEOPLE.continueWatching.title },
+  because: { id: 'home-because', label: DISCOVER_VIEW.recommendations.becauseName, navLabel: DISCOVER_VIEW.recommendations.becauseName },
+  forYou: { id: 'home-for-you', label: DISCOVER_VIEW.recommendations.forYouTitle, navLabel: DISCOVER_VIEW.recommendations.forYouTitle },
   people: { id: 'home-people', label: PEOPLE.shelf.title, navLabel: PEOPLE.shelf.title },
   hot: { id: 'home-hot', label: 'Hot Right Now', navLabel: 'Hot Right Now' },
   weekly: { id: 'home-weekly', label: 'Top 20 This Week', navLabel: 'Top 20 This Week' },
@@ -317,12 +319,12 @@ function rankBadgeClass(rank) {
    so no control ends up nested inside another one. A ranked card wraps its
    poster in the frame that cuts the numeral (.rank-cut in app.css); the
    numeral comes after the poster so it is drawn on the artwork. */
-export function RankedCard({ item, rank, showRank = true, showMeta = true, openPanel, watchlist }) {
+export function RankedCard({ item, rank, showRank = true, showMeta = true, openPanel, watchlist, source }) {
   const art = useUserArtwork();
   const title = item.title || item.name;
   const img   = posterUrl(displayPosterPath(art.apply(item)), 'w185');
   const type  = item.media_type || 'movie';
-  const openDetails = () => openPanel(item.id, type);
+  const openDetails = () => openPanel(item.id, type, source);
   const poster = (
     <div className="media-card-img">
       {img
@@ -656,6 +658,31 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     today: todayStr,
   });
   const { data, loading } = useDiscover();
+  // Because you watched / Recommended for you: TMDB's per-title
+  // recommendations ranked against this viewer's history (recommendations.js).
+  const history = useHistory(user?.id);
+  const recs = useRecommendationShelves({
+    history: history.entries,
+    watchlist: watchlist?.items,
+    watching: watching?.items,
+    fetchDetails: getTitleDetails,
+    today: todayStr,
+    enabled: !history.loading,
+  });
+  const becauseCount = recs.because?.items.length ?? 0;
+  const forYouCount = recs.forYou.length;
+  useEffect(() => {
+    if (becauseCount === 0) return;
+    oncePerSession('recommendations_viewed_because', () => {
+      track(EVENTS.RECOMMENDATIONS_VIEWED, { shelf: 'because', item_count: becauseCount });
+    });
+  }, [becauseCount]);
+  useEffect(() => {
+    if (forYouCount === 0) return;
+    oncePerSession('recommendations_viewed_for_you', () => {
+      track(EVENTS.RECOMMENDATIONS_VIEWED, { shelf: 'for_you', item_count: forYouCount });
+    });
+  }, [forYouCount]);
   const savedShown = !loading && firstRun && !watchlist?.loading
     ? Math.min(watchlist?.items?.length ?? 0, 20)
     : 0;
@@ -692,10 +719,14 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   // card (a chart's numbers would lie otherwise) but still count.
   const shown = dedupeHomeShelves(visibleHomeSections(homeLayout.layout, homeLayout.layout.order), {
     picks: showPicks ? [hero, ...otherHeroes.map(({ item }) => item)].filter(Boolean) : [],
+    because: applyFilters(recs.because?.items ?? []),
+    forYou: applyFilters(recs.forYou),
     hot: applyFilters(data.hotRail),
     weekly: applyFilters(data.weekly),
     anticipated: applyFilters(data.anticipatedMovies),
   }, { whole: ['picks', 'weekly'] });
+  const becauseItems = shown.because ?? [];
+  const forYouItems = shown.forYou ?? [];
   const hotRail = shown.hot ?? [];
   const weekly = shown.weekly ?? [];
   const anticipatedMovies = shown.anticipated ?? [];
@@ -707,6 +738,8 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   const available = {
     picks: showPicks,
     continue: continueItems.length > 0,
+    because: becauseItems.length > 0,
+    forYou: forYouItems.length > 0,
     hot: hotRail.length > 0,
     weekly: weekly.length > 0,
     people: peopleShelf.visible,
@@ -740,6 +773,20 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
       <RailSection key="continue" id={HOME_SECTION.continue.id} title={HOME_SECTION.continue.label} subtitle={PEOPLE.continueWatching.subtitle}>
         {continueItems.map(item => (
           <ContinueCard key={item.tmdbId} item={item} onOpen={() => openPanel(item.tmdbId, 'tv', 'continue_watching')} />
+        ))}
+      </RailSection>
+    ),
+    because: () => (
+      <RailSection key="because" id={HOME_SECTION.because.id} title={DISCOVER_VIEW.recommendations.becauseTitle(recs.because.seed.title)}>
+        {becauseItems.map(item => (
+          <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} source="because_you_watched" />
+        ))}
+      </RailSection>
+    ),
+    forYou: () => (
+      <RailSection key="forYou" id={HOME_SECTION.forYou.id} title={HOME_SECTION.forYou.label} subtitle={DISCOVER_VIEW.recommendations.forYouSubtitle}>
+        {forYouItems.map(item => (
+          <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} source="recommended_for_you" />
         ))}
       </RailSection>
     ),
@@ -827,6 +874,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
 }
 
 const getTVDetails = (id) => tmdb.getTVDetails(id);
+const getTitleDetails = (type, id) => (type === 'tv' ? tmdb.getTVDetails(id) : tmdb.getMovieDetails(id));
 
 /* ═══════════════════════════════════════
    DiscoverView — Home

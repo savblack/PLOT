@@ -143,6 +143,8 @@ export function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
 }
 
 export const fetchContinueWatchingTv = fetchTv;
+/** Movie or show details, with TMDB's recommendations appended. Home's recommendation shelves. */
+export const fetchHomeTitle = fetchTitle;
 
 function shelfMeta(item: { people: { name: string }[]; date?: string | null; network?: string | null }, today: string) {
   const who = item.people.map(p => p.name).join(', ');

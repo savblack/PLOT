@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { continueWatchingItems } from './continueWatching.js';
 import { sortWatching } from './watchingOrder.js';
 import { suggestPeople } from './peopleSuggestions.js';
+import { pickSeeds, ownedKeys, becauseYouWatched, recommendedForYou, MAX_SEEDS } from './recommendations.js';
 
 /**
  * Data for Home's Continue watching shelf and the Your people invite. The
@@ -82,4 +83,46 @@ export function usePeopleSuggestions(logged, fetchDetails, { enabled, exclude })
     [state, key, exclude],
   );
   return { suggestions: key ? suggestions : [], loading: !!key && state.key !== key };
+}
+
+/**
+ * Home's "Because you watched" and "Recommended for you" shelves. The rules
+ * are pure (recommendations.js); this fetches details (with TMDB's
+ * recommendations appended) for the seed titles only, at most MAX_SEEDS
+ * calls, which the TMDB client caches.
+ * @param {{
+ *   history: any[],
+ *   watchlist?: any[],
+ *   watching?: any[],
+ *   fetchDetails: (mediaType: 'movie' | 'tv', id: number) => Promise<any>,
+ *   today: string,
+ *   enabled?: boolean,
+ * }} args
+ * @returns {{ because: { seed: import('./recommendations.js').Seed, items: any[] } | null, forYou: any[], loading: boolean }}
+ */
+export function useRecommendationShelves({ history, watchlist, watching, fetchDetails, today, enabled = true }) {
+  const seeds = useMemo(() => (enabled ? pickSeeds(history ?? [], { limit: MAX_SEEDS }) : []), [history, enabled]);
+  const key = seeds.map(s => s.key).join(',');
+  const [state, setState] = useState(/** @type {{ key: string, byKey: Map<string, any> }} */ ({ key: '', byKey: new Map() }));
+  useEffect(() => {
+    if (!key) return;
+    let active = true;
+    Promise.all(seeds.map(s => fetchDetails(s.mediaType, s.tmdbId).then(d => [s.key, d]).catch(() => [s.key, null])))
+      .then(pairs => { if (active) setState({ key, byKey: new Map(pairs.filter(([, d]) => d)) }); });
+    return () => { active = false; };
+    // seeds is captured through key; fetchDetails is a stable module function.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  const ready = !!key && state.key === key;
+  const owned = useMemo(() => ownedKeys(history, watchlist, watching), [history, watchlist, watching]);
+  const because = useMemo(
+    () => (ready ? becauseYouWatched(seeds, state.byKey, { owned, today }) : null),
+    [ready, seeds, state, owned, today],
+  );
+  const forYou = useMemo(() => {
+    if (!ready) return [];
+    const shown = new Set((because?.items ?? []).map(item => `${item.media_type}:${item.id}`));
+    return recommendedForYou(seeds, state.byKey, { owned, exclude: shown });
+  }, [ready, seeds, state, owned, because]);
+  return { because, forYou, loading: !!key && !ready };
 }

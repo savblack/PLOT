@@ -20,6 +20,8 @@
 export const HOME_SECTION_IDS = Object.freeze([
   'picks',
   'continue',
+  'because',
+  'forYou',
   'hot',
   'weekly',
   'people',
@@ -28,7 +30,9 @@ export const HOME_SECTION_IDS = Object.freeze([
 /* New Releases, Most Binged, Now Showing and Top 10 by Platform used to be
    Home shelves too. They moved to the New Releases page (November 2026) so
    Home is five shelves that do not repeat each other. A saved layout that
-   still names them is fine: unknown ids are dropped on read. */
+   still names them is fine: unknown ids are dropped on read.
+   Because you watched and Recommended for you (recommendations.js) joined
+   in November 2026, after Continue watching. */
 
 /** What a pin can point at. `watchlist` has one fixed id; `list` is a custom list id; `person` is a TMDB person id. */
 export const PIN_KINDS = Object.freeze(['watchlist', 'list', 'person']);
