@@ -136,6 +136,8 @@ export function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
 }
 
 export const fetchContinueWatchingTv = fetchTv;
+/** Movie or show details, with TMDB's recommendations appended. Home's recommendation shelves. */
+export const fetchHomeTitle = fetchTitle;
 
 function shelfMeta(item: { people: { name: string }[]; date?: string | null; network?: string | null }, today: string) {
   const who = item.people.map(p => p.name).join(', ');
@@ -196,7 +198,10 @@ export function YourPeopleShelf() {
   const { open } = useMediaPanel();
   const { userId, profile, history } = useAppData();
   const premium = profile != null && isPremiumProfile(profile);
-  const people = usePeopleFollows(premium ? userId : null);
+  // Following is Premium, but what someone already follows shows for
+  // everyone when there is something new from them; the invite stays
+  // Premium. As on web (DiscoverView.jsx, useYourPeopleShelf).
+  const people = usePeopleFollows(userId);
   const today = localDateStr();
   const ids = useMemo(() => people.follows.map((f: { tmdb_person_id: number }) => f.tmdb_person_id), [people.follows]);
   const { rows } = usePeopleFeed(ids, { today, version: people.feedVersion });
@@ -210,15 +215,18 @@ export function YourPeopleShelf() {
   const followed = useMemo(() => new Set<number>(ids), [ids]);
   const { suggestions } = usePeopleSuggestions(logged, fetchTitle, { enabled: emptyFollows, exclude: followed });
 
-  if (!premium || people.loading) return null;
+  if (people.loading) return null;
   if (people.follows.length === 0) {
-    if (!suggestions.length) return null;
+    if (!premium || !suggestions.length) return null;
     return (
       <View style={{ marginTop: spacing.xl }}>
         <PeopleInvite suggestions={suggestions} />
       </View>
     );
   }
+  // A Free viewer sees the shelf only when it has titles; Premium keeps the
+  // "nothing new" line so the shelf they set up does not vanish.
+  if (!premium && items.length === 0) return null;
   return (
     <View style={{ marginTop: spacing.xl }}>
       <ShelfHeader
