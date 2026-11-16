@@ -6,6 +6,7 @@ import {
   getAuthCallbackUrl,
   getTraktCallbackUrl,
   redirectToExternal,
+  simklErrorReturn,
   traktErrorReturn,
 } from '../../src/utils/redirects.js';
 
@@ -69,4 +70,17 @@ test('traktErrorReturn falls back to Settings for a missing or unexpected addres
   // A protocol-relative address would leave the site if used as a link.
   assert.deepEqual(traktErrorReturn('//example.invalid/onboarding'), settings);
   assert.deepEqual(traktErrorReturn('https://example.invalid/settings'), settings);
+});
+
+test('simklErrorReturn goes back to the page the connect started on', () => {
+  assert.deepEqual(simklErrorReturn('/onboarding?import=simkl'), { href: '/onboarding?import=simkl', place: 'setup' });
+  assert.deepEqual(simklErrorReturn('/settings?section=connections&import=simkl'), { href: '/settings?section=connections&import=simkl', place: 'settings' });
+  assert.deepEqual(simklErrorReturn('/import?source=simkl&from=onboarding'), { href: '/import?source=simkl&from=onboarding', place: 'import' });
+});
+
+test('simklErrorReturn falls back to Import for a missing or unexpected address', () => {
+  const importPage = { href: '/import?source=simkl', place: 'import' };
+  assert.deepEqual(simklErrorReturn(null), importPage);
+  assert.deepEqual(simklErrorReturn('/home'), importPage);
+  assert.deepEqual(simklErrorReturn('//example.invalid/onboarding'), importPage);
 });
