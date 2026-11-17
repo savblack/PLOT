@@ -7,9 +7,9 @@ import { letterboxdLeaveDecision } from '@plot/core/letterboxdImportPrompt.js';
 import { holdPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
-  Modal, StyleSheet, FlatList, Linking, AppState,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, FlatList, Linking, AppState,
 } from 'react-native';
+import AppModal from './AppModal';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +26,7 @@ import {
   resolveImportEntries, readExistingHistory, buildImportRows, writeImportDocument, chooseImportMatch, reviewImportDuplicates,
   createImportReporter, IMPORT_ENTRY_POINTS, IMPORT_FAILURE_REASONS,
 } from '@plot/core/importPipeline.js';
-import { readImportJobReview, finishImportJobReview, importSourceName } from '@plot/core/importJobs.js';
+import { readImportJobReview, finishImportJobReview, importSourceName, importListChoiceNeeded, importListChoiceOptions, importFileNameForListChoice } from '@plot/core/importJobs.js';
 import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -200,7 +200,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   useEffect(() => holdPremiumTrialPrompt(), []);
   const insets = useSafeAreaInsets();
   const sheetTop = usePageSheetTop();
-  const { notify, dialog } = useDialog();
+  const { notify, dialog, choose } = useDialog();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const plex = useMediaSync(userId);
@@ -315,6 +315,19 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
         const file = new FileSystem.File(asset.uri);
         return { name: asset.name, size: asset.size, text: () => file.text(), arrayBuffer: () => file.arrayBuffer() };
       });
+      // An IMDb list, or a renamed Letterboxd watched/watchlist file, cannot
+      // say what it is: ask, then read it under the answer's name, as the
+      // web import page and the background import sheet do.
+      if ((platform === 'imdb' || platform === 'letterboxd') && files.length === 1 && !/\.zip$/i.test(files[0].name)) {
+        const head = (await files[0].text().catch(() => '')).slice(0, 4096);
+        if (importListChoiceNeeded(platform, head, files[0].name)) {
+          const { question, options } = importListChoiceOptions(platform);
+          const picked = await choose({ title: question, options: options.map(option => ({ label: option.label })) });
+          if (picked == null) return;
+          const name = importFileNameForListChoice(options[picked].id, platform);
+          if (name) files[0] = { ...files[0], name };
+        }
+      }
       const document = await readImportSelection(platform === 'trakt-export' ? 'trakt' : platform, files);
       if (platform === 'letterboxd') void clearLetterboxdImport(userId);
       const raw = document.entries;
@@ -385,7 +398,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
     } finally {
       letterboxdPicking.current = false;
     }
-  }, [platform, userId, importReport, notify]);
+  }, [platform, userId, importReport, notify, choose]);
 
   /* One plan drives both the preview and the write. Nothing here deletes: the
      old version cleared every history row for the titles in the file before
@@ -488,7 +501,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
   const unmatched   = resolved.filter(row => row.status === 'unmatched').length;
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <AppModal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.container, { paddingTop: sheetTop }]}>
 
         {/* Header: the shared sheet top bar, with a back chevron between steps */}
@@ -714,7 +727,7 @@ function AccountImportHistoryModal({ userId, onClose, entry = IMPORT_ENTRY_POINT
 
         {dialog}
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

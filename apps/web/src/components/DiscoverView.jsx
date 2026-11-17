@@ -14,6 +14,7 @@ import RailArrows from './RailArrows.jsx';
 import { useRailScroll } from '../hooks/useRailScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
+import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
 import { OFFICIAL_PLATFORMS } from '@plot/core/usePlatformCharts.js';
 import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
@@ -144,7 +145,9 @@ const HOME_SECTION = {
   people: { id: 'home-people', label: PEOPLE.shelf.title, navLabel: PEOPLE.shelf.title },
   hot: { id: 'home-hot', label: 'Hot Right Now', navLabel: 'Hot Right Now' },
   weekly: { id: 'home-weekly', label: 'Top 20 This Week', navLabel: 'Top 20 This Week' },
+  streaming: { id: 'home-streaming', label: DISCOVER_VIEW.nowOnStreamingTitle, navLabel: DISCOVER_VIEW.nowOnStreamingTitle },
   anticipated: { id: 'home-anticipated', label: DISCOVER_VIEW.mostAnticipatedTitle, navLabel: DISCOVER_VIEW.mostAnticipatedTitle },
+  platforms: { id: 'home-platforms', label: 'Top 10 by Platform', navLabel: 'Top 10 By Platform' },
 };
 
 export function HomePageNav({ sections }) {
@@ -569,7 +572,7 @@ function PlatformRow({ def, chart, logoPath, openPanel, watchlist, typeFilters, 
   );
 }
 
-export function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, genreFilters }) {
+function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, genreFilters }) {
   const byKey = Object.fromEntries(platformList.map(p => [p.key, p]));
   const logos = usePlatformLogos();
   return (
@@ -664,6 +667,10 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     today: todayStr,
   });
   const { data, loading } = useDiscover();
+  // Hard-coded official-chart platforms: the same set for everyone, unrelated
+  // to the user's own streaming selections. The hook returns only platforms
+  // with synced rows; PlatformCharts fills in the rest as unavailable.
+  const platformList = usePlatformCharts();
   // Because you watched / Recommended for you: TMDB's per-title
   // recommendations ranked against this viewer's history (recommendations.js).
   const history = useHistory(user?.id);
@@ -731,14 +738,16 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     forYou: applyFilters(recs.forYou),
     hot: applyFilters(data.hotRail),
     weekly: applyFilters(data.weekly),
+    streaming: applyFilters(data.streamingMovies),
     anticipated: applyFilters(data.anticipatedMovies),
   }, { whole: ['picks', 'weekly'] });
   const becauseItems = shown.because ?? [];
   const forYouItems = shown.forYou ?? [];
   const hotRail = shown.hot ?? [];
   const weekly = shown.weekly ?? [];
+  const streamingMovies = shown.streaming ?? [];
   const anticipatedMovies = shown.anticipated ?? [];
-  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || anticipatedMovies.length > 0;
+  const hasContent = hero || hotRail.length > 0 || weekly.length > 0 || streamingMovies.length > 0 || anticipatedMovies.length > 0;
   const savedItems = firstRun ? (watchlist?.items ?? []).slice(0, 20).map(row => ({ id: row.tmdb_id, media_type: row.media_type, title: row.title, poster_path: row.poster_path })) : [];
   // Which shelves have content right now; the viewer's layout then decides
   // the order and drops the ones they hid. The first-run Saved shelf stays
@@ -751,7 +760,9 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     hot: hotRail.length > 0,
     weekly: weekly.length > 0,
     people: peopleShelf.visible,
+    streaming: streamingMovies.length > 0,
     anticipated: anticipatedMovies.length > 0,
+    platforms: platformList.length > 0,
   };
   const orderedIds = visibleHomeSections(homeLayout.layout, Object.keys(available).filter(id => available[id]));
   const pinId = (shelf) => `home-pin-${shelf.key.replace(':', '-')}`;
@@ -807,6 +818,13 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     ),
     weekly: () => <WeeklyChart key="weekly" id={HOME_SECTION.weekly.id} items={weekly} openPanel={openPanel} watchlist={watchlist} />,
     people: () => <YourPeopleSection key="people" shelf={peopleShelf} openPanel={openPanel} />,
+    streaming: () => (
+      <RailSection key="streaming" id={HOME_SECTION.streaming.id} title={HOME_SECTION.streaming.label} subtitle={DISCOVER_VIEW.nowOnStreamingSubtitle}>
+        {streamingMovies.map(item => (
+          <RankedCard key={`${item.media_type}-${item.id}`} item={item} showRank={false} openPanel={openPanel} watchlist={watchlist} />
+        ))}
+      </RailSection>
+    ),
     anticipated: () => (
       <RailSection key="anticipated" id={HOME_SECTION.anticipated.id} title={HOME_SECTION.anticipated.label} subtitle={DISCOVER_VIEW.mostAnticipatedSubtitle}>
         {anticipatedMovies.map(item => (
@@ -814,6 +832,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         ))}
       </RailSection>
     ),
+    platforms: () => <PlatformCharts key="platforms" id={HOME_SECTION.platforms.id} platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />,
   };
 
   return (
@@ -822,7 +841,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} />
         <OnThisDayCard item={onThisDay} openPanel={openPanel} />
         <HomePageNav sections={pageSections} />
-        <section className="hist-card home-filter-card"><SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} /></section>
+        <SideFilters className="home-filter-card" typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} />
       </aside>
       <div className="discover-sections home-stream">
       {savedItems.length > 0 && (

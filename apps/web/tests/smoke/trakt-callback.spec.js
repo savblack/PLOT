@@ -18,7 +18,14 @@ test('a failed Trakt connect in the popup offers to close it, and closes it', as
   await expect(close).toBeVisible();
   await expect(popup.getByRole('link')).toHaveCount(0);
 
-  await Promise.all([popup.waitForEvent('close'), close.click()]);
+  // The click closes the page it is acting on, so Playwright can reject it
+  // with "Target page, context or browser has been closed" before it reports
+  // the click as done. That is the behaviour under test: the close event is
+  // the assertion, and any other click failure still fails the test.
+  const clicked = close.click().catch((error) => {
+    if (!/has been closed/.test(String(error?.message))) throw error;
+  });
+  await Promise.all([popup.waitForEvent('close'), clicked]);
   expect(popup.isClosed()).toBe(true);
   expect(page.isClosed()).toBe(false);
   expect(page.url()).toBe(openerUrl);

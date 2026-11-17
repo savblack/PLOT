@@ -91,7 +91,10 @@ stale; run `pnpm run import-engine` after touching the import pipeline.
   the `plot` Pages project. `TVTIME_IMPORT_ENABLED` is still off. Mobile's
   `EXPO_PUBLIC_IMPORT_EVENTS_ENABLED` / `EXPO_PUBLIC_IMPORT_ANNOTATIONS_ENABLED`
   must be set on the EAS `production` environment before the next store build.
-  Staging's function has both off, so builds pointed at Staging leave them off.
+  Staging's function has both on since 2026-11-17, to match production: with
+  them off, Staging took the legacy save path and could not show that the
+  worker's saves were being refused in production (2026-11-11 to 2026-11-16).
+  The apps' own switches on Staging builds are a separate setting.
   Imported ratings and reviews are saved to `imported_annotations` and the data
   export, but no screen shows them yet.
 - Check how imports are doing with `pnpm run imports:report` (last 24 hours by

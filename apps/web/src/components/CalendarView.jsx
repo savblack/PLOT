@@ -12,7 +12,6 @@ import { useGenres } from '../hooks/useGenres.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
 import { MEDIA } from '../copy/media.js';
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
-import { titleMatchesQuery } from '@plot/core/media.js';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import CalendarSidePanel from './CalendarSidePanel.jsx';
 import CalendarStream from './CalendarStream.jsx';
@@ -21,7 +20,6 @@ import CalendarReleaseRail from './CalendarReleaseRail.jsx';
 import UpcomingSuggestionsSheet from './UpcomingSuggestionsSheet.jsx';
 import EmptyState from './EmptyState.jsx';
 import Segmented from './Segmented.jsx';
-import SearchField from './SearchField.jsx';
 
 const SUGGEST_DISMISS_KEY = 'plot_calendar_suggest_dismissed';
 
@@ -60,8 +58,7 @@ export default function CalendarView() {
   const { genres } = useGenres();
   const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
   const [genreFilters, setGenreFilters] = useState([]);
-  const [query, setQuery] = useState('');
-  const filtered = typeFilters.length < ALL_TYPES.length || genreFilters.length > 0 || query.trim().length > 0;
+  const filtered = typeFilters.length < ALL_TYPES.length || genreFilters.length > 0;
 
   /* ── My dates ── */
   const listsReady = !watchlist.loading && !watching.loading && !reminders.loading;
@@ -73,8 +70,8 @@ export default function CalendarView() {
     { ready: listsReady },
   );
   const myDays = useMemo(
-    () => groupCalendarEventsByDay(filterCalendarEvents(events, typeFilters, genreFilters, query), todayStr),
-    [events, typeFilters, genreFilters, query, todayStr],
+    () => groupCalendarEventsByDay(filterCalendarEvents(events, typeFilters, genreFilters), todayStr),
+    [events, typeFilters, genreFilters, todayStr],
   );
   const hasAnyEvents = useMemo(() => events.some(ev => ev.date >= todayStr), [events, todayStr]);
   const eventDates   = useMemo(() => new Set(myDays.map(d => d.ds)), [myDays]);
@@ -105,9 +102,7 @@ export default function CalendarView() {
 
   /* ── All releases ── */
   const { loading: allLoading, days: releaseDays, feedEmpty, providerLogos } = useFilteredUpcoming({ typeFilters, genreFilters });
-  const visibleReleaseDays = useMemo(() => releaseDays
-    .map(day => ({ ...day, items: day.items.filter(item => titleMatchesQuery(item, query)) }))
-    .filter(day => day.items.length > 0), [releaseDays, query]);
+  const visibleReleaseDays = releaseDays;
 
   /* ── Scrolling the stream from the side panel ── */
   const streamRef = useRef(null);
@@ -151,7 +146,6 @@ export default function CalendarView() {
             value={view}
             onChange={setView}
           />
-          <SearchField className="hist-search cal-search" value={query} onChange={setQuery} placeholder={CALENDAR_VIEW.search} ariaLabel={CALENDAR_VIEW.search} />
         </div>
       </div>
 

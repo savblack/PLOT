@@ -6,7 +6,6 @@ import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet.jsx';
 import ParentalGuide from './ParentalGuide.jsx';
-import { updateProfile } from '@plot/core/profile.js';
 import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -55,7 +54,7 @@ import {
   guideSeasons,
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
-import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
+import { fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, reportAwardsShown, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -200,8 +199,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
   const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
   const episodeMinutes = episode?.runtime > 0 ? episode.runtime : fallbackEpisodeRuntime(details);
   const runtime = episodeMinutes ? MEDIA_PANEL.episodeRuntime(episodeMinutes) : '';
-  const ends = episodeMinutes ? endsAtTime(episodeMinutes) : null;
-  const where = [offer?.providerName, runtime, ends ? MEDIA_PANEL.endsAt(ends) : ''].filter(Boolean).join(' · ');
+  const where = [offer?.providerName, runtime].filter(Boolean).join(' · ');
   const leftCaption = timeLeftCaption(showTimeLeft({
     details,
     season,
@@ -1173,7 +1171,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 }
 
 export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose, onBrowse }) {
-  const { watchlist, watching, user, profile, favorites, customLists, openPanel, refreshProfile } = useApp();
+  const { watchlist, watching, user, profile, favorites, customLists, openPanel } = useApp();
   const art = useUserArtwork();
   const followPerson = useFollowPerson();
   const [talentId, setTalentId] = useState(null);
@@ -1492,8 +1490,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     : (details?.number_of_seasons
         ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
         : '');
-  const movieEnds = isMovie && details?.runtime > 0 ? endsAtTime(details.runtime) : null;
-  const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
   const artworkSubject = isMovie ? 'movie' : 'tv';
   const fromProgress = progress?.current_season;
   const seasonForPoster = isMovie
@@ -1503,9 +1499,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
   const posterPath = seasonPoster || art.path(artworkSubject, itemId, 'poster') || details?.poster_path || null;
   const backdropPath = art.path(artworkSubject, itemId, 'backdrop') || details?.backdrop_path || null;
   const logoPath = art.path(artworkSubject, itemId, 'logo');
-  const author = isMovie
-    ? (details?.credits?.crew || []).find(c => c.job === 'Director')?.name
-    : (details?.created_by || [])[0]?.name;
   const genreChips = (details?.genres || []).slice(0, 2);
   const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, itemType), keywordsOpen);
   // Without onBrowse (Storybook) the chips stay plain labels.
@@ -1758,23 +1751,14 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   />
                 </div>
                 <h2 className="panel-title">{title}</h2>
-                <p className="panel-facts">
-                  {factLine}
-                  {author && <><br />{author}</>}
-                </p>
+                {/* One facts line: year, length, rating. The director or
+                    creator is in the credits below. */}
                 <ParentalGuide
                   key={`${itemType}-${itemId}`}
+                  facts={[year, runtimeText]}
                   mediaType={isMovie ? 'movie' : 'tv'}
                   tmdbId={itemId}
                   details={details}
-                  signedIn={!!user}
-                  hidden={profile?.show_parental_guide === false}
-                  onSetShown={async (shown) => {
-                    if (!user?.id) return false;
-                    const { error } = await updateProfile({ userId: user.id, patch: { show_parental_guide: shown } });
-                    if (!error) refreshProfile();
-                    return !error;
-                  }}
                 />
                 {(genreChips.length > 0 || chip?.upcoming) && (
                   <div className="panel-genres">
@@ -1785,23 +1769,22 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     ) : <Tag tone="sage" key={g.id} label={g.name} />)}
                   </div>
                 )}
+                {/* Keywords sit beside the poster, under the genres. Three show
+                    before "+N more" so the column stays about one row deep. */}
+                {onBrowse && keywordChips.length > 0 && (
+                  <div className="panel-genres panel-keywords" role="group" aria-label={BROWSE.keywordsLabel}>
+                    {keywordChips.map(k => (
+                      <button type="button" className="panel-tag-link" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
+                        onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}><Tag label={k.name} /></button>
+                    ))}
+                    {(hiddenKeywords > 0 || keywordsOpen) && (
+                      <button type="button" className="panel-tag-link" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
+                        <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-              {/* Keywords run the full width under the poster, so a long list
-                  never stacks in the narrow column beside it. Genres stay in that
-                  column, under the rating, where two short tags fit. */}
-              {onBrowse && keywordChips.length > 0 && (
-                <div className="panel-genres panel-keywords panel-head-tags" role="group" aria-label={BROWSE.keywordsLabel}>
-                  {keywordChips.map(k => (
-                    <button type="button" className="panel-tag-link" key={k.id} aria-label={BROWSE.keywordLink(k.name)}
-                      onClick={() => browse('keyword', k.id, k.name, `/browse?${new URLSearchParams(keywordBrowseParams({ mediaType: itemType, keywordId: k.id, name: k.name }))}`)}><Tag label={k.name} /></button>
-                  ))}
-                  {(hiddenKeywords > 0 || keywordsOpen) && (
-                    <button type="button" className="panel-tag-link" aria-expanded={keywordsOpen} onClick={() => setKeywordsOpenFor(o => (o === titleKey ? null : titleKey))}>
-                      <Tag label={keywordsOpen ? BROWSE.fewerKeywords : BROWSE.moreKeywords(hiddenKeywords)} />
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* ── Actions ──

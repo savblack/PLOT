@@ -110,6 +110,7 @@ export const EVENTS = Object.freeze({
   // clicked also carries { target: 'checkout' | 'plans' } (and plan for
   // checkout); dismissed is any close without a click (Not now, Escape, scrim).
   PREMIUM_PROMPT_SHOWN: 'premium_prompt_shown',
+  PREMIUM_PROMPT_SUPPRESSED: 'premium_prompt_suppressed',
   PREMIUM_PROMPT_CLICKED: 'premium_prompt_clicked',
   PREMIUM_PROMPT_DISMISSED: 'premium_prompt_dismissed',
   // The signed-in "Go Premium" link (core/goPremiumLink.js) was tapped.

@@ -52,39 +52,20 @@ test('tagCinemaReleases makes regional now-playing movies available to the cinem
   assert.equal(prepared[0].items[0]._cinema, true);
 });
 
-test('the page leads with Most Binged and Now Showing from the same load', async () => {
+test('the load returns the genre rails alone, and asks for nothing the page no longer shows', async () => {
   // Ids are opaque fixture values from a fake client, never real TMDB ids.
+  // No getRecentReleases or getTrending here: calling either would throw.
   const client = {
-    async getRecentReleases() { return { movies: [], tv: [] }; },
-    async getGenreCatalog() { return { movie: [], tv: [] }; },
-    async getNowPlaying() {
-      return { results: [
-        { id: 11, title: 'Out now', original_language: 'en', poster_path: '/a.jpg', release_date: '2026-01-02' },
-        { id: 12, title: 'Not yet', original_language: 'en', poster_path: '/b.jpg', release_date: '2999-01-01' },
-      ] };
-    },
-    async getTrending(type, window) {
-      assert.deepEqual([type, window], ['tv', 'day']);
-      return { results: [
-        { id: 21, name: 'Show', original_language: 'en', poster_path: '/c.jpg' },
-        { id: 22, name: 'No poster', original_language: 'en', poster_path: null },
-      ] };
+    async getGenreCatalog() { return { movie: [{ id: 35, name: 'Comedy' }], tv: [] }; },
+    async getNowPlaying() { return { results: [{ id: 11 }] }; },
+    async discoverNewestByGenre() {
+      return { results: [{ id: 11, title: 'Out now', original_language: 'en', poster_path: '/a.jpg', release_date: '2026-01-02', genre_ids: [35] }] };
     },
   };
   const data = await loadNewReleaseData({ client });
-  assert.deepEqual(data.binged.map(i => [i.id, i.media_type]), [[21, 'tv']]);
-  assert.deepEqual(data.cinema.map(i => i.id), [11]);
-});
-
-test('a failed trending call empties Most Binged and nothing else', async () => {
-  const client = {
-    async getRecentReleases() { return { movies: [], tv: [] }; },
-    async getGenreCatalog() { return { movie: [], tv: [] }; },
-    async getNowPlaying() { return { results: [] }; },
-    async getTrending() { throw new Error('429'); },
-  };
-  const data = await loadNewReleaseData({ client });
-  assert.deepEqual(data.binged, []);
+  assert.deepEqual(Object.keys(data), ['genreRails']);
+  assert.deepEqual(data.genreRails.map(rail => rail.key), ['comedy']);
+  assert.equal(data.genreRails[0].items[0]._cinema, true);
 });
 
 // Keyword ids and titles below are opaque fixture values from a fake client.
@@ -92,7 +73,6 @@ test('Horror, Romance and Thriller rails add shows found by TMDB keyword', async
   _resetKeywordGenreCache();
   const seen = [];
   const client = {
-    async getRecentReleases() { return { movies: [], tv: [] }; },
     async getNowPlaying() { return []; },
     async getGenreCatalog() {
       return { movie: [{ id: 27, name: 'Horror' }, { id: 35, name: 'Comedy' }], tv: [{ id: 35, name: 'Comedy' }] };

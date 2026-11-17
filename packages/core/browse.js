@@ -5,18 +5,22 @@ import { tmdb } from './tmdb.js';
 
 /** Keywords shown under a title: TMDB lists them by relevance, so the first few are the best. */
 export const MAX_KEYWORD_CHIPS = 8;
-/** How many show before "+N more": about one row, so the header stays short. */
-export const COLLAPSED_KEYWORD_CHIPS = 4;
+/** How many show before "+N more": about one row in the column beside the
+    poster, so the header stays short. Web's column fits three. */
+export const COLLAPSED_KEYWORD_CHIPS = 3;
+/** The iPhone's column is narrower: two chips and "+N more" fit on one row. */
+export const COLLAPSED_KEYWORD_CHIPS_COMPACT = 2;
 
 /**
  * @template T
  * @param {T[]} keywords
  * @param {boolean} expanded
+ * @param {number} [limit] How many show while collapsed.
  * @returns {{ visible: T[], hidden: number }}
  */
-export function collapseKeywords(keywords, expanded) {
-  if (expanded || keywords.length <= COLLAPSED_KEYWORD_CHIPS) return { visible: keywords, hidden: 0 };
-  return { visible: keywords.slice(0, COLLAPSED_KEYWORD_CHIPS), hidden: keywords.length - COLLAPSED_KEYWORD_CHIPS };
+export function collapseKeywords(keywords, expanded, limit = COLLAPSED_KEYWORD_CHIPS) {
+  if (expanded || keywords.length <= limit) return { visible: keywords, hidden: 0 };
+  return { visible: keywords.slice(0, limit), hidden: keywords.length - limit };
 }
 
 /**

@@ -10,9 +10,10 @@
  */
 import { useState, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+import AppModal from './AppModal';
 import Button from './Button';
 import ModalHeader from './ModalHeader';
 import Toggle from './Toggle';
@@ -61,7 +62,7 @@ export default function ReportSheet({
   };
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <AppModal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={[styles.container, { paddingTop: sheetTop }]}>
           <ModalHeader
@@ -147,7 +148,7 @@ export default function ReportSheet({
           )}
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </AppModal>
   );
 }
 

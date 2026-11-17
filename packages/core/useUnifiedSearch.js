@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { tmdb } from './tmdb.js';
 import { supabase } from './supabase.js';
-import { classifySearchResults, demotePlaceholderTitles, matchLibrary, mergeSearchResults, parseSearchScope } from './search.js';
+import { classifySearchResults, demotePlaceholderTitles, matchLibrary, mergeSearchResults, parseSearchScope, PLACE_MATCH_LIMIT } from './search.js';
 import { collectionSearchHits } from './collections.js';
 
 // 200 rather than the old page's 350: the palette is read while typing, and
@@ -21,18 +21,25 @@ const MIN_TERM_LENGTH = 2;
  * Rendering stays per app; this owns fetching and merging so web and mobile
  * agree on what a search returns.
  *
+ * With `place` set to anything but "everywhere" the search is local: only
+ * `placeRows` (see placeSearchRows) are matched, nothing is fetched, and the
+ * "@" / "/" prefixes mean nothing, so the query is searched as typed.
+ *
  * @param {string} query Raw, as typed.
- * @param {{ enabled?: boolean, signedIn?: boolean, library?: import('./search.js').LibraryRow[], onSearched?: (info: { scope: string, term: string, resultCount: number }) => void }} [options]
+ * @param {{ enabled?: boolean, signedIn?: boolean, library?: import('./search.js').LibraryRow[], place?: import('./search.js').SearchPlace, placeRows?: import('./search.js').LibraryRow[], onSearched?: (info: { scope: string, term: string, resultCount: number }) => void }} [options]
  *   `signedIn` gates the friends request (the RPC returns nothing to a
  *   signed-out caller for private profiles, and the network round trip is
  *   wasted). `library` is the viewer's own titles (watching, watchlist,
  *   history, in that priority order); matches lead the list instantly and
  *   the same title is not repeated from TMDB. `onSearched` fires once per
- *   executed search, for analytics.
+ *   executed search, for analytics; for a place search `scope` is the place.
  * @returns {{ items: import('./search.js').UnifiedSearchItem[], loading: boolean, scope: import('./search.js').SearchScope, term: string, searched: boolean, emptyMode: 'none'|'generic'|'title-guidance' }}
  */
-export function useUnifiedSearch(query, { enabled = true, signedIn = false, library = NO_ITEMS, onSearched } = {}) {
-  const { scope, term } = parseSearchScope(query);
+export function useUnifiedSearch(query, { enabled = true, signedIn = false, library = NO_ITEMS, place = 'everywhere', placeRows = NO_ITEMS, onSearched } = {}) {
+  const local = place !== 'everywhere';
+  const parsed = parseSearchScope(query);
+  const scope = local ? 'all' : parsed.scope;
+  const term = local ? String(query ?? '').trim() : parsed.term;
   // The last completed search, tagged with what it answered so a stale result
   // never renders against a newer query.
   const [result, setResult] = useState(null);
@@ -44,8 +51,11 @@ export function useUnifiedSearch(query, { enabled = true, signedIn = false, libr
 
   // Local, so no debounce: these rows are on screen before TMDB is asked.
   const own = useMemo(
-    () => (idle || scope !== 'all' ? NO_ITEMS : matchLibrary(term, library)),
-    [idle, scope, term, library],
+    () => {
+      if (idle || scope !== 'all') return NO_ITEMS;
+      return local ? matchLibrary(term, placeRows, { limit: PLACE_MATCH_LIMIT }) : matchLibrary(term, library);
+    },
+    [idle, scope, term, library, local, placeRows],
   );
   const ownKeys = useMemo(
     () => own.map(item => `${item.data.media_type || 'movie'}-${item.data.tmdb_id}`),
@@ -59,6 +69,15 @@ export function useUnifiedSearch(query, { enabled = true, signedIn = false, libr
   useEffect(() => {
     const requestId = ++requestRef.current;
     if (idle) return undefined;
+
+    if (local) {
+      // Nothing to fetch. The debounce only keeps analytics to one event per
+      // settled query, the same as a remote search.
+      const timer = setTimeout(() => {
+        onSearchedRef.current?.({ scope: place, term, resultCount: ownKeysRef.current.length });
+      }, DEBOUNCE_MS);
+      return () => clearTimeout(timer);
+    }
 
     const timer = setTimeout(async () => {
       const wantTitles = scope === 'all';
@@ -93,17 +112,21 @@ export function useUnifiedSearch(query, { enabled = true, signedIn = false, libr
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [term, scope, idle, signedIn]);
+  }, [term, scope, idle, signedIn, local, place]);
 
-  const current = !idle && result && result.term === term && result.scope === scope ? result : null;
+  const current = !idle && !local && result && result.term === term && result.scope === scope ? result : null;
   // While a newer query is in flight the previous list stays up, so the rows
   // do not blink away on every keystroke.
-  const shown = idle ? null : (current || result);
+  const shown = idle || local ? null : (current || result);
   const remote = shown?.items || NO_ITEMS;
   const items = useMemo(
     () => (own.length ? [...own, ...remote.filter(i => i.kind !== 'title' || !ownKeys.includes(`${i.data.media_type}-${i.data.id}`))] : remote),
     [own, ownKeys, remote],
   );
+
+  if (local) {
+    return { items, loading: false, searched: !idle, emptyMode: !idle && !own.length ? 'generic' : 'none', scope, term };
+  }
 
   return {
     items,

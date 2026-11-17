@@ -19,10 +19,11 @@ import { localDateStr } from '@plot/core/date.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaStatus.js';
 import { useEffect, useState, useRef, useMemo, type RefObject } from 'react';
 import {
-  View, Text, Image, ScrollView, TouchableOpacity, Modal, Pressable,
+  View, Text, Image, ScrollView, TouchableOpacity, Pressable,
   StyleSheet, Dimensions, Animated, Easing, PanResponder, Linking,
   Platform, KeyboardAvoidingView, Keyboard, type HostInstance,
 } from 'react-native';
+import AppModal from './AppModal';
 import { TextInput } from './TextInput';
 import { shouldDismissSheet, sheetDismissDuration } from '@plot/core/sheetDrag.js';
 import Svg, { Path, Line, Polyline, Circle, Polygon } from 'react-native-svg';
@@ -55,18 +56,17 @@ import {
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
-import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
+import { fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet';
 import ParentalGuide, { type ParentalGuideDetails } from './ParentalGuide';
 import { EpisodeRatingsEntry } from './EpisodeRatingsSheet';
-import { updateProfile } from '@plot/core/profile.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import { BROWSE } from '@plot/core/copy/browse.js';
-import { browseTapProps, collapseKeywords, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
+import { browseTapProps, COLLAPSED_KEYWORD_CHIPS_COMPACT, collapseKeywords, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
 import UpgradeSheet from './UpgradeSheet';
 import { useRouter, type Href } from 'expo-router';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -577,8 +577,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }:
   const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
   const episodeMinutes = episode?.runtime && episode.runtime > 0 ? episode.runtime : fallbackEpisodeRuntime(details);
   const runtime = episodeMinutes ? MEDIA_PANEL.episodeRuntime(episodeMinutes) : '';
-  const ends = episodeMinutes ? endsAtTime(episodeMinutes) : null;
-  const where = [offer?.provider_name, runtime, ends ? MEDIA_PANEL.endsAt(ends) : ''].filter(Boolean).join(' · ');
+  const where = [offer?.provider_name, runtime].filter(Boolean).join(' · ');
   const leftCaption = timeLeftCaption(showTimeLeft({
     details,
     season,
@@ -890,7 +889,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { userId, profile, refreshProfile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
+  const { userId, profile, watchlist, watching, favorites, history, customLists, topLists, privateNotes } = useAppData();
   const art = useUserArtwork();
   const { open: openTitle } = useMediaPanel();
   const router = useRouter();
@@ -1211,9 +1210,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     : (details?.number_of_seasons
         ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
         : '');
-  const movieRuntime = isMovie ? details?.runtime : undefined;
-  const movieEnds = movieRuntime != null && movieRuntime > 0 ? endsAtTime(movieRuntime) : null;
-  const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
   const artworkSubject = isMovie ? 'movie' : 'tv';
   const fromProgress = progress?.current_season;
   const seasonForPoster = isMovie
@@ -1223,9 +1219,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const posterPath = seasonPoster || art.path(artworkSubject, itemId, 'poster') || details?.poster_path || null;
   const backdropPath = art.path(artworkSubject, itemId, 'backdrop') || details?.backdrop_path || null;
   const logoPath = art.path(artworkSubject, itemId, 'logo');
-  const author = isMovie
-    ? details?.credits?.crew?.find(person => person.job === 'Director')?.name
-    : details?.created_by?.[0]?.name;
   const genreChips = (details?.genres || []).slice(0, 2);
   const castPeople = (details?.credits?.cast || details?.aggregate_credits?.cast || [])
     .filter((person): person is CreditPerson => !!person?.id && !!person?.name)
@@ -1238,7 +1231,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     ).values()]
     : (details?.created_by || []).filter((person): person is CreditPerson => !!person?.id && !!person?.name)
   ).slice(0, 3);
-  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, isMovie ? 'movie' : 'tv'), keywordsOpen);
+  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, isMovie ? 'movie' : 'tv'), keywordsOpen, COLLAPSED_KEYWORD_CHIPS_COMPACT);
   // Genre chips open Home with that genre set; keywords open their own list.
   const browse = (kind: 'genre' | 'keyword', id: number, name: string, href: Href) => {
     track(EVENTS.BROWSE_TAPPED, browseTapProps({ kind, id, name, mediaType: isMovie ? 'movie' : 'tv', source: 'title_panel' }));
@@ -1282,7 +1275,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   return (
     <>
-    <Modal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent>
+    <AppModal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent>
       {/* Backdrop */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: dim }]}>
         <TouchableOpacity style={styles.overlay} onPress={close} activeOpacity={1} />
@@ -1353,25 +1346,15 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       />
                     </View>
                     <Text style={styles.title}>{title}</Text>
-                    {!!factLine && (
-                      <Text style={styles.facts}>
-                        {factLine}
-                        {author ? `\n${author}` : ''}
-                      </Text>
-                    )}
+                    {/* One facts line: year, length, rating. The director or
+                        creator is in the credits below. */}
                     <ParentalGuide
                       key={`${itemType}-${itemId}`}
+                      facts={[year, runtimeText]}
+                      factsStyle={styles.facts}
                       mediaType={isMovie ? 'movie' : 'tv'}
                       tmdbId={itemId}
                       details={details}
-                      signedIn={!!userId}
-                      hidden={profile?.show_parental_guide === false}
-                      onSetShown={async (shown) => {
-                        if (!userId) return false;
-                        const { error } = await updateProfile({ userId, patch: { show_parental_guide: shown } });
-                        if (!error) refreshProfile();
-                        return !error;
-                      }}
                     />
                     {genreChips.length > 0 && (
                       <View style={styles.genreRow}>
@@ -1387,15 +1370,10 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         ))}
                       </View>
                     )}
-                  </View>
-                </View>
-
-                {/* Keywords run full width under the poster row, as on web, so a long
-                    list doesn't stack in the narrow column beside the poster. Genres stay
-                    in that column, under the rating, where two short tags fit. */}
-                {keywordChips.length > 0 && (
-                  <View style={styles.headTags}>
-                    <View style={styles.tagRow} accessibilityLabel={BROWSE.keywordsLabel}>
+                    {/* Keywords sit beside the poster, under the genres, as on web.
+                        Two show before "+N more": this column is narrower than web's. */}
+                    {keywordChips.length > 0 && (
+                    <View style={styles.keywordRow} accessibilityLabel={BROWSE.keywordsLabel}>
                       {keywordChips.map(k => (
                         <TouchableOpacity
                           key={k.id}
@@ -1416,8 +1394,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                         </TouchableOpacity>
                       )}
                     </View>
+                    )}
                   </View>
-                )}
+                </View>
 
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
@@ -1836,7 +1815,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         />
       )}
       {followPerson.sheet}
-    </Modal>
+    </AppModal>
     </>
   );
 }
@@ -1886,10 +1865,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   facts: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
-  // Full width under the head. With the head's own marginBottom this leaves
-  // 20pt between the genres/poster and the keywords (web: .panel-head-tags).
-  headTags: { marginTop: 4, marginBottom: spacing.lg },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  // Directly under the genres; the margin matches the tag gap so the two
+  // read as consecutive rows (web: .panel-keywords).
+  keywordRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
   scoresRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     paddingBottom: spacing.lg, marginBottom: spacing.lg,

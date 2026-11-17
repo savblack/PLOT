@@ -11,6 +11,7 @@ import {
   smartListSummary,
   loadLibraryMatches,
   loadDiscoverMatches,
+  loadSmartListTitles,
   watchedIdsFromHistory,
   SMART_LIST_DETAIL_LIMIT,
   smartListInRollUp,
@@ -196,4 +197,26 @@ test('the weekly roll-up includes new-discoveries lists unless switched off', ()
   assert.equal(smartListInRollUp(null), false);
   assert.equal(smartListRollUpEligible(normalizeSmartListRules({ source: 'discover' })), true);
   assert.equal(smartListRollUpEligible(null), false);
+});
+
+test('loadSmartListTitles: each list keeps its name, and one that fails comes back empty', async () => {
+  const client = {
+    getMovieDetails: async () => ({ runtime: 100, genres: [{ id: DRAMA }], release_date: '2015-01-01', vote_average: 7 }),
+  };
+  const found = await loadSmartListTitles({
+    client, gapMs: 0,
+    lists: [
+      { name: 'Short dramas', rules: rules({ source: 'watchlist', mediaType: 'movie', genreIds: [DRAMA], maxRuntime: 120 }) },
+      // No discover methods on this client, so loading this one throws.
+      { name: 'Broken', rules: rules({ source: 'discover', mediaType: 'movie' }) },
+    ],
+    watchlistItems: [
+      { tmdb_id: 900001, media_type: 'movie', title: 'Fits', genre_ids: [DRAMA], created_at: '2026-03-01' },
+      { tmdb_id: 900003, media_type: 'movie', title: 'Wrong genre', genre_ids: [COMEDY], created_at: '2026-01-01' },
+    ],
+  });
+  assert.deepEqual(found.map(l => [l.name, l.items.map(i => i.title)]), [
+    ['Short dramas', ['Fits']],
+    ['Broken', []],
+  ]);
 });

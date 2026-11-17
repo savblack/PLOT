@@ -3,6 +3,14 @@
 // foot bar already asks "Watched it?". Core never opens UI; it only notifies.
 // Both apps subscribe: web in App.jsx, mobile in MediaPanelContext.tsx.
 
+/** A save from calendar suggestions stays on that surface. */
+export const CALENDAR_SUGGESTIONS_SOURCE = 'calendar_suggestions';
+
+/** @param {string | null | undefined} source */
+export function shouldOpenPendingWatchPanel(source) {
+  return source !== CALENDAR_SUGGESTIONS_SOURCE;
+}
+
 /** @type {Set<(payload: { tmdb_id: number, media_type: string, source?: string }) => void>} */
 const watchQueuedListeners = new Set();
 

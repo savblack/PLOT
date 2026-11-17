@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { onPendingWatchQueued, notifyPendingWatchQueued } from '../../watchQueued.js';
+import {
+  CALENDAR_SUGGESTIONS_SOURCE, onPendingWatchQueued,
+  notifyPendingWatchQueued, shouldOpenPendingWatchPanel,
+} from '../../watchQueued.js';
 
 // Opaque integers for queue tests only. Derived from dates so they are not guessed
 // TMDB catalog ids and are never passed to tmdb.search.
@@ -26,4 +29,10 @@ test('a listener that throws does not stop the others or the save', () => {
   assert.equal(seen.length, 1);
   stopBad();
   stopGood();
+});
+
+test('calendar saves stay on their surface while ordinary saves open a panel', () => {
+  assert.equal(shouldOpenPendingWatchPanel(CALENDAR_SUGGESTIONS_SOURCE), false);
+  assert.equal(shouldOpenPendingWatchPanel('in_app'), true);
+  assert.equal(shouldOpenPendingWatchPanel(undefined), true);
 });

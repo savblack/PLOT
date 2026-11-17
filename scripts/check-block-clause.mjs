@@ -73,6 +73,12 @@ const BLOCK_FILTERED = [
 
 // Must NOT carry it, each for a reason that has to survive review.
 const BLOCK_EXEMPT = {
+  set_premium_trial_prompt_deferral:
+    'Updates only auth.uid() profile and returns whether its own deferred marker changed. '
+    + 'No other account identity or visibility is returned.',
+  record_account_session:
+    'Reads and updates only auth.uid() profile, returning an integer session count. '
+    + 'No other account identity or visibility is returned.',
   handle_new_user:
     'The signup trigger. It writes the profiles row and never reads one back for '
     + 'a viewer, and it runs before the account it creates could have blocked or '

@@ -46,20 +46,24 @@ import { track, EVENTS, setPersonProps } from './lib/analytics.js';
 import { touchLastSeen } from '@plot/core/brevoLifecycleClient.js';
 import { personPropsFromProfile } from '@plot/core/analyticsEvents.js';
 import { useUiPrefs } from '@plot/core/useUiPrefs.js';
-import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
-import { CALENDAR_SUGGESTIONS_SOURCE } from '@plot/core/upcomingSuggestions.js';
+import { onPendingWatchQueued, shouldOpenPendingWatchPanel } from '@plot/core/watchQueued.js';
 import { updateProfile } from '@plot/core/profile.js';
 import { loadPremiumEntitlement } from '@plot/core/billing.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { ArtworkProvider } from '@plot/core/useUserArtwork.js';
 import { AppContext, useApp } from './hooks/useApp.js';
 import { SHOW_WATCH_TOGETHER } from './launchFeatures.js';
+import { useHistory } from '@plot/core/useHistory.js';
+import { useAccountSession } from '@plot/core/accountSession.js';
+import { useAccountValue } from '@plot/core/useAccountValue.js';
+import { clearPremiumTrialPrompt, premiumTrialPromptKey, PREMIUM_TRIAL_PROMPT_SEEN } from '@plot/core/premiumTrialPrompt.js';
 
 export { useApp };
 
 /* ── Timezone mismatch banner ─────────── */
 const TZ_DISMISS_KEY = 'plot_tz_dismissed';
 const TZ_NUDGE_DAYS  = 7;
+const readPromptSeen = userId => readStorage(premiumTrialPromptKey(userId)) === PREMIUM_TRIAL_PROMPT_SEEN;
 
 function TimezoneBanner({ deviceTz, onUpdate, onDismiss }) {
   return (
@@ -140,6 +144,32 @@ function SaveToast({ toast, onClose }) {
 export default function App() {
   const navigate  = useNavigate();
   const location  = useLocation();
+  const [visible, setVisible] = useState(() => document.visibilityState !== 'hidden');
+  const [sessionActivityAt, setSessionActivityAt] = useState(0);
+  useEffect(() => {
+    let lastSignal = 0;
+    const signal = () => {
+      const now = Date.now();
+      if (now - lastSignal < 60_000) return;
+      lastSignal = now;
+      setSessionActivityAt(now);
+    };
+    const update = () => {
+      const next = document.visibilityState !== 'hidden';
+      setVisible(next);
+      if (next) signal();
+    };
+    document.addEventListener('visibilitychange', update);
+    window.addEventListener('focus', signal);
+    document.addEventListener('pointerdown', signal);
+    document.addEventListener('keydown', signal);
+    return () => {
+      document.removeEventListener('visibilitychange', update);
+      window.removeEventListener('focus', signal);
+      document.removeEventListener('pointerdown', signal);
+      document.removeEventListener('keydown', signal);
+    };
+  }, []);
 
   const [user,    setUser]    = useState(() => {
     const cached = readCachedSession();
@@ -223,6 +253,7 @@ export default function App() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (activeUserIdRef.current && activeUserIdRef.current !== (session?.user?.id ?? null)) clearPremiumTrialPrompt();
       activeUserIdRef.current = session?.user?.id ?? null;
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -315,9 +346,8 @@ export default function App() {
   // Out-of-panel save (Discover card, search row, …): open the title so the
   // watch prompt can show in the same session. Skip if that title is already open.
   useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type, source }) => {
-    // Adds from the release-calendar sheet stay in that sheet. Opening the
-    // title panel here would cover it.
-    if (source === CALENDAR_SUGGESTIONS_SOURCE) return;
+    // Calendar suggestions stay on their own surface.
+    if (!shouldOpenPendingWatchPanel(source)) return;
     const open = panelItemRef.current;
     if (open && Number(open.id) === Number(tmdb_id) && open.type === media_type) return;
     openPanel(tmdb_id, media_type, 'engagement_prompt');
@@ -342,6 +372,12 @@ export default function App() {
   const watchlist    = useWatchlist(user?.id);
   const privateNotes = usePrivateNotes(user?.id);
   const watching     = useWatching(user?.id);
+  const history      = useHistory(user?.id);
+  const sessionCount = useAccountSession(user?.id && profile?.id === user.id ? user.id : null, profile?.timezone, visible, sessionActivityAt);
+  const accountValue = useAccountValue({
+    userId: user?.id, watchlist, watching, history, sessionCount,
+    readPromptSeen,
+  });
   const reminders    = useReminders(user?.id);
   const topLists     = useTopLists(user?.id);
   const favorites    = useFavorites(user?.id, { watching, watchlist });
@@ -424,6 +460,8 @@ export default function App() {
     watchlist,
     privateNotes,
     watching,
+    history,
+    accountValue,
     reminders,
     topLists,
     favorites,
