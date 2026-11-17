@@ -30,6 +30,7 @@ import Toggle from '../../components/Toggle';
 import { useDialog } from '../../components/Dialog';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { signOutOfPlot } from '../../lib/signOut';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
@@ -38,7 +39,7 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
-import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
+import { track, EVENTS } from '../../lib/analytics';
 import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
 import { clearWatchHistory, clearSavedAndWatching } from '@plot/core/userMedia.js';
 import { updateProfile } from '@plot/core/profile.js';
@@ -60,7 +61,7 @@ import { useMyAlerts } from '@plot/core/usePremiumAlerts.js';
 import { useStreamingAlertsSwitch, useMutedFilms, useStreamingEmailSwitch } from '@plot/core/useStreamingAlerts.js';
 import { usePushAlerts } from '@plot/core/usePushAlerts.js';
 import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
-import { registerPushToken, unregisterPushToken } from '../../lib/pushNotifications';
+import { registerPushToken } from '../../lib/pushNotifications';
 import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
 import { ALERT_EMAIL } from '@plot/core/copy/alertEmail.js';
 import { ALERT_EMAIL_ENABLED, GUIDE_ENABLED } from '@plot/core/features.js';
@@ -1173,18 +1174,7 @@ export default function SettingsScreen() {
     if (!setFamily(id)) setThemeUpgrade(id);
   };
 
-  const handleSignOut = async () => {
-    if (!(await confirm({ title: SETTINGS_VIEW.page.signOutTitle, message: SETTINGS_VIEW.page.signOutMessage, confirmLabel: SETTINGS_VIEW.signOut, cancelLabel: COMMON.cancel, destructive: true }))) return;
-    if (userId) {
-      try { await unregisterPushToken(userId); }
-      catch { notify(PUSH_ALERTS.error); return; }
-    }
-    // Capture before the reset, or the event lands on the fresh anonymous
-    // profile instead of the person who actually signed out.
-    track(EVENTS.USER_SIGNED_OUT, {});
-    await supabase.auth.signOut();
-    resetAnalytics();
-  };
+  const handleSignOut = () => signOutOfPlot({ userId, confirm, notify });
 
   const handleClearHistory = async () => {
     if (!(await confirm({ title: SETTINGS_VIEW.confirm.clearWatchHistoryTitle, message: SETTINGS_VIEW.confirm.clearWatchHistoryMessage, confirmLabel: SETTINGS_VIEW.confirm.clearHistory, cancelLabel: 'Cancel', destructive: true }))) return;

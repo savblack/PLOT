@@ -8,6 +8,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { APP_SHELL } from '@plot/core/copy/appShell.js';
 import { SETTINGS_VIEW } from '@plot/core/copy/settingsView.js';
 import { titleForView } from '@plot/core/navigation.js';
+import { THEME_FAMILIES, THEME_MODES, isPremiumFamily, type ThemeFamily } from '@plot/core/themes.js';
 import { useNotifications } from '@plot/core/useNotifications.js';
 import { Palette, fontFamily, spacing, radii } from '../lib/tokens';
 import { useTheme } from '../contexts/ThemeContext';
@@ -20,6 +21,10 @@ import { SHOW_WATCH_TOGETHER } from '../lib/launchFeatures';
 import PlotWordmark from './PlotWordmark';
 import { GoPremiumSpark, useGoPremiumLink } from './GoPremiumLink';
 import PremiumMark from './PremiumMark';
+import ThemeChip from './ThemeChip';
+import UpgradeSheet from './UpgradeSheet';
+import { useDialog } from './Dialog';
+import { signOutOfPlot } from '../lib/signOut';
 import { PREMIUM_SETTINGS_PATH } from '../lib/premium';
 import { guideInMenu } from '@plot/core/broadcastGuide.js';
 
@@ -45,6 +50,11 @@ const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; p
 
 const KOFI_URL = 'https://ko-fi.com/J7P123TYGK';
 
+const A = SETTINGS_VIEW.appearance;
+// Web's note beside Mode says "This browser". The phone stores the choice on
+// the device, so the wording is the phone's own and stays out of the catalog.
+const THIS_DEVICE = 'This device';
+
 const BOTTOM_NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName }[] = [
   { id: 'settings', label: 'Settings', path: '/(app)/settings', icon: 'settings' },
 ];
@@ -58,12 +68,16 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const insets   = useSafeAreaInsets();
   const router   = useRouter();
   const pathname = usePathname();
-  const { colors } = useTheme();
+  const { colors, mode, family, setMode, setFamily } = useTheme();
   const { profile, userId } = useAppData();
+  const { confirm, notify, dialog } = useDialog();
+  const premium = !!profile?.is_premium;
   const { unread } = useNotifications(userId);
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  // The Premium family a Free viewer tapped: opens the upgrade sheet for it.
+  const [themeUpgrade, setThemeUpgrade] = useState<ThemeFamily | null>(null);
   // The pink Go Premium chip above the profile; read only while the drawer is open.
   const goPremium = useGoPremiumLink(userId, profile, visible, 'chip');
   const slideX   = useRef(new Animated.Value(-DRAWER_W)).current;
@@ -97,6 +111,31 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
     void Linking.openURL(KOFI_URL).catch(() => {});
   };
 
+  // A family the viewer cannot use never applies: the upgrade sheet opens
+  // instead, as on web and in Settings.
+  const pickTheme = (id: ThemeFamily) => {
+    if (!setFamily(id)) setThemeUpgrade(id);
+  };
+
+  const signOut = async () => {
+    if (await signOutOfPlot({ userId, confirm, notify })) onClose();
+  };
+
+  // Rendered in both the open and closed trees, so a sheet opened from the
+  // menu survives the drawer closing behind it.
+  const sheets = (
+    <>
+      <UpgradeSheet
+        visible={!!themeUpgrade}
+        reason="themes"
+        family={themeUpgrade ?? undefined}
+        onClose={() => setThemeUpgrade(null)}
+        onCompare={() => navigate(PREMIUM_SETTINGS_PATH)}
+      />
+      {dialog}
+    </>
+  );
+
   const pathParts = pathname.split('?')[0].split('/').filter(Boolean);
   const segment = pathParts[pathParts.length - 1] ?? '';
   const onHome = pathname === '/' || pathname === '/(app)' || pathname === '/(app)/';
@@ -109,36 +148,35 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const profileActive = segment === 'profile'
     || (!!profile?.username && pathParts[0] === 'u' && pathParts[1] === profile.username);
 
-  const menuRow = ({ key, label, icon, active, link, onPress }: {
-    key?: string; label: string; icon: NavIconName | 'profile'; active?: boolean; link?: boolean; onPress: () => void;
-  }) => {
-    const color = active ? colors.textPrimary : colors.textSecondary;
-    return (
-      <TouchableOpacity
-        key={key}
-        style={[styles.navItem, active && styles.navItemActive]}
-        onPress={onPress}
-        activeOpacity={0.7}
-        accessibilityRole={link ? 'link' : 'button'}
-        accessibilityState={{ selected: !!active }}
-        accessibilityLabel={label}
-      >
-        {icon === 'profile' ? (
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
-            <Circle cx={12} cy={8} r={4} />
-            <Path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
-          </Svg>
-        ) : (
-          <NavGlyph name={icon} color={color} />
-        )}
-        <Text style={[styles.navLabel, { color }, active && styles.navLabelActive]} numberOfLines={1}>{label}</Text>
-      </TouchableOpacity>
-    );
-  };
+  // One row of the account menu. Web's rows carry no selected state, so
+  // neither do these; the profile row under the menu shows where you are.
+  const menuRow = ({ key, label, icon, link, onPress }: {
+    key?: string; label: string; icon: NavIconName | 'profile'; link?: boolean; onPress: () => void;
+  }) => (
+    <TouchableOpacity
+      key={key}
+      style={styles.menuItem}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole={link ? 'link' : 'button'}
+      accessibilityLabel={label}
+    >
+      {icon === 'profile' ? (
+        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+          <Circle cx={12} cy={8} r={4} />
+          <Path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
+        </Svg>
+      ) : (
+        <NavGlyph name={icon} color={colors.textSecondary} />
+      )}
+      <Text style={styles.menuLabel} numberOfLines={1}>{label}</Text>
+    </TouchableOpacity>
+  );
 
   // Don't block touches when fully closed
   if (!visible) {
     return (
+      <>
       <Animated.View
         style={[styles.root, { opacity: overlayO }]}
         pointerEvents="none"
@@ -146,10 +184,13 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
         <Animated.View style={[styles.drawer, { transform: [{ translateX: slideX }] }]}>
           </Animated.View>
       </Animated.View>
+      {sheets}
+      </>
     );
   }
 
   return (
+    <>
     <Animated.View style={[styles.root, { opacity: overlayO }]} pointerEvents="box-none">
       {/* Dimmed overlay — tap to close */}
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
@@ -208,17 +249,80 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
 
           </ScrollView>
 
-          {/* Foot, as in the web rail: the profile row opens the account menu.
-              Settings and Help build Plot live in it, as they do on web. */}
+          {/* Foot, as in the web rail: the profile row opens the account menu,
+              laid out as web's AccountMenu.jsx is. Top to bottom: Light / Dark /
+              System, a chip per theme family, the account links, Help build
+              Plot, then Sign out. */}
           <View style={styles.foot}>
             {menuOpen && (
               <View style={styles.menu}>
-                {profile?.username && (menuRow({ label: APP_SHELL.profile, icon: 'profile', active: profileActive, onPress: () => navigate(`/(app)/u/${profile.username}`) }))}
-                {BOTTOM_NAV_ITEMS.map(item => (menuRow({ key: item.id, label: item.label, icon: item.icon, active: isActive(item.id), onPress: () => navigate(item.path) })))}
-                <View style={styles.menuDivider} />
-                <Text style={styles.helpTitle}>{APP_SHELL.helpBuild}</Text>
-                {menuRow({ label: APP_SHELL.giveFeedback, icon: 'feedback', onPress: () => openFeedback('general') })}
-                {menuRow({ label: SETTINGS_VIEW.support.supportPlot, icon: 'support', link: true, onPress: openSupport })}
+                <View style={styles.appearance}>
+                  <View style={styles.menuHead}>
+                    <Text style={styles.menuTitle}>{A.switcher.mode}</Text>
+                    <Text style={styles.menuNote}>{THIS_DEVICE}</Text>
+                  </View>
+                  <View style={styles.modes} accessibilityRole="radiogroup" accessibilityLabel={`${A.switcher.mode}, ${THIS_DEVICE}`}>
+                    {THEME_MODES.map(m => (
+                      <TouchableOpacity
+                        key={m}
+                        style={[styles.modeButton, mode === m && styles.modeButtonActive]}
+                        onPress={() => setMode(m)}
+                        activeOpacity={0.7}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: mode === m }}
+                      >
+                        <Text style={[styles.modeText, mode === m && styles.modeTextActive]} numberOfLines={1}>{A.modes[m]}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={styles.menuHead}>
+                    <Text style={styles.menuTitle}>{A.themesLabel}</Text>
+                    <Text style={styles.menuNote} numberOfLines={1}>{A.switcher.current(A.families[family as keyof typeof A.families], isPremiumFamily(family))}</Text>
+                  </View>
+                  <View style={styles.swatches} accessibilityRole="radiogroup" accessibilityLabel={A.themesOptionsLabel}>
+                    {THEME_FAMILIES.map(id => {
+                      const name = A.families[id as keyof typeof A.families];
+                      const locked = isPremiumFamily(id) && !premium;
+                      return (
+                        <TouchableOpacity
+                          key={id}
+                          onPress={() => pickTheme(id)}
+                          activeOpacity={0.7}
+                          hitSlop={4}
+                          accessibilityRole="radio"
+                          accessibilityState={{ checked: family === id }}
+                          accessibilityLabel={locked ? A.lockedTheme(name) : name}
+                        >
+                          <ThemeChip family={id} selected={family === id} />
+                          {locked && <PremiumMark size={11} style={styles.swatchLock} />}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.menuSection}>
+                  {profile?.username && (menuRow({ label: APP_SHELL.viewYourProfile, icon: 'profile', onPress: () => navigate(`/(app)/u/${profile.username}`) }))}
+                  {BOTTOM_NAV_ITEMS.map(item => (menuRow({ key: item.id, label: item.label, icon: item.icon, onPress: () => navigate(item.path) })))}
+                </View>
+
+                <View style={styles.menuSection}>
+                  <Text style={styles.helpTitle}>{APP_SHELL.helpBuild}</Text>
+                  {menuRow({ label: APP_SHELL.giveFeedback, icon: 'feedback', onPress: () => openFeedback('general') })}
+                  {menuRow({ label: SETTINGS_VIEW.support.supportPlot, icon: 'support', link: true, onPress: openSupport })}
+                </View>
+
+                <View style={styles.menuSection}>
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => { void signOut(); }}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={SETTINGS_VIEW.signOut}
+                  >
+                    <Text style={[styles.menuLabel, styles.signOut]}>{SETTINGS_VIEW.signOut}</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
             {goPremium && (
@@ -263,6 +367,8 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
         </View>
       </Animated.View>
     </Animated.View>
+    {sheets}
+    </>
   );
 }
 
@@ -319,29 +425,72 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 24,
   },
-  helpTitle: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 11,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xs,
-  },
+  // The account menu, sized and spaced as web's .account-menu-panel. Rows are
+  // 40pt tall where web's are 36px, for a finger.
   menu: {
     marginBottom: spacing.sm,
-    padding: 4,
-    gap: 2,
+    padding: 6,
     borderRadius: radii.md,
     borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceRaised,
+  },
+  appearance: { gap: 9, paddingHorizontal: 8, paddingTop: 8, paddingBottom: 12 },
+  menuHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
+  menuTitle: { fontFamily: fontFamily.sansBold, fontSize: 12.8, color: colors.textPrimary },
+  menuNote: { flexShrink: 1, fontFamily: fontFamily.sans, fontSize: 11.2, color: colors.textMuted },
+  modes: {
+    flexDirection: 'row',
+    marginBottom: 5,
+    padding: 3,
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSunken,
   },
-  menuDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginVertical: spacing.xs,
+  modeButton: { flex: 1, height: 30, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center' },
+  modeButtonActive: { backgroundColor: colors.surface },
+  modeText: { fontFamily: fontFamily.sansBold, fontSize: 11.5, color: colors.textSecondary },
+  modeTextActive: { color: colors.textPrimary },
+  swatches: { flexDirection: 'row', justifyContent: 'space-between' },
+  // The Premium spark on a family a Free viewer cannot pick yet.
+  swatchLock: {
+    position: 'absolute',
+    right: -3,
+    bottom: -3,
+    padding: 1,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceRaised,
   },
+  menuSection: {
+    paddingVertical: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  helpTitle: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 10.9,
+    color: colors.textMuted,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: 2,
+  },
+  menuItem: {
+    minHeight: 40,
+    padding: 8,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  menuLabel: {
+    flexShrink: 1,
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 13.5,
+    color: colors.textPrimary,
+  },
+  // Sign out is the menu's one accent: logout is an approved accent action.
+  signOut: { color: colors.accentText },
   foot: {
     gap: 2,
     paddingHorizontal: 12,
