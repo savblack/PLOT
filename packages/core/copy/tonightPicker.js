@@ -191,22 +191,11 @@ export const TONIGHT_PICKER = {
   pickForMe: 'Pick one for me',
   // Nov 14 (round 3A): one card, one button, the rest behind links.
   moodTitle: 'What are you in the mood for?',
-  moreOptions: 'More options',
-  fewerOptions: 'Fewer options',
   moreShelves: 'See more shelves',
   fewerShelves: 'Show fewer shelves',
   chips: {
-    label: 'Narrow it down',
     movies: 'Movies',
     shows: 'Shows',
-    short: { movie: 'Under 2h', tv: 'Short episodes' },
-    light: 'Light',
-    gripping: 'Gripping',
-    recent: 'New',
-    rated: 'Rated 7+',
-    services: 'My services',
-    more: 'More filters',
-    fewer: 'Fewer filters',
     // Nov 16: the card's labelled rows (tonightShelves.js MOODS, moodRows).
     rows: { mood: 'Mood', where: 'Where', other: 'Other' },
     moods: {
