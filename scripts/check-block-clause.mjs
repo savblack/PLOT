@@ -51,6 +51,7 @@ const DIR = 'supabase/migrations';
 const BLOCK_FILTERED = [
   'get_profile_card',      // the public profile page
   'taste_overlap',         // Premium taste comparison: the target's identity and history
+  'list_saved_comparisons', // the people you have compared with, on the Compare page
   'search_users',          // user search
   'suggested_users',       // suggestion rails
   'list_followers',        // follower list

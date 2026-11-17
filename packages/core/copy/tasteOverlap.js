@@ -55,7 +55,6 @@ export const TASTE_OVERLAP = {
 
   /** @param {number} n */
   watchlistOverlap: (n) => `${plural(n, 'title', 'titles')} on both your watchlists`,
-  watchTogether: 'Choose one together in Watch together',
 
   share: 'Share your match',
 
@@ -68,8 +67,6 @@ export const TASTE_OVERLAP = {
   retry: 'Try again',
 
   // Picker
-  pickerTitle: 'Compare your taste',
-  pickerIntro: 'Pick anyone you follow, or anyone with a public profile.',
   searchLabel: 'Search people',
   searchPlaceholder: 'Search by name or @username',
   peopleYouFollow: 'People you follow',
@@ -77,11 +74,25 @@ export const TASTE_OVERLAP = {
   compare: 'Compare',
   requestPending: 'Request pending',
   privateProfile: 'Private profile',
-  publicProfile: 'Public',
-  privateApproved: 'Private, you’re approved',
+  followNobodyTitle: 'No one to compare with yet',
   followNobody: 'Follow people to compare with them, or search for a public profile.',
   noResults: 'No one found.',
-  privacyNote: 'Taste overlap only uses what they already show you on their profile: watch history and ratings. Private profiles need an accepted follow first.',
+
+  // Saved comparisons: the people you have already compared with.
+  savedTitle: 'Your comparisons',
+  /** @param {string} name */
+  refreshComparison: (name) => `Refresh your comparison with ${name}`,
+  /** @param {string} name */
+  removeComparison: (name) => `Remove ${name} from your comparisons`,
+
+  // The sample comparison the picker shows until someone is chosen. The
+  // numbers are in @plot/core/tasteOverlap.js (EXAMPLE_OVERLAP); the person
+  // and the genres are made up, so their names live here with the other copy.
+  // Its titles are this week's trending ones, fetched, never typed in.
+  exampleTag: 'Sample',
+  exampleName: 'Maya',
+  exampleNote: 'This is a sample. Pick someone to see your own match.',
+  exampleGenres: ['Drama', 'Comedy', 'Science fiction'],
 
   // Entry points
   compareTaste: 'Compare taste',

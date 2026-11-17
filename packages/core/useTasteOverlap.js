@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase.js';
-import { tasteOverlap } from './tasteOverlap.js';
+import { tmdb } from './tmdb.js';
+import { tasteOverlap, exampleOverlap } from './tasteOverlap.js';
 
 /**
  * @typedef {'premium_required' | 'not_found' | 'not_visible' | 'not_authenticated' | 'failed'} TasteOverlapError
@@ -141,4 +142,33 @@ export function useCompareCandidates(viewerId, query) {
   }, [term, viewerId]);
 
   return { following, results, loadingFollowing, searching, isSearching: term.length >= 2 };
+}
+
+/** @type {ReturnType<typeof exampleOverlap> | null} */
+let exampleCache = null;
+
+/**
+ * The picker's sample comparison. Starts as the numbers alone and gains its
+ * titles once this week's trending list arrives, so every id and poster is
+ * one TMDB returned. If that request fails the sample simply stays without
+ * its two title sections.
+ */
+export function useExampleOverlap() {
+  const [overlap, setOverlap] = useState(() => exampleCache ?? exampleOverlap());
+
+  useEffect(() => {
+    if (exampleCache) return undefined;
+    let alive = true;
+    tmdb.getTrending('all', 'week').then(({ results }) => {
+      const titles = (results || [])
+        .filter(r => (r.media_type === 'movie' || r.media_type === 'tv') && r.poster_path && !r.adult)
+        .map(r => ({ tmdb_id: r.id, media_type: r.media_type, title: r.title || r.name, poster_path: r.poster_path }));
+      const next = exampleOverlap(titles);
+      if (next.loved.length) exampleCache = next;
+      if (alive) setOverlap(next);
+    }, () => {});
+    return () => { alive = false; };
+  }, []);
+
+  return overlap;
 }

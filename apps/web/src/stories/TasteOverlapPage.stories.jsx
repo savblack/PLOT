@@ -1,7 +1,9 @@
 import resolvedTitles from './profileTitles.fixture.json';
 import { MemoryRouter } from 'react-router-dom';
 import { AppContext } from '../hooks/useApp.js';
-import { tasteOverlap } from '@plot/core/tasteOverlap.js';
+import { tasteOverlap, exampleOverlap, exampleGenreNames, EXAMPLE_SHARED_WATCHLIST } from '@plot/core/tasteOverlap.js';
+import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
+import { ComparePeopleCard } from '../components/ComparePeoplePanel.jsx';
 import { TasteOverlapView } from '../pages/TasteOverlapPage.jsx';
 import TasteShareDialog from '../components/TasteShareDialog.jsx';
 
@@ -49,7 +51,34 @@ export default {
   )],
 };
 
+// The people panel, from fixed people: fictional, like everyone else here.
+const people = [
+  { id: 'sam', username: 'sam', display_name: 'Sam', avatar_url: null, is_public: true, follow_status: 'accepted' },
+  { id: 'jo', username: 'jopark', display_name: 'Jo Park', avatar_url: null, is_public: false, follow_status: 'accepted' },
+  { id: 'rafa', username: 'rafao', display_name: 'Rafael Ortiz', avatar_url: null, is_public: true, follow_status: 'accepted' },
+  { id: 'lee', username: 'leereyes', display_name: 'Lee Reyes', avatar_url: null, is_public: false, follow_status: 'pending' },
+];
+const panel = (extra) => (
+  <ComparePeopleCard query="" onQuery={() => {}} people={people} busy={false} isSearching={false} {...extra} />
+);
+const example = {
+  example: true, target: { username: '', display_name: TASTE_OVERLAP.exampleName, is_public: true },
+  // The app passes this week's trending titles; the story reuses the resolved fixture.
+  overlap: exampleOverlap([...resolvedTitles, ...resolvedTitles.slice(0, 3)]), genreName: exampleGenreNames(TASTE_OVERLAP.exampleGenres),
+  sharedWatchlist: EXAMPLE_SHARED_WATCHLIST,
+};
+
 export const Populated = {};
+// /compare: nobody chosen yet, so the right column is the sample.
+export const PickerFollowingNobody = { args: { ...example, side: panel({ people: [] }) } };
+export const PickerWithPeople = { args: { ...example, side: panel() } };
+// /u/sam/compare: the same two columns with Sam chosen.
+const saved = [
+  { username: 'sam', display_name: 'Sam', avatar_url: null, compared_at: '2026-11-16T09:00:00Z' },
+  { username: 'rafao', display_name: 'Rafael Ortiz', avatar_url: null, compared_at: '2026-11-10T09:00:00Z' },
+];
+export const WithPeoplePanel = { args: { side: panel({ selectedUsername: 'sam', saved, className: 'to-side--wide-only' }) } };
+export const PickerWithSavedComparisons = { args: { ...example, side: panel({ saved }) } };
 export const PrivateFriend = { args: { target: privateTarget, sharedWatchlist: null } };
 export const NotEnoughRatings = { args: { overlap: tasteOverlap(rows(mineRatings).slice(0, 3), rows(theirRatings).slice(0, 3)) } };
 export const FreeViewer = { args: { premium: false } };

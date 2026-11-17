@@ -11,22 +11,20 @@
  * is labelled.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import { View, StyleSheet } from 'react-native';
 import Chip from './Chip';
 import CollapsibleSection from './CollapsibleSection';
 import HistoryInsights from './HistoryInsights';
 import HistoryRow from './HistoryRow';
 import { HistoryEntry } from '../hooks/useHistory';
 import { useTheme } from '../contexts/ThemeContext';
-import { Palette, fontFamily, fontSize, spacing, radii } from '../lib/tokens';
+import { Palette, spacing } from '../lib/tokens';
 import { monthLabel } from '@plot/core/history.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { DRILLDOWN_STATS, type Drilldown } from '@plot/core/historyDrilldown.js';
 import { HISTORY_VIEW as T } from '@plot/core/copy/historyView.js';
-import { TASTE_OVERLAP } from '@plot/core/copy/tasteOverlap.js';
 import EmptyState from './EmptyState';
-import Button from './Button';
+import ComparePrompt from './taste/ComparePrompt';
 
 export interface MonthGroup {
   key: string;
@@ -109,7 +107,7 @@ export default function HistorySection({
   return (
     <View>
       <HistoryInsights sharePreset={sharePreset} onSharePresetUsed={onSharePresetUsed} onDrilldown={onDrilldown} onUpgrade={onUpgrade} />
-      <HistoryComparePrompt />
+      <ComparePrompt />
       {drilldown && drillLabel && (
         <Chip selected label={`${drillLabel}  ×`} accessibilityLabel={T.drilldownRemove(drillLabel)} onPress={() => onClearDrilldown?.()} style={styles.chip} />
       )}
@@ -122,36 +120,11 @@ export default function HistorySection({
   );
 }
 
-function HistoryComparePrompt() {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const router = useRouter();
-  return (
-    <View style={styles.prompt}>
-      <Text style={styles.promptTitle}>{TASTE_OVERLAP.historyPromptTitle}</Text>
-      <Text style={styles.promptBody}>{TASTE_OVERLAP.historyPromptBody}</Text>
-      <Button variant="outline" size="sm" label={TASTE_OVERLAP.compareTaste} onPress={() => router.push('/(app)/compare' as Href)} />
-    </View>
-  );
-}
-
-const makeStyles = (colors: Palette) => StyleSheet.create({
+// Takes the palette like every other makeStyles, though nothing here is colored now.
+const makeStyles = (_colors: Palette) => StyleSheet.create({
   chip: {
     alignSelf: 'flex-start',
     marginHorizontal: spacing.xl,
     marginBottom: spacing.md,
   },
-  prompt: {
-    marginHorizontal: spacing.xl,
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-    padding: spacing.lg,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    gap: spacing.sm,
-  },
-  promptTitle: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
-  promptBody: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 20, color: colors.textMuted },
 });

@@ -34,6 +34,7 @@ import { readStorage, writeStorage, removeStorage } from '../../lib/storage';
 import { Demo, FriendSearch } from './WatchTogetherStart';
 import { InviteLinkCard, useInviteShare } from './InviteLinkCard';
 import { AcceptSheet } from './AcceptSheet';
+import ComparePrompt from '../taste/ComparePrompt';
 import {
   ButtonRow, ErrorNote, ListCard, Note, PersonRow, SectionLabel, WatchPage, openPremium, useOpenTitle,
 } from './WatchChrome';
@@ -157,6 +158,9 @@ export function WatchHub() {
       {stage === 'people'
         ? shelfPartners.length > 0 && <SharedShelf key={selected ?? ''} partners={shelfPartners} onSeeAll={(path) => router.push(path as Href)} />
         : <PreviewShelf premium={premium} />}
+
+      {/* The other thing two people can do with their lists and ratings. */}
+      <ComparePrompt />
 
       {reviewing && (
         <AcceptSheet

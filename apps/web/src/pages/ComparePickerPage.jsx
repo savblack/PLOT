@@ -1,81 +1,51 @@
-import './TasteOverlapPage.css';
-import { useId, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+// Compare, before anyone is chosen: the people panel on the left and a sample
+// comparison on the right, so the page shows what you get instead of a blank
+// column. Choosing a person opens /u/:username/compare, which is the same
+// layout with the real numbers.
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LoginRedirect from '../components/LoginRedirect.jsx';
-import EmptyState from '../components/EmptyState.jsx';
-import SearchField from '../components/SearchField.jsx';
+import ComparePeoplePanel from '../components/ComparePeoplePanel.jsx';
 import { useApp } from '../hooks/useApp.js';
-import { useCompareCandidates } from '@plot/core/useTasteOverlap.js';
-import { canCompare } from '@plot/core/tasteOverlap.js';
-import PlotLoader from '@plot/ui/PlotLoader.jsx';
+import { EXAMPLE_SHARED_WATCHLIST, exampleGenreNames } from '@plot/core/tasteOverlap.js';
+import { useExampleOverlap } from '@plot/core/useTasteOverlap.js';
+import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
+import { EVENTS } from '@plot/core/analyticsEvents.js';
+import { track } from '../lib/analytics.js';
 import { TASTE_OVERLAP as T } from '../copy/tasteOverlap.js';
-import Avatar from '../components/Avatar.jsx';
+import { TasteOverlapView } from './TasteOverlapPage.jsx';
 
-function detailFor(person) {
-  if (person.is_public) return T.publicProfile;
-  if (person.follow_status === 'accepted') return T.privateApproved;
-  return T.privateProfile;
-}
-
-function PersonRow({ person }) {
-  const name = person.display_name || person.username;
-  return (
-    <li className="to-pick-row">
-      <Avatar src={person.avatar_url} name={name} size={44} />
-      <span className="to-pick-text">
-        <span className="to-pick-name">{name}</span>
-        <span className="to-pick-detail">{detailFor(person)}</span>
-      </span>
-      {canCompare(person) ? (
-        <Link className="btn btn-sm btn-primary" to={`/u/${person.username}/compare`} aria-label={`${T.compare}: ${name}`}>{T.compare}</Link>
-      ) : person.follow_status === 'pending' ? (
-        <span className="to-pill">{T.requestPending}</span>
-      ) : (
-        <Link className="btn btn-sm btn-secondary" to={`/u/${person.username}`}>{name}</Link>
-      )}
-    </li>
-  );
-}
+const EXAMPLE_TARGET = { username: '', display_name: T.exampleName, avatar_url: null, is_public: true };
 
 export default function ComparePickerPage() {
-  const { user } = useApp();
+  const { user, openPanel } = useApp();
+  const overlap = useExampleOverlap();
   const navigate = useNavigate();
-  const [query, setQuery] = useState('');
-  const searchId = useId();
-  const { following, results, loadingFollowing, searching, isSearching } = useCompareCandidates(user?.id, query);
+  const { saved, remove } = useSavedComparisons(user?.id);
+  const genreName = useMemo(() => exampleGenreNames(T.exampleGenres), []);
 
   if (!user) return <LoginRedirect />;
 
-  const list = isSearching ? results : following;
-  const busy = isSearching ? searching : loadingFollowing;
-
   return (
-    <div className="to-view">
-      <div className="to-top">
-        <button type="button" className="to-icon-btn" aria-label={T.back} onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/history'))}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
-        </button>
-      </div>
-
-      <header className="to-header">
-        <h1 className="to-h1">{T.pickerTitle}</h1>
-        <p className="to-intro">{T.pickerIntro}</p>
-      </header>
-
-      <SearchField id={searchId} placeholder={T.searchPlaceholder} ariaLabel={T.searchLabel} value={query} onChange={setQuery} />
-
-      <h2 className="to-group-label">{isSearching ? T.searchResults : T.peopleYouFollow}</h2>
-      {busy ? (
-        <div className="to-loading"><PlotLoader /></div>
-      ) : list.length === 0 ? (
-        <EmptyState body={isSearching ? T.noResults : T.followNobody} />
-      ) : (
-        <ul className="to-picks">
-          {list.map(p => <PersonRow key={p.id} person={p} />)}
-        </ul>
+    <TasteOverlapView
+      example
+      premium
+      loading={false}
+      error={null}
+      target={EXAMPLE_TARGET}
+      overlap={overlap}
+      sharedWatchlist={EXAMPLE_SHARED_WATCHLIST}
+      genreName={genreName}
+      openPanel={openPanel}
+      side={(
+        <ComparePeoplePanel
+          viewerId={user.id}
+          saved={saved}
+          // Nothing is on screen to refresh here, so refresh opens it, which asks afresh.
+          onRefresh={(handle) => { track(EVENTS.SAVED_COMPARISON_REFRESHED); navigate(`/u/${handle}/compare`); }}
+          onRemove={(handle) => { remove(handle).then(ok => { if (ok) track(EVENTS.SAVED_COMPARISON_REMOVED); }); }}
+        />
       )}
-
-      <p className="to-privacy">{T.privacyNote}</p>
-    </div>
+    />
   );
 }

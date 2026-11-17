@@ -67,6 +67,16 @@ export const EVENTS = Object.freeze({
   // instagram on web and share | save on mobile.
   SHARE_CARD_OPENED: 'share_card_opened',
   SHARE_CARD_SENT: 'share_card_sent',
+  // The saved comparisons list on Compare. `refreshed` is the refresh icon on
+  // a row (the comparison is asked for again); `removed` is the x. Neither
+  // carries who the other person is.
+  SAVED_COMPARISON_REFRESHED: 'saved_comparison_refreshed',
+  SAVED_COMPARISON_REMOVED: 'saved_comparison_removed',
+  // The Watch Together button on a comparison's shared-watchlist row. Carries
+  // { sample: boolean }: true on the picker's sample, which opens the Watch
+  // Together hub instead of one person. Fires on the tap, which always
+  // navigates, so there is no failure case to count.
+  COMPARE_WATCH_TOGETHER_TAPPED: 'compare_watch_together_tapped',
   // A Premium viewer tapped a History stat tile and landed on the titles
   // behind it. Carries { stat: 'titles' | 'genre' | 'weekday', source }.
   // Fires only once the filtered list is on screen. Tier 1 at most.

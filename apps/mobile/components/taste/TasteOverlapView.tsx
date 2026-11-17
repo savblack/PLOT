@@ -1,7 +1,7 @@
 // Taste overlap. The phone layout of apps/web/src/pages/TasteOverlapPage.jsx.
 // Free viewers get the inline upsell. The comparison itself comes from
 // useTasteOverlap, which stays quiet until the viewer is Premium.
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
@@ -9,13 +9,17 @@ import Svg, { Circle, Text as SvgText, Path } from 'react-native-svg';
 import { IconChevronLeft, IconChevronDown } from '../icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
-import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent } from '@plot/core/tasteOverlap.js';
+import { useTasteOverlap, useExampleOverlap } from '@plot/core/useTasteOverlap.js';
+import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
+import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent, EXAMPLE_SHARED_WATCHLIST, exampleGenreNames } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { TASTE_OVERLAP as T } from '@plot/core/copy/tasteOverlap.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
+import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
+import { EVENTS } from '@plot/core/analyticsEvents.js';
+import { track } from '../../lib/analytics';
 import { COMMON } from '@plot/core/copy/common.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -35,6 +39,7 @@ import { EmptyNote } from '../EmptyState';
 type TasteModel = TasteOverlapModel;
 
 type TasteTarget = {
+  id?: string | null;
   username: string;
   display_name?: string | null;
   avatar_url?: string | null;
@@ -82,6 +87,17 @@ export default function TasteOverlapScreen() {
   const { genres } = useGenres();
   const genreName = useMemo(() => genreMap(genres), [genres]);
   const { open } = useMediaPanel();
+  const { save, remove } = useSavedComparisons(userId);
+  const shown = asTarget(target);
+  const shownHandle = overlap && shown ? shown.username : null;
+
+  // A comparison that loaded is saved to "Your comparisons" on the picker; one
+  // the server now refuses (blocked, gone private, deleted) leaves it.
+  useEffect(() => {
+    if (shownHandle && shown) save(shown);
+    else if (error === 'not_found' || error === 'not_visible') void remove(username);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `shown` is rebuilt every render; its handle is the change that matters
+  }, [shownHandle, overlap, error, username, save, remove]);
 
   return (
     <TasteOverlapBody
@@ -283,15 +299,17 @@ function OverlapMessage({
 }
 
 function WatchlistOverlap({
-  styles, colors, count, onPress,
+  styles, colors, count, onPress, sample = false,
 }: {
   styles: ReturnType<typeof makeStyles>;
   colors: Palette;
   count: number;
+  /** Opens Watch Together; without it the row is the count alone. */
   onPress?: () => void;
+  sample?: boolean;
 }) {
-  const copy = (
-    <>
+  return (
+    <View style={styles.watchlist}>
       <View style={styles.watchIcon}>
         <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.accentSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
           <Path d="M3 5h18v12H3z" />
@@ -301,26 +319,54 @@ function WatchlistOverlap({
       </View>
       <View style={styles.watchCopy}>
         <Text style={styles.watchText}>{T.watchlistOverlap(count)}</Text>
-        {onPress ? <Text style={styles.watchCta}>{T.watchTogether}</Text> : null}
+        {onPress ? (
+          <Button
+            variant="primary"
+            size="sm"
+            label={WATCH_TOGETHER.navLabel}
+            onPress={() => { track(EVENTS.COMPARE_WATCH_TOGETHER_TAPPED, { sample }); onPress(); }}
+            style={styles.watchBtn}
+          />
+        ) : null}
       </View>
-    </>
+    </View>
   );
-  if (!onPress) return <View style={styles.watchlist}>{copy}</View>;
+}
+
+/**
+ * The sample comparison the picker shows before anyone is chosen: the same
+ * cards as a real one between two full profiles, minus Share. Its titles are
+ * this week's trending ones, so they open like any other.
+ */
+export function TasteOverlapExample() {
+  const { colors } = useTheme();
+  const overlap = useExampleOverlap();
+  const { open } = useMediaPanel();
+  const router = useRouter();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const genreName = useMemo(() => exampleGenreNames(T.exampleGenres), []);
   return (
-    <TouchableOpacity
-      style={styles.watchlist}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`${T.watchlistOverlap(count)}. ${T.watchTogether}`}
-    >
-      {copy}
-    </TouchableOpacity>
+    <OverlapBody
+      example
+      styles={styles}
+      colors={colors}
+      name={T.exampleName}
+      overlap={overlap as unknown as TasteModel}
+      sharedWatchlist={EXAMPLE_SHARED_WATCHLIST}
+      genreName={genreName}
+      onOpen={(id, mediaType) => open(id, mediaType === 'tv' ? 'tv' : 'movie')}
+      onShare={() => {}}
+      // The sample is nobody in particular, so its button opens the hub.
+      onWatchTogether={SHOW_WATCH_TOGETHER ? () => router.push('/(app)/together' as Href) : undefined}
+    />
   );
 }
 
 function OverlapBody({
-  styles, colors, name, overlap, sharedWatchlist, genreName, onOpen, onShare, onWatchTogether,
+  styles, colors, name, overlap, sharedWatchlist, genreName, onOpen, onShare, onWatchTogether, example = false,
 }: {
+  /** The picker's sample: a title section only once it has titles, and no share. */
+  example?: boolean;
   styles: ReturnType<typeof makeStyles>;
   colors: Palette;
   name: string;
@@ -397,6 +443,7 @@ function OverlapBody({
         </View>
       </View>
 
+      {(!example || o.loved.length > 0) && (
       <View style={styles.section}>
         <Text style={styles.h2}>{T.bothLoved}</Text>
         {o.loved.length === 0 ? <EmptyNote>{T.bothLovedEmpty}</EmptyNote> : (
@@ -415,7 +462,9 @@ function OverlapBody({
           </View>
         )}
       </View>
+      )}
 
+      {(!example || o.disagree.length > 0) && (
       <View style={styles.card}>
         <Text style={styles.h2}>{T.disagree}</Text>
         {o.disagree.length === 0 ? <EmptyNote>{T.disagreeEmpty}</EmptyNote> : o.disagree.map((title, index) => (
@@ -435,6 +484,7 @@ function OverlapBody({
           </TouchableOpacity>
         ))}
       </View>
+      )}
 
       {sharedWatchlist != null && sharedWatchlist > 0 && (
         <WatchlistOverlap
@@ -442,10 +492,11 @@ function OverlapBody({
           colors={colors}
           count={sharedWatchlist}
           onPress={onWatchTogether}
+          sample={example}
         />
       )}
 
-      <Button variant="primary" label={T.share} onPress={onShare} style={styles.primary} />
+      {!example && <Button variant="primary" label={T.share} onPress={onShare} style={styles.primary} />}
     </>
   );
 }
@@ -591,9 +642,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   watchIcon: {
     width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,
   },
-  watchCopy: { flex: 1, gap: 2 },
-  watchText: { fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.onAccentSecondaryFill },
-  watchCta: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.onAccentSecondaryFill },
+  // The count, then the button on the same line at the right edge.
+  watchCopy: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  watchBtn: { flexShrink: 0 },
+  watchText: { flex: 1, fontFamily: fontFamily.sansBold, fontSize: 15, color: colors.onAccentSecondaryFill },
   primary: { alignSelf: 'center' },
   state: { alignItems: 'flex-start', gap: spacing.md, padding: 18, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   stateTitle: { fontFamily: fontFamily.display, fontSize: 22, letterSpacing: -0.4, color: colors.textPrimary },

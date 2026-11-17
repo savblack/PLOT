@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   byTitle, matchPercent, favouriteDecade, genreSplit, sharedTopGenreId, tasteOverlap,
   MIN_SHARED_RATINGS, canCompare, canNameOnShareCard, shareCardContent, SHARE_CARD_THEMES,
+  EXAMPLE_OVERLAP, exampleOverlap,
 } from '../../tasteOverlap.js';
 
 // Synthetic ids: these rows never reach TMDB, they only need to be distinct.
@@ -92,4 +93,23 @@ test('share card themes all resolve to real colours', () => {
   for (const theme of Object.values(SHARE_CARD_THEMES)) {
     for (const value of Object.values(theme)) assert.match(value, /^(#|rgba)/);
   }
+});
+
+test('the sample comparison only shows titles it was handed', () => {
+  // No titles yet (or TMDB failed): the numbers alone, both title sections empty.
+  assert.deepEqual(exampleOverlap().loved, []);
+  assert.deepEqual(exampleOverlap().disagree, []);
+  assert.equal(exampleOverlap().match, EXAMPLE_OVERLAP.match);
+
+  const titles = Array.from({ length: 12 }, (_, i) => row(i + 1, { poster_path: `/p${i + 1}.jpg` }));
+  const full = exampleOverlap([row(99), ...titles]);
+  // A title with no poster is skipped, and nothing appears in both sections.
+  assert.equal(full.loved.length, 6);
+  assert.equal(full.disagree.length, 3);
+  const ids = [...full.loved, ...full.disagree].map(t => t.tmdb_id);
+  assert.equal(new Set(ids).size, 9);
+  assert.ok(!ids.includes(99));
+  // The invented ratings mean what each section says.
+  assert.ok(full.loved.every(t => t.mine >= 8 && t.theirs >= 8));
+  assert.ok(full.disagree.every(t => Math.abs(t.mine - t.theirs) >= 4));
 });
