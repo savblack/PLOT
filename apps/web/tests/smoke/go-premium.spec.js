@@ -89,6 +89,18 @@ test('someone who has subscribed before gets Go Premium with no trial line', asy
   await expect(page.getByText('7 days free')).toHaveCount(0);
 });
 
+test('before value, the nav chip is hidden but Settings still offers the trial', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${url}?value=low`);
+  await expect(page.locator('.app-sidebar-foot .go-premium-chip')).toHaveCount(0);
+  await expect(page.locator('.settings-side').getByRole('link', { name: 'Go Premium · 7 days free' })).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('.settings-mobile-head').getByRole('link', { name: 'Go Premium · 7 days free' })).toBeVisible();
+  await page.getByRole('button', { name: 'More' }).click();
+  await expect(page.locator('#app-nav-drawer .go-premium-chip')).toHaveCount(0);
+});
+
 test('a Premium member never sees it', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`${url}?billing=premium`);

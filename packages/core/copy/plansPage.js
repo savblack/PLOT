@@ -134,6 +134,12 @@ export const PLANS_PAGE = {
         body: 'Premium adds smart lists, deeper viewing stats, every theme and Watch together. Cancel before the 7 days are up and you pay nothing.',
         also: ['lists', 'stats'],
       },
+      trialAfterValue: {
+        context: () => 'Your library is taking shape',
+        title: 'Want more from Plot? Try Premium free for 7 days.',
+        body: 'Premium adds smart lists, deeper viewing stats, every theme and Watch together. Cancel before the 7 days are up and you pay nothing.',
+        also: ['lists', 'stats'],
+      },
       lists: {
         context: (cap) => `You’ve used all ${cap} free lists`,
         title: 'Make a list for every kind of night.',

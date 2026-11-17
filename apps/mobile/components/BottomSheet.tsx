@@ -9,7 +9,8 @@
  * own drag-to-close sheet.
  */
 import { useMemo, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, type DimensionValue } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, type DimensionValue } from 'react-native';
+import AppModal from './AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COMMON } from '@plot/core/copy/common.js';
 import { useTheme } from '../contexts/ThemeContext';
@@ -18,7 +19,7 @@ import SectionTitle from './SectionTitle';
 
 export const SHEET_DIM = 'rgba(0,0,0,0.45)';
 
-export default function BottomSheet({ visible, onClose, title, children, footer, scroll = true, maxHeight = '88%', flush = false, closeLabel = COMMON.cancel }: {
+export default function BottomSheet({ visible, onClose, title, children, footer, scroll = true, maxHeight = '88%', flush = false, closeLabel = COMMON.cancel, holdTrialPrompt = true }: {
   visible: boolean;
   onClose: () => void;
   /** Text, or a node such as a logo beside a name (the import sheets). */
@@ -35,12 +36,14 @@ export default function BottomSheet({ visible, onClose, title, children, footer,
    *  Done for a picker that applies as you tap. Null hides it, for a sheet
    *  whose foot already has its own Cancel (the confirm pop-up). */
   closeLabel?: string | null;
+  /** The proactive trial sheet is the one modal that must not hold itself. */
+  holdTrialPrompt?: boolean;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <AppModal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent holdTrialPrompt={holdTrialPrompt}>
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable style={[StyleSheet.absoluteFill, styles.dim]} onPress={onClose} accessibilityRole="button" accessibilityLabel={COMMON.close} />
         <View style={[styles.panel, { maxHeight, paddingBottom: insets.bottom + spacing.xl }, flush && styles.flush]}>
@@ -63,7 +66,7 @@ export default function BottomSheet({ visible, onClose, title, children, footer,
           {footer ? <View style={[styles.footer, flush && styles.flushTitle]}>{footer}</View> : null}
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </AppModal>
   );
 }
 

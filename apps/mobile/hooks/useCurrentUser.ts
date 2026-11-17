@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { setUserTimezone } from '@plot/core/date.js';
+import { clearPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 
 interface Profile {
   id: string;
@@ -41,6 +42,7 @@ export function useCurrentUser() {
     let mounted = true;
     const applySession = (session: any) => {
       if (!mounted) return;
+      if (profileOwnerRef.current && profileOwnerRef.current !== (session?.user?.id ?? null)) clearPremiumTrialPrompt();
       if (session?.user) {
         profileOwnerRef.current = session.user.id;
         setUserId(session.user.id);

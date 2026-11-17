@@ -19,10 +19,11 @@ import { localDateStr } from '@plot/core/date.js';
 import { markMediaAsWatched, moveSavedShowToWatching } from '@plot/core/mediaStatus.js';
 import { useEffect, useState, useRef, useMemo, type RefObject } from 'react';
 import {
-  View, Text, Image, ScrollView, TouchableOpacity, Modal, Pressable,
+  View, Text, Image, ScrollView, TouchableOpacity, Pressable,
   StyleSheet, Dimensions, Animated, Easing, PanResponder, Linking,
   Platform, KeyboardAvoidingView, Keyboard, type HostInstance,
 } from 'react-native';
+import AppModal from './AppModal';
 import { TextInput } from './TextInput';
 import { shouldDismissSheet, sheetDismissDuration } from '@plot/core/sheetDrag.js';
 import Svg, { Path, Line, Polyline, Circle, Polygon } from 'react-native-svg';
@@ -1274,7 +1275,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
   return (
     <>
-    <Modal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent>
+    <AppModal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent>
       {/* Backdrop */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: dim }]}>
         <TouchableOpacity style={styles.overlay} onPress={close} activeOpacity={1} />
@@ -1814,7 +1815,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         />
       )}
       {followPerson.sheet}
-    </Modal>
+    </AppModal>
     </>
   );
 }

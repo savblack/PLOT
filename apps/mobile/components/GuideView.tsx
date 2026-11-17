@@ -1,7 +1,8 @@
 // Native renderer. The account settings, dates, filtering and loading lifecycle
 // are shared with web. FlatList virtualizes large broadcast schedules.
 import { useState } from 'react';
-import { View, Text, Pressable, FlatList, ScrollView, Modal, Linking } from 'react-native';
+import { View, Text, Pressable, FlatList, ScrollView, Linking } from 'react-native';
+import AppModal from './AppModal';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppData } from '../contexts/AppDataContext';
@@ -92,13 +93,13 @@ export function BroadcastAgenda({ region, preferences, endpoint = '', showHeadin
         </ScrollView>
       </PageSheet>
     )}
-    <Modal visible={selected !== null} animationType="slide" onRequestClose={() => setSelected(null)}>
+    <AppModal visible={selected !== null} animationType="slide" onRequestClose={() => setSelected(null)}>
       <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
         <ModalHeader title={selected?.title ?? ''} actionLabel={COMMON.cancel} onAction={() => setSelected(null)} />
         <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
           {selected && <><Text style={{ color: colors.textMuted }}>{names.get(selected.channelId)} · {time(selected.start)}–{time(selected.end)}</Text><Text style={{ color: colors.textPrimary }}>{selected.description || COPY.noDescription}</Text></>}
         </ScrollView>
       </View>
-    </Modal>
+    </AppModal>
   </View>;
 }

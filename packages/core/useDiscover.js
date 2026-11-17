@@ -26,7 +26,7 @@ const MIN_RAIL_SIZE = 14;
 
 /**
  * Most Binged Shows: TMDB's trending-today TV, English-origin, with posters.
- * Shared by Home's Picks (its TV leader) and the New Releases page.
+ * Home's Picks reads its TV leader from this. The rail itself is gone (17 Nov 2026).
  * @param {any[] | null | undefined} trendingTvResults
  * @param {{ hideKids?: boolean }} [options]
  * @returns {any[]}
@@ -43,8 +43,8 @@ const trendingTvItemsFrom = (results, hideKids) => dedupeByMediaId(
 /**
  * Movies in cinemas today, from TMDB's now-playing results: English-origin,
  * kids content dropped when asked, released on or before `today` (so they and
- * "coming soon" never share a title), flagged `_cinema`. Web's Now Showing
- * rail and plot's Picks read this, and so does mobile's Picks.
+ * "coming soon" never share a title), flagged `_cinema`. plot's Picks reads
+ * this on web and mobile. The Now Showing rail is gone (17 Nov 2026).
  * @param {any[] | null | undefined} nowPlayingResults
  * @param {{ today: string, hideKids?: boolean }} options
  * @returns {any[]}
@@ -75,6 +75,26 @@ export function anticipatedMoviesFrom(upcomingResults, { today, hideKids = false
 }
 
 /**
+ * Now on Streaming: movies that had a cinema release and reached rent or buy
+ * in the last few weeks. Takes both lists from tmdb.getNowOnStreaming() and
+ * keeps the digital releases that also appear among the cinema releases, most
+ * popular first, English-origin, with posters, kids content dropped when
+ * asked. Each title keeps the digital list's release_date (the day it reached
+ * streaming). Home reads this on web and mobile.
+ * @param {{ digital?: any[], theatrical?: any[] } | null | undefined} releases
+ * @param {{ hideKids?: boolean }} [options]
+ * @returns {any[]}
+ */
+export function nowOnStreamingFrom(releases, { hideKids = false } = {}) {
+  const cinemaIds = new Set((releases?.theatrical || []).map(movie => movie.id));
+  return dedupeByMediaId(
+    excludeKidsContent((releases?.digital || []).filter(isEnglishOriginTitle), hideKids)
+      .filter(movie => cinemaIds.has(movie.id))
+      .map(movie => ({ ...movie, media_type: 'movie' })),
+  ).filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
+}
+
+/**
  * The "In cinemas" card in plot's Picks: the highest trending movie that is
  * in cinemas now, else the first title in cinemas.
  * @param {any[]} trendingMovies Trending movies, most trending first.
@@ -95,6 +115,7 @@ const emptyDiscoverData = () => ({
   weekly: [],
   bingedShows: [],
   cinemaMovies: [],
+  streamingMovies: [],
   anticipatedMovies: [],
 });
 
@@ -134,10 +155,12 @@ export async function loadDiscoverData({ hideKids = false, client = tmdb, onPrim
   };
   onPrimary?.(primary);
 
-  const [onThisDay, upcoming, nowPlaying] = await Promise.all([
+  const [onThisDay, upcoming, nowPlaying, nowOnStreaming] = await Promise.all([
     client.getOnThisDay().catch(() => null),
     client.getUpcoming().catch(() => null),
     client.getNowPlaying().catch(() => null),
+    // Only feeds Now on Streaming; a failure hides that shelf, nothing else.
+    Promise.resolve().then(() => client.getNowOnStreaming()).catch(() => null),
   ]);
 
   // Now and next are separate rails, split strictly on today's date, so
@@ -153,6 +176,7 @@ export async function loadDiscoverData({ hideKids = false, client = tmdb, onPrim
     onThisDay,
     heroByType: { ...primary.heroByType, cinema: trendingCinema },
     cinemaMovies,
+    streamingMovies: nowOnStreamingFrom(nowOnStreaming, { hideKids }),
     anticipatedMovies,
   };
 }

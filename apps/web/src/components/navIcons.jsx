@@ -121,14 +121,16 @@ export function IconHistory() {
   );
 }
 
-// New Releases: a film frame with a spark at its corner, so it reads as
-// "new titles" and not as a second Calendar.
+// New Releases: a clapperboard. The film frame with a spark it replaces read
+// as a second Calendar at menu size (Savannah, 17 Nov 2026). Same strokes as
+// 'new-releases' in apps/mobile/components/NavIcons.tsx.
 export function IconNewReleases() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="6" width="14" height="15" rx="2" />
-      <path d="M3 11h14" />
-      <path d="M19 2v4M17 4h4" />
+      <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />
+      <path d="m6.2 5.3 3.1 3.9" />
+      <path d="m12.4 3.4 3.1 4" />
+      <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
     </svg>
   );
 }

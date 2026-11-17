@@ -232,7 +232,7 @@ export default function YourPeopleScreen() {
         </View>
 
         <View style={{ marginTop: spacing.md, padding: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border }}>
-          <Text style={{ fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, marginBottom: spacing.sm }}>{CALENDAR_VIEW.filter.show}</Text>
+          <Text style={{ fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, marginBottom: spacing.sm }}>{MEDIA.typeHeading}</Text>
           {TYPE_ROWS.map(row => {
             const on = typeFilters.includes(row.id);
             return (

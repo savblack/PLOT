@@ -2,13 +2,14 @@
  * Home screen. Mirrors web DiscoverView.
  * Shelf order comes from the viewer's Home layout (@plot/core/homeLayout.js);
  * the default is picks, Up next, Hot Right Now, Top 20 This Week,
- * Your people, Most Anticipated. The New Releases screen (mode "new") leads with Out Today,
- * recent and coming soon, Most Binged and Top 10 by Platform, then genre rails.
+ * Your people, Now on Streaming, Most Anticipated, Top 10 by Platform. The New Releases
+ * screen (mode "new") is the genre rails alone, as on web. Out Today, Recently Released,
+ * Coming Soon, Most Binged, Now Showing and Top 10 by Platform were removed from it on
+ * 17 Nov 2026 (Savannah); Top 10 by Platform is a Home shelf again (`platforms`).
  */
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
-import HomeReleases from '../../components/HomeReleases';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -28,11 +29,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 import { tmdb, setTmdbRegion, prioritiseEnglishSpeakingTitles } from '../../lib/tmdb';
 import { useNewReleases, prepareNewReleaseGenreRails } from '@plot/core/useNewReleases.js';
+import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '@plot/core/mediaFilters.js';
 import { parseGenreBrowse } from '@plot/core/browse.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
-import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
@@ -62,7 +63,7 @@ import { oncePerSession } from '@plot/core/oncePerSession.js';
 import { featuredCuratedList } from '@plot/core/curatedLists.js';
 import { CuratedListCard, CuratedListPanel } from '../../components/CuratedLists';
 import PicksCarousel from '../../components/PicksCarousel';
-import { anticipatedMoviesFrom, currentCinemaMovies, trendingCinemaHero } from '@plot/core/useDiscover.js';
+import { anticipatedMoviesFrom, currentCinemaMovies, nowOnStreamingFrom, trendingCinemaHero } from '@plot/core/useDiscover.js';
 import { localDateStr } from '@plot/core/date.js';
 import { dedupeHomeShelves, visibleHomeSections } from '@plot/core/homeLayout.js';
 import { useHomeLayout } from '@plot/core/useHomeLayout.js';
@@ -70,8 +71,10 @@ import FinishingTouches, { useFinishingTouchesState } from '../../components/Fin
 import PremiumFirstWeek, { usePremiumFirstWeekState } from '../../components/PremiumFirstWeek';
 import PremiumTrialPrompt from '../../components/PremiumTrialPrompt';
 import ActivationNudge, { useActivationNudgeVisible } from '../../components/ActivationNudge';
+import QuickAdd from '../../components/QuickAdd';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 import ImportJobCard, { type ImportJobRow } from '../../components/ImportJobCard';
+import { importCardsShown, useImportJobs } from '@plot/core/importJobs.js';
 import { markImportDone } from '../../lib/finishingTouches';
 import { takePendingImportSource } from '../../lib/pendingImport';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
@@ -226,30 +229,6 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
         </TouchableOpacity>
       </View>
       <PosterCaption title={title} meta={cardMetaLine(item)} />
-    </TouchableOpacity>
-  );
-}
-
-// ── Binge card (wide backdrop) ────────────────────────────────────────
-function BingeCard({ item, onPress }: { item: MediaItem; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const art = useUserArtwork();
-  const shown = art.apply(item);
-  const title    = item.name || item.title || '';
-  const backdrop = backdropUrl(displayBackdropPath(shown), 'w780') || posterUrl(displayPosterPath(shown), 'w342');
-
-  return (
-    <TouchableOpacity style={styles.bingeCard} onPress={onPress} activeOpacity={0.85}>
-      {backdrop
-        ? <Image source={{ uri: backdrop }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
-      }
-      <View style={styles.bingeShade} />
-      <View style={styles.bingeCopy}>
-        <Text style={styles.bingeTitle} numberOfLines={2}>{title}</Text>
-        <Text style={styles.bingeMeta}>{cardMetaLine(item, { fallbackType: 'tv' })}</Text>
-      </View>
     </TouchableOpacity>
   );
 }
@@ -538,13 +517,11 @@ function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorit
 
 // ── New Releases tab content ──────────────────────────────────────────
 // Mounted only while the tab is active. useNewReleases fires ~21 TMDB
-// requests (Recently Released plus a movie and a TV call per genre rail),
+// requests (now-playing plus a movie and a TV call per genre rail),
 // so calling it from HomeScreen would spend that budget on every app open
 // and trip the proxy's rate limit for people who never open the tab.
-function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel, afterCinema }: {
+function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel }: {
   hideKids: boolean;
-  /** Drawn after Now Showing and before the genre rails (Top 10 by Platform), as on web. */
-  afterCinema?: ReactNode;
   typeFilters: string[];
   genreFilters: number[];
   savedIds: Set<number>;
@@ -562,33 +539,24 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
   // The same rails web's New Releases page shows (prepareNewReleaseGenreRails):
   // one per category, titled by the genre alone, since the screen title
   // already says "New Releases".
-  const genreRails: Array<{ key: string; title: string; items: MediaItem[] }> =
+  const rails: Array<{ key: string; title: string; items: MediaItem[] }> =
     prepareNewReleaseGenreRails(data.genreRails, typeFilters, genreFilters);
-  // Now Showing was a web Home shelf; it heads the genre rails here, as on web.
-  const cinema = filterByGenre(filterByType(data.cinema, typeFilters), genreFilters) ?? [];
-  const rails = cinema.length
-    ? [{ key: 'cinema', title: 'Now Showing', kicker: MEDIA.inCinemas, items: cinema }, ...genreRails]
-    : genreRails;
 
   if (!rails.length) {
     return (
-      <>
-      {afterCinema}
       <EmptyState
         title={DISCOVER_VIEW.newReleasesEmpty.title}
         body={typeFilters.length < ALL_TYPES.length || genreFilters.length ? DISCOVER_VIEW.newReleasesEmpty.filtered : DISCOVER_VIEW.newReleasesEmpty.none}
       />
-      </>
     );
   }
 
   return (
     <>
-      {rails.map((rail: { key: string; title: string; kicker?: string; items: MediaItem[] }, i) => (
+      {rails.map(rail => (
         <View key={rail.key}>
-        {i === (cinema.length ? 1 : 0) && afterCinema}
         <View style={styles.section}>
-          <SectionHeader kicker={rail.kicker} title={rail.title} />
+          <SectionHeader title={rail.title} />
           <FlatList
             horizontal
             data={rail.items}
@@ -629,6 +597,8 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   const [cinemaHero,    setCinemaHero]    = useState<MediaItem | null>(null);
   // Most Anticipated: movies opening after today (shared with web: useDiscover.js).
   const [anticipated,   setAnticipated]   = useState<MediaItem[]>([]);
+  // Now on Streaming: movies that left cinemas for rent or buy (shared with web: useDiscover.js).
+  const [streaming,     setStreaming]     = useState<MediaItem[]>([]);
   // Official published charts from platform_charts — a fixed platform list,
   // identical for everyone, rather than TMDB popularity filtered to whatever
   // the user happens to subscribe to.
@@ -673,7 +643,8 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
      ACTIVATED analytics, and left the shared store stale until app restart:
      save on Home, open the title's panel, and it still offered "Add to
      Watchlist". */
-  const { favorites, watchlist, watching, history, userId, profile, user, customLists, refreshProfile } = useAppData();
+  const { favorites, watchlist, watching, history, userId, profile, user, customLists, refreshProfile, accountValue } = useAppData();
+  const imports = useImportJobs(mode === 'home' ? userId : null);
   const homeLayout = useHomeLayout({ userId, saved: profile?.home_layout, onPersisted: refreshProfile });
   const router = useRouter();
   // Up next: the shows with an episode out, then the saved titles, one shelf.
@@ -758,7 +729,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
 
         // The watchlist is no longer fetched here — useWatchlist (via
         // useAppData) owns loading it, for every surface at once.
-        const [trendingDay, trendingWeek, trendingTV, nowPlaying, upcoming] = await Promise.all([
+        const [trendingDay, trendingWeek, trendingTV, nowPlaying, upcoming, nowOnStreaming] = await Promise.all([
           tmdb.getTrending('all', 'day'),
           tmdb.getTrending('all', 'week'),
           tmdb.getTrending('tv',  'day'),
@@ -766,6 +737,8 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           tmdb.getNowPlaying().catch(() => null),
           // Only feeds Most Anticipated; a failure hides that shelf, nothing else.
           tmdb.getUpcoming().catch(() => null),
+          // Only feeds Now on Streaming; a failure hides that shelf, nothing else.
+          tmdb.getNowOnStreaming().catch(() => null),
         ]);
 
         if (cancelled) return;
@@ -774,6 +747,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         const today = localDateStr();
         const inCinemas = currentCinemaMovies(nowPlaying?.results, { today, hideKids });
         setAnticipated(anticipatedMoviesFrom(upcoming?.results, { today, hideKids }));
+        setStreaming(nowOnStreamingFrom(nowOnStreaming, { hideKids }));
         const trendingMovies = excludeKidsContent(prioritiseEnglishSpeakingTitles(trendingDay?.results ?? []), hideKids).filter((t: MediaItem) => t.media_type === 'movie');
         setCinemaHero(trendingCinemaHero(trendingMovies, inCinemas));
         if (trendingWeek?.results) setWeekly(excludeKidsContent(trendingWeek.results, hideKids).slice(0, 20));
@@ -840,11 +814,13 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
     forYou: applyFilters(recs.forYou),
     hot: applyFilters(trending.slice(1, 10)),
     weekly: applyFilters(weekly),
+    streaming: applyFilters(streaming),
     anticipated: applyFilters(anticipated),
   }, { whole: ['picks', 'weekly'] });
   const becauseRail: MediaItem[] = shown.because ?? [];
   const forYouRail: MediaItem[] = shown.forYou ?? [];
   const hotRail = shown.hot ?? [];
+  const streamingRail = shown.streaming ?? [];
   const anticipatedRail = shown.anticipated ?? [];
 
   // Three trending titles stand in for Up next while nothing is saved, each
@@ -1038,6 +1014,29 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       </>
     ),
     people: () => <YourPeopleShelf />,
+    streaming: () => (
+      <>
+        {streamingRail.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader kicker={DISCOVER_VIEW.nowOnStreamingSubtitle} title={DISCOVER_VIEW.nowOnStreamingTitle} />
+            <PosterRail
+              data={streamingRail}
+              keyExtractor={item => String(item.id)}
+              renderItem={({ item }) => (
+                <PosterCard
+                  item={item}
+                  onPress={() => item.id && openPanel(item.id, 'movie')}
+                  saved={savedIds.has(item.id ?? 0)}
+                  onSave={() => handleSave(item)}
+                  isFav={favorites.isFavorite(item.id ?? 0)}
+                  onFavorite={() => toggleFav(item)}
+                />
+              )}
+            />
+          </View>
+        )}
+      </>
+    ),
     anticipated: () => (
       <>
         {anticipatedRail.length > 0 && (
@@ -1056,32 +1055,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
                   onFavorite={() => toggleFav(item)}
                 />
               )}
-            />
-          </View>
-        )}
-      </>
-    ),
-  };
-  // New Releases, Most Binged and Top 10 by Platform were Home shelves until
-  // November 2026. They head the New Releases screen now, as on web, so Home
-  // is five shelves that do not repeat each other.
-  const releaseShelves: Record<string, () => ReactNode> = {
-    releases: () => <HomeReleases rails={['today', 'recent', 'comingSoon']} />,
-    binged: () => (
-      <>
-        {applyFilters(bingedShows).length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Popular TV" title="Most Binged Shows" />
-            <FlatList
-              horizontal
-              data={applyFilters(bingedShows)}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <BingeCard item={item} onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))} />
-              )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
             />
           </View>
         )}
@@ -1125,9 +1098,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           scrollEventThrottle={16}
           onScroll={glass.onScroll}
         >
-          {(['releases', 'binged'] as const).map(id => <View key={id}>{releaseShelves[id]()}</View>)}
           <NewReleasesContent
-            afterCinema={releaseShelves.platforms()}
             hideKids={hideKids}
             typeFilters={typeFilters}
             genreFilters={genreFilters}
@@ -1143,6 +1114,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
         style={styles.screen}
         contentContainerStyle={{ paddingTop: HEADER_H + 20, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
           scrollEventThrottle={16}
           onScroll={e => {
             glass.onScroll(e);
@@ -1162,10 +1134,13 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
             <Text style={styles.weekText}>{DISCOVER_VIEW.weekLine(weekNights, bestStreak)}</Text>
           </TouchableOpacity>
         )}
-        {userId && <ImportJobCard userId={userId} onReview={setReviewJob} onFinished={onImportFinished} />}
-        {/* No titles at all: the empty-library nudge takes the checklist's place. */}
-        {nudgeVisible
-          ? <ActivationNudge onImport={setImportSource} />
+        {userId && <ImportJobCard userId={userId} imports={imports} onReview={setReviewJob} onFinished={onImportFinished} />}
+        {/* Quick-add leads through the first four unique titles. */}
+        {accountValue.titleCount != null && accountValue.titleCount < 5 && !importSource && !reviewJob && importCardsShown(imports).length === 0 && <QuickAdd />}
+        {accountValue.titleCount === 0 && !firstWeek.visible
+          ? null
+          : nudgeVisible && accountValue.titleCount == null
+            ? <ActivationNudge onImport={setImportSource} />
           : firstWeek.visible
             ? <PremiumFirstWeek onState={firstWeek.setState} />
             : <FinishingTouches state={ft.state} onState={ft.setState} />}
@@ -1377,35 +1352,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   // ── Binge cards ──
-  bingeCard: {
-    width: BINGE_W,
-    height: BINGE_H,
-    borderRadius: radii.md,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceSunken,
-    flexShrink: 0,
-  },
-  bingeShade: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  bingeCopy: {
-    position: 'absolute',
-    bottom: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
-  },
-  bingeTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: 18,
-    color: '#fff',
-    marginBottom: 3,
-  },
-  bingeMeta: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    color: 'rgba(255,255,255,0.7)',
-  },
 
   // ── Chart rows ──
   chartRow: {
@@ -1475,6 +1421,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   // ── Platform sections ──
+
   platSection: {
     marginHorizontal: spacing.xl,
     marginBottom: spacing.sm,

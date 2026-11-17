@@ -11,6 +11,7 @@ import SettingsPage from '../../../src/components/SettingsPage.jsx';
 import GoPremiumLink from '../../../src/components/GoPremiumLink.jsx';
 import { configure } from '@plot/core/config.js';
 import { createInMemorySupabase } from '@plot/core/tests/support/inMemorySupabase.js';
+import { hasFeltValue } from '@plot/core/hasFeltValue.js';
 import '../../../src/styles/app.css';
 import '../../../src/index.css';
 
@@ -27,7 +28,12 @@ client.rpc = async (name) => (name === 'get_my_billing_status' ? { data: BILLING
 configure({ supabaseClient: client });
 const user = { id: '00000000-0000-4000-8000-000000000001', email: 'sam@example.com' };
 const profile = { id: user.id, username: 'sam', display_name: 'Sam Rivera', avatar_url: null, is_premium: premium };
-const app = { uiPrefs: { prefs: {} } };
+const titleCount = params.get('value') === 'low' ? 4 : 5;
+const sessionCount = 1;
+const app = {
+  uiPrefs: { prefs: {} },
+  accountValue: { titleCount, sessionCount, feltValue: hasFeltValue({ titleCount, sessionCount }) },
+};
 
 function Shell() {
   const [view, setView] = useState('settings');

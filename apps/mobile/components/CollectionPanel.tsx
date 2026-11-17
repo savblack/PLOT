@@ -2,7 +2,8 @@
 // MediaPanel, with the franchise's films as the body. Mirrors
 // apps/web/src/components/CollectionPanel.jsx.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, Modal, StyleSheet, Dimensions, Animated } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native';
+import AppModal from './AppModal';
 import Svg, { Line } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tmdb } from '../lib/tmdb';
@@ -55,7 +56,7 @@ export default function CollectionPanel({ collectionId, onClose }: { collectionI
     : '';
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent>
+    <AppModal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent>
       <TouchableOpacity style={styles.overlay} onPress={close} activeOpacity={1} />
       <Animated.View style={[styles.panel, { transform: [{ translateY: slideY }], paddingBottom: insets.bottom }]}>
         <View style={styles.handleOverlay} pointerEvents="none"><View style={styles.handle} /></View>
@@ -108,7 +109,7 @@ export default function CollectionPanel({ collectionId, onClose }: { collectionI
           </View>
         </ScrollView>
       </Animated.View>
-    </Modal>
+    </AppModal>
   );
 }
 

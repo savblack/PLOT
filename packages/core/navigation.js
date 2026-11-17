@@ -6,6 +6,10 @@ import { FAVOURITES_ENABLED, GUIDE_ENABLED } from './features.js';
 
 export const APP_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: '/home', primary: true },
+  // New Releases: its own page on both apps, listed straight after Home
+  // (Savannah, 17 Nov 2026). Not primary, so it stays out of the tab bar.
+  // Mobile lists it in its drawer (DrawerMenu.tsx) in the same place.
+  { id: 'new-releases', label: 'New Releases', path: '/new-releases', primary: false },
   { id: 'calendar', label: 'Calendar', path: '/calendar', primary: true },
   { id: 'my-lists', label: 'My Lists', path: '/my-lists', primary: true },
   // Own page on web. Mobile keeps the My Lists tab and also opens this from
@@ -15,9 +19,6 @@ export const APP_NAV_ITEMS = [
   // stays out of the tab bar. Dropped below while the guide is hidden
   // (GUIDE_ENABLED in features.js).
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
-  // New Releases: its own page on both apps. Mobile lists it in its drawer
-  // (DrawerMenu.tsx) right after Guide; web's rail and phone drawer read it here.
-  { id: 'new-releases', label: 'New Releases', path: '/new-releases', primary: false },
   // Just Decide, the tonight picker (Premium). Free viewers land on the Premium gate,
   // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
   { id: 'tonight', label: 'Just Decide', path: '/tonight', primary: false, premium: true },

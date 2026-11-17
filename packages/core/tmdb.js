@@ -548,6 +548,58 @@ export const tmdb = {
     return { results: pages.flatMap(p => p?.results ?? []) };
   },
 
+  /* ── Now on streaming: movies that left cinemas for rent or buy ──
+     Discover queries limited to titles a storefront rents or sells right now.
+     `theatrical` is the viewer's region: a cinema release there in the last
+     six months that a storefront there carries today. `digital` says which
+     of those arrived recently: a digital release in the last 60 days. With
+     `region` set, each result's release_date is the date of the release type
+     asked for, so the digital list carries the day the title reached
+     streaming. The caller keeps the titles that appear in both
+     (nowOnStreamingFrom, useDiscover.js); that is what separates a cinema
+     release from a straight-to-streaming one.
+     TMDB records few digital dates outside the US (Australia returned four
+     titles on 2026-11-17 where the US returned forty), and a film usually
+     reaches rent or buy in most markets within days of the US. So outside
+     the US the US digital list is read as well, for timing only: whether the
+     viewer can rent the title is still answered by their own region's
+     `theatrical` query.
+     TMDB matches a title on any digital date in the window (a later, cheaper
+     rental counts) but returns its first one, so a film that reached
+     streaming months ago comes back too; those are dropped here by date.
+     The primary-date floor keeps out re-releases of old films, as in
+     getUpcoming. ── */
+  getNowOnStreaming: async () => {
+    const today = localDateStr();
+    const daysAgo = (days) => { const d = new Date(); d.setDate(d.getDate() - days); return dateToLocalStr(d); };
+    const twelveMonthsAgo = new Date(); twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    const digitalSince = daysAgo(60);
+    const paramsFor = (region) => ({
+      'release_date.lte': today,
+      'primary_release_date.gte': dateToLocalStr(twelveMonthsAgo),
+      watch_region: region,
+      with_watch_monetization_types: 'rent|buy',
+      sort_by: 'popularity.desc',
+      region,
+    });
+    const digitalRegions = [...new Set([userRegion, 'US'])];
+    const [digitalPages, theatricalPages] = await Promise.all([
+      Promise.all(digitalRegions.flatMap(region => [1, 2].map(page =>
+        fetchFromTMDB('/discover/movie', { ...paramsFor(region), 'release_date.gte': digitalSince, 'with_release_type': '4', page })
+      ))),
+      Promise.all([1, 2, 3].map(page =>
+        fetchFromTMDB('/discover/movie', { ...paramsFor(userRegion), 'release_date.gte': daysAgo(180), 'with_release_type': '2|3', page })
+      )),
+    ]);
+    return {
+      // The viewer's region comes first, so its own date wins when both list a title.
+      digital: digitalPages.flatMap(p => p?.results ?? [])
+        .filter(m => (m.release_date || '') >= digitalSince)
+        .sort((x, y) => (y.popularity ?? 0) - (x.popularity ?? 0)),
+      theatrical: theatricalPages.flatMap(p => p?.results ?? []),
+    };
+  },
+
   /* ── TV on the air ── */
   getTVOnTheAir: async () => {
     const pages = await Promise.all(

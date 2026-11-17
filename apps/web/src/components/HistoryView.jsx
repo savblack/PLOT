@@ -301,8 +301,9 @@ function PeopleCard({ entries, details, openPanel, onShare, shareReady }) {
   );
 }
 
-/* The Calendar's Show and Genre rows, then History's own Status rows in the
-   same style. Reviewed and Didn't finish are OR-ed: either state qualifies. */
+/* History's own Status rows first (Savannah, 17 Nov 2026), then the shared
+   Type and Genre rows, all in one card. Reviewed and Didn't finish are OR-ed:
+   either state qualifies. */
 function Filters({ types, setTypes, genres, setGenres, genreOptions, reviewed, setReviewed, dnf, setDnf }) {
   return (
     <SideFilters

@@ -17,9 +17,9 @@ export const CALENDAR_VIEW = {
   // The Calendar's own filter box. Worded for the page so it doesn't read as
   // a second copy of the sidebar's Search (which opens the title palette).
   search: 'Search the calendar',
-  // Web Calendar side panel: the Show (type) and Genre filter rows.
+  // Web side filter panel: the Genre rows. Its type heading is MEDIA.typeHeading
+  // ("Type"; it read "Show" until 17 Nov 2026).
   filter: {
-    show: 'Show',
     genre: 'Genre',
     genreCount: (n) => `${n} genres`,
   },
