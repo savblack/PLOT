@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.7.0](https://github.com/savblack/PLOT/compare/mobile-v1.6.0...mobile-v1.7.0) (2026-11-17)
+
+
+### Features
+
+* **app:** remove the greeting, the date and the sub text under page headings ([#1710](https://github.com/savblack/PLOT/issues/1710)) ([5c0db24](https://github.com/savblack/PLOT/commit/5c0db2446aaa59a914021837e41c139e51913ab5))
+* **auth:** eye icon instead of Show/Hide on the password field ([#1701](https://github.com/savblack/PLOT/issues/1701)) ([16f569b](https://github.com/savblack/PLOT/commit/16f569b3f4fa1d5f33d5002a6353132bdd4c8370))
+* **compare:** two-column Compare with a sample and saved comparisons ([#1730](https://github.com/savblack/PLOT/issues/1730)) ([e315a9f](https://github.com/savblack/PLOT/commit/e315a9f3d620e705f28bec7acaafc79c2ceaee28))
+* **guide:** hide the TV guide on web, mobile and the site ([#1712](https://github.com/savblack/PLOT/issues/1712)) ([7ee7871](https://github.com/savblack/PLOT/commit/7ee78714ad4fbeb0fe8ea8e73f914b6f61f2a122))
+* **home:** add a Now on Streaming shelf to Home on web and iPhone ([#1732](https://github.com/savblack/PLOT/issues/1732)) ([3bba50c](https://github.com/savblack/PLOT/commit/3bba50c850419207c44ebbce0033633a053f520c))
+* **home:** recommendation shelves, and Your people for everyone ([#1698](https://github.com/savblack/PLOT/issues/1698)) ([4570cff](https://github.com/savblack/PLOT/commit/4570cff05f6ebe53a7882e5a3ae4c07117021182))
+* **home:** remove the Home quick-add card and bring back the empty-library nudge ([#1739](https://github.com/savblack/PLOT/issues/1739)) ([982f8a1](https://github.com/savblack/PLOT/commit/982f8a181c402311a8b3bdbbf377b966c5261b64))
+* **mobile:** private-note and review markers on list posters ([#1709](https://github.com/savblack/PLOT/issues/1709)) ([fac8579](https://github.com/savblack/PLOT/commit/fac85793ec983d807abdd2fcde7110ca06cbe90b))
+* **mobile:** show Most Anticipated on iPhone Home ([#1690](https://github.com/savblack/PLOT/issues/1690)) ([32c6067](https://github.com/savblack/PLOT/commit/32c606787a1137ccadcd623439d087cfe1e80125))
+* **mobile:** Show/Hide toggle on the password field ([#1691](https://github.com/savblack/PLOT/issues/1691)) ([e7438c0](https://github.com/savblack/PLOT/commit/e7438c0a972a8bab8f46476b5a4cdaefaed59a7a))
+* **new-releases:** genre rails only, filter as a panel, charts back on Home ([#1736](https://github.com/savblack/PLOT/issues/1736)) ([cfaadb1](https://github.com/savblack/PLOT/commit/cfaadb1a2180483aa7398f96326f0a072d47ac85))
+* **onboarding:** remove the building screen from web and iPhone ([#1716](https://github.com/savblack/PLOT/issues/1716)) ([9716d00](https://github.com/savblack/PLOT/commit/9716d001902676714f64f069b769e3e24f63eff0))
+* one bookmark in both apps; green In watchlist pill on web ([#1714](https://github.com/savblack/PLOT/issues/1714)) ([e52d115](https://github.com/savblack/PLOT/commit/e52d1157cb51e86f9a91102b16a2cc4e4e82084b))
+* **premium:** hold Premium prompts until users feel value, add Home quick-add ([#1707](https://github.com/savblack/PLOT/issues/1707)) ([8bed26d](https://github.com/savblack/PLOT/commit/8bed26d71ef8068fcc274f62fb7adcf5fb6cacd5))
+* **search:** search within one page from the search box, on web and mobile ([#1721](https://github.com/savblack/PLOT/issues/1721)) ([10c55e4](https://github.com/savblack/PLOT/commit/10c55e47c921f4510cdab40823daec477cd6687f))
+* **title:** tidy the title header on web and iPhone ([#1737](https://github.com/savblack/PLOT/issues/1737)) ([f887a79](https://github.com/savblack/PLOT/commit/f887a791256053b962bd6dc03f890328e5344d05))
+* **tonight:** every filter on the mood card, web and mobile ([#1720](https://github.com/savblack/PLOT/issues/1720)) ([8ae8273](https://github.com/savblack/PLOT/commit/8ae8273fb9f0981f34e8f92bfff10f7ef98c16a5))
+* **tonight:** remove the 'Free: one pick a day' note ([#1726](https://github.com/savblack/PLOT/issues/1726)) ([80e1df5](https://github.com/savblack/PLOT/commit/80e1df55040e67e03fdb0e080a001cbb7cb395d2))
+
+
+### Bug Fixes
+
+* **home:** Top 20 bookmark beside the title on phones, featured dots centered ([#1733](https://github.com/savblack/PLOT/issues/1733)) ([3a6f772](https://github.com/savblack/PLOT/commit/3a6f772a60d5973e754f463991d162e1c7e11a76))
+* **imports:** an import that saves nothing fails loudly; iPhone asks what a list file is ([#1738](https://github.com/savblack/PLOT/issues/1738)) ([aba0a4b](https://github.com/savblack/PLOT/commit/aba0a4b0b9a9f46c0cdac0bb247fcb4e7da1a11e))
+* **imports:** bring Plex back to the import, and ask about an unnamed Letterboxd file ([#1699](https://github.com/savblack/PLOT/issues/1699)) ([405b3c4](https://github.com/savblack/PLOT/commit/405b3c44f3bc960dab17398b89519f5bdf62e35d))
+* **mobile:** onboarding matches web, and the captcha box no longer covers the Password field ([#1702](https://github.com/savblack/PLOT/issues/1702)) ([baf1172](https://github.com/savblack/PLOT/commit/baf1172e916bad8c1a8e160707ec48358422fe0c))
+* **mobile:** one Premium spark everywhere; remove the Just Decide button ([#1697](https://github.com/savblack/PLOT/issues/1697)) ([d19cfd2](https://github.com/savblack/PLOT/commit/d19cfd2f23c6517aad55998004e60638f4f5ceef))
+* **onboarding:** a failed search says so with Retry, and phone wording for file imports ([#1706](https://github.com/savblack/PLOT/issues/1706)) ([203855c](https://github.com/savblack/PLOT/commit/203855c02cd6e12ed5dbaf16029feb76614cc41d))
+* **panel:** genres under the rating, keywords full width (web + iPhone) ([#1693](https://github.com/savblack/PLOT/issues/1693)) ([fcd5c64](https://github.com/savblack/PLOT/commit/fcd5c646e8a3365f8f3f2b7c3604854215241fcc))
+
 ## [1.6.0](https://github.com/savblack/PLOT/compare/mobile-v1.5.0...mobile-v1.6.0) (2026-11-15)
 
 
