@@ -69,7 +69,10 @@ jobs:
         run: |
           set -euo pipefail
           sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          # Download to a file and retry: postgresql.org drops this connection
+          # now and then, and piping straight into gpg failed the job (#1720, #1726).
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o /tmp/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/pgdg.gpg /tmp/pgdg.asc
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
           # The runner ships pg_dump 16 on PATH by default; Supabase is on PG 17 and
