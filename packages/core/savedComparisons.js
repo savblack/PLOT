@@ -5,7 +5,7 @@
 // always asks the server again, so a block, a profile gone private or a lapsed
 // Premium is still enforced there.
 //
-// The list lives in the saved_comparisons table (migration 20261117090000), so
+// The list lives in the saved_comparisons table (migration 20261117150000), so
 // it follows the viewer to every device. These helpers only keep the copy on
 // screen in step while a save or a removal is on its way to the server.
 
