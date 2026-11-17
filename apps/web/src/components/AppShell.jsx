@@ -7,6 +7,7 @@ import { APP_SHELL } from '../copy/appShell.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import AppSidebar from './AppSidebar.jsx';
+import AccountMenu from './AccountMenu.jsx';
 import GoPremiumLink from './GoPremiumLink.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import PremiumTrialPrompt from './PremiumTrialPrompt.jsx';
@@ -15,9 +16,7 @@ import {
   IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
 } from './navIcons.jsx';
 import PlotLogo from './PlotLogo.jsx';
-import { PremiumBadge } from './ProfileBadges.jsx';
 import PremiumMark from './PremiumMark.jsx';
-import Avatar from './Avatar.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 /* Shared with AppSidebar — see ./navIcons.jsx. */
@@ -124,6 +123,9 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   // segment stops the rest of the path leaking in as "@savannah/compare".
   const isProfileView = (currentView || '').startsWith('u/');
   const profileHandle = isProfileView ? currentView.split('/')[1] : null;
+  // The drawer's profile row reads as selected on the viewer's own profile
+  // and on Settings, as the desktop rail's does.
+  const accountActive = (!!profile?.username && currentView === `u/${profile.username}`) || isActiveView(currentView, 'settings');
   const desktopTitle = isProfileView
     ? (profile?.username && profileHandle === profile.username ? APP_SHELL.profile : `@${profileHandle}`)
     : (APP_NAV_ITEMS.find(item => item.id === currentView)?.label ?? pageTitle);
@@ -239,19 +241,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               </button>
             );
           })}
-          {profile?.username && (
-            <button
-              type="button"
-              className="nav-drawer-item"
-              onClick={() => { closeDrawer(); navigate(`/u/${profile.username}`); }}
-            >
-              {/* The avatar takes the icon column so this row hangs off the
-                  same left edge as the rest, the way the rail's profile row does. */}
-              <Avatar src={profile.avatar_url} name={profile.display_name || profile.username} size={18} tone="raised" className="nav-drawer-avatar" />
-              <span className="nav-drawer-label">{APP_SHELL.profile}</span>
-              {isPremiumProfile(profile) && <PremiumBadge className="app-sidebar-verified" />}
-            </button>
-          )}
           {user && (
             <button type="button" className={`nav-drawer-item${currentView === 'notifications' ? ' active' : ''}`} onClick={() => handleNav('notifications')}>
               <IconBell />
@@ -261,34 +250,57 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
           )}
         </nav>
 
-        <div className="nav-drawer-footer">
-          {/* Go Premium: the pink side-nav chip for a Free member, read only
-              while the drawer is open. */}
-          {user && drawerOpen && !isPremiumProfile(profile) && (
-            <GoPremiumLink profile={profile} placement="side_nav" variant="chip" className="nav-drawer-item" labelClassName="nav-drawer-label" onBeforeNavigate={closeDrawer} />
-          )}
-          <button
-            type="button"
-            className={`nav-drawer-item${currentView === 'settings' ? ' active' : ''}`}
-            onClick={() => handleNav('settings')}
-            aria-current={currentView === 'settings' ? 'page' : undefined}
-          >
-            <IconSettings />
-            <span className="nav-drawer-label">{SETTINGS_VIEW.page.title}</span>
-          </button>
-          {/* Feedback and sign out were only in the desktop account menu, so a
-              phone had no way to reach either from the menu. */}
-          {user && (
-            <button type="button" className="nav-drawer-item nav-drawer-item--text" onClick={() => { closeDrawer(); setFeedbackOpen(true); }}>
-              <span className="nav-drawer-label">{APP_SHELL.giveFeedback}</span>
+        {/* Foot, as on the desktop rail and in the mobile app's drawer: the
+            profile row opens the account menu, which holds the theme controls,
+            the account links, Help build Plot and Sign out. A viewer with no
+            profile yet keeps the plain rows. */}
+        {profile?.username ? (
+          <div className="nav-drawer-footer nav-drawer-footer--account">
+            {/* Go Premium: the pink side-nav chip for a Free member, read only
+                while the drawer is open. */}
+            {drawerOpen && !isPremiumProfile(profile) && (
+              <GoPremiumLink profile={profile} placement="side_nav" variant="chip" className="app-sidebar-item" labelClassName="app-sidebar-label" onBeforeNavigate={closeDrawer} />
+            )}
+            <AccountMenu
+              profile={profile}
+              active={accountActive}
+              current={accountActive}
+              settingsLabel={SETTINGS_VIEW.page.title}
+              onViewProfile={() => { closeDrawer(); navigate(`/u/${profile.username}`); }}
+              onSettings={() => handleNav('settings')}
+              onFeedback={() => { closeDrawer(); setFeedbackOpen(true); }}
+              onSignOut={() => { closeDrawer(); navigate('/logout'); }}
+              mode={themeMode}
+              family={themeFamily}
+              onPickMode={setThemeMode}
+              onPickFamily={setThemeFamily}
+              isPremium={isPremiumProfile(profile)}
+              onLocked={(family) => { closeDrawer(); setThemeUpgrade(family); }}
+            />
+          </div>
+        ) : (
+          <div className="nav-drawer-footer">
+            <button
+              type="button"
+              className={`nav-drawer-item${currentView === 'settings' ? ' active' : ''}`}
+              onClick={() => handleNav('settings')}
+              aria-current={currentView === 'settings' ? 'page' : undefined}
+            >
+              <IconSettings />
+              <span className="nav-drawer-label">{SETTINGS_VIEW.page.title}</span>
             </button>
-          )}
-          {user && (
-            <button type="button" className="nav-drawer-item nav-drawer-item--text nav-drawer-item--signout" onClick={() => { closeDrawer(); navigate('/logout'); }}>
-              <span className="nav-drawer-label">{SETTINGS_VIEW.signOut}</span>
-            </button>
-          )}
-        </div>
+            {user && (
+              <button type="button" className="nav-drawer-item nav-drawer-item--text" onClick={() => { closeDrawer(); setFeedbackOpen(true); }}>
+                <span className="nav-drawer-label">{APP_SHELL.giveFeedback}</span>
+              </button>
+            )}
+            {user && (
+              <button type="button" className="nav-drawer-item nav-drawer-item--text nav-drawer-item--signout" onClick={() => { closeDrawer(); navigate('/logout'); }}>
+                <span className="nav-drawer-label">{SETTINGS_VIEW.signOut}</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Tab bar (phones and tablets; the sidebar replaces it when wide) ── */}

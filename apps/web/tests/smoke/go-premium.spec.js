@@ -27,7 +27,7 @@ test('desktop: a clean pink Go Premium chip sits just above the profile, and the
   await expect(foot.getByText('7 days free')).toHaveCount(0);
   // Directly above the profile row, and exactly one nav row wide and tall.
   const chipBox = await chip.boundingBox();
-  const profileBox = await page.locator('.app-sidebar-profile').boundingBox();
+  const profileBox = await page.locator('.app-sidebar-foot .app-sidebar-profile').boundingBox();
   expect(chipBox.y + chipBox.height).toBeLessThanOrEqual(profileBox.y);
   expect(profileBox.y - (chipBox.y + chipBox.height)).toBeLessThan(24);
   const rowBox = await page.locator('.app-sidebar-nav > .app-sidebar-item').nth(1).boundingBox();
@@ -52,7 +52,7 @@ test('desktop: a clean pink Go Premium chip sits just above the profile, and the
   }
 
   // The account menu no longer repeats it.
-  await page.locator('.app-sidebar-profile').click();
+  await page.locator('.app-sidebar-foot .app-sidebar-profile').click();
   await expect(page.getByRole('menu').getByText(/Go Premium/)).toHaveCount(0);
   await page.keyboard.press('Escape');
 
@@ -71,15 +71,80 @@ test('phone web: the menu drawer leads its footer with the clean chip; the Setti
   const chip = drawer.locator('.go-premium-chip');
   await expect(chip).toHaveText('Go Premium');
   await expect(drawer.getByText('7 days free')).toHaveCount(0);
-  // Full drawer-row width, aligned with the row below it.
+  // Full row width, aligned with the profile row below it.
   // Measured in one frame: the drawer slides in, so separate reads can disagree.
   const [chipBox, rowBox] = await drawer.evaluate(el => [
     el.querySelector('.go-premium-chip'),
-    el.querySelector('.nav-drawer-footer .nav-drawer-item:not(.go-premium-chip)'),
+    el.querySelector('.nav-drawer-footer .app-sidebar-profile'),
   ].map(n => { const r = n.getBoundingClientRect(); return { x: r.x, width: r.width }; }));
   expect(Math.abs(chipBox.x - rowBox.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(chipBox.width - rowBox.width)).toBeLessThanOrEqual(1);
   await shot(page, 'card2-web-phone-menu-v4');
+});
+
+test('phone web: the profile row in the menu drawer opens the account menu', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(url);
+  await page.getByRole('button', { name: 'More' }).click();
+  const drawer = page.locator('#app-nav-drawer');
+  await expect(drawer).toHaveClass(/open/);
+  // The separate Profile, Settings, feedback and sign-out rows are gone: the
+  // profile row holds them, as on the desktop rail.
+  await expect(drawer.locator('.nav-drawer-item--signout')).toHaveCount(0);
+  await drawer.locator('.app-sidebar-profile').click();
+
+  const menu = drawer.getByRole('menu', { name: 'Account' });
+  await expect(menu).toBeVisible();
+  for (const mode of ['Light', 'Dark', 'System']) {
+    await expect(menu.getByRole('menuitemradio', { name: mode, exact: true })).toBeVisible();
+  }
+  await expect(menu.locator('.account-menu-swatch')).toHaveCount(6);
+  for (const item of ['View your profile', 'Settings', 'Give feedback', 'Sign out']) {
+    await expect(menu.getByRole('menuitem', { name: item, exact: true })).toBeVisible();
+  }
+  await expect(menu.getByRole('menuitem', { name: /Support Plot/ })).toBeVisible();
+
+  // The panel stays inside the drawer and on screen.
+  const [panel, box] = await drawer.evaluate(el => [el.querySelector('.account-menu-panel'), el]
+    .map(n => { const r = n.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }));
+  expect(panel.left).toBeGreaterThanOrEqual(box.left);
+  expect(panel.right).toBeLessThanOrEqual(box.right);
+  expect(panel.top).toBeGreaterThanOrEqual(0);
+  await shot(page, 'web-phone-account-menu');
+
+  // A Premium theme a Free viewer taps opens the upgrade sheet, not the theme.
+  await menu.locator('.account-menu-swatch').nth(1).click();
+  await expect(drawer).not.toHaveClass(/open/);
+  await expect(page.getByRole('dialog')).toBeVisible();
+});
+
+test('small phone: the account menu fits the drawer and Sign out can be reached', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto(url);
+  await page.getByRole('button', { name: 'More' }).click();
+  const drawer = page.locator('#app-nav-drawer');
+  await drawer.locator('.app-sidebar-profile').click();
+  const [panel, box] = await drawer.evaluate(el => [el.querySelector('.account-menu-panel'), el]
+    .map(n => { const r = n.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top }; }));
+  // The drawer is 272px wide here, narrower than the panel's desktop width.
+  expect(panel.left).toBeGreaterThanOrEqual(box.left);
+  expect(panel.right).toBeLessThanOrEqual(box.right);
+  expect(panel.top).toBeGreaterThanOrEqual(0);
+  const signOut = drawer.getByRole('menuitem', { name: 'Sign out', exact: true });
+  await signOut.scrollIntoViewIfNeeded();
+  await expect(signOut).toBeInViewport();
+  await shot(page, 'web-small-phone-account-menu');
+});
+
+test('phone web: View your profile in the account menu closes the drawer and opens the profile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(url);
+  await page.getByRole('button', { name: 'More' }).click();
+  const drawer = page.locator('#app-nav-drawer');
+  await drawer.locator('.app-sidebar-profile').click();
+  await drawer.getByRole('menuitem', { name: 'View your profile', exact: true }).click();
+  await expect(drawer).not.toHaveClass(/open/);
+  expect(new URL(page.url()).pathname).toBe('/u/sam');
 });
 
 test('someone who has subscribed before gets Go Premium with no trial line', async ({ page }) => {
@@ -105,7 +170,7 @@ test('a Premium member never sees it', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`${url}?billing=premium`);
   await expect(page.locator('.go-premium-chip')).toHaveCount(0);
-  await page.locator('.app-sidebar-profile').click();
+  await page.locator('.app-sidebar-foot .app-sidebar-profile').click();
   await expect(page.getByRole('menu')).toBeVisible();
   await expect(page.getByText(/Go Premium/)).toHaveCount(0);
 });
