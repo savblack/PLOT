@@ -5152,13 +5152,12 @@ a.provider-chip--link:hover {
 .home-up-next-chev svg { width: 15px; height: 15px; }
 .home-on-this-day-hit { border-bottom: 0; padding-block: 0; }
 .home-on-this-day-poster { width: 52px; height: 78px; border-radius: 8px; }
-.hist-card.home-filter-card {
-  gap: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
+/* The Show and Genre filter is a card wherever it sits in a side column:
+   Home, Your people and New Releases share this one rule so they cannot
+   drift. Home's used to sit bare on the page background (Savannah, 17 Nov
+   2026: the same panel as New Releases). */
+.home-filter-card,
+.new-releases-filter-card { gap: 24px; padding: 18px 12px 10px; }
 .home-page-nav { gap: 18px; padding: 20px 12px 12px; }
 .home-page-nav-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-right: 4px; }
 .home-page-nav-customize { border: 0; background: transparent; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
@@ -5186,9 +5185,9 @@ a.provider-chip--link:hover {
 .new-releases-stream .discover-sections { padding-bottom: 0; }
 .new-releases-stream .discover-section { scroll-margin-top: 24px; }
 .new-releases-stream .discover-section-header { padding-left: 0; padding-right: 0; }
-/* The side column is the Show and Genre filter alone, drawn as a card. The
-   Jump to index that sat above it is gone: Genre already narrows the page. */
-.new-releases-filter-card { gap: 24px; padding: 18px 8px 10px; }
+/* The side column is the Show and Genre filter alone, drawn as a card
+   (.new-releases-filter-card, styled with Home's above). The Jump to index
+   that sat above it is gone: Genre already narrows the page. */
 .home-stream .discover-section { scroll-margin-top: 24px; }
 .home-toolbar-actions { display: flex; align-items: center; gap: 10px; }
 .home-toolbar-actions > .desktop-page-filter { display: none; }
