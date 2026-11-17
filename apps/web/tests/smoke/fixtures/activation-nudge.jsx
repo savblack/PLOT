@@ -1,8 +1,8 @@
 /* eslint-disable react-refresh/only-export-components -- a smoke fixture page, never hot-reloaded */
 // The real AppShell and Home top cards (and History's empty page) for a new
-// account, for the empty-library and quick-add smoke tests. No live accounts:
-// an in-memory Supabase with no history and no import jobs. ?titles= sets the
-// already-derived library count; ?page=history shows History.
+// account, for the empty-library nudge and deferred-trial smoke tests. No live
+// accounts: an in-memory Supabase with no history and no import jobs. ?titles=
+// sets the already-derived library count; ?page=history shows History.
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { createRoot } from 'react-dom/client';
@@ -15,7 +15,6 @@ import { HistoryPage } from '../../../src/components/HistoryView.jsx';
 import ActivationNudge from '../../../src/components/ActivationNudge.jsx';
 import { activationNudgeSources } from '@plot/core/activationNudge.js';
 import { hasFeltValue } from '@plot/core/hasFeltValue.js';
-import { notifyPendingWatchQueued, onPendingWatchQueued, shouldOpenPendingWatchPanel } from '@plot/core/watchQueued.js';
 import { requestPremiumTrialPrompt } from '@plot/core/premiumTrialPrompt.js';
 import { _setPostHogClient } from '../../../src/lib/analytics.js';
 import ResponsiveDialog from '../../../src/components/ResponsiveDialog.jsx';
@@ -53,37 +52,24 @@ const item = { tmdb_id: 1396, media_type: 'tv', title: 'Breaking Bad' };
 function Shell() {
   const [view, setView] = useState(page);
   const [searches, setSearches] = useState(0);
-  const [count, setCount] = useState(titleCount);
-  const [saved, setSaved] = useState(titleCount ? [item] : []);
-  const [panelItem, setPanelItem] = useState(null);
   const [competingSheet, setCompetingSheet] = useState(trialOverlay);
   useEffect(() => { if (trialOverlay) requestPremiumTrialPrompt('fifth_title'); }, []);
-  useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type, source }) => {
-    if (shouldOpenPendingWatchPanel(source)) setPanelItem({ id: tmdb_id, type: media_type });
-  }), []);
   const app = {
     user, profile, uiPrefs: { prefs: {} },
-    accountValue: { titleCount: count, sessionCount: 1, feltValue: hasFeltValue({ titleCount: count, sessionCount: 1 }) },
+    accountValue: { titleCount, sessionCount: 1, feltValue: hasFeltValue({ titleCount, sessionCount: 1 }) },
     watchlist: {
-      items: saved, loading: false, error: null,
-      isInList: id => saved.some(row => Number(row.tmdb_id) === Number(id)),
-      addToList: async (result, opts) => {
-        setSaved(rows => [...rows, { ...result, tmdb_id: result.id }]);
-        setCount(value => value + 1);
-        notifyPendingWatchQueued({ tmdb_id: result.id, media_type: result.media_type, source: opts?.source });
-        return true;
-      },
+      items: titleCount ? [item] : [], loading: false, error: null,
+      isInList: id => Number(id) === item.tmdb_id && titleCount > 0,
     },
-    watching: { items: [], loading: false, error: false, isWatching: () => false },
+    watching: { items: [], loading: false, error: false },
     history: { entries: [], loading: false, loadError: null, isWatched: () => false },
     openSearch: () => setSearches(n => n + 1),
   };
   const sources = activationNudgeSources({ simklClientId: 'smoke-simkl' });
   return (
     <AppContext.Provider value={app}>
-      <AppShell currentView={view} navigateTo={setView} profile={profile} user={user} panelOpen={!!panelItem} onOpenSearch={app.openSearch}>
+      <AppShell currentView={view} navigateTo={setView} profile={profile} user={user} panelOpen={false} onOpenSearch={app.openSearch}>
         <p data-testid="searches" hidden>{searches}</p>
-        {panelItem && <aside data-testid="title-panel">{`${panelItem.type} ${panelItem.id}`}</aside>}
         {competingSheet && <ResponsiveDialog title="Fill your calendar" onClose={() => setCompetingSheet(false)}>
           <button type="button" onClick={() => setCompetingSheet(false)}>Close calendar sheet</button>
         </ResponsiveDialog>}

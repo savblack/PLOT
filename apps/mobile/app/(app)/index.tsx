@@ -70,10 +70,9 @@ import FinishingTouches, { useFinishingTouchesState } from '../../components/Fin
 import PremiumFirstWeek, { usePremiumFirstWeekState } from '../../components/PremiumFirstWeek';
 import PremiumTrialPrompt from '../../components/PremiumTrialPrompt';
 import ActivationNudge, { useActivationNudgeVisible } from '../../components/ActivationNudge';
-import QuickAdd from '../../components/QuickAdd';
 import ImportHistoryModal from '../../components/ImportHistoryModal';
 import ImportJobCard, { type ImportJobRow } from '../../components/ImportJobCard';
-import { importCardsShown, useImportJobs } from '@plot/core/importJobs.js';
+import { useImportJobs } from '@plot/core/importJobs.js';
 import { markImportDone } from '../../lib/finishingTouches';
 import { takePendingImportSource } from '../../lib/pendingImport';
 import { IMPORT_ENTRY_POINTS } from '@plot/core/importPipeline.js';
@@ -677,7 +676,7 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
      ACTIVATED analytics, and left the shared store stale until app restart:
      save on Home, open the title's panel, and it still offered "Add to
      Watchlist". */
-  const { favorites, watchlist, watching, history, userId, profile, user, customLists, refreshProfile, accountValue } = useAppData();
+  const { favorites, watchlist, watching, history, userId, profile, user, customLists, refreshProfile } = useAppData();
   const imports = useImportJobs(mode === 'home' ? userId : null);
   const homeLayout = useHomeLayout({ userId, saved: profile?.home_layout, onPersisted: refreshProfile });
   const router = useRouter();
@@ -1197,12 +1196,9 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           </TouchableOpacity>
         )}
         {userId && <ImportJobCard userId={userId} imports={imports} onReview={setReviewJob} onFinished={onImportFinished} />}
-        {/* Quick-add leads through the first four unique titles. */}
-        {accountValue.titleCount != null && accountValue.titleCount < 5 && !importSource && !reviewJob && importCardsShown(imports).length === 0 && <QuickAdd />}
-        {accountValue.titleCount === 0 && !firstWeek.visible
-          ? null
-          : nudgeVisible && accountValue.titleCount == null
-            ? <ActivationNudge onImport={setImportSource} />
+        {/* No titles at all: the empty-library nudge takes the checklist's place. */}
+        {nudgeVisible
+          ? <ActivationNudge onImport={setImportSource} />
           : firstWeek.visible
             ? <PremiumFirstWeek onState={firstWeek.setState} />
             : <FinishingTouches state={ft.state} onState={ft.setState} />}

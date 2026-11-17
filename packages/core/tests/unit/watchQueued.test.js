@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  CALENDAR_SUGGESTIONS_SOURCE, QUICK_ADD_SOURCE, onPendingWatchQueued,
+  CALENDAR_SUGGESTIONS_SOURCE, onPendingWatchQueued,
   notifyPendingWatchQueued, shouldOpenPendingWatchPanel,
 } from '../../watchQueued.js';
 
@@ -31,8 +31,7 @@ test('a listener that throws does not stop the others or the save', () => {
   stopGood();
 });
 
-test('quick-add and calendar saves stay on their surface while ordinary saves open a panel', () => {
-  assert.equal(shouldOpenPendingWatchPanel(QUICK_ADD_SOURCE), false);
+test('calendar saves stay on their surface while ordinary saves open a panel', () => {
   assert.equal(shouldOpenPendingWatchPanel(CALENDAR_SUGGESTIONS_SOURCE), false);
   assert.equal(shouldOpenPendingWatchPanel('in_app'), true);
   assert.equal(shouldOpenPendingWatchPanel(undefined), true);

@@ -103,9 +103,6 @@ export const EVENTS = Object.freeze({
   PREMIUM_PROMPT_SUPPRESSED: 'premium_prompt_suppressed',
   PREMIUM_PROMPT_CLICKED: 'premium_prompt_clicked',
   PREMIUM_PROMPT_DISMISSED: 'premium_prompt_dismissed',
-  QUICK_ADD_SHOWN: 'quick_add_shown',
-  QUICK_ADD_FOCUSED: 'quick_add_focused',
-  QUICK_ADD_TITLE_ADDED: 'quick_add_title_added',
   // The signed-in "Go Premium" link (core/goPremiumLink.js) was tapped.
   // Properties: placement ('side_nav' | 'settings'), trial (eligible for the
   // 7 days free; the side-nav chip never shows that text).
