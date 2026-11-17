@@ -84,6 +84,8 @@ Merging `main`, production database writes, deploys, and public posts still wait
 
 Pass `--apply` to delete Claude and Codex chat files older than 14 days. Cursor's chat storage is listed and not deleted. Quit Cursor before removing that folder by hand. Pass `--apply --xcode` to delete DerivedData, simulators, and iOS device support. Those take a long time to rebuild.
 
+`pnpm run worktrees -- finished` lists every worktree as `finished` or `keep`, with the reason. A worktree is finished only when GitHub says its pull request merged, its newest commit is the one that merged, and it has no edits besides a leftover `AGENT_HANDOFF.md`. A worktree with no branch counts as finished when its commit is already on `main`. Anything it cannot check (no pull request, `gh` signed out) is kept. Pass `--remove` to delete the finished folders. Branches and pull requests on GitHub are not touched. Follow it with `pnpm store prune`: on 2026-11-17 removing six worktrees freed 0.6GB and the prune after it freed 6GB, because worktree packages are mostly APFS clones of the store.
+
 Cloud chats (Cursor cloud, Manus, grok.com) are not on this Mac. Archive those in the product.
 
 A local model is the wrong tool for this cleanup. The script already knows the rules.

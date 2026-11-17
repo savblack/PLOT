@@ -104,7 +104,9 @@ Before the pull request merges, run `pnpm run worktrees -- done` and commit the 
 
 ## Cleanup (after merge or close)
 
-From the main checkout, only when the session is `done` or the pull request is merged, and the tree is clean:
+To clear every merged worktree at once, run `pnpm run worktrees -- finished` to see the list, then `pnpm run worktrees -- finished --remove`, then `pnpm store prune`. It keeps anything with edits, an open or missing pull request, or commits after the merge.
+
+To remove one by hand, from the main checkout, only when the session is `done` or the pull request is merged, and the tree is clean:
 
 ```bash
 git worktree remove ../PLOT-worktrees/<YYYY-MM-DD-task>

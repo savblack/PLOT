@@ -9,11 +9,14 @@
 //   pnpm run worktrees -- pause --next "The empty state test is still red."
 //   pnpm run worktrees -- claim --agent claude-code
 //   pnpm run worktrees -- attach agent/2026-10-17-watchlist-empty
+//   pnpm run worktrees -- finished            (lists merged worktrees)
+//   pnpm run worktrees -- finished --remove   (deletes those folders)
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { HANDOFF_FILE, SESSION_FILE, lockIsStale, renderHandoff } from './agent/handoff.mjs';
+import { changedPaths, worktreeFinished } from './agent/worktreeFinished.mjs';
 
 const git = (args, cwd) => execFileSync('git', args, { encoding: 'utf8', cwd }).trim();
 
@@ -201,6 +204,76 @@ const commandList = () => {
   }
 };
 
+// Asks GitHub for the branch's newest pull request. Returns null when there
+// is none, and undefined when gh is missing or signed out, so the caller
+// keeps the worktree rather than guessing.
+const prFor = (branch) => {
+  try {
+    const out = execFileSync('gh', ['pr', 'list', '--head', branch, '--state', 'all', '--limit', '1',
+      '--json', 'state,headRefOid,number'], { encoding: 'utf8', cwd: mainRoot(), stdio: ['ignore', 'pipe', 'ignore'] });
+    return JSON.parse(out)[0] || null;
+  } catch {
+    return undefined;
+  }
+};
+
+const commandFinished = (remove) => {
+  const main = mainRoot();
+  const here = repoRoot();
+  try {
+    git(['fetch', 'origin', 'main'], main);
+  } catch {
+    // Offline: detached worktrees are judged against the last fetched main.
+  }
+  const blocks = git(['worktree', 'list', '--porcelain'], main).split('\n\n').filter(Boolean);
+  const finished = [];
+  for (const block of blocks) {
+    const path = (block.match(/^worktree (.+)$/m) || [])[1] || '';
+    if (!path || !existsSync(path)) continue;
+    const branch = (block.match(/^branch refs\/heads\/(.+)$/m) || [])[1] || '';
+    const head = git(['rev-parse', 'HEAD'], path);
+    // Not git(): its trim() would eat the leading space of the first line.
+    const porcelain = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8', cwd: path });
+    let detachedOnMain = false;
+    if (!branch) {
+      try {
+        git(['merge-base', '--is-ancestor', head, 'origin/main'], main);
+        detachedOnMain = true;
+      } catch {
+        detachedOnMain = false;
+      }
+    }
+    const verdict = worktreeFinished({
+      isMain: path === main,
+      isCurrent: path === here && path !== main,
+      changedFiles: changedPaths(porcelain),
+      branch,
+      head,
+      detachedOnMain,
+      pr: branch && path !== main ? prFor(branch) : undefined,
+    });
+    console.log(`${verdict.finished ? 'finished' : 'keep'}\t${branch || '(detached)'}\t${path}\t${verdict.reason}`);
+    if (verdict.finished) finished.push(path);
+  }
+  if (!finished.length) {
+    console.log('\nNothing to remove.');
+    return;
+  }
+  if (!remove) {
+    console.log(`\n${finished.length} finished. Run \`pnpm run worktrees -- finished --remove\` to delete those folders.`);
+    console.log('Branches and pull requests on GitHub are not touched.');
+    return;
+  }
+  for (const path of finished) {
+    // --force only because AGENT_HANDOFF.md is often left untracked; the
+    // verdict above already refused any other change.
+    git(['worktree', 'remove', '--force', path], main);
+    console.log(`Removed ${path}`);
+  }
+  git(['worktree', 'prune'], main);
+  console.log('\nRun `pnpm store prune` to also drop packages nothing uses any more.');
+};
+
 // The docs say `pnpm run worktrees -- new <task>`, and pnpm 10 passes that
 // `--` through. Left in, `new` read args[1] as the task name and created
 // agent/<date>-new (seen 2026-11-10).
@@ -219,8 +292,9 @@ try {
   else if (sub === 'claim') commandClaim(flag('--agent'), args.includes('--force'));
   else if (sub === 'attach') commandAttach(args[1]);
   else if (sub === 'done') commandDone();
+  else if (sub === 'finished') commandFinished(args.includes('--remove'));
   else {
-    console.error('Use list, new, pause, claim, attach, or done.');
+    console.error('Use list, new, pause, claim, attach, done, or finished.');
     process.exit(2);
   }
 } catch (error) {
