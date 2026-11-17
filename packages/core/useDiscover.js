@@ -26,7 +26,7 @@ const MIN_RAIL_SIZE = 14;
 
 /**
  * Most Binged Shows: TMDB's trending-today TV, English-origin, with posters.
- * Shared by Home's Picks (its TV leader) and the New Releases page.
+ * Home's Picks reads its TV leader from this. The rail itself is gone (17 Nov 2026).
  * @param {any[] | null | undefined} trendingTvResults
  * @param {{ hideKids?: boolean }} [options]
  * @returns {any[]}
@@ -43,8 +43,8 @@ const trendingTvItemsFrom = (results, hideKids) => dedupeByMediaId(
 /**
  * Movies in cinemas today, from TMDB's now-playing results: English-origin,
  * kids content dropped when asked, released on or before `today` (so they and
- * "coming soon" never share a title), flagged `_cinema`. Web's Now Showing
- * rail and plot's Picks read this, and so does mobile's Picks.
+ * "coming soon" never share a title), flagged `_cinema`. plot's Picks reads
+ * this on web and mobile. The Now Showing rail is gone (17 Nov 2026).
  * @param {any[] | null | undefined} nowPlayingResults
  * @param {{ today: string, hideKids?: boolean }} options
  * @returns {any[]}

@@ -116,7 +116,9 @@ test('pins: only Premium sees them, and only ones that still resolve', () => {
 
 test('normalize: a layout saved with the shelves that moved to New Releases still loads', () => {
   const l = normalizeHomeLayout({ order: ['platforms', 'binged', 'hot', 'releases', 'cinema'], hidden: ['binged', 'weekly'] });
-  assert.equal(l.order[0], 'hot');
+  // Top 10 by Platform is a Home shelf again (17 Nov 2026), so it keeps the
+  // place the viewer gave it; the other three stay gone.
+  assert.deepEqual(l.order.slice(0, 2), ['platforms', 'hot']);
   assert.deepEqual([...l.order].sort(), [...HOME_SECTION_IDS].sort());
   assert.deepEqual(l.hidden, ['weekly']);
 });

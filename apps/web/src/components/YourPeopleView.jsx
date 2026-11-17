@@ -162,9 +162,7 @@ export function YourPeoplePage({ follows, items, today, loading, view, setView, 
             </div>
             <FollowSearch follow={follow} />
           </section>
-          <section className="hist-card home-filter-card">
-            <SideFilters typeRows={TYPE_ROWS} typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={[]} setGenreFilters={() => {}} genres={[]} showGenre={false} />
-          </section>
+            <SideFilters className="home-filter-card" typeRows={TYPE_ROWS} typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={[]} setGenreFilters={() => {}} genres={[]} showGenre={false} />
         </aside>
         <div className="cal-stream people-stream">
           {!loading && follows.length === 0 && <EmptyState body={P.page.empty} />}

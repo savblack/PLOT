@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { tmdb, isEnglishOriginTitle, excludeKidsContent } from './tmdb.js';
 import { filterByGenre, filterByType } from './mediaFilters.js';
 import { TV_KEYWORD_GENRES, tvKeywordIds } from './keywordGenres.js';
-import { bingedShowsFrom, currentCinemaMovies } from './useDiscover.js';
-import { localDateStr } from './date.js';
 
 const hasPoster = item => !!item.poster_path;
 const MIN_RAIL_SIZE = 14;
@@ -109,34 +107,18 @@ async function loadGenreRail({ movieGenreId, tvGenreId, tvKeywordGenre }, hideKi
     .slice(0, Math.max(MIN_RAIL_SIZE, 18));
 }
 
-function prepareRecentReleases(recentReleases, hideKids) {
-  const recentByDate = excludeKidsContent([...(recentReleases?.tv || []), ...(recentReleases?.movies || [])]
-    .filter(isEnglishOriginTitle), hideKids)
-    .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''));
-  const seenIds = new Set();
-  return recentByDate.filter(item => {
-    const key = `${item.media_type}-${item.id}`;
-    if (seenIds.has(key)) return false;
-    seenIds.add(key);
-    return true;
-  }).filter(hasPoster).slice(0, Math.max(MIN_RAIL_SIZE, 18));
-}
-
 /**
- * Load the New Releases page: the last 30 days, Most Binged Shows, Now
- * Showing, and one rail per genre. Only this page loads it; Home has no
- * releases shelf since November 2026.
+ * Load the New Releases page: one rail per genre and nothing else. The last
+ * 30 days, Most Binged Shows and Now Showing rows were removed from both apps
+ * on 17 Nov 2026. Now-playing is still read, because the Cinema type filter
+ * keys off it (tagCinemaReleases).
  *
  * @param {{ hideKids?: boolean, client?: typeof tmdb }} [options]
  */
 export async function loadNewReleaseData({ hideKids = false, client = tmdb } = {}) {
-  const recentPromise = client.getRecentReleases(30, []);
   const genreDefinitions = buildGenreRailDefinitions(await client.getGenreCatalog());
-  const [recentReleases, nowPlaying, trendingTv, ...genreResults] = await Promise.all([
-    recentPromise,
+  const [nowPlaying, ...genreResults] = await Promise.all([
     client.getNowPlaying(),
-    // Most Binged Shows heads the page (it was a Home shelf); a failure only empties that row.
-    Promise.resolve().then(() => client.getTrending('tv', 'day')).catch(() => null),
     ...genreDefinitions.map(rail => loadGenreRail(rail, hideKids, client)),
   ]);
 
@@ -150,12 +132,7 @@ export async function loadNewReleaseData({ hideKids = false, client = tmdb } = {
     nowPlaying?.results || [],
   );
 
-  return {
-    recent: prepareRecentReleases(recentReleases, hideKids),
-    genreRails,
-    binged: bingedShowsFrom(trendingTv?.results, { hideKids }),
-    cinema: currentCinemaMovies(nowPlaying?.results, { today: localDateStr(), hideKids }).slice(0, 10),
-  };
+  return { genreRails };
 }
 
 /**
@@ -163,12 +140,12 @@ export async function loadNewReleaseData({ hideKids = false, client = tmdb } = {
  * See {@link useDiscover} — the app supplies `hideKids`.
  */
 export function useNewReleases({ hideKids = false } = {}) {
-  const [data,    setData]    = useState({ recent: [], genreRails: [], binged: [], cinema: [] });
+  const [data,    setData]    = useState({ genreRails: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const emptyData = { recent: [], genreRails: [], binged: [], cinema: [] };
+    const emptyData = { genreRails: [] };
 
     async function load() {
       setLoading(true);
