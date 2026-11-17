@@ -14,7 +14,9 @@ import RailArrows from './RailArrows.jsx';
 import { useRailScroll } from '../hooks/useRailScroll.js';
 import { useGenres } from '../hooks/useGenres.js';
 import { useDiscover } from '../hooks/useDiscover.js';
-import { tmdb } from '@plot/core/tmdb.js';
+import { usePlatformCharts } from '../hooks/usePlatformCharts.js';
+import { OFFICIAL_PLATFORMS } from '@plot/core/usePlatformCharts.js';
+import { tmdb, getTmdbRegion } from '@plot/core/tmdb.js';
 import { filterByType, filterByGenre } from '../utils/mediaFilters.js';
 import { MEDIA } from '../copy/media.js';
 import { cardMetaLine } from '@plot/core/media.js';
@@ -144,6 +146,7 @@ const HOME_SECTION = {
   hot: { id: 'home-hot', label: 'Hot Right Now', navLabel: 'Hot Right Now' },
   weekly: { id: 'home-weekly', label: 'Top 20 This Week', navLabel: 'Top 20 This Week' },
   anticipated: { id: 'home-anticipated', label: DISCOVER_VIEW.mostAnticipatedTitle, navLabel: DISCOVER_VIEW.mostAnticipatedTitle },
+  platforms: { id: 'home-platforms', label: 'Top 10 by Platform', navLabel: 'Top 10 By Platform' },
 };
 
 export function HomePageNav({ sections }) {
@@ -483,6 +486,106 @@ function WeeklyChart({ id, items, openPanel, watchlist }) {
   );
 }
 
+/* ── One platform's official chart ──
+   The logo is the row label; a Movies / TV switch sits under it when both
+   lists apply. A platform with no synced rows still gets a row — a compact
+   one that says the chart is unavailable rather than disappearing, so the
+   section's shape does not change from week to week with the sync's fortunes. */
+/* The hook only resolves a logo for platforms that have rows; every row here
+   shows its logo, so look them all up once from TMDB's provider list. */
+function usePlatformLogos() {
+  const [logos, setLogos] = useState({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await tmdb.getWatchProvidersForRegion('tv', getTmdbRegion());
+        const providers = res?.results || [];
+        const found = {};
+        for (const def of OFFICIAL_PLATFORMS) {
+          const p = providers.find(p => def.match.test(p.provider_name || ''));
+          if (p?.logo_path) found[def.key] = p.logo_path;
+        }
+        if (!cancelled) setLogos(found);
+      } catch { /* logos are optional; the initial stands in */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return logos;
+}
+
+function PlatformRow({ def, chart, logoPath, openPanel, watchlist, typeFilters, genreFilters }) {
+  const showMovies = typeFilters.includes('movie') || typeFilters.includes('cinema');
+  const showTv     = typeFilters.includes('tv');
+  const movies = chart && showMovies ? filterByGenre(chart.movies, genreFilters) : [];
+  const tv     = chart && showTv     ? filterByGenre(chart.tv, genreFilters)     : [];
+  const [type, setType] = useState('movie');
+  const rail = useRailScroll();
+
+  const lists = [
+    movies.length ? { id: 'movie', label: MEDIA.movies, items: movies } : null,
+    tv.length     ? { id: 'tv',    label: MEDIA.tv,     items: tv }     : null,
+  ].filter(Boolean);
+  const active = lists.find(l => l.id === type) ?? lists[0];
+
+  return (
+    <div className={`discover-plat-row${active ? '' : ' discover-plat-row--empty'}`}>
+      <div className="discover-plat-label">
+        <div className="discover-plat-ident">
+          {(logoPath || chart?.logo_path)
+            ? <img className="discover-plat-logo" src={`https://image.tmdb.org/t/p/w45${logoPath || chart.logo_path}`} alt="" />
+            : <span className="discover-plat-logo discover-plat-logo-fallback" aria-hidden="true">{def.name.slice(0, 1)}</span>
+          }
+          <span className="discover-plat-name">{def.name}</span>
+        </div>
+        {!active && <span className="discover-plat-note">{MEDIA.chartUnavailable}</span>}
+        {lists.length > 1 && (
+          <div className="discover-plat-switch" role="tablist" aria-label={`${def.name} chart`}>
+            {lists.map(l => (
+              <button
+                key={l.id}
+                type="button"
+                role="tab"
+                aria-selected={l.id === active.id}
+                className={`discover-plat-switch-btn${l.id === active.id ? ' active' : ''}`}
+                onClick={() => setType(l.id)}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {active && (
+        <div className="discover-plat-rail-wrap">
+          <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>
+          <ScrollRail rail={rail} className="discover-plat-rail">
+            {active.items.slice(0, 10).map((item, i) => (
+              <RankedCard key={`${item.id}-${i}`} item={item} rank={item._rank ?? i + 1} showMeta={false} openPanel={openPanel} watchlist={watchlist} />
+            ))}
+          </ScrollRail>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlatformCharts({ id, platformList, openPanel, watchlist, typeFilters, genreFilters }) {
+  const byKey = Object.fromEntries(platformList.map(p => [p.key, p]));
+  const logos = usePlatformLogos();
+  return (
+    <section id={id} className="discover-section">
+      <DiscoverSectionHeader title="Top 10 by Platform" subtitle="Official charts" />
+      <div className="discover-plat-list">
+        {OFFICIAL_PLATFORMS.map(def => (
+          <PlatformRow key={def.key} def={def} chart={byKey[def.key]} logoPath={logos[def.key]} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ── Your people ── board R2-4b, or the 4c invite for someone who follows
    nobody yet. Following is Premium, but what someone already follows (a
    lapsed member's follows stay stored) shows for everyone, as long as there
@@ -563,6 +666,10 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     today: todayStr,
   });
   const { data, loading } = useDiscover();
+  // Hard-coded official-chart platforms: the same set for everyone, unrelated
+  // to the user's own streaming selections. The hook returns only platforms
+  // with synced rows; PlatformCharts fills in the rest as unavailable.
+  const platformList = usePlatformCharts();
   // Because you watched / Recommended for you: TMDB's per-title
   // recommendations ranked against this viewer's history (recommendations.js).
   const history = useHistory(user?.id);
@@ -651,6 +758,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
     weekly: weekly.length > 0,
     people: peopleShelf.visible,
     anticipated: anticipatedMovies.length > 0,
+    platforms: platformList.length > 0,
   };
   const orderedIds = visibleHomeSections(homeLayout.layout, Object.keys(available).filter(id => available[id]));
   const pinId = (shelf) => `home-pin-${shelf.key.replace(':', '-')}`;
@@ -713,6 +821,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
         ))}
       </RailSection>
     ),
+    platforms: () => <PlatformCharts key="platforms" id={HOME_SECTION.platforms.id} platformList={platformList} openPanel={openPanel} watchlist={watchlist} typeFilters={typeFilters} genreFilters={genreFilters} />,
   };
 
   return (

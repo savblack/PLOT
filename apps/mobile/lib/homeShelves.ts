@@ -15,4 +15,6 @@ export const HOME_SHELF_LABELS: Record<string, string> = {
   weekly: 'Top 20 This Week',
   people: PEOPLE.shelf.title,
   anticipated: DISCOVER_VIEW.mostAnticipatedTitle,
+  // Same words as the section header Home draws (index.tsx).
+  platforms: 'Top 10 by Platform',
 };

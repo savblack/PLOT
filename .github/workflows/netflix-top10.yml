@@ -1,10 +1,8 @@
 name: Netflix Top 10 — daily sync
 
 on:
-  # Switched off on 2026-11-17 (Savannah): Top 10 by Platform was removed from
-  # both apps, so nothing reads platform_charts. The schedule is gone; the job
-  # can still be run by hand. To bring the charts back, restore the schedule
-  # (it was `cron: '0 12 * * *'`, daily at 12:00 UTC).
+  schedule:
+    - cron: '0 12 * * *' # 12:00 UTC daily — free Tudum feed, no API quota to manage
   workflow_dispatch:
 
 permissions:

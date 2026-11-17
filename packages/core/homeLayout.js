@@ -26,6 +26,7 @@ export const HOME_SECTION_IDS = Object.freeze([
   'people',
   'anticipated',
   'because',
+  'platforms',
 ]);
 /* New Releases, Most Binged, Now Showing and Top 10 by Platform used to be
    Home shelves too. They moved to the New Releases page (November 2026) so
@@ -33,6 +34,8 @@ export const HOME_SECTION_IDS = Object.freeze([
    from both apps on 17 Nov 2026 (Savannah). The New Releases page is its
    genre rails. A saved layout that still names them is fine: unknown ids are
    dropped on read.
+   Top 10 by Platform (`platforms`) came back to Home the same day, last in
+   the default order, where it sat before the move (Savannah, 17 Nov 2026).
    Recommended for you and Because you watched (recommendations.js) joined
    in November 2026: Recommended for you after Continue watching, Because you
    watched last, under Most Anticipated (Savannah, 16 Nov 2026). */

@@ -566,8 +566,8 @@ Included so a search for "scheduled marketing" does not stop at the first cron.
 
 | Workflow | Schedule | What it actually feeds |
 | --- | --- | --- |
-| [`.github/workflows/netflix-top10.yml`](../../.github/workflows/netflix-top10.yml) | Off since 2026-11-17 (manual run only; was daily 12:00 UTC) | `platform_charts` for the app's Netflix chart, which was removed from both apps. Netflix Tudum TSV. Not Buffer, not /whats-on. |
-| [`.github/workflows/streaming-top10.yml`](../../.github/workflows/streaming-top10.yml) | Off since 2026-11-17 (manual run only; was Wednesday 12:30 UTC) | Prime, Max, Apple, Disney charts via Movie of the Night (or RapidAPI). Weekly because the free tier is small. App charts, not social. |
+| [`.github/workflows/netflix-top10.yml`](../../.github/workflows/netflix-top10.yml) | Daily 12:00 UTC | `platform_charts` for the app's Netflix chart. Netflix Tudum TSV. Not Buffer, not /whats-on. |
+| [`.github/workflows/streaming-top10.yml`](../../.github/workflows/streaming-top10.yml) | Wednesday 12:30 UTC | Prime, Max, Apple, Disney charts via Movie of the Night (or RapidAPI). Weekly because the free tier is small. App charts, not social. |
 | [`.github/workflows/broadcast-guide.yml`](../../.github/workflows/broadcast-guide.yml) | Every 6 hours, and on guide-file pushes | TV guide snapshots in [`scripts/guide/refresh.py`](../../scripts/guide/refresh.py). Product data. Health artifact kept 7 days. |
 
 Auth email templates (`scripts/push-auth-emails.mjs`) and the shared footer/token checks are brand consistency for product email, not a content calendar.

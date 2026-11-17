@@ -1,12 +1,13 @@
 name: Streaming Top 10 — weekly sync (Prime / Max / Apple / Disney)
 
 on:
-  # Switched off on 2026-11-17 (Savannah): Top 10 by Platform was removed from
-  # both apps, so nothing reads platform_charts. The schedule is gone; the job
-  # can still be run by hand. To bring the charts back, restore the schedule
-  # (it was `cron: '30 12 * * 3'`, Wednesday 12:30 UTC). Keep it WEEKLY: the
-  # Movie of the Night free tier is 500 requests/month and each run costs
-  # 4 services × active regions; daily crossed the cap at the 5th region.
+  schedule:
+    # Wednesday 12:30 UTC, just after the Netflix sync. WEEKLY on purpose: the
+    # Movie of the Night free tier is 500 requests/month and each run costs
+    # 4 services × active regions. Daily crossed the cap at the 5th region
+    # (4 × 7 × 30 = 840) and every platform went dark for the rest of the
+    # month. Weekly is 4 × regions × ~4.3 — room for ~29 regions.
+    - cron: '30 12 * * 3'
   workflow_dispatch:
 
 permissions:
