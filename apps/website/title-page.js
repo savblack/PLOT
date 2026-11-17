@@ -62,10 +62,14 @@ var g=document.createElement('script');g.async=true;g.crossOrigin='anonymous';g.
 document.addEventListener('click', function (event) {
   var button = event.target && event.target.closest && event.target.closest('.trailer-play[data-video-key]');
   if (!button) return;
-  var key = button.getAttribute('data-video-key');
-  if (!/^[A-Za-z0-9_-]{11}$/.test(key || '')) return;
+  var match = /^([A-Za-z0-9_-]{11})$/.exec(button.getAttribute('data-video-key') || '');
+  if (!match) return;
+  var key = match[1];
   var iframe = document.createElement('iframe');
-  iframe.src = 'https://www.youtube-nocookie.com/embed/' + key + '?autoplay=1&rel=0';
+  var src = new URL(encodeURIComponent(key), 'https://www.youtube-nocookie.com/embed/');
+  src.searchParams.set('autoplay', '1');
+  src.searchParams.set('rel', '0');
+  iframe.src = src.href;
   iframe.title = button.getAttribute('aria-label') || 'Official trailer';
   iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
   iframe.referrerPolicy = 'strict-origin-when-cross-origin';

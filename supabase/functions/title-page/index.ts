@@ -77,7 +77,7 @@ ${head}
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${SITE}/_partials/footer.css">
 <link rel="stylesheet" href="${SITE}/title-page.css?v=c65a086a0c38">
-<script defer src="${SITE}/title-page.js?v=69106bab580c"></script>
+<script defer src="${SITE}/title-page.js?v=2d490a01fc6d"></script>
 </head>
 <body>
 ${GTM_NOSCRIPT}
