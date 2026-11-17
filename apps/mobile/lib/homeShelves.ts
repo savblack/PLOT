@@ -14,5 +14,6 @@ export const HOME_SHELF_LABELS: Record<string, string> = {
   hot: 'Hot Right Now',
   weekly: 'Top 20 This Week',
   people: PEOPLE.shelf.title,
+  streaming: DISCOVER_VIEW.nowOnStreamingTitle,
   anticipated: DISCOVER_VIEW.mostAnticipatedTitle,
 };

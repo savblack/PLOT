@@ -24,6 +24,7 @@ export const HOME_SECTION_IDS = Object.freeze([
   'hot',
   'weekly',
   'people',
+  'streaming',
   'anticipated',
   'because',
 ]);
@@ -33,7 +34,9 @@ export const HOME_SECTION_IDS = Object.freeze([
    still names them is fine: unknown ids are dropped on read.
    Recommended for you and Because you watched (recommendations.js) joined
    in November 2026: Recommended for you after Continue watching, Because you
-   watched last, under Most Anticipated (Savannah, 16 Nov 2026). */
+   watched last, under Most Anticipated (Savannah, 16 Nov 2026).
+   Now on Streaming (movies that left cinemas for rent or buy) joined on
+   17 Nov 2026, above Most Anticipated: what just arrived, then what is next. */
 
 /** What a pin can point at. `watchlist` has one fixed id; `list` is a custom list id; `person` is a TMDB person id. */
 export const PIN_KINDS = Object.freeze(['watchlist', 'list', 'person']);
