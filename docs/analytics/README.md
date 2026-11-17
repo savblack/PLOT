@@ -199,27 +199,24 @@ or starts its second server-recorded session. `premium_prompt_suppressed` record
 trigger (`onboarding`, `trakt_import`, `fifth_title`, or `second_session`).
 The Settings Premium link and deliberate feature gates remain available.
 
-Home's quick-add appears at 0–4 unique titles. The zero-title Home activation
-funnel is `quick_add_shown` → `quick_add_focused` → `quick_add_title_added`.
-Shown and focused record `title_count` and `surface: home`; focused fires once
-per mount. Title added records the count after a successful one-tap save,
-`list` (`watching` or `watchlist`), and `surface: home`.
-The underlying `watchlist_saved` or `watching_started` event also carries
-`source: quick_add`.
+The Home quick-add was removed on 17 Nov 2026. Its `quick_add_shown`,
+`quick_add_focused`, and `quick_add_title_added` events are no longer emitted.
+The empty-library activation nudge is back on Home.
 
 ### The empty-library nudge
 
-An account with no titles in its watchlist, watching or history sees the Home
-quick-add. History still shows "Add your first show or movie" with an
+An account with no titles in its watchlist, watching or history sees "Add
+your first show or movie" (any number counts; there is no target) with an
 import button for each source confirmed end to end in production
 (`ACTIVATION_NUDGE_SOURCE_IDS` in `packages/core/activationNudge.js`, Trakt and
-Simkl as of 12 Nov 2026). The History nudge replaces its empty state on web
-and is gone at the first title. `activation_nudge_*` events remain on the
-History nudge; Home quick-add uses its own events above.
+Simkl as of 12 Nov 2026). It sits in Home's checklist slot on web and mobile,
+replaces History's empty state on web, and is gone at the first title. On web,
+an import showing takes precedence over the nudge. `activation_nudge_*`
+events fire on both surfaces.
 
 | Event | When | Properties |
 |---|---|---|
-| `activation_nudge_shown` | The nudge drew (once per mount) | `surface: 'history' \| 'my_lists'` |
+| `activation_nudge_shown` | The nudge drew (once per mount) | `surface: 'home' \| 'history' \| 'my_lists'` |
 | `activation_nudge_add_clicked` | Find a title (opens Search) | `surface` |
 | `activation_nudge_import_clicked` | An import source button | `surface`, `source` (import platform id, e.g. `trakt`) |
 

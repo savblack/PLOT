@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { feltValueSuppressionReason, hasFeltValue, quickAddCountAfterAdd, quickAddProgress, uniqueLibraryTitleCount } from '../../hasFeltValue.js';
+import { feltValueSuppressionReason, hasFeltValue, uniqueLibraryTitleCount } from '../../hasFeltValue.js';
 import { accountSessionCountForUser, recordAccountSession, shouldRecheckAccountSession, shouldStartAccountSession } from '../../accountSession.js';
-import { QUICK_ADD } from '../../copy/quickAdd.js';
-import { EVENTS } from '../../analyticsEvents.js';
 
 const ready = rows => ({ items: rows, entries: rows, loading: false, error: false, loadError: false });
 const title = (tmdb_id, media_type = 'movie') => ({ tmdb_id, media_type });
@@ -25,17 +23,6 @@ test('unique count deduplicates lists and repeated history by media type plus TM
   assert.equal(count, 6);
   assert.equal(uniqueLibraryTitleCount({ watchlist: ready([]), watching: ready([]), history: { ...ready([]), loading: true } }), null);
   assert.equal(uniqueLibraryTitleCount({ watchlist: { ...ready([]), error: 'failed' }, watching: ready([]), history: ready([]) }), null);
-});
-
-test('quick add copy, progress and analytics event', () => {
-  assert.equal(quickAddProgress(2), 2);
-  assert.equal(quickAddProgress(8), 5);
-  assert.equal(quickAddCountAfterAdd(4, false), 5);
-  assert.equal(quickAddCountAfterAdd(4, true), 4);
-  assert.equal(QUICK_ADD.progress(1), '1 title in your library');
-  assert.equal(QUICK_ADD.progress(3), '3 titles in your library');
-  assert.equal(QUICK_ADD.hint, 'Movies go to your Watchlist');
-  assert.equal(EVENTS.QUICK_ADD_FOCUSED, 'quick_add_focused');
 });
 
 test('suppression reason follows known session and title state', () => {

@@ -39,13 +39,3 @@ export function feltValueSuppressionReason({ titleCount, sessionCount }) {
   return Number.isInteger(titleCount) && titleCount >= 1 && titleCount < 5
     && Number.isInteger(sessionCount) && sessionCount >= 1 ? 'titles_lt_5' : 'first_session';
 }
-
-/** @param {number | null | undefined} titleCount */
-export function quickAddProgress(titleCount) {
-  return Number.isInteger(titleCount) ? Math.min(Math.max(titleCount, 0), 5) : 0;
-}
-
-/** @param {number | null | undefined} titleCount @param {boolean} alreadyInLibrary */
-export function quickAddCountAfterAdd(titleCount, alreadyInLibrary) {
-  return (Number.isInteger(titleCount) ? titleCount : 0) + (alreadyInLibrary ? 0 : 1);
-}

@@ -346,7 +346,7 @@ export default function App() {
   // Out-of-panel save (Discover card, search row, …): open the title so the
   // watch prompt can show in the same session. Skip if that title is already open.
   useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type, source }) => {
-    // Quick-add and calendar saves stay on their own surfaces.
+    // Calendar suggestions stay on their own surface.
     if (!shouldOpenPendingWatchPanel(source)) return;
     const open = panelItemRef.current;
     if (open && Number(open.id) === Number(tmdb_id) && open.type === media_type) return;

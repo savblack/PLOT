@@ -1,5 +1,5 @@
-// The cards above Home's feed: import progress, quick-add, and the checklist.
-// An import comes first. The checklist follows quick-add (Finishing touches,
+// The cards above Home's feed: an import progress card and the checklist.
+// An import comes first. The checklist shows alongside it (Finishing touches,
 // or the Premium checklist for a member in their first week; the two never
 // stack). The Watch together invitation that used to sit here was removed on
 // 15 Nov 2026: Premium is asked for once, in the sidebar, and Watch together
@@ -20,11 +20,9 @@ import { usePremium } from '../hooks/usePremium.js';
 import { readPremiumFirstWeek } from '../utils/premiumFirstWeekState.js';
 import ActivationNudge from './ActivationNudge.jsx';
 import { useActivationNudge } from '../hooks/useActivationNudge.js';
-import QuickAdd from './QuickAdd.jsx';
 
 export default function HomeTopCards() {
-  const { user, profile, accountValue } = useApp();
-  const titleCount = accountValue?.titleCount ?? null;
+  const { user, profile } = useApp();
   const imports = useImportJobs(user?.id);
   const importShowing = importCardsShown(imports).length > 0;
   const allowed = homeTopCardsAllowed({ importsLoading: imports.loading });
@@ -35,19 +33,17 @@ export default function HomeTopCards() {
   const [firstWeek, setFirstWeek] = useState(() => readPremiumFirstWeek(user?.id));
   const firstWeekShowing = premiumFirstWeekVisible(firstWeek, { isPremium: premium.isPremium });
 
-  // Quick-add takes the empty-library nudge's Home slot through title five.
-  // The original nudge remains on History and as a fallback while counts load.
+  // An account with no titles at all gets the empty-library nudge in the
+  // checklist's place (until the first title, or while an import is running,
+  // which is already the next step).
   const nudge = useActivationNudge();
   const nudgeShowing = nudge.show && !importShowing;
-  const quickAddShowing = !importShowing && titleCount != null && titleCount < 5;
 
   return (
     <>
       <ImportJobCard imports={imports} />
-      {quickAddShowing && <QuickAdd />}
-      {allowed.checklist && (quickAddShowing && titleCount === 0 && !firstWeekShowing
-        ? null
-        : nudgeShowing && !quickAddShowing ? <ActivationNudge surface="home" sources={nudge.sources} />
+      {allowed.checklist && (nudgeShowing
+        ? <ActivationNudge surface="home" sources={nudge.sources} />
         : firstWeekShowing ? <PremiumFirstWeek onChange={setFirstWeek} /> : <FinishingTouches />)}
     </>
   );
