@@ -1,5 +1,6 @@
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import ConfirmModal from '../components/ConfirmModal.jsx';
+import { SETTINGS_VIEW } from '../copy/settingsView.js';
 
 export default {
   title: 'Components/ConfirmModal',
@@ -38,6 +39,24 @@ export const Danger = {
     message: 'This permanently deletes the list and everything in it. This can\'t be undone.',
     confirmLabel: 'Delete',
     danger: true,
+  },
+};
+
+// A title that names the brand lowercase draws the logo in place of the word,
+// and the dialog is still announced as the full sentence.
+export const BrandInTitle = {
+  args: {
+    title: SETTINGS_VIEW.page.signOutTitle,
+    message: SETTINGS_VIEW.page.signOutMessage,
+    confirmLabel: SETTINGS_VIEW.signOut,
+  },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = body.getByRole('dialog', { name: SETTINGS_VIEW.page.signOutTitle });
+    // The wordmark is drawn, not typed: no live "plot" text in the title.
+    // Not toBeVisible: the card is still fading in when this runs.
+    await expect(dialog.querySelector('p svg')).not.toBeNull();
+    await expect(dialog.querySelector('p').textContent).toBe('Sign out of ?');
   },
 };
 

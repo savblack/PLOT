@@ -23,6 +23,7 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { COMMON } from '@plot/core/copy/common.js';
+import { splitAtWordmark } from '@plot/core/wordmark.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 import BottomSheet, { SheetActions } from './BottomSheet';
@@ -58,22 +59,18 @@ type Open =
  * still read out as the original sentence. A title without it stays a string.
  */
 function brandTitle(title: string, color: string): ReactNode {
-  const match = /\bplot\b/.exec(title);
-  if (!match) return title;
-  const before = title.slice(0, match.index).trimEnd();
-  const after = title.slice(match.index + match[0].length);
-  // Close up to punctuation ("plot?"), keep a word space before a word.
-  const gapAfter = /^\s/.test(after) ? WORD_GAP : 0;
+  const parts = splitAtWordmark(title);
+  if (!parts) return title;
   return (
     <View style={brandStyles.row} accessible accessibilityRole="header" accessibilityLabel={title}>
-      {before ? <SectionTitle>{before}</SectionTitle> : null}
+      {parts.before ? <SectionTitle>{parts.before}</SectionTitle> : null}
       <PlotWordmark
         size={fontSize.xl}
         color={color}
         label={null}
-        style={[brandStyles.mark, { marginLeft: before ? WORD_GAP : 0, marginRight: gapAfter }]}
+        style={[brandStyles.mark, { marginLeft: parts.spaceBefore ? WORD_GAP : 0, marginRight: parts.spaceAfter ? WORD_GAP : 0 }]}
       />
-      {after.trim() ? <SectionTitle>{after.trimStart()}</SectionTitle> : null}
+      {parts.after ? <SectionTitle>{parts.after}</SectionTitle> : null}
     </View>
   );
 }
