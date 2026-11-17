@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { endsAtTime, remainingAiredEpisodes, showTimeLeft, timeLeftCaption } from '../../timeLeft.js';
+import { remainingAiredEpisodes, showTimeLeft, timeLeftCaption } from '../../timeLeft.js';
 
 const show = {
   episode_run_time: [40],
@@ -45,12 +45,4 @@ test('a gap with no average leaves the total unset', () => {
   assert.equal(left.minutesLeft, null);
   assert.equal(left.missingRuntimes, 1);
   assert.equal(timeLeftCaption(left), '2 episodes left');
-});
-
-test('ends at follows the locale clock', () => {
-  const now = new Date('2026-10-13T12:00:00Z');
-  assert.equal(endsAtTime(102, now, { locales: 'en-US', timeZone: 'UTC' }), '1:42 PM');
-  assert.equal(endsAtTime(102, now, { locales: 'en-GB', timeZone: 'UTC' }), '13:42');
-  assert.equal(endsAtTime(0, now), null);
-  assert.equal(endsAtTime(40, new Date('nope')), null);
 });

@@ -106,20 +106,3 @@ export function timeLeftCaption(left) {
   if (left.minutesLeft > 0) return MEDIA_PANEL.episodesAndTimeLeft(left.episodesLeft, formatDuration(left.minutesLeft));
   return MEDIA_PANEL.episodesLeft(left.episodesLeft);
 }
-
-/**
- * Local clock time a runtime finishes, or null when there is nothing to add.
- * `timeZone` is for tests. Callers omit it so the device zone is used.
- * @param {number} runtimeMinutes
- * @param {Date} [now]
- * @param {{ locales?: Intl.LocalesArgument, timeZone?: string }} [options]
- * @returns {string | null}
- */
-export function endsAtTime(runtimeMinutes, now = new Date(), { locales, timeZone } = {}) {
-  const minutes = Number(runtimeMinutes);
-  if (!(minutes > 0) || !(now instanceof Date) || Number.isNaN(now.getTime())) return null;
-  const end = new Date(now.getTime() + minutes * 60_000);
-  const format = { hour: 'numeric', minute: '2-digit' };
-  if (timeZone) format.timeZone = timeZone;
-  return new Intl.DateTimeFormat(locales, format).format(end);
-}

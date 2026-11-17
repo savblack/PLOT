@@ -85,6 +85,11 @@ gaps between the kicker, title, rating, genres and each keyword row).
   `packages/core/timeLeft.js` and its test are left in place, unused by the
   apps. Checks and `test:unit` pass; the Up next row was NOT viewed on screen.
 
+- Savannah, 2026-11-17 (eighth request): "delete the code". `endsAtTime` and
+  its test are removed from `packages/core/timeLeft.js`; nothing in the repo
+  references it. Checks pass; `test:unit` passes (core is one test fewer,
+  1458).
+
 ## Checks
 
 - `node --test packages/core/tests/unit/browse.test.js`: 7 pass.
