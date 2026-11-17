@@ -40,8 +40,14 @@ gaps between the kicker, title, rating, genres and each keyword row).
 - `node --test packages/core/tests/unit/browse.test.js`: 7 pass.
 - `pnpm run check`: pass (lint 0 errors, build, bundle size).
 - `pnpm --filter @plot/mobile run typecheck`: pass.
-- Not done: the iPhone app has NOT been run in the simulator with this change.
-  It compiles; the layout beside the 136pt poster is unseen.
+- iPhone app run on the iPhone 17 Pro simulator (existing dev build from
+  2026-11-07, Metro from this worktree on port 8097), signed in. Seen: a movie
+  with 2 keywords (no "+N more"), a series with 8 (3 chips then "+5 more"),
+  the expanded state ("Show fewer"), and a keyword chip opening its browse
+  page. Expanded, the 8 chips take five rows in the narrow column and run
+  below the poster's foot.
+- Noticed, not from this change: a "two children with the same key" warning
+  on Home in the dev build, before any title is opened.
 - Viewed the Storybook story at 375, 496 and 1280 wide, collapsed and expanded.
 - Not done: the signed-in app itself (no test login), so "Customize artwork"
   beside the kicker was not seen at phone width. `test:smoke` not run.
