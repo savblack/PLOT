@@ -2,14 +2,13 @@
  * Home screen. Mirrors web DiscoverView.
  * Shelf order comes from the viewer's Home layout (@plot/core/homeLayout.js);
  * the default is picks, Up next, Hot Right Now, Top 20 This Week,
- * Your people, Most Anticipated. The New Releases screen (mode "new") leads with Out Today
- * and Coming Soon, then genre rails. Recently Released, Most Binged, Now Showing and
- * Top 10 by Platform were removed from both apps on 17 Nov 2026.
+ * Your people, Most Anticipated. The New Releases screen (mode "new") is the genre rails
+ * alone, as on web. Out Today, Recently Released, Coming Soon, Most Binged, Now Showing
+ * and Top 10 by Platform were removed on 17 Nov 2026 (Savannah).
  */
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
 import ErrorState from '../../components/ErrorState';
-import HomeReleases from '../../components/HomeReleases';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useMediaPanel } from '../../contexts/MediaPanelContext';
@@ -875,10 +874,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           scrollEventThrottle={16}
           onScroll={glass.onScroll}
         >
-          {/* Out Today and Coming Soon lead; the genre rails follow. Recently
-              Released, Most Binged, Now Showing and Top 10 by Platform were
-              removed from both apps on 17 Nov 2026 (Savannah). */}
-          <HomeReleases rails={['today', 'comingSoon']} />
           <NewReleasesContent
             hideKids={hideKids}
             typeFilters={typeFilters}

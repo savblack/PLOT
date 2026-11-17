@@ -13,7 +13,9 @@ card is gone. The four sections (the recent-releases row, Most Binged Shows,
 Now Showing, Top 10 by Platform) are removed from both apps: Savannah was told
 they are not on Home either and answered "Remove everywhere" (17 Nov 2026).
 New Releases sits straight under Home in the menu on both apps and has a new
-clapperboard icon.
+clapperboard icon. The iPhone screen's Out Today and Coming Soon rows are gone
+too, so it matches web. The two scheduled jobs that collected the Top 10 by
+Platform data are switched off (they can still be run by hand).
 
 ## Done
 
@@ -25,8 +27,13 @@ clapperboard icon.
   `packages/core/usePlatformCharts.js`, its test and the web shim deleted
   (nothing imported them any more).
 - iPhone: `apps/mobile/app/(app)/index.tsx` drops Recently Released, Most
-  Binged, Now Showing, Top 10 by Platform and their components and styles.
-  Out Today and Coming Soon still lead the screen (Savannah did not name them).
+  Binged, Now Showing, Top 10 by Platform and their components and styles,
+  then Out Today and Coming Soon ("make this match the web");
+  `apps/mobile/components/HomeReleases.tsx` deleted.
+- Chart jobs: the `schedule:` trigger is removed from
+  `.github/workflows/netflix-top10.yml` and `streaming-top10.yml` (manual run
+  kept, old cron noted in each file). Takes effect when this merges to main.
+  Scripts and the `platform_charts` table are untouched.
 - Menu: `packages/core/navigation.js` lists New Releases after Home;
   `DrawerMenu.tsx` the same. Icon: clapperboard in `navIcons.jsx` (web) and
   `NavIcons.tsx` (iPhone, which was reusing the calendar icon).
@@ -45,11 +52,11 @@ clapperboard icon.
 ## Left alone, for Savannah to decide
 
 - A web user who has saved their own menu order keeps that order.
-- The nightly jobs that fill the `platform_charts` table still run
-  (`scripts/sync-netflix-top10.mjs`, `scripts/sync-streaming-top10.mjs`);
-  nothing reads that table in the apps now.
-- `HomeReleases.tsx` still knows how to draw Recently Released; no screen asks
-  for it.
+- The `platform_charts` table and the two sync scripts stay. Dropping the
+  table is a production schema change and needs its own yes; iPhone builds
+  already installed still read it and will show the last synced charts.
+- `packages/core/tests/unit/homeReleasesParity.test.js` still names the
+  deleted HomeReleases in a comment; it tests `useUpcoming.js`, which is live.
 - `.discover-plat-*` styles stay: My Lists' Top 5 switch and the design system
   page use them. `MEDIA.chartUnavailable` copy is now unused.
 
@@ -61,4 +68,4 @@ clapperboard icon.
 ## Approvals
 
 Given: "Remove everywhere" for the four sections; move New Releases under
-Home; new icon. Needed: Savannah's yes before a pull request or merge.
+Home; new icon; iPhone to match web; switch the chart jobs off. Needed: Savannah's yes before a pull request or merge.
