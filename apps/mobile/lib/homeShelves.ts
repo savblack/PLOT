@@ -16,4 +16,6 @@ export const HOME_SHELF_LABELS: Record<string, string> = {
   people: PEOPLE.shelf.title,
   streaming: DISCOVER_VIEW.nowOnStreamingTitle,
   anticipated: DISCOVER_VIEW.mostAnticipatedTitle,
+  // Same words as the section header Home draws (index.tsx).
+  platforms: 'Top 10 by Platform',
 };

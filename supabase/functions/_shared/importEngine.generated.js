@@ -2842,12 +2842,16 @@ function splitImportForBackground(resolved) {
   }
   return { ready, review, leftOut };
 }
+function importSavedNothing(outcome) {
+  return (outcome?.failed || 0) > 0 && !(outcome?.inserted || 0) && !(outcome?.duplicates || 0);
+}
 export {
   buildImportRows,
   configure,
   getConfig,
   importListResultMessage,
   importReportMessages,
+  importSavedNothing,
   needsDuplicateReview,
   planHistoryImport,
   readExistingHistory,

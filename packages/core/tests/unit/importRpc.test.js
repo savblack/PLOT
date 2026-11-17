@@ -53,3 +53,19 @@ test('the worker turns the setting on, and neither app does', async () => {
   assert.doesNotMatch(read('../../../../apps/web/src/main.jsx'), /importActsForUser/);
   assert.doesNotMatch(read('../../../../apps/mobile/lib/configureCore.ts'), /importActsForUser/);
 });
+
+test('an import that tried to save and saved nothing is a failure, not a partial import', async () => {
+  const { importSavedNothing } = await import('../../importBackground.js');
+  assert.equal(importSavedNothing({ inserted: 0, duplicates: 0, failed: 4 }), true);
+  // Some saved, everything already there, or nothing attempted: not this.
+  assert.equal(importSavedNothing({ inserted: 1, duplicates: 0, failed: 3 }), false);
+  assert.equal(importSavedNothing({ inserted: 0, duplicates: 4, failed: 0 }), false);
+  assert.equal(importSavedNothing({ inserted: 0, duplicates: 2, failed: 2 }), false);
+  assert.equal(importSavedNothing({ inserted: 0, duplicates: 0, failed: 0 }), false);
+  assert.equal(importSavedNothing(undefined), false);
+  // The worker stops before it removes the uploaded files, so the job can retry.
+  const { readFileSync } = await import('node:fs');
+  const worker = readFileSync(new URL('../../../../supabase/functions/import-worker/index.ts', import.meta.url), 'utf8');
+  assert.ok(worker.indexOf('engine.importSavedNothing(outcome)') > 0);
+  assert.ok(worker.indexOf('engine.importSavedNothing(outcome)') < worker.indexOf("await removeArtifacts(admin, job, [...job.files, '_entries.json', '_resolved.json']);\n    return finish"));
+});

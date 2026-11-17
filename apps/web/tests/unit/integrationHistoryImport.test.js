@@ -135,3 +135,10 @@ test('Simkl is a configured manual two-way sync on both apps', () => {
   assert.match(mobileHook, /sync: importHistory/);
   assert.match(mobileHook, /disconnect/);
 });
+
+test('the iPhone import screen asks what an unnamed IMDb or Letterboxd list file is', () => {
+  const modal = read('../../../mobile/components/ImportHistoryModal.tsx');
+  assert.match(modal, /importListChoiceNeeded\(platform, head, files\[0\]\.name\)/);
+  assert.match(modal, /importListChoiceOptions\(platform\)/);
+  assert.match(modal, /importFileNameForListChoice\(options\[picked\]\.id, platform\)/);
+});
