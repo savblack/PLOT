@@ -22,7 +22,7 @@ import { TONIGHT_PICKER } from './copy/tonightPicker.js';
 /** @typedef {import('./tonightPicker.js').PickerOptions} PickerOptions */
 /** @typedef {import('./tonightPicker.js').PickerCandidate} PickerCandidate */
 
-/** Genres behind the Light and Gripping chips and shelves, per type. */
+/** Genres behind the "Something light" and "Something gripping" shelves, per type. */
 export const SHELF_GENRES = {
   light: { movie: [35, 16, 10749], tv: [35, 16] },
   gripping: { movie: [53, 80, 9648, 27], tv: [80, 9648, -53] },
@@ -37,14 +37,12 @@ export const SHELF_SIZE = 12;
 const WATCHLIST_TARGET = 40;
 
 /**
- * @typedef {'movies'|'shows'|'short'|'light'|'gripping'|'recent'|'rated'|'services'|'watchlist'} ShelfChip
+ * @typedef {'movies'|'shows'|'short'|'services'|'watchlist'} ShelfChip
  */
 
-// Nov 14 (round 3A): the card splits the same options into three kinds.
+// The card's movie-or-show switch and its on/off options. Moods are MOODS, below.
 /** Movie or show: a two-way switch. */
 export const TYPE_CHIPS = /** @type {ShelfChip[]} */ (['movies', 'shows']);
-/** What kind of night: any number of these. */
-export const MOOD_CHIPS = /** @type {ShelfChip[]} */ (['light', 'gripping', 'recent', 'rated']);
 /** On or off. `services` only with services, `watchlist` only with a watchlist. */
 export const SWITCH_CHIPS = /** @type {ShelfChip[]} */ (['short', 'services', 'watchlist']);
 
@@ -60,10 +58,6 @@ export function chipOn(chip, o) {
     case 'movies': return o.mediaType === 'movie';
     case 'shows': return o.mediaType === 'tv';
     case 'short': return o.mediaType === 'tv' ? o.maxEpisodeRuntime === SHORT_LIMIT.tv : o.maxRuntime === SHORT_LIMIT.movie;
-    case 'light': return hasAll(o.genreIds, SHELF_GENRES.light[o.mediaType]);
-    case 'gripping': return hasAll(o.genreIds, SHELF_GENRES.gripping[o.mediaType]);
-    case 'recent': return o.era === 'recent';
-    case 'rated': return o.minScore === 7;
     case 'services': return o.onlyServices;
     case 'watchlist': return o.onlyWatchlist;
     default: return false;
@@ -71,7 +65,7 @@ export function chipOn(chip, o) {
 }
 
 /**
- * The options after tapping a chip. Switching type drops the genre chips,
+ * The options after tapping a chip. Switching type drops the chosen moods,
  * since genre ids differ between movies and shows.
  * @param {ShelfChip} chip
  * @param {PickerOptions} o
@@ -79,20 +73,12 @@ export function chipOn(chip, o) {
  */
 export function toggleChip(chip, o) {
   const on = chipOn(chip, o);
-  const genres = (key) => {
-    const ids = SHELF_GENRES[key][o.mediaType];
-    return on ? o.genreIds.filter(id => !ids.includes(id)) : [...new Set([...o.genreIds, ...ids])];
-  };
   switch (chip) {
     case 'movies': return on ? o : { ...o, mediaType: 'movie', genreIds: [], tvFormat: 'any', maxEpisodeRuntime: null };
     case 'shows': return on ? o : { ...o, mediaType: 'tv', genreIds: [], maxRuntime: null };
     case 'short': return o.mediaType === 'tv'
       ? { ...o, maxEpisodeRuntime: on ? null : SHORT_LIMIT.tv }
       : { ...o, maxRuntime: on ? null : SHORT_LIMIT.movie };
-    case 'light': return { ...o, genreIds: genres('light') };
-    case 'gripping': return { ...o, genreIds: genres('gripping') };
-    case 'recent': return { ...o, era: on ? 'any' : 'recent' };
-    case 'rated': return { ...o, minScore: on ? null : 7 };
     case 'services': return { ...o, onlyServices: !on };
     case 'watchlist': return { ...o, onlyWatchlist: !on };
     default: return o;

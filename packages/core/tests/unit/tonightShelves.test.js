@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  chipOn, toggleChip, buildShelves, chipLabel, SHELF_GENRES, SHORT_LIMIT, SHELF_SIZE,
+  chipOn, toggleChip, buildShelves, chipLabel, SHORT_LIMIT, SHELF_SIZE,
   MOODS, MOOD_GENRES, moodOn, toggleMood, moodRows, moodFiltersOn, clearMoodFilters, activeMoodChoices,
 } from '../../tonightShelves.js';
 import { defaultPickerOptions, PICKER_ERAS, PICKER_MIN_SCORES, PICKER_RUNTIMES, PICKER_EPISODE_RUNTIMES } from '../../tonightPicker.js';
@@ -13,17 +13,16 @@ const movie = (id, extra = {}) => ({ id: -id, media_type: 'movie', title: `M${id
 
 test('chips toggle the picker options they stand for, and back', () => {
   const base = defaultPickerOptions();
-  for (const chip of ['short', 'light', 'gripping', 'recent', 'rated', 'services']) {
+  for (const chip of ['short', 'services', 'watchlist']) {
     const on = toggleChip(chip, base);
     assert.equal(chipOn(chip, on), !chipOn(chip, base), chip);
     assert.equal(chipOn(chip, toggleChip(chip, on)), chipOn(chip, base), `${chip} back`);
   }
   assert.equal(toggleChip('short', base).maxRuntime, SHORT_LIMIT.movie);
-  assert.deepEqual(toggleChip('light', base).genreIds, SHELF_GENRES.light.movie);
 });
 
 test('switching to shows drops movie genres and movie length', () => {
-  const o = toggleChip('short', toggleChip('light', defaultPickerOptions()));
+  const o = toggleChip('short', toggleMood('funny', defaultPickerOptions()));
   const tv = toggleChip('shows', o);
   assert.equal(tv.mediaType, 'tv');
   assert.deepEqual(tv.genreIds, []);
@@ -46,7 +45,7 @@ test('shelves sort the watchlist and skip facets a chip already set', () => {
   assert.deepEqual(ids(shelves[2]), [-1]);
   assert.deepEqual(ids(shelves[3]), [-2]);
 
-  const narrowed = buildShelves({ watchlist, services: [], options: toggleChip('light', toggleChip('short', options)), hasServices: true, premium: true });
+  const narrowed = buildShelves({ watchlist, services: [], options: toggleMood('funny', toggleChip('short', options)), hasServices: true, premium: true });
   assert.deepEqual(narrowed.map(s => s.id), ['watchlist']);
 });
 
