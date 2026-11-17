@@ -6,7 +6,7 @@ import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
 import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 import { track } from '../lib/analytics.js';
-import { MIN_SHARED_RATINGS } from '@plot/core/tasteOverlap.js';
+import { MIN_SHARED_RATINGS, vennName } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -57,8 +57,10 @@ function Venn({ watched, name }) {
       <text x="76" y="90" textAnchor="middle" className="to-venn-label">{T.you.toLowerCase()}</text>
       <text x="150" y="74" textAnchor="middle" className="to-venn-num to-venn-num--both">{watched.both}</text>
       <text x="150" y="92" textAnchor="middle" className="to-venn-label to-venn-label--both">{T.both}</text>
-      <text x="222" y="72" textAnchor="middle" className="to-venn-num">{watched.theirs}</text>
-      <text x="222" y="90" textAnchor="middle" className="to-venn-label">{name}</text>
+      {/* Centred in the part of their circle outside the overlap (182 to 250),
+          with the name cut to what fits there. */}
+      <text x="216" y="72" textAnchor="middle" className="to-venn-num">{watched.theirs}</text>
+      <text x="216" y="90" textAnchor="middle" className="to-venn-label">{vennName(name)}</text>
     </svg>
   );
 }

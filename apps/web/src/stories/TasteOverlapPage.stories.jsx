@@ -79,6 +79,8 @@ const saved = [
 ];
 export const WithPeoplePanel = { args: { side: panel({ selectedUsername: 'sam', saved, className: 'to-side--wide-only' }) } };
 export const PickerWithSavedComparisons = { args: { ...example, side: panel({ saved }) } };
+// A name too long for its circle is cut there, not left to run over the edge.
+export const LongName = { args: { target: { ...publicTarget, display_name: 'Rafael Ortiz-Castellanos' } } };
 export const PrivateFriend = { args: { target: privateTarget, sharedWatchlist: null } };
 export const NotEnoughRatings = { args: { overlap: tasteOverlap(rows(mineRatings).slice(0, 3), rows(theirRatings).slice(0, 3)) } };
 export const FreeViewer = { args: { premium: false } };

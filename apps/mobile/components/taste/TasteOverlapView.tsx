@@ -11,7 +11,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTasteOverlap, useExampleOverlap } from '@plot/core/useTasteOverlap.js';
 import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
-import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent, EXAMPLE_SHARED_WATCHLIST, exampleGenreNames } from '@plot/core/tasteOverlap.js';
+import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent, EXAMPLE_SHARED_WATCHLIST, exampleGenreNames, vennName } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -516,8 +516,10 @@ function Venn({
       <SvgText x={76} y={90} textAnchor="middle" fill={colors.textSecondary} fontFamily={fontFamily.sans} fontSize={11}>{T.you.toLowerCase()}</SvgText>
       <SvgText x={150} y={74} textAnchor="middle" fill={colors.accentText} fontFamily={fontFamily.display} fontSize={28}>{watched.both}</SvgText>
       <SvgText x={150} y={92} textAnchor="middle" fill={colors.textPrimary} fontFamily={fontFamily.sansBold} fontSize={11}>{T.both}</SvgText>
-      <SvgText x={222} y={72} textAnchor="middle" fill={colors.textPrimary} fontFamily={fontFamily.display} fontSize={22}>{watched.theirs}</SvgText>
-      <SvgText x={222} y={90} textAnchor="middle" fill={colors.textSecondary} fontFamily={fontFamily.sans} fontSize={11}>{name}</SvgText>
+      {/* Centred in the part of their circle outside the overlap (182 to 250),
+          with the name cut to what fits there. */}
+      <SvgText x={216} y={72} textAnchor="middle" fill={colors.textPrimary} fontFamily={fontFamily.display} fontSize={22}>{watched.theirs}</SvgText>
+      <SvgText x={216} y={90} textAnchor="middle" fill={colors.textSecondary} fontFamily={fontFamily.sans} fontSize={11}>{vennName(name)}</SvgText>
     </Svg>
   );
 }
