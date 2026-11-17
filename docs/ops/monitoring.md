@@ -28,6 +28,14 @@ GitHub-side watchers raise issues rather than email:
   number of security policies, and row counts. It opens an `incident` issue and
   emails if the backup is stale, does not decrypt, or restores anything less.
   See `scripts/db-backup-restore-check.sh`.
+- `staging-import-e2e.yml` opens an `incident` issue ("Staging imports are
+  failing end to end") when the nightly import test fails, and closes it on the
+  next passing run. The test uploads four IMDb and Letterboxd files to Staging
+  the way the apps do and checks the background worker saved them
+  (`pnpm run staging:import-e2e`). It exists because the worker saved nothing on
+  production from 2026-11-11 to 2026-11-16 while every other check passed.
+  Needs the `PLOT_STAGING_DB_PASSWORD` and `PLOT_STAGING_PUBLISHABLE_KEY`
+  repository secrets.
 - `staging-tests.yml` opens an `incident` issue when the nightly Staging SQL
   tests fail, and closes it on the next pass.
 - `cron-health.yml` checks the database's own scheduled jobs (pg_cron) every

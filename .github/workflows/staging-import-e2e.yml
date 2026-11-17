@@ -1,0 +1,193 @@
+# Nightly: upload four export files to PLOT Staging the way the apps do, and
+# check that the background import worker saves them
+# (`pnpm run staging:import-e2e`, scripts/staging-import-e2e.mjs).
+#
+# WHY: from 2026-11-11 to 2026-11-16 the import worker on production read and
+# matched every uploaded file and then saved nothing: its saves were refused
+# (#1722). Unit tests, browser tests and the Staging SQL tests all passed the
+# whole time, because none of them runs the real chain: the app's upload, the
+# storage bucket, the queue, the deployed edge function, and the database
+# functions it saves through. It was found only when someone ran four files
+# through by hand. This runs them every night instead.
+#
+# STAGING ONLY. The script builds its API address from Staging's project ref,
+# and its database access goes through scripts/staging-sql.sh, which cannot
+# point at production. This workflow never sees a production credential.
+#
+# Secrets: PLOT_STAGING_DB_PASSWORD (also used by staging-tests.yml), to make
+# and empty the one dedicated test account, and PLOT_STAGING_PUBLISHABLE_KEY,
+# Staging's publishable key, to sign in as it. A pull request from a fork
+# receives no secrets and is skipped.
+#
+# Unlike staging-tests.yml this installs dependencies, because it runs the
+# shared import code from packages/core. `--ignore-scripts` keeps install
+# scripts from running next to the Staging password.
+#
+# On a pull request it runs only when the test itself changes. The worker it
+# exercises is the one deployed to Staging, not the pull request's, so running
+# it for import code changes would report on code the pull request did not ship.
+#
+# The alarm stands itself down, as staging-tests.yml's does: a failing nightly
+# run opens one `incident` issue (or comments on the open one) and the next
+# passing nightly run closes it.
+
+name: Staging import end to end
+
+on:
+  schedule:
+    - cron: '40 7 * * *'    # 07:40 UTC daily, after the Staging SQL tests (07:10)
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'scripts/staging-import-e2e.mjs'
+      - 'scripts/staging-sql.sh'
+      - '.github/workflows/staging-import-e2e.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+# One dedicated account: two runs at once would empty each other's rows.
+concurrency:
+  group: staging-import-e2e
+  cancel-in-progress: false
+
+jobs:
+  import:
+    name: Import four files through Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.17.1
+          cache: pnpm
+
+      # Supabase is on PG 17; match it, as staging-tests.yml does.
+      - name: Install psql 17
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          # Download to a file and retry: postgresql.org drops this connection
+          # now and then, and piping straight into gpg failed the job (#1720, #1726).
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o /tmp/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/pgdg.gpg /tmp/pgdg.asc
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Import four files end to end
+        id: run
+        env:
+          PLOT_STAGING_DB_PASSWORD: ${{ secrets.PLOT_STAGING_DB_PASSWORD }}
+          PLOT_STAGING_PUBLISHABLE_KEY: ${{ secrets.PLOT_STAGING_PUBLISHABLE_KEY }}
+        run: |
+          set -o pipefail
+          node scripts/staging-import-e2e.mjs 2>&1 | tee "$RUNNER_TEMP/import-e2e.log"
+
+      # Must run even when the step above died: a red run with no explanation
+      # is the next thing to get ignored.
+      - name: Summarise
+        id: summary
+        if: always()
+        run: |
+          log="$RUNNER_TEMP/import-e2e.log"
+          verdict=$(tail -n 1 "$log" 2>/dev/null || true)
+          [ -n "$verdict" ] || verdict='The test produced no output; see the run log.'
+          {
+            echo 'verdict<<VERDICT_EOF'
+            echo "$verdict"
+            echo 'VERDICT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "## $verdict"
+            echo ''
+            echo '```'
+            grep -E 'PASS|FAIL|ERROR|^✓|^✗|^account' "$log" 2>/dev/null | tail -n 60 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Raise an incident for a failing nightly run
+        if: failure() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERDICT: ${{ steps.summary.outputs.verdict }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          label='incident'
+          title='Staging imports are failing end to end'
+          gh label create "$label" \
+            --color 'b60205' \
+            --description 'A scheduled job or production check is failing' \
+            2>/dev/null || true
+
+          body=$(
+            printf '%s\n' \
+              "The nightly Staging import test failed on [\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)." \
+              '' \
+              "> ${VERDICT}" \
+              '' \
+              'This test uploads four IMDb and Letterboxd files to Staging the way the apps' \
+              'do and checks that the background worker saves them. A failure means an' \
+              'uploaded file may be read and then not saved, which is what happened on' \
+              'production in November 2026. Production runs the same worker code, so check' \
+              'it before assuming this is only Staging.' \
+              '' \
+              'Reproduce locally (Staging only, one dedicated test account):' \
+              '' \
+              '```' \
+              'pnpm run staging:import-e2e' \
+              '```' \
+              '' \
+              'The next passing nightly run closes this issue, so an open issue means it' \
+              'has not passed since.' \
+              '' \
+              "Raised by [Staging import end to end]($RUN_URL)."
+          )
+
+          # The label is shared with other alarms, so match on the title too.
+          existing=$(gh issue list --state open --label "$label" --limit 50 --json number,title \
+            --jq "[.[] | select(.title == \"$title\")][0].number // \"\"")
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label "$label" --body "$body"
+          fi
+
+      - name: Stand the incident down after a passing nightly run
+        if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          label='incident'
+          title='Staging imports are failing end to end'
+          existing=$(gh issue list --state open --label "$label" --limit 50 --json number,title \
+            --jq "[.[] | select(.title == \"$title\")][0].number // \"\"")
+          [ -n "$existing" ] || exit 0
+
+          body=$(
+            printf '%s\n' \
+              "Recovered. All four files imported end to end on Staging on [\`${GITHUB_SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)." \
+              '' \
+              'Closing so the next failure opens its own issue instead of commenting here.' \
+              '' \
+              "Stood down by [Staging import end to end]($RUN_URL)."
+          )
+
+          gh issue comment "$existing" --body "$body"
+          gh issue close "$existing"

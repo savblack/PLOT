@@ -65,6 +65,7 @@
     "supabase:staging": "node scripts/supabase-staging.mjs",
     "staging:session": "node scripts/create-staging-test-session.mjs",
     "staging:test": "node --env-file-if-exists=.env scripts/staging-test.mjs",
+    "staging:import-e2e": "node --env-file-if-exists=.env scripts/staging-import-e2e.mjs",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",
     "mkt:copy:pull": "node marketing/copy/pull.mjs",
