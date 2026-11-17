@@ -55,7 +55,7 @@ import {
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
-import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
+import { fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet';
@@ -576,8 +576,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished }:
   const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
   const episodeMinutes = episode?.runtime && episode.runtime > 0 ? episode.runtime : fallbackEpisodeRuntime(details);
   const runtime = episodeMinutes ? MEDIA_PANEL.episodeRuntime(episodeMinutes) : '';
-  const ends = episodeMinutes ? endsAtTime(episodeMinutes) : null;
-  const where = [offer?.provider_name, runtime, ends ? MEDIA_PANEL.endsAt(ends) : ''].filter(Boolean).join(' · ');
+  const where = [offer?.provider_name, runtime].filter(Boolean).join(' · ');
   const leftCaption = timeLeftCaption(showTimeLeft({
     details,
     season,

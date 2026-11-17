@@ -29,8 +29,7 @@ export const MEDIA_PANEL = {
   seasonEpisode: (season, episode) => `Season ${season} · Episode ${episode}`,
   episodeRuntime: (minutes) => `${minutes} min`,
   // Free. "3h 12m left" on Continue watching, and the series total under the
-  // title panel progress bar. Ends at sits beside the runtime.
-  endsAt: (time) => `Ends at ${time}`,
+  // title panel progress bar.
   timeLeft: (duration) => `${duration} left`,
   episodesLeft: (count) => (count === 1 ? '1 episode left' : `${count} episodes left`),
   episodesAndTimeLeft: (count, duration) => (

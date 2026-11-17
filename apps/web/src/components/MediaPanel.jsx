@@ -54,7 +54,7 @@ import {
   guideSeasons,
   isSeriesComplete,
 } from '@plot/core/watchingProgress.js';
-import { endsAtTime, fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
+import { fallbackEpisodeRuntime, showTimeLeft, timeLeftCaption } from '@plot/core/timeLeft.js';
 import { fetchVerifiedAvailability, formatOfferPrice, offersFromTmdb, networksFromDetails, regionDisplayName } from '@plot/core/availability.js';
 import { fetchCriticScore, reportAwardsShown, pickAudienceQuote, getConsensusLine, audienceScoreFromDetails } from '@plot/core/reviews.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
@@ -199,8 +199,7 @@ function UpNextCard({ tvId, details, progress, whereToWatch, onSeriesFinished })
   const still = episode?.still_path ? backdropUrl(episode.still_path, 'w300') : null;
   const episodeMinutes = episode?.runtime > 0 ? episode.runtime : fallbackEpisodeRuntime(details);
   const runtime = episodeMinutes ? MEDIA_PANEL.episodeRuntime(episodeMinutes) : '';
-  const ends = episodeMinutes ? endsAtTime(episodeMinutes) : null;
-  const where = [offer?.providerName, runtime, ends ? MEDIA_PANEL.endsAt(ends) : ''].filter(Boolean).join(' · ');
+  const where = [offer?.providerName, runtime].filter(Boolean).join(' · ');
   const leftCaption = timeLeftCaption(showTimeLeft({
     details,
     season,

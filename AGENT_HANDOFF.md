@@ -79,6 +79,12 @@ gaps between the kicker, title, rating, genres and each keyword row).
   the line; simulator "2026 · 2h 39m · M", 2 chips then "+6 more".
 - `pnpm run test:unit`: all suites pass (642, 1459, 91).
 
+- Savannah, 2026-11-17 (seventh request): remove "Ends at" from the Up next
+  episode row too. Done on both apps; `MEDIA_PANEL.endsAt` deleted from the
+  copy catalog. No app shows "Ends at" anywhere now. `endsAtTime` in
+  `packages/core/timeLeft.js` and its test are left in place, unused by the
+  apps. Checks and `test:unit` pass; the Up next row was NOT viewed on screen.
+
 ## Checks
 
 - `node --test packages/core/tests/unit/browse.test.js`: 7 pass.
