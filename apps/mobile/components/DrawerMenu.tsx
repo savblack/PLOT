@@ -33,11 +33,11 @@ const DRAWER_W = Math.min(300, Dimensions.get('window').width * 0.85);
 const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; premium?: boolean }[] = [
   { id: 'search',   label: APP_SHELL.search,       path: '/(app)/search',   icon: 'search' },
   { id: 'index',    label: 'Home',                  path: '/(app)/',         icon: 'home' },
+  { id: 'new-releases', label: titleForView('new-releases'), path: '/(app)/new-releases', icon: 'new-releases' },
   { id: 'calendar', label: 'Calendar',              path: '/(app)/calendar', icon: 'calendar' },
   { id: 'my-lists', label: 'My Lists',              path: '/(app)/my-lists', icon: 'lists' },
   { id: 'history',  label: titleForView('history'), path: '/(app)/history',  icon: 'history' },
   { id: 'guide',    label: titleForView('guide'),   path: '/(app)/guide',    icon: 'guide' },
-  { id: 'new-releases', label: titleForView('new-releases'), path: '/(app)/new-releases', icon: 'calendar' },
   { id: 'tonight',  label: titleForView('tonight'), path: '/(app)/tonight',  icon: 'tonight', premium: true },
   ...(SHOW_WATCH_TOGETHER ? [{ id: 'together', label: titleForView('together'), path: '/(app)/together', icon: 'together' as const, premium: true }] : []),
 ];
