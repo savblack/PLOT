@@ -71,7 +71,7 @@ function InlineGenres({ genreFilters, setGenreFilters, genres }) {
         aria-controls={listId}
       >
         <span className="cal-filter-name">{genreSummary(genreFilters, genres)}</span>
-        <span className={`cal-filter-chev cal-filter-chev--down${open ? ' cal-filter-chev--open' : ''}`}><ChevronRight /></span>
+        <span className={`cal-filter-chev cal-filter-chev--turn${open ? ' cal-filter-chev--open' : ''}`}><ChevronRight /></span>
       </button>
       {open && (
         <div id={listId} ref={listRef} className="cal-filter-inline" role="group" aria-label={CALENDAR_VIEW.filter.genre}>

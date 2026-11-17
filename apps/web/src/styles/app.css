@@ -1731,13 +1731,13 @@ svg { stroke-width: 1.5; }
 .cal-filter-tick svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .cal-filter-chev { display: flex; color: var(--text-muted); }
 .cal-filter-chev svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-/* Genres open inside the panel (SideFilters): the chevron points down and
-   flips when open. The list scrolls within the card. The side column is
+/* Genres open inside the panel (SideFilters): the chevron points right when
+   closed, like every other row's, and turns down when open. The list scrolls within the card. The side column is
    sticky, so while the list is open the column scrolls on its own: without
    that, a panel taller than the window (the Calendar's, under its mini
    months) would hide the list below the fold with no way to reach it. */
-.cal-filter-chev--down svg { transform: rotate(90deg); transition: transform 0.15s ease; }
-.cal-filter-chev--open svg { transform: rotate(-90deg); }
+.cal-filter-chev--turn svg { transition: transform 0.15s ease; }
+.cal-filter-chev--open svg { transform: rotate(90deg); }
 .cal-filter-inline {
   max-height: min(420px, 60vh);
   overflow-y: auto;
