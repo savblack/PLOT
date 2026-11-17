@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import * as Linking from 'expo-linking';
-import { onPendingWatchQueued } from '@plot/core/watchQueued.js';
+import { onPendingWatchQueued, shouldOpenPendingWatchPanel } from '@plot/core/watchQueued.js';
 import { parseTitleDeepLink } from '@plot/core/brevoLifecycle.js';
 
 export type PanelItemType = 'movie' | 'tv' | 'collection';
@@ -48,7 +48,8 @@ export function MediaPanelProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Out-of-panel save: open the title so the watch prompt can show same session.
-  useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type }) => {
+  useEffect(() => onPendingWatchQueued(({ tmdb_id, media_type, source }) => {
+    if (!shouldOpenPendingWatchPanel(source)) return;
     const openNow = stateRef.current;
     if (openNow.itemId === tmdb_id && openNow.itemType === media_type) return;
     if (media_type !== 'movie' && media_type !== 'tv') return;

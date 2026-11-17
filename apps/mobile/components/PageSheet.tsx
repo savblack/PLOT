@@ -12,7 +12,8 @@
  * full screen.
  */
 import { useMemo, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import AppModal from './AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COMMON } from '@plot/core/copy/common.js';
 import { useTheme } from '../contexts/ThemeContext';
@@ -49,7 +50,7 @@ export default function PageSheet({ title, onClose, children, onSave, saveLabel 
   const insets = useSafeAreaInsets();
   const top = usePageSheetTop();
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <AppModal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={[styles.sheet, { paddingTop: top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ModalHeader title={title} actionLabel={closeLabel} onAction={onClose} />
         <View style={styles.body}>{children}</View>
@@ -60,7 +61,7 @@ export default function PageSheet({ title, onClose, children, onSave, saveLabel 
           </View>
         ) : null}
       </KeyboardAvoidingView>
-    </Modal>
+    </AppModal>
   );
 }
 

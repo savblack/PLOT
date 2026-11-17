@@ -55,8 +55,15 @@ test('import and calendar email links keep their query for after sign-in', async
 });
 
 test('public profile route is reachable without auth', async ({ page }) => {
+  // CI supplies a placeholder Supabase host. Keep this signed-out smoke local.
+  await page.route('https://placeholder.supabase.co/**', route => route.abort());
+  await page.route('https://placeholder.supabase.co/rest/v1/rpc/get_profile_card*', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: '[]',
+  }));
   await page.goto('/u/smoke-test-user');
+  await expect(page).toHaveURL(/\/u\/smoke-test-user$/);
   // A non-existent (or private, to an anon viewer) profile shows the placeholder.
   await expect(page.getByRole('heading', { name: /isn't public/i })).toBeVisible();
   await expect(page.getByText(/either doesn't exist or hasn't made their profile public yet/i)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
 });

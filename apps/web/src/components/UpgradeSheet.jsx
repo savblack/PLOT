@@ -122,9 +122,9 @@ export function UpgradeSheetView({ reason, onClose, returnFocusRef, family, kept
             sentence under it. A returning subscriber gets no trial, so the
             feature leads as it used to. */}
         <div className={`upgrade-sheet-offer${pending ? ' is-pending' : ''}`} aria-busy={pending || undefined}>
-        <h2 id={titleId} className="upgrade-sheet-title">{trial ? S.trialTitle : content.title}</h2>
+        <h2 id={titleId} className="upgrade-sheet-title">{trial && reason !== 'trialAfterValue' ? S.trialTitle : content.title}</h2>
         <p className="upgrade-sheet-body">
-          {trial && <strong>{content.title} </strong>}
+          {trial && reason !== 'trialAfterValue' && <strong>{content.title} </strong>}
           {content.preview && <>{content.preview.line} </>}
           {content.body}
         </p>

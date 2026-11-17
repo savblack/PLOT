@@ -88,7 +88,7 @@ configure({
   // One seam, four names: core reports where in a series the user moved, and
   // the action decides which event that is. Keeps the episode grind separate
   // from the bulk "mark the season watched" action in the funnels.
-  onWatchProgress: ({ tmdb_id, action, season, episode }) => {
+  onWatchProgress: ({ tmdb_id, action, season, episode, source }) => {
     const name = {
       started:   EVENTS.WATCHING_STARTED,
       stopped:   EVENTS.WATCHING_STOPPED,
@@ -100,7 +100,7 @@ configure({
     }[action];
     // started/stopped carry no season or episode; drop the keys rather than
     // sending nulls, so the PostHog property only exists where it means something.
-    if (name) track(name, { tmdb_id, ...(season != null ? { season } : {}), ...(episode != null ? { episode } : {}) });
+    if (name) track(name, { tmdb_id, ...(season != null ? { season } : {}), ...(episode != null ? { episode } : {}), ...(source ? { source } : {}) });
   },
   onProfileUpdate: ({ fields }) => track(EVENTS.PROFILE_UPDATED, { fields }),
   // Failed writes, from the same canonical sites as the seams above. The

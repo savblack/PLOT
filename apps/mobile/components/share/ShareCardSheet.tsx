@@ -3,9 +3,10 @@
 // card order come from @plot/core/shareCards.js.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, Modal, ScrollView, StyleSheet,
+  View, Text, Pressable, ScrollView, StyleSheet,
   useWindowDimensions, type View as RNView,
 } from 'react-native';
+import AppModal from '../AppModal';
 import { TextInput } from '../TextInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconChevronLeft, IconChevronRight } from '../icons';
@@ -107,7 +108,7 @@ export default function ShareCardSheet({
   };
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <AppModal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.sheet, { paddingTop: sheetTop, paddingBottom: insets.bottom + spacing.lg }]}>
         <ModalHeader title={T.sheetTitle} action={(
           <View style={styles.headActions}>
@@ -215,7 +216,7 @@ export default function ShareCardSheet({
           </View>
         )}
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

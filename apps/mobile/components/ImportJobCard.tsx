@@ -28,14 +28,15 @@ export type ImportJobRow = {
 
 interface Props {
   userId: string;
+  imports: ReturnType<typeof useImportJobs>;
   /** The finished job left entries to match: open the review on them. */
   onReview: (job: ImportJobRow) => void;
   /** A finished import was seen for the first time on this device. */
   onFinished?: (job: ImportJobRow) => void;
 }
 
-export default function ImportJobCard({ userId, onReview, onFinished }: Props) {
-  const { jobs, current, queued, cancel, dismiss } = useImportJobs(userId);
+export default function ImportJobCard({ userId, imports, onReview, onFinished }: Props) {
+  const { jobs, current, queued, cancel, dismiss } = imports;
   // The running job (with what waits behind it), then each finished job the
   // user hasn't seen off. Queued jobs don't get a card of their own.
   const shown = [current, ...jobs.filter((job: ImportJobRow) => importJobFinished(job) && !job.seen_at)].filter(Boolean) as ImportJobRow[];

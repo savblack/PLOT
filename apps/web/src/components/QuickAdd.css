@@ -1,0 +1,16 @@
+.quick-add {
+  margin: 0 0 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+.quick-add h2 { margin: 0 0 .75rem; font-size: 1.25rem; }
+.quick-add input { width: 100%; padding: .7rem .8rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--text-primary); }
+.quick-add-progress { margin: .6rem 0 0; color: var(--text-secondary); font-size: .85rem; }
+.quick-add-hint { margin: .5rem 0 0; color: var(--text-secondary); font-size: .8rem; }
+.quick-add-results { list-style: none; padding: 0; margin: .75rem 0 0; }
+.quick-add-results li { display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding: .65rem 0; border-top: 1px solid var(--border); }
+.quick-add-results li > div { display: flex; gap: .4rem; }
+.quick-add-results button { border: 1px solid var(--border); border-radius: var(--radius-md); padding: .4rem .6rem; background: var(--surface); color: var(--text-primary); cursor: pointer; }
+.quick-add-results button:disabled { opacity: .45; cursor: default; }
