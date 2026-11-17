@@ -40,14 +40,14 @@ This is an unfinished checkpoint. See Checks.
 
 ## Checks
 
-- [x] `pnpm run check` (0 errors, 168 warnings, all there before this change)
+- [x] `pnpm run check` (0 errors, 168 warnings; the count was not compared with `main`)
 - [x] `pnpm run test:unit` (all pass, 0 fail)
 - [x] The new button markup drawn with the app's real styles on localhost: cream pill sized to its label, 34px icon button inside the input, solid dots, tick.
 - [ ] The real pop-up opened while signed in (the agent cannot sign in; check the pull request's Cloudflare preview)
 
 ## Next
 
-Open a pull request, then look at the real pop-up signed in on its Cloudflare preview.
+Pull request is open. Look at the real pop-up signed in on its Cloudflare preview. Delete this file in the last commit before merge.
 
 ## Approvals
 
