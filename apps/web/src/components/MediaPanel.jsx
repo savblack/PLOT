@@ -6,7 +6,6 @@ import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import CustomizeArtwork from './ArtworkSheet.jsx';
 import ParentalGuide from './ParentalGuide.jsx';
-import { updateProfile } from '@plot/core/profile.js';
 import PrivateNote from './PrivateNote.jsx';
 import { customListCreationError, isCustomListLimitError } from '@plot/core/customListCreation.js';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -1173,7 +1172,7 @@ function AddToCustomListSheet({ details, itemId, itemType, onClose }) {
 }
 
 export default function MediaPanel({ itemId, itemType, initialListOpen = false, closing, onClose, onBrowse }) {
-  const { watchlist, watching, user, profile, favorites, customLists, openPanel, refreshProfile } = useApp();
+  const { watchlist, watching, user, profile, favorites, customLists, openPanel } = useApp();
   const art = useUserArtwork();
   const followPerson = useFollowPerson();
   const [talentId, setTalentId] = useState(null);
@@ -1761,14 +1760,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   mediaType={isMovie ? 'movie' : 'tv'}
                   tmdbId={itemId}
                   details={details}
-                  signedIn={!!user}
-                  hidden={profile?.show_parental_guide === false}
-                  onSetShown={async (shown) => {
-                    if (!user?.id) return false;
-                    const { error } = await updateProfile({ userId: user.id, patch: { show_parental_guide: shown } });
-                    if (!error) refreshProfile();
-                    return !error;
-                  }}
                 />
                 {(genreChips.length > 0 || chip?.upcoming) && (
                   <div className="panel-genres">

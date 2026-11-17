@@ -5971,15 +5971,15 @@ a.provider-chip--link:hover {
     min-height: 44px;
   }
 
-  /* The head's text-sized controls (genre and keyword tags, the rating, the
-     artwork link) keep their own height. A 44px box around a 26px tag left
+  /* The head's text-sized controls (genre and keyword tags, the artwork
+     link) keep their own height. A 44px box around a 26px tag left
      each row of tags looking double-spaced. The tap area is padded out by
      the pseudo-element instead, as far as the row gap allows. */
-  .panel-head :is(.panel-tag-link, .parental-guide-rating, .parental-guide-show, .parental-guide-hide, .panel-artwork-btn) {
+  .panel-head :is(.panel-tag-link, .panel-artwork-btn) {
     position: relative;
     min-height: 0;
   }
-  .panel-head :is(.panel-tag-link, .parental-guide-rating, .parental-guide-show, .parental-guide-hide, .panel-artwork-btn)::after {
+  .panel-head :is(.panel-tag-link, .panel-artwork-btn)::after {
     content: '';
     position: absolute;
     inset: -5px 0;

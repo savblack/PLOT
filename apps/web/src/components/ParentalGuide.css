@@ -1,54 +1,7 @@
-.parental-guide {
-  margin-top: 0.35rem;
-}
-
 /* Sits in the facts line as one of its items: same size and line height as
-   the text around it, a step darker so it reads as the one you can tap. */
+   the text around it, a step darker. */
 .parental-guide-rating {
-  display: inline;
-  padding: 0;
-  border: 0;
-  background: none;
   color: var(--text-primary);
-  font: inherit;
   font-weight: 600;
   white-space: nowrap;
-  cursor: pointer;
-}
-
-.parental-guide-rating--static { cursor: default; }
-
-.parental-guide-error {
-  margin: 0;
-}
-
-.parental-guide-hide,
-.parental-guide-show {
-  padding: 0.05rem 0.45rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text-muted);
-  font: inherit;
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1.4;
-  cursor: pointer;
-}
-
-.parental-guide-hide:hover,
-.parental-guide-show:hover {
-  color: var(--text-primary);
-  border-color: var(--text-muted);
-}
-
-.parental-guide-hide:focus-visible,
-.parental-guide-show:focus-visible {
-  outline: 2px solid var(--text-muted);
-  outline-offset: 2px;
-}
-
-.parental-guide-error {
-  color: var(--text-muted);
-  font-size: 0.75rem;
 }

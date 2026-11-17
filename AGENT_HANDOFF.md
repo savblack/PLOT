@@ -63,6 +63,22 @@ gaps between the kicker, title, rating, genres and each keyword row).
 - Simulator after these: "2026 · 2h 39m · M", 2 chips then "+6 more", rating
   tap shows Hide only. Web NOT re-viewed after this last edit (build passes).
 
+- Savannah, 2026-11-17 (sixth request, superseding the "Hide only" note
+  above): "Yes, remove Hide", then, on seeing Hide plus "Could not update the
+  parental guide. Try again." in the simulator: "this shouldnt be anywhere
+  ever". `ParentalGuide` on both apps is now a plain label in the facts line:
+  no Hide, no "Show guide", no error text, no `signedIn`/`hidden`/`onSetShown`
+  props. The four parental-guide strings are gone from
+  `packages/core/copy/mediaPanel.js`.
+- Consequence, my call: `profiles.show_parental_guide` is no longer read by
+  either app, so a member who hid the rating earlier sees it again. The
+  column and `App.jsx`'s select of it are untouched (no migration).
+- Observed, not investigated: her Hide tap on the simulator (Staging) failed
+  to save, which is what produced the error text.
+- Seen after this: web Storybook "2021 · 2h 35m · PG-13" with no buttons in
+  the line; simulator "2026 · 2h 39m · M", 2 chips then "+6 more".
+- `pnpm run test:unit`: all suites pass (642, 1459, 91).
+
 ## Checks
 
 - `node --test packages/core/tests/unit/browse.test.js`: 7 pass.
