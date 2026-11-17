@@ -252,30 +252,26 @@
 .auth-field input {
   width: 100%;
   padding: clamp(0.65rem, 1.2vh, 0.85rem) 1rem;
-  border: 1.5px solid var(--border);
+  /* White field on the cream page, outlined with the stronger hairline so the
+     edge is visible. A filled beige field read as disabled. The border width
+     stays fixed on focus so the text does not shift. */
+  border: 1.5px solid var(--border-strong);
   border-radius: var(--radius-md);
   font-family: var(--font-sans);
   font-size: 0.95rem;
   color: var(--text-primary);
   background: var(--surface-raised);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
-.auth-field input::placeholder { color: var(--text-muted); }
+.auth-field input::placeholder { color: var(--text-muted); opacity: 0.75; }
+
+.auth-field input:hover { border-color: color-mix(in srgb, var(--text-primary) 32%, transparent); }
 
 .auth-field input:focus {
   border-color: var(--text-primary);
-  border-width: 1px;
-  background: var(--surface);
   box-shadow: none;
-}
-
-/* Login uses the warm sunken cream for editable fields. Google remains white
-   so the third-party action is visually distinct from first-party controls. */
-.auth-page--login .auth-field input,
-.auth-page--login .auth-field input:focus {
-  background: var(--surface-sunken);
 }
 
 /* Password wrapper */
@@ -569,7 +565,7 @@ a.auth-cta { text-decoration: none; }
   width: 100%;
   min-height: 48px;
   padding: 0.7rem 1rem;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border-strong);
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
   color: var(--text-primary);
