@@ -18,6 +18,7 @@ import { isPremiumProfile } from '@plot/core/premium.js';
 import { useBillingStatusResult } from '@plot/core/useBillingStatus.js';
 import { EVENTS, track } from '../lib/analytics';
 import { usePremiumCheckout } from '../lib/usePremiumCheckout';
+import { useAppData } from '../contexts/AppDataContext';
 
 export type GoPremiumPlacement = 'side_nav' | 'settings';
 
@@ -28,6 +29,7 @@ export function useGoPremiumLink(
   active = true,
   variant: 'line' | 'chip' = 'line',
 ) {
+  const { accountValue } = useAppData();
   const { data: billing, ready } = useBillingStatusResult(active ? userId ?? null : null);
   const checkout = usePremiumCheckout(active);
   if (!active || !userId || !checkout.allowed) return null;
@@ -37,6 +39,7 @@ export function useGoPremiumLink(
     billingReady: ready,
     trialEligible: trialEligible(billing),
     variant,
+    feltValue: accountValue.feltValue,
   });
   if (!link) return null;
   return {

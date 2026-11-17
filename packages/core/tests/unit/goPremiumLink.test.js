@@ -23,8 +23,9 @@ test('nothing for a Premium member, a signed-out viewer, or before billing answe
 });
 
 test('the side-nav chip stays clean: just Go Premium, never the trial line', () => {
-  assert.deepEqual(goPremiumLink({ ...free, variant: 'chip' }), { label: 'Go Premium', trial: true });
-  assert.deepEqual(goPremiumLink({ ...free, trialEligible: false, variant: 'chip' }), { label: 'Go Premium', trial: false });
+  assert.equal(goPremiumLink({ ...free, variant: 'chip' }), null);
+  assert.deepEqual(goPremiumLink({ ...free, feltValue: true, variant: 'chip' }), { label: 'Go Premium', trial: true });
+  assert.deepEqual(goPremiumLink({ ...free, feltValue: true, trialEligible: false, variant: 'chip' }), { label: 'Go Premium', trial: false });
   assert.doesNotMatch(PLANS_PAGE.goPremium.chip, /days free/);
   assert.equal(goPremiumLink({ ...free, isPremium: true, variant: 'chip' }), null);
 });

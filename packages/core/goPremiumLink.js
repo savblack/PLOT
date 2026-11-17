@@ -14,14 +14,15 @@ export const GO_PREMIUM_PLACEMENTS = Object.freeze(['side_nav', 'settings']);
  * of the billing read, or web usePremium().trialEligible: the trial line only
  * shows to someone who has never subscribed.
  *
- * The side-nav chip (`variant: 'chip'`) always says just "Go Premium", with
- * no trial line; `trial` still reports eligibility for the click event.
+ * The side-nav chip (`variant: 'chip'`) waits until felt value and always says
+ * just "Go Premium"; `trial` still reports eligibility for the click event.
  *
- * @param {{ signedIn: boolean, isPremium?: boolean, billingReady: boolean, trialEligible?: boolean | null, variant?: 'line' | 'chip' }} input
+ * @param {{ signedIn: boolean, isPremium?: boolean, billingReady: boolean, trialEligible?: boolean | null, variant?: 'line' | 'chip', feltValue?: boolean }} input
  * @returns {{ label: string, trial: boolean } | null}
  */
-export function goPremiumLink({ signedIn, isPremium = false, billingReady, trialEligible = false, variant = 'line' }) {
+export function goPremiumLink({ signedIn, isPremium = false, billingReady, trialEligible = false, variant = 'line', feltValue = false }) {
   if (!signedIn || isPremium || !billingReady) return null;
+  if (variant === 'chip' && !feltValue) return null;
   const trial = trialEligible === true;
   if (variant === 'chip') return { label: PLANS_PAGE.goPremium.chip, trial };
   return { label: trial ? PLANS_PAGE.goPremium.trial : PLANS_PAGE.goPremium.plain, trial };

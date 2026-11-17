@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { trialEligible } from '@plot/core/billing.js';
 import { goPremiumLink } from '@plot/core/goPremiumLink.js';
+import { useApp } from '../hooks/useApp.js';
 import { useBillingStatusResult } from '@plot/core/useBillingStatus.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { premiumPlansPath } from '../utils/premiumExplore.js';
@@ -16,6 +17,7 @@ import './GoPremiumLink.css';
 
 /** @param {{ id?: string | null, is_premium?: boolean } | null | undefined} profile */
 function useGoPremiumLink(profile, variant) {
+  const app = useApp();
   const userId = profile?.id ?? null;
   const { data: billing, ready } = useBillingStatusResult(userId);
   return goPremiumLink({
@@ -24,6 +26,7 @@ function useGoPremiumLink(profile, variant) {
     billingReady: ready,
     trialEligible: trialEligible(billing),
     variant,
+    feltValue: app?.accountValue?.feltValue === true,
   });
 }
 

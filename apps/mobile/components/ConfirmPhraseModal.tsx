@@ -13,9 +13,10 @@
  */
 import { useState, useMemo } from 'react';
 import {
-  View, Text, Modal, StyleSheet,
+  View, Text, StyleSheet,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+import AppModal from './AppModal';
 import Button from './Button';
 import ModalHeader from './ModalHeader';
 import { TextInput } from './TextInput';
@@ -75,7 +76,7 @@ export default function ConfirmPhraseModal({
   };
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <AppModal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -111,7 +112,7 @@ export default function ConfirmPhraseModal({
           </View>
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </AppModal>
   );
 }
 

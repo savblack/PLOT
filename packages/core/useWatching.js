@@ -52,7 +52,7 @@ export function replaceWatchingRow(rows, tmdbId, data) {
  *   items: any[];
  *   loading: boolean;
  *   error: boolean;
- *   startWatching: (item: any) => Promise<any>;
+ *   startWatching: (item: any, opts?: { source?: string }) => Promise<any>;
  *   markEpisodeWatched: (tmdbId: number, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<any>;
  *   stopWatching: (tmdbId: number, opts?: { undo?: import('./undo.js').UndoOption }) => Promise<any>;
  *   setProgress: (tmdbId: number, season: number, episode: number, opts?: { reason?: 'episode' | 'season', undo?: import('./undo.js').UndoOption }) => Promise<{ ok: boolean; code?: string; error?: string|null; data?: any }>;
@@ -128,7 +128,7 @@ export function useWatching(userId) {
   }, []); // stable — seasonCache is a ref, never triggers recreation
 
   /* ── Start watching a show ── */
-  const startWatching = useCallback(async (item) => {
+  const startWatching = useCallback(async (item, opts) => {
     if (!userId) return null;
     const tmdb_id = tmdbIdFromItem(item);
     const mediaRow = baseMediaRow(item, { fallbackType: 'tv' });
@@ -152,9 +152,11 @@ export function useWatching(userId) {
       setItems(prev => sortWatching([data, ...prev.filter(i => i.tmdb_id !== tmdb_id)]));
       // Analytics seam (platform-injected; see config.js). Series progress is
       // reported from these canonical spots so both apps get it for free.
-      getConfig().onWatchProgress?.({ tmdb_id, action: 'started' });
+      getConfig().onWatchProgress?.({ tmdb_id, action: 'started', ...(opts?.source ? { source: opts.source } : {}) });
     } else {
-      reportActionFailure(FAILED_ACTIONS.WATCH_PROGRESS, error, { tmdb_id, media_type: 'tv', progress_action: 'started' });
+      reportActionFailure(FAILED_ACTIONS.WATCH_PROGRESS, error, {
+        tmdb_id, media_type: 'tv', progress_action: 'started', ...(opts?.source ? { source: opts.source } : {}),
+      });
     }
     return data;
   }, [userId]);

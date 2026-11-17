@@ -14,7 +14,7 @@ import { excludeKidsContent, prioritiseEnglishSpeakingTitles } from './tmdb.js';
  */
 
 /** Passed to watchlist.addToList so the title panel does not cover the sheet. */
-export const CALENDAR_SUGGESTIONS_SOURCE = 'calendar_suggestions';
+export { CALENDAR_SUGGESTIONS_SOURCE } from './watchQueued.js';
 
 const SHOW_LIMIT = 6;
 const MOVIE_LIMIT = 6;
