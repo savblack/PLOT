@@ -3257,10 +3257,10 @@ svg { stroke-width: 1.5; }
 /* The kicker needs air under the band; the poster grows by the same amount
    so its foot still lands below the text column. */
 .panel-head-text { min-width: 0; padding-top: 0.8rem; }
-/* Keywords: second grid row, under both columns. The grid's 1rem row gap
-   plus this margin keeps them clear of the genres above. (The double class
-   outranks .panel-genres' margin-top further down.) */
-.panel-genres.panel-head-tags { grid-column: 1 / -1; min-width: 0; margin-top: 0.25rem; }
+/* Keywords: in the text column, directly under the genres. The smaller
+   margin matches the tag gap, so the two read as consecutive rows. (The
+   double class outranks .panel-genres' margin-top further down.) */
+.panel-genres + .panel-genres.panel-keywords { margin-top: 0.35rem; }
 
 /* Kind stays on the left. Customize artwork shares that line and sits at the
    right edge of the head, so a long title cannot push it down under the genres. */
@@ -5967,6 +5967,20 @@ a.provider-chip--link:hover {
 
   .panel button {
     min-height: 44px;
+  }
+
+  /* The head's text-sized controls (genre and keyword tags, the artwork
+     link) keep their own height. A 44px box around a 26px tag left
+     each row of tags looking double-spaced. The tap area is padded out by
+     the pseudo-element instead, as far as the row gap allows. */
+  .panel-head :is(.panel-tag-link, .panel-artwork-btn) {
+    position: relative;
+    min-height: 0;
+  }
+  .panel-head :is(.panel-tag-link, .panel-artwork-btn)::after {
+    content: '';
+    position: absolute;
+    inset: -5px 0;
   }
 
   .panel-close-btn {

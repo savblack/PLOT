@@ -68,3 +68,9 @@ export const InWatchlist = {
   args: { itemId: 438631, itemType: 'movie' },
   parameters: { app: { watchlist: { ...app.watchlist, isInList: () => true } } },
 };
+
+/** With `onBrowse`, as in the app: genres become links and the keyword chips
+    show beside the poster, three before "+N more". */
+export const WithKeywordChips = {
+  args: { itemId: 438631, itemType: 'movie', onBrowse: noop },
+};
