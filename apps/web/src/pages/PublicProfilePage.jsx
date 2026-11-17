@@ -6,6 +6,7 @@ import './PublicProfilePage.css';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import DialogActions from '../components/DialogActions.jsx';
+import Icon from '../components/Icon.jsx';
 import BackLink from '../components/BackLink.jsx';
 import { useApp } from '../hooks/useApp.js';
 import { supabase } from '@plot/core/supabase.js';
@@ -55,19 +56,15 @@ const posterUrl = (path, size = 'w342') =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
 
 /* ── Per-field edit toggle icons (Edit profile modal) ── */
+// The shared icon set (@plot/core/icons.js) has no "more" dots, so they are
+// drawn here. The fill is on each dot, not the svg, because the shared
+// .icon-btn rule sets `svg { fill: none }`. The check beside it is the shared one.
 function DotsFieldIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
-      <circle cx="5" cy="12" r="2"/>
-      <circle cx="12" cy="12" r="2"/>
-      <circle cx="19" cy="12" r="2"/>
-    </svg>
-  );
-}
-function SaveFieldIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12" />
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="5" cy="12" r="2" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="2" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -154,7 +151,6 @@ export const profileStyles = `
   /* ── Edit profile modal ── */
   .pp-edit-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.4rem; }
   .pp-photo { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-  .pp-photo-btn { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 0.9rem; cursor: pointer; }
   .pp-field-label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
   .pp-input { width: 100%; box-sizing: border-box; padding: 0.6rem 2.4rem 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); color: var(--text-primary); font-size: 0.95rem; }
   .pp-input[readonly] { background: var(--surface-raised); color: var(--text-secondary); cursor: default; }
@@ -163,12 +159,8 @@ export const profileStyles = `
   .pp-social-input-icon { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); color: var(--text-secondary); flex-shrink: 0; }
   .pp-social-input-icon svg { width: 16px; height: 16px; }
   .pp-input-wrap { position: relative; }
-  .pp-input-edit-btn {
-    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
-    width: 28px; height: 28px; border-radius: 50%; border: none; background: none;
-    color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
-  }
-  .pp-input-edit-btn:hover { color: var(--text-primary); background: var(--surface-raised); }
+  /* Placement only: the button itself is the shared .icon-btn (app.css). */
+  .pp-input-edit-btn { position: absolute; right: 0.2rem; top: 50%; transform: translateY(-50%); }
   .pp-hint { font-size: 0.75rem; margin-top: 0.35rem; color: var(--text-muted); }
   .pp-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .pp-toggle-help { font-size: 0.78rem; color: var(--text-muted); margin: 0.15rem 0 0; line-height: 1.4; }
@@ -378,7 +370,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
       <div className="pp-edit-body">
         <div className="pp-photo">
           {safeImageSrc(avatar) ? <img className="pp-avatar" src={safeImageSrc(avatar)} alt="" /> : <div className="pp-avatar">{initial}</div>}
-          <button type="button" className="pp-photo-btn" onClick={() => fileRef.current?.click()} disabled={saving}>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => fileRef.current?.click()} disabled={saving}>
             Change photo
           </button>
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickPhoto} />
@@ -399,7 +391,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
             />
             <button
               type="button"
-              className="pp-input-edit-btn"
+              className="icon-btn pp-input-edit-btn"
               aria-label={editingName ? PUBLIC_PROFILE_PAGE.saveDisplayName : PUBLIC_PROFILE_PAGE.editDisplayName}
               title={editingName ? COMMON.save : COMMON.edit}
               onClick={() => {
@@ -409,7 +401,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
                 });
               }}
             >
-              {editingName ? <SaveFieldIcon /> : <DotsFieldIcon />}
+              {editingName ? <Icon name="check" /> : <DotsFieldIcon />}
             </button>
           </div>
         </div>
@@ -445,7 +437,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
             />
             <button
               type="button"
-              className="pp-input-edit-btn"
+              className="icon-btn pp-input-edit-btn"
               aria-label={editingUname ? PUBLIC_PROFILE_PAGE.saveUsername : PUBLIC_PROFILE_PAGE.editUsername}
               title={editingUname ? COMMON.save : COMMON.edit}
               onClick={() => {
@@ -455,7 +447,7 @@ function EditProfileModal({ userId, current, onClose, onSaved, favWord }) {
                 });
               }}
             >
-              {editingUname ? <SaveFieldIcon /> : <DotsFieldIcon />}
+              {editingUname ? <Icon name="check" /> : <DotsFieldIcon />}
             </button>
           </div>
           {unameStatus === 'checking' && <div className="pp-hint">Checking…</div>}
