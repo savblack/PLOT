@@ -248,6 +248,23 @@ export function exampleOverlap(titles = []) {
   };
 }
 
+/** The most characters of a name the overlap circles have room for. */
+export const VENN_NAME_MAX = 9;
+
+/**
+ * A person's name as drawn inside their circle. The space between the
+ * overlap and the circle's edge is about 60 of the drawing's 300 units, which
+ * at the label's size holds nine characters; a longer name used to run over
+ * the circle's edge. The full name is still what a screen reader hears.
+ * @param {string | null | undefined} name
+ * @returns {string}
+ */
+export function vennName(name) {
+  const chars = Array.from(String(name || '').trim());
+  if (chars.length <= VENN_NAME_MAX) return chars.join('');
+  return `${chars.slice(0, VENN_NAME_MAX - 1).join('').trimEnd()}…`;
+}
+
 /**
  * Genre names for EXAMPLE_OVERLAP, keyed the way the comparison views expect.
  * @param {string[]} names TASTE_OVERLAP.exampleGenres

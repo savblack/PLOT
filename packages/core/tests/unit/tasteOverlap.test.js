@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
   byTitle, matchPercent, favouriteDecade, genreSplit, sharedTopGenreId, tasteOverlap,
   MIN_SHARED_RATINGS, canCompare, canNameOnShareCard, shareCardContent, SHARE_CARD_THEMES,
-  EXAMPLE_OVERLAP, exampleOverlap,
+  EXAMPLE_OVERLAP, exampleOverlap, vennName, VENN_NAME_MAX,
 } from '../../tasteOverlap.js';
 
 // Synthetic ids: these rows never reach TMDB, they only need to be distinct.
@@ -112,4 +112,14 @@ test('the sample comparison only shows titles it was handed', () => {
   // The invented ratings mean what each section says.
   assert.ok(full.loved.every(t => t.mine >= 8 && t.theirs >= 8));
   assert.ok(full.disagree.every(t => Math.abs(t.mine - t.theirs) >= 4));
+});
+
+test('a name is cut to fit inside its circle', () => {
+  assert.equal(vennName('Maya'), 'Maya');
+  assert.equal(vennName('sav-black'), 'sav-black');
+  assert.equal(vennName('Rafael Ortiz'), 'Rafael O…');
+  // No space left dangling before the ellipsis, and never longer than the room.
+  assert.equal(vennName('Jo Park Williams'), 'Jo Park…');
+  assert.ok(Array.from(vennName('a'.repeat(40))).length <= VENN_NAME_MAX);
+  assert.equal(vennName(null), '');
 });
