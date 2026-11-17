@@ -27,6 +27,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Palette, fontFamily, fontSize, spacing } from '../lib/tokens';
 import BottomSheet, { SheetActions } from './BottomSheet';
 import Button, { TextLink } from './Button';
+import PlotWordmark from './PlotWordmark';
+import SectionTitle from './SectionTitle';
 
 export type ConfirmOptions = {
   title: string;
@@ -48,6 +50,43 @@ type Open =
   | ({ kind: 'confirm' } & ConfirmOptions)
   | ({ kind: 'choose' } & ChooseOptions)
   | { kind: 'notice'; title: string; message?: string };
+
+/**
+ * A dialog title with the logo in it. The catalog writes the brand lowercase
+ * ("Sign out of plot?") where it stands for the logo, so that word is drawn
+ * as the wordmark, as Home's "plot's Picks" heading does. The whole title is
+ * still read out as the original sentence. A title without it stays a string.
+ */
+function brandTitle(title: string, color: string): ReactNode {
+  const match = /\bplot\b/.exec(title);
+  if (!match) return title;
+  const before = title.slice(0, match.index).trimEnd();
+  const after = title.slice(match.index + match[0].length);
+  // Close up to punctuation ("plot?"), keep a word space before a word.
+  const gapAfter = /^\s/.test(after) ? WORD_GAP : 0;
+  return (
+    <View style={brandStyles.row} accessible accessibilityRole="header" accessibilityLabel={title}>
+      {before ? <SectionTitle>{before}</SectionTitle> : null}
+      <PlotWordmark
+        size={fontSize.xl}
+        color={color}
+        label={null}
+        style={[brandStyles.mark, { marginLeft: before ? WORD_GAP : 0, marginRight: gapAfter }]}
+      />
+      {after.trim() ? <SectionTitle>{after.trimStart()}</SectionTitle> : null}
+    </View>
+  );
+}
+
+// A word space at the title's size.
+const WORD_GAP = fontSize.xl * 0.24;
+
+const brandStyles = StyleSheet.create({
+  row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline' },
+  // The wordmark's box sits on its descender, so it is nudged down onto the
+  // text baseline. Same offset as Home's picks heading.
+  mark: { transform: [{ translateY: fontSize.xl * 0.19 }] },
+});
 
 export function useDialog(): {
   confirm: (options: ConfirmOptions) => Promise<boolean>;
@@ -106,7 +145,7 @@ export function useDialog(): {
   const dialog = open ? (
     <BottomSheet
       visible
-      title={open.title}
+      title={brandTitle(open.title, colors.textPrimary)}
       onClose={() => close(false)}
       scroll={false}
       closeLabel={open.kind === 'confirm' ? null : COMMON.cancel}
