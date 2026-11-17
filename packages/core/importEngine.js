@@ -19,4 +19,4 @@ export {
 } from './importPipeline.js';
 export { planHistoryImport } from './importPlan.js';
 export { needsDuplicateReview, reviewPendingWatchSummaries } from './importEvents.js';
-export { splitImportForBackground } from './importBackground.js';
+export { splitImportForBackground, importSavedNothing } from './importBackground.js';

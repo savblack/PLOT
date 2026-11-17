@@ -26,3 +26,15 @@ export function splitImportForBackground(resolved) {
   }
   return { ready, review, leftOut };
 }
+
+/**
+ * A write that refused every entry and saved none. finish_import_slice would
+ * file this under "partial" with no message, which is how a worker that could
+ * not save anything went unnoticed (2026-11-16). Some saved, or everything
+ * already there, is not this: only "tried, and nothing landed".
+ *
+ * @param {{ inserted?: number, duplicates?: number, failed?: number }} outcome
+ */
+export function importSavedNothing(outcome) {
+  return (outcome?.failed || 0) > 0 && !(outcome?.inserted || 0) && !(outcome?.duplicates || 0);
+}

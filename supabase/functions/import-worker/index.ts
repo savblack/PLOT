@@ -232,6 +232,11 @@ async function runFileJob(admin: Db, job: Job, startedAt: number) {
       const known: any[] = split.ready[0]?.destination ? [] : existing;
       const plan = engine.planHistoryImport({ rows, existing: known });
       outcome = await engine.writeImportDocument({ userId: job.user_id, resolved: split.ready, summaryRows: plan.rows });
+      // Every entry refused and none saved is a failed import, not a partial
+      // one. Throw before the files are removed: the job retries the write
+      // (saves are keyed, so a retry adds nothing twice) and, if it keeps
+      // failing, ends "failed" with the gaveUp message and an error in PostHog.
+      if (engine.importSavedNothing(outcome)) throw new Error(`write saved none of ${outcome.failed} entries`);
     }
     const kept = split.review.slice(0, REVIEW_CAP);
     if (kept.length) await writeArtifact(admin, job, '_review.json', kept);
