@@ -7,33 +7,42 @@ Updated: 2026-11-17
 
 ## In everyday words
 
-Savannah looked at a mockup and chose something simpler: on the web New
-Releases page the "Jump to" card is removed, and the Show / Genre filter is
-the only thing in the side column, drawn as a proper card (panel). The
-earlier pills, phone row and genre merge were all undone.
+On the web New Releases page the "Jump to" card is gone, and the Show / Genre
+filter is the only thing in the side column, drawn as a proper card (panel).
+The four sections that led the page (Last 30 Days, Most Binged Shows, Now
+Showing, Top 10 by Platform) are removed too, on Savannah's instruction, so
+the page is the genre sections only.
+
+IMPORTANT, Savannah needs to decide: she asked for the four sections to go
+because they are "already on the home page". In the current code they are
+NOT on Home. They were moved off Home to New Releases this month
+(`packages/core/homeLayout.js`). With this branch they would not appear
+anywhere in the web app. The removal is its own commit so it can be dropped.
 
 ## Done
 
-- `apps/web/src/components/NewReleasesView.jsx`: Jump to card removed; filter
-  section uses `hist-card new-releases-filter-card`.
-- `apps/web/src/styles/app.css`: `.new-releases-filter-card`; jump rules removed.
-- Core, copy, tests and the jump component/hook/story are back to main's state.
+- Commit "drop the Jump to card": `NewReleasesView.jsx` (card removed, filter
+  section is `hist-card new-releases-filter-card`), `app.css`.
+- Commit "remove the four lead sections": `NewReleasesView.jsx` renders only
+  `prepareNewReleaseGenreRails(...)`. Story added:
+  `apps/web/src/stories/NewReleasesFilterPanel.stories.jsx`.
+- Earlier pills, phone row and genre merge are undone (core matches main).
 
 ## Checks
 
-- `pnpm run lint`: 0 errors. NOT run after this change: `pnpm run check`
-  (build), `pnpm run test:unit`. NOT looked at in a browser.
+- `pnpm run check`, `pnpm run test:unit`, `pnpm run test:smoke`: all passed.
+- Filter card looked at in Storybook ("New Releases/Filter panel").
+- Not seen: the real signed-in page (no local test login), dark theme.
 
 ## Next
 
-1. Run `pnpm run check` and look at the card (padding is a first guess:
-   18px 8px 10px).
-2. Open question for Savannah: she said the four top sections (Last 30 Days,
-   Most Binged Shows, Now Showing, Top 10 by Platform) are "already on the
-   home page". Does she want those sections removed from the New Releases
-   page itself? They are still there. Check Home really shows them first.
-3. Merge origin/main (branch is a few commits behind), then PR on her yes.
-4. Delete this file in the last commit before merge.
+1. Savannah's answer on the four sections: gone for good, back on Home, or
+   kept on New Releases (revert the second commit).
+2. If they stay removed: web still fetches their data
+   (`loadNewReleaseData` loads recent/binged; the iPhone app uses the same
+   load and still shows these sections). Trim the web fetch and decide the
+   iPhone app's version; open a parity issue with the pull request.
+3. Pull request on her yes. Delete this file in the last commit before merge.
 
 ## Approvals
 
