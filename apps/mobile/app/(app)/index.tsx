@@ -2,8 +2,9 @@
  * Home screen. Mirrors web DiscoverView.
  * Shelf order comes from the viewer's Home layout (@plot/core/homeLayout.js);
  * the default is picks, Up next, Hot Right Now, Top 20 This Week,
- * Your people, Most Anticipated. The New Releases screen (mode "new") leads with Out Today,
- * recent and coming soon, Most Binged and Top 10 by Platform, then genre rails.
+ * Your people, Most Anticipated. The New Releases screen (mode "new") leads with Out Today
+ * and Coming Soon, then genre rails. Recently Released, Most Binged, Now Showing and
+ * Top 10 by Platform were removed from both apps on 17 Nov 2026.
  */
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import PlotLoader from '@plot/ui/PlotLoader';
@@ -32,7 +33,6 @@ import { useGenres } from '@plot/core/useGenres.js';
 import { ALL_TYPES, filterByType, filterByGenre } from '@plot/core/mediaFilters.js';
 import { parseGenreBrowse } from '@plot/core/browse.js';
 import GroupedFilterMenu from '../../components/GroupedFilterMenu';
-import { usePlatformCharts } from '@plot/core/usePlatformCharts.js';
 import GuideView from '../../components/GuideView';
 import { excludeKidsContent } from '@plot/core/tmdb.js';
 import { posterUrl, backdropUrl, Palette, fontFamily, fontSize, spacing, radii, iconButtonSize } from '../../lib/tokens';
@@ -122,16 +122,6 @@ interface StreamingProvider {
   id: number;
   name: string;
   logo_path?: string | null;
-}
-
-/** Shape returned by core's usePlatformCharts. `id` is the platform key
- *  ('netflix'), not a TMDB watch-provider id. */
-interface PlatformData {
-  id: string;
-  name: string;
-  logo_path?: string | null;
-  movies: MediaItem[];
-  tv: MediaItem[];
 }
 
 // ── Heart SVG — same outline/fill treatment as the web card heart ─────
@@ -228,30 +218,6 @@ function PosterCard({ item, onPress, saved, onSave, isFav, onFavorite }: {
         </TouchableOpacity>
       </View>
       <PosterCaption title={title} meta={cardMetaLine(item)} />
-    </TouchableOpacity>
-  );
-}
-
-// ── Binge card (wide backdrop) ────────────────────────────────────────
-function BingeCard({ item, onPress }: { item: MediaItem; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const art = useUserArtwork();
-  const shown = art.apply(item);
-  const title    = item.name || item.title || '';
-  const backdrop = backdropUrl(displayBackdropPath(shown), 'w780') || posterUrl(displayPosterPath(shown), 'w342');
-
-  return (
-    <TouchableOpacity style={styles.bingeCard} onPress={onPress} activeOpacity={0.85}>
-      {backdrop
-        ? <Image source={{ uri: backdrop }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
-      }
-      <View style={styles.bingeShade} />
-      <View style={styles.bingeCopy}>
-        <Text style={styles.bingeTitle} numberOfLines={2}>{title}</Text>
-        <Text style={styles.bingeMeta}>{cardMetaLine(item, { fallbackType: 'tv' })}</Text>
-      </View>
     </TouchableOpacity>
   );
 }
@@ -380,173 +346,13 @@ function PicksHeader() {
   );
 }
 
-// ── Collapsible platform section ──────────────────────────────────────
-function PlatformSection({ platform, saved, onSave, isFav, onFavorite, onOpen }: {
-  platform: PlatformData;
-  saved: Set<number>;
-  onSave: (item: MediaItem) => void;
-  isFav: (id: number) => boolean;
-  onFavorite: (item: MediaItem) => void;
-  onOpen: (item: MediaItem, type: 'movie' | 'tv') => void;
-}) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [open, setOpen] = useState(false);
-  const logoUri = platform.logo_path
-    ? `https://image.tmdb.org/t/p/w45${platform.logo_path}`
-    : null;
-
-  const toggle = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setOpen(o => !o);
-  };
-
-  const total = platform.movies.length + platform.tv.length;
-  if (!total) return null;
-
-  return (
-    <View style={styles.platSection}>
-      {/* Header row */}
-      <TouchableOpacity
-        style={styles.platHeader}
-        onPress={toggle}
-        activeOpacity={0.7}
-        accessibilityLabel={open ? `Collapse ${platform.name} platform` : `Expand ${platform.name} platform`}
-        accessibilityRole="button"
-      >
-        <View style={styles.platHeaderLeft}>
-          {logoUri
-            ? <Image source={{ uri: logoUri }} style={styles.platLogo} resizeMode="contain" />
-            : <View style={[styles.platLogo, styles.platLogoFallback]}>
-                <Text style={styles.platLogoFallbackText}>{platform.name.slice(0, 2)}</Text>
-              </View>
-          }
-          <Text style={styles.platName}>{platform.name}</Text>
-        </View>
-        <IconChevronDown size={18} color={colors.textMuted} style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }} />
-      </TouchableOpacity>
-
-      {open && (
-        <View style={styles.platBody}>
-          {platform.movies.length > 0 && (
-            <>
-              <Text style={styles.platTypeLabel}>Movies</Text>
-              <FlatList
-                horizontal
-                data={platform.movies.slice(0, 10)}
-                keyExtractor={item => `m-${item.id}`}
-                renderItem={({ item, index }) => (
-                  <PosterCardRanked
-                    item={{ ...item, media_type: 'movie' }}
-                    rank={item._rank ?? index + 1}
-                    onPress={() => onOpen(item, 'movie')}
-                    saved={saved.has(item.id ?? 0)}
-                    onSave={() => onSave({ ...item, media_type: 'movie' })}
-                    isFav={isFav(item.id ?? 0)}
-                    onFavorite={() => onFavorite({ ...item, media_type: 'movie' })}
-                  />
-                )}
-                showsHorizontalScrollIndicator={false}
-                nestedScrollEnabled
-                contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md, paddingBottom: spacing.sm }}
-              />
-            </>
-          )}
-          {platform.tv.length > 0 && (
-            <>
-              <Text style={styles.platTypeLabel}>TV Shows</Text>
-              <FlatList
-                horizontal
-                data={platform.tv.slice(0, 10)}
-                keyExtractor={item => `tv-${item.id}`}
-                renderItem={({ item, index }) => (
-                  <PosterCardRanked
-                    item={{ ...item, media_type: 'tv' }}
-                    rank={item._rank ?? index + 1}
-                    onPress={() => onOpen(item, 'tv')}
-                    saved={saved.has(item.id ?? 0)}
-                    onSave={() => onSave({ ...item, media_type: 'tv' })}
-                    isFav={isFav(item.id ?? 0)}
-                    onFavorite={() => onFavorite({ ...item, media_type: 'tv' })}
-                  />
-                )}
-                showsHorizontalScrollIndicator={false}
-                nestedScrollEnabled
-                contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md, paddingBottom: spacing.sm }}
-              />
-            </>
-          )}
-        </View>
-      )}
-    </View>
-  );
-}
-
-// ── Poster card with rank badge ───────────────────────────────────────
-function PosterCardRanked({ item, rank, onPress, saved, onSave, isFav, onFavorite }: {
-  item: MediaItem;
-  rank: number;
-  onPress: () => void;
-  saved: boolean;
-  onSave: () => void;
-  isFav: boolean;
-  onFavorite: () => void;
-}) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const posterScale = useHomePosterScale();
-  const { profile } = useAppData();
-  const art = useUserArtwork();
-  const fw        = favoriteWords(profile?.region);
-  const title     = item.title || item.name || '';
-  const img       = posterUrl(displayPosterPath(art.apply(item)), 'w185');
-
-  return (
-    <TouchableOpacity style={[styles.card, { width: CARD_W * posterScale }]} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.cardImg}>
-        {img
-          ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          : <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSunken }]} />
-        }
-        {/* Rank number — bottom left, no circle (matches web) */}
-        <Text style={styles.rankBadgeText}>{rank}</Text>
-        {/* Heart — favourite (top left, in the former type-chip slot) */}
-        {FAVOURITES_ENABLED && (
-          <TouchableOpacity
-            style={[styles.cardActionBtn, styles.cardActionBtnLeft]}
-            onPress={onFavorite}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel={isFav ? `Remove ${fw.nounLower}` : `Add ${fw.nounLower}`}
-            accessibilityRole="button"
-          >
-            <HeartIcon color={isFav ? colors.accent : '#fff'} filled={isFav} />
-          </TouchableOpacity>
-        )}
-        {/* Bookmark — watchlist (top right) */}
-        <TouchableOpacity
-          style={styles.cardActionBtn}
-          onPress={onSave}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={saved ? MEDIA.removeFromWatchlist : MEDIA.saveToWatchlist}
-          accessibilityRole="button"
-        >
-          <BookmarkGlyph saved={saved} onImage size={15} colors={colors} />
-        </TouchableOpacity>
-      </View>
-      <PosterCaption title={title} meta={cardMetaLine(item)} />
-    </TouchableOpacity>
-  );
-}
-
 // ── New Releases tab content ──────────────────────────────────────────
 // Mounted only while the tab is active. useNewReleases fires ~21 TMDB
-// requests (Recently Released plus a movie and a TV call per genre rail),
+// requests (now-playing plus a movie and a TV call per genre rail),
 // so calling it from HomeScreen would spend that budget on every app open
 // and trip the proxy's rate limit for people who never open the tab.
-function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel, afterCinema }: {
+function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onSave, isFav, onFavorite, openPanel }: {
   hideKids: boolean;
-  /** Drawn after Now Showing and before the genre rails (Top 10 by Platform), as on web. */
-  afterCinema?: ReactNode;
   typeFilters: string[];
   genreFilters: number[];
   savedIds: Set<number>;
@@ -564,33 +370,24 @@ function NewReleasesContent({ hideKids, typeFilters, genreFilters, savedIds, onS
   // The same rails web's New Releases page shows (prepareNewReleaseGenreRails):
   // one per category, titled by the genre alone, since the screen title
   // already says "New Releases".
-  const genreRails: Array<{ key: string; title: string; items: MediaItem[] }> =
+  const rails: Array<{ key: string; title: string; items: MediaItem[] }> =
     prepareNewReleaseGenreRails(data.genreRails, typeFilters, genreFilters);
-  // Now Showing was a web Home shelf; it heads the genre rails here, as on web.
-  const cinema = filterByGenre(filterByType(data.cinema, typeFilters), genreFilters) ?? [];
-  const rails = cinema.length
-    ? [{ key: 'cinema', title: 'Now Showing', kicker: MEDIA.inCinemas, items: cinema }, ...genreRails]
-    : genreRails;
 
   if (!rails.length) {
     return (
-      <>
-      {afterCinema}
       <EmptyState
         title={DISCOVER_VIEW.newReleasesEmpty.title}
         body={typeFilters.length < ALL_TYPES.length || genreFilters.length ? DISCOVER_VIEW.newReleasesEmpty.filtered : DISCOVER_VIEW.newReleasesEmpty.none}
       />
-      </>
     );
   }
 
   return (
     <>
-      {rails.map((rail: { key: string; title: string; kicker?: string; items: MediaItem[] }, i) => (
+      {rails.map(rail => (
         <View key={rail.key}>
-        {i === (cinema.length ? 1 : 0) && afterCinema}
         <View style={styles.section}>
-          <SectionHeader kicker={rail.kicker} title={rail.title} />
+          <SectionHeader title={rail.title} />
           <FlatList
             horizontal
             data={rail.items}
@@ -634,7 +431,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
   // Official published charts from platform_charts — a fixed platform list,
   // identical for everyone, rather than TMDB popularity filtered to whatever
   // the user happens to subscribe to.
-  const platforms = usePlatformCharts();
   // Home is one feed. New Releases is its own screen, as on web.
   const tab = mode === 'new' ? 'new' : 'discover';
   const [loading,      setLoading]      = useState(true);
@@ -1065,55 +861,6 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
       </>
     ),
   };
-  // New Releases, Most Binged and Top 10 by Platform were Home shelves until
-  // November 2026. They head the New Releases screen now, as on web, so Home
-  // is five shelves that do not repeat each other.
-  const releaseShelves: Record<string, () => ReactNode> = {
-    releases: () => <HomeReleases rails={['today', 'recent', 'comingSoon']} />,
-    binged: () => (
-      <>
-        {applyFilters(bingedShows).length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Popular TV" title="Most Binged Shows" />
-            <FlatList
-              horizontal
-              data={applyFilters(bingedShows)}
-              keyExtractor={item => String(item.id)}
-              renderItem={({ item }) => (
-                <BingeCard item={item} onPress={() => item.id && openPanel(item.id, (item.media_type === 'tv' ? 'tv' : 'movie'))} />
-              )}
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-            />
-          </View>
-        )}
-      </>
-    ),
-    platforms: () => (
-      <>
-        {platforms.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader kicker="Official charts" title="Top 10 by Platform" />
-            {platforms.map(platform => (
-              <PlatformSection
-                key={platform.id}
-                platform={platform}
-                saved={savedIds}
-                onSave={handleSave}
-                isFav={(id) => favorites.isFavorite(id)}
-                onFavorite={toggleFav}
-                onOpen={(item, type) => item.id && openPanel(item.id, type)}
-              />
-            ))}
-            <Text style={styles.platAttribution}>
-              Official Top 10 · Netflix and the Streaming Availability API.
-            </Text>
-          </View>
-        )}
-      </>
-    ),
-  };
   const homeShelves = visibleHomeSections(homeLayout.layout, Object.keys(renderShelf));
 
   return (
@@ -1128,9 +875,11 @@ function DiscoverScreen({ mode }: { mode: 'home' | 'new' }) {
           scrollEventThrottle={16}
           onScroll={glass.onScroll}
         >
-          {(['releases', 'binged'] as const).map(id => <View key={id}>{releaseShelves[id]()}</View>)}
+          {/* Out Today and Coming Soon lead; the genre rails follow. Recently
+              Released, Most Binged, Now Showing and Top 10 by Platform were
+              removed from both apps on 17 Nov 2026 (Savannah). */}
+          <HomeReleases rails={['today', 'comingSoon']} />
           <NewReleasesContent
-            afterCinema={releaseShelves.platforms()}
             hideKids={hideKids}
             typeFilters={typeFilters}
             genreFilters={genreFilters}
@@ -1384,35 +1133,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   // ── Binge cards ──
-  bingeCard: {
-    width: BINGE_W,
-    height: BINGE_H,
-    borderRadius: radii.md,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceSunken,
-    flexShrink: 0,
-  },
-  bingeShade: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  bingeCopy: {
-    position: 'absolute',
-    bottom: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
-  },
-  bingeTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: 18,
-    color: '#fff',
-    marginBottom: 3,
-  },
-  bingeMeta: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    color: 'rgba(255,255,255,0.7)',
-  },
 
   // ── Chart rows ──
   chartRow: {
@@ -1482,71 +1202,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
 
   // ── Platform sections ──
-  platSection: {
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  platHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  platHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  platLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceSunken,
-  },
-  platLogoFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  platLogoFallbackText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-  },
-  platName: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.sm,
-    color: colors.textPrimary,
-  },
-  platBody: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  platTypeLabel: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 10,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  platAttribution: {
-    fontFamily: fontFamily.sans,
-    fontSize: 11,
-    lineHeight: 15,
-    color: colors.textMuted,
-    paddingHorizontal: spacing.xl,
-    marginTop: spacing.sm,
-  },
 
   // ── This week line ──
   weekLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, marginBottom: spacing.md, minHeight: 24 },

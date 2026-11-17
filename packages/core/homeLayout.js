@@ -29,8 +29,10 @@ export const HOME_SECTION_IDS = Object.freeze([
 ]);
 /* New Releases, Most Binged, Now Showing and Top 10 by Platform used to be
    Home shelves too. They moved to the New Releases page (November 2026) so
-   Home is five shelves that do not repeat each other. A saved layout that
-   still names them is fine: unknown ids are dropped on read.
+   Home is five shelves that do not repeat each other, and were then removed
+   from both apps on 17 Nov 2026 (Savannah). The New Releases page is its
+   genre rails. A saved layout that still names them is fine: unknown ids are
+   dropped on read.
    Recommended for you and Because you watched (recommendations.js) joined
    in November 2026: Recommended for you after Continue watching, Because you
    watched last, under Most Anticipated (Savannah, 16 Nov 2026). */
