@@ -64,7 +64,6 @@ export default function NewReleasesView() {
       />
       <div className="cal-body new-releases-layout">
         <aside className="cal-side new-releases-side">
-          <section className="hist-card new-releases-filter-card">
             <SideFilters
               typeFilters={typeFilters}
               setTypeFilters={setTypeFilters}
@@ -72,7 +71,6 @@ export default function NewReleasesView() {
               setGenreFilters={setGenreFilters}
               genres={genres}
             />
-          </section>
         </aside>
         <div className="new-releases-stream">
           <NewReleasesContent openPanel={openPanel} watchlist={watchlist} rails={rails} loading={loading} />

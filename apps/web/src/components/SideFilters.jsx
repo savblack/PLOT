@@ -4,13 +4,14 @@ import { CALENDAR_VIEW } from '../copy/calendarView.js';
 import { TYPE_ROWS } from './sideFilterRows.js';
 
 /* The Show and Genre filter rows from the Calendar's left column, shared so
-   every page's panel is the same control and not a lookalike. Show is a row
-   per type with a tick; Genre is one row that opens the genres as rows under
+   every page's panel is the same control and not a lookalike. It draws its
+   own card (.side-filter-card), so every page gets the same panel (Savannah,
+   17 Nov 2026). Type is a row per type with a tick; Genre is one row that opens the genres as rows under
    it, inside the panel. It used to open a menu beside the column, which on
    New Releases sat partly above the viewport and over the posters, so its
    first rows could not be reached (Savannah, 17 Nov 2026: in the panel, on
    every page that has it). Extra sections (History's Status rows) render as
-   children after Genre, in the same row style. */
+   children ahead of Type, in the same row style. */
 
 const ChevronRight = () => <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6" /></svg>;
 const Tick = () => <svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12" /></svg>;
@@ -25,7 +26,7 @@ function genreSummary(genreFilters, genres) {
 
 /**
  * One tickable row. Exported so a page can add its own section in the same
- * style beneath Show and Genre.
+ * style above Type and Genre.
  * @param {{ label: string, on: boolean, onToggle: () => void }} props
  */
 export function FilterRow({ label, on, onToggle }) {
@@ -93,12 +94,13 @@ function InlineGenres({ genreFilters, setGenreFilters, genres }) {
  * @param {(v: number[]) => void} props.setGenreFilters
  * @param {{id: number, name: string}[]} props.genres
  * @param {{id: string, label: string}[]} [props.typeRows]  Defaults to TV, Movies, Cinema.
- * @param {import('react').ReactNode} [props.children]  Extra sections after Genre.
+ * @param {import('react').ReactNode} [props.children]  Extra sections, drawn above Type.
+ * @param {string} [props.className]  Extra class on the card (Home hides its card on phones).
  * @param {boolean} [props.showGenre]  false where items carry no genres (Your people).
  */
 export default function SideFilters({
   typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres,
-  typeRows = TYPE_ROWS, children, showGenre = true,
+  typeRows = TYPE_ROWS, children, showGenre = true, className = '',
 }) {
   // A type can be switched off only while another stays on: with nothing
   // ticked the filter would read as "show nothing" but behave as "show all".
@@ -111,9 +113,11 @@ export default function SideFilters({
   };
 
   return (
-    <>
+    <section className={`hist-card side-filter-card${className ? ` ${className}` : ''}`}>
+      {children}
+
       <div className="cal-filter">
-        <div className="cal-filter-label">{CALENDAR_VIEW.filter.show}</div>
+        <div className="cal-filter-label">{MEDIA.typeHeading}</div>
         <div>
           {typeRows.map(({ id, label }) => (
             <FilterRow key={id} label={label} on={typeFilters.includes(id)} onToggle={() => toggleType(id)} />
@@ -125,8 +129,6 @@ export default function SideFilters({
         <div className="cal-filter-label">{CALENDAR_VIEW.filter.genre}</div>
         <InlineGenres genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} />
       </div>}
-
-      {children}
-    </>
+    </section>
   );
 }

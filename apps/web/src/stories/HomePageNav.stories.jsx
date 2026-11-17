@@ -42,9 +42,7 @@ function SideColumn() {
     <MemoryRouter>
       <div style={{ width: 264, padding: 24, boxSizing: 'content-box', display: 'flex', flexDirection: 'column', gap: 24 }}>
         <HomePageNav sections={sections} />
-        <section className="hist-card home-filter-card">
           <SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={GENRES} />
-        </section>
       </div>
     </MemoryRouter>
   );
