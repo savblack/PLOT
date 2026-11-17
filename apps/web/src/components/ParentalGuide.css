@@ -2,23 +2,17 @@
   margin-top: 0.35rem;
 }
 
-.parental-guide-rating-row {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
+/* Sits in the facts line as one of its items: same size and line height as
+   the text around it, a step darker so it reads as the one you can tap. */
 .parental-guide-rating {
-  display: inline-flex;
+  display: inline;
   padding: 0;
   border: 0;
   background: none;
   color: var(--text-primary);
   font: inherit;
-  font-size: 0.82rem;
   font-weight: 600;
-  line-height: 1.4;
-  text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -28,7 +22,6 @@
   align-items: flex-start;
   gap: 0.28rem;
   max-width: 28rem;
-  margin-top: 0.3rem;
   color: var(--text-secondary);
   font-size: 0.78rem;
   line-height: 1.45;

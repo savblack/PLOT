@@ -35,6 +35,19 @@ gaps between the kicker, title, rating, genres and each keyword row).
   with a pseudo-element (about 29px tall).
 - `apps/web/src/stories/MediaPanel.stories.jsx`: `WithKeywordChips` story.
 
+- Savannah, 2026-11-17 (third request): put the rating on the top facts line
+  ("2024 · 3 seasons · MA 15+") on all titles, web and iPhone, and drop the
+  director/creator name from the head (it is in the credits below).
+- `ParentalGuide` (web `.jsx`/`.css`, mobile `.tsx`) now renders the facts
+  line itself with the rating inline; takes `facts`, `after` (a movie's "Ends
+  at", placed after the rating: my choice) and, on mobile, `factsStyle`. The
+  "Hide" control moved into the opened details. `author` removed from both
+  `MediaPanel` files.
+- Seen in Storybook (movie and series, rating opened) and on the simulator
+  (movie: "2026 · 2h 39m · M · Ends at 9:14 pm", rating opened with Hide).
+- Noticed on the simulator after a cold relaunch, not from this change: a
+  "[useWatchlist] Could not get or create list" warning.
+
 ## Checks
 
 - `node --test packages/core/tests/unit/browse.test.js`: 7 pass.

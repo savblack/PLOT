@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View, type StyleProp, type TextStyle } from 'react-native';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { loadCertificationMeaning, movieGuide, tvGuide } from '@plot/core/parentalGuide.js';
 import { regionName } from '@plot/core/regions.js';
@@ -12,8 +12,11 @@ export type ParentalGuideDetails = {
 };
 
 /**
- * Regional rating under the title facts. Advisories open on the rating.
- * Signed-in members can hide it from here. Settings screens are in other pulls.
+ * The title's facts line, with the regional rating on it: "2024 · 3 seasons ·
+ * MA 15+". `facts` come before the rating and `after` (a movie's "Ends at")
+ * follows it. The line renders with or without a rating. Advisories open on
+ * the rating. Signed-in members can hide it from here. Settings screens are
+ * in other pulls.
  */
 export default function ParentalGuide({
   mediaType,
@@ -22,6 +25,9 @@ export default function ParentalGuide({
   signedIn,
   hidden,
   onSetShown,
+  facts,
+  after,
+  factsStyle,
 }: {
   mediaType: 'movie' | 'tv';
   tmdbId: number;
@@ -29,6 +35,10 @@ export default function ParentalGuide({
   signedIn: boolean;
   hidden: boolean;
   onSetShown: (shown: boolean) => Promise<boolean>;
+  facts: Array<string | null | undefined>;
+  after?: string;
+  /** The panel's own facts text style, so the line matches the head it sits in. */
+  factsStyle: StyleProp<TextStyle>;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -79,9 +89,25 @@ export default function ParentalGuide({
     setSaving(false);
   }
 
-  if (!shown) {
-    if (!signedIn) return null;
+  const lead = facts.filter(Boolean).join(' · ');
+  const factsLine = (rating: ReactNode) => {
+    if (!lead && !rating && !after) return null;
     return (
+      <Text style={factsStyle}>
+        {lead}
+        {lead && rating ? ' · ' : ''}
+        {rating}
+        {(lead || rating) && after ? ' · ' : ''}
+        {after}
+      </Text>
+    );
+  };
+
+  if (!shown) {
+    if (!signedIn) return factsLine(null);
+    return (
+      <>
+        {factsLine(null)}
       <View style={styles.wrap}>
         <TouchableOpacity
           style={styles.action}
@@ -93,53 +119,59 @@ export default function ParentalGuide({
         </TouchableOpacity>
         {error ? <Text style={styles.error}>{MEDIA_PANEL.couldNotUpdateParentalGuide}</Text> : null}
       </View>
+      </>
     );
   }
 
-  if (!guide) return null;
+  if (!guide) return factsLine(null);
   const descriptors = guide.descriptors.join(', ');
 
   return (
-    <View style={styles.wrap}>
-      <View style={styles.ratingRow}>
-        <TouchableOpacity
+    <>
+      {factsLine(
+        <Text
+          style={styles.rating}
           onPress={() => setOpen(value => !value)}
           accessibilityRole="button"
           accessibilityState={{ expanded: open }}
           accessibilityLabel={`${guide.certification}. ${MEDIA_PANEL.parentalGuide}`}
         >
-          <Text style={styles.rating}>{guide.certification}</Text>
-        </TouchableOpacity>
-        {open && signedIn ? (
-          <TouchableOpacity
-            style={styles.action}
-            onPress={() => setPreference(false)}
-            accessibilityRole="button"
-            accessibilityLabel={`${MEDIA_PANEL.hideParentalGuide} ${MEDIA_PANEL.parentalGuide}`}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text style={styles.actionText}>{MEDIA_PANEL.hideParentalGuide}</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-      {open ? (
-        <View style={styles.body}>
-          <Text style={styles.region}>{regionName(region)}</Text>
-          {meaning ? <Text style={styles.copy}>{meaning}</Text> : null}
-          {descriptors ? <Text style={styles.copy}>{descriptors}</Text> : null}
+          {guide.certification}
+        </Text>
+      )}
+      {open || error ? (
+        <View style={styles.wrap}>
+          {open ? (
+            <View style={styles.body}>
+              <Text style={styles.region}>{regionName(region)}</Text>
+              {meaning ? <Text style={styles.copy}>{meaning}</Text> : null}
+              {descriptors ? <Text style={styles.copy}>{descriptors}</Text> : null}
+              {signedIn ? (
+                <TouchableOpacity
+                  style={styles.action}
+                  onPress={() => setPreference(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${MEDIA_PANEL.hideParentalGuide} ${MEDIA_PANEL.parentalGuide}`}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.actionText}>{MEDIA_PANEL.hideParentalGuide}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : null}
+          {error ? <Text style={styles.error}>{MEDIA_PANEL.couldNotUpdateParentalGuide}</Text> : null}
         </View>
       ) : null}
-      {error ? <Text style={styles.error}>{MEDIA_PANEL.couldNotUpdateParentalGuide}</Text> : null}
-    </View>
+    </>
   );
 }
 
 function makeStyles(colors: Palette) {
   return StyleSheet.create({
     wrap: { marginTop: 6, alignItems: 'flex-start' },
-    ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    rating: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
-    body: { marginTop: 4, gap: 4, alignItems: 'flex-start' },
+    // Nested in the facts line, so size and line height come from it.
+    rating: { fontFamily: fontFamily.sansBold, color: colors.textPrimary },
+    body: { gap: 4, alignItems: 'flex-start' },
     region: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textMuted },
     copy: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 18, color: colors.textSecondary },
     action: {

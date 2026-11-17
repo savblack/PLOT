@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
 import { loadCertificationMeaning, movieGuide, tvGuide } from '@plot/core/parentalGuide.js';
 import { regionName } from '@plot/core/regions.js';
@@ -6,11 +6,14 @@ import { getTmdbRegion, tmdb } from '@plot/core/tmdb.js';
 import './ParentalGuide.css';
 
 /**
- * Regional rating under the title facts. Advisories open on the rating.
- * Signed-in members can hide it. The preference lives on the profile because
- * the settings screens are in other open pulls.
+ * The title's facts line, with the regional rating on it: "2024 · 3 seasons ·
+ * MA 15+". `facts` come before the rating and `after` (a movie's "Ends at")
+ * follows it. The line renders with or without a rating, so the panel has one
+ * facts line whether the rating is loading, missing or hidden.
+ * Advisories open on the rating. Signed-in members can hide it. The preference
+ * lives on the profile because the settings screens are in other open pulls.
  */
-export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hidden, onSetShown }) {
+export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hidden, onSetShown, facts = [], after = '' }) {
   const region = getTmdbRegion();
   const [ratings, setRatings] = useState(null);
   const [meaning, setMeaning] = useState(null);
@@ -58,24 +61,38 @@ export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hi
     setSaving(false);
   }
 
-  if (!shown) {
-    if (!signedIn) return null;
+  const lead = facts.filter(Boolean).join(' · ');
+  const factsLine = (rating) => {
+    const parts = [lead, rating, after].filter(Boolean);
+    if (!parts.length) return null;
     return (
-      <div className="parental-guide">
-        <button type="button" className="parental-guide-show" onClick={() => setPreference(true)}>
-          {MEDIA_PANEL.showParentalGuide}
-        </button>
-        {error && <p className="parental-guide-error">{MEDIA_PANEL.couldNotUpdateParentalGuide}</p>}
-      </div>
+      <p className="panel-facts">
+        {parts.map((part, i) => <Fragment key={i}>{i > 0 && ' · '}{part}</Fragment>)}
+      </p>
+    );
+  };
+
+  if (!shown) {
+    if (!signedIn) return factsLine(null);
+    return (
+      <>
+        {factsLine(null)}
+        <div className="parental-guide">
+          <button type="button" className="parental-guide-show" onClick={() => setPreference(true)}>
+            {MEDIA_PANEL.showParentalGuide}
+          </button>
+          {error && <p className="parental-guide-error">{MEDIA_PANEL.couldNotUpdateParentalGuide}</p>}
+        </div>
+      </>
     );
   }
 
-  if (!guide) return null;
+  if (!guide) return factsLine(null);
 
   const descriptors = guide.descriptors.join(', ');
   return (
-    <div className="parental-guide">
-      <div className="parental-guide-rating-row">
+    <>
+      {factsLine(
         <button
           type="button"
           className="parental-guide-rating"
@@ -85,25 +102,29 @@ export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hi
         >
           {guide.certification}
         </button>
-        {open && signedIn && (
-          <button
-            type="button"
-            className="parental-guide-hide"
-            aria-label={`${MEDIA_PANEL.hideParentalGuide} ${MEDIA_PANEL.parentalGuide}`}
-            onClick={() => setPreference(false)}
-          >
-            {MEDIA_PANEL.hideParentalGuide}
-          </button>
-        )}
-      </div>
-      {open && (
-        <div className="parental-guide-body">
-          <p className="parental-guide-region">{regionName(region)}</p>
-          {meaning && <p className="parental-guide-meaning">{meaning}</p>}
-          {descriptors && <p className="parental-guide-descriptors">{descriptors}</p>}
+      )}
+      {(open || error) && (
+        <div className="parental-guide">
+          {open && (
+            <div className="parental-guide-body">
+              <p className="parental-guide-region">{regionName(region)}</p>
+              {meaning && <p className="parental-guide-meaning">{meaning}</p>}
+              {descriptors && <p className="parental-guide-descriptors">{descriptors}</p>}
+              {signedIn && (
+                <button
+                  type="button"
+                  className="parental-guide-hide"
+                  aria-label={`${MEDIA_PANEL.hideParentalGuide} ${MEDIA_PANEL.parentalGuide}`}
+                  onClick={() => setPreference(false)}
+                >
+                  {MEDIA_PANEL.hideParentalGuide}
+                </button>
+              )}
+            </div>
+          )}
+          {error && <p className="parental-guide-error">{MEDIA_PANEL.couldNotUpdateParentalGuide}</p>}
         </div>
       )}
-      {error && <p className="parental-guide-error">{MEDIA_PANEL.couldNotUpdateParentalGuide}</p>}
-    </div>
+    </>
   );
 }

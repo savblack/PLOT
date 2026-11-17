@@ -1213,7 +1213,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
         : '');
   const movieRuntime = isMovie ? details?.runtime : undefined;
   const movieEnds = movieRuntime != null && movieRuntime > 0 ? endsAtTime(movieRuntime) : null;
-  const factLine = [year, runtimeText, movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''].filter(Boolean).join(' · ');
   const artworkSubject = isMovie ? 'movie' : 'tv';
   const fromProgress = progress?.current_season;
   const seasonForPoster = isMovie
@@ -1223,9 +1222,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   const posterPath = seasonPoster || art.path(artworkSubject, itemId, 'poster') || details?.poster_path || null;
   const backdropPath = art.path(artworkSubject, itemId, 'backdrop') || details?.backdrop_path || null;
   const logoPath = art.path(artworkSubject, itemId, 'logo');
-  const author = isMovie
-    ? details?.credits?.crew?.find(person => person.job === 'Director')?.name
-    : details?.created_by?.[0]?.name;
   const genreChips = (details?.genres || []).slice(0, 2);
   const castPeople = (details?.credits?.cast || details?.aggregate_credits?.cast || [])
     .filter((person): person is CreditPerson => !!person?.id && !!person?.name)
@@ -1353,14 +1349,13 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       />
                     </View>
                     <Text style={styles.title}>{title}</Text>
-                    {!!factLine && (
-                      <Text style={styles.facts}>
-                        {factLine}
-                        {author ? `\n${author}` : ''}
-                      </Text>
-                    )}
+                    {/* One facts line: year, length, rating, then a movie's end
+                        time. The director or creator is in the credits below. */}
                     <ParentalGuide
                       key={`${itemType}-${itemId}`}
+                      facts={[year, runtimeText]}
+                      after={movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''}
+                      factsStyle={styles.facts}
                       mediaType={isMovie ? 'movie' : 'tv'}
                       tmdbId={itemId}
                       details={details}
