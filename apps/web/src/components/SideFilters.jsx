@@ -1,3 +1,4 @@
+import { useId, useState } from 'react';
 import { MEDIA } from '../copy/media.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
 import GroupedFilterMenu from './GroupedFilterMenu.jsx';
@@ -7,7 +8,12 @@ import { TYPE_ROWS } from './sideFilterRows.js';
    the History page's panel is the same control and not a lookalike. Show is a
    row per type with a tick; Genre is one row that opens the grouped genre
    menu beside the column. Extra sections (History's Status rows) render as
-   children after Genre, in the same row style. */
+   children after Genre, in the same row style.
+
+   `genreInline` opens the genres as rows under the Genre row, inside the
+   panel, in place of the menu beside the column. New Releases uses it: its
+   panel sits at the top of the page, where the menu opened partly above the
+   viewport and over the posters (Savannah, 17 Nov 2026). */
 
 const ChevronRight = () => <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6" /></svg>;
 const Tick = () => <svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12" /></svg>;
@@ -40,6 +46,38 @@ export function FilterRow({ label, on, onToggle }) {
   );
 }
 
+/* Genre as rows inside the panel: the summary row opens and closes the list,
+   "All genres" clears the selection, and each genre is a tickable row. */
+function InlineGenres({ genreFilters, setGenreFilters, genres }) {
+  const [open, setOpen] = useState(false);
+  const listId = useId();
+  const toggle = (id) => setGenreFilters(
+    genreFilters.includes(id) ? genreFilters.filter(g => g !== id) : [...genreFilters, id],
+  );
+  return (
+    <div>
+      <button
+        type="button"
+        className="cal-filter-row"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-controls={listId}
+      >
+        <span className="cal-filter-name">{genreSummary(genreFilters, genres)}</span>
+        <span className={`cal-filter-chev cal-filter-chev--down${open ? ' cal-filter-chev--open' : ''}`}><ChevronRight /></span>
+      </button>
+      {open && (
+        <div id={listId} className="cal-filter-inline" role="group" aria-label={CALENDAR_VIEW.filter.genre}>
+          <FilterRow label={MEDIA.allGenres} on={genreFilters.length === 0} onToggle={() => setGenreFilters([])} />
+          {genres.map(g => (
+            <FilterRow key={g.id} label={g.name} on={genreFilters.includes(g.id)} onToggle={() => toggle(g.id)} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * @param {object} props
  * @param {string[]} props.typeFilters
@@ -50,10 +88,11 @@ export function FilterRow({ label, on, onToggle }) {
  * @param {{id: string, label: string}[]} [props.typeRows]  Defaults to TV, Movies, Cinema.
  * @param {import('react').ReactNode} [props.children]  Extra sections after Genre.
  * @param {boolean} [props.showGenre]  false where items carry no genres (Your people).
+ * @param {boolean} [props.genreInline]  Open the genres as rows inside the panel, not as a menu beside it.
  */
 export default function SideFilters({
   typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres,
-  typeRows = TYPE_ROWS, children, showGenre = true,
+  typeRows = TYPE_ROWS, children, showGenre = true, genreInline = false,
 }) {
   // A type can be switched off only while another stays on: with nothing
   // ticked the filter would read as "show nothing" but behave as "show all".
@@ -78,7 +117,9 @@ export default function SideFilters({
 
       {showGenre && <div className="cal-filter">
         <div className="cal-filter-label">{CALENDAR_VIEW.filter.genre}</div>
-        <GroupedFilterMenu
+        {genreInline ? (
+          <InlineGenres genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} />
+        ) : <GroupedFilterMenu
           ariaLabel={CALENDAR_VIEW.filter.genre}
           className="cal-filter-menu"
           groups={[{
@@ -99,7 +140,7 @@ export default function SideFilters({
               <span className="cal-filter-chev"><ChevronRight /></span>
             </button>
           )}
-        />
+        />}
       </div>}
 
       {children}

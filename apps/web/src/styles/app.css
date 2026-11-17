@@ -1737,6 +1737,16 @@ svg { stroke-width: 1.5; }
    little below the row so it reads as coming out of it rather than sitting
    above it, and grows upward beside the mini months. Two columns of options
    keep the whole list visible without an inner scroll. */
+/* Genres opened inside the panel (SideFilters genreInline): the chevron
+   points down and flips when open; a long list scrolls within the card so the
+   panel never outgrows the screen. */
+.cal-filter-chev--down svg { transform: rotate(90deg); transition: transform 0.15s ease; }
+.cal-filter-chev--open svg { transform: rotate(-90deg); }
+.cal-filter-inline {
+  max-height: min(420px, 55vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .cal-filter-menu { display: block; z-index: 5; }
 .cal-filter-menu .guide-filter-menu {
   top: auto;
