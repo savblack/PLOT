@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { COMMON } from '../copy/common.js';
 import { CONFIRM_MODAL } from '../copy/confirmModal.js';
+import { splitAtWordmark } from '@plot/core/wordmark.js';
+import PlotLogo from './PlotLogo.jsx';
 
 /**
  * ConfirmModal — replaces window.confirm() with a styled, accessible modal.
@@ -12,7 +14,23 @@ import { CONFIRM_MODAL } from '../copy/confirmModal.js';
  *   const [confirm, setConfirm] = useState(null);
  *   // trigger: setConfirm({ message: '…', onConfirm: () => doThing() })
  *   {confirm && <ConfirmModal {...confirm} onClose={() => setConfirm(null)} />}
+ *
+ * A title that names the brand lowercase ("Sign out of plot?") draws the logo
+ * in place of that word, as mobile's Dialog does. The logo is hidden from
+ * screen readers and the dialog is named by the title string itself, so it
+ * is still announced as the exact sentence ("plot?", not "plot ?").
  */
+function brandTitle(title, parts) {
+  if (!parts) return title;
+  return (
+    <>
+      {parts.before}{parts.spaceBefore ? ' ' : ''}
+      <PlotLogo inherit aria-hidden="true" />
+      {parts.spaceAfter ? ' ' : ''}{parts.after}
+    </>
+  );
+}
+
 export default function ConfirmModal({ title, message, confirmLabel = COMMON.confirm, danger = false, onConfirm, onClose, confirmPhrase = null, informational = false }) {
   const cancelRef = useRef(null);
   const confirmRef = useRef(null);
@@ -23,6 +41,7 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
   const titleId = useId();
   const messageId = useId();
   const phraseId = useId();
+  const brandParts = splitAtWordmark(title);
   const phraseMatches = !confirmPhrase || typedPhrase.trim().toLowerCase() === confirmPhrase.toLowerCase();
 
   useEffect(() => {
@@ -98,7 +117,8 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
         <div
           role="dialog"
           aria-modal="true"
-          aria-labelledby={title ? titleId : undefined}
+          aria-label={brandParts ? title : undefined}
+          aria-labelledby={title && !brandParts ? titleId : undefined}
           aria-describedby={messageId}
           onClick={e => e.stopPropagation()}
           style={{
@@ -116,12 +136,12 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
             <p id={titleId} style={{
               fontFamily: 'var(--font-display)',
               fontSize: '1.15rem',
-              fontWeight: 400,
+              fontWeight: 700,
               color: 'var(--text-primary)',
               marginBottom: '0.5rem',
               lineHeight: 1.25,
             }}>
-              {title}
+              {brandTitle(title, brandParts)}
             </p>
           )}
           <p id={messageId} style={{
