@@ -711,6 +711,29 @@ Free owner choosing Invite people on a list fires `premium_gate_hit` with
 events ride the same `onWatchTogether` seam (`list_invite_shared`,
 `list_joined`) and never carry list ids or keys.
 
+## Compare
+
+The Compare page (taste overlap, Premium) fires three events of its own. Each
+app fires them from its own screen with the names in `analyticsEvents.js`,
+because the buttons live in the app, not in a core hook. None of them says who
+the other person is: no user id, no username.
+
+| Event | When | Props |
+|---|---|---|
+| `saved_comparison_refreshed` | The refresh icon on a row in Your comparisons was pressed. Fires on the press: the comparison on screen is asked for again, or that person's comparison opens | none |
+| `saved_comparison_removed` | The x on a row in Your comparisons, once the server has removed it | none |
+| `compare_watch_together_tapped` | The Watch Together button on a comparison's shared-watchlist row | `sample` (`true` on the picker's sample, which opens the Watch Together hub; `false` on a real comparison, which opens that person's page) |
+
+A person is added to Your comparisons when a comparison loads, not by a
+button, so saving has no event of its own. A remove the server refuses fires
+`action_failed` with `action: saved_comparison_remove` and no
+`saved_comparison_removed`.
+
+There is no "comparison viewed" event. A Free viewer who opens the upgrade
+sheet from a comparison fires `premium_gate_hit` with `feature: taste_overlap`
+(see Premium gates). What happens after `compare_watch_together_tapped` is in
+the Watch together events above.
+
 ## Reviews
 
 `review_written` fires from `useHistory` when a save carries review text that
@@ -736,7 +759,7 @@ covered once. Properties:
 
 | Prop | Meaning |
 |---|---|
-| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers), and for auth emails that are neither a sign-in nor a signup `password_reset_request` and `confirmation_resend` (`source: signup_bypass` when the backup sender failed; web only until mobile parity lands). Canonical list: `FAILED_ACTIONS`. |
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `saved_comparison_remove`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers), and for auth emails that are neither a sign-in nor a signup `password_reset_request` and `confirmation_resend` (`source: signup_bypass` when the backup sender failed; web only until mobile parity lands). Canonical list: `FAILED_ACTIONS`. |
 | `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
 | `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
 | `http_status` | When present. |
