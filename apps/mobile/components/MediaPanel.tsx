@@ -66,7 +66,7 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { track, EVENTS, captureException } from '../lib/analytics';
 import { BROWSE } from '@plot/core/copy/browse.js';
-import { browseTapProps, collapseKeywords, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
+import { browseTapProps, COLLAPSED_KEYWORD_CHIPS_COMPACT, collapseKeywords, genreBrowseParams, keywordBrowseParams, topKeywords } from '@plot/core/browse.js';
 import UpgradeSheet from './UpgradeSheet';
 import { useRouter, type Href } from 'expo-router';
 import { PEOPLE } from '@plot/core/copy/people.js';
@@ -1211,8 +1211,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     : (details?.number_of_seasons
         ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
         : '');
-  const movieRuntime = isMovie ? details?.runtime : undefined;
-  const movieEnds = movieRuntime != null && movieRuntime > 0 ? endsAtTime(movieRuntime) : null;
   const artworkSubject = isMovie ? 'movie' : 'tv';
   const fromProgress = progress?.current_season;
   const seasonForPoster = isMovie
@@ -1234,7 +1232,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
     ).values()]
     : (details?.created_by || []).filter((person): person is CreditPerson => !!person?.id && !!person?.name)
   ).slice(0, 3);
-  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, isMovie ? 'movie' : 'tv'), keywordsOpen);
+  const { visible: keywordChips, hidden: hiddenKeywords } = collapseKeywords(topKeywords(details, isMovie ? 'movie' : 'tv'), keywordsOpen, COLLAPSED_KEYWORD_CHIPS_COMPACT);
   // Genre chips open Home with that genre set; keywords open their own list.
   const browse = (kind: 'genre' | 'keyword', id: number, name: string, href: Href) => {
     track(EVENTS.BROWSE_TAPPED, browseTapProps({ kind, id, name, mediaType: isMovie ? 'movie' : 'tv', source: 'title_panel' }));
@@ -1349,12 +1347,11 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       />
                     </View>
                     <Text style={styles.title}>{title}</Text>
-                    {/* One facts line: year, length, rating, then a movie's end
-                        time. The director or creator is in the credits below. */}
+                    {/* One facts line: year, length, rating. The director or
+                        creator is in the credits below. */}
                     <ParentalGuide
                       key={`${itemType}-${itemId}`}
                       facts={[year, runtimeText]}
-                      after={movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''}
                       factsStyle={styles.facts}
                       mediaType={isMovie ? 'movie' : 'tv'}
                       tmdbId={itemId}
@@ -1383,7 +1380,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       </View>
                     )}
                     {/* Keywords sit beside the poster, under the genres, as on web.
-                        Three show before "+N more" (core's collapseKeywords). */}
+                        Two show before "+N more": this column is narrower than web's. */}
                     {keywordChips.length > 0 && (
                     <View style={styles.keywordRow} accessibilityLabel={BROWSE.keywordsLabel}>
                       {keywordChips.map(k => (

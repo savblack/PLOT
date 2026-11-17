@@ -48,6 +48,21 @@ gaps between the kicker, title, rating, genres and each keyword row).
 - Noticed on the simulator after a cold relaunch, not from this change: a
   "[useWatchlist] Could not get or create list" warning.
 
+- Savannah, 2026-11-17 (fourth and fifth requests): iPhone shows 2 keyword
+  chips then "+N more" (web stays at 3); remove "Ends at" from the header and
+  remove the rating description, on both apps.
+- `packages/core/browse.js`: `collapseKeywords` takes a `limit` again;
+  `COLLAPSED_KEYWORD_CHIPS_COMPACT = 2` is what mobile passes.
+- `ParentalGuide` (both apps): no meaning, region or advisories; `after` prop
+  gone. Signed out, the rating is plain text. Signed in, tapping it shows
+  only "Hide" (kept so the hide preference still has a home: my call, not
+  hers; she may want it gone). `loadCertificationMeaning` in core is now
+  unused by the apps; left in place.
+- "Ends at" is still on the Up next episode row (`MediaPanel` ~line 203 web,
+  ~580 mobile); only the header lost it.
+- Simulator after these: "2026 · 2h 39m · M", 2 chips then "+6 more", rating
+  tap shows Hide only. Web NOT re-viewed after this last edit (build passes).
+
 ## Checks
 
 - `node --test packages/core/tests/unit/browse.test.js`: 7 pass.

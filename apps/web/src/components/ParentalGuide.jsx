@@ -1,22 +1,20 @@
 import { Fragment, useEffect, useState } from 'react';
 import { MEDIA_PANEL } from '@plot/core/copy/mediaPanel.js';
-import { loadCertificationMeaning, movieGuide, tvGuide } from '@plot/core/parentalGuide.js';
-import { regionName } from '@plot/core/regions.js';
+import { movieGuide, tvGuide } from '@plot/core/parentalGuide.js';
 import { getTmdbRegion, tmdb } from '@plot/core/tmdb.js';
 import './ParentalGuide.css';
 
 /**
  * The title's facts line, with the regional rating on it: "2024 · 3 seasons ·
- * MA 15+". `facts` come before the rating and `after` (a movie's "Ends at")
- * follows it. The line renders with or without a rating, so the panel has one
+ * MA 15+". The line renders with or without a rating, so the panel has one
  * facts line whether the rating is loading, missing or hidden.
- * Advisories open on the rating. Signed-in members can hide it. The preference
- * lives on the profile because the settings screens are in other open pulls.
+ * The rating is a label only: no meaning or advisories. For a signed-in
+ * member it is also the control that offers Hide. The preference lives on the
+ * profile because the settings screens are in other open pulls.
  */
-export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hidden, onSetShown, facts = [], after = '' }) {
+export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hidden, onSetShown, facts = [] }) {
   const region = getTmdbRegion();
   const [ratings, setRatings] = useState(null);
-  const [meaning, setMeaning] = useState(null);
   const [open, setOpen] = useState(false);
   const [seenHidden, setSeenHidden] = useState(hidden);
   const [shown, setShown] = useState(!hidden);
@@ -37,16 +35,6 @@ export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hi
   const guide = mediaType === 'tv'
     ? tvGuide(ratings, region)
     : movieGuide(details?.release_dates, region);
-  const certification = guide?.certification ?? null;
-
-  useEffect(() => {
-    if (!certification) return undefined;
-    let cancelled = false;
-    loadCertificationMeaning(tmdb, mediaType, region, certification).then(text => {
-      if (!cancelled) setMeaning(text);
-    });
-    return () => { cancelled = true; };
-  }, [mediaType, region, certification]);
 
   async function setPreference(next) {
     if (!signedIn || saving) return;
@@ -63,7 +51,7 @@ export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hi
 
   const lead = facts.filter(Boolean).join(' · ');
   const factsLine = (rating) => {
-    const parts = [lead, rating, after].filter(Boolean);
+    const parts = [lead, rating].filter(Boolean);
     if (!parts.length) return null;
     return (
       <p className="panel-facts">
@@ -89,10 +77,9 @@ export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hi
 
   if (!guide) return factsLine(null);
 
-  const descriptors = guide.descriptors.join(', ');
   return (
     <>
-      {factsLine(
+      {factsLine(signedIn ? (
         <button
           type="button"
           className="parental-guide-rating"
@@ -102,25 +89,18 @@ export default function ParentalGuide({ mediaType, tmdbId, details, signedIn, hi
         >
           {guide.certification}
         </button>
-      )}
+      ) : <span className="parental-guide-rating parental-guide-rating--static">{guide.certification}</span>)}
       {(open || error) && (
         <div className="parental-guide">
           {open && (
-            <div className="parental-guide-body">
-              <p className="parental-guide-region">{regionName(region)}</p>
-              {meaning && <p className="parental-guide-meaning">{meaning}</p>}
-              {descriptors && <p className="parental-guide-descriptors">{descriptors}</p>}
-              {signedIn && (
-                <button
-                  type="button"
-                  className="parental-guide-hide"
-                  aria-label={`${MEDIA_PANEL.hideParentalGuide} ${MEDIA_PANEL.parentalGuide}`}
-                  onClick={() => setPreference(false)}
-                >
-                  {MEDIA_PANEL.hideParentalGuide}
-                </button>
-              )}
-            </div>
+            <button
+              type="button"
+              className="parental-guide-hide"
+              aria-label={`${MEDIA_PANEL.hideParentalGuide} ${MEDIA_PANEL.parentalGuide}`}
+              onClick={() => setPreference(false)}
+            >
+              {MEDIA_PANEL.hideParentalGuide}
+            </button>
           )}
           {error && <p className="parental-guide-error">{MEDIA_PANEL.couldNotUpdateParentalGuide}</p>}
         </div>

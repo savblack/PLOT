@@ -1492,7 +1492,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
     : (details?.number_of_seasons
         ? `${details.number_of_seasons} season${details.number_of_seasons > 1 ? 's' : ''}`
         : '');
-  const movieEnds = isMovie && details?.runtime > 0 ? endsAtTime(details.runtime) : null;
   const artworkSubject = isMovie ? 'movie' : 'tv';
   const fromProgress = progress?.current_season;
   const seasonForPoster = isMovie
@@ -1754,12 +1753,11 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   />
                 </div>
                 <h2 className="panel-title">{title}</h2>
-                {/* One facts line: year, length, rating, then a movie's end
-                    time. The director or creator is in the credits below. */}
+                {/* One facts line: year, length, rating. The director or
+                    creator is in the credits below. */}
                 <ParentalGuide
                   key={`${itemType}-${itemId}`}
                   facts={[year, runtimeText]}
-                  after={movieEnds ? MEDIA_PANEL.endsAt(movieEnds) : ''}
                   mediaType={isMovie ? 'movie' : 'tv'}
                   tmdbId={itemId}
                   details={details}
