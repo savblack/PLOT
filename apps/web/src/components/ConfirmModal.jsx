@@ -136,7 +136,7 @@ export default function ConfirmModal({ title, message, confirmLabel = COMMON.con
             <p id={titleId} style={{
               fontFamily: 'var(--font-display)',
               fontSize: '1.15rem',
-              fontWeight: 400,
+              fontWeight: 700,
               color: 'var(--text-primary)',
               marginBottom: '0.5rem',
               lineHeight: 1.25,
