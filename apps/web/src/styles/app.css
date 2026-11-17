@@ -5189,33 +5189,9 @@ a.provider-chip--link:hover {
 .new-releases-stream .discover-sections { padding-bottom: 0; }
 .new-releases-stream .discover-section { scroll-margin-top: 24px; }
 .new-releases-stream .discover-section-header { padding-left: 0; padding-right: 0; }
-.new-releases-jump { gap: 10px; padding: 14px 12px 14px; }
-.new-releases-jump .cal-filter-row[aria-current="true"] .cal-filter-name { color: var(--accent-text); }
-/* The page's own rows stay rows; the genres are twenty-odd short names of one
-   kind, so they wrap as chips and the card fits a screen. */
-.new-releases-jump-group { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
-.new-releases-jump-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 2px; }
-.new-releases-jump-chip {
-  flex-shrink: 0;
-  padding: 5px 11px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  background: transparent;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.35;
-  color: var(--text-primary);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color 0.12s ease, border-color 0.12s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.new-releases-jump-chip:hover { color: var(--accent-text); }
-.new-releases-jump-chip[aria-current="true"] { color: var(--accent-text); border-color: var(--accent); }
-.new-releases-jump-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* The phone and tablet form of the same index: see the max-width block below. */
-.new-releases-jumpbar { display: none; }
+/* The side column is the Show and Genre filter alone, drawn as a card. The
+   Jump to index that sat above it is gone: Genre already narrows the page. */
+.new-releases-filter-card { gap: 24px; padding: 18px 8px 10px; }
 .home-stream .discover-section { scroll-margin-top: 24px; }
 .home-toolbar-actions { display: flex; align-items: center; gap: 10px; }
 .home-toolbar-actions > .desktop-page-filter { display: none; }
@@ -5243,30 +5219,6 @@ a.provider-chip--link:hover {
   .home-side { display: flex; position: static; width: auto; gap: 16px; padding: 0 var(--gut, 1rem); margin-bottom: 24px; }
   .home-side > .home-page-nav,
   .home-side > .home-filter-card { display: none; }
-}
-
-@media (max-width: 1023px) {
-  /* No side column here, so the index is one row of chips that sticks to the
-     top of the page (.app-main is the scroller) and scrolls sideways. */
-  .new-releases-jumpbar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    margin-bottom: 12px;
-    padding: 8px var(--gut, 1rem);
-    background: var(--bg);
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-  .new-releases-jumpbar::-webkit-scrollbar { display: none; }
-  .new-releases-jumpbar .new-releases-jump-chip { padding: 7px 13px; }
-  .new-releases-jumpbar-rule { flex-shrink: 0; width: 1px; height: 18px; margin: 0 4px; background: var(--border-strong); }
-  /* A section scrolled to from the bar stops below it, not under it. */
-  .new-releases-stream .discover-section { scroll-margin-top: 64px; }
 }
 
 /* The first row of a page: that page's controls on the right (Home's

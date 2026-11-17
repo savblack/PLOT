@@ -12,8 +12,6 @@ import EmptyState from './EmptyState.jsx';
 import { DISCOVER_VIEW } from '@plot/core/copy/discoverView.js';
 import { DiscoverToolbar, PlatformCharts, RailSection, RankedCard } from './DiscoverView.jsx';
 import SideFilters from './SideFilters.jsx';
-import { NewReleasesJumpBar, NewReleasesJumpCard } from './NewReleasesJump.jsx';
-import { useActiveRail } from '../hooks/useActiveRail.js';
 
 /* What is out now, then the same filtered, alphabetical set of genre rails.
    The first four rows (Last 30 days, Most Binged, Now Showing, Top 10 by
@@ -62,11 +60,8 @@ export default function NewReleasesView() {
       { key: 'cinema', title: 'Now Showing', subtitle: MEDIA.inCinemas, items: applyFilters(data.cinema) },
     ].filter(rail => rail.items.length > 0);
     const platforms = platformList.length > 0 ? [{ key: 'platforms', title: 'Top 10 by Platform', items: platformList }] : [];
-    const genreRails = prepareNewReleaseGenreRails(data.genreRails, typeFilters, genreFilters).map(rail => ({ ...rail, isGenre: true }));
-    return [...lead, ...platforms, ...genreRails];
+    return [...lead, ...platforms, ...prepareNewReleaseGenreRails(data.genreRails, typeFilters, genreFilters)];
   }, [data.recent, data.genreRails, data.binged, data.cinema, platformList, typeFilters, genreFilters]);
-
-  const [currentKey, jumpTo] = useActiveRail(rails);
 
   if (!app) return null;
   const { openPanel, watchlist } = app;
@@ -81,11 +76,9 @@ export default function NewReleasesView() {
         setGenreFilters={setGenreFilters}
         genres={genres}
       />
-      {!loading && <NewReleasesJumpBar rails={rails} currentKey={currentKey} onJump={jumpTo} />}
       <div className="cal-body new-releases-layout">
         <aside className="cal-side new-releases-side">
-          {!loading && <NewReleasesJumpCard rails={rails} currentKey={currentKey} onJump={jumpTo} />}
-          <section className="hist-card home-filter-card">
+          <section className="hist-card new-releases-filter-card">
             <SideFilters
               typeFilters={typeFilters}
               setTypeFilters={setTypeFilters}

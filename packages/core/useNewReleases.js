@@ -8,44 +8,27 @@ import { localDateStr } from './date.js';
 const hasPoster = item => !!item.poster_path;
 const MIN_RAIL_SIZE = 14;
 
-// TMDB files TV under three combined genres that movies split apart. Listed
-// on their own they read as duplicates beside the movie rails ("Action",
-// "Action & Adventure", "Adventure"), so each one's shows join the movie rails
-// it names. Keyed by name: the ids come from the catalog at runtime.
-const TV_GENRE_HOMES = {
-  'Action & Adventure': ['Action', 'Adventure'],
-  'Sci-Fi & Fantasy': ['Science Fiction', 'Fantasy'],
-  'War & Politics': ['War'],
-};
-
 /**
  * Build one rail for every genre returned by TMDB. Movie and TV catalogs are
- * joined by name, and TV's combined genres (TV_GENRE_HOMES) fold into the
- * movie genres they name. A combined genre stays its own rail only when the
- * movie catalog has none of its homes.
+ * joined by name only when the category is genuinely shared; distinct names
+ * such as "Action" and "Action & Adventure" remain separate sections.
  *
  * @param {{movie?:Array<{id:number,name:string}>,tv?:Array<{id:number,name:string}>}} catalog
  */
 export function buildGenreRailDefinitions(catalog) {
   const rails = new Map();
-  const add = (genre, type, name = genre.name) => {
-    const existing = rails.get(name) || {
-      key: name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-      label: `New in ${name}`,
+  const add = (genre, type) => {
+    const existing = rails.get(genre.name) || {
+      key: genre.name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      label: `New in ${genre.name}`,
       genreIds: [],
     };
     existing[`${type}GenreId`] = genre.id;
-    if (name !== genre.name) existing.tvFolded = true;
     if (!existing.genreIds.includes(genre.id)) existing.genreIds.push(genre.id);
-    rails.set(name, existing);
+    rails.set(genre.name, existing);
   };
-  const movieNames = new Set((catalog?.movie || []).map(genre => genre.name));
   (catalog?.movie || []).forEach(genre => add(genre, 'movie'));
-  (catalog?.tv || []).forEach(genre => {
-    const homes = (TV_GENRE_HOMES[genre.name] || []).filter(name => movieNames.has(name));
-    if (homes.length) homes.forEach(name => add(genre, 'tv', name));
-    else add(genre, 'tv');
-  });
+  (catalog?.tv || []).forEach(genre => add(genre, 'tv'));
   // Horror, Romance and Thriller have no TV genre; their shows come from TMDB
   // keywords instead (keywordGenres.js), the same as in Just Decide.
   for (const rail of rails.values()) {
@@ -105,7 +88,7 @@ async function newestTvByKeywordGenre(movieGenreId, client) {
   return ids.length ? client.discoverNewestByKeyword('tv', ids.join('|')) : null;
 }
 
-async function loadGenreRail({ movieGenreId, tvGenreId, tvKeywordGenre, tvFolded }, hideKids, client = tmdb) {
+async function loadGenreRail({ movieGenreId, tvGenreId, tvKeywordGenre }, hideKids, client = tmdb) {
   const [movieGenreRes, tvGenreRes] = await Promise.all([
     movieGenreId ? client.discoverNewestByGenre('movie', movieGenreId).catch(() => null) : Promise.resolve(null),
     tvGenreId ? client.discoverNewestByGenre('tv', tvGenreId).catch(() => null)
@@ -115,13 +98,10 @@ async function loadGenreRail({ movieGenreId, tvGenreId, tvKeywordGenre, tvFolded
   const movies = (movieGenreRes?.results || []).map(m => ({ ...m, media_type: 'movie' }));
   // Keyword-found shows carry the rail's genre id too, so the page's Horror
   // (etc.) filter keeps them; TMDB's own genre_ids never include it for TV.
-  // The same goes for shows folded in from a combined TV genre: an Action
-  // rail's shows are tagged "Action & Adventure", never the movie "Action".
-  const railGenreForTv = tvKeywordGenre || (tvFolded ? movieGenreId : null);
   const tv = (tvGenreRes?.results || []).map(s => ({
     ...s,
     media_type: 'tv',
-    ...(railGenreForTv ? { genre_ids: [...new Set([...(s.genre_ids || []), railGenreForTv])] } : {}),
+    ...(tvKeywordGenre ? { genre_ids: [...new Set([...(s.genre_ids || []), tvKeywordGenre])] } : {}),
   }));
   return excludeKidsContent([...movies, ...tv].filter(isEnglishOriginTitle), hideKids)
     .filter(hasPoster)

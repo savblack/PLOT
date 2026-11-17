@@ -15,53 +15,18 @@ const rails = [
   { key: 'truecrime', label: 'New in True Crime', genreIds: [], items: [{ id: 4, media_type: 'tv', genre_ids: [] }] },
 ];
 
-test('buildGenreRailDefinitions folds TV\'s combined genres into the movie genres they name', () => {
+test('buildGenreRailDefinitions covers movie and TV catalogs while keeping distinct names separate', () => {
   const definitions = buildGenreRailDefinitions({
-    movie: [{ id: 28, name: 'Action' }, { id: 12, name: 'Adventure' }, { id: 35, name: 'Comedy' }],
-    tv: [{ id: 10759, name: 'Action & Adventure' }, { id: 35, name: 'Comedy' }, { id: 10764, name: 'Reality' }],
+    movie: [{ id: 28, name: 'Action' }, { id: 35, name: 'Comedy' }],
+    tv: [{ id: 10759, name: 'Action & Adventure' }, { id: 35, name: 'Comedy' }],
   });
 
   assert.deepEqual(definitions.map(rail => rail.label), [
     'New in Action',
-    'New in Adventure',
+    'New in Action & Adventure',
     'New in Comedy',
-    'New in Reality',
   ]);
-  const action = definitions.find(rail => rail.key === 'action');
-  assert.deepEqual([action.movieGenreId, action.tvGenreId, action.tvFolded], [28, 10759, true]);
-  // Both ids, so the page's "Action" and "Action & Adventure" filters each keep the rail.
-  assert.deepEqual(action.genreIds, [28, 10759]);
-  assert.deepEqual(definitions.find(rail => rail.key === 'adventure').genreIds, [12, 10759]);
-  const comedy = definitions.find(rail => rail.key === 'comedy');
-  assert.deepEqual([comedy.genreIds, comedy.tvFolded], [[35], undefined]);
-});
-
-test('a combined TV genre keeps its own rail when the movie catalog has none of its homes', () => {
-  const definitions = buildGenreRailDefinitions({
-    movie: [{ id: 35, name: 'Comedy' }],
-    tv: [{ id: 10759, name: 'Action & Adventure' }],
-  });
-  assert.deepEqual(definitions.map(rail => rail.label), ['New in Action & Adventure', 'New in Comedy']);
-});
-
-test('shows folded into a movie genre rail carry that genre id, so the genre filter keeps them', async () => {
-  const client = {
-    async getRecentReleases() { return { movies: [], tv: [] }; },
-    async getGenreCatalog() {
-      return { movie: [{ id: 28, name: 'Action' }], tv: [{ id: 10759, name: 'Action & Adventure' }] };
-    },
-    async getNowPlaying() { return { results: [] }; },
-    async getTrending() { return { results: [] }; },
-    async discoverNewestByGenre(type, genreId) {
-      return type === 'movie'
-        ? { results: [{ id: 1, title: 'Film', original_language: 'en', poster_path: '/a.jpg', release_date: '2026-01-02', genre_ids: [genreId] }] }
-        : { results: [{ id: 2, name: 'Show', original_language: 'en', poster_path: '/b.jpg', first_air_date: '2026-01-03', genre_ids: [genreId] }] };
-    },
-  };
-  const data = await loadNewReleaseData({ client });
-  assert.deepEqual(data.genreRails.map(rail => rail.key), ['action']);
-  const prepared = prepareNewReleaseGenreRails(data.genreRails, ['tv', 'cinema', 'movie'], [28]);
-  assert.deepEqual(prepared[0].items.map(item => [item.media_type, item.id]), [['tv', 2], ['movie', 1]]);
+  assert.deepEqual(definitions.find(rail => rail.key === 'comedy').genreIds, [35]);
 });
 
 test('prepareNewReleaseGenreRails removes the repeated prefix and sorts by genre', () => {
