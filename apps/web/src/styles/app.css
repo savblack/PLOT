@@ -1731,38 +1731,25 @@ svg { stroke-width: 1.5; }
 .cal-filter-tick svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .cal-filter-chev { display: flex; color: var(--text-muted); }
 .cal-filter-chev svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-/* The genre row is the trigger of the shared filter popover. The panel is
-   sticky near the bottom of the viewport, so a menu hanging below the row
-   would be clipped; this one opens to the RIGHT of the column, hanging a
-   little below the row so it reads as coming out of it rather than sitting
-   above it, and grows upward beside the mini months. Two columns of options
-   keep the whole list visible without an inner scroll. */
-/* Genres opened inside the panel (SideFilters genreInline): the chevron
-   points down and flips when open; a long list scrolls within the card so the
-   panel never outgrows the screen. */
+/* Genres open inside the panel (SideFilters): the chevron points down and
+   flips when open. The list scrolls within the card. The side column is
+   sticky, so while the list is open the column scrolls on its own: without
+   that, a panel taller than the window (the Calendar's, under its mini
+   months) would hide the list below the fold with no way to reach it. */
 .cal-filter-chev--down svg { transform: rotate(90deg); transition: transform 0.15s ease; }
 .cal-filter-chev--open svg { transform: rotate(-90deg); }
 .cal-filter-inline {
-  max-height: min(420px, 55vh);
+  max-height: min(420px, 60vh);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.cal-filter-menu { display: block; z-index: 5; }
-.cal-filter-menu .guide-filter-menu {
-  top: auto;
-  bottom: -120px;
-  right: auto;
-  left: calc(100% + 16px);
-  width: 360px;
-  max-height: calc(100vh - 3rem);
-  padding: 0.6rem;
-  border-radius: var(--radius-md);
-}
-.cal-filter-menu .guide-filter-heading { display: none; }
-.cal-filter-menu .guide-filter-group {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 0.5rem;
+@media (min-width: 1024px) {
+  .cal-side:has(.cal-filter-inline) {
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
 }
 
 /* ── Stream ── */
@@ -6310,20 +6297,6 @@ a.provider-chip--link:hover {
 .hist-person-name { font-size: 14px; font-weight: 600; color: var(--text-primary); transition: color 0.12s ease; }
 .hist-person:hover .hist-person-name { color: var(--accent-text); }
 .hist-person:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
-
-/* Filters are the Calendar's rows (SideFilters, .cal-filter*). The genre
-   menu opens to the right of the column, which the Calendar can rely on
-   because it hides its column under 1024px; History keeps the column above
-   the stream on a phone, so the menu drops below its row there instead. */
-@media (max-width: 1023px) {
-  .hist-side .cal-filter-menu .guide-filter-menu {
-    left: 0;
-    right: auto;
-    top: calc(100% + 4px);
-    bottom: auto;
-    width: min(360px, 100%);
-  }
-}
 
 /* ── Stream ── */
 .hist-stream { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 28px; }

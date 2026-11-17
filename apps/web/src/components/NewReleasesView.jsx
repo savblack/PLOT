@@ -71,7 +71,6 @@ export default function NewReleasesView() {
               genreFilters={genreFilters}
               setGenreFilters={setGenreFilters}
               genres={genres}
-              genreInline
             />
           </section>
         </aside>

@@ -18,7 +18,7 @@ function Preview() {
   return (
     <div style={{ width: 264, padding: 24, boxSizing: 'content-box' }}>
       <section className="hist-card new-releases-filter-card">
-        <SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={GENRES} genreInline />
+        <SideFilters typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={GENRES} />
       </section>
     </div>
   );

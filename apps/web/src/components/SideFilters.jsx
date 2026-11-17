@@ -1,19 +1,16 @@
-import { useId, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { MEDIA } from '../copy/media.js';
 import { CALENDAR_VIEW } from '../copy/calendarView.js';
-import GroupedFilterMenu from './GroupedFilterMenu.jsx';
 import { TYPE_ROWS } from './sideFilterRows.js';
 
 /* The Show and Genre filter rows from the Calendar's left column, shared so
-   the History page's panel is the same control and not a lookalike. Show is a
-   row per type with a tick; Genre is one row that opens the grouped genre
-   menu beside the column. Extra sections (History's Status rows) render as
-   children after Genre, in the same row style.
-
-   `genreInline` opens the genres as rows under the Genre row, inside the
-   panel, in place of the menu beside the column. New Releases uses it: its
-   panel sits at the top of the page, where the menu opened partly above the
-   viewport and over the posters (Savannah, 17 Nov 2026). */
+   every page's panel is the same control and not a lookalike. Show is a row
+   per type with a tick; Genre is one row that opens the genres as rows under
+   it, inside the panel. It used to open a menu beside the column, which on
+   New Releases sat partly above the viewport and over the posters, so its
+   first rows could not be reached (Savannah, 17 Nov 2026: in the panel, on
+   every page that has it). Extra sections (History's Status rows) render as
+   children after Genre, in the same row style. */
 
 const ChevronRight = () => <svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6" /></svg>;
 const Tick = () => <svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12" /></svg>;
@@ -47,10 +44,20 @@ export function FilterRow({ label, on, onToggle }) {
 }
 
 /* Genre as rows inside the panel: the summary row opens and closes the list,
-   "All genres" clears the selection, and each genre is a tickable row. */
+   "All genres" clears the selection, and each genre is a tickable row. The
+   side column is sticky, so a panel taller than the window could never be
+   scrolled to its end (the Calendar's Genre row sits at the foot of the
+   window). While the list is open the column scrolls on its own
+   (.cal-side:has(.cal-filter-inline) in app.css), and opening brings the list
+   into view. */
 function InlineGenres({ genreFilters, setGenreFilters, genres }) {
   const [open, setOpen] = useState(false);
   const listId = useId();
+  const listRef = useRef(null);
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (open && list) list.scrollIntoView?.({ block: 'nearest' });
+  }, [open]);
   const toggle = (id) => setGenreFilters(
     genreFilters.includes(id) ? genreFilters.filter(g => g !== id) : [...genreFilters, id],
   );
@@ -67,7 +74,7 @@ function InlineGenres({ genreFilters, setGenreFilters, genres }) {
         <span className={`cal-filter-chev cal-filter-chev--down${open ? ' cal-filter-chev--open' : ''}`}><ChevronRight /></span>
       </button>
       {open && (
-        <div id={listId} className="cal-filter-inline" role="group" aria-label={CALENDAR_VIEW.filter.genre}>
+        <div id={listId} ref={listRef} className="cal-filter-inline" role="group" aria-label={CALENDAR_VIEW.filter.genre}>
           <FilterRow label={MEDIA.allGenres} on={genreFilters.length === 0} onToggle={() => setGenreFilters([])} />
           {genres.map(g => (
             <FilterRow key={g.id} label={g.name} on={genreFilters.includes(g.id)} onToggle={() => toggle(g.id)} />
@@ -88,11 +95,10 @@ function InlineGenres({ genreFilters, setGenreFilters, genres }) {
  * @param {{id: string, label: string}[]} [props.typeRows]  Defaults to TV, Movies, Cinema.
  * @param {import('react').ReactNode} [props.children]  Extra sections after Genre.
  * @param {boolean} [props.showGenre]  false where items carry no genres (Your people).
- * @param {boolean} [props.genreInline]  Open the genres as rows inside the panel, not as a menu beside it.
  */
 export default function SideFilters({
   typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres,
-  typeRows = TYPE_ROWS, children, showGenre = true, genreInline = false,
+  typeRows = TYPE_ROWS, children, showGenre = true,
 }) {
   // A type can be switched off only while another stays on: with nothing
   // ticked the filter would read as "show nothing" but behave as "show all".
@@ -117,30 +123,7 @@ export default function SideFilters({
 
       {showGenre && <div className="cal-filter">
         <div className="cal-filter-label">{CALENDAR_VIEW.filter.genre}</div>
-        {genreInline ? (
-          <InlineGenres genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} />
-        ) : <GroupedFilterMenu
-          ariaLabel={CALENDAR_VIEW.filter.genre}
-          className="cal-filter-menu"
-          groups={[{
-            heading: MEDIA.genreHeading,
-            options: genres.map(g => ({ id: g.id, label: g.name })),
-            value: genreFilters,
-            onChange: setGenreFilters,
-          }]}
-          trigger={({ open, toggle }) => (
-            <button
-              type="button"
-              className="cal-filter-row"
-              onClick={toggle}
-              aria-expanded={open}
-              aria-haspopup="true"
-            >
-              <span className="cal-filter-name">{genreSummary(genreFilters, genres)}</span>
-              <span className="cal-filter-chev"><ChevronRight /></span>
-            </button>
-          )}
-        />}
+        <InlineGenres genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} />
       </div>}
 
       {children}
