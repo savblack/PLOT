@@ -24,6 +24,7 @@ import { hasServiceKeyBearer } from '../_shared/serviceBearer.ts';
 import { clampDescription, fitTitle } from '../_shared/seoText.ts';
 import { scheduleTitleIndexWrite, type IndexedTitle } from '../_shared/titlePageIndex.ts';
 import { reportError } from '../_shared/posthogLog.ts';
+import { renderTitlesSitemap } from '../_shared/titleSitemap.js';
 
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
@@ -75,8 +76,8 @@ ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${SITE}/_partials/footer.css">
-<link rel="stylesheet" href="${SITE}/title-page.css?v=d3e4be911168">
-<script defer src="${SITE}/title-page.js?v=37a1a8165a48"></script>
+<link rel="stylesheet" href="${SITE}/title-page.css?v=c65a086a0c38">
+<script defer src="${SITE}/title-page.js?v=69106bab580c"></script>
 </head>
 <body>
 ${GTM_NOSCRIPT}
@@ -158,20 +159,26 @@ const SITEMAP_CACHE = 'public, s-maxage=86400, stale-while-revalidate=604800';
 
 async function buildTitlesSitemap(): Promise<{ xml: string; count: number }> {
   const supabase = admin();
-  const urls = new Map<string, string>(); // "type:id" -> loc (dedupes)
+  const titles: { media_type: 'movie' | 'tv'; tmdb_id: number; title: string }[] = [];
   const add = (mt: unknown, rawId: unknown, t: unknown) => {
     const id = Number(rawId);
     if (!Number.isInteger(id) || id <= 0) return;
     const type = mt === 'tv' ? 'tv' : 'movie';
-    urls.set(`${type}:${id}`, `${SITE}/${type}/${slugify(String(t || ''))}-${id}`);
+    titles.push({ media_type: type, tmdb_id: id, title: String(t || '') });
   };
 
-  const { data: tracked } = await supabase
-    .from('marketing_tracked_titles')
-    .select('media_type, tmdb_id, title')
-    .order('popularity', { ascending: false })
-    .limit(1500);
-  for (const t of tracked || []) add(t.media_type, t.tmdb_id, t.title);
+  // Do not cap the tracked catalogue at 1,500. New Thursday seeds can have
+  // null popularity and would otherwise fall below that cutoff.
+  for (let from = 0; from < INDEX_LIMIT; from += INDEX_PAGE) {
+    const { data: tracked, error } = await supabase
+      .from('marketing_tracked_titles')
+      .select('media_type, tmdb_id, title')
+      .order('popularity', { ascending: false })
+      .range(from, from + INDEX_PAGE - 1);
+    if (error || !tracked?.length) break;
+    for (const t of tracked) add(t.media_type, t.tmdb_id, t.title);
+    if (tracked.length < INDEX_PAGE) break;
+  }
 
   const { data: snaps } = await supabase
     .from('marketing_trending_snapshots')
@@ -229,11 +236,7 @@ async function buildTitlesSitemap(): Promise<{ xml: string; count: number }> {
     await Promise.all(requests);
   }
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${[...urls.values()].map((loc) => `<url><loc>${esc(loc)}</loc><changefreq>weekly</changefreq></url>`).join('\n')}
-</urlset>`;
-  return { xml, count: urls.size };
+  return renderTitlesSitemap(titles, SITE);
 }
 
 async function storeTitlesSitemap(): Promise<{ xml: string; count: number }> {
@@ -356,6 +359,14 @@ Deno.serve(async (req) => {
     inCinemas = days >= 0 && days <= 90 && streaming.length === 0 && rentBuy.length === 0;
   }
   const saveHref = `${APP}/save?media_type=${type}&tmdb_id=${id}&src=title_page`;
+  const available = streaming.length > 0 || rentBuy.length > 0;
+  const experimentCopy = available ? 'Save to your watchlist.' : 'Get notified when it streams.';
+  const experimentKind = available ? 'save' : 'track';
+  // The HTML is shared across cache entries. CSS hides both test placements
+  // until the browser receives an explicit "test" flag value.
+  const stickyHtml = `<div class="cta-sticky cta-test" role="region" aria-label="Save this title">
+    <span>${esc(title)}</span><a class="cta" href="${esc(saveHref)}" data-cta="title_${experimentKind}_sticky">${experimentCopy}</a>
+  </div>`;
   // A real control now that the Pages proxy forwards ?r= (it used to build the
   // region from Cloudflare geo alone, so this could only ever be a label).
   // <details> so it works with no JavaScript. The choices are submit buttons in
@@ -387,7 +398,7 @@ Deno.serve(async (req) => {
     watchBody = `<div class="watch">${rows}</div>
   <div class="card-foot">
     <span class="src">Availability from JustWatch via TMDB. Changes over time.</span>
-    <a class="cta" href="${esc(saveHref)}" data-cta="title_save">Save to your plot</a>
+    <a class="cta" href="${esc(saveHref)}" data-cta="title_save"><span class="cta-control-copy">Save to your plot</span><span class="cta-test-copy">Save to your watchlist.</span></a>
   </div>`;
   } else if (inCinemas) {
     watchBody = `<div class="answer">
@@ -465,6 +476,19 @@ Deno.serve(async (req) => {
       }).join('')}</div></div>`
     : '';
 
+  // TMDB's appended videos are the only source of keys. Only an official
+  // YouTube Trailer gets a player; the iframe is created after a click.
+  const trailer = (data.videos?.results || []).find((video: any) =>
+    video?.site === 'YouTube' && video?.type === 'Trailer' && video?.official === true && /^[A-Za-z0-9_-]{11}$/.test(video.key || ''));
+  const trailerKey = trailer?.key || null;
+  const trailerHtml = trailerKey ? `<div class="section title-trailer">
+    <h2>Official trailer</h2>
+    <button class="trailer-play" type="button" data-video-key="${trailerKey}" aria-label="Play the official trailer for ${esc(title)}">
+      <img src="https://i.ytimg.com/vi/${trailerKey}/hqdefault.jpg" alt="" loading="lazy">
+      <span class="trailer-play-icon" aria-hidden="true">▶</span>
+    </button>
+  </div>` : '';
+
   // ── <head>: description, canonical, OG, JSON-LD ──
   const availableOn = streaming.slice(0, 3).map((provider) => provider.provider_name);
   const availabilityDescription = availableOn.length
@@ -500,6 +524,13 @@ Deno.serve(async (req) => {
     ...(actors.length ? { actor: actors } : {}),
     ...(genres.length ? { genre: genres } : {}),
     ...(rating && votes ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: rating, ratingCount: votes, bestRating: 10, worstRating: 0 } } : {}),
+    ...(trailerKey ? { video: {
+      '@type': 'VideoObject',
+      name: `${title} official trailer`,
+      thumbnailUrl: `https://i.ytimg.com/vi/${trailerKey}/hqdefault.jpg`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${trailerKey}`,
+      ...(trailer.published_at ? { uploadDate: trailer.published_at } : {}),
+    } } : {}),
     url: canonicalUrl,
   });
   const head = `<meta name="description" content="${esc(desc)}">
@@ -527,7 +558,7 @@ Deno.serve(async (req) => {
     isMovie ? '' : (data.networks || [])[0]?.name || '',
   ].filter(Boolean).join('<span class="dot">·</span>');
 
-  const body = `
+  const body = `${stickyHtml}
 <nav class="crumbs" aria-label="Breadcrumb">
   <a href="${SITE}">Home</a><span class="sep">/</span><span>${isMovie ? 'Films' : 'Series'}</span>${genres[0] ? `<span class="sep">/</span><span>${esc(genres[0])}</span>` : ''}
 </nav>
@@ -542,6 +573,7 @@ Deno.serve(async (req) => {
     </div>
     <h1 class="title">${esc(title)}</h1>
     ${metaBits ? `<div class="meta">${metaBits}</div>` : ''}
+    <a class="cta cta-lead cta-test" href="${esc(saveHref)}" data-cta="title_${experimentKind}_lead">${experimentCopy}</a>
   </div>
 </div>
 
@@ -553,6 +585,7 @@ ${watchHtml}
   </div>
   ${factsHtml}
 </div>
+${trailerHtml}
 ${castHtml}
 ${relHtml}
 `;
