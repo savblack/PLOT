@@ -84,6 +84,9 @@ export function titleForView(view) {
  * @param {string} id
  */
 export function isActiveView(view, id) {
+  // A comparison with one person lives under their profile
+  // (u/<username>/compare) but is still Compare, so the menu keeps it lit.
+  if (id === 'compare' && /^u\/[^/]+\/compare$/.test(view || '')) return true;
   return view === id || (view || '').startsWith(`${id}/`);
 }
 
