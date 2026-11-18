@@ -10,7 +10,7 @@
 export const ABOUT_PAGE = {
   meta: {
     title: "About Plot: the free movie & TV journal built by one person",
-    description: "Plot is a free movie and TV tracker and journal built by a solo developer. Track what you watch, never miss a release, and pick what to watch tonight. Premium from US$2/month.",
+    description: "Plot is a free movie and TV tracker and journal built by a solo developer. Track what you watch, never miss a release, and pick what to watch tonight. Premium from $2 a month.",
   },
   pageLabel: "About",
   h1: "About plot",
@@ -52,7 +52,7 @@ export const ABOUT_PAGE = {
           detail: "Follow friends, read what they thought in their own words, and compare taste with one number. Nobody can resist finding out they're a 41. <a href=\"/taste-match\" data-cta=\"about-features\">Try Taste match</a>",
         },
       ],
-      premiumNote: "Free to start. Moving from Letterboxd, Trakt, Netflix or TMDB? Bring your history with you, and confirm every entry before it's saved. Premium is US$3 a month or US$24 a year, with the first 7 days free, and adds Decide, a live calendar subscription and unlimited lists. <a href=\"/pricing\" data-cta=\"about-premium\">See what Premium adds</a>",
+      premiumNote: "Free to start. Moving from Letterboxd, Trakt, Netflix or TMDB? Bring your history with you, and confirm every entry before it's saved. Premium is $3 a month, or $2 a month paid yearly, with the first 7 days free, and adds Decide, a live calendar subscription and unlimited lists. <a href=\"/pricing\" data-cta=\"about-premium\">See what Premium adds</a>",
     },
     {
       id: "solo",
@@ -76,11 +76,11 @@ export const ABOUT_PAGE = {
         },
         {
           term: "What it costs",
-          detail: "Nothing. Premium is US$3/month or US$24/year, with the first 7 days free.",
+          detail: "Nothing. Premium is $3 a month, or $2 a month paid yearly, with the first 7 days free.",
         },
         {
           term: "Where it runs",
-          detail: "Any browser, at <a href=\"https://app.theplot.tv\" data-cta=\"about-facts\">app.theplot.tv</a>. iPhone and Android are coming.",
+          detail: "Any browser, at <a href=\"https://app.theplot.tv\" data-cta=\"about-facts\">app.theplot.tv</a>. An iPhone app is coming.",
         },
       ],
       ctas: [
@@ -100,15 +100,15 @@ export const ABOUT_PAGE = {
       faq: [
         {
           q: "Is Plot free?",
-          a: "Yes. Tracking, your watchlist, the release calendar, What's On, up to 5 lists and following friends are free. Premium adds unlimited lists, a live calendar subscription and Decide for US$3/month or US$24/year, with a 7-day free trial.",
+          a: "Yes. Tracking, your watchlist, the release calendar, What's On, up to 5 lists and following friends are free. Premium adds unlimited lists, a live calendar subscription and Decide for $3 a month, or $2 a month paid yearly, with a 7-day free trial.",
         },
         {
           q: "How is Plot different from Letterboxd, Trakt or IMDb?",
           a: "Plot covers movies and TV together, in one journal, in daylight. Reviews are short on purpose, so you log a feeling instead of writing an essay. And Plot leans into what happens next: a release calendar, where to watch on every title, and a daily What's On page.",
         },
         {
-          q: "Is there a Plot app for iPhone or Android?",
-          a: "Not yet. Plot runs in any browser at app.theplot.tv and works well on a phone. Native iPhone and Android apps are in progress, and you can ask to be notified on the <a href=\"/#app-soon\" data-cta=\"about-faq\">home page</a>.",
+          q: "Is there a Plot app for iPhone?",
+          a: "Not yet. Plot runs in any browser at app.theplot.tv and works well on a phone. A native iPhone app is in progress, and you can ask to be notified on the <a href=\"/#app\" data-cta=\"about-faq\">home page</a>.",
         },
         {
           q: "Can I import my history from another app?",
