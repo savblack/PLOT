@@ -3,7 +3,7 @@
 
 export const NOT_FOUND_PAGE = {
   meta: {
-    title: 'Page not found — plot',
+    title: 'Page not found · Plot',
     description: "The page you were looking for isn't here.",
   },
   code: '404',

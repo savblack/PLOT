@@ -75,7 +75,7 @@ ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${SITE}/_partials/footer.css">
-<link rel="stylesheet" href="${SITE}/title-page.css?v=d3e4be911168">
+<link rel="stylesheet" href="${SITE}/title-page.css?v=7abe33fd9c75">
 <script defer src="${SITE}/title-page.js?v=37a1a8165a48"></script>
 </head>
 <body>
@@ -111,7 +111,7 @@ ${FOOTER_HTML}
 
 function notFound() {
   return page(
-    'Not found · plot',
+    'Not found · Plot',
     '<meta name="robots" content="noindex">',
     `<div class="section"><h1 class="title">We couldn't find that title.</h1>
      <p class="overview" style="margin-top:16px">It may have moved or never existed. Try <a href="${SITE}/whats-on" style="color:var(--accent-2);font-weight:600">What's On</a>.</p></div>`,
@@ -298,7 +298,7 @@ Deno.serve(async (req) => {
   if (!Number.isInteger(id) || id <= 0) return notFound();
 
   const key = Deno.env.get('TMDB_API_KEY');
-  if (!key) return page('plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 503, false);
+  if (!key) return page('Plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 503, false);
 
   let data: any;
   try {
@@ -306,10 +306,10 @@ Deno.serve(async (req) => {
       `${TMDB}/${type}/${id}?api_key=${key}&language=en-US&append_to_response=watch/providers,credits,videos,recommendations`,
     );
     if (r.status === 404) return notFound();
-    if (!r.ok) return page('plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
+    if (!r.ok) return page('Plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
     data = await r.json();
   } catch {
-    return page('plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
+    return page('Plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
   }
 
   const isMovie = type === 'movie';
@@ -392,8 +392,8 @@ Deno.serve(async (req) => {
   } else if (inCinemas) {
     watchBody = `<div class="answer">
     <div class="answer-text" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span class="badge">In cinemas</span>
-      <span><span class="answer-hd">Showing in cinemas now.</span><span class="answer-sub">Not yet on any streaming service.</span></span>
+      <span class="badge">In theaters</span>
+      <span><span class="answer-hd">Showing in theaters now.</span><span class="answer-sub">Not yet on any streaming service.</span></span>
     </div>
     <div class="answer-act"><a class="cta" href="${esc(saveHref)}" data-cta="title_track">Tell me when it streams</a></div>
   </div>
@@ -421,7 +421,8 @@ Deno.serve(async (req) => {
     const d = new Date(iso);
     return isNaN(d.getTime())
       ? ''
-      : `${d.getUTCDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+      // US order (Jul 15, 2026): Plot's marketing pages are written for a US reader.
+      : `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
   };
   const director = isMovie
     ? (data.credits?.crew || []).find((c: any) => c.job === 'Director')?.name || ''
@@ -470,7 +471,7 @@ Deno.serve(async (req) => {
   const availabilityDescription = availableOn.length
     ? `Watch ${title}${yr ? ` (${yr})` : ''} on ${availableOn.join(', ')} in ${regionName(region)}. See streaming, rental and purchase options.`
     : inCinemas
-      ? `${title}${yr ? ` (${yr})` : ''} is showing in cinemas in ${regionName(region)}. Track it on plot to know when it starts streaming.`
+      ? `${title}${yr ? ` (${yr})` : ''} is showing in theaters in ${regionName(region)}. Track it on Plot to know when it starts streaming.`
       : `Find where to watch ${title}${yr ? ` (${yr})` : ''} in ${regionName(region)} and track when it becomes available to stream, rent or buy.`;
   // Overview pads the availability line past the "too short" mark; a title
   // with no overview gets a sentence about tracking it instead.
@@ -480,7 +481,7 @@ Deno.serve(async (req) => {
   // one; it also pushed most titles past 60 characters.
   const yrPart = yr ? ` (${yr})` : '';
   const metaTitle = fitTitle([
-    `${title}${yrPart}: where to watch · plot`,
+    `${title}${yrPart}: where to watch · Plot`,
     `Where to watch ${title}${yrPart}`,
     `Where to watch ${title}`,
     title,
@@ -529,7 +530,7 @@ Deno.serve(async (req) => {
 
   const body = `
 <nav class="crumbs" aria-label="Breadcrumb">
-  <a href="${SITE}">Home</a><span class="sep">/</span><span>${isMovie ? 'Films' : 'Series'}</span>${genres[0] ? `<span class="sep">/</span><span>${esc(genres[0])}</span>` : ''}
+  <a href="${SITE}">Home</a><span class="sep">/</span><span>${isMovie ? 'Movies' : 'TV'}</span>${genres[0] ? `<span class="sep">/</span><span>${esc(genres[0])}</span>` : ''}
 </nav>
 
 <div class="band${backdrop ? '' : ' noart'}">${backdrop ? `<img src="${esc(backdrop)}" alt="" fetchpriority="high"><div class="scrim"></div>` : ''}</div>
@@ -537,7 +538,7 @@ Deno.serve(async (req) => {
   ${poster ? `<div class="poster"><img src="${esc(poster)}" alt="${esc(title)} poster"></div>` : ''}
   <div class="lead-meta">
     <div class="kind">
-      <span class="chip">${isMovie ? 'Film' : 'Series'}</span>
+      <span class="chip">${isMovie ? 'Movie' : 'TV'}</span>
       ${genres.slice(0, 2).map((g: string) => `<span class="genre">${esc(g)}</span>`).join('')}
     </div>
     <h1 class="title">${esc(title)}</h1>

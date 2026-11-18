@@ -8,12 +8,12 @@
 export const META = {
   title: 'plot | Movie & TV Tracker',
   description: "plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
-  ogImageAlt: 'plot — your movie & TV companion',
+  ogImageAlt: 'Plot: your movie & TV companion',
 };
 
 export const HERO = {
   headline: 'Always know what to watch.',
-  sub: 'All the movies and shows you’ve seen, saved and are counting down to. Finally in one place. That’s Plot.',
+  sub: 'Every movie and show you’ve seen, saved, or can’t wait for. Finally in one place.',
   cta: 'Start tracking',
   note: 'Free to start. Your watchlist starts here.',
   // "Up next": a fan of three posters with a notification over them. Titles
@@ -106,7 +106,7 @@ export const APP = {
   headline: 'plot, in your pocket.',
   body: 'Everything you love about Plot: discover, track, curate and share. Be the first to know when the app launches.',
   notifyCta: 'Notify me',
-  notifySuccess: "You're on the list — we'll email you the moment the app lands.",
+  notifySuccess: "You're on the list. We'll email you the moment the app lands.",
 };
 
 // Replaces "Built by a solo developer" and its Ko-fi button.
@@ -114,7 +114,8 @@ export const INDIE = {
   headline: 'Made by an independent developer, not a studio or streaming platform.',
   body: 'Plot answers to the people who use it, not advertisers or investors. Premium keeps it that way.',
   pills: ['No ads', 'Independent', 'Free plan, forever'],
-  cta: 'Support Plot with Premium', // same checkout intent as the Premium card
+  cta: 'Start tracking',
+  premiumCta: 'See Premium', // links to /pricing
   story: 'Read the story',
 };
 

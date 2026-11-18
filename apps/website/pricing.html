@@ -76,9 +76,9 @@
 
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=2d83d1fa" />
-  <link rel="stylesheet" href="/nav.css?v=ba29d7a0" />
-  <link rel="stylesheet" href="/premium-stories.css?v=1409093d" />
+  <link rel="stylesheet" href="/ui.css?v=054517e3" />
+  <link rel="stylesheet" href="/nav.css?v=579e0491" />
+  <link rel="stylesheet" href="/premium-stories.css?v=3395f5f6" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -164,7 +164,7 @@
     .billing-opt.is-active { background: var(--bg); color: var(--text); }
     .billing-opt:focus-visible { outline: 2px solid var(--fill); outline-offset: 2px; }
     .billing-save {
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -204,7 +204,7 @@
       border-radius: var(--r-pill);
       background: var(--sage);
       color: var(--text);
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       font-weight: 600;
       letter-spacing: 0.04em;
     }
@@ -311,11 +311,13 @@
     .cmp-group td {
       padding: 2rem 1rem 0.6rem;
       text-align: left;
-      font-size: 0.72rem;
+      /* Ink, not the accent: pink text this small cannot reach 4.5:1 on
+         the cream ground. 0.82rem = 11.5px on the 14px site base. */
+      font-size: 0.82rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--accent);
+      color: var(--text);
       border-bottom: 0;
     }
     .cmp-yes { display: inline-flex; }
@@ -380,6 +382,25 @@
       .plan-amount { font-size: 3.2rem; }
       .closer { padding: 5rem 1.25rem 3rem; }
       .nav-links { gap: 0.9rem; }
+
+      /* Comparison table on a phone: both plans side by side, no sideways
+         scroll. The price cards already sit above the table, so the header
+         keeps only the plan names, pinned under the floating nav pill
+         (26px from the top, 52px tall) while the rows scroll. The scroll box
+         stops scrolling so `position: sticky` reaches the page. */
+      .cmp-scroll { overflow-x: visible; }
+      .cmp-table { min-width: 0; table-layout: fixed; font-size: 0.9rem; }
+      .cmp-table th, .cmp-table td { padding: 0.8rem 0.35rem; }
+      .cmp-table .cmp-feat { width: 54%; padding-left: 0; }
+      .cmp-table thead th { position: sticky; top: 84px; z-index: 1; background: var(--bg); box-shadow: inset 0 -1px 0 var(--rule); }
+      .cmp-head { padding: 10px 0; border-radius: 0; background: none; align-items: center; }
+      .cmp-head--free, .cmp-head--premium { background: none; color: var(--text); }
+      .cmp-head .plan-price, .cmp-head .plan-billed, .cmp-head .btn { display: none; }
+      .cmp-head .plan-name { font-family: var(--sans); font-size: 0.9rem; font-weight: 600; letter-spacing: 0; }
+      .cmp-head--premium .plan-name { padding: 4px 10px; border-radius: var(--r-pill); background: var(--ink); color: var(--bg); }
+      .cmp-group td { padding: 1.6rem 0 0.4rem; }
+      .cmp-text { font-size: 0.86rem; }
+      .cmp-table tbody tr:last-child td.cmp-premium { border-radius: 0 0 12px 12px; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   </style>

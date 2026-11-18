@@ -297,7 +297,7 @@
   background: var(--surface);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 0.62rem;
+  font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -305,7 +305,7 @@
 }
 .chip-pink { background: var(--fill); }
 .chip-sage { background: var(--sage); }
-.chip-plain { text-transform: none; letter-spacing: 0.02em; font-weight: 500; font-size: 0.66rem; }
+.chip-plain { text-transform: none; letter-spacing: 0.02em; font-weight: 500; font-size: 0.8rem; }
 
 
 /* Cards and panels — the deeper cream, 20px radius, no border, no shadow */
@@ -322,5 +322,5 @@
 
 /* Display type helpers */
 .display { font-family: var(--display); font-weight: 700; letter-spacing: var(--display-tracking); line-height: 0.95; }
-.caps { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
+.caps { font-size: 0.8rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
 .quote { font-family: var(--display); font-weight: 500; }

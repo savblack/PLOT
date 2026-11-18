@@ -76,7 +76,7 @@
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Plot — your movie &amp; TV companion" />
+  <meta property="og:image:alt" content="Plot: your movie &amp; TV companion" />
   <meta property="og:url" content="https://theplot.tv/" />
 
   <!-- Twitter / X card -->
@@ -112,8 +112,8 @@
   <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=2d83d1fa" />
-  <link rel="stylesheet" href="/nav.css?v=ba29d7a0" />
+  <link rel="stylesheet" href="/ui.css?v=054517e3" />
+  <link rel="stylesheet" href="/nav.css?v=579e0491" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -546,7 +546,7 @@
     .ticker-badge {
       flex-shrink: 0;
       font-family: var(--sans);
-      font-size: 0.72rem;
+      font-size: 0.8rem;
       font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
@@ -592,7 +592,7 @@
 
     .ticker-cat {
       font-family: var(--sans);
-      font-size: 0.58rem;
+      font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
@@ -661,10 +661,14 @@
     }
     .woc-form button:hover:not(:disabled) { background: var(--fill-hover); border-color: var(--fill-hover); }
     .woc-form button:disabled { opacity: 0.6; cursor: default; }
+    /* The app waitlist is a secondary goal on the homepage: an outline button,
+       so Start tracking stays the one pink action below the hero. */
+    #appNotifyForm button { background: var(--surface); border-color: var(--rule); }
+    #appNotifyForm button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--rule); }
 
     /* Notify and Subscribe are each the primary action in their own section. */
 
-    .woc-msg { font-size: 0.78rem; color: var(--text-secondary); min-height: 1.1em; padding-left: 0.5rem; }
+    .woc-msg { font-size: 0.8rem; color: var(--text-secondary); min-height: 1.1em; padding-left: 0.5rem; }
 
     /* Honeypot: invisible to humans, tempting to bots */
     .woc-form .fn-website { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
@@ -776,18 +780,18 @@
 
     /* Never miss a drop: the next releases, filled from /api/discover. */
     .dr-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-    .dr-sub { font-size: 0.75rem; color: var(--text-secondary); }
+    .dr-sub { font-size: 0.8rem; color: var(--text-secondary); }
     .dr-rows { list-style: none; margin: 0; padding: 0; }
     .dr-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; }
     .dr-row + .dr-row { border-top: 1px solid var(--rule); }
     .dr-date { width: 44px; flex-shrink: 0; text-align: center; line-height: 1; }
-    .dr-dow { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); }
+    .dr-dow { display: block; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); }
     .dr-day { display: block; font-family: var(--display); font-weight: 700; font-size: 1.6rem; }
     .dr-poster { width: 44px; height: 66px; flex-shrink: 0; object-fit: cover; border-radius: 6px; background: var(--surface); }
     .dr-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .dr-name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dr-kind { font-size: 0.8rem; color: var(--text-secondary); }
-    .dr-chip { margin-left: auto; flex-shrink: 0; padding: 5px 10px; border-radius: var(--r-pill); font-size: 0.75rem; font-weight: 600; background: var(--surface); color: var(--text-secondary); }
+    .dr-chip { margin-left: auto; flex-shrink: 0; padding: 5px 10px; border-radius: var(--r-pill); font-size: 0.8rem; font-weight: 600; background: var(--surface); color: var(--text-secondary); }
     .dr-chip.is-saved { background: var(--fill); color: var(--text); }
 
     /* Bring your history: a watch history filling in poster by poster, then
@@ -857,6 +861,7 @@
     .pm { max-width: 1000px; margin: 0 auto; }
     .pm-head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: clamp(20px, 3vw, 32px) 40px; margin-bottom: clamp(28px, 5vw, 48px); }
     .pm-head .hx-headline { margin-bottom: 0; }
+    .pm-cta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
     .pm-price { margin: 0; font-size: 0.9rem; color: var(--text-secondary); }
     .pm-price strong { color: var(--text); }
     .pm-grid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: clamp(14px, 2vw, 20px); row-gap: 0; margin-bottom: calc(-1 * clamp(14px, 2vw, 20px)); }
@@ -1018,7 +1023,8 @@
       }
       #app .hx-inner { grid-template-rows: auto; grid-template-areas: "copy" "visual" "actions"; }
       .hx-body { margin-bottom: 0; }
-      .hx-actions { flex-direction: column; align-items: stretch; gap: 0.75rem; text-align: center; }
+      /* Buttons keep their own width on a phone (centred), never full-bleed. */
+      .hx-actions { flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; }
       .hx-actions .btn { justify-content: center; }
       #indie .hx-body { margin-bottom: 1.6rem; }
       #indie .hx-actions { align-self: stretch; }
@@ -1150,7 +1156,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <section id="hero">
     <div class="hero-copy">
       <h1 class="hero-headline">Always know what to watch</h1>
-      <p class="hero-sub">All the movies and shows you’ve seen, saved and are counting down to. Finally in one place. That’s Plot.</p>
+      <p class="hero-sub">Every movie and show you’ve seen, saved, or can’t wait for. Finally in one place.</p>
       <div class="hero-search-wrap">
       <form class="hero-search" action="https://app.theplot.tv/signup" method="get" role="search" data-cta="hero_search">
         <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>
@@ -1179,7 +1185,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
        Bear from the discover mockup below, Perfect Days from the app's history
        fixture). The reviews, dates and note are sample diary content. -->
   <div class="hero-trust">
-    <p>Bring your whole history with you, free on every plan</p>
+    <p>Import from any of these, free on every plan</p>
     <ul aria-label="Import from"><li>Letterboxd</li><li>Trakt</li><li>TV Time</li><li>IMDb</li><li class="hero-trust-more">and more</li></ul>
   </div>
 
@@ -1296,7 +1302,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="pm reveal">
       <div class="pm-head">
         <div><h2 class="hx-headline" id="premiumHeadline">Less deciding.<br>More watching.</h2></div>
-        <p class="pm-price"><strong>$2/mo</strong> billed yearly, 4 months free.</p>
+        <div class="pm-cta"><p class="pm-price"><strong>$2/mo</strong> billed yearly, 4 months free.</p><a href="/pricing" class="btn btn-outline" data-cta="home-premium-see">See Premium</a></div>
       </div>
       <div class="pm-grid">
         <div class="pm-tile"><h3>Something to watch, in under a minute.</h3><p>Tell Plot how long you’ve got and what you’re in the mood for.</p>
@@ -1391,7 +1397,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Free plan, forever</li>
       </ul>
       <div class="hx-actions">
-        <a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" data-cta="indie-premium">Support Plot with Premium</a>
+        <a href="https://app.theplot.tv/signup" class="btn btn-primary btn-large" data-cta="indie-signup">Start tracking</a>
+        <a href="/pricing" class="btn btn-outline btn-large" data-cta="indie-premium">See Premium</a>
         <a href="/about" class="hx-link" data-cta="indie-about">Read the story</a>
       </div>
     </div>
@@ -1489,13 +1496,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             msg.textContent = success;
             form.reset();
           }).catch(function () {
-            msg.textContent = "Something went wrong — try again in a minute.";
+            msg.textContent = "We couldn’t add you just now. Try again in a minute.";
           }).finally(function () {
             button.disabled = false;
           });
         });
       }
-      wire(document.getElementById('appNotifyForm'), document.getElementById('appNotifyMsg'), "You're on the list — we'll email you the moment the app lands.", 'mobile-app');
+      wire(document.getElementById('appNotifyForm'), document.getElementById('appNotifyMsg'), "You're on the list. We'll email you the moment the app lands.", 'mobile-app');
     })();
     // Cache by full query string so identical calls across the page (e.g.
     // movie/now_playing requested by both the trending sets and the ticker)
@@ -1838,7 +1845,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         });
         populate([
           group('Trending Now', trending,   12),
-          group('In Cinemas',   nowPlaying, 10),
+          group('In Theaters',  nowPlaying, 10),
           group('Coming Soon',  upcoming,   10),
           group('Top Rated TV', topTv,      10),
         ]);
