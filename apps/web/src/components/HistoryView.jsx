@@ -110,15 +110,15 @@ function DrilldownChip({ label, onRemove }) {
   );
 }
 
-/* The share-card entry on a side card: an icon in the head, pink when that
-   card can be shared right now, cream when its data is still thin. Path 1
-   in docs/design/share-cards.md. */
-function ShareIcon({ what, ready, onClick }) {
+/* The share-card entry on a side card: an icon in the head, always the
+   neutral cream (the accent is not decoration). Path 1 in
+   docs/design/share-cards.md. */
+function ShareIcon({ what, onClick }) {
   if (!onClick) return null;
   return (
     <button
       type="button"
-      className={`hist-share${ready ? ' hist-share--ready' : ''}`}
+      className="hist-share"
       onClick={onClick}
       aria-label={SHARE_CARDS.shareCardAria(what)}
       title={SHARE_CARDS.shareAsCard}
@@ -128,7 +128,7 @@ function ShareIcon({ what, ready, onClick }) {
   );
 }
 
-function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName, onShare, shareReady, drillFor, upgradeTo, onUpgrade }) {
+function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genreName, onShare, drillFor, upgradeTo, onUpgrade }) {
   const wd = favouriteWeekday(entries);
   const topGenre = topGenreId(entries);
   const mins = movieMinutes(entries, details);
@@ -143,7 +143,7 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
       <div className="hist-card-head">
         <span className="hist-card-title">{isCurrentYear ? T.yearSoFar(year) : T.yearCardTitle(year)}</span>
         {detailsLoading && <span className="hist-card-note" aria-live="polite">{T.loadingInsights}</span>}
-        <ShareIcon what={isCurrentYear ? T.yearSoFar(year) : T.yearCardTitle(year)} ready={shareReady} onClick={onShare} />
+        <ShareIcon what={isCurrentYear ? T.yearSoFar(year) : T.yearCardTitle(year)} onClick={onShare} />
       </div>
       <div className="hist-stats">
         <Stat value={entries.length} label={T.titles}
@@ -172,7 +172,7 @@ function YearCard({ year, isCurrentYear, entries, details, detailsLoading, genre
 
 /* One title per day: the month as a strip of what you saw. `month` is the
    index into the year's month groups (newest first). */
-function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, today, openPanel, onShare, shareReady }) {
+function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, today, openPanel, onShare }) {
   const art = useUserArtwork();
   const group = monthGroups[monthIndex];
   const perDay = useMemo(() => (group ? titlePerDay(entries, year, group.month) : new Map()), [entries, year, group]);
@@ -230,21 +230,21 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
       {s.best > 1 && (
         <div className="hist-card-foot">
           <span>{T.bestStreak} <b>{s.best}</b>{s.bestMonth ? ` in ${s.bestMonth.slice(0, 3)}` : ''}</span>
-          <ShareIcon what={T.bestStreak} ready={shareReady} onClick={onShare} />
+          <ShareIcon what={T.bestStreak} onClick={onShare} />
         </div>
       )}
     </div>
   );
 }
 
-function CrowdCard({ entries, details, openPanel, onShare, shareReady }) {
+function CrowdCard({ entries, details, openPanel, onShare }) {
   const art = useUserArtwork();
   const cmp = crowdComparison(entries, details);
   if (!cmp || cmp.compared < 3) return null;
   const sentence = crowdSentence(cmp);
   return (
     <div className="hist-card">
-      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.crowdHeading}</span><ShareIcon what={T.crowdHeading} ready={shareReady} onClick={onShare} /></div>
+      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.crowdHeading}</span><ShareIcon what={T.crowdHeading} onClick={onShare} /></div>
       <div className="hist-card-body">
         <span className="hist-card-lead">{sentence}</span>
         <div className="hist-crowd-row">
@@ -263,13 +263,13 @@ function CrowdCard({ entries, details, openPanel, onShare, shareReady }) {
   );
 }
 
-function PeopleCard({ entries, details, openPanel, onShare, shareReady }) {
+function PeopleCard({ entries, details, openPanel, onShare }) {
   const art = useUserArtwork();
   const people = recurringPeople(entries, details);
   if (!people.length) return null;
   return (
     <div className="hist-card">
-      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.peopleHeading}</span><ShareIcon what={T.peopleHeading} ready={shareReady} onClick={onShare} /></div>
+      <div className="hist-card-head hist-card-head--label"><span className="hist-card-label">{T.peopleHeading}</span><ShareIcon what={T.peopleHeading} onClick={onShare} /></div>
       <div className="hist-card-body">
         {people.map(p => {
           const img = profileUrl(art.path('person', p.id, 'profile') || p.profile_path, 'w185');
@@ -421,7 +421,6 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
     // eslint-disable-next-line react-hooks/exhaustive-deps -- genreName reads genreList
     [entries, yearEntries, details, genreList, activeYear, today, topLists, profile],
   );
-  const cardReady = (id) => !!shareCards.find(c => c.id === id)?.available;
   const canShare = shareCards.length > 0;
   // Only genres that occur in this year's history, so the menu offers nothing
   // that would empty the page; alphabetical, as the Calendar lists them.
@@ -510,7 +509,6 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
             detailsLoading={detailsLoading}
             genreName={genreName}
             onShare={canShare ? () => setShareCard(CARD_IDS.HIGHLIGHTS) : null}
-            shareReady={cardReady(CARD_IDS.HIGHLIGHTS)}
             drillFor={drillFor}
             upgradeTo={premium ? null : premiumPlansPath('/history')}
             // The line opens the upgrade sheet for deeper stats. The href stays
@@ -527,13 +525,12 @@ export function HistoryPage({ entries, details, detailsLoading, genreList, openP
               today={today}
               openPanel={openPanel}
               onShare={canShare ? () => setShareCard(CARD_IDS.STREAK) : null}
-              shareReady={cardReady(CARD_IDS.STREAK)}
             />
           )}
           <CrowdCard entries={yearEntries} details={details} openPanel={openPanel}
-            onShare={canShare ? () => setShareCard(CARD_IDS.CROWD) : null} shareReady={cardReady(CARD_IDS.CROWD)} />
+            onShare={canShare ? () => setShareCard(CARD_IDS.CROWD) : null} />
           <PeopleCard entries={yearEntries} details={details} openPanel={openPanel}
-            onShare={canShare ? () => setShareCard(CARD_IDS.PERSON) : null} shareReady={cardReady(CARD_IDS.PERSON)} />
+            onShare={canShare ? () => setShareCard(CARD_IDS.PERSON) : null} />
           <CompareTasteCard />
           <Filters
             types={types} setTypes={setTypes}

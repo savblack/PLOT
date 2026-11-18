@@ -28,9 +28,8 @@ import type { ShareCardModel } from './share/ShareCardView';
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-function ShareIcon({ what, ready, onPress, colors }: {
+function ShareIcon({ what, onPress, colors }: {
   what: string;
-  ready: boolean;
   onPress: () => void;
   colors: Palette;
 }) {
@@ -46,10 +45,10 @@ function ShareIcon({ what, ready, onPress, colors }: {
         borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: ready ? colors.accentFill : colors.surfaceSunken,
+        backgroundColor: colors.surfaceSunken,
       }}
     >
-      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={ready ? colors.onAccentFill : colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <Path d="M12 15V4m0 0-4 4m4-4 4 4" />
         <Path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
       </Svg>
@@ -98,7 +97,6 @@ export default function HistoryInsights({
     });
   }, [profile, yearEntries, entries, details, genres, year, today, topLists.lists]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const ready = (id: string) => !!cards.find(card => card.id === id)?.available;
   const openSheet = (id: string) => setPicked(id);
   const openId = picked || sharePreset || null;
 
@@ -135,7 +133,7 @@ export default function HistoryInsights({
           <Text style={styles.yearTitle}>{yearTitle}</Text>
           {detailsLoading && <Text style={styles.note}>{T.loadingInsights}</Text>}
           {cards.length > 0 && (
-            <ShareIcon what={yearTitle} ready={ready(CARD_IDS.HIGHLIGHTS)} colors={colors} onPress={() => openSheet(CARD_IDS.HIGHLIGHTS)} />
+            <ShareIcon what={yearTitle} colors={colors} onPress={() => openSheet(CARD_IDS.HIGHLIGHTS)} />
           )}
         </View>
         <Stat label={T.titles} value={String(yearEntries.length)} styles={styles}
@@ -199,7 +197,7 @@ export default function HistoryInsights({
                 {streak.bestMonth ? ` in ${streak.bestMonth.slice(0, 3)}` : ''}
               </Text>
               {cards.length > 0 && (
-                <ShareIcon what={T.bestStreak} ready={ready(CARD_IDS.STREAK)} colors={colors} onPress={() => openSheet(CARD_IDS.STREAK)} />
+                <ShareIcon what={T.bestStreak} colors={colors} onPress={() => openSheet(CARD_IDS.STREAK)} />
               )}
             </View>
           )}
@@ -211,7 +209,7 @@ export default function HistoryInsights({
           <View style={styles.head}>
             <Text style={styles.kicker}>{T.crowdHeading}</Text>
             {cards.length > 0 && (
-              <ShareIcon what={T.crowdHeading} ready={ready(CARD_IDS.CROWD)} colors={colors} onPress={() => openSheet(CARD_IDS.CROWD)} />
+              <ShareIcon what={T.crowdHeading} colors={colors} onPress={() => openSheet(CARD_IDS.CROWD)} />
             )}
           </View>
           <Text style={styles.lead}>{crowdSentence(crowd)}</Text>
@@ -234,7 +232,7 @@ export default function HistoryInsights({
           <View style={styles.head}>
             <Text style={styles.kicker}>{T.peopleHeading}</Text>
             {cards.length > 0 && (
-              <ShareIcon what={T.peopleHeading} ready={ready(CARD_IDS.PERSON)} colors={colors} onPress={() => openSheet(CARD_IDS.PERSON)} />
+              <ShareIcon what={T.peopleHeading} colors={colors} onPress={() => openSheet(CARD_IDS.PERSON)} />
             )}
           </View>
           {people.map((person: { id: number; name: string; profile_path?: string | null; line: string }) => {
