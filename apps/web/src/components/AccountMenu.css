@@ -135,3 +135,19 @@
     bottom: 0;
   }
 }
+
+
+/* Phone drawer: the foot is inset like the rail's, and the panel takes the
+   drawer's width (the drawer is narrower than 280px on a small phone). It
+   scrolls inside itself on a short screen so Sign out stays reachable. */
+.nav-drawer .nav-drawer-footer--account {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.nav-drawer .account-menu-panel {
+  width: 100%;
+  max-height: calc(100dvh - var(--header-h) - 150px);
+  overflow-y: auto;
+}
