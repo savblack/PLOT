@@ -147,6 +147,35 @@ test('phone web: View your profile in the account menu closes the drawer and ope
   expect(new URL(page.url()).pathname).toBe('/u/sam');
 });
 
+test('phone web: Sign out in the account menu asks first, and Cancel keeps you signed in', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(url);
+  await page.getByRole('button', { name: 'More' }).click();
+  const drawer = page.locator('#app-nav-drawer');
+  await drawer.locator('.app-sidebar-profile').click();
+  await drawer.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+  await expect(drawer).not.toHaveClass(/open/);
+  const dialog = page.getByRole('dialog', { name: 'Sign out of plot?' });
+  await expect(dialog).toBeVisible();
+  await shot(page, 'web-phone-sign-out-confirm');
+  expect(new URL(page.url()).pathname).not.toBe('/logout');
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(new URL(page.url()).pathname).not.toBe('/logout');
+});
+
+test('desktop: Sign out in the account menu asks first, then signs out on confirm', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(url);
+  await page.locator('.app-sidebar-foot .app-sidebar-profile').click();
+  await page.locator('.app-sidebar-foot').getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sign out of plot?' });
+  await expect(dialog).toBeVisible();
+  expect(new URL(page.url()).pathname).not.toBe('/logout');
+  await dialog.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/logout');
+});
+
 test('someone who has subscribed before gets Go Premium with no trial line', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`${url}?billing=lapsed`);
