@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
-import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey, trendingAsTitles, exampleTitlePool, unlockedPartners, DEMO_SIZE } from './watchTogether.js';
+import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey, trendingAsTitles, exampleTitlePool, saveIdeas, unlockedPartners, DEMO_SIZE } from './watchTogether.js';
 import { tmdb } from './tmdb.js';
 
 /**
@@ -345,6 +345,24 @@ export function useWatchTogetherExampleTitles(saved) {
     return () => { live = false; };
   }, [needMore]);
   return exampleTitlePool(saved, trending);
+}
+
+/**
+ * Trending titles to save when you and a partner have nothing in common yet
+ * (see saveIdeas). Only fetches while `enabled`, and drops anything you save.
+ *
+ * @param {{ tmdb_id: number, media_type: string }[] | null | undefined} saved
+ * @param {boolean} enabled
+ */
+export function useSaveIdeas(saved, enabled) {
+  const [trending, setTrending] = useState(/** @type {import('./watchTogether.js').SessionCard[]} */ ([]));
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let live = true;
+    tmdb.getTrending('all', 'week').then(r => { if (live) setTrending(trendingAsTitles(r?.results)); }, () => {});
+    return () => { live = false; };
+  }, [enabled]);
+  return enabled ? saveIdeas(trending, saved) : [];
 }
 
 /**
