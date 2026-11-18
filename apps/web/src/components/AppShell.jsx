@@ -10,6 +10,7 @@ import AppSidebar from './AppSidebar.jsx';
 import AccountMenu from './AccountMenu.jsx';
 import GoPremiumLink from './GoPremiumLink.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 import PremiumTrialPrompt from './PremiumTrialPrompt.jsx';
 import { useApp } from '../hooks/useApp.js';
 import {
@@ -44,6 +45,9 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
 
   const { unread, refreshCount } = useNotifications(user?.id);
   const { themeMode, themeFamily, setThemeMode, setThemeFamily, uiPrefs } = useApp() ?? {};
+  // Sign out asks first from every place the shell offers it, as Settings and
+  // the iPhone app do. /logout itself stays a direct link.
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [themeUpgrade, setThemeUpgrade] = useState(null); // Premium family a Free viewer tapped in the account menu
 
   // Warm the other pages' chunks while idle so navigating doesn't wait on them.
@@ -144,7 +148,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         sidebarOrder={uiPrefs?.prefs.sidebar}
         onToggleCollapsed={() => setSidebarCollapsed(collapsed => !collapsed)}
         onFeedback={() => user ? setFeedbackOpen(true) : navigate('/login')}
-        onSignOut={() => navigate('/logout')}
+        onSignOut={() => setConfirmSignOut(true)}
         onNavigate={go}
         onNavigateProfile={(username) => navigate(`/u/${username}`)}
         themeMode={themeMode}
@@ -153,6 +157,15 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         onPickFamily={setThemeFamily}
         onThemeLocked={setThemeUpgrade}
       />
+      {confirmSignOut && (
+        <ConfirmModal
+          title={SETTINGS_VIEW.page.signOutTitle}
+          message={SETTINGS_VIEW.page.signOutMessage}
+          confirmLabel={SETTINGS_VIEW.signOut}
+          onConfirm={() => { navigate('/logout'); return true; }}
+          onClose={() => setConfirmSignOut(false)}
+        />
+      )}
       {themeUpgrade && <UpgradeSheet reason="themes" family={themeUpgrade} onClose={() => setThemeUpgrade(null)} />}
       {/* Once, after onboarding or a Trakt import: the 7-day trial offer. */}
       {user && <PremiumTrialPrompt profile={profile} currentView={currentView} />}
@@ -269,7 +282,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               onViewProfile={() => { closeDrawer(); navigate(`/u/${profile.username}`); }}
               onSettings={() => handleNav('settings')}
               onFeedback={() => { closeDrawer(); setFeedbackOpen(true); }}
-              onSignOut={() => { closeDrawer(); navigate('/logout'); }}
+              onSignOut={() => { closeDrawer(); setConfirmSignOut(true); }}
               mode={themeMode}
               family={themeFamily}
               onPickMode={setThemeMode}
@@ -295,7 +308,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               </button>
             )}
             {user && (
-              <button type="button" className="nav-drawer-item nav-drawer-item--text nav-drawer-item--signout" onClick={() => { closeDrawer(); navigate('/logout'); }}>
+              <button type="button" className="nav-drawer-item nav-drawer-item--text nav-drawer-item--signout" onClick={() => { closeDrawer(); setConfirmSignOut(true); }}>
                 <span className="nav-drawer-label">{SETTINGS_VIEW.signOut}</span>
               </button>
             )}
