@@ -401,7 +401,25 @@ Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills
 (via `skills-lock.json`), minus `code-structure`, minus upstream
 `new-feature` (Plot replaces isolate with a local skill), and minus
 `greploop` and `greploop-apps`. Those two only talk to Greptile, which is off.
-Do not add them back. Typical flow:
+Do not add them back.
+
+`impeccable` (design critique and polish) is a pinned copy of
+`pbakaus/impeccable` 4.9.2 (engine 0.1.25, upstream commit `d41d986`), reviewed
+on 2026-11-18. It was copied by hand, not installed with `npx impeccable
+install`, so nothing updates it unseen; re-review before replacing it. Rules:
+
+- **No design hook.** Do not run `impeccable hooks on` or add its
+  `PostToolUse`/`Stop` hooks; run `detect` or `audit` when asked.
+- **Never sign in** (`impeccable login`). Signed-in runs upload DESIGN.md,
+  critiques and scan counts to an Impeccable account.
+- **Telemetry stays off** via the committed `.impeccable/config.json`.
+- **`live` mode only with `IMPECCABLE_LIVE_COPY_AGENT=chat`** (or `off`) set in
+  the shell that starts it. Its default falls back to launching `claude`/`codex`
+  with permissions and sandbox bypassed, in a checkout whose `.env` holds
+  production keys.
+- Its bold-design defaults never override `docs/design/shared-design-system.md`.
+
+Typical flow:
 
 1. **Isolate** — `/plot-worktree`: sibling worktree at
    `~/Developer/PLOT-worktrees/<task>` (never nest under this checkout; nested harness
