@@ -42,10 +42,12 @@ Passed locally:
 - `test:unit`
 - website function tests
 
-Not run, because they touch the production copy or Staging and need Savannah's OK:
-- `pnpm run db:migration-test`
-- `pnpm run db:drift`
-- `pnpm run staging:test -- all`
+Run with Savannah's OK (2026-11-18). `.env` was loaded with `set -a; . ./.env`, and Homebrew `postgresql@17/bin` was put on PATH:
+- `db:migration-test`: PASS. The new migration applied cleanly to a local copy of production, and the sandbox was torn down.
+- `db:drift`: no drift. The only difference is the expected new migration, on both projects.
+- `staging:test -- all`: all 31 tests passed. The runner applied the new migration inside each rolled-back transaction.
+
+No Staging test yet asserts the new avatar SELECT rule directly: owner can list their own folder, another user and anon cannot. That would be worth adding.
 
 ## Open question for Savannah
 
@@ -53,7 +55,7 @@ The audit also noted that the Premium badge guard runs only on profile updates, 
 
 ## Next
 
-1. With Savannah's OK, run `db:migration-test` and `staging:test -- all`.
+1. Database tests: done, all passing.
 2. Have a second agent read the migration diff. AGENTS.md requires this for permission changes.
 3. Open the PR (remove this file in the last commit before merge).
 4. After merge, deploy `signup-bypass`, `title-page` and `calendar-feed`: `supabase functions deploy <name>`.
