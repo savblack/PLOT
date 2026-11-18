@@ -1,6 +1,6 @@
 # website-critique-fixes
 
-Status: paused
+Status: active (pull request open)
 Branch: agent/2026-11-18-website-critique-fixes
 Worktree: ~/Developer/PLOT-worktrees/2026-11-18-website-critique-fixes
 Owner: Savannah (approved "build 1 to 3" and "then build 4 to 6" in chat, 2026-11-19)
@@ -9,8 +9,7 @@ Updated: 2026-11-19
 ## In plain words
 
 Six design fixes for theplot.tv from the November 18 design critique are built on this branch.
-Nothing is live yet. Savannah still has to say whether to open a pull request, and the fixes go
-live only after it is merged.
+Nothing is live yet. A pull request is open; the fixes go live only after it is merged.
 
 1. On a phone, the pricing comparison table shows Free and Premium side by side.
 2. Movie and TV pages say Movies, TV, In theaters and Jul 15, 2026 (US wording).
@@ -54,4 +53,4 @@ mockups https://claude.ai/code/artifact/9e5c9776-424a-4b74-9dd0-3afc789db00e.
 
 ## Next
 
-Ask Savannah whether to open a pull request. Before merge: check the Cloudflare preview on phone and desktop, remove this file in the last commit.
+Pull request opened at Savannah's request (2026-11-19). Before merge: check the Cloudflare preview on phone and desktop, remove this file in the last commit.
