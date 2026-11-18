@@ -20,7 +20,7 @@ import PlotLoader from '@plot/ui/PlotLoader';
 import { useCompareCandidates } from '@plot/core/useTasteOverlap.js';
 import { canCompare } from '@plot/core/tasteOverlap.js';
 import { TASTE_OVERLAP as T } from '@plot/core/copy/tasteOverlap.js';
-import { VIEW_TITLES } from '@plot/core/navigation.js';
+import { titleForView } from '@plot/core/navigation.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { fontFamily, spacing, radii, type Palette } from '../../lib/tokens';
@@ -77,7 +77,7 @@ export default function ComparePickerScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }]}
       >
-        <Text style={styles.h1} accessibilityRole="header">{VIEW_TITLES.compare}</Text>
+        <Text style={styles.h1} accessibilityRole="header">{titleForView('compare')}</Text>
 
         <View style={styles.card}>
           <SearchField

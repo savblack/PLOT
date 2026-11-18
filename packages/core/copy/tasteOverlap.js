@@ -66,6 +66,8 @@ export const TASTE_OVERLAP = {
   failed: 'Couldn’t load your comparison.',
   retry: 'Try again',
 
+  // The menu item and the page's title. The picker's own button is `compare` below.
+  navLabel: 'Compare',
   // Picker
   searchLabel: 'Search people',
   searchPlaceholder: 'Search by name or @username',

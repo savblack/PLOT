@@ -45,6 +45,7 @@ const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; p
   { id: 'guide',    label: titleForView('guide'),   path: '/(app)/guide',    icon: 'guide' },
   { id: 'tonight',  label: titleForView('tonight'), path: '/(app)/tonight',  icon: 'tonight', premium: true },
   ...(SHOW_WATCH_TOGETHER ? [{ id: 'together', label: titleForView('together'), path: '/(app)/together', icon: 'together' as const, premium: true }] : []),
+  { id: 'compare',  label: titleForView('compare'), path: '/(app)/compare',  icon: 'compare', premium: true },
 ];
 
 

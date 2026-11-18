@@ -2,6 +2,7 @@ import { WATCH_TOGETHER } from './copy/watchTogether.js';
 import { PEOPLE } from './copy/people.js';
 import { BROWSE } from './copy/browse.js';
 import { COLLABORATIVE_LISTS } from './copy/collaborativeLists.js';
+import { TASTE_OVERLAP } from './copy/tasteOverlap.js';
 import { FAVOURITES_ENABLED, GUIDE_ENABLED } from './features.js';
 
 export const APP_NAV_ITEMS = [
@@ -26,6 +27,10 @@ export const APP_NAV_ITEMS = [
   // `feature` still lets an app hide it. The Premium mark stays: deciding
   // together needs Premium on at least one side.
   { id: 'together', label: WATCH_TOGETHER.navLabel, path: '/together', primary: false, premium: true, feature: 'watchTogether' },
+  // Compare (taste overlap): its own menu item on web and mobile (Savannah,
+  // 18 Nov 2026). The page shows a sample to anyone; comparing with a real
+  // person is Premium, hence the mark. Mobile lists it in DrawerMenu.tsx.
+  { id: 'compare', label: TASTE_OVERLAP.navLabel, path: '/compare', primary: false, premium: true },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ].filter(item => GUIDE_ENABLED || item.id !== 'guide');
@@ -42,8 +47,6 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
     // toast, Notifications, a person's page and Settings.
     'your-people': PEOPLE.page.title,
     import: 'Import',
-    // The taste overlap picker. Without an entry it fell through to the brand.
-    compare: 'Compare',
     // Keyed on the first segment: viewFromPath returns `person/<id>`, and the
     // page shows the person's own name, so the chrome only needs to say where
     // you are.

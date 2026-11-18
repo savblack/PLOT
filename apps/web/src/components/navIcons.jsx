@@ -158,6 +158,17 @@ export function IconWatchTogether() {
   );
 }
 
+// Compare: two overlapping circles, the page's own overlap diagram. Same
+// strokes as 'compare' in apps/mobile/components/NavIcons.tsx.
+export function IconCompare() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="12" r="6" />
+      <circle cx="15" cy="12" r="6" />
+    </svg>
+  );
+}
+
 /* Nav id → icon, keyed by APP_NAV_ITEMS. Both shells render the same nav list,
    so they read the same map: the sidebar held a private copy of this and the
    drawer had no icons at all, which is how the two surfaces came to disagree
@@ -172,6 +183,7 @@ export const NAV_ICONS = {
   history: IconHistory,
   tonight: IconTonight,
   together: IconWatchTogether,
+  compare: IconCompare,
   search: IconSearch,
   settings: IconSettings,
 };
