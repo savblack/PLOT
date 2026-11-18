@@ -2,8 +2,9 @@
 
 ## First-Time Setup
 
-Enable the local secret-scanning git hook (blocks commits containing secret-shaped
-strings). Run once per clone:
+`pnpm install` turns on the local git hooks in `.githooks/` (the root `prepare` script sets
+`core.hooksPath`). `pre-commit` blocks commits containing secret-shaped strings;
+`post-checkout` links `.env` into new worktrees. To turn them on by hand:
 
 ```sh
 git config core.hooksPath .githooks

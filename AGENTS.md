@@ -42,8 +42,8 @@ follow it without being re-told. Tickets say only *what* to build.
 
 ## Repository layout
 
-pnpm-workspaces monorepo (members in `pnpm-workspace.yaml`). `pnpm install` at root installs
-everything. Two settings in `.npmrc` are **mandatory**: `node-linker=hoisted` (Metro and
+pnpm-workspaces monorepo (members in `pnpm-workspace.yaml`). `pnpm install --frozen-lockfile` at root
+installs everything. Two settings in `.npmrc` are **mandatory**: `node-linker=hoisted` (Metro and
 `scripts/check-expo-sdk-deps.mjs` both assume a flat, hoisted `node_modules`) and
 `strict-peer-dependencies=false` (web and mobile pin different React patch versions).
 See `docs/ops/package-manager.md`.
@@ -164,28 +164,9 @@ that profile owner's region.
 
 ## Web → mobile parity
 
-Drift between the apps has historically been one-directional: web ships a feature, mobile
-doesn't, and a few months later the two apps disagree about what Plot is. `packages/core` is
-the mechanism that prevents it, but only if you use it deliberately.
-
-When you add or change a feature in `apps/web`:
-
-- **Put the logic in `@plot/core` first**, not in `apps/web/src`. Anything free of DOM APIs
-  belongs there — hooks included (`useDiscover`, `usePlatformCharts` and friends are core
-  modules for exactly this reason). Web then imports it like mobile does. Rendering stays
-  per-app; derivation, fetching and business rules do not.
-- **If it can't be shared** (it's genuinely DOM- or RN-specific), say so in a comment at the
-  top of the file and open a mobile parity issue in the same PR. "Mobile will catch up later"
-  with nothing written down is how the last round of drift happened.
-- **Never hand-port a core module into `apps/mobile/lib`.** If mobile needs a variant, widen
-  the core module's arguments. Mobile previously carried its own `timezones.ts`,
-  `importParsers.ts`, `spelling.ts` and five copies of `localDateStr`, all shadowing code that
-  already existed in core.
-- **Copy strings live in the shared catalog**, not inline in JSX, so both apps read the same
-  wording. See `apps/web/src/copy/`.
-
-Nothing in CI enforces this — lint and `tsc --noEmit` can't tell that a feature is missing.
-It's a review-time responsibility.
+Adding or changing a feature in `apps/web`? Put DOM-free logic in `@plot/core` first, never
+hand-port a core module into `apps/mobile/lib`, and read the rule in
+`docs/agents/web-mobile-parity.md`. Nothing in CI enforces parity; it is a review-time check.
 
 ## Architecture — seams that matter
 
@@ -220,20 +201,11 @@ These checks fail the build if two sources drift. Fix by regenerating both, not 
   `onclick=` or a new inline block in an Edge-Function-rendered page is blocked
   outright, so use `addEventListener` and a file under `apps/website/js/`.
 - `migrations:check` — no migration may recreate a function with a different
-  `ON CONFLICT` target without acknowledging it. See below.
+  `ON CONFLICT` target without acknowledging it. See `docs/ops/migrations.md`.
 - `copy:check` — no app file may hardcode a string that `packages/core/copy` owns.
 - `core:check` — every `@plot/core/…` import must resolve to a file in this checkout.
 
-**Why `core:check` exists when `tsc` already does this:** `tsc` is only reliable
-from the repo root of the tree you are editing. Worktrees nested *inside* the
-main checkout (e.g. `<repo>/.claude/worktrees/<name>`) are unsafe: a failed
-module lookup walks up the ancestor `node_modules` chain and lands on the
-**parent** checkout's `@plot/core`. You then typecheck against a tree you are
-not editing: a core module you deleted still resolves, and a core export you
-just added does not — both pass silently. A `tsconfig` `paths` mapping does
-**not** fix it (a mapping is a first attempt; when it misses, resolution falls
-back to the same walk). This blind spot is how #446 deleted `core/onboarding.js`
-with a live importer still on `main`.
+Why worktrees must be siblings (and why `core:check` exists): `docs/ops/agent-worktrees.md`.
 
 **Plot convention (source of truth):** agent worktrees are a **sibling** of this
 repo, never nested inside it:
@@ -287,112 +259,15 @@ to prevent. The catalog being *shared* is necessary but not sufficient — it ha
 - `scripts/adopt-shared-copy.mjs` is a codemod that does the mechanical replacement when a
   new batch of copy moves into core. Run it with `--dry-run` first.
 
-## Migrations: `create or replace function` replaces the WHOLE body
+## Migrations and the database
 
-Recreating a function you didn't author means inheriting everything the previous version
-fixed, and Postgres accepts a stale body silently. This has already caused a two-week
-production outage: `20260718120000` widened `feed_posts`' unique key to include
-`source_type` and updated the trigger's `ON CONFLICT` to match; `20260725000001` then
-recreated the same function from the pre-widening body, pointing the upsert at a
-constraint that no longer existed. Every write to `history` raised 42P10 and, because it
-is an AFTER trigger in the same transaction, the user-facing write failed. Marking a title
-watched was broken from 2026-07-25 to 2026-08-03 and nothing detected it.
-
-So:
-
-- **Before recreating an existing function, diff against what's live** — not against the
-  migration you remember. `select pg_get_functiondef(oid) from pg_proc where proname = '…'`.
-- `pnpm run migrations:check` fails the build if a redefinition changes the `ON CONFLICT`
-  target. If the change is deliberate, add `-- redefines: <fn> (…why…)` to the migration.
-- **Expand, then contract.** `pnpm run migrations:contract` (CI) fails a new or changed
-  migration that drops, renames or retypes a table, column, view, function, type or enum
-  value while the code on `main` (`apps/`, `packages/`, `supabase/functions/`), a SQL
-  function body or a cron job still names it. It also stops a new `not null` column with
-  no default, or `set not null`, on an existing table. Add the new thing and move the code
-  first; remove the old thing in a later migration, after that code has shipped (and, for
-  anything mobile read, after old iPhone builds stop mattering). When you have done that,
-  acknowledge each name: `-- contracts: <name> (why nothing deployed still uses it)`.
-  A name mobile or `packages/core` used in the last 90 days counts as used, because
-  installed iPhone builds lag `main`. It also fails a new function or cron job that names
-  a column, table or function an earlier migration removed (the `20261004100000` outage);
-  `-- dead-name-ok: <name> (what it is instead)` covers a same-named jsonb key or variable.
-  See `docs/ops/migration-contract.md`.
-- `pnpm run db:write-paths` checks the live database: every trigger function's upsert key
-  must resolve against a real constraint, and every table it references must exist. Runs
-  daily via `.github/workflows/db-write-paths.yml` and on any PR touching migrations.
-  Read-only; it deliberately does not write-and-rollback, because `http_request` triggers
-  on `profiles`/`feedback` are not reliably transactional.
+- **Local dev has no database of its own.** `pnpm run dev` talks to the PLOT Staging
+  Supabase project (see README "Local Setup"); there is nothing to migrate locally after a pull.
 - **A migration merged to `main` applies to PRODUCTION automatically** via the Supabase
-  GitHub integration. There is no staging gate — write it as if it runs immediately.
-- **`pnpm run db:migration-test` before merging anything under `supabase/migrations/`.**
-  Both checks above are static — neither executes any SQL — so without this the first run
-  of a migration is on real user data. This restores a copy of production into a throwaway
-  local Postgres 17 cluster, applies whatever is pending, and exits non-zero if any of it
-  fails. Needs `brew install postgresql@17` and the main checkout's `.env`. It caught two
-  deliberately broken migrations (a bad column reference and a bad cast) in testing.
-  Limits: Vault and pg_net are stubbed, and RLS policies are created but not exercised, so
-  a policy's *correctness* still needs the Staging project.
-- **`pnpm run db:function-diff` before merging any `create or replace function`.**
-  A redefinition is a whole-body replacement: you do not amend a function, you retype it,
-  and starting from the migration you remember rather than the body that is live silently
-  reverts everything added since. `migrations:check` catches only the one detail that broke
-  in July (a changed `ON CONFLICT` target). This catches the general case by restoring
-  production, applying pending migrations, and printing a unified diff of every function
-  body that changed. **A redefinition that only ADDS lines is the safe shape** — the tool
-  counts removed lines for exactly that reason. Not a CI gate: it needs production
-  credentials and its output is a diff for a human to read.
-- **`pnpm run staging:test -- <name|all>`** runs the Staging SQL tests
-  (`scripts/staging-<name>-test.sql`; `-- --list` names them). They execute policies, RPCs
-  and triggers under a real `auth.uid()` on the Staging project, which no static check and
-  not `db:migration-test` can do. `.github/workflows/staging-tests.yml` runs `all` nightly
-  (a failure opens an `incident` issue; the next pass closes it) and on every PR touching
-  `supabase/migrations/`. Each test runs in one transaction ending in `rollback`, so Staging
-  is unchanged whether it passes or dies partway — a teardown block at the bottom of a
-  script does not run when the script dies above it, which is how a previous run left a
-  profile public and a block row behind. The runner (`scripts/staging-test.mjs`) first
-  applies, inside that transaction, every migration in your checkout that Staging has not
-  recorded, so a branch's migrations are checked by every test. **A test must never `\i` a
-  migration itself:** replaying a shipped migration puts an older function body back inside
-  the transaction and the test passes against code that is no longer live. That is how 17
-  of 26 tests had silently stopped working by November 2026; the runner refuses such a
-  file. Fixture accounts A/B/C come from `scripts/staging-test-fixtures.sql`, which
-  recreates any Staging has lost. A new test is just a new `scripts/staging-<name>-test.sql`;
-  `scripts/staging-sql.sh` is the shared connection wrapper and is hard-wired to Staging.
-  The block test asserts from four viewpoints — blocker, blocked, an unrelated bystander,
-  and an anonymous reader. The last two are not padding: they are the only thing that
-  catches a visibility clause that is too *broad*.
-- **A trigger or function that names a column is not checked when it is created.** plpgsql
-  resolves `NEW.col`, `OLD.col` and column names in its SQL only when the line runs, so
-  `migrations:check` and `db:migration-test` both pass. `20261004100000` set
-  `watch_together.requester_shares_full`, which `20260927160000` had already dropped, and
-  every mutual-follow acceptance then raised in production until `20261005100000`. Before
-  relying on a column in a trigger or function, grep later migrations for
-  `drop column` on it, and write a `staging:*-test` that runs the trigger's real path under
-  an `auth.uid()`: its first line should reproduce the failure without the fix.
-- **`pnpm run db:block-clause` (CI)** requires every function reading `profiles` to be in
-  exactly one of `BLOCK_FILTERED` or `BLOCK_EXEMPT` in `scripts/check-block-clause.mjs`.
-  Blocking hides identity through seven security definer RPCs, because `profiles` has one
-  select policy (`auth.uid() = id`) and every identity read bypasses RLS. A later migration
-  recreating one of them from a stale body would drop the `not_blocked` clause and *nothing
-  would fail* — blocking keeps working everywhere else, the blocked account simply reappears
-  on one surface. Adding an identity RPC without classifying it fails the build.
-- **`pnpm run db:restore-drill`** proves the nightly backup still restores. `pg_restore`
-  exits 0 even when tables fail, so run this after any migration adding an extension type,
-  and compare the table count against production. See `docs/ops/db-restore.md`.
-- **`pnpm run db:drift`** (nightly via `.github/workflows/migration-drift.yml`) compares
-  production's and Staging's `schema_migrations` with `supabase/migrations`, then Staging's
-  schema with production's. Read-only. It exists because Staging drifted 18 migrations
-  behind `main` in September 2026 without anyone noticing, and because a ledger row is not
-  proof: two branches shared version `20260926160000`, so Staging recorded main's
-  `refresh_premium_badges` as applied and never ran it. Run it on your branch before merging
-  a migration: a version already taken on Staging by another branch fails it. After
-  applying or hand-repairing anything on Staging, record it in `schema_migrations` in the
-  same transaction.
-
-**Supabase `config.toml` pins `verify_jwt` per function.** Public functions set
-`verify_jwt = false`; forgetting it on redeploy makes the gateway reject requests before the
-function runs (this has taken `/whats-on` and Stripe billing down). Deploy relies on this
-file, not the `--no-verify-jwt` flag.
+  GitHub integration. There is no staging gate: write it as if it runs immediately.
+- **Before writing or reviewing anything under `supabase/migrations/` or `supabase/config.toml`,
+  read `docs/ops/migrations.md`.** It holds the whole-body `create or replace function` trap,
+  expand-then-contract, and the required `db:*` / `staging:test` checks.
 
 ## Testing expectations
 
@@ -425,17 +300,9 @@ file, not the `--no-verify-jwt` flag.
 
 ## Who Savannah talks to
 
-Savannah's main interface is her Grok bots. Cursor edits the repo when one of those bots has already routed the work here. It does not replace Chris, and it does not write a second morning plan.
-
-Plot is a TV and movie tracking app. The web app is at app.theplot.tv. The mobile app is on the way. She approves one prioritized plan each morning. The bots work through the day. Live payments, real user data, publishing, and sending still wait for her OK.
-
-- Chris, chief of staff and operations, sets the day's priorities and the ship queue. He builds the 5:30am plan for her approval, runs analytics, Stripe and Supabase setup, and the morning brief and close of day. He routes work to the right bot.
-- Jacob, CTO, owns the website, the web app, and the mobile app: reliability, performance, logs, errors, CI, deploys, and shipping fixes and features. He also covers security, retention, and support. Security includes secrets, who is allowed to see which data, and review of risky changes.
-- Hailey, CPO, owns the product: the core tracker, Premium, feedback, and web and mobile parity. She also owns conversion from signup to paid, and retention.
-- Alix, CMO, owns marketing, brand, social, and acquisition: SEO and articles, social posts scheduled in Buffer, and referral and share loops. She also owns traffic through to signup, including landing pages and site calls to action. She does not write the Saturday copy comparison. That job is `marketing/copy/GROK-HANDOFF.md`.
-- Kaia, conversion and community, owns activation after signup, the paywall and Stripe Checkout, trial to paid, and community replies. Those replies wait for Savannah's approval before posting.
-
-If she is asking here about the day's order, the morning plan, an analytics readout, or which bot should do something, point her to Chris when he is available. When the task is clearly Jacob, Hailey, Alix, or Kaia, name that bot in the plain opening, then do the repo work if this checkout is the right place. If Grok is unavailable or its usage allowance is exhausted, continue authorized work here from the saved record. Do not send Savannah back to a bot she cannot use or require a final handoff from it.
+Savannah's main interface is her Grok bots (Chris, Jacob, Hailey, Alix, Kaia). Asked about the
+day's order, the morning plan, or which bot should do something? Read
+`docs/agents/bots-and-handoffs.md`.
 
 ### Keep work resumable
 
@@ -449,11 +316,8 @@ Chris keeps the active task list with a link to each handoff. Each bot updates i
 
 After a real coding change, update the handoff, inspect the diff for unrelated work and secrets, and commit and push a checkpoint with `[skip ci]` in the message. Stage only the task's files. Do not open a pull request solely for a checkpoint. A checkpoint may be unfinished; record that clearly. A finished pull request still needs the required checks without `[skip ci]`. Remove `AGENT_HANDOFF.md` before merge as described in `docs/ops/agent-worktrees.md`.
 
-### Recover when a bot has already stopped
-
-Do not require the exhausted bot to write anything. Read the existing Notion records, Obsidian notes, linked artifacts, available conversation history, and current state in the relevant product. Compare timestamps and supporting evidence when records disagree; do not silently treat the newest note as proof that an action succeeded. For coding, inspect the same worktree, its diff, recent commits, and remote branch before writing. Respect the worktree ownership and claim rules; never run two writers on the same task. Reconstruct a handoff from verified evidence, label unknowns, and continue the next authorized action. Ask Savannah only for missing information that blocks progress, not for a recap the saved work already answers.
-
-Preserve the original scope and approval boundaries. Do not infer permission from a bot's plan or mark attempted work complete without evidence. Merges, production changes, payments, public posts, and sending still need Savannah's approval. On this Mac, uncommitted edits may remain in the same worktree. For a cloud session, check its saved artifacts and remote branch before concluding work is lost; restart only the part that cannot be recovered.
+Picking up after a bot has already stopped? Follow "Recover when a bot has already stopped"
+in `docs/agents/bots-and-handoffs.md`.
 
 ## How to explain the work
 
@@ -506,35 +370,8 @@ than shipping a guess.
 
 ## Cloud Agent environment
 
-Repo-managed: `.cursor/environment.json` wins over any personal or team dashboard
-environment for this repository. The Dockerfile pins Node **22.17.1** (same as
-`.github/workflows/ci.yml`), Deno 2.9.5, pnpm 10.6.3, and PostgreSQL 17. `install` runs
-`scripts/cloud-agent-install.sh` (frozen lockfile + Playwright Chromium).
-`start` rewrites the repo-root `.env` from injected secrets so both Vite and
-`node --env-file=.env` scripts see the same values. The web dev server is the
-`web` terminal on port 5177.
-
-Inject these as Cloud Agent **secrets** (never commit them). Browser-safe
-`VITE_*` values belong to **PLOT Staging**, not Production:
-
-| Secret | Why |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Staging project URL (`https://uzrhfivnhdcfieuaxzip.supabase.co`) |
-| `VITE_SUPABASE_ANON_KEY` | Staging publishable key (`sb_publishable_…`) |
-| `VITE_TMDB_PROXY_URL` | `https://tmdb-proxy-staging.sav-black.workers.dev` |
-| `VITE_TURNSTILE_SITE_KEY` | Needed for captcha-enforced signup/login. Same value as `EXPO_PUBLIC_TURNSTILE_SITE_KEY`. |
-
-Optional, only if the agent must run marketing or migration-test scripts:
-
-| Secret | Why |
-| --- | --- |
-| `SUPABASE_SERVICE_ROLE_KEY` | Staging service role. Never the Production service role. |
-| `SUPABASE_DB_URL` / `PLOT_PRODUCTION_DB_PASSWORD` | `pnpm run db:migration-test` restores a **copy of Production**. Confirm before injecting; the sandbox is destroyed on exit and holds real PII while it runs. |
-
-`pnpm run test:smoke` and `pnpm run test-storybook:web` need the Playwright
-Chromium the install script places in `~/.cache/ms-playwright`. `pnpm run
-edge:check` needs Deno (on PATH in the image). `pnpm run db:migration-test`
-needs the PG17 binaries (also in the image) plus the optional DB secret above.
+Running as a Cursor Cloud Agent, or changing `.cursor/environment.json` or its Dockerfile?
+Read `docs/ops/cloud-agent-environment.md`.
 
 ## Marketing
 
