@@ -57,13 +57,14 @@
   <meta name="description" content="The page you were looking for isn't here." />
   <meta name="robots" content="noindex" />
   <link rel="canonical" href="https://theplot.tv/" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=73fbeb95" />
+  <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
+  <link rel="stylesheet" href="/ui.css?v=e9689cc8" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     /* Brand tokens (--dark, --text-dark, --serif, --sans) come from /theme.css */
@@ -113,7 +114,7 @@
       transition: background 0.2s, transform 0.2s;
     }
     .home:hover { background: var(--surface-hover); transform: translateY(-1px); }
-    .actions .home:first-child { background: var(--fill); }
+    .actions .home:first-child { background: var(--fill); color: var(--on-fill); }
     .actions .home:first-child:hover { background: var(--fill-hover); }
     .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-top: 0.5rem; }
     .actions .home { margin-top: 0; }

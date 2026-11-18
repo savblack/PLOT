@@ -75,7 +75,7 @@ ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${SITE}/_partials/footer.css">
-<link rel="stylesheet" href="${SITE}/title-page.css?v=58b88a553dc0">
+<link rel="stylesheet" href="${SITE}/title-page.css?v=f841d1dc86fd">
 <script defer src="${SITE}/title-page.js?v=37a1a8165a48"></script>
 </head>
 <body>

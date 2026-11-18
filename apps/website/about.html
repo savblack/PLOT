@@ -56,7 +56,8 @@
   <title>About Plot: the free movie &amp; TV journal built by one person</title>
   <meta name="description" content="Plot is a free movie and TV tracker and journal built by a solo developer. Track what you watch, never miss a release, and pick what to watch tonight. Premium from $2 a month." />
   <link rel="canonical" href="https://theplot.tv/about" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -168,18 +169,14 @@
   <link rel="manifest" href="site.webmanifest" />
 
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=73fbeb95" />
-  <link rel="stylesheet" href="/nav.css?v=579e0491" />
+  <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
+  <link rel="stylesheet" href="/ui.css?v=e9689cc8" />
+  <link rel="stylesheet" href="/nav.css?v=d915d58f" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     /* Shared brand tokens live in /theme.css. Content pages use the warmer surface. */
-    :root {
-      --bg: #f8f2ea;
-    }
-
     html { scroll-behavior: smooth; }
 
     body {
@@ -217,14 +214,14 @@
       color: var(--text-secondary);
       margin-bottom: 3rem;
       padding-bottom: 2rem;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
+      border-bottom: 1px solid var(--rule);
     }
 
     /* Narrative prose reads as a letter — left-aligned, roomy, no justify
        rivers. The lead paragraph gets a touch more size to pull you in. */
     p {
       font-size: 1rem;
-      color: #333;
+      color: var(--text);
       line-height: 1.75;
       margin-bottom: 1.35rem;
       text-align: left;

@@ -56,7 +56,8 @@
   <title>Plot | Movie &amp; TV Tracker</title>
   <meta name="description" content="Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <link rel="canonical" href="https://theplot.tv/" />
-  <meta name="theme-color" content="#f8f2ea" />
+  <meta name="theme-color" content="#f8f2ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
 
   <!-- Favicon / app icon -->
   <!-- Every poster on this page is served from TMDB's image CDN rather than
@@ -111,9 +112,9 @@
 
   <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=73fbeb95" />
-  <link rel="stylesheet" href="/nav.css?v=579e0491" />
+  <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
+  <link rel="stylesheet" href="/ui.css?v=e9689cc8" />
+  <link rel="stylesheet" href="/nav.css?v=d915d58f" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -174,8 +175,8 @@
     /* ── Scrollbar ──────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: #d9d1c4; border-radius: var(--r-badge); }
-    ::-webkit-scrollbar-thumb:hover { background: #c4bbad; }
+    ::-webkit-scrollbar-thumb { background: var(--thumb); border-radius: var(--r-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--thumb-hover); }
 
     /* ── Grain texture overlay ──────────────────────────────── */
     body::before {
@@ -274,7 +275,7 @@
       height: 68px;
       box-sizing: border-box;
       padding: 0 8px 0 24px;
-      background: #fffaf3;
+      background: var(--card);
       border: 1.5px solid var(--text);
       border-radius: var(--r-pill);
     }
@@ -307,7 +308,7 @@
       list-style: none;
       max-height: 384px;
       overflow-y: auto;
-      background: #fffaf3;
+      background: var(--card);
       border: 1px solid var(--rule);
       border-radius: 20px;
       box-shadow: var(--shadow-overlay, 0 18px 40px -18px rgba(41, 41, 36, 0.45));
@@ -427,7 +428,7 @@
       box-sizing: border-box;
       width: 44cqw;
       padding: 2cqw 2cqw 2.8cqw;
-      background: #fffaf3;
+      background: var(--card);
       border-radius: 3.6cqw;
       box-shadow: 0 18px 40px rgba(41,41,36,0.16), 0 2px 6px rgba(41,41,36,0.06);
       font-size: 2.8cqw;
@@ -470,7 +471,7 @@
     .mem-card-title { font-family: var(--display); font-weight: 700; font-size: 1.28em; letter-spacing: -0.02em; color: var(--text); }
     .mem-card-date { font-size: 0.75em; color: var(--text-secondary); }
     .mem-stars { font-size: 1.07em; letter-spacing: 1px; color: var(--accent); }
-    .mem-stars span { color: rgba(41,41,36,0.18); }
+    .mem-stars span { color: color-mix(in srgb, var(--text) 18%, transparent); }
     .mem-rated { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2em 0.6em; }
     .mem-review { color: var(--text-secondary); }
     .mem-private {
@@ -540,7 +541,7 @@
       height: calc(var(--ticker-height) + env(safe-area-inset-bottom, 0px));
       padding-bottom: env(safe-area-inset-bottom, 0px);
       background: var(--ink);
-      color: var(--bg);
+      color: var(--on-ink);
     }
 
     .ticker-badge {
@@ -550,7 +551,7 @@
       font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--text);
+      color: var(--on-fill);
       background: var(--fill);
       padding: 0 1rem;
       height: 100%;
@@ -605,14 +606,14 @@
       font-family: var(--sans);
       font-size: 0.875rem;
       font-weight: 400;
-      color: var(--bg);
+      color: var(--on-ink);
       white-space: nowrap;
       padding: 0 0.4rem;
     }
 
     .ticker-sep {
       font-size: 0.7rem;
-      color: var(--bg);
+      color: var(--on-ink);
       padding: 0 0.2rem;
       opacity: 0.4;
     }
@@ -771,7 +772,7 @@
       max-width: 480px;
       box-sizing: border-box;
       padding: 22px 24px 18px;
-      background: #fffaf3;
+      background: var(--card);
       border-radius: var(--r-lg);
       box-shadow: 0 24px 60px rgba(41,41,36,0.14);
     }
@@ -791,7 +792,7 @@
     .dr-name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dr-kind { font-size: 0.8rem; color: var(--text-secondary); }
     .dr-chip { margin-left: auto; flex-shrink: 0; padding: 5px 10px; border-radius: var(--r-pill); font-size: 0.8rem; font-weight: 600; background: var(--surface); color: var(--text-secondary); }
-    .dr-chip.is-saved { background: var(--fill); color: var(--text); }
+    .dr-chip.is-saved { background: var(--fill); color: var(--on-fill); }
 
     /* Bring your history: a watch history filling in poster by poster, then
        the summary lands. Loops; reduced motion shows the finished state. */
@@ -825,8 +826,8 @@
     @media (prefers-reduced-motion: reduce) {
       .im-grid img, .im-done { animation: none; opacity: 1; }
     }
-    .im-done { margin-top: 14px; display: flex; gap: 12px; align-items: center; padding: 16px; border-radius: 16px; background: var(--sage); }
-    .im-done-mark { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; background: var(--accent-2); color: #fff; display: flex; align-items: center; justify-content: center; }
+    .im-done { margin-top: 14px; display: flex; gap: 12px; align-items: center; padding: 16px; border-radius: 16px; background: var(--sage); color: var(--on-fill); }
+    .im-done-mark { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; background: var(--accent-2); color: var(--bg); display: flex; align-items: center; justify-content: center; }
     .im-done-mark svg { width: 16px; height: 16px; }
     .im-done strong { display: block; font-size: 0.95rem; }
     .im-done div span { display: block; font-size: 0.8rem; color: #3f4a1c; }
@@ -839,7 +840,7 @@
       box-sizing: border-box;
       width: 46cqw;
       padding: 2.2cqw 2.2cqw 2.8cqw;
-      background: #fffaf3;
+      background: var(--card);
       border-radius: 3.6cqw;
       box-shadow: 0 20px 50px rgba(41,41,36,0.16);
       font-size: 2.6cqw;
@@ -865,7 +866,7 @@
     .pm-price strong { color: var(--text); }
     .pm-grid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: clamp(14px, 2vw, 20px); row-gap: 0; margin-bottom: calc(-1 * clamp(14px, 2vw, 20px)); }
     @media (min-width: 900px) { .pm-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    .pm-tile { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; min-width: 0; margin-bottom: clamp(14px, 2vw, 20px); padding: clamp(20px, 3vw, 28px); border-radius: clamp(20px, 3vw, 24px); background: #fffaf3; border: 1px solid rgba(41,41,36,0.07); }
+    .pm-tile { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; min-width: 0; margin-bottom: clamp(14px, 2vw, 20px); padding: clamp(20px, 3vw, 28px); border-radius: clamp(20px, 3vw, 24px); background: var(--card); border: 1px solid rgba(41,41,36,0.07); }
     .pm-tile h3 { margin: 0 0 10px; font-family: var(--display); font-weight: 700; font-size: clamp(1.3rem, 2.2vw, 1.45rem); letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance; }
     .pm-tile h3 s { text-decoration-thickness: 3px; text-decoration-color: var(--fill); color: var(--text-secondary); }
     .pm-tile p { margin: 0 0 clamp(20px, 3vw, 26px); max-width: 34ch; color: var(--text-secondary); }
@@ -873,7 +874,7 @@
     .pm-vis b { font-family: var(--display); letter-spacing: -0.03em; }
     .pm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .pm-chips span { padding: 7px 13px; border-radius: var(--r-pill); background: var(--bg); font-size: 0.82rem; }
-    .pm-chips .on { background: var(--ink); color: var(--bg); }
+    .pm-chips .on { background: var(--text); color: var(--bg); }
     .pm-poster { display: block; flex: none; width: clamp(48px, 7vw, 56px); height: auto; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 6px; }
     .pm-pick { display: flex; align-items: center; gap: 14px; }
     .pm-pick b { display: block; line-height: 1.1; }
@@ -908,7 +909,7 @@
     #indie .hx-body { max-width: 620px; margin-left: auto; margin-right: auto; }
     .in-pills { list-style: none; margin: 0 0 2.2rem; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
     .in-pills li { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px 10px 12px; border-radius: var(--r-pill); background: var(--surface); font-size: 0.95rem; font-weight: 600; }
-    .in-pills svg { width: 22px; height: 22px; padding: 4px; box-sizing: border-box; border-radius: 50%; background: var(--sage); color: var(--accent-2); }
+    .in-pills svg { width: 22px; height: 22px; padding: 4px; box-sizing: border-box; border-radius: 50%; background: var(--sage); color: #5F7030; /* the light green: it sits on the sage fill in both modes */ }
     #indie .hx-actions { justify-content: center; }
     .hx-link { font-size: 1rem; font-weight: 600; color: var(--text); text-underline-offset: 4px; }
 
@@ -956,11 +957,15 @@
       --box-inset: clamp(12px, 1.8vw, 24px);
       --box-gap: clamp(10px, 1.4vw, 16px);
       --box-radius: 28px;
-      --box-pink: #ffd3ea;
-      --box-white: #fffaf3;
+      --box-white: var(--card);
       /* Page ground, a touch lighter than the shared cream. Panel tints are
          set explicitly, so they do not move with it. */
       --bg: #faf6ef;
+      --thumb: #d9d1c4;
+      --thumb-hover: #c4bbad;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0c0c0c; --thumb: #2e2e2e; --thumb-hover: #3d3d3d; }
     }
     @media (max-width: 760px) {
       :root { --box-inset: 10px; --box-gap: 10px; --box-radius: 22px; }
@@ -1012,7 +1017,7 @@
     #memories { margin-top: 0; background: var(--surface); }
     #drops    { background: var(--box-pink); }
     #import   { background: var(--box-white); }
-    #lists    { background: var(--sage); }
+    #lists    { background: var(--box-sage); }
     #premium  { background: var(--surface); }
     #indie    { background: var(--box-white); }
 
