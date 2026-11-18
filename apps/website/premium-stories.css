@@ -24,7 +24,7 @@
 .stories-bar i { display: block; height: 100%; width: 0; background: var(--fill); }
 .stories-step[aria-pressed="true"] { color: var(--bg); }
 .stories-step[aria-pressed="true"] .stories-bar i { width: 100%; transition: width 6s linear; }
-.stories-step span:last-child { display: block; font-size: 0.8rem; font-weight: 600; line-height: 1.2; }
+.stories-step span:last-child { display: block; font-size: 0.875rem; font-weight: 600; line-height: 1.2; }
 /* The cards stack in one grid cell and cross-fade: the leaving card
    eases up and out while the next eases up and in. */
 .stories-visuals { display: grid; justify-content: center; align-items: center; min-height: 420px; }

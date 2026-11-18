@@ -136,6 +136,21 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
   }, true);
 })();
 
+/* Links to /pricing that sell Premium (marked data-premium-link) count as
+   premium_link_clicked, the same event the app's Go Premium link fires, with
+   the link's data-cta as placement. Footer and nav Pricing links are not
+   marked: they are navigation, not a Premium pitch. */
+(function () {
+  document.addEventListener('click', function (ev) {
+    var a = ev.target && ev.target.closest && ev.target.closest('a[data-premium-link]');
+    if (!a) return;
+    posthog.capture('premium_link_clicked', {
+      placement: a.getAttribute('data-cta') || 'unknown',
+      source: 'marketing',
+    });
+  }, true);
+})();
+
 /* The homepage search bar is a form, not a link, so its submit is counted
    here as the same signup_cta_clicked event. has_query says whether a title
    was typed; the title itself is never sent. */

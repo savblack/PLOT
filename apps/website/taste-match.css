@@ -15,7 +15,7 @@ h2 { font-size: 2rem; line-height: 1.15; }
 .hero-lede { font-size: 1rem; color: var(--text-secondary); max-width: 44ch; line-height: 1.75; }
 .tm-actions { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; margin-top: 2rem; }
 .tm-actions .btn { min-height: 44px; white-space: nowrap; }
-.tm-link { font-size: .85rem; padding: .6rem 0; }
+.tm-link { font-size: .875rem; padding: .6rem 0; }
 
 /* A small static example of the result. */
 .tm-sample {
@@ -35,19 +35,19 @@ h2 { font-size: 2rem; line-height: 1.15; }
 .tm-avatar--them { background: var(--sage); margin-left: -12px; }
 .tm-pair-line { font-size: .9rem; font-weight: 600; }
 .tm-number { font-family: var(--display); font-size: 5rem; line-height: 1; letter-spacing: -.03em; }
-.tm-caption { font-size: .8rem; color: var(--text-secondary); }
+.tm-caption { font-size: .875rem; color: var(--text-secondary); }
 .tm-bars { width: 100%; display: flex; flex-direction: column; gap: .4rem; margin-top: 1.25rem; }
 .tm-bar { display: block; height: 8px; border-radius: 999px; background: var(--rule); overflow: hidden; }
 .tm-bar > span { display: block; height: 100%; border-radius: 999px; background: var(--fill); }
 .tm-bar--them > span { background: var(--sage); }
-.tm-sample figcaption { margin-top: 1rem; font-size: .8rem; color: var(--text-secondary); }
+.tm-sample figcaption { margin-top: 1rem; font-size: .875rem; color: var(--text-secondary); }
 
 .tm-section { margin: 2rem 0 3rem; }
 .tm-section > h2 { margin-bottom: 1.5rem; }
 .tm-grid { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 3rem; }
 .tm-item { padding: 1.25rem 0; border-top: 1px solid var(--rule); }
 .tm-item dt { font-weight: 600; font-size: .9rem; margin-bottom: .4rem; }
-.tm-item dd { font-size: .82rem; color: var(--text-secondary); line-height: 1.7; }
+.tm-item dd { font-size: .875rem; color: var(--text-secondary); line-height: 1.7; }
 
 .tm-privacy { margin: 3rem 0 0; padding: 2rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); }
 .tm-privacy h2 { font-size: 1.3rem; margin-bottom: .6rem; }

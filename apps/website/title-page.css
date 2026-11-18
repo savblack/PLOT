@@ -100,7 +100,7 @@ h1.title{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,2.9rem);font-we
 .cast img,.cast .noface{width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--surface);display:block;margin-bottom:9px;}
 .cast figcaption{font-size:.79rem;line-height:1.32;}
 .cast .cn{font-weight:600;}
-.cast .cc{color:var(--mut);font-size:.74rem;}
+.cast .cc{color:var(--mut);font-size:.75rem;}
 .rel{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:14px;}
 .rel a{text-decoration:none;}
 .rel img,.rel .noart2{width:100%;aspect-ratio:2/3;border-radius:10px;object-fit:cover;background:var(--surface);display:block;}

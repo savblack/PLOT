@@ -119,7 +119,7 @@
   padding-top: 1rem;
   border-top: 1px solid rgba(41, 41, 36, 0.12);
 }
-.footer-copy { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.25rem; font-size: 0.8rem; color: rgba(41, 41, 36, 0.7); }
+.footer-copy { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.25rem; font-size: 0.875rem; color: rgba(41, 41, 36, 0.7); }
 .footer-copy a { font-size: inherit; color: inherit; }
 .footer-social { display: flex; align-items: center; margin-right: -12px; }
 .footer-social a {
