@@ -100,7 +100,7 @@ amounts; regional checkout prices and tax were not independently verified.
    and licence; obtain launch approval; enable server checkout and public pricing
    together. Re-add marketing sitemap/llms entries only at launch.
 
-Schema work in items 2–4 must follow AGENTS.md: inspect live function bodies,
+Schema work in items 2–4 must follow `docs/ops/migrations.md`: inspect live function bodies,
 run migration restore and function-diff checks, then obtain approval before
 production application. No production migration, production configuration or live payment was
 performed by this branch. Sandbox payments and rollback-only staging proofs are

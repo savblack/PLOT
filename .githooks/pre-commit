@@ -8,7 +8,8 @@
 # If it ever flags something that is genuinely NOT a secret, bypass with:
 #   git commit --no-verify
 #
-# Enable once per clone with:  git config core.hooksPath .githooks
+# Enabled by `pnpm install` (root `prepare` script). By hand:
+#   git config core.hooksPath .githooks
 
 repo_root=$(git rev-parse --show-toplevel)
 if ! "$repo_root/scripts/scan-secrets.sh" --cached; then

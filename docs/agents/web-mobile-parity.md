@@ -7,11 +7,31 @@ Read this before picking up any `apps/mobile` work.
 
 ## The rule
 
-When a feature lands in `apps/web`, either hoist the logic into `@plot/core`
-and consume it from both apps, or open a mobile parity issue. Savannah's
-standing instruction is **"everything should copy the web app"** — web is the
-reference, including nav shape (Guide nested under Home, History under My
-Lists) and copy.
+Savannah's standing instruction is **"everything should copy the web app"**: web is the
+reference, including nav shape (Guide nested under Home, History under My Lists) and copy.
+
+Drift between the apps has historically been one-directional: web ships a feature, mobile
+doesn't, and a few months later the two apps disagree about what Plot is. `packages/core` is
+the mechanism that prevents it, but only if you use it deliberately.
+
+When you add or change a feature in `apps/web`:
+
+- **Put the logic in `@plot/core` first**, not in `apps/web/src`. Anything free of DOM APIs
+  belongs there — hooks included (`useDiscover`, `usePlatformCharts` and friends are core
+  modules for exactly this reason). Web then imports it like mobile does. Rendering stays
+  per-app; derivation, fetching and business rules do not.
+- **If it can't be shared** (it's genuinely DOM- or RN-specific), say so in a comment at the
+  top of the file and open a mobile parity issue in the same PR. "Mobile will catch up later"
+  with nothing written down is how the last round of drift happened.
+- **Never hand-port a core module into `apps/mobile/lib`.** If mobile needs a variant, widen
+  the core module's arguments. Mobile previously carried its own `timezones.ts`,
+  `importParsers.ts`, `spelling.ts` and five copies of `localDateStr`, all shadowing code that
+  already existed in core.
+- **Copy strings live in the shared catalog**, not inline in JSX, so both apps read the same
+  wording. See `apps/web/src/copy/`.
+
+Nothing in CI enforces this — lint and `tsc --noEmit` can't tell that a feature is missing.
+It's a review-time responsibility.
 
 ## Done
 
