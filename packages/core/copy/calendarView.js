@@ -42,15 +42,34 @@ export const CALENDAR_VIEW = {
     title: 'Unavailable right now',
     body: 'New releases will appear here. Check back soon.',
   },
+  // The card under the web Calendar's mini months. It opens the sheet below,
+  // and its words follow where the person's calendar is: nothing saved yet,
+  // saved titles with no dates ahead, or dates already on it.
+  suggestCard: {
+    start: {
+      title: 'Start your calendar',
+      body: 'Add a show that’s airing now or a movie coming soon, and every new date shows up here.',
+      action: 'Find something to add',
+    },
+    quiet: {
+      title: 'Your shows are on a break',
+      body: 'Everything you’ve saved is between seasons for now. Add a show that’s airing to keep your calendar going.',
+      action: 'See what’s airing now',
+    },
+    more: {
+      title: 'Add to your calendar',
+      body: 'Pick up another show that’s on the air or a movie coming out soon.',
+      action: 'Browse what’s coming up',
+    },
+  },
   // The quick-add sheet on the web calendar. Mobile does not render it yet.
   suggest: {
-    open: 'Add upcoming',
     title: 'Fill your calendar',
-    body: 'Track a series that is already on the air, or a movie releasing soon. The dates show up here as soon as you add it.',
-    airingHeading: 'On the air',
-    airingBody: 'These series have already started, and another episode is still scheduled.',
+    body: 'Add a show that’s on the air or a movie coming out soon. Its next date lands on your calendar right away.',
+    airingHeading: 'Airing now',
+    airingBody: 'New episodes are still on the way.',
     moviesHeading: 'Movies coming soon',
-    moviesBody: 'Add one to your watchlist and its release date lands on your calendar.',
+    moviesBody: 'In theaters or streaming soon. Add one and its release date goes on your calendar.',
     nextEpisode: (code, when) => (code ? `${code} airs ${when}` : `Next episode airs ${when}`),
     inTheaters: (when) => `In theaters ${when}`,
     streaming: (when) => `Streaming ${when}`,

@@ -14,6 +14,7 @@ import { MEDIA } from '../copy/media.js';
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import CalendarSidePanel from './CalendarSidePanel.jsx';
+import CalendarSuggestCard from './CalendarSuggestCard.jsx';
 import CalendarStream from './CalendarStream.jsx';
 import CalendarEventRows from './CalendarEventRows.jsx';
 import CalendarReleaseRail from './CalendarReleaseRail.jsx';
@@ -100,6 +101,12 @@ export default function CalendarView() {
 
   const openSuggest = useCallback(() => setSuggestOpen(true), []);
 
+  // Which words the side card uses: nothing saved yet, saved titles with no
+  // dates ahead, or a calendar that already has dates. Hidden while loading so
+  // it doesn't flash the wrong words.
+  const hasTitles = watchlist.items.length > 0 || watching.items.length > 0 || reminders.reminders.length > 0;
+  const suggestState = !listsReady || myLoading ? null : !hasTitles ? 'start' : hasAnyEvents ? 'more' : 'quiet';
+
   /* ── All releases ── */
   const { loading: allLoading, days: releaseDays, feedEmpty, providerLogos } = useFilteredUpcoming({ typeFilters, genreFilters });
   const visibleReleaseDays = releaseDays;
@@ -135,9 +142,6 @@ export default function CalendarView() {
       {/* ── Heading row: the scope toggle on the right of the page title ── */}
       <div className="page-toolbar cal-toolbar cal-toolbar--search">
         <div className="page-toolbar-controls cal-toolbar-controls">
-          <button type="button" className="btn btn-primary btn-sm cal-suggest-btn" onClick={openSuggest}>
-            {CALENDAR_VIEW.suggest.open}
-          </button>
           <Segmented
             options={[
               { value: 'mine', label: CALENDAR_VIEW.scope.mine },
@@ -192,6 +196,7 @@ export default function CalendarView() {
             genreFilters={genreFilters}
             setGenreFilters={setGenreFilters}
             genres={genres}
+            suggest={suggestState ? <CalendarSuggestCard state={suggestState} onOpen={openSuggest} /> : null}
           />
 
           {view === 'mine' ? (
@@ -210,8 +215,8 @@ export default function CalendarView() {
                     title={CALENDAR_VIEW.empty.title}
                     body={CALENDAR_VIEW.empty.body}
                     action={!hasAnyEvents ? (
-                      <button type="button" className="btn btn-primary btn-sm" onClick={openSuggest}>
-                        {CALENDAR_VIEW.suggest.open}
+                      <button type="button" className="btn btn-primary btn-sm cal-empty-suggest" onClick={openSuggest}>
+                        {CALENDAR_VIEW.suggestCard[hasTitles ? 'quiet' : 'start'].action}
                       </button>
                     ) : null}
                   />}
