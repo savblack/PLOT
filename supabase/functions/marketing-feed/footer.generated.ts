@@ -69,7 +69,7 @@ export const FOOTER_CSS = `
   position: relative;
   z-index: 3;
   padding: 0 clamp(12px, 1.8vw, 24px) clamp(12px, 1.8vw, 24px);
-  color: var(--ink, #292924);
+  color: var(--footer-text, #292924);
   font-family: var(--sans, 'DM Sans', system-ui, sans-serif);
 }
 .footer-panel {
@@ -81,7 +81,7 @@ export const FOOTER_CSS = `
   box-sizing: border-box;
   overflow: hidden;
   border-radius: 28px;
-  background: #ffd3ea;
+  background: var(--footer-bg, #ffd3ea);
 }
 .footer-inner {
   max-width: 1040px;
@@ -123,14 +123,14 @@ export const FOOTER_CSS = `
   min-height: 44px;
   padding: 0 1.4rem;
   border-radius: 9999px;
-  background: var(--ink, #292924);
-  color: #ffd3ea;
+  background: var(--footer-cta-bg, #292924);
+  color: var(--footer-cta-text, #ffd3ea);
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
   transition: background 0.25s var(--ease, ease), transform 0.25s var(--ease, ease);
 }
-.footer-cta:hover { background: var(--ink-hover, #3a3a33); transform: translateY(-1px); }
+.footer-cta:hover { background: var(--footer-cta-bg-hover, #3a3a33); transform: translateY(-1px); }
 
 .footer-links {
   list-style: none;
@@ -142,7 +142,7 @@ export const FOOTER_CSS = `
 }
 .footer-links a,
 .footer-copy a {
-  color: var(--ink, #292924);
+  color: var(--footer-text, #292924);
   font-size: 0.875rem;
   line-height: 1.3;
   white-space: nowrap;
@@ -160,7 +160,7 @@ export const FOOTER_CSS = `
 .footer-links a:hover,
 .footer-links a:focus-visible,
 .footer-copy a:hover,
-.footer-copy a:focus-visible { text-decoration-color: var(--ink, #292924); }
+.footer-copy a:focus-visible { text-decoration-color: var(--footer-text, #292924); }
 
 .footer-bottom {
   display: flex;
@@ -169,9 +169,9 @@ export const FOOTER_CSS = `
   gap: 1rem;
   margin-top: 2.5rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(41, 41, 36, 0.12);
+  border-top: 1px solid var(--footer-rule, rgba(41, 41, 36, 0.12));
 }
-.footer-copy { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.25rem; font-size: 0.8rem; color: rgba(41, 41, 36, 0.7); }
+.footer-copy { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.25rem; font-size: 0.875rem; color: var(--footer-muted, rgba(41, 41, 36, 0.7)); }
 .footer-copy a { font-size: inherit; color: inherit; }
 .footer-social { display: flex; align-items: center; margin-right: -12px; }
 .footer-social a {
@@ -180,10 +180,10 @@ export const FOOTER_CSS = `
   justify-content: center;
   width: 44px;
   height: 44px;
-  color: var(--ink, #292924);
+  color: var(--footer-text, #292924);
   transition: color 0.2s;
 }
-.footer-social a:hover { color: rgba(41, 41, 36, 0.6); }
+.footer-social a:hover { color: var(--footer-muted, rgba(41, 41, 36, 0.6)); }
 .footer-social svg { width: 18px; height: 18px; display: block; }
 
 /* The wordmark bleeds off both sides and sinks below the bottom edge. The
@@ -207,7 +207,7 @@ export const FOOTER_CSS = `
   margin-left: -4vw;
   margin-left: -4cqw;
   /* A half step deeper than the panel, so the mark reads as texture. */
-  fill: #ffbcdf;
+  fill: var(--footer-mark, #ffbcdf);
   transition: fill 0.3s var(--ease, ease);
 }
 /* The foil: a pastel holographic sheen over the glyphs that fades in on hover
@@ -217,7 +217,7 @@ export const FOOTER_CSS = `
 .footer-wordmark:hover .footer-foil,
 .footer-wordmark:focus-visible .footer-foil,
 .footer-wordmark.is-touching .footer-foil { opacity: 1; }
-.footer-wordmark:focus-visible { outline: 2px solid var(--ink, #292924); outline-offset: -4px; }
+.footer-wordmark:focus-visible { outline: 2px solid var(--footer-text, #292924); outline-offset: -4px; }
 
 /* Only the pill carries the CSS arrow (ui.css gives every a[data-cta] one;
    defined here too because the edge-function pages don't load ui.css). */
@@ -238,7 +238,7 @@ export const FOOTER_CSS = `
 .footer-cta:focus-visible,
 .footer-links a:focus-visible,
 .footer-copy a:focus-visible,
-.footer-social a:focus-visible { outline: 2px solid var(--ink, #292924); outline-offset: 2px; border-radius: 4px; }
+.footer-social a:focus-visible { outline: 2px solid var(--footer-text, #292924); outline-offset: 2px; border-radius: 4px; }
 
 @media (max-width: 600px) {
   .site-footer { padding: 0 10px 10px; }

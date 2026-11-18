@@ -59,7 +59,7 @@ nav.scrolled {
   padding: 0.75rem 0.25rem;
   text-decoration: none;
   color: var(--text-secondary);
-  font-size: 0.69rem;
+  font-size: 0.8rem;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -75,7 +75,7 @@ nav.scrolled {
   border-radius: var(--r-pill);
   line-height: 1;
 }
-.nav-links a.nav-cta { color: var(--text); font-weight: 700; }
+.nav-links a.nav-cta { color: var(--on-fill, #292924); font-weight: 700; }
 .nav-cta:hover { background: var(--fill-hover); }
 
 /* Mobile nav toggle — padded to a ≥44px tap target, negative margin keeps
@@ -115,7 +115,7 @@ nav.scrolled {
     /* Translucent but opaque enough to keep the links legible over page
        content. The navbar matches this when open so the top of the panel
        reads as one seamless surface. */
-    background: rgba(248, 242, 234, 0.94);
+    background: var(--glass-menu, rgba(248, 242, 234, 0.94));
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     padding: 1.25rem 2rem;
@@ -124,10 +124,11 @@ nav.scrolled {
   }
   .nav-links.open li { display: block; }
   .nav-links.open a { display: block; padding: 0.85rem 0; text-align: center; }
-  .nav-links.open .nav-cta { margin-top: 0.5rem; padding: 0.85rem 0 !important; }
+  /* A compact pill sized to its label, not a full-width bar. */
+  .nav-links.open .nav-cta { display: block; width: max-content; margin: 0.5rem auto 0; padding: 0.85rem 1.8rem !important; }
   .nav-hamburger { display: flex; }
   nav.nav-open {
-    background: rgba(248, 242, 234, 0.94);
+    background: var(--glass-menu, rgba(248, 242, 234, 0.94));
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
   }
@@ -150,11 +151,11 @@ nav.scrolled {
   padding: 0 8px 0 22px;
   gap: 28px;
   border-radius: var(--r-pill);
-  background: rgba(255, 250, 243, 0.82);
+  background: var(--glass-nav, rgba(255, 250, 243, 0.82));
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--rule);
-  box-shadow: 0 4px 14px -10px rgba(41, 41, 36, 0.2);
+  box-shadow: 0 4px 14px -10px var(--shadow-color, rgba(41, 41, 36, 0.2));
   transition: top 0.45s var(--ease);
 }
 #navbar.scrolled,
@@ -183,7 +184,7 @@ nav.scrolled {
   #navbar.nav-open {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    background: rgba(255, 250, 243, 0.97);
+    background: var(--glass-solid, rgba(255, 250, 243, 0.97));
   }
   #navbar .nav-links.open {
     top: 76px;
@@ -191,7 +192,7 @@ nav.scrolled {
     right: 16px;
     border-radius: 24px;
     border: 1px solid var(--rule);
-    background: rgba(255, 250, 243, 0.97);
-    box-shadow: 0 4px 14px -10px rgba(41, 41, 36, 0.2);
+    background: var(--glass-solid, rgba(255, 250, 243, 0.97));
+    box-shadow: 0 4px 14px -10px var(--shadow-color, rgba(41, 41, 36, 0.2));
   }
 }

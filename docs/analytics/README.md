@@ -233,6 +233,9 @@ The app shows it only where it may link out to Checkout (US storefront).
 | Event | When | Properties |
 |---|---|---|
 | `premium_link_clicked` | The link was tapped | `placement: 'side_nav' \| 'settings'`, `trial` (boolean: the person is eligible for 7 days free; the side-nav chip never shows that text) |
+| `premium_link_clicked` | A "See Premium" button on the theplot.tv homepage was clicked (it opens `/pricing`) | `placement: 'home-premium-see' \| 'indie-see-premium'`, `source: 'marketing'`; no `trial` (the marketing site does not know). Fired by `apps/website/js/config.js` for any link marked `data-premium-link` |
+
+Until 2026-11-19 the homepage's closing button was "Support Plot with Premium", a link to Premium signup counted as `signup_cta_clicked` with `placement: 'indie-premium'`. That button is gone: the block now leads with Start tracking (`signup_cta_clicked`, `placement: 'indie-signup'`) and a See Premium link (`premium_link_clicked`, `placement: 'indie-see-premium'`). A chart of `indie-premium` stops at that date.
 
 All monetization dashboards keep PostHog's internal and test-account filter on.
 

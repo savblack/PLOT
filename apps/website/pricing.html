@@ -53,16 +53,17 @@
     }
   </script>
   <!-- End Google Tag Manager -->
-  <title>Pricing · Plot is free, Premium is $3 a month</title>
-  <meta name="description" content="Plot is free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers." />
+  <title>Pricing · Plot is free. Premium is $3/mo or $2/mo yearly</title>
+  <meta name="description" content="Plot is free to use, forever. Premium is $3 a month, or $2 a month paid yearly ($24), with a 7-day free trial for new subscribers." />
   <link rel="canonical" href="https://theplot.tv/pricing" />
-  <meta name="theme-color" content="#292924" />
+  <meta name="theme-color" content="#292924" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="plot" />
-  <meta property="og:title" content="Pricing · Plot is free, Premium is $3 a month" />
-  <meta property="og:description" content="Free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers." />
+  <meta property="og:title" content="Pricing · Plot is free. Premium is $3/mo or $2/mo yearly" />
+  <meta property="og:description" content="Free to use, forever. Premium is $3 a month, or $2 a month paid yearly ($24), with a 7-day free trial for new subscribers." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
@@ -75,10 +76,10 @@
   <link rel="manifest" href="site.webmanifest" />
 
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=2d83d1fa" />
-  <link rel="stylesheet" href="/nav.css?v=ba29d7a0" />
-  <link rel="stylesheet" href="/premium-stories.css?v=1409093d" />
+  <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
+  <link rel="stylesheet" href="/ui.css?v=e9689cc8" />
+  <link rel="stylesheet" href="/nav.css?v=d915d58f" />
+  <link rel="stylesheet" href="/premium-stories.css?v=34322ae5" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -115,7 +116,7 @@
     /* ── Hero: ink, like the home page's opening screen ──────── */
     .hero {
       background: var(--ink);
-      color: var(--bg);
+      color: var(--on-ink);
       padding: 84px 2rem 5rem;
       text-align: center;
     }
@@ -129,7 +130,7 @@
     }
     .hero h1 {
       font-size: clamp(2.6rem, 5vw, 4.25rem);
-      color: var(--bg);
+      color: var(--on-ink);
       max-width: 14ch;
       margin-bottom: 1.2rem;
     }
@@ -164,7 +165,7 @@
     .billing-opt.is-active { background: var(--bg); color: var(--text); }
     .billing-opt:focus-visible { outline: 2px solid var(--fill); outline-offset: 2px; }
     .billing-save {
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -191,7 +192,7 @@
       flex-direction: column;
       padding: 28px;
       border-radius: 28px;
-      background: #fffaf3;
+      background: var(--card);
       color: var(--text);
       min-width: 0;
     }
@@ -203,8 +204,8 @@
       padding: 5px 11px;
       border-radius: var(--r-pill);
       background: var(--sage);
-      color: var(--text);
-      font-size: 0.7rem;
+      color: var(--on-fill);
+      font-size: 0.875rem;
       font-weight: 600;
       letter-spacing: 0.04em;
     }
@@ -226,7 +227,7 @@
       padding: 8px 14px;
       border-radius: var(--r-pill);
       background: var(--accent-2);
-      color: #fff;
+      color: var(--bg);
       font-family: var(--display);
       font-weight: 700;
       font-size: 1.05rem;
@@ -270,10 +271,11 @@
       align-items: center;
       justify-content: center;
     }
-    .tick svg { width: 11px; height: 11px; fill: none; stroke: var(--text); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .tick svg { width: 11px; height: 11px; fill: none; stroke: var(--on-fill); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
     .tick--quiet { background: var(--surface-hover); }
+    .tick--quiet svg { stroke: var(--text); }
     .plan-card .btn { width: 100%; }
-    .plan-trial { margin-top: 14px; font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary); text-align: center; }
+    .plan-trial { margin-top: 14px; font-size: 0.875rem; line-height: 1.45; color: var(--text-secondary); text-align: center; }
 
     /* ── Comparison table, on the page cream ─────────────────── */
     /* The two plans head their own columns, price and button included,
@@ -299,30 +301,32 @@
       gap: 4px;
     }
     .cmp-head--free { background: var(--surface); }
-    .cmp-head--premium { background: var(--ink); color: var(--bg); }
+    .cmp-head--premium { background: var(--ink); color: var(--on-ink); }
     .cmp-head--premium .plan-billed, .cmp-head--premium .plan-per { color: #d9d1c4; }
     .cmp-head .plan-amount { font-size: 2.6rem; }
     .cmp-head .plan-price { margin: 6px 0 0; }
-    .cmp-head .plan-save { font-size: 0.85rem; padding: 5px 10px; }
+    .cmp-head .plan-save { font-size: 0.875rem; padding: 5px 10px; }
     .cmp-head .btn { width: 100%; margin-top: 14px; }
-    .cmp-head--free .btn-outline { background: #fffaf3; }
+    .cmp-head--free .btn-outline { background: var(--card); }
     .cmp-head--free .btn-outline:hover { background: var(--surface-hover); }
     .cmp-feat { text-align: left !important; width: 46%; color: var(--text); font-weight: 400; }
     .cmp-group td {
       padding: 2rem 1rem 0.6rem;
       text-align: left;
-      font-size: 0.72rem;
+      /* Ink, not the accent: pink text this small cannot reach 4.5:1 on
+         the cream ground. 0.82rem = 11.5px on the 14px site base. */
+      font-size: 0.82rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--accent);
+      color: var(--text);
       border-bottom: 0;
     }
     .cmp-yes { display: inline-flex; }
     .cmp-yes .tick { margin-top: 0; }
     .cmp-no { color: var(--text-secondary); opacity: 0.6; }
     .cmp-text { font-weight: 500; }
-    .cmp-table td.cmp-premium { background: rgba(41,41,36,0.05); }
+    .cmp-table td.cmp-premium { background: color-mix(in srgb, var(--text) 5%, transparent); }
     /* No hairline under the last row of each group, or of the table. */
     .cmp-table tbody tr:has(+ .cmp-group) > *, .cmp-table tbody tr:last-child > * { border-bottom: 0; }
     .cmp-table tbody tr:last-child td.cmp-premium { border-radius: 0 0 22px 22px; }
@@ -380,6 +384,25 @@
       .plan-amount { font-size: 3.2rem; }
       .closer { padding: 5rem 1.25rem 3rem; }
       .nav-links { gap: 0.9rem; }
+
+      /* Comparison table on a phone: both plans side by side, no sideways
+         scroll. The price cards already sit above the table, so the header
+         keeps only the plan names, pinned under the floating nav pill
+         (26px from the top, 52px tall) while the rows scroll. The scroll box
+         stops scrolling so `position: sticky` reaches the page. */
+      .cmp-scroll { overflow-x: visible; }
+      .cmp-table { min-width: 0; table-layout: fixed; font-size: 0.9rem; }
+      .cmp-table th, .cmp-table td { padding: 0.8rem 0.35rem; }
+      .cmp-table .cmp-feat { width: 54%; padding-left: 0; }
+      .cmp-table thead th { position: sticky; top: 84px; z-index: 1; background: var(--bg); box-shadow: inset 0 -1px 0 var(--rule); }
+      .cmp-head { padding: 10px 0; border-radius: 0; background: none; align-items: center; }
+      .cmp-head--free, .cmp-head--premium { background: none; color: var(--text); }
+      .cmp-head .plan-price, .cmp-head .plan-billed, .cmp-head .btn { display: none; }
+      .cmp-head .plan-name { font-family: var(--sans); font-size: 0.9rem; font-weight: 600; letter-spacing: 0; }
+      .cmp-head--premium .plan-name { padding: 4px 10px; border-radius: var(--r-pill); background: var(--text); color: var(--bg); }
+      .cmp-group td { padding: 1.6rem 0 0.4rem; }
+      .cmp-text { font-size: 0.86rem; }
+      .cmp-table tbody tr:last-child td.cmp-premium { border-radius: 0 0 12px 12px; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   </style>

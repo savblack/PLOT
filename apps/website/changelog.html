@@ -56,7 +56,8 @@
   <title>Changelog · What's new and improved in Plot</title>
   <meta name="description" content="What is new, improved, and fixed in Plot. Dated release notes for the movie and TV companion, newest first, so you can see every change as it ships." />
   <link rel="canonical" href="https://theplot.tv/changelog" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -76,18 +77,14 @@
   <link rel="manifest" href="site.webmanifest" />
 
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=2d83d1fa" />
-  <link rel="stylesheet" href="/nav.css?v=ba29d7a0" />
+  <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
+  <link rel="stylesheet" href="/ui.css?v=e9689cc8" />
+  <link rel="stylesheet" href="/nav.css?v=d915d58f" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     /* Shared brand tokens live in /theme.css. Content pages use the warmer surface. */
-    :root {
-      --bg: #f8f2ea;
-    }
-
     html { scroll-behavior: smooth; }
 
     body {
@@ -117,23 +114,23 @@
     }
 
     .page-meta {
-      font-size: 0.82rem;
+      font-size: 0.875rem;
       color: var(--text-secondary);
       margin-bottom: 3rem;
       padding-bottom: 2rem;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
+      border-bottom: 1px solid var(--rule);
     }
 
     .page-intro {
       font-size: 0.93rem;
-      color: #333;
+      color: var(--text);
       margin-bottom: 2.5rem;
     }
 
     .changelog-entry {
       padding-bottom: 2.5rem;
       margin-bottom: 2.5rem;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
+      border-bottom: 1px solid var(--rule);
     }
     .changelog-entry:last-of-type {
       border-bottom: none;
@@ -159,13 +156,13 @@
     }
 
     .changelog-entry time {
-      font-size: 0.82rem;
+      font-size: 0.875rem;
       color: var(--text-secondary);
     }
 
     .changelog-entry h3 {
       font-family: var(--sans);
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -175,7 +172,7 @@
 
     .page-wrap ul {
       font-size: 0.93rem;
-      color: #333;
+      color: var(--text);
       margin: 0 0 0.25rem 1.15rem;
     }
     .page-wrap ul li { margin-bottom: 0.45rem; }

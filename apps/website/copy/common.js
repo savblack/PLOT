@@ -39,5 +39,5 @@ export const FOOTER = {
 
 export const EMAIL_FORM = {
   placeholder: 'your@email.com',
-  genericError: 'Something went wrong — try again in a minute.',
+  genericError: 'We couldn’t add you just now. Try again in a minute.',
 };
