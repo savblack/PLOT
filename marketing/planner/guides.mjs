@@ -7,7 +7,7 @@
 //
 // Titles resolve LIVE from TMDB (never hardcoded ids). topic_key is stable (no
 // date) so each evergreen topic is created once; the UNIQUE constraint makes the
-// insert a no-op on repeat. Hooked into automation.runWeekly + `npm run mkt:guides`.
+// insert a no-op on repeat. Hooked into automation.runWeekly + `pnpm run mkt:guides`.
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { getSupabase } from '../lib/supabase.mjs';

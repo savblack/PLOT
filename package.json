@@ -98,6 +98,9 @@
     "typescript-eslint": "^8.72.2"
   },
   "packageManager": "pnpm@10.6.3",
+  "engines": {
+    "node": "22.x"
+  },
   "pnpm": {
     "patchedDependencies": {
       "decode-uri-component@0.5.1": "patches/decode-uri-component@0.5.1.patch"

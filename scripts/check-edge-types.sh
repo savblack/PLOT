@@ -27,7 +27,7 @@
 # resolves; the deployed function resolves its own versions in Supabase's runtime,
 # which is why the lock is not a deployment artifact.
 #
-# Usage: npm run edge:check   (needs deno on PATH: https://deno.land)
+# Usage: pnpm run edge:check   (needs deno on PATH: https://deno.land)
 
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -114,7 +114,7 @@ cat >&2 <<'MSG'
 If the errors name columns that do exist, the generated types are stale — the
 schema moved and supabase/functions/_shared/database.types.ts did not. Refresh it:
 
-    npm run gen:db-types
+    pnpm run gen:db-types
 
 If they name a nullable value going into a NOT NULL column, that is a real
 runtime failure waiting to happen (Postgres 23502 aborts the whole statement),

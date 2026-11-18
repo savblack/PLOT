@@ -131,7 +131,7 @@ const EXPLANATIONS = {
     'This is the July 2026 shape: a later migration recreated the function from',
     'an older body and dropped the clause. Blocking still works everywhere else,',
     'so nothing fails — the blocked account just reappears on this one surface.',
-    'Diff it against production before fixing: npm run db:function-diff',
+    'Diff it against production before fixing: pnpm run db:function-diff',
   ],
   'unexpected-clause': [
     'An exempt function grew a block clause. If that is deliberate, move it to',

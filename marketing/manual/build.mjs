@@ -38,9 +38,9 @@ const factsFor = (c) => {
   const p = c.payload || {}, t = p.title || {};
   const f = [];
   if (c.copyOnly) {
-    if (c.post_type === 'spotlight') f.push('Put the US title to spotlight in the Card block, then: npm run mkt:manual:media -- <date>');
-    else if (c.post_type === 'hidden_gem') f.push('Put the under-seen US title in the Card block, then: npm run mkt:manual:media -- <date>');
-    else if (c.post_type === 'what_to_watch_tonight') f.push('Put the US title to recommend tonight in the Card block, then: npm run mkt:manual:media -- <date>');
+    if (c.post_type === 'spotlight') f.push('Put the US title to spotlight in the Card block, then: pnpm run mkt:manual:media <date>');
+    else if (c.post_type === 'hidden_gem') f.push('Put the under-seen US title in the Card block, then: pnpm run mkt:manual:media <date>');
+    else if (c.post_type === 'what_to_watch_tonight') f.push('Put the US title to recommend tonight in the Card block, then: pnpm run mkt:manual:media <date>');
     else if (c.post_type === 'text_question') f.push('Text-only post (no image): write one short question for the audience.');
     else if (c.post_type === 'question_of_week') f.push('Text-only post (no image): write the question of the week.');
     return f;
@@ -128,7 +128,7 @@ const main = async () => {
 
   await writeFile(path.join(outDir, `${date}.md`), serialize(date, posts));
   console.log(`\n${posts.length} post(s) → ${path.relative(process.cwd(), outDir)}/`);
-  console.log(`Next: write the copy in ${date}.md, then  npm run mkt:manual:publish ${date}`);
+  console.log(`Next: write the copy in ${date}.md, then  pnpm run mkt:manual:publish ${date}`);
 };
 
 main().catch(async (err) => { console.error(err); await closeBrowser(); process.exit(1); });

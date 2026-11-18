@@ -4,7 +4,7 @@
 // serves as application/octet-stream, is worse than no catalog: it is a
 // published promise that fails on the first client to follow it. These tests
 // are the only thing that checks either. They live here because
-// `npm run test:website` is what CI runs for this site.
+// `pnpm run test:website` is what CI runs for this site.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync, existsSync } from 'node:fs';

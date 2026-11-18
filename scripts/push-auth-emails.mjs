@@ -19,7 +19,7 @@ const SITE_URL = 'https://theplot.tv';
 
 // ── Design tokens ──
 // Brand colors derive from @plot/core/tokens.js (the canonical source, enforced by
-// `npm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
+// `pnpm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
 //
 // The warm system (Sept 2026): cream ground, charcoal ink, the pink as a FILL
 // behind charcoal text on the button. surfaceTint,

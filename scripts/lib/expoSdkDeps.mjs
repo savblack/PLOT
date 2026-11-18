@@ -1,4 +1,4 @@
-// Pure comparison logic for `npm run mobile:deps`. The CLI wrapper in
+// Pure comparison logic for `pnpm run mobile:deps`. The CLI wrapper in
 // scripts/check-expo-sdk-deps.mjs reads the files; the decisions live here so
 // apps/web/tests/unit/expoSdkDeps.test.js can prove the guard flags the bumps
 // that actually broke the build and clears the ones that never did.

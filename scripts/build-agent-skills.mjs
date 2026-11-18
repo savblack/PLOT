@@ -79,7 +79,7 @@ const current = (() => {
 if (current === next) {
   console.log(`agent skills index is current (${skills.length} skills)`);
 } else if (check) {
-  console.error('✗ .well-known/agent-skills/index.json is out of date. Run `npm run skills` and commit.');
+  console.error('✗ .well-known/agent-skills/index.json is out of date. Run `pnpm run skills` and commit.');
   process.exit(1);
 } else {
   writeFileSync(INDEX, next);

@@ -3,7 +3,7 @@
 
    One copy for every static page (index, about, plans, privacy, terms,
    community, 404). Load after /theme.css. Values come from theme.css tokens,
-   which are checked against @plot/core/tokens.js by `npm run tokens:marketing`.
+   which are checked against @plot/core/tokens.js by `pnpm run tokens:marketing`.
    The Storybook stories import this file directly, so there is no mirror to
    keep in sync.
 

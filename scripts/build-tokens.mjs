@@ -124,7 +124,7 @@ if (mode === 'write') {
     const stale = next !== current ? 'tokens.css' : htmlNext !== htmlCurrent ? 'index.html' : 'boot/theme.js';
     console.error(`✗ ${stale} is out of sync with @plot/core/tokens.js.`);
     console.error('  A generated block was hand-edited or values changed in tokens.js.');
-    console.error('  Fix the value in packages/core/tokens.js, then run `npm run tokens:build`.');
+    console.error('  Fix the value in packages/core/tokens.js, then run `pnpm run tokens:build`.');
     process.exit(1);
   }
   const n = Object.keys(colors.light).length + Object.keys(colors.dark).length + Object.keys(radii).length
