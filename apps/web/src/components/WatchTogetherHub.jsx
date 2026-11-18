@@ -8,11 +8,11 @@
 // Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH (round 3)
 // Rules: @plot/core watchTogether.js (hubStage, joinNames, sharedOnDate).
 // Mobile parity: apps/mobile/components/watch/WatchHub.tsx.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { personName, hubStage, joinNames, sharedOnDate } from '@plot/core/watchTogether.js';
-import { useWatchTogetherTitles, useWatchTogetherExampleTitles, startWatchTogetherSession, useUpgradeNews } from '@plot/core/useWatchTogether.js';
+import { useWatchTogetherTitles, useWatchTogetherExampleTitles, useSaveIdeas, startWatchTogetherSession, useUpgradeNews } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { useInviteShare } from '../hooks/useInviteShare.js';
@@ -34,6 +34,18 @@ const NEWS_STORAGE = { getItem: readStorage, setItem: writeStorage, removeItem: 
 function useNews(wt, premium) {
   const { unlockedIds, dismiss } = useUpgradeNews({ partners: wt.partners, loading: wt.loading, premium, storage: NEWS_STORAGE });
   return { unlocked: wt.partners.filter(p => unlockedIds.includes(p.other_id)), dismiss };
+}
+
+// Saving a title can make a new match (your partner may already have it), so
+// recount when your watchlist changes size. Not on the first render.
+function useOnSavedChange(watchlist, refresh) {
+  const count = watchlist?.items?.length ?? 0;
+  const last = useRef(count);
+  useEffect(() => {
+    if (last.current === count) return;
+    last.current = count;
+    refresh();
+  }, [count, refresh]);
 }
 
 /** A face that picks who's watching. The picked one gets the accent ring. */
@@ -76,6 +88,9 @@ function InviteCard({ link }) {
 
 function PeopleCard({ partners, decidable, selected, onSelect, incoming, outgoing, onReview, onCancel, onDecide, onOpenGroup }) {
   const chosen = selected === GROUP ? null : partners.find(p => p.other_id === selected);
+  // Nothing in common: a swipe through zero titles is a dead end, so say what
+  // to do instead. The shelf beside the card holds ideas to save.
+  const nothingYet = chosen?.can_decide !== false && chosen?.overlap_count === 0;
   return (
     <section className="hist-card wth-main-card" aria-label={H.whosWatching}>
       {incoming.length > 0 && (
@@ -105,9 +120,10 @@ function PeopleCard({ partners, decidable, selected, onSelect, incoming, outgoin
             )}
           </div>
           <h2 className="wth-main-title">
-            {selected === GROUP ? T.overlap.groupHeading : chosen ? H.savedCount(personName(chosen), chosen.overlap_count ?? 0) : ''}
+            {selected === GROUP ? T.overlap.groupHeading : nothingYet ? H.nothingShared(personName(chosen)) : chosen ? H.savedCount(personName(chosen), chosen.overlap_count ?? 0) : ''}
           </h2>
-          {selected === GROUP
+          {nothingYet && <p className="wth-body">{H.noOverlapBody(personName(chosen))}</p>}
+          {nothingYet ? null : selected === GROUP
             ? <button type="button" className="btn btn-primary wth-main-btn" onClick={onOpenGroup}>{T.overlap.groupAction}</button>
             : chosen?.can_decide === false
               ? <PremiumGateButton reason="watchTogether" className="btn btn-primary wth-main-btn" onOpen={reportGate} />
@@ -123,12 +139,27 @@ function PeopleCard({ partners, decidable, selected, onSelect, incoming, outgoin
 function SharedShelf({ partners }) {
   const { openPanel, watchlist } = useApp();
   const locked = partners.some(p => p.can_decide === false);
-  const { titles, loading } = useWatchTogetherTitles(locked ? [] : partners.map(p => p.other_id));
+  const { titles, loading, refresh } = useWatchTogetherTitles(locked ? [] : partners.map(p => p.other_id));
+  useOnSavedChange(watchlist, refresh);
   const names = joinNames(partners.map(personName));
+  const empty = !locked && !loading && !titles.length;
+  const ideas = useSaveIdeas(watchlist?.items, empty);
   // Locked: the card above already says one of you needs Premium.
   if (locked) return null;
   if (loading && !titles.length) return null;
-  if (!titles.length) return <p className="wth-note">{H.nothingShared(names)}</p>;
+  if (empty) {
+    // One person: the card already says nothing overlaps. A group's card doesn't.
+    const note = partners.length > 1 && <p className="wth-note">{H.nothingShared(names)}</p>;
+    if (!ideas.length) return note || null;
+    return (
+      <>
+        {note}
+        <RailSection title={H.ideasTitle} subtitle={H.ideasNote}>
+          {ideas.map(t => <MediaCard key={`${t.media_type}:${t.tmdb_id}`} item={{ ...t, id: t.tmdb_id }} openPanel={openPanel} watchlist={watchlist} />)}
+        </RailSection>
+      </>
+    );
+  }
   const all = `/together/with/${partners.map(p => encodeURIComponent(p.username)).join(',')}`;
   return (
     <RailSection title={H.savedWith(names)} subtitle={String(titles.length)} headerRight={<Link className="wth-link" to={all}>{H.seeAll}</Link>}>
@@ -169,6 +200,8 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
   const [selectedId, setSelectedId] = useState(/** @type {string | null} */ (null));
   const news = useNews(wt, premium);
   const { partners, incoming, outgoing } = wt;
+  const { watchlist } = useApp();
+  useOnSavedChange(watchlist, wt.refresh);
 
   // Blank only until the first load. Later refreshes (after an invite or a
   // reply) keep the page up, so a half-typed search isn't wiped.

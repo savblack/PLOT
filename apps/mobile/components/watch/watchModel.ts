@@ -162,5 +162,6 @@ export function useTogetherTitles(otherIds: string[]) {
     titles: asTitles(raw.titles),
     loading: raw.loading === true,
     error: typeof raw.error === 'string' ? raw.error : null,
+    refresh: typeof raw.refresh === 'function' ? () => Promise.resolve((raw.refresh as () => unknown)()) : async () => {},
   };
 }

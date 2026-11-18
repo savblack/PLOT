@@ -322,6 +322,21 @@ export function trendingAsTitles(results) {
 }
 
 /**
+ * Ideas for people with nothing saved in common yet: trending titles the
+ * viewer hasn't saved, so every one is something new they could save. Saving
+ * one can create a match on the spot when the partner already has it.
+ *
+ * @param {SessionCard[] | null | undefined} trending  trendingAsTitles() output
+ * @param {{ tmdb_id: number, media_type: string }[] | null | undefined} saved  The viewer's watchlist
+ * @param {number} [limit]
+ * @returns {SessionCard[]}
+ */
+export function saveIdeas(trending, saved, limit = 12) {
+  const have = new Set((saved || []).filter(t => t && t.tmdb_id && t.media_type).map(titleKey));
+  return (trending || []).filter(t => t && !have.has(titleKey(t))).slice(0, limit);
+}
+
+/**
  * Titles for the start page's example and demo: the viewer's own saved titles
  * that have a poster, topped up from trending, without repeats.
  *
