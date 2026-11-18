@@ -48,17 +48,17 @@ export const CALENDAR_VIEW = {
   suggestCard: {
     start: {
       title: 'Start your calendar',
-      body: 'Add a show that’s airing now or a movie coming soon, and every new date shows up here.',
+      body: 'Add a show that’s airing or a movie coming out soon. New episodes and release dates show up here.',
       action: 'Find something to add',
     },
     quiet: {
-      title: 'Your shows are on a break',
-      body: 'Everything you’ve saved is between seasons for now. Add a show that’s airing to keep your calendar going.',
-      action: 'See what’s airing now',
+      title: 'Your calendar is quiet',
+      body: 'Your shows are between seasons and your movies are already out. Add something airing now or a movie coming soon.',
+      action: 'See what’s coming soon',
     },
     more: {
       title: 'Add to your calendar',
-      body: 'Pick up another show that’s on the air or a movie coming out soon.',
+      body: 'Find another show on the air or a new movie coming to theaters or streaming.',
       action: 'Browse what’s coming up',
     },
   },

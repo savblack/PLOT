@@ -1,6 +1,6 @@
 # Handoff: Calendar suggest card
 
-Status: paused (ready for review). Updated 2026-11-18.
+Status: paused (ready for review). Updated 2026-11-18. Card copy now covers movie releases as well as shows.
 
 What changed: the pink "Add upcoming" button at the top of the web Calendar is gone. A card under the mini calendar now opens the "Fill your calendar" sheet, and its words change with the person's calendar (nothing saved yet / saved shows with no dates ahead / dates already on it). The sheet's own copy was rewritten.
 
