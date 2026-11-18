@@ -1589,6 +1589,11 @@ svg { stroke-width: 1.5; }
 }
 
 /* ── Side panel ── */
+/* A page's own top control (Calendar's scope, Your People's view, the Settings
+   search) is the first row of its side column, so the column starts on the
+   same line as History's. It fills the column; a toggle splits it evenly. */
+.cal-side > .cal-side-control { width: 100%; }
+.cal-scope.cal-side-control .cal-scope-btn { flex: 1; }
 .cal-side {
   display: none;
   width: 264px;

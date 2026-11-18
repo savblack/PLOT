@@ -140,20 +140,6 @@ export default function CalendarView() {
   /* ── Back to today: panel to this month, page to the top ── */
   return (
     <div>
-      {/* ── Heading row: the scope toggle on the right of the page title ── */}
-      <div className="page-toolbar cal-toolbar cal-toolbar--search">
-        <div className="page-toolbar-controls cal-toolbar-controls">
-          <Segmented
-            options={[
-              { value: 'mine', label: CALENDAR_VIEW.scope.mine },
-              { value: 'all', label: CALENDAR_VIEW.scope.all },
-            ]}
-            value={view}
-            onChange={setView}
-          />
-        </div>
-      </div>
-
       <MobilePageControls
         title={MOBILE_CONTROLS.filters}
         groups={[
@@ -190,6 +176,17 @@ export default function CalendarView() {
         {suggestCard && <div className="cal-suggest-inline">{suggestCard}</div>}
         <div className="cal-body">
           <CalendarSidePanel
+            control={(
+              <Segmented
+                className="cal-side-control"
+                options={[
+                  { value: 'mine', label: CALENDAR_VIEW.scope.mine },
+                  { value: 'all', label: CALENDAR_VIEW.scope.all },
+                ]}
+                value={view}
+                onChange={setView}
+              />
+            )}
             panelStart={panelStart}
             onPagePanel={pagePanel}
             todayStr={todayStr}

@@ -22,10 +22,13 @@ the same spot as History and My Lists. Phone layouts are unchanged.
 ## Checks
 - `pnpm run check`: passed.
 
-## Open question for Savannah
-Calendar, Settings and Your People have a control row (toggle or search) on top, so their
-panels start below it (about 103-119px). Moving those controls into the left column would
-put the panels on the 44px line too.
+## Second change (Savannah said "Yes, move them")
+Calendar's My dates/All releases switch, the Settings search and Your People's
+By date/By person switch moved from a row above the page into the top of the left
+column (`.cal-side-control`, app.css). Measured: side and main columns both start at
+44px on all three. Phones: Calendar's switch and Settings search were already hidden
+there; Your People's switch now fills the width above the follow list.
+Checks: `pnpm run check` passed, `pnpm run test:unit` passed (0 failures).
 
 ## Next
-Open a PR after Savannah's answer; check the Cloudflare preview (shared shell class changed).
+Open a PR when Savannah asks; check the Cloudflare preview (shared shell class changed).

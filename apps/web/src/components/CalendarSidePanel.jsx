@@ -69,10 +69,11 @@ function MiniMonth({ year, month, todayStr, todayYear, eventDates, onPickDay, na
  * @param {(v: number[]) => void} props.setGenreFilters
  * @param {{id: number, name: string}[]} props.genres
  * @param {import('react').ReactNode} [props.suggest]   the card under the mini months
+ * @param {import('react').ReactNode} [props.control]   the page's scope toggle, first in the column
  */
 export default function CalendarSidePanel({
   panelStart, onPagePanel, todayStr, eventDates, onPickDay,
-  typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, suggest,
+  typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, suggest, control,
 }) {
   const todayYear   = Number(todayStr.slice(0, 4));
   const second      = new Date(panelStart.year, panelStart.month + 1, 1);
@@ -82,6 +83,7 @@ export default function CalendarSidePanel({
 
   return (
     <aside className="cal-side">
+      {control}
       <div className="cal-mini-card">
         {panelMonths.map(({ year, month }, i) => (
           <MiniMonth
