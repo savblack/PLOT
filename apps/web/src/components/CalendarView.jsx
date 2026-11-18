@@ -78,7 +78,7 @@ export default function CalendarView() {
   const eventDates   = useMemo(() => new Set(myDays.map(d => d.ds)), [myDays]);
 
   // Email links open the sheet once. An empty calendar opens it once per
-  // session, until they close it. The header button can open it again.
+  // session, until they close it. The suggest card can open it again.
   useEffect(() => {
     if (!fromLink || linkHandled.current) return;
     linkHandled.current = true;
@@ -106,6 +106,7 @@ export default function CalendarView() {
   // it doesn't flash the wrong words.
   const hasTitles = watchlist.items.length > 0 || watching.items.length > 0 || reminders.reminders.length > 0;
   const suggestState = !listsReady || myLoading ? null : !hasTitles ? 'start' : hasAnyEvents ? 'more' : 'quiet';
+  const suggestCard = suggestState ? <CalendarSuggestCard state={suggestState} onOpen={openSuggest} /> : null;
 
   /* ── All releases ── */
   const { loading: allLoading, days: releaseDays, feedEmpty, providerLogos } = useFilteredUpcoming({ typeFilters, genreFilters });
@@ -184,6 +185,9 @@ export default function CalendarView() {
       />
 
       <div className="cal-page">
+        {/* Below 1024px the side column is hidden, so the same card sits
+            above the stream instead. */}
+        {suggestCard && <div className="cal-suggest-inline">{suggestCard}</div>}
         <div className="cal-body">
           <CalendarSidePanel
             panelStart={panelStart}
@@ -196,7 +200,7 @@ export default function CalendarView() {
             genreFilters={genreFilters}
             setGenreFilters={setGenreFilters}
             genres={genres}
-            suggest={suggestState ? <CalendarSuggestCard state={suggestState} onOpen={openSuggest} /> : null}
+            suggest={suggestCard}
           />
 
           {view === 'mine' ? (
@@ -211,15 +215,7 @@ export default function CalendarView() {
               loading={myLoading}
               empty={hasAnyEvents && filtered
                 ? <EmptyState title={CALENDAR_VIEW.empty.filtered} body={CALENDAR_VIEW.empty.filteredBody} />
-                : <EmptyState
-                    title={CALENDAR_VIEW.empty.title}
-                    body={CALENDAR_VIEW.empty.body}
-                    action={!hasAnyEvents ? (
-                      <button type="button" className="btn btn-primary btn-sm cal-empty-suggest" onClick={openSuggest}>
-                        {CALENDAR_VIEW.suggestCard[hasTitles ? 'quiet' : 'start'].action}
-                      </button>
-                    ) : null}
-                  />}
+                : <EmptyState title={CALENDAR_VIEW.empty.title} body={CALENDAR_VIEW.empty.body} />}
               renderDay={(day) => <CalendarEventRows day={day} openPanel={openPanel} />}
             />
           ) : (

@@ -64,8 +64,10 @@ function Harness({ events, loading = false, suggest = 'more' }) {
     const day = days.find(d => d.ds >= ds);
     if (day) document.querySelector(`[data-day="${day.ds}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+  const card = loading ? null : <CalendarSuggestCard state={suggest} onOpen={() => console.log('open suggestions')} />;
   return (
     <div className="cal-page">
+      {card && <div className="cal-suggest-inline">{card}</div>}
       <div className="cal-body">
         <CalendarSidePanel
           panelStart={panelStart}
@@ -78,7 +80,7 @@ function Harness({ events, loading = false, suggest = 'more' }) {
           genreFilters={genreFilters}
           setGenreFilters={setGenreFilters}
           genres={GENRES}
-          suggest={loading ? null : <CalendarSuggestCard state={suggest} onOpen={() => console.log('open suggestions')} />}
+          suggest={card}
         />
         <CalendarStream
           variant="rows"

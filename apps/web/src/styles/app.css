@@ -1919,10 +1919,12 @@ svg { stroke-width: 1.5; }
 .cal-stream--rail .cal-stream-day { padding-top: 16px; }
 .cal-stream--rail .cal-stream-gutter { padding-top: 36px; }
 
+.cal-suggest-inline { max-width: 480px; margin-bottom: 24px; }
+
 @media (min-width: 1024px) {
   .cal-side { display: flex; }
-  /* The side column's suggest card does this job once the column shows. */
-  .cal-empty-suggest { display: none; }
+  /* The side column carries the suggest card once it shows. */
+  .cal-suggest-inline { display: none; }
 }
 
 @media (max-width: 599px) {
