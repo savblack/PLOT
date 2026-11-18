@@ -49,7 +49,6 @@ export const WATCH_TOGETHER = Object.freeze({
     // Shelves under the row of people.
     yourWatchlist: 'Your watchlist',
     previewNote: 'When someone joins, the titles you’ve both saved show up here.',
-    seeHow: 'See how it works',
     onPlot: 'Already on Plot?',
     peopleYouFollow: 'People you follow',
     moviesWith: (names) => `Movies you and ${names} saved`,
@@ -58,9 +57,9 @@ export const WATCH_TOGETHER = Object.freeze({
     lockedShelf: 'One of you needs Premium to see and swipe through what you share. Your friend never has to pay.',
     nothingShared: (names) => `Nothing you and ${names} have both saved yet.`,
     // Nov 14 (round 3A): one card, one button. Faces pick who's watching.
-    inviteLead: 'Invite the person you watch with',
-    inviteLeadBody: 'They get a link. When they join, you both see what you’ve saved and swipe until you agree.',
-    findOnPlot: 'Already on Plot? Find them',
+    // Nov 18: the explainer, rewritten to say what happens step by step.
+    inviteLead: 'Pick what to watch, together',
+    inviteLeadBody: 'Send a link to the person you watch with. Once they join, Plot lines up the titles you’ve both saved. You each swipe yes or no until you both land on the same one.',
     both: 'Both',
     everyone: 'Everyone',
     savedCount: (names, n) => `${n} ${n === 1 ? 'title' : 'titles'} you and ${names} both saved`,

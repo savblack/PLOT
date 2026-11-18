@@ -2,9 +2,9 @@
 // button, like web. My Lists' page (glass title bar, full-width sections):
 // a single card first (who's watching as a row of faces, a one-line count,
 // one pink button; requests as a one-line notice), then one shelf of what
-// you share. Search, the demo and inviting more people are quiet links. With
-// nobody yet the card leads with the invite link, because most people invite
-// someone who isn't on Plot.
+// you share. Inviting more people is a quiet link. With nobody yet the card
+// leads with the invite link, because most people invite someone who isn't
+// on Plot, and the Sam demo sits right under it so you can try swiping first.
 // Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH (round 3)
 // Rules: @plot/core watchTogether.js (hubStage, joinNames, sharedOnDate).
 // Web parity: apps/web/src/components/WatchTogetherHub.jsx.
@@ -20,7 +20,6 @@ import CollapsibleSection from '../CollapsibleSection';
 import GlassHeader, { useGlassOnScroll } from '../GlassHeader';
 import ScreenHeaderBar, { SCREEN_HEADER_H } from '../ScreenHeaderBar';
 import { Avatar } from '../Avatar';
-import { Tag } from '../Chip';
 import { hubStage, joinNames, personName, sharedOnDate } from '@plot/core/watchTogether.js';
 import { useWatchTogetherSuggestions, useWatchTogetherExampleTitles, startWatchTogetherSession, useUpgradeNews, useUserSearch } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
@@ -31,12 +30,12 @@ import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppData } from '../../contexts/AppDataContext';
 import { readStorage, writeStorage, removeStorage } from '../../lib/storage';
-import { Demo, FriendSearch } from './WatchTogetherStart';
+import { Demo } from './WatchTogetherStart';
 import { InviteLinkCard, useInviteShare } from './InviteLinkCard';
 import { AcceptSheet } from './AcceptSheet';
 import ComparePrompt from '../taste/ComparePrompt';
 import {
-  ButtonRow, ErrorNote, ListCard, Note, PersonRow, SectionLabel, WatchPage, openPremium, useOpenTitle,
+  ButtonRow, ErrorNote, Note, PersonRow, SectionLabel, WatchPage, openPremium, useOpenTitle,
 } from './WatchChrome';
 import { PosterArt, PosterCaption, posterColumnWidth } from '../PosterCard';
 import { posterUrl } from '../../lib/tokens';
@@ -82,8 +81,6 @@ export function WatchHub() {
   const router = useRouter();
   const { userId, profile } = useAppData();
   const together = useTogether(userId);
-  const suggestions = useWatchTogetherSuggestions(userId);
-  const suggested = asPeople(suggestions.people);
   const premium = isPremiumProfile(profile);
   const news = useNews(together.partners, together.loading, premium);
   // One instance for the page, so sharing from the card moves the page on.
@@ -91,15 +88,13 @@ export function WatchHub() {
   const [reviewing, setReviewing] = useState<WtPerson | null>(null);
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [sent, setSent] = useState<string[]>([]);
-  const [finding, setFinding] = useState(false);
   const [gate, setGate] = useState(false);
   const { partners, incoming, outgoing } = together;
 
   // Loading only until the first load. Later refreshes (after an invite or a
   // reply) keep the page up, so a half-typed search isn't wiped.
   const [ready, setReady] = useState(false);
-  if (!ready && !together.loading && !suggestions.loading && link.sharedRead) setReady(true);
+  if (!ready && !together.loading && link.sharedRead) setReady(true);
   if (!ready) {
     return <HubPage><Gutter><Note>{COMMON.loading}</Note></Gutter></HubPage>;
   }
@@ -120,14 +115,6 @@ export function WatchHub() {
     await together.respond(person.id, accept, shareFull);
     setBusy(false);
     setReviewing(null);
-  };
-  const invite = async (person: WtPerson) => {
-    const result = await together.send(person.id);
-    if (result.ok) {
-      setSent(prev => prev.includes(person.id) ? prev : [...prev, person.id]);
-      void suggestions.refresh();
-    }
-    return result.ok;
   };
 
   return (
@@ -150,14 +137,13 @@ export function WatchHub() {
           ) : <InviteCard link={link} />}
           {stage === 'people'
             ? <TextLink quiet label={H.inviteSomeone} onPress={() => { void link.send('share'); }} disabled={!link.url} />
-            : <TextLink quiet label={H.findOnPlot} onPress={() => setFinding(v => !v)} />}
-          {finding && stage !== 'people' && <OnPlot suggested={suggested} sent={sent} onInvite={invite} />}
+            : <ExampleDemo premium={premium} />}
         </Gutter>
       </View>
 
       {stage === 'people'
         ? shelfPartners.length > 0 && <SharedShelf key={selected ?? ''} partners={shelfPartners} onSeeAll={(path) => router.push(path as Href)} />
-        : <PreviewShelf premium={premium} />}
+        : <PreviewShelf />}
 
       {/* The other thing two people can do with their lists and ratings. */}
       <ComparePrompt />
@@ -314,28 +300,6 @@ function UpgradeNews({ unlocked, onDismiss }: { unlocked: WtPerson[]; onDismiss:
   );
 }
 
-function OnPlot({ suggested, sent, onInvite }: { suggested: WtPerson[]; sent: string[]; onInvite: (person: WtPerson) => Promise<boolean> }) {
-  return (
-    <View style={{ gap: spacing.md }}>
-      <FriendSearch sent={sent} onInvite={onInvite} />
-      {suggested.length > 0 && (
-        <ListCard>
-          {suggested.map(person => (
-            <PersonRow
-              key={person.id}
-              person={person}
-              note={typeof person.overlap_count === 'number' ? T.start.inCommon(person.overlap_count) : T.start.countLater}
-              trailing={sent.includes(person.id)
-                ? <Tag label={T.invite.sent} style={{ alignSelf: 'center' }} />
-                : <Button size="sm" label={T.invite.invite} onPress={() => { void onInvite(person); }} />}
-            />
-          ))}
-        </ListCard>
-      )}
-    </View>
-  );
-}
-
 /* ── The shelf ───────────────────────────────────────────────────────── */
 
 /** A My Lists shelf: a collapsible section with a rail of posters, edge to edge. */
@@ -383,23 +347,20 @@ function SharedShelf({ partners, onSeeAll }: { partners: WtPerson[]; onSeeAll: (
   );
 }
 
-/** With nobody yet: your watchlist, faded, as what they'll see first. */
-function PreviewShelf({ premium }: { premium: boolean }) {
+/** With nobody yet: the Sam demo, under the invite card, always open. */
+function ExampleDemo({ premium }: { premium: boolean }) {
   const { watchlist } = useAppData();
-  const [demo, setDemo] = useState(false);
   const saved = Array.isArray(watchlist?.items) ? watchlist.items : null;
   const pool = asTitles(useWatchTogetherExampleTitles(saved));
-  const all = asTitles(watchlist?.items);
-  const items = all.filter(t => t.poster_path).slice(0, 12);
-  return (
-    <>
-      {items.length > 0 && <Shelf id="wt-preview" title={H.previewFirst} titles={items} faded note={H.previewMatched} />}
-      <Gutter>
-        <TextLink quiet label={H.seeHow} onPress={() => setDemo(v => !v)} />
-        {demo && <Demo key={pool.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={pool} />}
-      </Gutter>
-    </>
-  );
+  return <Demo key={pool.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={pool} />;
+}
+
+/** With nobody yet: your watchlist, faded, as what they'll see first. */
+function PreviewShelf() {
+  const { watchlist } = useAppData();
+  const items = asTitles(watchlist?.items).filter(t => t.poster_path).slice(0, 12);
+  if (!items.length) return null;
+  return <Shelf id="wt-preview" title={H.previewFirst} titles={items} faded note={H.previewMatched} />;
 }
 
 /* ── Shared hooks ────────────────────────────────────────────────────── */
