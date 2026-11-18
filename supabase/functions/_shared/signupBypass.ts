@@ -24,6 +24,31 @@ export function allowedOrigin(origin: string | null): string {
   return 'https://app.theplot.tv';
 }
 
+// The production project ref (the same one scripts/check-migration-drift.mjs
+// names). Edge functions get SUPABASE_URL injected by the platform.
+export const PRODUCTION_PROJECT_REF = 'mkegtssedjyqldysvzga';
+
+/**
+ * The origin an emailed link may open on. CORS still answers localhost and
+ * Pages previews (allowedOrigin), but the Origin header on this endpoint is
+ * whatever the caller sends, so on production a link that carries a session
+ * only ever opens on Plot's own domain. Staging keeps localhost and previews,
+ * which is where they sign in. null falls back to https://app.theplot.tv.
+ */
+export function linkOrigin(origin: string | null, supabaseUrl: string | undefined): string | null {
+  let production = false;
+  try {
+    production = new URL(supabaseUrl || '').hostname === `${PRODUCTION_PROJECT_REF}.supabase.co`;
+  } catch { /* not production */ }
+  if (!production) return origin;
+  if (!origin) return null;
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (protocol === 'https:' && (hostname === 'theplot.tv' || hostname.endsWith('.theplot.tv'))) return origin;
+  } catch { /* use canonical origin */ }
+  return null;
+}
+
 // Only the mobile app sends client: 'app'. Anything else keeps the web callback.
 export function bypassClient(value: unknown): BypassClient {
   return value === 'app' ? 'app' : 'web';

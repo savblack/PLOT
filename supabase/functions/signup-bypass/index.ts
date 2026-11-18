@@ -50,6 +50,7 @@ import {
   bypassAction,
   bypassClient,
   isExistingAccountError,
+  linkOrigin,
   rateScopeFor,
   SIGNUP_BYPASS_GLOBAL_SCOPE,
   type BypassAction,
@@ -251,6 +252,8 @@ async function verifyFormToken(token: unknown): Promise<number | null> {
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin');
+  // Emailed links use emailOrigin; CORS answers keep the raw origin.
+  const emailOrigin = linkOrigin(origin, Deno.env.get('SUPABASE_URL'));
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors(origin) });
 
   // Issues the signed timing token the signup form fetches on load (see
@@ -328,7 +331,7 @@ Deno.serve(async (req) => {
   // send a magic link through Resend, inside the same rate limit. A missing
   // account gets the same success body so this route is not an address oracle.
   if (action !== 'signup') {
-    const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, action, body.confirmSignup === true, client);
+    const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, emailOrigin, action, body.confirmSignup === true, client);
     const failure = linkDeliveryError(sent);
     if (failure) return json({ error: failure.error, reason: failure.reason }, origin, failure.status);
     return json({ ok: true, requires_email_confirmation: true }, origin);
@@ -351,7 +354,7 @@ Deno.serve(async (req) => {
     // replaces the password on an unconfirmed row only after the mailer
     // accepts the link, so a failed send leaves the owner's password alone.
     if (isExistingAccountError(createError.message)) {
-      const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, origin, 'signup', true, client);
+      const sent = await deliverMagicLink(magicLinkAdmin(), mailLink, email, emailOrigin, 'signup', true, client);
       const failure = linkDeliveryError(sent);
       if (failure) return json({ error: failure.error, reason: failure.reason }, origin, failure.status);
       return json({ ok: true, requires_email_confirmation: true }, origin);
@@ -359,7 +362,7 @@ Deno.serve(async (req) => {
     return json({ error: 'Something went wrong. Please try again.', reason: 'unknown' }, origin, 400);
   }
 
-  const redirectTo = authCallbackRedirect(origin, 'signup', false, client);
+  const redirectTo = authCallbackRedirect(emailOrigin, 'signup', false, client);
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
     email,

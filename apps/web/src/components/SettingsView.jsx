@@ -27,7 +27,7 @@ import {
   AVATAR_MAX_MB, validateAvatarFile, isDuplicateUsernameError,
 } from '@plot/core/profileFields.js';
 import { fetchUserDataExport, downloadDataExport, downloadCsvExport } from '../utils/exportData.js';
-import { buildFeedbackAttachmentPath, feedbackAttachmentSignedUrl } from '../utils/feedback.js';
+import { FEEDBACK_ATTACHMENT_MIME_TYPES, buildFeedbackAttachmentPath, feedbackAttachmentSignedUrl, isAllowedFeedbackAttachment } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
 import { setUserTimezone } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -854,7 +854,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
 
   const addImages = (files) => {
     const valid = [...files]
-      .filter(f => f.type.startsWith('image/') && f.size <= MAX_IMAGE_MB * 1024 * 1024)
+      .filter(f => isAllowedFeedbackAttachment(f) && f.size <= MAX_IMAGE_MB * 1024 * 1024)
       .slice(0, MAX_IMAGES - images.length);
     setImages(prev => [
       ...prev,
@@ -1025,7 +1025,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
                 <span>Add screenshots</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept={FEEDBACK_ATTACHMENT_MIME_TYPES.join(',')}
                   multiple
                   style={{ display: 'none' }}
                   onChange={e => { addImages(e.target.files); e.target.value = ''; }}
