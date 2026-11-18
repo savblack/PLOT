@@ -98,8 +98,12 @@ gitignored so a stray one cannot be committed, but delete it rather than leave i
   for that class is the integration's own verdict, which `.github/workflows/supabase-deploy-guard.yml`
   watches and raises an issue for. So run `edge:check` before merging, and watch the guard
   after.
-- Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`;
-  Supabase functions via `supabase functions deploy <name>`; Workers under
+- Deploy: web app and marketing site both auto-deploy via Cloudflare Pages on merge to `main`.
+  Supabase migrations **and every `supabase/functions/*` function** deploy to PRODUCTION on
+  merge to `main` through the Supabase GitHub integration (watched by
+  `.github/workflows/supabase-deploy-guard.yml`). Do not tell anyone to run `supabase db push`
+  or `supabase functions deploy` after a merge; for Staging use
+  `pnpm run supabase:staging -- functions deploy <name>`. Workers under
   `apps/web/workers/` deploy on merge via `.github/workflows/workers-deploy.yml`
   (needs the `CLOUDFLARE_API_TOKEN` repo secret; by hand: `cd apps/web/workers/<name> && npx wrangler deploy`).
 
@@ -187,13 +191,19 @@ hand-port a core module into `apps/mobile/lib`, and read the rule in
 
 ## CI sync-guards — regenerate, don't hand-patch one side
 
-These checks fail the build if two sources drift. Fix by regenerating both, not editing one:
+These checks fail the build if two sources drift. Edit the source named on each line, then
+run its regenerate command. Never hand-edit the generated side:
 
 - `tokens:check` — `apps/web/src/styles/tokens.css` must match `@plot/core/tokens.js`
-  (canonical colors/radii; also feeds mobile).
-- `footer:check` · `changelog:check` · `tokens:marketing` · `emails:check` — shared
-  footer / public changelog (`apps/website/data/changelog.json`) / website+email
-  tokens / auth email templates.
+  (canonical colors/radii; also feeds mobile). Edit `tokens.js`, run `pnpm run tokens:build`.
+- `footer:check` — the marketing-site footer in every `apps/website/*.html`. Edit
+  `apps/website/_partials/footer.{html,css}`, run `pnpm run footer`.
+- `changelog:check` — `apps/website/changelog.html` and `apps/website/copy/changelog.js`.
+  Edit `apps/website/data/changelog.json` (or `pnpm run changelog:add`), run `pnpm run changelog`.
+- `emails:check` — `supabase/templates/*.html`. Edit `scripts/push-auth-emails.mjs`, run
+  `node scripts/push-auth-emails.mjs --render`.
+- `tokens:marketing` — read-only check that `apps/website/theme.css` and
+  `marketing/templates/base.css` match `@plot/core/tokens.js`. No generator: fix those two by hand.
 - `csp:check` — the marketing site's Content-Security-Policy (`apps/website/_headers`
   and `apps/website/functions/_lib/csp.generated.js`) must match the inline
   `<script>` blocks in `apps/website/*.html`, which it admits by hash. There is no
@@ -263,6 +273,7 @@ to prevent. The catalog being *shared* is necessary but not sufficient — it ha
 
 - **Local dev has no database of its own.** `pnpm run dev` talks to the PLOT Staging
   Supabase project (see README "Local Setup"); there is nothing to migrate locally after a pull.
+  Everything wired to Staging (scripts, workflows, Worker, host checks, docs): `docs/ops/staging.md`.
 - **A migration merged to `main` applies to PRODUCTION automatically** via the Supabase
   GitHub integration. There is no staging gate: write it as if it runs immediately.
 - **Before writing or reviewing anything under `supabase/migrations/` or `supabase/config.toml`,
