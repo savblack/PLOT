@@ -556,17 +556,15 @@ function PlatformRow({ def, chart, logoPath, openPanel, watchlist, typeFilters, 
             ))}
           </div>
         )}
+        {active && <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>}
       </div>
 
       {active && (
-        <div className="discover-plat-rail-wrap">
-          <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>
-          <ScrollRail rail={rail} className="discover-plat-rail">
-            {active.items.slice(0, 10).map((item, i) => (
-              <RankedCard key={`${item.id}-${i}`} item={item} rank={item._rank ?? i + 1} showMeta={false} openPanel={openPanel} watchlist={watchlist} />
-            ))}
-          </ScrollRail>
-        </div>
+        <ScrollRail rail={rail} className="discover-plat-rail">
+          {active.items.slice(0, 10).map((item, i) => (
+            <RankedCard key={`${item.id}-${i}`} item={item} rank={item._rank ?? i + 1} showMeta={false} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </ScrollRail>
       )}
     </div>
   );

@@ -5416,13 +5416,17 @@ a.provider-chip--link:hover {
 }
 
 /* ── Top 10 by Platform ───────────────────────
-   One row per official platform: the logo is the row label, the chart is a
-   rail beside it. Stacked rather than nested accordions, so every platform
-   is visible at once and the section has the same shape every week. */
+   One row per official platform: a header line (logo, name, Movies / TV,
+   arrows) over a full-width rail. The rail starts at the gutter at every
+   width so its titles line up with the sections above; a 168px label column
+   beside the rail used to push it about 200px in on desktop. Stacked rather
+   than nested accordions, so every platform is visible at once and the
+   section has the same shape every week. */
 .discover-plat-list {
   display: flex;
   flex-direction: column;
-  padding: 0 var(--gut);
+  /* The same gutter as the other Home rails (zero inside .home-stream on desktop). */
+  padding: 0 var(--discover-rail-gut, var(--gut));
 }
 .discover-plat-row {
   display: flex;
@@ -5491,12 +5495,6 @@ a.provider-chip--link:hover {
 }
 .discover-plat-switch-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-.discover-plat-rail-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 0;
-}
 .discover-plat-rail {
   display: flex;
   gap: 0.75rem;
@@ -5514,12 +5512,14 @@ a.provider-chip--link:hover {
 .discover-plat-rail:active { cursor: grabbing; }
 .discover-plat-rail > .media-card { flex: 0 0 var(--poster-w); }
 .discover-plat-rail > .media-card--ranked { flex-basis: var(--ranked-card-w); }
+.discover-plat-rail .rank-cut { color: var(--accent); }
 .discover-plat-arrows {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
   min-height: 28px;
+  margin-left: auto;
 }
 .discover-plat-arrows:empty { display: none; }
 
@@ -5527,32 +5527,6 @@ a.provider-chip--link:hover {
    worth of height — a row of ghost posters is dead space four times over. */
 .discover-plat-row--empty {
   padding: 1rem 0;
-}
-
-@media (min-width: 1024px) {
-  /* Room for the label to sit beside the rail rather than above it. */
-  .discover-plat-row {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 2rem;
-  }
-  .discover-plat-label {
-    flex: 0 0 168px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.6rem;
-    padding-top: 0.25rem;
-  }
-  .discover-plat-rail-wrap {
-    flex: 1;
-    min-width: 0;
-  }
-  .discover-plat-row--empty .discover-plat-label {
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
-    padding-top: 0;
-  }
 }
 
 /* ── Rail scroll controls ───────────────────── */
