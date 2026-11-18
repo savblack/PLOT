@@ -356,8 +356,10 @@ function Crowd({ card, story, px }: { card: ShareCardModel; story: boolean; px: 
 }
 
 function Genres({ card, story, px }: { card: ShareCardModel; story: boolean; px: Unit }) {
+  // Genre and share only, no title count. The post's padding, gap and bars
+  // match web's tighter genre card so five rows leave room for the footer.
   return (
-    <Panel px={px} style={{ gap: story ? px(3.2) : px(1.9) }}>
+    <Panel px={px} style={{ gap: story ? px(3.2) : px(1.2), paddingVertical: story ? px(4.6) : px(3.2) }}>
       {(card.rows || []).map((row, index) => (
         <View key={row.name} style={{ flexDirection: 'row', alignItems: 'center', gap: px(2) }}>
           <Text style={{ width: story ? px(22) : px(17), fontFamily: fontFamily.sansBold, fontSize: story ? px(4) : px(2.9), color: INK }} numberOfLines={1}>
@@ -366,7 +368,7 @@ function Genres({ card, story, px }: { card: ShareCardModel; story: boolean; px:
           <View style={{ flex: 1 }}>
             <View style={{
               width: `${Math.max(row.width, 14)}%`,
-              height: story ? px(6) : px(4.4),
+              height: story ? px(6) : px(3.8),
               borderRadius: px(1.2),
               backgroundColor: index === 0 ? PINK : SAGE,
               alignItems: 'center',
@@ -377,11 +379,6 @@ function Genres({ card, story, px }: { card: ShareCardModel; story: boolean; px:
               </Text>
             </View>
           </View>
-          {!story && (
-            <Text style={{ width: px(13), textAlign: 'right', fontSize: px(2.4), letterSpacing: px(2.4) * 0.04, textTransform: 'uppercase', color: MUTED }}>
-              {T.genreCount(row.count)}
-            </Text>
-          )}
         </View>
       ))}
     </Panel>

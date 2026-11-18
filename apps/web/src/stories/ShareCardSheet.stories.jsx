@@ -33,7 +33,7 @@ function makeEntries() {
   });
   for (let i = 0; i < 82; i++) {
     const d = new Date(Date.UTC(2026, 0, 3 + i * 3));
-    push(d.toISOString().slice(0, 10), { rating: 6 + (i % 5), genre_ids: i % 3 === 0 ? [27] : i % 3 === 1 ? [27, 18] : [35] });
+    push(d.toISOString().slice(0, 10), { rating: 6 + (i % 5), genre_ids: i % 3 === 0 ? [27] : i % 3 === 1 ? (i % 2 ? [27, 18, 28] : [27, 18]) : (i % 2 ? [35, 53] : [35]) });
   }
   for (let i = 11; i >= 0; i--) {
     const d = new Date(Date.UTC(2026, 8, 16 - i));
@@ -46,7 +46,8 @@ const ENTRIES = makeEntries();
 // crowd votes sit under the ratings, so the crowd card leans kinder.
 const CAST = [{ id: 1, name: 'Florence Pugh', profile_path: null }];
 const DETAILS = new Map(ENTRIES.map((e, i) => [`${e.media_type}:${e.tmdb_id}`, { runtime: 105, vote_average: 7.1, credits: { cast: i % 9 === 0 ? CAST : [] } }]));
-const GENRES = { 27: 'Horror', 18: 'Drama', 35: 'Comedy' };
+// Five genres, so the genre card shows the full five rows it can have.
+const GENRES = { 27: 'Horror', 18: 'Drama', 35: 'Comedy', 28: 'Action', 53: 'Thriller' };
 const genreName = (id) => GENRES[id] ?? null;
 
 function useCards({ thin = false } = {}) {
