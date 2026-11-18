@@ -67,7 +67,7 @@ export const Default = {
 // Two cards fit inside the frame, so neither arrow should appear — a rail that
 // cannot scroll must not offer to.
 export const NotScrollable = {
-  render: () => <Shelf title="Now Showing" subtitle="In cinemas">{cards(2)}</Shelf>,
+  render: () => <Shelf title="Now Showing" subtitle="In theaters">{cards(2)}</Shelf>,
 };
 
 // A title that answers its own question carries no subtitle.

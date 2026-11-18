@@ -14,7 +14,7 @@ export default {
 export const WatchingCard = {
   render: () => (
     <div style={{ width: 120 }}>
-      <ListCard title="Severance" img={null} meta="S02 · Ep 4 of 10" progress={40} onOpen={noop} />
+      <ListCard title="Severance" img={null} meta="S2 · E4 of 10" progress={40} onOpen={noop} />
     </div>
   ),
 };
