@@ -99,12 +99,11 @@ export const PREMIUM = {
   also: 'watch together, themes and widgets, unlimited lists including smart lists, calendar dates, actor and director alerts.',
 };
 
-// Plot mobile, coming soon: the app's home screen in a phone, and the launch
-// waitlist (posts with list: 'mobile-app').
+// Plot mobile, coming soon: one line, with the launch waitlist form opening
+// under the link (posts with list: 'mobile-app').
 export const APP = {
-  pill: 'Coming soon',
-  headline: 'plot, in your pocket.',
-  body: 'Everything you love about Plot: discover, track, curate and share. Be the first to know when the app launches.',
+  line: 'The iPhone app is coming.',
+  link: 'Get an email when it lands',
   notifyCta: 'Notify me',
   notifySuccess: "You're on the list. We'll email you the moment the app lands.",
 };
