@@ -5,7 +5,7 @@ import SideFilters from './SideFilters.jsx';
 
 /* The Calendar page's left column, shared by both scopes: two mini months in
    a card (the arrows page them two at a time; a day click scrolls the stream
-   to that day), then the Show and Genre filter rows that drive whichever
+   to that day), the optional suggest card, then the Show and Genre filter rows that drive whichever
    stream is on the right. */
 
 const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -68,10 +68,11 @@ function MiniMonth({ year, month, todayStr, todayYear, eventDates, onPickDay, na
  * @param {number[]} props.genreFilters
  * @param {(v: number[]) => void} props.setGenreFilters
  * @param {{id: number, name: string}[]} props.genres
+ * @param {import('react').ReactNode} [props.suggest]   the card under the mini months
  */
 export default function CalendarSidePanel({
   panelStart, onPagePanel, todayStr, eventDates, onPickDay,
-  typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres,
+  typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, suggest,
 }) {
   const todayYear   = Number(todayStr.slice(0, 4));
   const second      = new Date(panelStart.year, panelStart.month + 1, 1);
@@ -95,6 +96,8 @@ export default function CalendarSidePanel({
           />
         ))}
       </div>
+
+      {suggest}
 
       <SideFilters
         typeFilters={typeFilters}

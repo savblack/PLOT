@@ -2,6 +2,7 @@ import { useState } from 'react';
 import CalendarSidePanel from '../components/CalendarSidePanel.jsx';
 import CalendarStream from '../components/CalendarStream.jsx';
 import CalendarEventRows from '../components/CalendarEventRows.jsx';
+import CalendarSuggestCard from '../components/CalendarSuggestCard.jsx';
 import { filterCalendarEvents } from '../utils/calendar.js';
 
 /* Keep the calendar on a fixed day so Chromatic compares the same month and
@@ -50,7 +51,7 @@ function groupEventsByDay(events) {
 
 /* The page body as CalendarView composes it, with the app's data layer
    replaced by fixtures. Filters are live so the Show/Genre rows can be tried. */
-function Harness({ events, loading = false }) {
+function Harness({ events, loading = false, suggest = 'more' }) {
   const [panelStart, setPanelStart] = useState({ year: TODAY.getFullYear(), month: TODAY.getMonth() });
   const [typeFilters, setTypeFilters] = useState(['tv', 'cinema', 'movie']);
   const [genreFilters, setGenreFilters] = useState([]);
@@ -77,6 +78,7 @@ function Harness({ events, loading = false }) {
           genreFilters={genreFilters}
           setGenreFilters={setGenreFilters}
           genres={GENRES}
+          suggest={loading ? null : <CalendarSuggestCard state={suggest} onOpen={() => console.log('open suggestions')} />}
         />
         <CalendarStream
           variant="rows"
@@ -104,6 +106,10 @@ export default {
    the mini-month arrows. */
 export const Stream = { render: () => <Harness events={SAMPLE_EVENTS} /> };
 
-export const Empty = { render: () => <Harness events={[]} /> };
+/* Nothing saved yet: the side card asks them to start. */
+export const Empty = { render: () => <Harness events={[]} suggest="start" /> };
+
+/* Titles saved, but every one is between seasons. */
+export const NothingAhead = { render: () => <Harness events={[]} suggest="quiet" /> };
 
 export const Loading = { render: () => <Harness events={[]} loading /> };
