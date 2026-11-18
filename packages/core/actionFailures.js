@@ -76,6 +76,9 @@ export const FAILED_ACTIONS = Object.freeze({
   // "resend" on the check-your-inbox screen after signup, through GoTrue or
   // signup-bypass (`source: 'signup_bypass'`).
   CONFIRMATION_RESEND:          'confirmation_resend',
+  // The Confirm button on /newsletter/confirm (double opt-in for the digest).
+  // Only unexpected failures: an unknown, used or expired link is a page state.
+  NEWSLETTER_CONFIRM:           'newsletter_confirm',
 });
 
 /**

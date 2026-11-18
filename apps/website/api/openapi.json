@@ -39,7 +39,7 @@
       "post": {
         "operationId": "subscribe",
         "summary": "Subscribe an email address, or complete an unsubscribe",
-        "description": "Without query parameters, subscribes the address in the request body to the Plot digest, or to the mobile app waitlist when list is mobile-app. The response is the same whether or not the address was already subscribed, so it cannot be used to test whether someone has an account. With action=unsubscribe and a token, the request body is ignored and the subscription is ended; email clients use this form for one-click unsubscribe.",
+        "description": "Without query parameters, starts a subscription to the Plot digest for the address in the request body: the address is emailed a confirmation link and is subscribed only once that link is opened. With list set to mobile-app it joins the mobile app waitlist instead. The response is the same whether or not the address was already subscribed, so it cannot be used to test whether someone has an account. With action=unsubscribe and a token, the request body is ignored and the subscription is ended; email clients use this form for one-click unsubscribe.",
         "parameters": [
           { "$ref": "#/components/parameters/action" },
           { "$ref": "#/components/parameters/token" }
@@ -54,7 +54,7 @@
         },
         "responses": {
           "200": {
-            "description": "Subscribed, or unsubscribed when action=unsubscribe was given.",
+            "description": "Accepted (a confirmation email is sent for a new digest signup), or unsubscribed when action=unsubscribe was given.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Ok" }

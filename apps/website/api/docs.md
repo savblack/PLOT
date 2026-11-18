@@ -29,8 +29,11 @@ Content-Type: application/json
 {"email": "you@example.com"}
 ```
 
-Returns `{"ok": true}`. The response is the same whether or not the address was
-already subscribed, so it cannot be used to find out who has an account.
+Returns `{"ok": true}` and emails the address a confirmation link. The address
+only starts getting the digest once its owner opens that link (double opt-in),
+so a signup for someone else's address sends them one email and nothing more.
+The response is the same whether or not the address was already subscribed, so
+it cannot be used to find out who has an account.
 
 Send `{"list": "mobile-app"}` to join the mobile app launch waitlist instead of
 the digest. Joining the waitlist is consent to hear about the launch, not to

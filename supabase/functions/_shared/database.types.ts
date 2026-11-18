@@ -1275,6 +1275,8 @@ export type Database = {
       }
       marketing_subscribers: {
         Row: {
+          confirm_sent_at: string | null
+          confirm_token: string | null
           consented_at: string | null
           created_at: string
           email: string
@@ -1286,6 +1288,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          confirm_sent_at?: string | null
+          confirm_token?: string | null
           consented_at?: string | null
           created_at?: string
           email: string
@@ -1297,6 +1301,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          confirm_sent_at?: string | null
+          confirm_token?: string | null
           consented_at?: string | null
           created_at?: string
           email?: string

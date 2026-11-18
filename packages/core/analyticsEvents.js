@@ -72,6 +72,10 @@ export const EVENTS = Object.freeze({
   // carries who the other person is.
   SAVED_COMPARISON_REFRESHED: 'saved_comparison_refreshed',
   SAVED_COMPARISON_REMOVED: 'saved_comparison_removed',
+  // The Confirm button on /newsletter/confirm, once the server has confirmed
+  // the address (double opt-in). The theplot.tv form's newsletter_subscribed
+  // now means a confirmation email was requested, not a subscription.
+  NEWSLETTER_CONFIRMED: 'newsletter_confirmed',
   // The Watch Together button on a comparison's shared-watchlist row. Carries
   // { sample: boolean }: true on the picker's sample, which opens the Watch
   // Together hub instead of one person. Fires on the tap, which always
