@@ -62,6 +62,7 @@ const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 const EmailUnsubscribePage = lazy(() => import('./pages/EmailUnsubscribePage.jsx'));
 const NewsletterUnsubscribePage = lazy(() => import('./pages/NewsletterUnsubscribePage.jsx'));
+const NewsletterConfirmPage = lazy(() => import('./pages/NewsletterConfirmPage.jsx'));
 const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
 const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
 const TasteOverlapPage  = lazy(() => import('./pages/TasteOverlapPage.jsx'));
@@ -112,6 +113,7 @@ const router = createBrowserRouter([
   { path: '/save',           element: wrap(<SavePage />) },
   // Unsubscribe link in the weekly digest email. Public: the token is the authority.
   { path: '/newsletter/unsubscribe', element: wrap(<NewsletterUnsubscribePage />) },
+  { path: '/newsletter/confirm', element: wrap(<NewsletterConfirmPage />) },
 
   // Auth
   { path: '/login',          element: <AuthPage initialMode="login" /> },

@@ -745,6 +745,17 @@ characters, `medium` under 400, `long`). The text never leaves the device.
 It is not in the Tier 2 action. A review saved alongside a first watch already
 fires `marked_watched`, but an edit that only adds a note fires nothing else.
 
+## Newsletter
+
+The weekly digest is double opt-in (since 2026-11-18). `newsletter_subscribed`
+fires on theplot.tv when the form's request succeeds, which now means a
+confirmation email was asked for, not that anyone is subscribed.
+`newsletter_confirmed` fires on `/newsletter/confirm` in the web app, once the
+server has confirmed the address. It has no properties. The cross-subdomain
+cookie usually joins the two on one person, so confirmed / subscribed is the
+confirmation rate. A failed confirm (not an unknown, used or expired link,
+which are page states) sends `action_failed` with action `newsletter_confirm`.
+
 ## Failed writes
 
 Error tracking above catches *thrown* errors. A Supabase write that fails does
