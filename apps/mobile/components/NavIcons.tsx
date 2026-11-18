@@ -20,7 +20,8 @@ export type NavIconName =
   | 'support'
   | 'requests'
   | 'notifications'
-  | 'together';
+  | 'together'
+  | 'compare';
 
 function Glyph({ color, children }: { color: string; children: ReactNode }) {
   return (
@@ -142,6 +143,14 @@ export default function NavGlyph({ name, color }: { name: NavIconName; color: st
           <Path d="M3 13a2 2 0 0 1 4 0v1h10v-1a2 2 0 0 1 4 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <Path d="M6 19v2" />
           <Path d="M18 19v2" />
+        </Glyph>
+      );
+    // Two overlapping circles; same strokes as IconCompare on web.
+    case 'compare':
+      return (
+        <Glyph color={color}>
+          <Circle cx="9" cy="12" r="6" />
+          <Circle cx="15" cy="12" r="6" />
         </Glyph>
       );
   }

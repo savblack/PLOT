@@ -31,7 +31,7 @@ test('a member sees a membership card, not the sales pitch', async ({ page }) =>
   await expect(active.locator('.settings-status')).toHaveText('Active');
   await expect(active.getByText('Renews on June 19, 2027.')).toBeVisible();
   // Each Premium feature is a link into the app.
-  await expect(active.getByRole('link', { name: 'Open Just Decide' })).toHaveAttribute('href', '/tonight');
+  await expect(active.getByRole('link', { name: 'Open Decide' })).toHaveAttribute('href', '/tonight');
   await expect(active.getByRole('link', { name: 'Open Unlimited and smart lists' })).toHaveAttribute('href', '/my-lists');
   await expect(active.getByRole('link', { name: 'Open Customize your plot' })).toHaveAttribute('href', '/settings/themes');
   // The Free pitch (price and trial terms) is gone for a member.
@@ -48,5 +48,5 @@ test('a member sees a membership card, not the sales pitch', async ({ page }) =>
   // Someone on Free still sees the pitch and no membership rows.
   const free = page.getByRole('region', { name: 'No subscription', exact: true });
   await expect(free.getByText('US$3/month or US$24/year, taxes included')).toBeVisible();
-  await expect(free.getByRole('link', { name: 'Open Just Decide' })).toHaveCount(0);
+  await expect(free.getByRole('link', { name: 'Open Decide' })).toHaveCount(0);
 });

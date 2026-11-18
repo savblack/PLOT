@@ -14,7 +14,7 @@ test('the lists sheet names the free cap and fills the meter to it', () => {
 
 test('the lists sheet reuses the plans page rows, in order', () => {
   const labels = upgradeSheetContent('lists').also.map(row => row.label);
-  assert.deepEqual(labels, ['Just Decide', 'Find something you both want']);
+  assert.deepEqual(labels, ['Decide', 'Find something you both want']);
 });
 
 test('an unknown reason returns null instead of an empty sheet', () => {
@@ -43,7 +43,7 @@ test('the smart lists sheet has no limit meter and sells the rules', () => {
   assert.ok(content.context.length > 0);
   assert.match(content.body, /keeps finding matches/);
   assert.doesNotMatch(`${content.context} ${content.title} ${content.body}`, /—/);
-  assert.deepEqual(content.also.map(row => row.label), ['Just Decide', 'Find something you both want']);
+  assert.deepEqual(content.also.map(row => row.label), ['Decide', 'Find something you both want']);
 });
 
 test('upgradeSheetGateFeature maps sheet-only reasons and skips caller-tracked list gates', () => {

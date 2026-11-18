@@ -47,8 +47,9 @@ test('More opens the menu with everything that is not a tab, in the saved order'
   const menu = page.locator('#app-nav-drawer');
   await expect(menu).toHaveClass(/open/);
   // The saved order puts Watch together first. The tabs are not repeated here.
-  // New Releases isn't in that saved order, so it comes after the items that are.
-  await expect(menu.locator('.nav-drawer-nav .nav-drawer-label')).toHaveText(['Watch Together', 'Just Decide', 'New Releases']);
+  // New Releases and Compare aren't in that saved order, so they come after
+  // the items that are, in the menu's own order.
+  await expect(menu.locator('.nav-drawer-nav .nav-drawer-label')).toHaveText(['Watch Together', 'Decide', 'New Releases', 'Compare']);
   await expect(menu.getByRole('button', { name: 'Settings' })).toBeVisible();
 
   await menu.getByRole('button', { name: 'New Releases' }).click();
