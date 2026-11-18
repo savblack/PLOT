@@ -97,9 +97,6 @@
 .wth-bubble-link { font-size: 12px; color: var(--accent-text); overflow-wrap: anywhere; }
 
 .wth-news { gap: 8px; }
-.wth-find { display: flex; flex-direction: column; gap: 10px; }
 
 /* ── Right column ── */
 .wth-preview .media-card { opacity: 0.6; }
-.wth-demo-link { margin-top: 4px; }
-.wth-demo { max-width: 420px; margin-top: 12px; }

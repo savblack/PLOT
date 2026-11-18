@@ -1,5 +1,5 @@
 import { MemoryRouter } from 'react-router-dom';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, waitFor, within } from 'storybook/test';
 import { configure, getConfig } from '@plot/core/config.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { AppContext } from '../hooks/useApp.js';
@@ -9,7 +9,7 @@ import { AcceptDialog, WatchTogetherTile } from '../components/WatchTogetherPart
 
 /* Watch together for someone with nobody to watch with yet, the normal state
    (Nov 14, round 3A). One card leads with the link, because most people invite
-   someone who isn't on Plot; search and the demo are quiet links. "Waiting" is the same page after the link has gone out.
+   someone who isn't on Plot; the Sam demo sits open under it (Nov 18). "Waiting" is the same page after the link has gone out.
    People are fictional; a stub Supabase client answers the calls, so nothing
    here reads or writes account data. */
 
@@ -100,6 +100,9 @@ export const NobodyYet = {
     const canvas = within(canvasElement);
     await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.inviteLead })).toBeInTheDocument());
     await expect(canvas.getByRole('button', { name: T.hub.sendInvite })).toBeEnabled();
+    // The demo is open under the card, so you can try swiping before inviting anyone.
+    await expect(canvas.getByText(T.start.demoHeading)).toBeInTheDocument();
+    await expect(canvas.getByText(T.start.example)).toBeInTheDocument();
   },
 };
 export const NobodyYetPremium = { args: { premium: true } };
@@ -112,17 +115,6 @@ export const WaitingForSomeone = {
   },
 };
 export const WithPeopleYouFollow = { args: { suggested } };
-
-export const SearchAndInvite = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(await canvas.findByRole('button', { name: T.hub.findOnPlot }));
-    await userEvent.type(await canvas.findByPlaceholderText(T.invite.search), 'sam');
-    await waitFor(() => expect(canvas.getByText('@samk')).toBeInTheDocument());
-    await userEvent.click(canvas.getAllByRole('button', { name: T.invite.invite })[0]);
-    await waitFor(() => expect(canvas.getByText(T.invite.sent)).toBeInTheDocument());
-  },
-};
 
 /* Accepting when you follow each other: "Also share my full watchlist" starts on. */
 export const AcceptMutualFollow = {

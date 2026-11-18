@@ -1,9 +1,10 @@
 // Watch together's hub at /together. Nov 14 2026 (round 3A): one card, one
 // button. History's frame: the left column is a single card (who's watching
 // as a row of faces, a one-line count, one pink button), the right column one
-// shelf of what you share. Requests are a one-line notice in the card; search,
-// the demo and inviting more people are quiet links. With nobody yet the card
-// leads with the invite link, because most people invite someone not on Plot.
+// shelf of what you share. Requests are a one-line notice in the card;
+// inviting more people is a quiet link. With nobody yet the card leads with
+// the invite link, because most people invite someone not on Plot, and the
+// Sam demo sits right under it so you can try swiping before inviting anyone.
 // Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH (round 3)
 // Rules: @plot/core watchTogether.js (hubStage, joinNames, sharedOnDate).
 // Mobile parity: apps/mobile/components/watch/WatchHub.tsx.
@@ -11,13 +12,13 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { personName, hubStage, joinNames, sharedOnDate } from '@plot/core/watchTogether.js';
-import { useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherExampleTitles, startWatchTogetherSession, useUpgradeNews } from '@plot/core/useWatchTogether.js';
+import { useWatchTogetherTitles, useWatchTogetherExampleTitles, startWatchTogetherSession, useUpgradeNews } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { useInviteShare } from '../hooks/useInviteShare.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { AcceptDialog, PersonAvatar } from './WatchTogetherParts.jsx';
-import { Demo, FriendSearch, PersonRow } from './WatchTogetherStart.jsx';
+import { Demo } from './WatchTogetherStart.jsx';
 import { RailSection } from './DiscoverView.jsx';
 import MediaCard from './MediaCard.jsx';
 import PremiumGateButton from './PremiumGateButton.jsx';
@@ -136,24 +137,24 @@ function SharedShelf({ partners }) {
   );
 }
 
-/** With nobody yet: your watchlist, faded, as what they'll see first. */
-function PreviewShelf({ premium }) {
-  const { watchlist, openPanel } = useApp();
-  const [demo, setDemo] = useState(false);
+/** With nobody yet: the Sam demo, under the invite card, always open. */
+function ExampleDemo({ premium }) {
+  const { watchlist } = useApp();
   const pool = useWatchTogetherExampleTitles(watchlist?.items);
+  return <Demo key={pool.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={pool} />;
+}
+
+/** With nobody yet: your watchlist, faded, as what they'll see first. */
+function PreviewShelf() {
+  const { watchlist, openPanel } = useApp();
   const items = (watchlist?.items || []).filter(i => i.poster_path).slice(0, 12);
+  if (!items.length) return null;
   return (
-    <>
-      {items.length > 0 && (
-        <div className="wth-preview">
-          <RailSection title={H.previewFirst} subtitle={H.previewMatched}>
-            {items.map(i => <MediaCard key={`${i.media_type}:${i.tmdb_id}`} item={{ ...i, id: i.tmdb_id }} openPanel={openPanel} watchlist={watchlist} />)}
-          </RailSection>
-        </div>
-      )}
-      <button type="button" className="wth-link wth-demo-link" aria-expanded={demo} onClick={() => setDemo(v => !v)}>{H.seeHow}</button>
-      {demo && <div className="wth-demo"><Demo key={pool.length >= 5 ? 'ready' : 'waiting'} premium={premium} pool={pool} /></div>}
-    </>
+    <div className="wth-preview">
+      <RailSection title={H.previewFirst} subtitle={H.previewMatched}>
+        {items.map(i => <MediaCard key={`${i.media_type}:${i.tmdb_id}`} item={{ ...i, id: i.tmdb_id }} openPanel={openPanel} watchlist={watchlist} />)}
+      </RailSection>
+    </div>
   );
 }
 
@@ -161,22 +162,18 @@ function PreviewShelf({ premium }) {
 
 export default function WatchTogetherHub({ wt, premium, profile }) {
   const navigate = useNavigate();
-  const { user } = useApp();
   // One instance for the page, so sharing from the card moves the page on.
   const link = useInviteShare();
-  const { people: suggested, loading: suggestionsLoading, refresh: refreshSuggestions } = useWatchTogetherSuggestions(user?.id);
   const [reviewing, setReviewing] = useState(null);
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState(/** @type {string | null} */ (null));
-  const [finding, setFinding] = useState(false);
-  const [sent, setSent] = useState(() => new Set());
   const news = useNews(wt, premium);
   const { partners, incoming, outgoing } = wt;
 
   // Blank only until the first load. Later refreshes (after an invite or a
   // reply) keep the page up, so a half-typed search isn't wiped.
   const [ready, setReady] = useState(false);
-  if (!ready && !wt.loading && !suggestionsLoading) setReady(true);
+  if (!ready && !wt.loading) setReady(true);
   if (!ready) return <div className="hist-page wth-page" aria-busy="true" />;
 
   const stage = hubStage({ partners, incoming, outgoing, sharedAt: link.sharedAt });
@@ -195,11 +192,6 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
     await wt.respond(person.other_id, accept, shareFull);
     setBusy(false);
     setReviewing(null);
-  };
-  const invite = async (person) => {
-    const result = await wt.send(person.id);
-    if (result.ok) { setSent(prev => new Set(prev).add(person.id)); refreshSuggestions(); }
-    return result.ok;
   };
 
   return (
@@ -226,17 +218,7 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
 
           {stage === 'people'
             ? <button type="button" className="wth-link" onClick={link.share} disabled={!link.url}>{H.inviteSomeone}</button>
-            : <button type="button" className="wth-link" aria-expanded={finding} onClick={() => setFinding(v => !v)}>{H.findOnPlot}</button>}
-          {finding && stage !== 'people' && (
-            <div className="wth-find">
-              <FriendSearch sent={sent} onInvite={invite} />
-              {suggested.length > 0 && (
-                <div className="wt-list">
-                  {suggested.map(p => <PersonRow key={p.id} person={p} sent={sent.has(p.id)} onInvite={invite} />)}
-                </div>
-              )}
-            </div>
-          )}
+            : <ExampleDemo premium={premium} />}
 
           {/* The other thing two people can do with their lists and ratings. */}
           <CompareTasteCard />
@@ -246,7 +228,7 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
           <div className="discover-sections">
             {stage === 'people'
               ? shelfPartners.length > 0 && <SharedShelf key={selected} partners={shelfPartners} />
-              : <PreviewShelf premium={premium} />}
+              : <PreviewShelf />}
           </div>
         </div>
       </div>
