@@ -111,6 +111,7 @@ export const SETTINGS_VIEW = {
     reportABug: 'Report a bug',
     leaveFeedback: 'Leave feedback',
     panelTitle: 'Send feedback',
+    imagesSkipped: 'Some files were skipped. Screenshots need to be JPEG, PNG, WebP or GIF, within the size limit.',
   },
 
   errors: {
