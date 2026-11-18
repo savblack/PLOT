@@ -304,7 +304,7 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
         runtime,
         !isMovie && data.number_of_episodes ? `${data.number_of_episodes} episodes` : '',
         isMovie ? '' : (data.networks || [])[0]?.name || '',
-    ].filter(Boolean).join('<span class="dot">·</span>');
+    ].filter(Boolean).map((bit) => esc(bit)).join('<span class="dot">·</span>');
     const body = `
 <nav class="crumbs" aria-label="Breadcrumb">
   <a href="${SITE}">Home</a><span class="sep">/</span><span>${isMovie ? 'Films' : 'Series'}</span>${genres[0] ? `<span class="sep">/</span><span>${esc(genres[0])}</span>` : ''}

@@ -525,7 +525,7 @@ Deno.serve(async (req) => {
     runtime,
     !isMovie && data.number_of_episodes ? `${data.number_of_episodes} episodes` : '',
     isMovie ? '' : (data.networks || [])[0]?.name || '',
-  ].filter(Boolean).join('<span class="dot">·</span>');
+  ].filter(Boolean).map((bit) => esc(bit)).join('<span class="dot">·</span>');
 
   const body = `
 <nav class="crumbs" aria-label="Breadcrumb">

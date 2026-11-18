@@ -44,7 +44,7 @@ function nextDay(dateStr: string): string {
 }
 
 function esc(str: string): string {
-  return (str || '').replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n');
+  return (str || '').replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\r\n?|\n/g, '\\n');
 }
 
 function fold(line: string): string {
