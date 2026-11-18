@@ -18,7 +18,8 @@ import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { useInviteShare } from '../hooks/useInviteShare.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { AcceptDialog, PersonAvatar } from './WatchTogetherParts.jsx';
-import { Demo } from './WatchTogetherStart.jsx';
+import { Demo, InvitePanel } from './WatchTogetherStart.jsx';
+import ResponsiveDialog from './ResponsiveDialog.jsx';
 import { RailSection } from './DiscoverView.jsx';
 import MediaCard from './MediaCard.jsx';
 import PremiumGateButton from './PremiumGateButton.jsx';
@@ -196,6 +197,7 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
   // One instance for the page, so sharing from the card moves the page on.
   const link = useInviteShare();
   const [reviewing, setReviewing] = useState(null);
+  const [inviting, setInviting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState(/** @type {string | null} */ (null));
   const news = useNews(wt, premium);
@@ -250,7 +252,7 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
           ) : <InviteCard link={link} />}
 
           {stage === 'people'
-            ? <button type="button" className="wth-link" onClick={link.share} disabled={!link.url}>{H.inviteSomeone}</button>
+            ? <button type="button" className="wth-link" onClick={() => setInviting(true)}>{H.inviteSomeone}</button>
             : <ExampleDemo premium={premium} />}
 
           {/* The other thing two people can do with their lists and ratings. */}
@@ -265,6 +267,13 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
           </div>
         </div>
       </div>
+
+      {inviting && (
+        // Search people on Plot, or send the link to someone who isn't.
+        <ResponsiveDialog title={T.invite.title} onClose={() => setInviting(false)} contentClassName="wth-invite">
+          <InvitePanel wt={wt} />
+        </ResponsiveDialog>
+      )}
 
       {reviewing && (
         <AcceptDialog person={reviewing} viewer={profile} busy={busy}

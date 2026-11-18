@@ -16,6 +16,7 @@ import SearchField from '../SearchField';
 import SectionTitle from '../SectionTitle';
 import Button, { TextLink } from '../Button';
 import UpgradeSheet from '../UpgradeSheet';
+import BottomSheet from '../BottomSheet';
 import CollapsibleSection from '../CollapsibleSection';
 import GlassHeader, { useGlassOnScroll } from '../GlassHeader';
 import ScreenHeaderBar, { SCREEN_HEADER_H } from '../ScreenHeaderBar';
@@ -90,6 +91,7 @@ export function WatchHub() {
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [gate, setGate] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const { partners, incoming, outgoing } = together;
 
   // Loading only until the first load. Later refreshes (after an invite or a
@@ -137,7 +139,7 @@ export function WatchHub() {
             />
           ) : <InviteCard link={link} />}
           {stage === 'people'
-            ? <TextLink quiet label={H.inviteSomeone} onPress={() => { void link.send('share'); }} disabled={!link.url} />
+            ? <TextLink quiet label={H.inviteSomeone} onPress={() => setInviting(true)} />
             : <ExampleDemo premium={premium} />}
         </Gutter>
       </View>
@@ -158,6 +160,7 @@ export function WatchHub() {
           onAccept={shareFull => answer(reviewing, true, shareFull)}
         />
       )}
+      {inviting && <InviteSheet together={together} onClose={() => setInviting(false)} />}
       <UpgradeSheet visible={gate} reason="watchTogether" onClose={() => setGate(false)} onCompare={() => openPremium(router)} />
     </HubPage>
   );
@@ -454,6 +457,30 @@ export function WatchPicker({ together }: { together?: TogetherApi }) {
 export function WatchInvite() {
   const { userId } = useAppData();
   const together = useTogether(userId);
+  return (
+    <WatchPage>
+      <SectionTitle>{T.invite.title}</SectionTitle>
+      <InviteContent together={together} />
+    </WatchPage>
+  );
+}
+
+/** The hub's Invite someone: the same search and link, in a sheet. */
+function InviteSheet({ together, onClose }: { together: TogetherApi; onClose: () => void }) {
+  return (
+    <BottomSheet visible title={T.invite.title} onClose={onClose} closeLabel={COMMON.done}>
+      <InviteContent together={together} />
+    </BottomSheet>
+  );
+}
+
+/**
+ * Invite someone: search by name or @username, people you might pick, and
+ * your invite link for anyone not on Plot. The invite screen and the hub's
+ * sheet both show this, so they can't drift apart. Web: InvitePanel.
+ */
+function InviteContent({ together }: { together: TogetherApi }) {
+  const { userId } = useAppData();
   const suggestions = useWatchTogetherSuggestions(userId);
   const suggested = asPeople(suggestions.people);
   const [query, setQuery] = useState('');
@@ -469,14 +496,14 @@ export function WatchInvite() {
   };
   const list = search.searching ? asPeople(search.results || []) : suggested;
   return (
-    <WatchPage>
-      <SectionTitle>{T.invite.title}</SectionTitle>
+    <>
       <Note>{T.invite.body}</Note>
       <Note>{T.invite.mutualNote}</Note>
       <SearchField value={query} onChangeText={setQuery} placeholder={T.invite.search} />
       {!!error && <ErrorNote>{error}</ErrorNote>}
       {query.trim().length < 2 && <SectionLabel>{T.invite.suggested}</SectionLabel>}
       {list.length === 0 && query.trim().length < 2 && <Note>{T.invite.noSuggestions}</Note>}
+      {search.searching && search.results && search.results.length === 0 && <Note>{T.start.findNone}</Note>}
       {list.map(person => (
         <PersonRow
           key={person.id}
@@ -488,6 +515,6 @@ export function WatchInvite() {
         />
       ))}
       <InviteLinkCard />
-    </WatchPage>
+    </>
   );
 }

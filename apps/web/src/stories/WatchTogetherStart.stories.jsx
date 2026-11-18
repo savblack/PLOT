@@ -1,5 +1,5 @@
 import { MemoryRouter } from 'react-router-dom';
-import { expect, waitFor, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { configure, getConfig } from '@plot/core/config.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { AppContext } from '../hooks/useApp.js';
@@ -150,5 +150,19 @@ export const PairedNothingInCommon = {
     await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.nothingShared('emily-k') })).toBeInTheDocument());
     await expect(canvas.getByText(T.hub.noOverlapBody('emily-k'))).toBeInTheDocument();
     await expect(canvas.queryByRole('button', { name: T.hub.decideWith('emily-k') })).toBeNull();
+  },
+};
+
+/* Invite someone, once you watch with someone: a panel with search, people
+   you might pick, and your invite link (Nov 18), not straight to the share sheet. */
+export const InviteSomeonePanel = {
+  args: { ...PairedNothingInCommon.args, suggested },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole('button', { name: T.hub.inviteSomeone }));
+    const dialog = within(await within(document.body).findByRole('dialog', { name: T.invite.title }));
+    await expect(dialog.getByPlaceholderText(T.invite.search)).toBeInTheDocument();
+    await expect(dialog.getByText(T.link.inviteTitle)).toBeInTheDocument();
+    await waitFor(() => expect(dialog.getByText('Jordan Lee')).toBeInTheDocument());
   },
 };
