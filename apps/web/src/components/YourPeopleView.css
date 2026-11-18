@@ -1,6 +1,5 @@
 /* Your people (board R2-5a), on the History/My Lists shell: hairline rows in
    the stream, the follow list and the Show filter in the left column. */
-.people-toolbar { margin-bottom: 1.25rem; }
 .people-side { gap: 24px; }
 .people-muted { font-size: 0.75rem; color: var(--text-muted); }
 
@@ -44,7 +43,6 @@
 .people-row-save--on svg { fill: currentColor; }
 
 @media (max-width: 767px) {
-  .people-toolbar { flex-wrap: wrap; }
   .people-row-when { width: auto; max-width: 90px; font-size: 0.72rem; }
   .people-row-save { padding-inline: 0.5rem; }
 }

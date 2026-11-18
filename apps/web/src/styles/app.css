@@ -353,8 +353,31 @@ svg { stroke-width: 1.5; }
     border: 0;
   }
 
-  /* The top of every page, now that no heading opens it. */
-  .app-main-inner { padding-top: 1.25rem; }
+  /* The top of every page, now that no heading opens it. 44px is where the
+     History and My Lists panels have always started (20px here plus the 24px
+     their empty toolbar row left), so every page's first row lines up there.
+     Pages must not add top space of their own at this width: the rules below
+     take back the extra that some of them carried. */
+  .app-main-inner { padding-top: 2.75rem; }
+
+  /* A toolbar row with nothing in it takes no room. History's holds the year
+     switcher only when there is more than one year; My Lists' holds the phone
+     filter pill, which is hidden here. */
+  .app-main-inner .hist-toolbar--heading:has(> .hist-toolbar-controls:empty),
+  .app-main-inner .mylists-page .hist-toolbar { display: none; }
+
+  /* Toolbar rows that do hold controls (Settings, Notifications, Your People)
+     start on the line too, not 12px under it. */
+  .app-main-inner .hist-toolbar { padding-top: 0; }
+
+  /* Sub-pages and the profile carried their own top padding on top of the
+     shell's. Scoped to .app-main-inner so it outranks those pages' own
+     stylesheets, which load after this one. */
+  .app-main-inner .browse-page,
+  .app-main-inner .themes-gallery,
+  .app-main-inner .import-page { padding-top: 0; }
+  .app-main-inner .pp-intro,
+  .app-main-inner .pp-section-page-head { padding-top: 0; }
 }
 
 .app-sidebar-brand {
@@ -1566,6 +1589,11 @@ svg { stroke-width: 1.5; }
 }
 
 /* ── Side panel ── */
+/* A page's own top control (Calendar's scope, Your People's view, the Settings
+   search) is the first row of its side column, so the column starts on the
+   same line as History's. It fills the column; a toggle splits it evenly. */
+.cal-side > .cal-side-control { width: 100%; }
+.cal-scope.cal-side-control .cal-scope-btn { flex: 1; }
 .cal-side {
   display: none;
   width: 264px;
