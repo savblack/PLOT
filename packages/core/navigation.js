@@ -21,7 +21,7 @@ export const APP_NAV_ITEMS = [
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   // Just Decide, the tonight picker (Premium). Free viewers land on the Premium gate,
   // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
-  { id: 'tonight', label: 'Just Decide', path: '/tonight', primary: false, premium: true },
+  { id: 'tonight', label: 'Decide', path: '/tonight', primary: false, premium: true },
   // Watch together. On for web and mobile (SHOW_WATCH_TOGETHER, PLO-515).
   // `feature` still lets an app hide it. The Premium mark stays: deciding
   // together needs Premium on at least one side.
