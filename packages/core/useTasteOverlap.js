@@ -25,10 +25,11 @@ const cacheKey = (viewerId, handle) => (viewerId && handle ? `${viewerId}:${hand
 /**
  * Taste overlap between the signed-in viewer and `username`.
  *
- * The `taste_overlap` RPC is the gate: it refuses non-Premium viewers, blocked
- * or missing handles, and private profiles the viewer does not follow. Pass
- * `enabled: false` to skip the call (a Free viewer the client already knows
- * will be refused). Pass `viewerId` to reuse the last answer for this viewer
+ * The `taste_overlap` RPC is the gate: it refuses a pair where neither side
+ * has Premium, blocked or missing handles, and private profiles the viewer
+ * does not follow. Call it for every signed-in viewer, Free included: only the
+ * server knows whether the other person has Premium (see compareUnlocked in
+ * tasteOverlap.js). Pass `enabled: false` to skip the call. Pass `viewerId` to reuse the last answer for this viewer
  * while a fresh one loads.
  *
  * `sharedWatchlist` is the count of titles on both watchlists. The RPC

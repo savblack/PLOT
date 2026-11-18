@@ -1,4 +1,4 @@
--- Proof that taste_overlap() gates on Premium and visibility under a real
+-- Proof that taste_overlap() gates on Premium (either side) and visibility under a real
 -- auth.uid(), and returns only what can_view_profile already lets you read.
 --
 --   pnpm run staging:test -- taste-overlap
@@ -16,7 +16,7 @@
 -- Accounts are the same three Staging fixtures the block test uses:
 --   A  the viewer, made Premium here with an active billing_customers row
 --   B  a second viewer, on Free but holding the cosmetic is_premium badge
---   C  the person being compared with
+--   C  the person being compared with (on Free; given the badge below too)
 -- Their history uses titles already in Staging's history table, so every
 -- tmdb_id here came from TMDB (never a guessed id).
 \set ON_ERROR_STOP on
@@ -151,10 +151,38 @@ select case when (:'r'::jsonb->'shared_watchlist') = 'null'::jsonb
 reset role;
 set local request.jwt.claims = '{"role":"service_role"}';
 update public.profiles set is_public = true where id = :C;
+update public.profiles set is_public = true where id = :A;
+update public.profiles set is_premium = true where id = :C;
+select username as a_name from public.profiles where id = :A
+\gset
 set local role authenticated;
 set local request.jwt.claims = :B_CLAIMS;
 select case when pg_temp.overlap(:'c_name')->>'error' = 'premium_required'
-            then 'PASS' else 'FAIL' end || '  a Free viewer is refused, even holding the is_premium badge';
+            then 'PASS' else 'FAIL' end || '  neither side Premium: refused, even with both holding the is_premium badge';
+
+\echo ''
+\echo '=== Free viewer B, Premium A public (20261118140000) ==='
+-- Premium on either side unlocks the comparison: B is Free, A has an active
+-- billing row.
+select pg_temp.overlap(:'a_name') as r
+\gset
+select case when (:'r'::jsonb) ? 'theirs' and jsonb_array_length(:'r'::jsonb->'theirs') = 3
+            then 'PASS' else 'FAIL' end || '  a Free viewer can compare with a Premium member';
+select case when (:'r'::jsonb->'target'->>'username') = :'a_name'
+            then 'PASS' else 'FAIL' end || '  the target is the Premium member asked for';
+
+\echo ''
+\echo '=== Free viewer B, C private and not followed ==='
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+update public.profiles set is_public = false where id = :C;
+set local role authenticated;
+set local request.jwt.claims = :B_CLAIMS;
+select case when pg_temp.overlap(:'c_name')->>'error' = 'not_visible'
+            then 'PASS' else 'FAIL' end || '  a Free viewer gets not_visible for a private profile, never its history';
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+update public.profiles set is_public = true where id = :C;
 
 \echo ''
 \echo '=== C blocks A ==='

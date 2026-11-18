@@ -59,7 +59,7 @@ export const TASTE_OVERLAP = {
   share: 'Share your match',
 
   upsellTitle: 'Compare your taste with Premium',
-  upsellBody: 'Taste overlap is part of Deeper viewing stats. See your match, the genres you share and where you disagree with anyone you follow.',
+  upsellBody: 'Compare works when either of you has Premium. See your match, the genres you share and where you disagree.',
   notFound: 'This profile isn’t available.',
   /** @param {string} name */
   notVisible: (name) => `${name}’s profile is private. Once they accept your follow request, you can compare.`,
