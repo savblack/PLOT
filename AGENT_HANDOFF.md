@@ -56,8 +56,8 @@ The audit also noted that the Premium badge guard runs only on profile updates, 
 ## Next
 
 1. Database tests: done, all passing.
-2. Have a second agent read the migration diff. AGENTS.md requires this for permission changes.
-3. Open the PR (remove this file in the last commit before merge).
+2. Second-agent review: done. No blockers. Its should-fix (a silently dropped screenshot) is fixed in 1e9ed641c.
+3. PR open: https://github.com/savblack/PLOT/pull/1762. Auto-fix is watching CI. Remove this file in the last commit before merge.
 4. After merge, deploy `signup-bypass`, `title-page` and `calendar-feed`: `supabase functions deploy <name>`.
 
 ## Approvals
