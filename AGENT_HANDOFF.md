@@ -54,7 +54,8 @@ Not verified end to end: no real confirmation email was sent, and the function w
 
 ## Next
 
-1. Second-agent review (running), then address its findings.
+1. Second-agent review: done. Fixed: the send claim is race-safe (conditional write, one email per claim); the confirm write is conditional on status; the email is sent after the response (no timing or outage difference between new and existing addresses); unsubscribe clears an unclicked confirm token.
+   Not changed: a Settings toggle with a pending row (the trigger's on-conflict update already makes it active; no Staging test, because that path fires an outbound profiles webhook outside the rollback); linking a confirmed website row to an app account (an existing gap).
 2. Open the PR.
 3. Get Savannah's OK to merge, and remove this file in the last commit first.
 

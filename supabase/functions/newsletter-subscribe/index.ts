@@ -208,7 +208,8 @@ Deno.serve(async (req) => {
 
     await supabase
       .from('marketing_subscribers')
-      .update({ status: 'unsubscribed', unsubscribed_at: new Date().toISOString() })
+      // An unclicked confirmation link must not undo this unsubscribe.
+      .update({ status: 'unsubscribed', unsubscribed_at: new Date().toISOString(), confirm_token: null })
       .eq('id', sub.id);
 
     const brevoKey = Deno.env.get('BREVO_API_KEY');
@@ -246,7 +247,7 @@ Deno.serve(async (req) => {
     if (!sub || state === 'invalid') return json({ error: 'Link not valid' }, 404);
     if (state === 'expired') return json({ error: 'Link expired' }, 410);
 
-    const { error: confirmError } = await supabase
+    const { data: confirmed, error: confirmError } = await supabase
       .from('marketing_subscribers')
       .update({
         status: 'active',
@@ -255,11 +256,15 @@ Deno.serve(async (req) => {
         confirm_token: null,
       })
       .eq('id', sub.id)
-      .eq('confirm_token', token);
+      .eq('confirm_token', token)
+      .in('status', ['pending', 'unsubscribed'])
+      .select('id');
     if (confirmError) {
       reportLog('newsletter-subscribe', 'error', `Confirm failed: ${confirmError.message}`);
       return json({ error: 'Something went wrong' }, 500);
     }
+    // Another click, or a bounce, changed the row since it was read.
+    if (!confirmed?.length) return json({ error: 'Link not valid' }, 404);
 
     // Only now does the address join the marketing list.
     const brevoKey = Deno.env.get('BREVO_API_KEY');
@@ -373,45 +378,59 @@ Deno.serve(async (req) => {
 
   const token = reusableToken(existing) ?? newConfirmToken();
   const sentAt = new Date().toISOString();
+  // Each write claims the send: it only changes a row if nobody else claimed
+  // it first, so two submits at the same moment send one email with one token.
+  let claimed = false;
   if (action === 'create') {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('marketing_subscribers')
       .upsert(
         { email, status: 'pending', confirm_token: token, confirm_sent_at: sentAt },
         { onConflict: 'email', ignoreDuplicates: true },
-      );
+      )
+      .select('id');
     if (error) {
       reportLog('newsletter-subscribe', 'error', `Subscribe failed: ${error.message}`);
       return json({ error: 'Something went wrong' }, 500);
     }
+    claimed = (data?.length ?? 0) > 0;
   } else {
     // Pending or unsubscribed. The status is left alone: an unsubscribed row
-    // stays unsubscribed until the link is opened.
-    const { error } = await supabase
+    // stays unsubscribed until the link is opened. Conditional on the
+    // confirm_sent_at this request read, which is the hourly resend gate.
+    let update = supabase
       .from('marketing_subscribers')
       .update({ confirm_token: token, confirm_sent_at: sentAt })
-      .eq('id', existing!.id);
+      .eq('id', existing!.id)
+      .in('status', ['pending', 'unsubscribed']);
+    update = existing!.confirm_sent_at
+      ? update.eq('confirm_sent_at', existing!.confirm_sent_at)
+      : update.is('confirm_sent_at', null);
+    const { data, error } = await update.select('id');
     if (error) {
       reportLog('newsletter-subscribe', 'error', `Subscribe failed: ${error.message}`);
       return json({ error: 'Something went wrong' }, 500);
     }
+    claimed = (data?.length ?? 0) > 0;
   }
+  if (!claimed) return json({ ok: true });
 
-  // Re-read so a concurrent submit that won the insert race is not emailed twice
-  // with two different tokens: only the token actually stored goes out.
-  const { data: stored } = await supabase
-    .from('marketing_subscribers')
-    .select('confirm_token, confirm_sent_at')
-    .eq('email', email)
-    .maybeSingle();
-  if (!stored?.confirm_token || stored.confirm_token !== token) return json({ ok: true });
-
-  const sent = await sendConfirmEmail(email, confirmUrl(appOrigin(), token));
-  if (!sent) {
-    // Let the person retry straight away instead of waiting out the hourly gate.
-    await supabase.from('marketing_subscribers').update({ confirm_sent_at: null }).eq('email', email);
-    return json({ error: 'Something went wrong' }, 503);
-  }
+  // The email goes out after the response, so a new address and an existing
+  // one get the same answer in the same time, and a provider outage cannot
+  // tell anyone which addresses are new. A failed send clears the gate so the
+  // next submit tries again at once.
+  const deliver = (async () => {
+    const sent = await sendConfirmEmail(email, confirmUrl(appOrigin(), token));
+    if (!sent) {
+      await supabase.from('marketing_subscribers')
+        .update({ confirm_sent_at: null })
+        .eq('email', email)
+        .eq('confirm_token', token);
+    }
+  })();
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+  if (runtime) runtime.waitUntil(deliver);
+  else await deliver;
 
   return json({ ok: true });
 });
