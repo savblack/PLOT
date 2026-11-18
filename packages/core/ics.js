@@ -53,7 +53,7 @@ function eventCopy(ev) {
     };
   }
   if (ev.type === 'cinema' || ev.type === 'streaming') {
-    return { summary: title, description: ev.label || (ev.type === 'cinema' ? 'Cinema' : 'Streaming') };
+    return { summary: title, description: ev.label || (ev.type === 'cinema' ? 'Theaters' : 'Streaming') };
   }
   return { summary: title, description: ev.label || '' };
 }

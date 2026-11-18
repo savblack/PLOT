@@ -147,7 +147,7 @@ function rowFacts(item: Hit, genres: { id: number; name: string }[], art: Return
     const described = describeSearchResult(data, genres);
     const bits = [described.year, ...described.genres].filter(Boolean);
     let meta = bits.join(' · ');
-    if (described.rating) meta = `${meta}${meta ? ' · ' : ''}${described.rating} ★`;
+    if (described.rating) meta = `${meta}${meta ? ' · ' : ''}${MEDIA.criticsScore(described.rating)}`;
     return {
       title: data.title || data.name || MEDIA.unknown,
       meta,

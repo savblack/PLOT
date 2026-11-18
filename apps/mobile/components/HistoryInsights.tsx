@@ -26,7 +26,8 @@ import { APP_SHELL } from '@plot/core/copy/appShell.js';
 import ShareCardSheet from './share/ShareCardSheet';
 import type { ShareCardModel } from './share/ShareCardView';
 
-const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+// Sunday-first, as on the Calendar (US).
+const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 function ShareIcon({ what, onPress, colors }: {
   what: string;
@@ -300,7 +301,7 @@ function MiniMonth({
   const art = useUserArtwork();
   const first = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const lead = (first.getDay() + 6) % 7;
+  const lead = first.getDay();
   const isThisMonth = today.getFullYear() === year && today.getMonth() === month;
   const cells = [];
   for (let i = 0; i < lead; i++) cells.push(<View key={`lead-${i}`} style={styles.cell} />);

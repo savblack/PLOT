@@ -367,8 +367,10 @@ When you finish, start with the plain-English paragraph from "How to explain the
 3. **Follow-ups** — anything deferred or newly noticed, or "none."
 
 Quality bar: it builds, `pnpm run check` passes, no new lint errors, no console noise, no
-secrets added, no unrelated diffs. Design intent holds — flat monochrome (black/white/grey),
-structure from hairlines and surface tokens, compact buttons never full-width. The accent
+secrets added, no unrelated diffs. Design intent holds — warm, flat and quiet: a cream ground,
+soft charcoal ink (never `#000`), the brand pink, and a sage green as the quieter second
+voice (availability, "now at home"); structure from hairlines and surface tokens, compact
+buttons never full-width. The accent
 (`#E05578` on Light and Dark; its hue is per theme under Premium themes, the roles are
 unchanged) is reserved for approved interaction and hierarchy cues: Save, favourite, delete,
 logout, active tabs/indicators, focus and hover states, selected filters/providers,

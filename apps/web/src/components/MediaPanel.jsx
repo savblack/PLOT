@@ -1794,7 +1794,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 rather than as a wall. ── */}
             <div className="panel-actions-row">
               <button
-                className={`panel-pill${inList ? ' panel-pill--saved' : ' panel-pill--primary'}`}
+                className={`panel-pill${inList ? ' panel-pill--saved' : ''}`}
                 onClick={handleSaveFromPanel}
               >
                 {inList ? <Icon name="check" size={14} strokeWidth={2.4} /> : <Icon name="bookmark" size={15} />}
@@ -1929,7 +1929,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     )}
                     {whereToWatch.inCinemas && (
                       <div className="providers-grid">
-                        <div className="provider-chip provider-chip--cinema">In Cinemas</div>
+                        <div className="provider-chip provider-chip--cinema">{MEDIA.inCinemas}</div>
                       </div>
                     )}
                     {whereToWatch.streaming.length > 0 && (

@@ -17,7 +17,6 @@ import {
   IconMenu, IconClose, IconSearch, IconArrowUp, IconBell, IconSettings, NAV_ICONS,
 } from './navIcons.jsx';
 import PlotLogo from './PlotLogo.jsx';
-import PremiumMark from './PremiumMark.jsx';
 
 /* ── SVG Icons ───────────────────────── */
 /* Shared with AppSidebar — see ./navIcons.jsx. */
@@ -238,7 +237,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
         </div>
 
         <nav className="nav-drawer-nav">
-          {menuItems(uiPrefs?.prefs.sidebar, profile?.region).map(({ id, label, premium }) => {
+          {menuItems(uiPrefs?.prefs.sidebar, profile?.region).map(({ id, label }) => {
             const Icon = NAV_ICONS[id];
             return (
               <button
@@ -250,7 +249,6 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
               >
                 {Icon && <Icon />}
                 <span className="nav-drawer-label">{label}</span>
-                {premium && !isPremiumProfile(profile) && <PremiumMark />}
               </button>
             );
           })}

@@ -32,7 +32,7 @@ export function buildWatchlistMovieCalendarEvents(item, todayStr) {
     events.push({
       date: item.release_date,
       type: isSameDayStreamingRelease ? 'streaming' : isCinemaWindow ? 'cinema' : 'streaming',
-      label: isSameDayStreamingRelease ? 'Streaming' : isCinemaWindow ? 'Cinema' : 'Streaming',
+      label: isSameDayStreamingRelease ? 'Streaming' : isCinemaWindow ? 'Theaters' : 'Streaming',
       item: eventItem,
     });
   }

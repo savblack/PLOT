@@ -17,6 +17,7 @@ import { posterUrl, Palette, fontFamily, fontSize, spacing, iconButtonSize } fro
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
 import { historyRatingLabel } from '@plot/core/history.js';
+import { MEDIA } from '@plot/core/copy/media.js';
 
 export default function HistoryRow({ entry }: { entry: HistoryEntry }) {
   const { colors } = useTheme();
@@ -25,7 +26,7 @@ export default function HistoryRow({ entry }: { entry: HistoryEntry }) {
   const [expanded, setExpanded] = useState(false);
   const art = useUserArtwork();
   const img   = posterUrl(displayPosterPath(art.apply(entry)), 'w92');
-  const type  = entry.media_type === 'tv' ? 'Series' : 'Movie';
+  const type  = entry.media_type === 'tv' ? MEDIA.series : MEDIA.movie;
   const date  = entry.watched_at
     ? new Date(entry.watched_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })
     : '';

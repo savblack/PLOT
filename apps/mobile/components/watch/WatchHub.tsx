@@ -226,7 +226,7 @@ function InviteCard({ link }: { link: InviteLink }) {
           {!!display && <Text numberOfLines={1} style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary }}>{display}</Text>}
         </View>
       )}
-      <Button variant="primary" flex label={waiting ? H.shareAgain : H.sendInvite} onPress={() => { void send('share'); }} disabled={!url} />
+      <Button variant="primary" label={waiting ? H.shareAgain : H.sendInvite} onPress={() => { void send('share'); }} disabled={!url} />
       {/* No clipboard module in the app: Copy opens the share sheet with just the link (it has Copy). */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm }}>
         <Note>{waiting ? H.notifyNote : H.inviteFree}</Note>

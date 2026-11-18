@@ -39,7 +39,7 @@ export const PEOPLE = Object.freeze({
 
   chips: Object.freeze({
     outToday: 'Out today',
-    inCinemas: 'In cinemas',
+    inCinemas: 'In theaters',
     newSeason: 'New season',
     dated: 'Dated',
   }),

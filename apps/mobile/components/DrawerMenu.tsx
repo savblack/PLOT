@@ -79,7 +79,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   // The Premium family a Free viewer tapped: opens the upgrade sheet for it.
   const [themeUpgrade, setThemeUpgrade] = useState<ThemeFamily | null>(null);
-  // The pink Go Premium chip above the profile; read only while the drawer is open.
+  // The Go Premium row above the profile; read only while the drawer is open.
   const goPremium = useGoPremiumLink(userId, profile, visible, 'chip');
   const slideX   = useRef(new Animated.Value(-DRAWER_W)).current;
   const overlayO = useRef(new Animated.Value(0)).current;
@@ -226,9 +226,6 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                   <Text style={[styles.navLabel, { color }, active && styles.navLabelActive]} numberOfLines={1}>
                     {item.label}
                   </Text>
-                  {item.premium && !profile?.is_premium && (
-                    <PremiumMark style={styles.premiumMark} />
-                  )}
                 </TouchableOpacity>
               );
             })}
@@ -334,7 +331,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                 accessibilityRole="link"
                 accessibilityLabel={goPremium.label}
               >
-                <GoPremiumSpark color={colors.accentText} size={18} />
+                <GoPremiumSpark color={colors.accent} size={18} />
                 <Text style={[styles.navLabel, styles.goPremiumChipLabel]} numberOfLines={1}>{goPremium.label}</Text>
               </TouchableOpacity>
             )}
@@ -532,8 +529,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
   },
-  // Premium marker for Free viewers: web's PremiumMark, a small solid spark.
-  premiumMark: { marginLeft: 'auto' },
   navItemActive: {
     backgroundColor: colors.surfaceSunken,
   },
@@ -548,6 +543,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   // One full nav row (navItem's width, height, padding and icon column),
   // coloured like web's selected "Profile & account" Settings pill: the
   // accentDim blush with accentText type and star. Says only "Go Premium".
-  goPremiumChip: { backgroundColor: colors.accentDim, marginBottom: 6 },
-  goPremiumChipLabel: { fontFamily: fontFamily.sansBold, color: colors.accentText },
+  // A quiet row since 18 Nov (web GoPremiumLink.css): only the spark keeps the accent.
+  goPremiumChip: { marginBottom: 6 },
+  goPremiumChipLabel: { color: colors.textPrimary },
 });

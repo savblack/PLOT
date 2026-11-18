@@ -251,7 +251,7 @@ export const WATCH_TOGETHER = Object.freeze({
     ended: 'This session has ended.',
     startAgain: 'Start again',
     empty: (name) => `You and ${name} don’t have any titles in common yet.`,
-    swipeHint: 'Swipe right if you’re in, left if not.',
+    swipeHint: 'Slide the card right if you’re in, left if not.',
     start: 'Decide together',
   },
 

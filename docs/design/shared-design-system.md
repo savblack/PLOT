@@ -171,7 +171,8 @@ including that numeral, is still out.
   gradient, to create a readable lower-third without obscuring the artwork.
 - **Badges and compact labels:** use a small solid dark chip behind the text with
   a modest radius and padding. Keep the glyphs free of `text-shadow`.
-- **Chart ranks** are the exception, and have their own treatment: the big pink numeral cut
+- **Chart ranks** are the exception, and have their own treatment: the big pink numeral
+  (`--accent`, never `--accent-fill`, which is too light to carry type) cut
   out of the poster's bottom-left corner (`.rank-cut`), sized at 39% of the poster's width,
   hanging off the poster's left edge and clipped there by `.rank-cut-frame`. It is the same
   on the Discover platform charts, the My Lists Top 5 and the public profile Top 5; a rank
@@ -224,7 +225,7 @@ Rule of thumb: charcoal says what, sage says which kind, pink says the one that 
     deeper cream; ink is charcoal with cream text for the rare emphatic case. An outline
     pill (1px `--border-strong`, no fill, `.btn-ghost`) is only for on/off actions in a row,
     such as Follow and alerts (November 2026).
-  - **Chips** are small pills in the deeper cream; the pink fill marks the lead or a rank,
+  - **Chips** are small pills in the deeper cream; the pink fill marks the lead,
     the sage fill with green text marks availability.
   - **Cards and panels** are the deeper cream at 20px radius with no border and no shadow.
     Rows inside them separate with a hairline.
