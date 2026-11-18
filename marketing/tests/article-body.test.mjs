@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { articleExcerpt, isArticleTable, renderArticleBlock } from '../../supabase/functions/_shared/articleBody.js';
+import { linkArticleTitles } from '../../supabase/functions/_shared/articleTitleLinks.js';
 
 const TABLE = [
   '| Stay | Export | Switch |',
@@ -24,6 +25,22 @@ test('prose around a table stays prose, and the opening line can be the lede', (
 test('a normal paragraph is escaped, including angle brackets', () => {
   const html = renderArticleBlock('Stay <script>alert(1)</script> put.', { lede: true });
   assert.equal(html, '<p class="lede">Stay &lt;script&gt;alert(1)&lt;/script&gt; put.</p>');
+});
+
+test('the first prose mention of each attached title links to its canonical page', () => {
+  const refs = [
+    { title: 'Dune: Part Three', href: 'https://theplot.tv/movie/dune-part-three-1170608' },
+    { title: 'Crystal Lake', href: 'https://theplot.tv/tv/crystal-lake-213562' },
+  ];
+  const linked = new Set();
+  const renderProse = (text) => linkArticleTitles(text, refs, linked);
+  const intro = renderArticleBlock('Dune: Part Three meets Crystal Lake. Dune: Part Three again.', { lede: true, renderProse });
+  const later = renderArticleBlock('Crystal Lake returns. <script>bad</script>', { renderProse });
+  assert.match(intro, /<a href="https:\/\/theplot.tv\/movie\/dune-part-three-1170608">Dune: Part Three<\/a>/);
+  assert.match(intro, /<a href="https:\/\/theplot.tv\/tv\/crystal-lake-213562">Crystal Lake<\/a>/);
+  assert.equal((intro.match(/href=/g) || []).length, 2);
+  assert.doesNotMatch(later, /href=/);
+  assert.match(later, /&lt;script&gt;bad&lt;\/script&gt;/);
 });
 
 test('a sentence with a pipe is not a table', () => {

@@ -63,8 +63,8 @@ ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${SITE}/_partials/footer.css">
-<link rel="stylesheet" href="${SITE}/title-page.css?v=d3e4be911168">
-<script defer src="${SITE}/title-page.js?v=37a1a8165a48"></script>
+<link rel="stylesheet" href="${SITE}/title-page.css?v=c65a086a0c38">
+<script defer src="${SITE}/title-page.js?v=2d490a01fc6d"></script>
 </head>
 <body>
 ${GTM_NOSCRIPT}
@@ -142,6 +142,14 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
         inCinemas = days >= 0 && days <= 90 && streaming.length === 0 && rentBuy.length === 0;
     }
     const saveHref = `${APP}/save?media_type=${type}&tmdb_id=${id}&src=title_page`;
+    const available = streaming.length > 0 || rentBuy.length > 0;
+    const experimentCopy = available ? 'Save to your watchlist.' : 'Get notified when it streams.';
+    const experimentKind = available ? 'save' : 'track';
+    // The HTML is shared across cache entries. CSS hides both test placements
+    // until the browser receives an explicit "test" flag value.
+    const stickyHtml = `<div class="cta-sticky cta-test" role="region" aria-label="Save this title">
+    <span>${esc(title)}</span><a class="cta" href="${esc(saveHref)}" data-cta="title_${experimentKind}_sticky">${experimentCopy}</a>
+  </div>`;
     // A real control now that the Pages proxy forwards ?r= (it used to build the
     // region from Cloudflare geo alone, so this could only ever be a label).
     // <details> so it works with no JavaScript. The choices are submit buttons in
@@ -170,7 +178,7 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
         watchBody = `<div class="watch">${rows}</div>
   <div class="card-foot">
     <span class="src">Availability from JustWatch via TMDB. Changes over time.</span>
-    <a class="cta" href="${esc(saveHref)}" data-cta="title_save">Save to your plot</a>
+    <a class="cta" href="${esc(saveHref)}" data-cta="title_save"><span class="cta-control-copy">Save to your plot</span><span class="cta-test-copy">Save to your watchlist.</span></a>
   </div>`;
     }
     else if (inCinemas) {
@@ -245,6 +253,17 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
             return `<a href="${esc(href)}"><img src="${esc(img(r.poster_path, 'w185'))}" alt="${esc(rTitle)}" loading="lazy"><div class="rt">${esc(rTitle)}</div></a>`;
         }).join('')}</div></div>`
         : '';
+    // TMDB's appended videos are the only source of keys. Only an official
+    // YouTube Trailer gets a player; the iframe is created after a click.
+    const trailer = (data.videos?.results || []).find((video) => video?.site === 'YouTube' && video?.type === 'Trailer' && video?.official === true && /^[A-Za-z0-9_-]{11}$/.test(video.key || ''));
+    const trailerKey = trailer?.key || null;
+    const trailerHtml = trailerKey ? `<div class="section title-trailer">
+    <h2>Official trailer</h2>
+    <button class="trailer-play" type="button" data-video-key="${trailerKey}" aria-label="Play the official trailer for ${esc(title)}">
+      <img src="https://i.ytimg.com/vi/${trailerKey}/hqdefault.jpg" alt="" loading="lazy">
+      <span class="trailer-play-icon" aria-hidden="true">▶</span>
+    </button>
+  </div>` : '';
     // ── <head>: description, canonical, OG, JSON-LD ──
     const availableOn = streaming.slice(0, 3).map((provider) => provider.provider_name);
     const availabilityDescription = availableOn.length
@@ -280,6 +299,13 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
         ...(actors.length ? { actor: actors } : {}),
         ...(genres.length ? { genre: genres } : {}),
         ...(rating && votes ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: rating, ratingCount: votes, bestRating: 10, worstRating: 0 } } : {}),
+        ...(trailerKey ? { video: {
+                '@type': 'VideoObject',
+                name: `${title} official trailer`,
+                thumbnailUrl: `https://i.ytimg.com/vi/${trailerKey}/hqdefault.jpg`,
+                embedUrl: `https://www.youtube-nocookie.com/embed/${trailerKey}`,
+                ...(trailer.published_at ? { uploadDate: trailer.published_at } : {}),
+            } } : {}),
         url: canonicalUrl,
     });
     const head = `<meta name="description" content="${esc(desc)}">
@@ -305,7 +331,7 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
         !isMovie && data.number_of_episodes ? `${data.number_of_episodes} episodes` : '',
         isMovie ? '' : (data.networks || [])[0]?.name || '',
     ].filter(Boolean).join('<span class="dot">·</span>');
-    const body = `
+    const body = `${stickyHtml}
 <nav class="crumbs" aria-label="Breadcrumb">
   <a href="${SITE}">Home</a><span class="sep">/</span><span>${isMovie ? 'Films' : 'Series'}</span>${genres[0] ? `<span class="sep">/</span><span>${esc(genres[0])}</span>` : ''}
 </nav>
@@ -320,6 +346,7 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
     </div>
     <h1 class="title">${esc(title)}</h1>
     ${metaBits ? `<div class="meta">${metaBits}</div>` : ''}
+    <a class="cta cta-lead cta-test" href="${esc(saveHref)}" data-cta="title_${experimentKind}_lead">${experimentCopy}</a>
   </div>
 </div>
 
@@ -331,6 +358,7 @@ ${watchHtml}
   </div>
   ${factsHtml}
 </div>
+${trailerHtml}
 ${castHtml}
 ${relHtml}
 `;

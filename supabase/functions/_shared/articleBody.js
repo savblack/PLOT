@@ -279,29 +279,29 @@ const splitHtmlTables = (raw) => {
   return parts.length ? parts : [{ type: 'prose', text: raw }];
 };
 
-const renderParts = (parts, lede) => parts.map((part, idx) => {
+const renderParts = (parts, lede, renderProse = esc) => parts.map((part, idx) => {
   if (part.type === 'table') return renderMdTable(part);
   if (part.type === 'html') return sanitizeTableHtml(part.html) || `<p>${esc(part.html)}</p>`;
   const text = part.text.replace(/\s*\n\s*/g, ' ').trim();
   if (!text) return '';
   const cls = lede && idx === 0 ? ' class="lede"' : '';
-  return `<p${cls}>${esc(text)}</p>`;
+  return `<p${cls}>${renderProse(text)}</p>`;
 }).join('');
 
 /**
  * Render one page_body entry.
  * @param {string} text
- * @param {{ lede?: boolean }} [opts]  the opening paragraph of an article
+ * @param {{ lede?: boolean, renderProse?: (text: string) => string }} [opts]
  */
-export const renderArticleBlock = (text, { lede = false } = {}) => {
+export const renderArticleBlock = (text, { lede = false, renderProse = esc } = {}) => {
   const raw = String(text ?? '').replace(/\r\n/g, '\n').trim();
   if (!raw) return '';
-  if (/<table[\s>]/i.test(raw)) return renderParts(splitHtmlTables(raw), lede);
+  if (/<table[\s>]/i.test(raw)) return renderParts(splitHtmlTables(raw), lede, renderProse);
   if (!raw.includes('\n')) {
     const recovered = recoverCollapsed(raw);
     if (recovered) return renderMdTable(recovered);
   }
-  return renderParts(segmentMarkdown(raw), lede);
+  return renderParts(segmentMarkdown(raw), lede, renderProse);
 };
 
 const firstProse = (raw) => {

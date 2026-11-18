@@ -39,12 +39,14 @@ const DIRECTIVES = [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "img-src 'self' data: https://image.tmdb.org https://theplot.tv https://a.theplot.tv https://www.google.com https://www.google.com.au https://*.google-analytics.com",
+  "img-src 'self' data: https://image.tmdb.org https://i.ytimg.com https://theplot.tv https://a.theplot.tv https://www.google.com https://www.google.com.au https://*.google-analytics.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   // tmdb-proxy: the homepage search bar's live results (js/hero-search.js).
   "connect-src 'self' https://tmdb-proxy.sav-black.workers.dev https://a.theplot.tv https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://cloudflareinsights.com",
-  "frame-src https://www.googletagmanager.com",
+  // youtube-nocookie and i.ytimg: official trailer posters and click-to-load
+  // embeds on title pages, and the existing What's On trailer module.
+  "frame-src https://www.googletagmanager.com https://www.youtube-nocookie.com",
   "worker-src 'self' blob:",
   // The homepage search bar submits to app signup (GET, ?q=).
   "form-action 'self' https://app.theplot.tv",

@@ -8,7 +8,7 @@ import { FOOTER_HTML } from './footer.generated.js';
 import { renderTitlePage } from './titleRenderer.generated.js';
 
 // Bumped 2026-10-16 so cached pages stop pointing at Supabase title cards.
-export const TITLE_CACHE_VERSION = 3;
+export const TITLE_CACHE_VERSION = 4;
 
 export { cacheable };
 
