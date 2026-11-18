@@ -78,9 +78,9 @@
 /* The nav's own links keep the CTA arrow off. */
 .nav-links a[data-cta="nav"]::after { content: none; }
 
-/* footer-css:start (generated from _partials/footer.css — edit there, then run `npm run footer`) */
+/* footer-css:start (generated from _partials/footer.css — edit there, then run `pnpm run footer`) */
 /* Footer — the shared site footer's styles. Single source for every consumer:
-   `npm run footer` copies this into ui.css (static pages + Storybook) and into
+   `pnpm run footer` copies this into ui.css (static pages + Storybook) and into
    the marketing-feed and title-page edge functions, which don't load ui.css.
    Edit here, never in a copy.
 
