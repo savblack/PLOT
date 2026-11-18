@@ -24,7 +24,7 @@ import type { Database } from '../_shared/database.types.ts'
 // the schema instead.
 type Db = SupabaseClient<Database>;
 // Shared site footer markup and styles — generated from website/_partials/footer.html
-// and footer.css. Run `npm run footer` to regenerate after editing either partial.
+// and footer.css. Run `pnpm run footer` to regenerate after editing either partial.
 import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { QueryFailed, rows } from '../_shared/queryRows.ts';

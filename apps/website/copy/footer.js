@@ -1,6 +1,6 @@
 // Reference-only copy catalog for apps/website/_partials/footer.html — the
 // shared footer injected into every page (index.html, about.html, pricing.html,
-// via `npm run footer`). Not imported by the HTML.
+// via `pnpm run footer`). Not imported by the HTML.
 //
 // Every string here is identical to copy/common.js's FOOTER export (the
 // footer partial and each page's own <nav> share the same link labels) — this
