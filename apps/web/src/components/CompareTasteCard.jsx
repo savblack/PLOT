@@ -1,7 +1,8 @@
 // The side-column way into Compare: a line on what it is and one button.
 // Shared by History and Watch Together so both columns carry the same card.
-// The Compare page shows a sample to anyone and the Premium prompt when a
-// Free viewer picks a person, so this needs no gate of its own.
+// The Compare page shows a sample to anyone, and the Premium prompt only when
+// neither person has Premium (the server decides), so this needs no gate of
+// its own.
 //
 // Mobile's twin is apps/mobile/components/taste/ComparePrompt.tsx; the words
 // are TASTE_OVERLAP in @plot/core/copy.

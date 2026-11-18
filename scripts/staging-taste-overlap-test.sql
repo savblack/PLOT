@@ -39,7 +39,9 @@ select username as c_name from public.profiles where id = :C
 -- Premium is is_premium(), which reads billing_customers (20261002100000).
 -- B gets the badge with no billing row: the legacy-supporter shape, which must
 -- not unlock the comparison.
-delete from public.billing_customers where user_id in (:A, :B);
+-- C is cleared too, so "neither side Premium" below cannot pass or fail on a
+-- subscription the Staging fixture happens to hold.
+delete from public.billing_customers where user_id in (:A, :B, :C);
 insert into public.billing_customers (user_id, stripe_customer_id, subscription_status, current_period_end)
 values (:A, 'cus_taste_overlap_test_a', 'active', now() + interval '30 days');
 update public.profiles set is_premium = true where id in (:A, :B);
@@ -183,6 +185,32 @@ select case when pg_temp.overlap(:'c_name')->>'error' = 'not_visible'
 reset role;
 set local request.jwt.claims = '{"role":"service_role"}';
 update public.profiles set is_public = true where id = :C;
+
+\echo ''
+\echo '=== Free viewer B, Premium A private and not followed ==='
+-- The Premium side must never open history the viewer could not otherwise
+-- read: visibility is checked before Premium.
+update public.profiles set is_public = false where id = :A;
+delete from public.follows where follower_id = :B and following_id = :A;
+set local role authenticated;
+set local request.jwt.claims = :B_CLAIMS;
+select case when pg_temp.overlap(:'a_name')->>'error' = 'not_visible'
+            then 'PASS' else 'FAIL' end || '  a Premium member who is private stays closed to a Free viewer';
+
+\echo ''
+\echo '=== Premium A blocks Free viewer B ==='
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+update public.profiles set is_public = true where id = :A;
+delete from public.user_blocks where :B in (blocker_id, blocked_id);
+insert into public.user_blocks (blocker_id, blocked_id) values (:A, :B);
+set local role authenticated;
+set local request.jwt.claims = :B_CLAIMS;
+select case when pg_temp.overlap(:'a_name')->>'error' = 'not_found'
+            then 'PASS' else 'FAIL' end || '  a Premium member who blocked the viewer reads as not_found';
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+delete from public.user_blocks where blocker_id = :A and blocked_id = :B;
 
 \echo ''
 \echo '=== C blocks A ==='
