@@ -67,6 +67,73 @@ exception when others then
   raise notice 'PASS  garbage claims fail closed (%)', sqlerrm;
 end $$;
 
+-- 20261118140000: the same flags are guarded when a profile row is created.
+-- A already has a row, so a guard-free insert would fail on the primary key
+-- (23505). Seeing the guard's message instead proves the BEFORE INSERT guard
+-- ran first; seeing 23505 for an ordinary insert proves it lets those through.
+\echo ''
+\echo '=== insert ==='
+set local request.jwt.claims = '{"sub":"467ce784-39eb-480e-8593-4632667fc9c3","role":"authenticated"}';
+set local role authenticated;
+do $$
+begin
+  insert into public.profiles (id, is_premium) values ('467ce784-39eb-480e-8593-4632667fc9c3', true);
+  raise notice 'FAIL  a client created a profile with is_premium set';
+exception when others then
+  if sqlerrm like '%can only be changed by billing%' then
+    raise notice 'PASS  a client cannot create a profile with is_premium set';
+  else
+    raise notice 'FAIL  no insert guard for is_premium (got: %)', sqlerrm;
+  end if;
+end $$;
+
+do $$
+begin
+  insert into public.profiles (id, is_supporter) values ('467ce784-39eb-480e-8593-4632667fc9c3', true);
+  raise notice 'FAIL  a client created a profile with is_supporter set';
+exception when others then
+  if sqlerrm like '%Ko-fi webhook%' then
+    raise notice 'PASS  a client cannot create a profile with is_supporter set';
+  else
+    raise notice 'FAIL  no insert guard for is_supporter (got: %)', sqlerrm;
+  end if;
+end $$;
+
+do $$
+begin
+  insert into public.profiles (id, last_kofi_tip_at) values ('467ce784-39eb-480e-8593-4632667fc9c3', now());
+  raise notice 'FAIL  a client created a profile with last_kofi_tip_at set';
+exception when others then
+  if sqlerrm like '%last_kofi_tip_at can only be changed%' then
+    raise notice 'PASS  a client cannot create a profile with last_kofi_tip_at set';
+  else
+    raise notice 'FAIL  no insert guard for last_kofi_tip_at (got: %)', sqlerrm;
+  end if;
+end $$;
+
+do $$
+begin
+  insert into public.profiles (id, display_name) values ('467ce784-39eb-480e-8593-4632667fc9c3', 'plain insert');
+  raise notice 'FAIL  a duplicate profile row was created';
+exception when unique_violation then
+  raise notice 'PASS  an ordinary client insert passes the guard (reaches the primary key)';
+when others then
+  raise notice 'FAIL  the guard blocked an ordinary insert: %', sqlerrm;
+end $$;
+reset role;
+
+-- Billing and the Ko-fi webhook run as service_role and must still pass.
+set local request.jwt.claims = '{"role":"service_role"}';
+do $$
+begin
+  insert into public.profiles (id, is_premium, is_supporter) values ('467ce784-39eb-480e-8593-4632667fc9c3', true, true);
+  raise notice 'FAIL  a duplicate profile row was created';
+exception when unique_violation then
+  raise notice 'PASS  the service role can still create a profile with flags set (reaches the primary key)';
+when others then
+  raise notice 'FAIL  the insert guard blocked the service role: %', sqlerrm;
+end $$;
+
 rollback;
 \echo ''
 \echo 'rolled back — Staging is exactly as it was'
