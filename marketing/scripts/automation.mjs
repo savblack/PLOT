@@ -305,12 +305,12 @@ const printDoctor = () => {
   console.log('Plot marketing automation');
   for (const [label, value] of lines) console.log(`${label}: ${value}`);
   console.log('\nCommands:');
-  console.log('  npm run weekly');
-  console.log('  npm run weekly -- --dangerous-codex');
-  console.log('  npm run schedule -- --dry-run');
-  console.log('  npm run reconcile -- --dry-run');
-  console.log('  npm run newsletter -- --dry-run');
-  console.log('  npm run snapshot');
+  console.log('  pnpm run weekly');
+  console.log('  pnpm run weekly --dangerous-codex');
+  console.log('  pnpm run schedule --dry-run');
+  console.log('  pnpm run reconcile --dry-run');
+  console.log('  pnpm run newsletter --dry-run');
+  console.log('  pnpm run snapshot');
 };
 
 const main = () => {

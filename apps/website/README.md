@@ -35,7 +35,7 @@ Three things keep it honest, and all three are easy to break by hand:
   `api/openapi.json` and `api/docs.md` are not optional decoration.
 - Truth. The catalog is static JSON; nothing at runtime notices when it names a
   URL this site does not serve. `functions/_lib/api-catalog.test.js` (run by
-  `npm run test:website`, which CI runs) checks every anchor and every link
+  `pnpm run test:website`, which CI runs) checks every anchor and every link
   against what is actually on disk or in `functions/`, and checks the `_headers`
   rules still match the types the catalog advertises.
 - Scope. The catalog describes what Plot offers publicly, and the three
@@ -98,8 +98,8 @@ Beyond `llms.txt` and the API catalog above:
   (Agent Skills Discovery RFC v0.2.0). **Do not edit `index.json` by hand.** Each
   entry carries a SHA-256 of its SKILL.md, which is how a consumer checks it got
   what Plot published; a stale digest makes a careful client reject the skill
-  outright. Edit the SKILL.md, run `npm run skills`, commit both. CI runs
-  `npm run skills:check`.
+  outright. Edit the SKILL.md, run `pnpm run skills`, commit both. CI runs
+  `pnpm run skills:check`.
 
 ## Storybook (documentation only)
 

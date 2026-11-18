@@ -142,29 +142,9 @@ CI on Node 22.
 
 ## Spelling
 
-Plot's primary market is the United States. User-facing copy is American English:
-color, favorite, theater, organize, program, and the other -ize forms. That covers
-the apps, the marketing site, social posts, What's On, card text, alt text, and email.
-
-Marketing copy is for a US reader. Use US release dates, US streaming services,
-US references, and US date order (June 19, Friday, June 19) when a date is written
-out. Do not localize marketing for Australia or the UK.
-
-Legal pages stay as they are. Terms of Service, Privacy Policy, Community Standards,
-and any other legal page keep their current wording, including British spelling
-where the text already uses it. Do not "correct" them to American spelling.
-
-`packages/core/spelling.js` still switches a few already-shipped words (favorite,
-color, and the rest of that dictionary) from the viewer's `profile.region`.
-(`apps/web/src/utils/spelling.js` and `apps/mobile/lib/spelling.ts` are re-export
-shims.) Leave those call sites alone unless a ticket asks for the sweep. Do not
-add new words to the dictionary, and do not add new `regionalWords()` call sites.
-A new string is American spelling, written out.
-
-If you do touch an existing call site, region still comes from the viewer's own
-profile (`useApp()` on web, `useAppData()` on mobile), not the profile being
-looked at. On someone else's public profile, pass `undefined` (US) rather than
-that profile owner's region.
+User-facing copy is American English for a US reader; legal pages keep their current
+wording. Before writing copy or touching a `regionalWords()` call site, read
+`docs/agents/spelling.md`.
 
 ## Web → mobile parity
 
@@ -189,33 +169,13 @@ hand-port a core module into `apps/mobile/lib`, and read the rule in
   tiers are PostHog cohorts, not events. See `docs/analytics/README.md` before
   adding an event or reading a number off a dashboard.
 
-## CI sync-guards — regenerate, don't hand-patch one side
+## CI sync-guards and worktrees
 
-These checks fail the build if two sources drift. Edit the source named on each line, then
-run its regenerate command. Never hand-edit the generated side:
-
-- `tokens:check` — `apps/web/src/styles/tokens.css` must match `@plot/core/tokens.js`
-  (canonical colors/radii; also feeds mobile). Edit `tokens.js`, run `pnpm run tokens:build`.
-- `footer:check` — the marketing-site footer in every `apps/website/*.html`. Edit
-  `apps/website/_partials/footer.{html,css}`, run `pnpm run footer`.
-- `changelog:check` — `apps/website/changelog.html` and `apps/website/copy/changelog.js`.
-  Edit `apps/website/data/changelog.json` (or `pnpm run changelog:add`), run `pnpm run changelog`.
-- `emails:check` — `supabase/templates/*.html`. Edit `scripts/push-auth-emails.mjs`, run
-  `node scripts/push-auth-emails.mjs --render`.
-- `tokens:marketing` — read-only check that `apps/website/theme.css` and
-  `marketing/templates/base.css` match `@plot/core/tokens.js`. No generator: fix those two by hand.
-- `csp:check` — the marketing site's Content-Security-Policy (`apps/website/_headers`
-  and `apps/website/functions/_lib/csp.generated.js`) must match the inline
-  `<script>` blocks in `apps/website/*.html`, which it admits by hash. There is no
-  `'unsafe-inline'`: after editing an inline block run `pnpm run csp`; an inline
-  `onclick=` or a new inline block in an Edge-Function-rendered page is blocked
-  outright, so use `addEventListener` and a file under `apps/website/js/`.
-- `migrations:check` — no migration may recreate a function with a different
-  `ON CONFLICT` target without acknowledging it. See `docs/ops/migrations.md`.
-- `copy:check` — no app file may hardcode a string that `packages/core/copy` owns.
-- `core:check` — every `@plot/core/…` import must resolve to a file in this checkout.
-
-Why worktrees must be siblings (and why `core:check` exists): `docs/ops/agent-worktrees.md`.
+`*:check` scripts (`tokens`, `footer`, `changelog`, `emails`, `csp`, `copy`, `core`,
+`migrations`, …) fail the build when a generated file drifts from its source. Edit the
+source and regenerate; never hand-patch the generated side. Which source and which command
+for each: `docs/ops/ci-sync-guards.md`. Why worktrees must be siblings (and why
+`core:check` exists): `docs/ops/agent-worktrees.md`.
 
 **Plot convention (source of truth):** agent worktrees are a **sibling** of this
 repo, never nested inside it:

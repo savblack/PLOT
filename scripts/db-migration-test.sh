@@ -2,7 +2,7 @@
 # Apply this branch's pending migrations to a throwaway copy of PRODUCTION.
 #
 # WHY: merging a migration to main applies it to production automatically, and
-# the only existing gates — `npm run migrations:check` and `npm run
+# the only existing gates — `pnpm run migrations:check` and `npm run
 # db:write-paths` — are static; neither executes any SQL. So the first time a
 # migration actually runs is on real user data. Supabase preview branches would
 # close that gap for ~$30-40/month and were ruled out on cost.

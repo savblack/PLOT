@@ -22,7 +22,7 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
 
 ## Local Setup
 
-1. Install dependencies:
+1. Use Node 22. `.nvmrc` pins the exact version CI runs (22.17.1); `nvm use` or `fnm use` picks it up. Then install dependencies:
 
    ```sh
    pnpm install --frozen-lockfile

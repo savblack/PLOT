@@ -10,7 +10,7 @@
 // This writes DATA ONLY. No marketing_posts row. Idempotent: upsert keyed on
 // snapshot_date, so re-running the same Sunday replaces the same row.
 //
-//   TMDB_API_KEY=… SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… npm run mkt:snapshot
+//   TMDB_API_KEY=… SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… pnpm run mkt:snapshot
 import { getSupabase } from '../lib/supabase.mjs';
 import { trendingSnapshotDate } from '../lib/dates.mjs';
 import { fetchTrendingTop } from '../lib/trending.mjs';

@@ -10,7 +10,7 @@
     // Mode ('plot-theme': light | dark | system) plus family
     // ('plot-theme-family'). A retired single theme id in 'plot-theme'
     // migrates. Both lists are generated from packages/core/tokens.js and
-    // themes.js by `npm run tokens:build`. The Premium check happens once
+    // themes.js by `pnpm run tokens:build`. The Premium check happens once
     // React has the profile; this only paints the stored choice.
     // @palettes:start
     var families = { 'sage': 1, 'mist': 1, 'blush': 1, 'plum': 1, 'ink': 1 };

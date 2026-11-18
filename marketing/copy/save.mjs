@@ -28,7 +28,7 @@ const main = async () => {
   try {
     entries = (await readdir(JOBS_DIR)).filter(f => f.endsWith('.copy.json'));
   } catch {
-    console.log('No jobs directory. Run `npm run mkt:copy:pull` first.');
+    console.log('No jobs directory. Run `pnpm run mkt:copy:pull` first.');
     return;
   }
   if (!entries.length) {

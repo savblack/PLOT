@@ -23,8 +23,8 @@ Before running this, create two Password items in Keychain Access:
   ${PASSWORD_SERVICE}   the staging account password
 
 Usage:
-  npm run staging:session
-  npm run staging:session -- --origin http://127.0.0.1:5177
+  pnpm run staging:session
+  pnpm run staging:session --origin http://127.0.0.1:5177
 
 The output is written under .playwright/, which is gitignored. Never share it.`);
 }

@@ -15,7 +15,7 @@
 #
 # Usage:
 #   set -a; . .env; set +a          # from the MAIN checkout
-#   npm run db:function-diff
+#   pnpm run db:function-diff
 #
 # Requires: brew install postgresql@17
 #
@@ -78,7 +78,7 @@ for f in "${pending[@]}"; do
     echo
     echo "✗ $(basename "$f") did not apply, so there is nothing to diff." >&2
     printf '%s\n' "$err" | sed 's/^/    /' | head -12 >&2
-    echo "  Fix it with npm run db:migration-test first." >&2
+    echo "  Fix it with pnpm run db:migration-test first." >&2
     exit 1
   fi
 done
