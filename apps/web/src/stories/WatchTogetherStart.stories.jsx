@@ -152,3 +152,16 @@ export const PairedNothingInCommon = {
     await expect(canvas.queryByRole('button', { name: T.hub.decideWith('emily-k') })).toBeNull();
   },
 };
+
+/* Invite someone, once you watch with someone: a card in the column with
+   search and your invite link (Nov 19), not a text link to the share sheet. */
+export const InviteSomeonePanel = {
+  args: { ...PairedNothingInCommon.args },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const card = within(await canvas.findByRole('region', { name: T.hub.inviteSomeone }));
+    await expect(card.getByPlaceholderText(T.invite.search)).toBeInTheDocument();
+    await expect(card.getByText(T.link.inviteTitle)).toBeInTheDocument();
+    await expect(card.getByRole('button', { name: T.link.share })).toBeInTheDocument();
+  },
+};

@@ -137,7 +137,7 @@ export function WatchHub() {
             />
           ) : <InviteCard link={link} />}
           {stage === 'people'
-            ? <TextLink quiet label={H.inviteSomeone} onPress={() => { void link.send('share'); }} disabled={!link.url} />
+            ? <InviteMoreCard together={together} />
             : <ExampleDemo premium={premium} />}
         </Gutter>
       </View>
@@ -454,6 +454,62 @@ export function WatchPicker({ together }: { together?: TogetherApi }) {
 export function WatchInvite() {
   const { userId } = useAppData();
   const together = useTogether(userId);
+  return (
+    <WatchPage>
+      <SectionTitle>{T.invite.title}</SectionTitle>
+      <InviteContent together={together} />
+    </WatchPage>
+  );
+}
+
+/**
+ * With people already: invite someone else, right on the hub. Search for
+ * someone on Plot (matches show under the box), or send your link to anyone
+ * who isn't. Web: InviteMoreCard in WatchTogetherHub.jsx.
+ */
+function InviteMoreCard({ together }: { together: TogetherApi }) {
+  const { colors } = useTheme();
+  const { userId } = useAppData();
+  const [query, setQuery] = useState('');
+  const search = useUserSearch(query, { excludeId: userId, limit: 5 });
+  const [sent, setSent] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const invite = async (person: WtPerson) => {
+    setError(null);
+    const result = await together.send(person.id);
+    if (result.ok) setSent(prev => prev.includes(person.id) ? prev : [...prev, person.id]);
+    else setError(errorText(result.code));
+  };
+  const results = search.searching && search.results ? asPeople(search.results) : null;
+  return (
+    <View style={{ gap: spacing.sm, padding: spacing.lg, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+      <Text accessibilityRole="header" style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary }}>{H.inviteSomeone}</Text>
+      <Note>{T.invite.body}</Note>
+      <SearchField value={query} onChangeText={setQuery} placeholder={T.invite.search} />
+      {!!error && <ErrorNote>{error}</ErrorNote>}
+      {results && results.length === 0 && <Note>{T.start.findNone}</Note>}
+      {results?.map(person => (
+        <PersonRow
+          key={person.id}
+          person={person}
+          note={`@${person.username}`}
+          trailing={sent.includes(person.id)
+            ? <SectionLabel>{T.invite.sent}</SectionLabel>
+            : <Button variant="primary" size="sm" label={T.invite.invite} onPress={() => invite(person)} />}
+        />
+      ))}
+      <InviteLinkCard />
+    </View>
+  );
+}
+
+/**
+ * Invite someone: search by name or @username, people you might pick, and
+ * your invite link for anyone not on Plot. The invite screen and the hub's
+ * sheet both show this, so they can't drift apart. Web: InvitePanel.
+ */
+function InviteContent({ together }: { together: TogetherApi }) {
+  const { userId } = useAppData();
   const suggestions = useWatchTogetherSuggestions(userId);
   const suggested = asPeople(suggestions.people);
   const [query, setQuery] = useState('');
@@ -469,14 +525,14 @@ export function WatchInvite() {
   };
   const list = search.searching ? asPeople(search.results || []) : suggested;
   return (
-    <WatchPage>
-      <SectionTitle>{T.invite.title}</SectionTitle>
+    <>
       <Note>{T.invite.body}</Note>
       <Note>{T.invite.mutualNote}</Note>
       <SearchField value={query} onChangeText={setQuery} placeholder={T.invite.search} />
       {!!error && <ErrorNote>{error}</ErrorNote>}
       {query.trim().length < 2 && <SectionLabel>{T.invite.suggested}</SectionLabel>}
       {list.length === 0 && query.trim().length < 2 && <Note>{T.invite.noSuggestions}</Note>}
+      {search.searching && search.results && search.results.length === 0 && <Note>{T.start.findNone}</Note>}
       {list.map(person => (
         <PersonRow
           key={person.id}
@@ -488,6 +544,6 @@ export function WatchInvite() {
         />
       ))}
       <InviteLinkCard />
-    </WatchPage>
+    </>
   );
 }

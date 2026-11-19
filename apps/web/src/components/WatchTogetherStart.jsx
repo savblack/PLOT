@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { personName, pickDemoDeck, demoPartnerSaysYes } from '@plot/core/watchTogether.js';
-import { useUserSearch } from '@plot/core/useWatchTogether.js';
+import { useUserSearch, useWatchTogetherSuggestions } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { posterUrl } from '../utils/images.js';
@@ -90,6 +90,50 @@ export function FriendSearch({ sent, onInvite, onDark = false }) {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Invite someone: search by name or @username, people you might pick, and
+ * your invite link for anyone not on Plot. The /together/invite page and the
+ * hub's Invite someone panel both show this, so they can't drift apart.
+ */
+export function InvitePanel({ wt }) {
+  const { user } = useApp();
+  const { people: suggested } = useWatchTogetherSuggestions(user?.id);
+  const [query, setQuery] = useState('');
+  const { searching, results } = useUserSearch(query, { excludeId: user?.id, limit: 20 });
+  const [sent, setSent] = useState(() => new Set());
+  const [error, setError] = useState(null);
+
+  const invite = async (person) => {
+    setError(null);
+    const result = await wt.send(person.id);
+    if (result.ok) setSent(prev => new Set(prev).add(person.id));
+    else setError(T.errors[result.code] || T.errors.generic);
+  };
+
+  const list = searching ? (results || []) : suggested;
+  return (
+    <>
+      <p className="wt-card-body">{T.invite.body}</p>
+      <p className="wt-note">{T.invite.mutualNote}</p>
+      <SearchField id="wt-invite-search" placeholder={T.invite.search} value={query} onChange={setQuery} />
+      {error && <p className="wt-error" role="alert">{error}</p>}
+      {query.trim().length < 2 && <h2 className="wt-section-label">{T.invite.suggested}</h2>}
+      {list.length === 0 && query.trim().length < 2 && <p className="wt-note">{T.invite.noSuggestions}</p>}
+      {searching && results && results.length === 0 && <p className="wt-note">{S.findNone}</p>}
+      {list.map(p => (
+        <div key={p.id} className="wt-row">
+          <PersonAvatar person={p} />
+          <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">@{p.username}</span></span>
+          {sent.has(p.id)
+            ? <Tag label={T.invite.sent} />
+            : <button type="button" className="btn btn-primary btn-sm" onClick={() => invite(p)}>{T.invite.invite}</button>}
+        </div>
+      ))}
+      <InviteLinkCard />
+    </>
   );
 }
 

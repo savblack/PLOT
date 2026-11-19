@@ -101,3 +101,10 @@
 
 /* ── Right column ── */
 .wth-preview .media-card { opacity: 0.6; }
+
+/* Invite someone, once you have people: search and your link, in the column. */
+.wth-invite-or { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 0.25rem; }
+.wth-invite-url { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wth-invite-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.wth-invite-card .wt-find { margin-top: 0; }
+.wth-invite-card .wt-find-results { padding: 0; }
