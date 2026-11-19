@@ -17,11 +17,11 @@ export const FOOTER_PARTIAL = {
     company: { heading: 'Company', links: { about: 'About', community: 'Community', support: 'Support', changelog: 'Changelog' } },
     legal: { heading: 'Legal', links: { privacy: 'Privacy', terms: 'Terms' } },
   },
-  wordmarkAria: 'plot home',
-  copyright: (year) => `© ${year} plot`,
+  wordmarkAria: 'Plot home',
+  copyright: (year) => `© ${year} Plot`,
   socialAria: {
-    instagram: 'plot on Instagram',
-    threads: 'plot on Threads',
-    x: 'plot on X',
+    instagram: 'Plot on Instagram',
+    threads: 'Plot on Threads',
+    x: 'Plot on X',
   },
 };
