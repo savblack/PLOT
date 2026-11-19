@@ -16,10 +16,10 @@ Savannah on 2026-11-18 and 2026-11-19. This is the record later phases build fro
 | 6–7 | No pushes 11 PM to 7 AM in the viewer's time zone; held pushes go at 7 AM. No setting to change it. |
 | 8 | Held 7 AM pushes combine into one. Daytime drops push one by one. |
 | 9 | Push only for shows the person is caught up on (watched the previous episode), or has switched push on for from the Episode alerts card. Other followed shows get the in-app alert only. |
-| 10 | Times appear on existing screens: Calendar, Episode alerts card, Tonight. No new Upcoming list yet. |
+| 10 | Times appear on existing screens: Calendar and the Episode alerts card. No new Upcoming list yet. (Tonight was dropped on 2026-11-19: it shows no upcoming dates to put a time on.) |
 | 11 | Ships as soon as it is built. No quiet trial period. |
 | 12 | A PostHog kill switch, plus an automatic brake: if too many confirmed times move in their final hours, or TVmaze stops answering, alerts fall back to the morning path and an incident issue opens. |
-| 13 | Estimates come from a hand-kept list of each US service's usual drop time, with a monthly check against observed TVmaze times that opens an issue on drift. |
+| 13 | ~~Estimates from a hand-kept list of service drop times, checked monthly.~~ **Changed 2026-11-19:** no estimates for now. TVmaze listed no time for any of 215 Netflix, 20 Apple TV or 29 Paramount+ episodes over three weeks, so a list could never be checked. Streaming shows show the day until a source for their times exists. This also makes decisions 4 and 17 moot for now. |
 | 14 | No web-only Premium extra (no browser notifications, no email per episode). Push arrives with the iPhone app. |
 | 15 | Two settings: "Episode alerts in Plot" and "Episode alerts on my phone". |
 | 16 | Phone alerts start on, with a one-time in-app note the first time one would send. |
@@ -45,8 +45,10 @@ largest services.
 
 1. **Collect** (this change): `tvmaze_show_links`, `episode_airings`, hourly
    `episode-air-times` job. Nothing user-facing.
-2. **Display**: estimate list, times on Calendar / Episode alerts card / Tonight,
-   the two settings. Match a stored airing to TMDB's episode only when their dates
-   agree within a day, since TVmaze and TMDB numbering can differ.
+2. **Display** (`packages/core/dropTimes.js`): exact times on the Calendar and the
+   Episode alerts card, web and mobile. A stored airing is matched to TMDB's
+   episode only when their dates agree within a day, since TVmaze and TMDB
+   numbering can differ. The two settings (decision 15) move to phase 3, where
+   phone alerts make them matter.
 3. **Alerts**: alert job every 15 minutes for confirmed times, quiet hours, 7 AM
    summary, brake and kill switch, one-time note.

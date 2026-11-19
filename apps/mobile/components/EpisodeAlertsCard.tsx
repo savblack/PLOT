@@ -7,6 +7,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
 import { useRouter, type Href } from 'expo-router';
 import { useEpisodeAlerts } from '@plot/core/useEpisodeAlerts.js';
 import { nextEpisodeLine } from '@plot/core/episodeAlerts.js';
+import { useNextDropTime } from '@plot/core/useNextDropTime.js';
 import { buildCalendarEvents } from '@plot/core/calendar.js';
 import { generateICS } from '@plot/core/ics.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
@@ -52,7 +53,8 @@ export default function EpisodeAlertsCard({ show }: { show: EpisodeAlertsShow })
   const [menuOpen, setMenuOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
   const title = show?.name || '';
-  const next = nextEpisodeLine(show, localDateStr());
+  const dropsAt = useNextDropTime(show);
+  const next = nextEpisodeLine(show, localDateStr(), dropsAt);
   const premium = isPremiumProfile(profile);
 
   if (!userId || !show?.id) return null;
