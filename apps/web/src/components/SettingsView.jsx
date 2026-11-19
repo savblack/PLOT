@@ -724,7 +724,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
             style={{
               width: 32, height: 32, borderRadius: '50%', overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--accent-dim)', color: 'var(--accent)',
+              background: 'var(--accent-dim)', color: 'var(--accent-text)',
               fontFamily: 'var(--font-display)', fontSize: '0.85rem', fontWeight: 600,
               flexShrink: 0,
             }}

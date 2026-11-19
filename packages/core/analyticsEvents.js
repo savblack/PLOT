@@ -287,6 +287,10 @@ export const EVENTS = Object.freeze({
   // `item_count`. On web, opening a title from one is title_viewed with
   // source 'because_you_watched' or 'recommended_for_you'.
   RECOMMENDATIONS_VIEWED: 'recommendations_viewed',
+  // Home's "Nothing coming up yet" card: "Pick something for me" was pressed,
+  // which opens Decide (/tonight). Web only: mobile Home has no such card.
+  // No properties. The pick itself is tonight_picks_drawn.
+  HOME_PICK_FOR_TONIGHT_CLICKED: 'home_pick_for_tonight_clicked',
   // Marketing email consent. `source` distinguishes the Settings toggle from the
   // in-app prompt so we can tell which surface actually earns opt-ins.
   MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',

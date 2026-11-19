@@ -70,7 +70,8 @@ export const TASTE_OVERLAP = {
   navLabel: 'Compare',
   // Picker
   searchLabel: 'Search people',
-  searchPlaceholder: 'Search by name or @username',
+  // Short enough for the side card; the field's search icon says "search".
+  searchPlaceholder: 'Name or @username',
   peopleYouFollow: 'People you follow',
   searchResults: 'Search results',
   compare: 'Compare',

@@ -439,7 +439,7 @@ export default function SearchScreen() {
                   </View>
                 )}
                 {inList && (
-                  <Svg width={14} height={14} viewBox="0 0 24 24" fill={colors.textPrimary} stroke={colors.textPrimary} strokeWidth={1.5} accessibilityLabel={MEDIA.saveToWatchlist}>
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill={colors.textPrimary} stroke={colors.textPrimary} strokeWidth={1.5} accessibilityLabel={MEDIA_PANEL.inWatchlist}>
                     <Path d={ICON_PATHS.bookmark} />
                   </Svg>
                 )}

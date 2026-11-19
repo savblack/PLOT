@@ -6,10 +6,16 @@ import { TV_KEYWORD_GENRES, tvKeywordIds } from './keywordGenres.js';
 const hasPoster = item => !!item.poster_path;
 const MIN_RAIL_SIZE = 14;
 
+// TV genres that are a broader version of one movie genre: the movie genre
+// joins the TV rail, under the TV name, so New Releases doesn't show "Action"
+// and "Action & Adventure" as two rows (UI critique, Nov 19).
+const TV_GENRE_JOINS = Object.freeze({ 10759: 28, 10765: 878, 10768: 10752 });
+
 /**
  * Build one rail for every genre returned by TMDB. Movie and TV catalogs are
- * joined by name only when the category is genuinely shared; distinct names
- * such as "Action" and "Action & Adventure" remain separate sections.
+ * joined when the name is shared, and when a TV genre is the broader version
+ * of a movie genre (TV_GENRE_JOINS): Action joins Action & Adventure, Science
+ * Fiction joins Sci-Fi & Fantasy, War joins War & Politics.
  *
  * @param {{movie?:Array<{id:number,name:string}>,tv?:Array<{id:number,name:string}>}} catalog
  */
@@ -25,8 +31,13 @@ export function buildGenreRailDefinitions(catalog) {
     if (!existing.genreIds.includes(genre.id)) existing.genreIds.push(genre.id);
     rails.set(genre.name, existing);
   };
-  (catalog?.movie || []).forEach(genre => add(genre, 'movie'));
-  (catalog?.tv || []).forEach(genre => add(genre, 'tv'));
+  const tvGenres = catalog?.tv || [];
+  const joinedInto = new Map(tvGenres.filter(g => TV_GENRE_JOINS[g.id]).map(g => [TV_GENRE_JOINS[g.id], g]));
+  (catalog?.movie || []).forEach(genre => {
+    const tv = joinedInto.get(genre.id);
+    add(tv ? { ...genre, name: tv.name } : genre, 'movie');
+  });
+  tvGenres.forEach(genre => add(genre, 'tv'));
   // Horror, Romance and Thriller have no TV genre; their shows come from TMDB
   // keywords instead (keywordGenres.js), the same as in Just Decide.
   for (const rail of rails.values()) {

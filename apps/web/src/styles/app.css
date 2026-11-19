@@ -519,7 +519,7 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-pill);
   background: var(--accent-secondary-fill);
   color: var(--on-accent-secondary-fill);
-  font-size: 0.6rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -546,6 +546,8 @@ svg { stroke-width: 1.5; }
 .app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: stretch; }
 .app-sidebar-nav > .app-sidebar-item:first-child { margin-bottom: 10px; }
 .app-sidebar-item { width: auto; max-width: 100%; border-radius: var(--radius-md); padding: 10px 12px; gap: 12px; }
+/* Page rows are links (Cmd-click opens a new tab); they look like the button rows. */
+a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
 .app-sidebar-nav > .app-sidebar-item { width: 100%; }
 .app-sidebar-item:hover,
 .app-sidebar-item.active { background: var(--surface-sunken); color: var(--text-primary); }
@@ -567,7 +569,7 @@ svg { stroke-width: 1.5; }
 .app-sidebar-foot:empty { display: none; }
 .app-sidebar-profile { width: 100%; border-radius: var(--radius-md); padding: 6px 12px; min-height: 48px; }
 .app-sidebar-profile-copy { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
-.app-sidebar-profile-copy small { font-size: 0.68rem; color: var(--text-secondary); }
+.app-sidebar-profile-copy small { font-size: 0.75rem; color: var(--text-secondary); }
 .app-sidebar-profile .app-sidebar-avatar { width: 34px; height: 34px; border: 1px solid var(--border-strong); }
 
 @media (min-width: 1024px) {
@@ -1701,9 +1703,9 @@ svg { stroke-width: 1.5; }
 .cal-mini-day--today,
 .cal-mini-day--today:hover,
 .cal-mini-day--today:disabled {
-  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
-  color: var(--chip-cinema);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
+  background: var(--accent-dim);
+  color: var(--accent-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, var(--border));
   font-weight: 600;
 }
 .cal-mini-dot {
@@ -1716,7 +1718,7 @@ svg { stroke-width: 1.5; }
   border-radius: 50%;
   background: var(--accent);
 }
-.cal-mini-day--today .cal-mini-dot { background: var(--chip-cinema); }
+.cal-mini-day--today .cal-mini-dot { background: var(--accent); }
 
 /* Show / Genre filter rows under the mini months. Same row metrics as a
    plain list: 14px name, 11px 4px padding, hairline between rows. */
@@ -1727,7 +1729,7 @@ svg { stroke-width: 1.5; }
   padding: 0 8px;
 }
 .cal-filter-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -2435,7 +2437,7 @@ svg { stroke-width: 1.5; }
 .top5-hint {
   color: var(--text-secondary);
   font-size: 0.75rem;
-  font-style: italic;
+  font-style: normal; /* no italic face ships, so a slant would be faked */
   line-height: 1.3;
   padding: 0 0.5rem;
   text-align: center;
@@ -4057,7 +4059,7 @@ a.provider-chip--link:hover {
   margin-bottom: 2rem;
 }
 .settings-group-title {
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -4901,7 +4903,7 @@ a.provider-chip--link:hover {
   /* One step up from the 0.58rem the other small labels use. Those all sit on
      a flat surface; this is the only one overlaid on artwork, where the same
      size reads as a smudge at 9px. */
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -4975,7 +4977,7 @@ a.provider-chip--link:hover {
 }
 
 .discover-hero-meta {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: rgba(255,255,255,0.72);
   margin-bottom: 0.65rem;
   font-weight: 500;
@@ -5162,6 +5164,16 @@ a.provider-chip--link:hover {
 .home-personal-skeleton--action { width: 72%; height: 10px; margin-top: auto; }
 @keyframes home-personal-shimmer { to { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { .home-personal-skeleton::after { animation: none; } }
+/* My Lists loading (ListsLoading.jsx): the side card and a poster grid. */
+.lists-loading { display: flex; align-items: flex-start; gap: 72px; padding: 24px 0; }
+.lists-loading-side { display: none; flex-direction: column; gap: 12px; width: 264px; flex-shrink: 0; padding: 16px 14px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--border); box-sizing: border-box; }
+.lists-loading-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 20px 14px; }
+.lists-loading-card { display: flex; flex-direction: column; gap: 8px; }
+.lists-loading-poster { aspect-ratio: 2 / 3; border-radius: var(--radius-md); }
+.lists-loading-line { height: 10px; width: 70%; }
+.lists-loading-line--title { height: 13px; width: 45%; margin-bottom: 4px; }
+@media (min-width: 1024px) { .lists-loading-side { display: flex; } }
+@media (max-width: 599px) { .lists-loading { padding: 16px var(--gut); } .lists-loading-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 10px; } }
 .home-personal-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-sunken); color: var(--text-primary); font-family: var(--font-display); font-size: 20px; line-height: 1; }
 .home-personal-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .home-personal-card .hist-card-body { gap: 7px; }
@@ -6070,7 +6082,7 @@ a.provider-chip--link:hover {
   color: var(--text-primary);
 }
 .hist-card-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -6256,9 +6268,10 @@ a.provider-chip--link:hover {
 .hist-mini-day--future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); color: var(--text-muted); }
 .hist-mini-day--today,
 .hist-mini-day--today.hist-mini-day--future {
-  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
-  color: var(--chip-cinema);
+  /* Same as the Calendar's today: the accent's text shade on its tint. */
+  background: var(--accent-dim);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, var(--border));
+  color: var(--accent-text);
   font-weight: 600;
 }
 .hist-mini-tile {
@@ -6344,7 +6357,7 @@ a.provider-chip--link:hover {
 .hist-month-count { font-size: 12px; color: var(--text-muted); }
 .hist-month-insight {
   font-family: var(--font-display);
-  font-style: italic;
+  font-style: normal; /* no italic face ships, so a slant would be faked */
   font-size: 15px;
   color: var(--text-secondary);
   text-align: right;
