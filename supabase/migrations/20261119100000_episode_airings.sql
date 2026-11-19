@@ -42,6 +42,11 @@ create index if not exists tvmaze_show_links_tvmaze_idx on public.tvmaze_show_li
 
 alter table public.tvmaze_show_links enable row level security;
 revoke all on public.tvmaze_show_links from anon, authenticated;
+-- A deny-all policy so the "RLS on, no policy" advisor stays quiet (the
+-- convention from 20261012170000); the service role bypasses it.
+drop policy if exists "tvmaze_show_links is server-only" on public.tvmaze_show_links;
+create policy "tvmaze_show_links is server-only" on public.tvmaze_show_links
+  for select using (false);
 
 -- ── 2. Episode times (public schedule data) ─────────────────────────────────
 

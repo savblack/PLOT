@@ -122,14 +122,24 @@ export function dedupeRows(rows) {
  * @param {Date} now
  */
 export function withChanges(incoming, existing, now) {
+  // Every row carries all three change columns. A batch upsert writes the union
+  // of its rows' keys and nulls any a row lacks, so leaving them off unchanged
+  // rows would wipe their last recorded move whenever a sibling moved.
   return incoming.map(row => {
     const prev = existing.get(`${row.season_number}:${row.episode_number}`);
-    if (!prev) return row;
+    if (!prev) return { ...row, previous_air_date: null, previous_airs_at: null, changed_at: null };
     // Compare instants, not strings: Postgres hands back "+00:00" where the
     // row carries "Z".
     const before = prev.airs_at ? Date.parse(prev.airs_at) : null;
     const after = row.airs_at ? Date.parse(row.airs_at) : null;
-    if (prev.air_date === row.air_date && before === after) return row;
+    if (prev.air_date === row.air_date && before === after) {
+      return {
+        ...row,
+        previous_air_date: prev.previous_air_date ?? null,
+        previous_airs_at: prev.previous_airs_at ?? null,
+        changed_at: prev.changed_at ?? null,
+      };
+    }
     return {
       ...row,
       previous_air_date: prev.air_date,
@@ -137,6 +147,21 @@ export function withChanges(incoming, existing, now) {
       changed_at: now.toISOString(),
     };
   });
+}
+
+/**
+ * Stored episodes of a show that TVmaze no longer lists with a usable date in
+ * the kept window: pulled to TBA, pushed past KEEP_AHEAD_DAYS, renumbered or
+ * deleted. Their stored time will not happen, so they are removed rather than
+ * left for a later alert to act on. Rows already past the window are removed too.
+ *
+ * @param {{ season_number: number, episode_number: number }[]} existing stored rows for the show
+ * @param {{ season_number: number, episode_number: number }[]} fresh rows from airingRow
+ * @returns {{ season_number: number, episode_number: number }[]}
+ */
+export function withdrawnRows(existing, fresh) {
+  const keep = new Set(fresh.map(r => `${r.season_number}:${r.episode_number}`));
+  return existing.filter(r => !keep.has(`${r.season_number}:${r.episode_number}`));
 }
 
 /**

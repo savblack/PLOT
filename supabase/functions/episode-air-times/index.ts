@@ -21,8 +21,11 @@
  *     and a 429 is retried after a pause;
  *   - it stops starting TVmaze calls after about 100s and carries the rest to
  *     the next hour, the most urgent first, so nothing starves or hangs;
- *   - a failed call changes nothing for that show;
- *   - above 50% failed calls the run reports ok:false;
+ *   - every call times out after 15s, and a failed call changes nothing for
+ *     that show;
+ *   - an episode TVmaze stops listing in the window (TBA, pushed out,
+ *     renumbered) is deleted, so no stale time is left for an alert to use;
+ *   - at 50% or more failed links and show reads the run reports ok:false;
  *   - one row per run lands in alert_job_runs.
  *
  * Auth: called by pg_cron via pg_net with the Vault service-role bearer
@@ -36,9 +39,9 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { reportError } from '../_shared/posthogLog.ts';
-import { tmdbGetWithRetry } from '../_shared/tmdbRetry.ts';
+import { retryAfterMs, tmdbGetWithRetry } from '../_shared/tmdbRetry.ts';
 import {
-  airingRow, dedupeRows, linkLookups, linkQueue, syncQueue, venueOf, withChanges,
+  KEEP_PAST_DAYS, airingRow, dedupeRows, isoDay, linkLookups, linkQueue, syncQueue, venueOf, withChanges, withdrawnRows,
 } from '../_shared/episodeAirings.js';
 
 type Db = SupabaseClient<Database>;
@@ -56,6 +59,10 @@ const UPSERT_CHUNK = 500;
 // 20 calls per 10s is TVmaze's limit; 550ms apart keeps us at about 18.
 const TVMAZE_GAP_MS = 550;
 const TVMAZE_RETRY_MS = 10_000;
+const TVMAZE_RETRY_MAX_MS = 20_000;
+// Per call. The run deadline is only checked between shows, so this bounds
+// how far past it one show can run.
+const CALL_TIMEOUT_MS = 15_000;
 const FETCH_DEADLINE_MS = 100_000;
 // Linking costs a TMDB call and up to two TVmaze calls, so cap it per run and
 // leave room for syncing. A large backlog clears over a few hours.
@@ -66,19 +73,31 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** Spaced TVmaze GET. Returns null for a 404 (no such show), throws on anything else that fails. */
+/** A fetch that gives up after CALL_TIMEOUT_MS, so one hung call cannot outlive the run. */
+const timedFetch: typeof fetch = (input, init) =>
+  fetch(input, { ...init, signal: AbortSignal.timeout(CALL_TIMEOUT_MS) });
+
+/**
+ * Spaced TVmaze GET. Returns null for a 404 (no such show), throws on anything
+ * else that fails. `weight` is how many requests the call really makes: a
+ * matched /lookup answers with a redirect that fetch follows, so it is two.
+ */
 function tvmazeClient() {
-  let last = 0;
-  return async function get(path: string): Promise<any | null> {
+  let next = 0;
+  return async function get(path: string, weight = 1): Promise<any | null> {
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const wait = last + TVMAZE_GAP_MS - Date.now();
+      const wait = next - Date.now();
       if (wait > 0) await sleep(wait);
-      last = Date.now();
-      const res = await fetch(`${TVMAZE_BASE}${path}`, { headers: TVMAZE_HEADERS });
+      next = Date.now() + TVMAZE_GAP_MS * weight;
+      const res = await timedFetch(`${TVMAZE_BASE}${path}`, { headers: TVMAZE_HEADERS });
       if (res.ok) return await res.json();
       if (res.status === 404) { await res.body?.cancel(); return null; }
       await res.body?.cancel();
-      if (res.status === 429 && attempt === 1) { await sleep(TVMAZE_RETRY_MS); continue; }
+      if (res.status === 429 && attempt === 1) {
+        const asked = retryAfterMs(res.headers.get('Retry-After'));
+        await sleep(Math.min(TVMAZE_RETRY_MAX_MS, asked ?? TVMAZE_RETRY_MS));
+        continue;
+      }
       throw new Error(`TVmaze ${path.split('?')[0]} failed (${res.status})`);
     }
     throw new Error(`TVmaze ${path.split('?')[0]} failed`);
@@ -140,8 +159,11 @@ Deno.serve(async (req) => {
     shows_followed: 0,
     links_attempted: 0, links_matched: 0, links_unmatched: 0,
     shows_due: 0, shows_synced: 0, shows_deferred: 0,
-    episodes_written: 0, episodes_exact: 0, episodes_moved: 0,
-    calls: 0, failures: 0,
+    episodes_written: 0, episodes_exact: 0, episodes_moved: 0, episodes_withdrawn: 0,
+    // Units of work (one link, the update list, one show sync) and how many of
+    // them failed, so a full TVmaze outage reads as 100%, not as a share of
+    // individual requests.
+    calls: 0, attempts: 0, failures: 0,
   };
 
   let runId: number | null = null;
@@ -175,14 +197,15 @@ Deno.serve(async (req) => {
   for (const tmdbId of linkQueue(followed, links, now).slice(0, LINK_PER_RUN)) {
     if (Date.now() > deadline) break;
     stats.links_attempted++;
+    stats.attempts++;
     try {
       stats.calls++;
-      const ids = await tmdbGetWithRetry(`/tv/${tmdbId}/external_ids`, tmdbKey);
+      const ids = await tmdbGetWithRetry(`/tv/${tmdbId}/external_ids`, tmdbKey, { fetchImpl: timedFetch });
       let show: any = null;
       let source: 'thetvdb' | 'imdb' | 'none' = 'none';
       for (const lookup of linkLookups(ids)) {
         stats.calls++;
-        show = await tvmaze(`/lookup/shows?${lookup.source}=${encodeURIComponent(lookup.value)}`);
+        show = await tvmaze(`/lookup/shows?${lookup.source}=${encodeURIComponent(lookup.value)}`, 2);
         if (show?.id) { source = lookup.source; break; }
       }
       const venue = venueOf(show);
@@ -210,6 +233,7 @@ Deno.serve(async (req) => {
 
   // ── Re-read changed shows ──
   let updates: Record<string, number> = {};
+  stats.attempts++;
   try {
     stats.calls++;
     updates = (await tvmaze('/updates/shows?since=day')) ?? {};
@@ -225,6 +249,7 @@ Deno.serve(async (req) => {
 
   for (const [index, link] of queue.entries()) {
     if (Date.now() > deadline) { stats.shows_deferred = queue.length - index; break; }
+    stats.attempts++;
     try {
       stats.calls++;
       const episodes = await tvmaze(`/shows/${link.tvmaze_id}/episodes`);
@@ -232,26 +257,37 @@ Deno.serve(async (req) => {
       const rows = dedupeRows(episodes.map(ep => airingRow(ep, link.tmdb_id, now)).filter(Boolean));
 
       const { data: existingRows, error: readError } = await db.from('episode_airings')
-        .select('season_number, episode_number, air_date, airs_at')
+        .select('season_number, episode_number, air_date, airs_at, previous_air_date, previous_airs_at, changed_at')
         .eq('tmdb_id', link.tmdb_id);
       if (readError) throw new Error(`episode_airings read failed: ${readError.message}`);
       const existing = new Map((existingRows ?? []).map(r => [`${r.season_number}:${r.episode_number}`, r]));
-      const changed = withChanges(rows, existing, now).map(r => ({ ...r, updated_at: nowIso }));
+      const fresh = withChanges(rows, existing, now).map(r => ({ ...r, updated_at: nowIso }));
+      const withdrawn = withdrawnRows(existingRows ?? [], rows);
 
-      stats.episodes_exact += changed.filter(r => r.time_source === 'exact').length;
-      stats.episodes_moved += changed.filter(r => 'changed_at' in r).length;
+      stats.episodes_exact += fresh.filter(r => r.time_source === 'exact').length;
+      stats.episodes_moved += fresh.filter(r => r.changed_at === nowIso).length;
+      stats.episodes_withdrawn += withdrawn.length;
       if (!dryRun) {
-        for (let i = 0; i < changed.length; i += UPSERT_CHUNK) {
+        for (let i = 0; i < fresh.length; i += UPSERT_CHUNK) {
           const { error } = await db.from('episode_airings')
-            .upsert(changed.slice(i, i + UPSERT_CHUNK), { onConflict: 'tmdb_id,season_number,episode_number' });
+            .upsert(fresh.slice(i, i + UPSERT_CHUNK), { onConflict: 'tmdb_id,season_number,episode_number' });
           if (error) throw new Error(`episode_airings write failed: ${error.message}`);
+        }
+        // A stored drop TVmaze no longer lists in the window (TBA, pushed out,
+        // renumbered) will not happen at its stored time, so it goes.
+        for (const gone of withdrawn) {
+          const { error } = await db.from('episode_airings').delete()
+            .eq('tmdb_id', link.tmdb_id)
+            .eq('season_number', gone.season_number)
+            .eq('episode_number', gone.episode_number);
+          if (error) throw new Error(`episode_airings delete failed: ${error.message}`);
         }
         const { error } = await db.from('tvmaze_show_links')
           .update({ synced_at: nowIso, tvmaze_updated: updates[String(link.tvmaze_id)] ?? link.tvmaze_updated })
           .eq('tmdb_id', link.tmdb_id);
         if (error) throw new Error(`tvmaze_show_links update failed: ${error.message}`);
       }
-      stats.episodes_written += changed.length;
+      stats.episodes_written += fresh.length;
       stats.shows_synced++;
     } catch (err) {
       stats.failures++;
@@ -259,6 +295,12 @@ Deno.serve(async (req) => {
     }
   }
 
-  const failureRate = stats.calls ? stats.failures / stats.calls : 0;
-  return finish(failureRate <= MAX_FAILURE_RATE);
+  // Episodes of shows nobody re-reads (unfollowed) would otherwise stay forever.
+  if (!dryRun) {
+    const { error } = await db.from('episode_airings').delete().lt('air_date', isoDay(now, -KEEP_PAST_DAYS));
+    if (error) reportError(JOB, 'episode_airings prune failed:', error);
+  }
+
+  const failureRate = stats.attempts ? stats.failures / stats.attempts : 0;
+  return finish(failureRate < MAX_FAILURE_RATE);
 });

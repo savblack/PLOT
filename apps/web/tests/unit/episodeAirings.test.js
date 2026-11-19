@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   KEEP_AHEAD_DAYS, KEEP_PAST_DAYS, RELINK_AFTER_DAYS, RESYNC_AFTER_HOURS,
-  airingRow, dedupeRows, isoDay, linkLookups, linkQueue, syncQueue, venueOf, withChanges,
+  airingRow, dedupeRows, isoDay, linkLookups, linkQueue, syncQueue, venueOf, withChanges, withdrawnRows,
 } from '../../../../supabase/functions/_shared/episodeAirings.js';
 
 // The rules behind exact episode drop times. The bar: a wrong time is worse than
@@ -93,12 +93,29 @@ test('a moved drop time keeps the old value and when it moved', () => {
 test('the same instant in another format is not a change', () => {
   const row = airingRow(ep(), SHOW, NOW);
   const existing = new Map([['2:4', { air_date: '2026-11-21', airs_at: '2026-11-22T02:00:00+00:00' }]]);
-  assert.equal(withChanges([row], existing, NOW)[0].changed_at, undefined);
+  assert.equal(withChanges([row], existing, NOW)[0].changed_at, null);
+});
+
+test('an unchanged row keeps its last recorded move, so a batch upsert cannot wipe it', () => {
+  // A batch upsert nulls any column a row leaves out. Every row must carry the
+  // three change columns, and an unchanged one carries its stored values.
+  const moved = airingRow(ep({ id: 1, number: 4 }), SHOW, NOW);
+  const steady = airingRow(ep({ id: 2, number: 5 }), SHOW, NOW);
+  const existing = new Map([
+    ['2:4', { air_date: '2026-11-21', airs_at: '2026-11-22T01:00:00+00:00' }],
+    ['2:5', { air_date: '2026-11-21', airs_at: '2026-11-22T02:00:00+00:00',
+      previous_air_date: '2026-11-20', previous_airs_at: '2026-11-21T02:00:00+00:00', changed_at: '2026-11-15T00:00:00.000Z' }],
+  ]);
+  const [, out] = withChanges([moved, steady], existing, NOW);
+  assert.equal(out.changed_at, '2026-11-15T00:00:00.000Z');
+  assert.equal(out.previous_air_date, '2026-11-20');
+  assert.equal(out.previous_airs_at, '2026-11-21T02:00:00+00:00');
 });
 
 test('a first sighting is not a change; gaining a time is', () => {
   const row = airingRow(ep(), SHOW, NOW);
-  assert.equal(withChanges([row], new Map(), NOW)[0].changed_at, undefined);
+  const [first] = withChanges([row], new Map(), NOW);
+  assert.deepEqual([first.changed_at, first.previous_air_date, first.previous_airs_at], [null, null, null]);
   const existing = new Map([['2:4', { air_date: '2026-11-21', airs_at: null }]]);
   assert.equal(withChanges([row], existing, NOW)[0].changed_at, NOW.toISOString());
 });
@@ -124,4 +141,13 @@ test('linking: new shows, and no-match shows only after the relink wait', () => 
     [-3, { tvmaze_id: null, checked_at: longAgo }],
   ]);
   assert.deepEqual(linkQueue([-1, -2, -3, -4], links, NOW), [-3, -4]);
+});
+
+test('an episode TVmaze no longer lists in the window is withdrawn', () => {
+  // Pulled to TBA (airingRow returns null), pushed out, or renumbered: its stored
+  // time will not happen, so it must not stay for an alert to act on.
+  const existing = [{ season_number: 2, episode_number: 4 }, { season_number: 2, episode_number: 5 }];
+  const fresh = [airingRow(ep({ number: 4 }), SHOW, NOW), airingRow(ep({ number: 5, airdate: 'TBA' }), SHOW, NOW)].filter(Boolean);
+  assert.deepEqual(withdrawnRows(existing, fresh), [{ season_number: 2, episode_number: 5 }]);
+  assert.deepEqual(withdrawnRows([], fresh), []);
 });
