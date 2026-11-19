@@ -1,6 +1,6 @@
 # Import source sheet redesign
 
-Status: paused (ready for review, no PR yet)
+Status: paused (PR open, waiting on CI and a preview check)
 Owner: Savannah (requested in Claude Code)
 Branch: agent/2026-11-19-plex-sheet-design
 Worktree: ~/Developer/PLOT-worktrees/2026-11-19-plex-sheet-design
@@ -38,8 +38,8 @@ look at it and say whether to open a pull request.
 
 ## Approvals
 
-- Given: redesign the import source sheet (all sources).
-- Still needed: whether to open a PR.
+- Given: redesign the import source sheet (all sources); open the PR.
+- Still needed: merge (not requested).
 
 ## Next
 
