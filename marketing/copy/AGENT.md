@@ -66,7 +66,7 @@ announced the wrong day, or called a classic a hidden gem.
 - `instagram`: no URLs except that same trailer link ("at theplot.tv" in the CTA is fine)
 - A caption that mentions a trailer without a known official link is rejected; drop the mention
 - `hashtags`: 3 to 5 items, no `#` prefix
-- `cta_variant`: one of `track_it`, `whats_on_tonight`, `journal_it`, `none`
+- `cta_variant`: one of `track_it`, `whats_on_tonight`, `none`
 
 `page_title` and `page_body` are additionally checked by
 `supabase/functions/_shared/articleRules.js`, which rejects em and en dashes,

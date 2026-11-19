@@ -9,7 +9,10 @@
 
 import { articleErrors, socialErrors } from './articleRules.js';
 
-export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'journal_it', 'none'];
+// `journal_it` ("Log it in your Plot") was retired on 2026-11-19 with the move from
+// a journal to a companion positioning; older posts that carry it are read as track_it.
+export const CTA_VARIANTS = ['track_it', 'whats_on_tonight', 'none'];
+const RETIRED_CTA = { journal_it: 'track_it' };
 
 // Field-by-field spec, rendered into every brief so the worker sees the exact
 // contract it must satisfy. Keep this in lockstep with validateCopy below.
@@ -206,7 +209,7 @@ export const validateCopy = (raw, context = {}) => {
       ? raw.hashtags.map(h => String(h).trim().replace(/^#/, '').replace(/\s+/g, '')).filter(Boolean)
       : [],
     alt_text: str(raw.alt_text),
-    cta_variant: str(raw.cta_variant),
+    cta_variant: RETIRED_CTA[str(raw.cta_variant)] || str(raw.cta_variant),
     page_title: str(raw.page_title),
     page_body: Array.isArray(raw.page_body)
       ? raw.page_body.map(str).filter(Boolean)

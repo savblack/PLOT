@@ -169,7 +169,7 @@ const COPY = {
       threads: `${t} is ${years} years old today. Where does the time go.`,
       hashtags: [titleTag(t), 'onthisday', 'rewatch', 'filmtwitter'],
       alt_text: `An on this day card for ${t}, ${years} years on.`,
-      cta_variant: 'journal_it',
+      cta_variant: 'track_it',
     };
   },
 
@@ -216,7 +216,7 @@ const COPY = {
       threads: `${top} is number one this week. ${note}`,
       hashtags: ['trending', 'whatson', 'watchlist', 'filmtwitter'],
       alt_text: `A trending chart card led by ${top || 'this week\'s top title'}.`,
-      cta_variant: 'journal_it',
+      cta_variant: 'track_it',
     };
   },
 };
@@ -257,7 +257,7 @@ const runSelfTest = () => {
       if (/#/.test(c.x) || /#/.test(c.threads)) fail(`${type}#${i}: hashtags not allowed on X/Threads`);
       const pageProse = [c.page_title, ...c.page_body].join(' ');
       if (/[—–]|(\s-\s)/.test(pageProse)) fail(`${type}#${i}: dash in page prose`);
-      if (!['track_it', 'whats_on_tonight', 'journal_it', 'none'].includes(c.cta_variant)) fail(`${type}#${i}: bad cta_variant`);
+      if (!['track_it', 'whats_on_tonight', 'none'].includes(c.cta_variant)) fail(`${type}#${i}: bad cta_variant`);
       if (c.hashtags.length < 3 || c.hashtags.length > 5) fail(`${type}#${i}: want 3-5 hashtags`);
     }
   }

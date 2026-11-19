@@ -32,11 +32,11 @@ export const SCHEDULE = {
 
 export const CTA = {
   upcoming: 'whats_on_tonight',
-  trending: 'journal_it',
-  on_this_day: 'journal_it',
+  trending: 'track_it',
+  on_this_day: 'track_it',
   countdown: 'track_it',
-  spotlight: 'journal_it',
-  hidden_gem: 'journal_it',
+  spotlight: 'track_it',
+  hidden_gem: 'track_it',
   what_to_watch_tonight: 'whats_on_tonight',
   text_question: 'none',
   question_of_week: 'none',
