@@ -16,7 +16,6 @@ import SearchField from '../SearchField';
 import SectionTitle from '../SectionTitle';
 import Button, { TextLink } from '../Button';
 import UpgradeSheet from '../UpgradeSheet';
-import BottomSheet from '../BottomSheet';
 import CollapsibleSection from '../CollapsibleSection';
 import GlassHeader, { useGlassOnScroll } from '../GlassHeader';
 import ScreenHeaderBar, { SCREEN_HEADER_H } from '../ScreenHeaderBar';
@@ -91,7 +90,6 @@ export function WatchHub() {
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [gate, setGate] = useState(false);
-  const [inviting, setInviting] = useState(false);
   const { partners, incoming, outgoing } = together;
 
   // Loading only until the first load. Later refreshes (after an invite or a
@@ -139,7 +137,7 @@ export function WatchHub() {
             />
           ) : <InviteCard link={link} />}
           {stage === 'people'
-            ? <TextLink quiet label={H.inviteSomeone} onPress={() => setInviting(true)} />
+            ? <InviteMoreCard together={together} />
             : <ExampleDemo premium={premium} />}
         </Gutter>
       </View>
@@ -160,7 +158,6 @@ export function WatchHub() {
           onAccept={shareFull => answer(reviewing, true, shareFull)}
         />
       )}
-      {inviting && <InviteSheet together={together} onClose={() => setInviting(false)} />}
       <UpgradeSheet visible={gate} reason="watchTogether" onClose={() => setGate(false)} onCompare={() => openPremium(router)} />
     </HubPage>
   );
@@ -465,12 +462,44 @@ export function WatchInvite() {
   );
 }
 
-/** The hub's Invite someone: the same search and link, in a sheet. */
-function InviteSheet({ together, onClose }: { together: TogetherApi; onClose: () => void }) {
+/**
+ * With people already: invite someone else, right on the hub. Search for
+ * someone on Plot (matches show under the box), or send your link to anyone
+ * who isn't. Web: InviteMoreCard in WatchTogetherHub.jsx.
+ */
+function InviteMoreCard({ together }: { together: TogetherApi }) {
+  const { colors } = useTheme();
+  const { userId } = useAppData();
+  const [query, setQuery] = useState('');
+  const search = useUserSearch(query, { excludeId: userId, limit: 5 });
+  const [sent, setSent] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const invite = async (person: WtPerson) => {
+    setError(null);
+    const result = await together.send(person.id);
+    if (result.ok) setSent(prev => prev.includes(person.id) ? prev : [...prev, person.id]);
+    else setError(errorText(result.code));
+  };
+  const results = search.searching && search.results ? asPeople(search.results) : null;
   return (
-    <BottomSheet visible title={T.invite.title} onClose={onClose} closeLabel={COMMON.done}>
-      <InviteContent together={together} />
-    </BottomSheet>
+    <View style={{ gap: spacing.sm, padding: spacing.lg, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+      <Text accessibilityRole="header" style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary }}>{H.inviteSomeone}</Text>
+      <Note>{T.invite.body}</Note>
+      <SearchField value={query} onChangeText={setQuery} placeholder={T.invite.search} />
+      {!!error && <ErrorNote>{error}</ErrorNote>}
+      {results && results.length === 0 && <Note>{T.start.findNone}</Note>}
+      {results?.map(person => (
+        <PersonRow
+          key={person.id}
+          person={person}
+          note={`@${person.username}`}
+          trailing={sent.includes(person.id)
+            ? <SectionLabel>{T.invite.sent}</SectionLabel>
+            : <Button variant="primary" size="sm" label={T.invite.invite} onPress={() => invite(person)} />}
+        />
+      ))}
+      <InviteLinkCard />
+    </View>
   );
 }
 

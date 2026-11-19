@@ -1,5 +1,5 @@
 import { MemoryRouter } from 'react-router-dom';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, waitFor, within } from 'storybook/test';
 import { configure, getConfig } from '@plot/core/config.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { AppContext } from '../hooks/useApp.js';
@@ -153,16 +153,15 @@ export const PairedNothingInCommon = {
   },
 };
 
-/* Invite someone, once you watch with someone: a panel with search, people
-   you might pick, and your invite link (Nov 18), not straight to the share sheet. */
+/* Invite someone, once you watch with someone: a card in the column with
+   search and your invite link (Nov 19), not a text link to the share sheet. */
 export const InviteSomeonePanel = {
-  args: { ...PairedNothingInCommon.args, suggested },
+  args: { ...PairedNothingInCommon.args },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(await canvas.findByRole('button', { name: T.hub.inviteSomeone }));
-    const dialog = within(await within(document.body).findByRole('dialog', { name: T.invite.title }));
-    await expect(dialog.getByPlaceholderText(T.invite.search)).toBeInTheDocument();
-    await expect(dialog.getByText(T.link.inviteTitle)).toBeInTheDocument();
-    await waitFor(() => expect(dialog.getByText('Jordan Lee')).toBeInTheDocument());
+    const card = within(await canvas.findByRole('region', { name: T.hub.inviteSomeone }));
+    await expect(card.getByPlaceholderText(T.invite.search)).toBeInTheDocument();
+    await expect(card.getByText(T.link.inviteTitle)).toBeInTheDocument();
+    await expect(card.getByRole('button', { name: T.link.share })).toBeInTheDocument();
   },
 };
