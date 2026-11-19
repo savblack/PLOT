@@ -123,10 +123,12 @@ function LanguageSelect({ picker, id }) {
    title, then a labelled row per filter with every choice on the card, so
    nothing hides behind a link. Pick is the only filled button; Surprise me
    and Clear all are quiet links beside it. */
-function MoodRow({ label, radio = false, children }) {
+function MoodRow({ label, radio = false, action = null, children }) {
   return (
     <div className="tonight-row">
-      <span className="tonight-row-label">{label}</span>
+      {action
+        ? <div className="tonight-row-head"><span className="tonight-row-label">{label}</span>{action}</div>
+        : <span className="tonight-row-label">{label}</span>}
       <ChipRow className="tonight-chips" role={radio ? 'radiogroup' : 'group'} aria-label={label}>{children}</ChipRow>
     </div>
   );
@@ -152,15 +154,16 @@ function MoodCard({ picker, premium }) {
       </div>
       {/* Pick sits at the top of the card (Nov 19): below the rows it was off
           the first screen on a laptop. The rows only narrow the pick. */}
+      {/* One line in the narrow column: the compact Pick, Surprise me beside it.
+          Clear all lives with the filters it clears, on the first row. */}
       <div className="tonight-mood-actions">
-        <PickForMe picker={picker} premium={premium} className="tonight-mood-pick" />
+        <PickForMe picker={picker} premium={premium} className="btn-sm tonight-mood-pick" />
         <button type="button" className="tonight-quiet" onClick={() => picker.go('surprise')}>{T.surpriseMe}</button>
-        {moodFiltersOn(options) && (
-          <button type="button" className="tonight-quiet" onClick={() => set(clearMoodFilters(options))}>{T.chips.clearAll}</button>
-        )}
       </div>
       <div className="tonight-rows">
-        <MoodRow label={T.chips.rows.mood}>
+        <MoodRow label={T.chips.rows.mood} action={moodFiltersOn(options) && (
+          <button type="button" className="tonight-quiet tonight-clear" onClick={() => set(clearMoodFilters(options))}>{T.chips.clearAll}</button>
+        )}>
           {MOODS.map(m => <Chip key={m} size="sm" label={T.chips.moods[m]} selected={moodOn(m, options)} onClick={() => set(toggleMood(m, options))} />)}
         </MoodRow>
         {moodRows(options.mediaType).map(row => (

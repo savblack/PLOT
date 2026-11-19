@@ -391,11 +391,16 @@
 .tonight-other { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .tonight-lang { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
 .tonight-lang .tonight-select { font-size: 13px; padding: 4px 0; text-align: left; color: var(--text-primary); }
-.tonight-mood-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 4px 0 14px; }
+.tonight-mood-actions { display: flex; align-items: center; gap: 14px; padding: 2px 0 12px; }
+.tonight-mood-actions > * { white-space: nowrap; }
+.tonight-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.tonight-quiet.tonight-clear { font-size: 12px; }
 /* Between phone and desktop the card is wide, so the label sits beside its chips. */
 @media (min-width: 600px) and (max-width: 1023px) {
   .tonight-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; }
   .tonight-row-label { padding-top: 6px; }
+  /* In the label column, Clear all sits under the label. */
+  .tonight-row-head { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
 .tonight-quiet {
   all: unset;
