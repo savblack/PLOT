@@ -254,6 +254,57 @@ export type Database = {
         }
         Relationships: []
       }
+      episode_airings: {
+        Row: {
+          air_date: string
+          air_time: string | null
+          airs_at: string | null
+          changed_at: string | null
+          episode_number: number
+          first_seen_at: string
+          previous_air_date: string | null
+          previous_airs_at: string | null
+          runtime_minutes: number | null
+          season_number: number
+          time_source: string
+          tmdb_id: number
+          tvmaze_episode_id: number
+          updated_at: string
+        }
+        Insert: {
+          air_date: string
+          air_time?: string | null
+          airs_at?: string | null
+          changed_at?: string | null
+          episode_number: number
+          first_seen_at?: string
+          previous_air_date?: string | null
+          previous_airs_at?: string | null
+          runtime_minutes?: number | null
+          season_number: number
+          time_source: string
+          tmdb_id: number
+          tvmaze_episode_id: number
+          updated_at?: string
+        }
+        Update: {
+          air_date?: string
+          air_time?: string | null
+          airs_at?: string | null
+          changed_at?: string | null
+          episode_number?: number
+          first_seen_at?: string
+          previous_air_date?: string | null
+          previous_airs_at?: string | null
+          runtime_minutes?: number | null
+          season_number?: number
+          time_source?: string
+          tmdb_id?: number
+          tvmaze_episode_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       episode_alert_mutes: {
         Row: {
           created_at: string
@@ -2797,6 +2848,45 @@ export type Database = {
           },
         ]
       }
+      tvmaze_show_links: {
+        Row: {
+          checked_at: string
+          match_source: string
+          synced_at: string | null
+          tmdb_id: number
+          tvmaze_id: number | null
+          tvmaze_updated: number | null
+          venue_country: string | null
+          venue_kind: string | null
+          venue_name: string | null
+          venue_timezone: string | null
+        }
+        Insert: {
+          checked_at?: string
+          match_source: string
+          synced_at?: string | null
+          tmdb_id: number
+          tvmaze_id?: number | null
+          tvmaze_updated?: number | null
+          venue_country?: string | null
+          venue_kind?: string | null
+          venue_name?: string | null
+          venue_timezone?: string | null
+        }
+        Update: {
+          checked_at?: string
+          match_source?: string
+          synced_at?: string | null
+          tmdb_id?: number
+          tvmaze_id?: number | null
+          tvmaze_updated?: number | null
+          venue_country?: string | null
+          venue_kind?: string | null
+          venue_name?: string | null
+          venue_timezone?: string | null
+        }
+        Relationships: []
+      }
       user_blocks: {
         Row: {
           blocked_id: string
@@ -3707,6 +3797,7 @@ export type Database = {
         Returns: undefined
       }
       run_alert_email_delivery: { Args: never; Returns: undefined }
+      run_episode_air_times: { Args: never; Returns: undefined }
       run_marketing_linear_mirror: { Args: never; Returns: undefined }
       run_marketing_notion_mirror: { Args: never; Returns: undefined }
       run_movie_release_notifications: { Args: never; Returns: undefined }
