@@ -132,17 +132,17 @@ export function getTmdbCallbackUrl() {
 // TMDB sends the person back with the request token in the link. Only the
 // token this tab asked for is accepted: a link carrying someone else's token
 // would otherwise import their TMDB account into this Plot account.
-export function rememberTmdbRequest(requestToken, returnTo, entry) {
-  sessionStorage.setItem('plot_tmdb_request', JSON.stringify({ requestToken, returnTo, entry }));
+export function rememberTmdbRequest(requestToken, binding, returnTo, entry) {
+  sessionStorage.setItem('plot_tmdb_request', JSON.stringify({ requestToken, binding, returnTo, entry }));
 }
 
-/** @returns {{ returnTo: string, entry: string | null } | null} null unless the token is the one this tab asked for */
+/** @returns {{ binding: string, returnTo: string, entry: string | null } | null} null unless the token is the one this tab asked for */
 export function consumeTmdbRequest(requestToken) {
   let saved = null;
   try { saved = JSON.parse(sessionStorage.getItem('plot_tmdb_request') || 'null'); } catch { /* unreadable */ }
   sessionStorage.removeItem('plot_tmdb_request');
   if (!saved?.requestToken || saved.requestToken !== requestToken) return null;
-  return { returnTo: typeof saved.returnTo === 'string' && saved.returnTo.startsWith('/') ? saved.returnTo : '/settings?section=connections', entry: saved.entry || null };
+  return { binding: String(saved.binding || ''), returnTo: typeof saved.returnTo === 'string' && saved.returnTo.startsWith('/') ? saved.returnTo : '/settings?section=connections', entry: saved.entry || null };
 }
 
 export function tmdbErrorReturn(returnTo) {

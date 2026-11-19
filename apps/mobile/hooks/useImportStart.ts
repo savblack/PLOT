@@ -246,7 +246,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
       setPhase('connect');
     };
     if (!userId) { fail(IMPORT_VIEW.tmdbUnavailable); return; }
-    let approval: { requestToken: string; approveUrl: string };
+    let approval: { requestToken: string; approveUrl: string; binding: string };
     try { approval = await requestTmdbApproval(TMDB_REDIRECT_URI); }
     catch (e) { fail(e instanceof Error ? e.message : IMPORT_VIEW.tmdbUnavailable); return; }
     const result = await WebBrowser.openAuthSessionAsync(approval.approveUrl, TMDB_REDIRECT_URI);
@@ -256,7 +256,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     if (params.request_token !== approval.requestToken || params.denied === 'true' || params.approved !== 'true') {
       fail(IMPORT_VIEW.tmdbNotApproved); return;
     }
-    const { job, error: failure, count } = await startTmdbAccountImport({ userId, requestToken: approval.requestToken, entry });
+    const { job, error: failure, count } = await startTmdbAccountImport({ userId, requestToken: approval.requestToken, binding: approval.binding, entry });
     if (failure || !job) { fail(failure?.message ?? IMPORT_VIEW.tmdbUnavailable); return; }
     reporter().report('started', { source: 'tmdb', count });
     onStarted?.('tmdb', { id: job.id });

@@ -32,6 +32,9 @@ export default function TmdbCallbackPage() {
     called.current = true;
     const run = async () => {
       const requestToken = params.get('request_token') || '';
+      // The token can read the account until it is used: keep it out of the
+      // address bar and history (analytics redact it too, utils/redactUrl.js).
+      window.history.replaceState(window.history.state, '', window.location.pathname);
       const request = consumeTmdbRequest(requestToken);
       const reporter = createImportReporter({ entry: request?.entry || undefined });
       const fail = (message) => {
@@ -46,7 +49,7 @@ export default function TmdbCallbackPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/login', { replace: true }); return; }
       const { error: failure, count } = await startTmdbAccountImport({
-        userId: session.user.id, requestToken, entry: request.entry || undefined,
+        userId: session.user.id, requestToken, binding: request.binding, entry: request.entry || undefined,
       });
       if (failure) { fail(failure.message); return; }
       reporter.report('started', { source: 'tmdb', count });

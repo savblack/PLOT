@@ -32,29 +32,31 @@ async function callTmdbAccount(action, body) {
 
 /**
  * @param {string} redirectTo where TMDB sends the person back to
- * @returns {Promise<{ requestToken: string, approveUrl: string }>}
+ * @returns {Promise<{ requestToken: string, approveUrl: string, binding: string }>}
+ *   binding ties the token to this Plot account; startTmdbAccountImport needs it.
  */
 export async function requestTmdbApproval(redirectTo) {
   let result;
   try { result = await callTmdbAccount('start', { redirect_to: redirectTo }); }
   catch { throw new Error(IMPORT_VIEW.tmdbUnavailable); }
   if (!isTmdbRequestToken(result.requestToken) || typeof result.approveUrl !== 'string'
-      || !result.approveUrl.startsWith('https://www.themoviedb.org/authenticate/')) {
+      || !result.approveUrl.startsWith('https://www.themoviedb.org/authenticate/')
+      || typeof result.binding !== 'string' || !/^[0-9a-f]{64}$/.test(result.binding)) {
     throw new Error(IMPORT_VIEW.tmdbUnavailable);
   }
-  return { requestToken: result.requestToken, approveUrl: result.approveUrl };
+  return { requestToken: result.requestToken, approveUrl: result.approveUrl, binding: result.binding };
 }
 
 /**
  * Read the approved account and queue its import.
- * @param {{ userId: string, requestToken: string, entry?: string }} args
+ * @param {{ userId: string, requestToken: string, binding: string, entry?: string }} args
  * @returns {Promise<{ job: any, error: Error | null, count: number }>}
  */
-export async function startTmdbAccountImport({ userId, requestToken, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE }) {
+export async function startTmdbAccountImport({ userId, requestToken, binding, entry = IMPORT_ENTRY_POINTS.IMPORT_PAGE }) {
   if (!userId || !isTmdbRequestToken(requestToken)) return { job: null, error: new Error(IMPORT_VIEW.tmdbNotApproved), count: 0 };
   let account;
   try {
-    account = await callTmdbAccount('fetch', { request_token: requestToken });
+    account = await callTmdbAccount('fetch', { request_token: requestToken, binding });
   } catch (error) {
     const notApproved = error instanceof Error && error.message === 'not_approved';
     return { job: null, error: new Error(notApproved ? IMPORT_VIEW.tmdbNotApproved : IMPORT_VIEW.tmdbUnavailable), count: 0 };

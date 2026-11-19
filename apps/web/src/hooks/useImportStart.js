@@ -259,8 +259,8 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
       // Same tab: TMDB's approval page sends the person back to /auth/tmdb,
       // which reads the account, queues the import and returns here.
       setPhase('connecting');
-      requestTmdbApproval(getTmdbCallbackUrl()).then(({ requestToken, approveUrl }) => {
-        rememberTmdbRequest(requestToken, returnPath('tmdb'), entry);
+      requestTmdbApproval(getTmdbCallbackUrl()).then(({ requestToken, approveUrl, binding }) => {
+        rememberTmdbRequest(requestToken, binding, returnPath('tmdb'), entry);
         onBeforeRedirect?.();
         redirectToExternal(approveUrl);
       }, () => failConnect('tmdb'));

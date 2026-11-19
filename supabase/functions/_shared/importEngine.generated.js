@@ -2701,9 +2701,10 @@ async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbI
         const ref = entry.tmdbRef;
         if (ref && getTitle && Number.isSafeInteger(ref.id) && ref.id > 0 && ["movie", "tv"].includes(ref.mediaType)) {
           const titleKey2 = `tmdb:${ref.mediaType}:${ref.id}`;
+          const lookup = () => getTitle(ref.mediaType, ref.id);
           if (!searches.has(titleKey2)) {
             requested = true;
-            searches.set(titleKey2, getTitle(ref.mediaType, ref.id));
+            searches.set(titleKey2, lookup().catch(() => sleep(1e3).then(lookup)));
           }
           const item = await searches.get(titleKey2);
           if (item?.id !== ref.id) return { ...entry, status: "unmatched", candidates: [], reason: "not_found" };

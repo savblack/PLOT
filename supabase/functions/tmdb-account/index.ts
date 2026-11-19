@@ -28,7 +28,9 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import type { Database } from '../_shared/database.types.ts';
 import { reportError } from '../_shared/posthogLog.ts';
-import { allowedTmdbRedirect } from '../_shared/tmdbAccount.ts';
+import { allowedTmdbRedirect, tmdbTokenBinding, tmdbTokenRefused } from '../_shared/tmdbAccount.ts';
+import { serviceKey } from '../_shared/serviceKey.ts';
+import { constantTimeEqual } from '../_shared/serviceBearer.ts';
 
 const TMDB = 'https://api.themoviedb.org/3';
 const APPROVE = 'https://www.themoviedb.org/authenticate';
@@ -38,6 +40,12 @@ const MAX_PAGES = 250;
 const MAX_LISTS = 100;
 /** Pages fetched at once, to stay well under TMDB's rate limit. */
 const CONCURRENCY = 4;
+/**
+ * Stop reading after this long and return what was read, marked truncated.
+ * Well inside the platform's wall clock, so the session is always deleted:
+ * a function killed mid-read would never reach its `finally`.
+ */
+const READ_BUDGET_MS = 90_000;
 const FORMAT = 'plot-tmdb-account';
 
 const corsHeaders = {
@@ -110,15 +118,20 @@ function title(item: any, mediaType: 'movie' | 'tv') {
   };
 }
 
-/** Every page of one paged account endpoint, up to MAX_PAGES. */
+/** What one read has left: a deadline, and the endpoints it could not finish. */
+type Read = { deadline: number, truncated: string[] };
+
+/** Every page of one paged account endpoint, up to MAX_PAGES and the read's deadline. */
 // deno-lint-ignore no-explicit-any
-async function allPages(path: string, params: Record<string, string>, truncated: string[]): Promise<any[]> {
+async function allPages(path: string, params: Record<string, string>, read: Read): Promise<any[]> {
+  if (Date.now() > read.deadline) { read.truncated.push(path); return []; }
   const first = await tmdb(path, { params: { ...params, page: '1' } });
   const total = Math.max(1, Number(first.total_pages) || 1);
   const last = Math.min(total, MAX_PAGES);
-  if (total > MAX_PAGES) truncated.push(path);
+  if (total > MAX_PAGES) read.truncated.push(path);
   const results = [...(first.results || first.items || [])];
   for (let page = 2; page <= last; page += CONCURRENCY) {
+    if (Date.now() > read.deadline) { if (!read.truncated.includes(path)) read.truncated.push(path); break; }
     const batch = [];
     for (let p = page; p < page + CONCURRENCY && p <= last; p++) {
       batch.push(tmdb(path, { params: { ...params, page: String(p) } }));
@@ -128,27 +141,34 @@ async function allPages(path: string, params: Record<string, string>, truncated:
   return results;
 }
 
-async function handleStart(body: Record<string, unknown>) {
+async function handleStart(body: Record<string, unknown>, userId: string) {
   const redirectTo = String(body.redirect_to || '');
   if (!allowedTmdbRedirect(redirectTo)) return json({ error: 'Invalid redirect' }, 400);
   const token = await tmdb('/authentication/token/new');
   const requestToken = String(token.request_token || '');
   if (!/^[a-f0-9]{40}$/.test(requestToken)) throw new Error('TMDB returned no request token');
   const approveUrl = `${APPROVE}/${requestToken}?redirect_to=${encodeURIComponent(redirectTo)}`;
-  return json({ requestToken, approveUrl });
+  // The app sends this back with the token; see tmdbTokenBinding.
+  const binding = await tmdbTokenBinding(serviceKey(), userId, requestToken);
+  return json({ requestToken, approveUrl, binding });
 }
 
-async function handleFetch(body: Record<string, unknown>) {
+async function handleFetch(body: Record<string, unknown>, userId: string) {
+  const startedAt = Date.now();
   const requestToken = String(body.request_token || '');
   if (!/^[a-f0-9]{40}$/.test(requestToken)) return json({ error: 'Invalid request token' }, 400);
+  // Only the Plot account that started this sign-in may use its token.
+  const expected = await tmdbTokenBinding(serviceKey(), userId, requestToken);
+  if (!constantTimeEqual(String(body.binding || ''), expected)) return json({ error: 'not_approved' }, 409);
 
   let sessionId = '';
   try {
     const session = await tmdb('/authentication/session/new', { method: 'POST', body: { request_token: requestToken } });
     sessionId = String(session.session_id || '');
   } catch (error) {
-    // Not approved (17), expired (33) or already used: the person has to start again.
-    if (error instanceof TmdbError && error.status < 500) return json({ error: 'not_approved' }, 409);
+    // Not approved, expired or already used: the person has to start again.
+    // Anything else (rate limit, a bad key, an outage) is "unavailable".
+    if (error instanceof TmdbError && tmdbTokenRefused(error.code)) return json({ error: 'not_approved' }, 409);
     throw error;
   }
   if (!sessionId) return json({ error: 'not_approved' }, 409);
@@ -158,21 +178,22 @@ async function handleFetch(body: Record<string, unknown>) {
     if (!validId(account.id)) throw new Error('TMDB returned no account');
     const base = `/account/${account.id}`;
     const params = { session_id: sessionId, sort_by: 'created_at.asc' };
-    const truncated: string[] = [];
+    const read: Read = { deadline: startedAt + READ_BUDGET_MS, truncated: [] };
 
     const [watchMovies, watchTv, ratedMovies, ratedTv, ratedEpisodes, ownLists] = await Promise.all([
-      allPages(`${base}/watchlist/movies`, params, truncated),
-      allPages(`${base}/watchlist/tv`, params, truncated),
-      allPages(`${base}/rated/movies`, params, truncated),
-      allPages(`${base}/rated/tv`, params, truncated),
-      allPages(`${base}/rated/tv/episodes`, params, truncated),
-      allPages(`${base}/lists`, { session_id: sessionId }, truncated),
+      allPages(`${base}/watchlist/movies`, params, read),
+      allPages(`${base}/watchlist/tv`, params, read),
+      allPages(`${base}/rated/movies`, params, read),
+      allPages(`${base}/rated/tv`, params, read),
+      allPages(`${base}/rated/tv/episodes`, params, read),
+      allPages(`${base}/lists`, { session_id: sessionId }, read),
     ]);
 
     const lists = [];
     for (const list of ownLists.slice(0, MAX_LISTS)) {
       if (list?.id == null || !String(list.name || '').trim()) continue;
-      const items = await allPages(`/list/${encodeURIComponent(String(list.id))}`, { session_id: sessionId }, truncated);
+      if (Date.now() > read.deadline) { read.truncated.push(`/list/${list.id}`); continue; }
+      const items = await allPages(`/list/${encodeURIComponent(String(list.id))}`, { session_id: sessionId }, read);
       lists.push({
         id: String(list.id),
         name: String(list.name).trim(),
@@ -181,7 +202,7 @@ async function handleFetch(body: Record<string, unknown>) {
           .map(item => title(item, item.media_type)),
       });
     }
-    if (ownLists.length > MAX_LISTS) truncated.push(`${base}/lists`);
+    if (ownLists.length > MAX_LISTS) read.truncated.push(`${base}/lists`);
 
     return json({
       format: FORMAT,
@@ -203,7 +224,7 @@ async function handleFetch(body: Record<string, unknown>) {
           name: String(item.name || ''), rating: item.rating,
         })),
       lists,
-      truncated: truncated.map(path => path.replace(/^\/account\/\d+/, '/account')),
+      truncated: read.truncated.map(path => path.replace(/^\/account\/\d+/, '/account')),
     });
   } finally {
     // Plot keeps no access to the account, whether or not the read finished.
@@ -218,8 +239,8 @@ serve(async (req) => {
     const user = await authUser(req);
     if (!user) return json({ error: 'Unauthorized' }, 401);
     const body = await req.json().catch(() => ({})) as Record<string, unknown>;
-    if (body.action === 'start') return await handleStart(body);
-    if (body.action === 'fetch') return await handleFetch(body);
+    if (body.action === 'start') return await handleStart(body, user.id);
+    if (body.action === 'fetch') return await handleFetch(body, user.id);
     return json({ error: 'Unknown action' }, 404);
   } catch (error) {
     reportError('tmdb-account', '[tmdb-account]', error);

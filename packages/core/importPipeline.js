@@ -260,7 +260,10 @@ export async function resolveImportEntries(entries, { search, findByImdbId, find
           // through the person's device: take the title, poster and genres
           // from TMDB, never from the file.
           const titleKey = `tmdb:${ref.mediaType}:${ref.id}`;
-          if (!searches.has(titleKey)) { requested = true; searches.set(titleKey, getTitle(ref.mediaType, ref.id)); }
+          // The ID is exact, so a brief TMDB error is worth one more try
+          // before the title is left out.
+          const lookup = () => getTitle(ref.mediaType, ref.id);
+          if (!searches.has(titleKey)) { requested = true; searches.set(titleKey, lookup().catch(() => sleep(1000).then(lookup))); }
           const item = await searches.get(titleKey);
           if (item?.id !== ref.id) return { ...entry, status: 'unmatched', candidates: [], reason: 'not_found' };
           const candidate = { ...item, media_type: ref.mediaType };

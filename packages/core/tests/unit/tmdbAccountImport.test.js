@@ -115,3 +115,16 @@ test('a TMDB title that no longer exists is left out, not guessed', async () => 
   assert.equal(entry.status, 'unmatched');
   assert.equal(entry.reason, 'not_found');
 });
+
+test('a brief TMDB error on an exact ID is tried once more', async () => {
+  const { entries } = parseTmdbAccount(text);
+  let calls = 0;
+  const [entry] = await resolveImportEntries([entries[2]], {
+    search: () => Promise.reject(new Error('should not search')),
+    getTitle: (mediaType, id) => (++calls === 1 ? Promise.reject(new Error('TMDB 503'))
+      : Promise.resolve({ id, title: movie.title, release_date: movie.release_date, poster_path: null, genres: [] })),
+  });
+  assert.equal(calls, 2);
+  assert.equal(entry.status, 'matched');
+  assert.equal(entry.tmdbTitle, movie.title);
+});
