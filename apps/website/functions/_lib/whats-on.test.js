@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { marketingFeedPage, feedCacheKey } from './whats-on.js';
+import { marketingFeedPage, feedCacheKey, cacheWindows, freshness, storedCopy } from './whats-on.js';
 
 const SHAREABLE = 'public, s-maxage=3600, stale-while-revalidate=86400';
 
@@ -140,5 +140,95 @@ test('a search term is capped at 80 characters', async () => {
   await withCache(async ({ get, calls }) => {
     await get(`https://theplot.tv/whats-on?q=${'a'.repeat(200)}`);
     assert.equal(calls[0].searchParams.get('q').length, 80);
+  });
+});
+
+const HOUR = 3600 * 1000;
+
+async function at(ms, run) {
+  const real = Date.now;
+  Date.now = () => ms;
+  try { return await run(); } finally { Date.now = real; }
+}
+
+test('cache windows come from s-maxage and stale-while-revalidate', () => {
+  assert.deepEqual(cacheWindows(SHAREABLE), { fresh: 3600, stale: 86400 });
+  assert.deepEqual(cacheWindows('public, max-age=60'), { fresh: 0, stale: 0 });
+  assert.deepEqual(cacheWindows(null), { fresh: 0, stale: 0 });
+});
+
+test('a stored copy lives for both windows and remembers when it was stored', () => {
+  const copy = storedCopy(new Response('x', { headers: { 'cache-control': SHAREABLE } }), 1000);
+  assert.equal(copy.headers.get('cache-control'), 'public, max-age=90000');
+  assert.equal(freshness(copy, 1000 + HOUR - 1), 'fresh');
+  assert.equal(freshness(copy, 1000 + HOUR), 'stale');
+  assert.equal(freshness(copy, 1000 + 25 * HOUR), 'expired');
+});
+
+test('an entry stored before stamping counts as fresh', () => {
+  assert.equal(freshness(new Response('x', { headers: { 'cache-control': SHAREABLE } }), Date.now()), 'fresh');
+});
+
+test('readers see the page\'s own Cache-Control, not the stored one', async () => {
+  await withCache(async ({ get, cache, settle }) => {
+    await get('https://theplot.tv/whats-on');
+    await settle();
+    const [entry] = cache.store.values();
+    assert.equal(entry.headers.get('cache-control'), 'public, max-age=90000');
+    const hit = await get('https://theplot.tv/whats-on');
+    assert.equal(hit.headers.get('x-plot-cache'), 'hit');
+    assert.equal(hit.headers.get('cache-control'), SHAREABLE);
+    assert.equal(hit.headers.get('x-plot-stored-at'), null);
+    assert.equal(hit.headers.get('x-plot-cache-control'), null);
+  });
+});
+
+test('after an hour the old copy is served at once and refreshed behind it', async () => {
+  let version = 0;
+  await withCache(async ({ get, calls, settle }) => {
+    const start = 1_800_000_000_000;
+    await at(start, async () => { await get('https://theplot.tv/whats-on'); await settle(); });
+    await at(start + 2 * HOUR, async () => {
+      const old = await get('https://theplot.tv/whats-on');
+      assert.equal(old.headers.get('x-plot-cache'), 'stale');
+      assert.equal(old.headers.get('cache-control'), SHAREABLE);
+      assert.equal(await old.text(), 'v1');
+      await settle();
+    });
+    assert.equal(calls.length, 2);
+    await at(start + 2 * HOUR + 1000, async () => {
+      const next = await get('https://theplot.tv/whats-on');
+      assert.equal(next.headers.get('x-plot-cache'), 'hit');
+      assert.equal(await next.text(), 'v2');
+    });
+    assert.equal(calls.length, 2);
+  }, () => new Response(`v${++version}`, { status: 200, headers: { 'cache-control': SHAREABLE } }));
+});
+
+test('a failed refresh keeps the old copy', async () => {
+  let n = 0;
+  await withCache(async ({ get, settle }) => {
+    const start = 1_800_000_000_000;
+    await at(start, async () => { await get('https://theplot.tv/whats-on'); await settle(); });
+    await at(start + 2 * HOUR, async () => {
+      assert.equal(await (await get('https://theplot.tv/whats-on')).text(), 'good');
+      await settle();
+      const again = await get('https://theplot.tv/whats-on');
+      assert.equal(again.headers.get('x-plot-cache'), 'stale');
+      assert.equal(await again.text(), 'good');
+    });
+  }, () => (++n === 1
+    ? new Response('good', { status: 200, headers: { 'cache-control': SHAREABLE } })
+    : new Response('down', { status: 503, headers: { 'cache-control': SHAREABLE } })));
+});
+
+test('a copy past both windows is rebuilt before answering', async () => {
+  await withCache(async ({ get, calls, settle }) => {
+    const start = 1_800_000_000_000;
+    await at(start, async () => { await get('https://theplot.tv/whats-on'); await settle(); });
+    await at(start + 26 * HOUR, async () => {
+      assert.equal((await get('https://theplot.tv/whats-on')).headers.get('x-plot-cache'), 'miss');
+    });
+    assert.equal(calls.length, 2);
   });
 });

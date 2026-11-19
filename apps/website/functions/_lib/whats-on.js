@@ -48,6 +48,104 @@ export function searchTerm(url) {
   return (url.searchParams.get('q') || '').replace(/\s+/g, ' ').trim().slice(0, 80);
 }
 
+// Cloudflare's Cache API ignores stale-while-revalidate: it drops an entry
+// once s-maxage runs out, so the first reader after every hour waited for a
+// full Edge Function render (about 4 s from cold). The proxy now honours the
+// directive itself. An entry is kept for s-maxage + stale-while-revalidate,
+// stamped with when it was stored; past s-maxage it is still served at once
+// while a fresh copy is fetched in the background.
+const STORED_AT = 'X-Plot-Stored-At';
+const SHARED_CC = 'X-Plot-Cache-Control';
+
+/**
+ * How long a page counts as fresh, and how much longer an old copy may be
+ * served while a new one is fetched, in seconds, read from Cache-Control.
+ *
+ * @param {string | null} cacheControl
+ */
+export function cacheWindows(cacheControl) {
+  const seconds = (name) => {
+    const match = new RegExp(`(?:^|[\\s,])${name}=(\\d+)`, 'i').exec(cacheControl || '');
+    return match ? Number(match[1]) : 0;
+  };
+  return { fresh: seconds('s-maxage'), stale: seconds('stale-while-revalidate') };
+}
+
+/**
+ * The copy put in the Cache API: kept for the fresh and stale windows
+ * together, stamped with when it was stored, and carrying the Cache-Control
+ * readers should see so it can be restored on the way out.
+ *
+ * @param {Response} response
+ * @param {number} now ms since the epoch
+ */
+export function storedCopy(response, now) {
+  const cacheControl = response.headers.get('cache-control') || '';
+  const { fresh, stale } = cacheWindows(cacheControl);
+  const headers = new Headers(response.headers);
+  headers.set('Cache-Control', `public, max-age=${fresh + stale}`);
+  headers.set(STORED_AT, String(now));
+  headers.set(SHARED_CC, cacheControl);
+  return new Response(response.body, { status: response.status, headers });
+}
+
+/**
+ * 'fresh' inside s-maxage, 'stale' inside the stale-while-revalidate window
+ * after it, 'expired' beyond both. An entry stored before this change has no
+ * stamp; the Cache API already expires it at s-maxage, so it counts as fresh.
+ *
+ * @param {Response} hit
+ * @param {number} now ms since the epoch
+ */
+export function freshness(hit, now) {
+  const storedAt = Number(hit.headers.get(STORED_AT));
+  if (!storedAt) return 'fresh';
+  const { fresh, stale } = cacheWindows(hit.headers.get(SHARED_CC));
+  const age = (now - storedAt) / 1000;
+  if (age < fresh) return 'fresh';
+  return age < fresh + stale ? 'stale' : 'expired';
+}
+
+/** A stored copy as readers get it: their Cache-Control, no internal stamps. */
+function served(hit, state) {
+  const response = tagged(hit, state);
+  const shared = response.headers.get(SHARED_CC);
+  if (shared) response.headers.set('Cache-Control', shared);
+  response.headers.delete(SHARED_CC);
+  response.headers.delete(STORED_AT);
+  return response;
+}
+
+/**
+ * Render a feed page through the Edge Function. Throws if it can't be reached.
+ *
+ * @param {string} upstreamUrl
+ * @param {string} q search term, '' for none
+ */
+async function render(upstreamUrl, q) {
+  const upstream = await fetch(upstreamUrl, { headers: { accept: 'text/html', ...AUTH_HEADERS } });
+  const body = await upstream.text();
+  // Serve as HTML; drop Supabase's text/plain + sandbox CSP.
+  return new Response(body, {
+    status: upstream.status,
+    headers: {
+      ...PAGE_HEADERS,
+      'Cache-Control': upstream.status === 200 && !q
+        ? upstream.headers.get('cache-control') || SHAREABLE
+        : 'no-store',
+    },
+  });
+}
+
+/**
+ * Store a rendered page if it is shareable. A failed render stores nothing,
+ * so a stale copy already in the cache stays in place.
+ */
+function store(cache, cacheKey, response) {
+  if (!cacheable(response.status, response.headers.get('cache-control'))) return Promise.resolve();
+  return cache.put(cacheKey, storedCopy(response.clone(), Date.now())).catch(() => {});
+}
+
 /**
  * @param {Request} request
  * @param {string|null} slug trailing path segment, or null for an index
@@ -76,33 +174,30 @@ export async function marketingFeedPage(request, slug, waitUntil) {
   const cache = !q && globalThis.caches && globalThis.caches.default;
   const cacheKey = feedCacheKey(url, slug);
   if (cache) {
+    let hit;
     try {
-      const hit = await cache.match(cacheKey);
-      if (hit) return tagged(hit, 'hit');
+      hit = await cache.match(cacheKey);
     } catch { /* a cache fault falls through to the Edge Function */ }
+    const state = hit ? freshness(hit, Date.now()) : 'expired';
+    if (state === 'fresh') return served(hit, 'hit');
+    if (state === 'stale') {
+      const refresh = render(upstreamUrl, q)
+        .then((fresh) => store(cache, cacheKey, fresh))
+        .catch(() => {});
+      if (waitUntil) waitUntil(refresh); else await refresh;
+      return served(hit, 'stale');
+    }
   }
 
-  let upstream;
+  let response;
   try {
-    upstream = await fetch(upstreamUrl, { headers: { accept: 'text/html', ...AUTH_HEADERS } });
+    response = await render(upstreamUrl, q);
   } catch {
     return htmlError(502, FALLBACK);
   }
 
-  const body = await upstream.text();
-  // Serve as HTML; drop Supabase's text/plain + sandbox CSP.
-  const response = new Response(body, {
-    status: upstream.status,
-    headers: {
-      ...PAGE_HEADERS,
-      'Cache-Control': upstream.status === 200 && !q
-        ? upstream.headers.get('cache-control') || SHAREABLE
-        : 'no-store',
-    },
-  });
-
-  if (cache && method === 'GET' && cacheable(response.status, response.headers.get('cache-control'))) {
-    const stored = cache.put(cacheKey, response.clone()).catch(() => {});
+  if (cache && method === 'GET') {
+    const stored = store(cache, cacheKey, response);
     if (waitUntil) waitUntil(stored); else await stored;
   }
   return tagged(response, 'miss');
