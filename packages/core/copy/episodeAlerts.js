@@ -30,4 +30,14 @@ export const EPISODE_ALERTS = {
   downloadHint: 'A one-time snapshot of the dates announced so far',
   linkCopied: 'Calendar link copied. Paste it into Google or Apple Calendar.',
   nothingToDownload: 'No dates announced for this show yet.',
+
+  // Settings > Viewing, the two switches for every show (Settings uses `title`
+  // above as the group heading).
+  settings: {
+    inAppLabel: 'Episode alerts in Plot',
+    inAppHint: 'A notification when a show you follow has a new episode out, at the time it airs when we know it.',
+    phoneLabel: 'Episode alerts on my phone',
+    phoneHint: 'A push on your iPhone when it drops. Between 11 PM and 7 AM they wait and arrive together at 7.',
+    phoneNeedsInApp: 'Turn on Episode alerts in Plot first.',
+  },
 };

@@ -6,14 +6,84 @@ export const PUSH_LOOK_BACK_DAYS = 2;
 export const PUSH_MAX_ATTEMPTS = 3;
 export const PUSH_LEASE_MS = 10 * 60 * 1000;
 
-/** @param {{ push_enabled: boolean, push_enabled_at: string | null, streaming_alerts: boolean }} prefs
+/** @param {{ push_enabled: boolean, push_enabled_at: string | null, streaming_alerts: boolean, episode_push?: boolean }} prefs
  *  @param {{ type: string, created_at: string }} notification
  *  @param {boolean} premium */
 export function pushBlocked(prefs, notification, premium) {
   if (!premium || !prefs.push_enabled || !prefs.push_enabled_at) return 'not_enabled';
   if (notification.created_at < prefs.push_enabled_at) return 'before_opt_in';
   if (notification.type === 'streaming_arrival' && !prefs.streaming_alerts) return 'streaming_off';
+  // "Episode alerts on my phone" (20261120090000). Missing means on.
+  if (notification.type === 'new_episode' && prefs.episode_push === false) return 'episode_push_off';
   return null;
+}
+
+// Quiet hours (docs/features/episode-drop-times.md, decisions 6 to 8): no push
+// from 11 PM to 7 AM in the person's own time zone. Nothing is dropped: a held
+// notification is simply not claimed, so the first run after 7 AM sends it.
+// Episodes waiting at that point go out as one summary instead of one push each.
+export const QUIET_FROM_HOUR = 23;
+export const QUIET_UNTIL_HOUR = 7;
+/** Plot's market is the US, so an unknown zone is treated as Eastern, not UTC (which would wake the US). */
+export const DEFAULT_TIME_ZONE = 'America/New_York';
+
+/** The person's local hour (0 to 23) at `nowMs`. A bad or missing zone falls back to Eastern. */
+export function localHour(nowMs, timeZone) {
+  const read = (zone) => Number(new Intl.DateTimeFormat('en-US', { timeZone: zone, hour: 'numeric', hourCycle: 'h23' }).format(new Date(nowMs)));
+  try {
+    return read(timeZone || DEFAULT_TIME_ZONE);
+  } catch {
+    return read(DEFAULT_TIME_ZONE);
+  }
+}
+
+/** True from 11 PM to just before 7 AM in the person's zone. */
+export function inQuietHours(nowMs, timeZone) {
+  const hour = localHour(nowMs, timeZone);
+  return hour >= QUIET_FROM_HOUR || hour < QUIET_UNTIL_HOUR;
+}
+
+/**
+ * Which pushes to send for one device this run. Each entry is one message and
+ * the notifications it covers. Episodes waiting in the morning hour (7 AM, when
+ * overnight drops are released from quiet hours) become one summary; at any
+ * other hour, and for every other type, each notification is its own push.
+ *
+ * @template {{ notification: { type: string, media_title: string | null } }} C
+ * @param {C[]} candidates for one device, oldest first
+ * @param {number} nowMs
+ * @param {string | null | undefined} timeZone
+ * @returns {C[][]}
+ */
+export function groupPushes(candidates, nowMs, timeZone) {
+  const episodes = candidates.filter(c => c.notification.type === 'new_episode');
+  const others = candidates.filter(c => c.notification.type !== 'new_episode');
+  const morning = localHour(nowMs, timeZone) === QUIET_UNTIL_HOUR;
+  if (morning && episodes.length > 1) return [episodes, ...others.map(c => [c])];
+  return candidates.map(c => [c]);
+}
+
+/**
+ * The push for a group from groupPushes. A single notification reads as it
+ * always has; a morning group reads as one summary and opens the notification
+ * list at its first episode.
+ *
+ * @param {Parameters<typeof pushMessage>[0][]} group
+ */
+export function pushMessageFor(group) {
+  if (group.length === 1) return pushMessage(group[0]);
+  const titles = [...new Set(group.map(n => oneLine(n.media_title)).filter(Boolean))];
+  const shown = titles.slice(0, 3);
+  const more = titles.length - shown.length;
+  const names = more > 0 ? `${shown.join(', ')} and ${more} more`
+    : shown.length > 1 ? `${shown.slice(0, -1).join(', ')} and ${shown[shown.length - 1]}`
+      : shown[0] ?? '';
+  const first = pushMessage(group[0]);
+  return {
+    title: `${group.length} new episodes dropped overnight`.slice(0, 100),
+    body: (names || 'Shows you follow').slice(0, 180),
+    data: first.data,
+  };
 }
 
 /** @param {{ status: string, attempts: number, claimed_at: string | null } | null} delivery

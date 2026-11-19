@@ -310,6 +310,9 @@ export const EVENTS = Object.freeze({
   CALENDAR_FEED_GENERATED: 'calendar_feed_generated',
   // The title panel's Episode alerts switch for one show (`on`: the new state).
   EPISODE_ALERTS_TOGGLED: 'episode_alerts_toggled',
+  // Settings' Episode alerts switches for every show, after the write lands.
+  // `setting`: in_app or phone; `on`: the new state.
+  EPISODE_ALERT_SETTING_CHANGED: 'episode_alert_setting_changed',
   // Where to watch, when a film has no offer in the viewer's region and they
   // ask to be told. Fired after the watchlist save (if it was not already
   // there) and the mute clear both land. `added_to_watchlist` is true when
