@@ -2,8 +2,8 @@
    (on cream, with .stories--light). One benefit at a time: copy and a
    step switcher on one side, the matching product visual on the other. */
 /* Steps auto-advance every 6s unless motion is reduced. */
-.stories { background: var(--ink); color: var(--bg); padding-top: 2rem; }
-.stories h2 { font-size: clamp(2.4rem, 4.2vw, 3.5rem); color: var(--bg); margin-bottom: 1.1rem; }
+.stories { background: var(--ink); color: var(--on-ink); padding-top: 2rem; }
+.stories h2 { font-size: clamp(2.4rem, 4.2vw, 3.5rem); color: var(--on-ink); margin-bottom: 1.1rem; }
 .stories-inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -22,9 +22,9 @@
 .stories-step:focus-visible { outline: 2px solid var(--fill); outline-offset: 4px; border-radius: 4px; }
 .stories-bar { display: block; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.16); overflow: hidden; margin-bottom: 8px; }
 .stories-bar i { display: block; height: 100%; width: 0; background: var(--fill); }
-.stories-step[aria-pressed="true"] { color: var(--bg); }
+.stories-step[aria-pressed="true"] { color: var(--on-ink); }
 .stories-step[aria-pressed="true"] .stories-bar i { width: 100%; transition: width 6s linear; }
-.stories-step span:last-child { display: block; font-size: 0.74rem; font-weight: 600; line-height: 1.2; }
+.stories-step span:last-child { display: block; font-size: 0.875rem; font-weight: 600; line-height: 1.2; }
 /* The cards stack in one grid cell and cross-fade: the leaving card
    eases up and out while the next eases up and in. */
 .stories-visuals { display: grid; justify-content: center; align-items: center; min-height: 420px; }
@@ -57,7 +57,7 @@
   padding: 9px 16px 9px 12px;
   border-radius: var(--r-pill);
   background: rgba(255,255,255,0.08);
-  color: var(--bg);
+  color: var(--on-ink);
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -65,11 +65,11 @@
 
 /* The product visuals: one cream card each. Every animation below
    ends on the card's resting state; reduced motion skips straight to it. */
-.vis { width: 100%; max-width: 440px; padding: 20px 22px; background: #fffaf3; color: var(--text); border-radius: 24px; font-size: 0.9rem; font-weight: 400; }
+.vis { width: 100%; max-width: 440px; padding: 20px 22px; background: var(--card); color: var(--text); border-radius: 24px; font-size: 0.9rem; font-weight: 400; }
 .vis-meta { display: block; font-size: 0.8rem; color: var(--text-secondary); }
-.vis-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-pill); background: var(--ink); color: var(--bg); font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+.vis-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-pill); background: var(--text); color: var(--bg); font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
 .poster { display: block; width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 8px; background: var(--surface); }
-.av { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 700; font-size: 0.7rem; flex-shrink: 0; }
+.av { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 700; font-size: 0.7rem; flex-shrink: 0; color: var(--on-fill); }
 .av-you { background: var(--fill); }
 .av-them { background: var(--sage); }
 @keyframes vis-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -77,11 +77,11 @@
 /* Just Decide: the three chips select in turn, the stack shuffles and
    settles on tonight's pick, then the play pill presses. */
 .pf-q { margin-bottom: 10px; }
-.pf-label { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 5px; }
+.pf-label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px; }
 .pf-seg { display: flex; flex-wrap: wrap; gap: 6px; }
 .pf-seg span { padding: 6px 12px; border-radius: var(--r-pill); background: var(--surface); font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); }
-.pf-seg .on { background: var(--fill); color: var(--text); animation: pf-chip 0.35s var(--ease) both; animation-delay: var(--d, 0s); }
-@keyframes pf-chip { from { background: var(--surface); color: var(--text-secondary); transform: scale(0.96); } 60% { transform: scale(1.04); } to { background: var(--fill); color: var(--text); transform: none; } }
+.pf-seg .on { background: var(--fill); color: var(--on-fill); animation: pf-chip 0.35s var(--ease) both; animation-delay: var(--d, 0s); }
+@keyframes pf-chip { from { background: var(--surface); color: var(--text-secondary); transform: scale(0.96); } 60% { transform: scale(1.04); } to { background: var(--fill); color: var(--on-fill); transform: none; } }
 .pf-pick { display: flex; gap: 14px; align-items: center; margin-top: 18px; }
 .pf-shuffle { position: relative; width: 68px; flex-shrink: 0; }
 .pf-shuffle .poster { width: 68px; }
@@ -113,9 +113,9 @@
 .wt-ring { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; border: 3px solid var(--accent); z-index: 1; pointer-events: none; animation: wt-ring 0.6s var(--ease) 1.7s both; }
 @keyframes wt-ring { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
 .wt-both { position: absolute; left: 50%; top: 50%; z-index: 3; display: flex; transform: translate(-50%, 46px); animation: vis-rise 0.4s var(--ease) 2.1s both; }
-.wt-both .av { border: 2px solid #fffaf3; }
+.wt-both .av { border: 2px solid var(--card); }
 .wt-both .av + .av { margin-left: -8px; }
-.wt-outcome { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: var(--sage); animation: vis-rise 0.5s var(--ease) 2.4s both; }
+.wt-outcome { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: var(--sage); color: var(--on-fill); animation: vis-rise 0.5s var(--ease) 2.4s both; }
 .wt-outcome strong { display: block; font-size: 0.92rem; }
 .wt-outcome .vis-meta { color: #3f4a1c; }
 
@@ -124,11 +124,11 @@
 .wp-top { margin-bottom: 14px; }
 .wp-posters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .wp-posters .poster { border-radius: 6px; animation: vis-rise 0.45s var(--ease) both; animation-delay: calc(var(--i) * 0.1s); }
-.wp-top-label { display: block; margin-top: 8px; font-size: 0.78rem; color: var(--text-secondary); }
+.wp-top-label { display: block; margin-top: 8px; font-size: 0.8rem; color: var(--text-secondary); }
 .wp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
 .wp-stat { padding: 12px; border-radius: 14px; background: var(--surface); }
 .wp-stat b { display: block; font-family: var(--display); font-weight: 700; font-size: 1.7rem; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
-.wp-stat span { display: block; margin-top: 4px; font-size: 0.74rem; color: var(--text-secondary); }
+.wp-stat span { display: block; margin-top: 4px; font-size: 0.8rem; color: var(--text-secondary); }
 .wp-bars { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
 .wp-bar { display: grid; grid-template-columns: 76px 1fr 34px; align-items: center; gap: 10px; font-size: 0.8rem; }
 .wp-bar i { display: block; height: 10px; border-radius: 5px; background: var(--fill); width: var(--w, 50%); transform-origin: left; animation: wp-grow 0.7s var(--ease) both; animation-delay: var(--d, 0s); }
@@ -150,18 +150,18 @@
    posters and bars follow, and the disagreement lands last. */
 .tm-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .tm-pair { display: flex; }
-.tm-pair .av { width: 36px; height: 36px; font-size: 0.95rem; border: 2px solid #fffaf3; animation: tm-meet 0.7s var(--ease) both; }
+.tm-pair .av { width: 36px; height: 36px; font-size: 0.95rem; border: 2px solid var(--card); animation: tm-meet 0.7s var(--ease) both; }
 .tm-pair .av + .av { margin-left: -10px; --from: 14px; }
 .tm-pair .av-you { --from: -14px; }
 @keyframes tm-meet { from { transform: translateX(var(--from, 0)); } to { transform: none; } }
 .tm-num { display: block; font-family: var(--display); font-weight: 700; font-size: 2.4rem; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
-.tm-cap { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+.tm-cap { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
 .tm-row { margin-bottom: 12px; }
-.tm-label { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; }
+.tm-label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; }
 .tm-posters { display: flex; gap: 6px; }
 .tm-posters .poster { width: 56px; border-radius: 6px; animation: vis-rise 0.45s var(--ease) both; animation-delay: var(--d, 0s); }
 .tm-genres { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.tm-legend { display: flex; gap: 14px; justify-content: flex-end; font-size: 0.72rem; color: var(--text-secondary); }
+.tm-legend { display: flex; gap: 14px; justify-content: flex-end; font-size: 0.8rem; color: var(--text-secondary); }
 .tm-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .tm-legend i { width: 10px; height: 10px; border-radius: 3px; }
 .tm-genre { display: grid; grid-template-columns: 64px 1fr; grid-template-rows: auto auto; column-gap: 10px; row-gap: 3px; align-items: center; font-size: 0.8rem; }
@@ -202,8 +202,8 @@
 @keyframes my-ring { 0% { border-color: var(--t-ink); } 20% { border-color: transparent; } }
 .my-theme[style*="--i:0"], .my-icon[style*="--i:0"] { border-color: var(--t-ink); }
 .my-icons { display: flex; gap: 8px; align-items: center; }
-.my-icon { width: 42px; height: 42px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 0.78rem; letter-spacing: -0.04em; background: var(--t-bg); color: var(--t-ink); border: 2px solid transparent; animation: my-ring 7.5s steps(1, end) 1s infinite; animation-delay: calc(1s + var(--i) * 1.5s); }
-.my-icons small { margin-left: auto; font-size: 0.78rem; color: inherit; opacity: 0.6; }
+.my-icon { width: 42px; height: 42px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 0.8rem; letter-spacing: -0.04em; background: var(--t-bg); color: var(--t-ink); border: 2px solid transparent; animation: my-ring 7.5s steps(1, end) 1s infinite; animation-delay: calc(1s + var(--i) * 1.5s); }
+.my-icons small { margin-left: auto; font-size: 0.8rem; color: inherit; opacity: 0.6; }
 .my-widgets { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
 .my-widget { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 16px; background: var(--skin-surface); color: inherit; }
 .my-widget .poster { width: 44px; border-radius: 6px; flex-shrink: 0; }
@@ -228,9 +228,9 @@
 .stories--light .stories-slide p { color: var(--text-secondary); }
 .stories--light .stories-step { color: var(--text-secondary); }
 .stories--light .stories-step[aria-pressed="true"] { color: var(--text); }
-.stories--light .stories-bar { background: rgba(41,41,36,0.12); }
-.stories--light .stories-also { border-top-color: rgba(41,41,36,0.1); }
+.stories--light .stories-bar { background: var(--rule); }
+.stories--light .stories-also { border-top-color: var(--rule); }
 .stories--light .stories-also-label { color: var(--text-secondary); }
 .stories--light .also-pill { background: var(--surface); color: var(--text); }
 .stories--light .also-pill svg { stroke: var(--accent); }
-.stories--light .vis { border: 1px solid rgba(41,41,36,0.08); box-shadow: 0 24px 60px rgba(41,41,36,0.12); }
+.stories--light .vis { border: 1px solid color-mix(in srgb, var(--text) 8%, transparent); box-shadow: 0 24px 60px rgba(41,41,36,0.12); }

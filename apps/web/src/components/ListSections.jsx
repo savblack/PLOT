@@ -122,7 +122,7 @@ export function AddToRankModal({ listType, rank, onAdd, onClose }) {
 
   return (
     <ResponsiveDialog
-      title={`Select #${rank} ${listType === 'movies' ? 'Movie' : 'TV Show'}`}
+      title={`Select #${rank} ${listType === 'movies' ? 'movie' : 'TV show'}`}
       onClose={onClose}
       tall
       contentClassName="responsive-dialog-content--flush"
@@ -532,10 +532,9 @@ export function WatchingSection({ watching, hidden, Frame = ListSection }) {
             // denominator is known.
             const total  = epCounts[item.tmdb_id] || item.total_episodes || 0;
             const pct    = total ? Math.min(100, Math.round((item.current_episode / total) * 100)) : null;
-            const season = `S${String(item.current_season).padStart(2, '0')}`;
-            const meta   = total
-              ? `${season} · Ep ${item.current_episode} of ${total}`
-              : `${season}E${String(item.current_episode).padStart(2, '0')}`;
+            // One episode format app-wide: "S1 · E3", the same as Home.
+            const ep     = `S${item.current_season} · E${item.current_episode}`;
+            const meta   = total ? `${ep} of ${total}` : ep;
             return (
               <ListCard
                 key={item.tmdb_id}
@@ -1044,7 +1043,7 @@ export function TopFiveSection({ topLists, Frame = ListSection }) {
               aria-label={`Add your #${rank} ${typeLabel}`}
             >
               <PlusIcon />
-              <span className="top5-hint">{rank === 1 ? "What's your GOAT?" : 'Add a title'}</span>
+              <span className="top5-hint">{rank === 1 ? CUSTOM_LISTS.topPickPrompt : CUSTOM_LISTS.topAddPrompt}</span>
             </button>
             <span className="rank-cut">{rank}</span>
           </span>

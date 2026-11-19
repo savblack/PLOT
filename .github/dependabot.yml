@@ -25,7 +25,7 @@ updates:
     # So these move only with `cd apps/mobile && npx expo install --fix`, run
     # deliberately as part of an SDK upgrade. Every update-type is ignored, not
     # just minor/major: several are pinned exactly, so even a patch bump leaves
-    # the SDK's range and `npm run mobile:deps` will fail the build.
+    # the SDK's range and `pnpm run mobile:deps` will fail the build.
     #
     # `react` and `react-dom` are deliberately NOT here. They are Expo-managed
     # for mobile but apps/web depends on them too, and Dependabot ignores by

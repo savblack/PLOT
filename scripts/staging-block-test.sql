@@ -70,8 +70,11 @@ select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A finds B in sea
   from public.search_users(:'b_name') where id = :B;
 select case when count(*) = 2 then 'PASS' else 'FAIL' end || '  A sees both of C''s followers (A and B)'
   from public.list_followers(:C);
+-- Only the row inserted above: created_at defaults to now(), which is this
+-- transaction's start. A leftover A<->B follow on Staging (2026-11-18) carries
+-- its own notifications from B, and counting those made this check flaky.
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  A sees B''s notification'
-  from public.list_notifications() where actor_id = :B;
+  from public.list_notifications() where actor_id = :B and type = 'new_follower' and created_at = now();
 
 -- Not hardcoded: trg_notify_follow writes a notification of its own when C
 -- follows A, so C's count is the fixture row plus whatever the trigger added.

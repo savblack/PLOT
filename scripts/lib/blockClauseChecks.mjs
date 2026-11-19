@@ -1,4 +1,4 @@
-// Pure extraction + rule logic for `npm run db:block-clause`. The CLI wrapper
+// Pure extraction + rule logic for `pnpm run db:block-clause`. The CLI wrapper
 // in scripts/check-block-clause.mjs reads the migrations and formats the
 // output; the decisions live here so apps/web/tests/unit/blockClauseChecks.test.js
 // can prove the guard flags a stale redefinition rather than merely existing.

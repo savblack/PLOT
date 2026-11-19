@@ -2,7 +2,7 @@
 // both sizes (plus light/dark where the template supports theming) into
 // marketing/preview/out/. Needs only TMDB_API_KEY — no DB, no posting.
 //
-//   TMDB_API_KEY=... npm run mkt:preview
+//   TMDB_API_KEY=... pnpm run mkt:preview
 //   open marketing/preview/out/index.html
 import { writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';

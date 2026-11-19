@@ -145,3 +145,7 @@
 @media (max-width: 479px) { .isp-pill-line { display: none; } }
 @keyframes ij-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
 @media (prefers-reduced-motion: reduce) { .isp-pill-bar i.is-indeterminate { animation: none; width: 100%; opacity: 0.5; } }
+
+/* ImportView's page wrapper. The shell sets the top space at sidebar widths
+   (app.css); on a phone the page keeps its own 1rem. */
+.import-page { padding-top: 1rem; }

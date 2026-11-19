@@ -20,8 +20,9 @@ configure({
   isDev: true,
 });
 
-// suggest_watch_together's answer for the story being shown.
+// suggest_watch_together's and list_watch_together's answers for the story being shown.
 let currentSuggested = [];
+let currentPartners = [];
 const people = [
   { id: 'u-sam', display_name: 'Sam Kerr', username: 'samk', avatar_url: null },
   { id: 'u-samira', display_name: 'Samira', username: 'samira.b', avatar_url: null },
@@ -41,7 +42,8 @@ const stubClient = {
   rpc: async (name) => {
     if (name === 'search_users') return { data: people, error: null };
     if (name === 'watch_together_status') return { data: [{ state: 'none' }], error: null };
-    if (name === 'list_watch_together') return { data: [], error: null };
+    if (name === 'list_watch_together') return { data: currentPartners, error: null };
+    if (name === 'watch_together_titles') return { data: [], error: null };
     if (name === 'suggest_watch_together') return { data: currentSuggested, error: null };
     if (name === 'my_watch_together_link') return { data: 'abc123', error: null };
     return { data: null, error: null };
@@ -71,6 +73,7 @@ export default {
     (Story, context) => {
       if (getConfig().supabaseClient !== stubClient) configure({ supabaseClient: stubClient });
       currentSuggested = context.args.suggested || [];
+      currentPartners = context.args.partners || [];
       try {
         if (context.args.sharedAt) window.localStorage.setItem(INVITE_SHARED_KEY, context.args.sharedAt);
         else window.localStorage.removeItem(INVITE_SHARED_KEY);
@@ -79,7 +82,7 @@ export default {
         <MemoryRouter initialEntries={['/together']}>
           <AppContext.Provider value={app(context.args.premium)}>
             <div className="app-main-inner" style={{ padding: '1rem 0 3rem', minHeight: '100vh', background: 'var(--bg)' }}>
-              <Story key={`${context.args.sharedAt || ''}:${(context.args.suggested || []).length}`} />
+              <Story key={`${context.args.sharedAt || ''}:${(context.args.suggested || []).length}:${(context.args.partners || []).length}`} />
             </div>
           </AppContext.Provider>
         </MemoryRouter>
@@ -128,4 +131,37 @@ export const AcceptMutualFollow = {
 /* A friend's profile when you follow each other: the tile says what the invite shares. */
 export const ProfileTileMutualFollow = {
   render: () => <WatchTogetherTile person={{ id: 'u-sam', username: 'samk', display_name: 'Sam', is_public: false }} viewer={{ id: 'u-mia' }} viewerProfile={{ is_premium: true }} />,
+};
+
+/* Paired, on Premium, with nothing saved in common (Nov 18). The card says so
+   and what to do, with no button into an empty swipe; the shelf holds trending
+   titles to save instead of one grey line. */
+export const PairedNothingInCommon = {
+  args: {
+    premium: true,
+    partners: [{
+      other_id: 'u-emily', username: 'emily-k', display_name: null, avatar_url: null,
+      direction: 'paired', created_at: '2026-11-17T12:00:00Z', accepted_at: '2026-11-17T12:00:00Z',
+      i_share_full: false, overlap_count: 0, can_decide: true,
+    }],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() => expect(canvas.getByRole('heading', { name: T.hub.nothingShared('emily-k') })).toBeInTheDocument());
+    await expect(canvas.getByText(T.hub.noOverlapBody('emily-k'))).toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: T.hub.decideWith('emily-k') })).toBeNull();
+  },
+};
+
+/* Invite someone, once you watch with someone: a card in the column with
+   search and your invite link (Nov 19), not a text link to the share sheet. */
+export const InviteSomeonePanel = {
+  args: { ...PairedNothingInCommon.args },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const card = within(await canvas.findByRole('region', { name: T.hub.inviteSomeone }));
+    await expect(card.getByPlaceholderText(T.invite.search)).toBeInTheDocument();
+    await expect(card.getByText(T.link.inviteTitle)).toBeInTheDocument();
+    await expect(card.getByRole('button', { name: T.link.share })).toBeInTheDocument();
+  },
 };

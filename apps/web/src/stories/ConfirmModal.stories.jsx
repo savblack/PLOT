@@ -1,6 +1,7 @@
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import ConfirmModal from '../components/ConfirmModal.jsx';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { CONFIRM_MODAL } from '@plot/core/copy/confirmModal.js';
 
 export default {
   title: 'Components/ConfirmModal',
@@ -91,7 +92,7 @@ export const ConfirmThrows = {
     const confirm = within(dialog).getByRole('button', { name: 'Remove' });
 
     await userEvent.click(confirm);
-    await expect(await within(dialog).findByRole('alert')).toHaveTextContent('Something went wrong. Please try again.');
+    await expect(await within(dialog).findByRole('alert')).toHaveTextContent(CONFIRM_MODAL.failed);
     await expect(args.onClose).not.toHaveBeenCalled();
     await waitFor(() => expect(confirm).toBeEnabled());
   },

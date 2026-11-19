@@ -2,6 +2,10 @@
    .cal-stream-month). Only the notification-specific parts live here. */
 .notif-page { max-width: 760px; margin-inline: auto; }
 .notif-toolbar { min-height: 58px; }
+/* The row keeps its height so the list does not jump when "Mark all read"
+   comes and goes, but the button sits on the page's top line (44px at sidebar
+   widths, app.css) rather than centred 5px under it. */
+.notif-toolbar { align-items: flex-start; }
 .notif-body { display: flex; flex-direction: column; gap: 24px; }
 .notif-section { display: flex; flex-direction: column; gap: 10px; }
 .notif-status { padding: 8px 4px; }

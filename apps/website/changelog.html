@@ -56,11 +56,12 @@
   <title>Changelog · What's new and improved in Plot</title>
   <meta name="description" content="What is new, improved, and fixed in Plot. Dated release notes for the movie and TV companion, newest first, so you can see every change as it ships." />
   <link rel="canonical" href="https://theplot.tv/changelog" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="plot" />
+  <meta property="og:site_name" content="Plot" />
   <meta property="og:title" content="Changelog · What's new and improved in Plot" />
   <meta property="og:description" content="What is new, improved, and fixed in Plot. Dated release notes for the movie and TV companion, newest first, so you can see every change as it ships." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
@@ -76,25 +77,21 @@
   <link rel="manifest" href="site.webmanifest" />
 
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=4365c1cb" />
-  <link rel="stylesheet" href="/nav.css?v=ba29d7a0" />
+  <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
+  <link rel="stylesheet" href="/ui.css?v=5d41273c" />
+  <link rel="stylesheet" href="/nav.css?v=d5a39888" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     /* Shared brand tokens live in /theme.css. Content pages use the warmer surface. */
-    :root {
-      --bg: #f8f2ea;
-    }
-
     html { scroll-behavior: smooth; }
 
     body {
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
-      font-weight: 300;
+      font-weight: 400;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
@@ -109,7 +106,7 @@
     h1 {
       font-family: var(--display);
       font-size: clamp(2rem, 4vw, 2.8rem);
-      font-weight: 400;
+      font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1.15;
       color: var(--text);
@@ -117,23 +114,23 @@
     }
 
     .page-meta {
-      font-size: 0.82rem;
+      font-size: 0.875rem;
       color: var(--text-secondary);
       margin-bottom: 3rem;
       padding-bottom: 2rem;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
+      border-bottom: 1px solid var(--rule);
     }
 
     .page-intro {
-      font-size: 0.93rem;
-      color: #333;
+      font-size: 1.143rem;
+      color: var(--text);
       margin-bottom: 2.5rem;
     }
 
     .changelog-entry {
       padding-bottom: 2.5rem;
       margin-bottom: 2.5rem;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
+      border-bottom: 1px solid var(--rule);
     }
     .changelog-entry:last-of-type {
       border-bottom: none;
@@ -159,13 +156,13 @@
     }
 
     .changelog-entry time {
-      font-size: 0.82rem;
+      font-size: 0.875rem;
       color: var(--text-secondary);
     }
 
     .changelog-entry h3 {
       font-family: var(--sans);
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -174,8 +171,8 @@
     }
 
     .page-wrap ul {
-      font-size: 0.93rem;
-      color: #333;
+      font-size: 1.143rem;
+      color: var(--text);
       margin: 0 0 0.25rem 1.15rem;
     }
     .page-wrap ul li { margin-bottom: 0.45rem; }
@@ -195,12 +192,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager -->
 
   <nav id="navbar">
-    <a href="/" class="nav-logo" aria-label="plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
+    <a href="/" class="nav-logo" aria-label="Plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="/pricing">Pricing</a></li>
+      <li class="nav-more"><a href="/taste-match">Taste match</a></li>
+      <li class="nav-more"><a href="/about">About</a></li>
+      <li class="nav-more"><a href="/support">Support</a></li>
       <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
-      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
+      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Start tracking</a></li>
     </ul>
     <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
@@ -210,14 +210,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <main class="page-wrap">
   <!-- changelog:start (generated from data/changelog.json — edit there, then run `pnpm run changelog`) -->
     <h1>Changelog</h1>
-    <p class="page-meta">What shipped in plot, newest first.</p>
+    <p class="page-meta">What shipped in Plot, newest first.</p>
 
     <p class="page-intro">Every public ship lands here the same day, in plain language. Entries use <strong>New</strong>, <strong>Improved</strong>, and <strong>Fixed</strong>.</p>
 
     <article class="changelog-entry" id="1.0.0">
       <header class="changelog-entry-header">
         <h2>1.0.0</h2>
-        <time datetime="2026-10-22">22 October 2026</time>
+        <time datetime="2026-10-22">October 22, 2026</time>
       </header>
 
       <h3>New</h3>
@@ -225,7 +225,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <li>Pick for Me is now Just Decide, and everyone gets one free pick a day</li>
         <li>Choose the poster, backdrop and logo you want on any title</li>
         <li>Home is built around your own titles: pin shelves, set their order, pick a card style and density, and rate what you have just watched in one loop</li>
-        <li>A Watch together card on Home, and Watch together is on for everyone in the iOS app with a redesigned start page</li>
+        <li>A Watch together card on Home, and Watch together, with a redesigned start page, is coming to the iPhone app</li>
         <li>Episode ratings on title pages, regional age ratings, time left on a show and when it ends, and specials in the episode guide</li>
         <li>Imports run in the background: pick a source, queue a few, and start them during onboarding. Your sources now live in Settings</li>
         <li>A prompt for episode alerts and streaming arrival when you save a show or film</li>
@@ -247,12 +247,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <article class="changelog-entry" id="0.10.0">
       <header class="changelog-entry-header">
         <h2>0.10.0</h2>
-        <time datetime="2026-10-13">13 October 2026</time>
+        <time datetime="2026-10-13">October 13, 2026</time>
       </header>
 
       <h3>New</h3>
       <ul>
-        <li>Sign in with Apple on web and in the iOS app</li>
+        <li>Sign in with Apple on web, and coming to the iPhone app</li>
         <li>Just Decide, a tonight picker for Premium: answer a few questions, get a pick, and keep the searches you like</li>
         <li>Watch together: see what is on both your watchlists, swipe through picks with a friend, and build shared lists. Premium hosts, friends join free</li>
         <li>Smart lists that keep themselves up to date from rules you set, and collaborative lists you build with friends</li>
@@ -263,20 +263,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <li>Import your history from Plex, Trakt, IMDb ratings, TV Time archives and Simkl</li>
         <li>A live calendar subscription and theme families for Premium, plus a one-time calendar export for everyone</li>
         <li>Choose who can see your Want to Watch, and set visibility per list</li>
-        <li>New onboarding on web and iOS, with a Finishing touches card on your first visit home</li>
-        <li>A Lists from plot shelf of curated lists you can save, and Plot’s Picks that rotate on their own</li>
+        <li>New onboarding on web (coming to the iPhone app), with a Finishing touches card on your first visit home</li>
+        <li>A Lists from Plot shelf of curated lists you can save, and Plot’s Picks that rotate on their own</li>
         <li>Horror, Romance and Thriller for shows, watch status chips on list titles, and a status filter with a progress bar</li>
-        <li>In the iOS app: search titles, people and friends together, search across My Lists, export your data, change your profile photo, and a feedback section in the drawer</li>
+        <li>Coming to the iPhone app: search titles, people and friends together, search across My Lists, export your data, change your profile photo, and a feedback section in the drawer</li>
         <li>A support page on the website</li>
       </ul>
       <h3>Improved</h3>
       <ul>
         <li>Undo after removing a title, changing episode progress, or creating a list</li>
         <li>Quick one-line prompts to mark a title watched after you save it, and to rate it after you mark it watched</li>
-        <li>One persistent foot bar on the title panel, on web and iOS</li>
-        <li>The sidebar account menu holds your theme, Help build Plot and account links. History and Guide sit in the same place on iOS as on web</li>
+        <li>One persistent foot bar on the title panel, on web and in the coming iPhone app</li>
+        <li>The sidebar account menu holds your theme, Help build Plot and account links. History and Guide sit in the same place on web as in the coming iPhone app</li>
         <li>History is cached between pages so moving around the app feels quicker</li>
-        <li>The website has a new footer, uppercase navigation, and a homepage that says what plot is for: review, rate, remember</li>
+        <li>The website has a new footer, uppercase navigation, and a homepage that says what Plot is for: review, rate, remember</li>
       </ul>
       <h3>Fixed</h3>
       <ul>
@@ -284,7 +284,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <li>Searching a list no longer loses focus after one character, and custom lists can be filtered and searched on a phone</li>
         <li>Signing up is more reliable when a password is autofilled or the human check is slow</li>
         <li>Taps reach the hero and binge cards on phones</li>
-        <li>Release notes say In theaters and write dates in US order, and home releases are no longer labelled as in cinemas</li>
+        <li>Release notes say In theaters and write dates in US order, and home releases are no longer labeled as in cinemas</li>
         <li>Deleting your account copes with a dropped connection, and the newsletter Unsubscribe link opens a real page</li>
       </ul>
     </article>
@@ -292,7 +292,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <article class="changelog-entry" id="2026.9.21">
       <header class="changelog-entry-header">
         <h2>2026.9.21</h2>
-        <time datetime="2026-09-21">21 September 2026</time>
+        <time datetime="2026-09-21">September 21, 2026</time>
       </header>
 
       <h3>New</h3>
@@ -328,7 +328,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="footer-intro">
           <p class="footer-lede">Everything you've watched.<br>Everything you want to watch.</p>
           <div class="footer-actions">
-            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your Plot</a>
+            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start tracking</a>
           </div>
         </div>
         <ul class="footer-links" role="navigation" aria-label="Footer">
@@ -361,7 +361,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
          sides and sinks below the bottom edge. On hover a pastel foil sheen (the
          <use> filled with #footer-foil) fades in over the glyphs; js/footer.js tilts
          it with the pointer. Version stamp added by scripts/build-footer.mjs. -->
-    <a class="footer-wordmark" href="/" aria-label="plot home" data-cta="footer">
+    <a class="footer-wordmark" href="/" aria-label="Plot home" data-cta="footer">
       <svg viewBox="52 -681 1403 871" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-foil" x1="-0.6" x2="1.6" gradientTransform="rotate(100 0.5 0.5)"><stop offset="0" stop-color="#ffbcdf"/><stop offset="0.18" stop-color="#ffd1e8"/><stop offset="0.34" stop-color="#fff2b8"/><stop offset="0.5" stop-color="#c9f2d9"/><stop offset="0.66" stop-color="#c6e4ff"/><stop offset="0.82" stop-color="#e0cfff"/><stop offset="1" stop-color="#ffbcdf"/></linearGradient></defs><g id="footer-wordmark-glyphs"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-55,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5Z"/><path transform="translate(-110,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-165,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></g><use class="footer-foil" href="#footer-wordmark-glyphs"/></svg>
     </a>
     </div>

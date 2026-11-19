@@ -10,8 +10,11 @@ export const DISCOVER_VIEW = {
   startHere: 'Start here',
   startHereBody: 'Choose a show that’s airing now. We’ll show you when the next episode drops here.',
   findAiringShow: 'Find a show airing now',
-  nothingUpcoming: 'Nothing coming up yet',
-  nothingUpcomingBody: 'Your saved shows are between seasons or have no new episodes. Choose one that’s airing now to see what’s next.',
+  nothingUpcoming: 'Nothing coming up yet.',
+  // Nov 19: with nothing new from their shows, offer tonight's pick instead
+  // of another search (Decide, /tonight).
+  nothingUpcomingBody: 'Your shows are between seasons right now. Want something to watch tonight instead?',
+  pickForTonight: 'Pick something for me',
   refreshing: 'Updating…',
   offline: 'You’re offline',
   offlineBody: 'Reconnect to refresh upcoming episodes. Your saved shows are still safe.',

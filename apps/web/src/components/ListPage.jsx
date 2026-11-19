@@ -16,7 +16,7 @@ import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
 import { filterByWatchStatus, LIST_STATUS_FILTER_IDS } from '@plot/core/listWatchStatus.js';
 import { customListIdFromKey, customListKey, sortListItems, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '../utils/date.js';
-import LoadingSpinner from './LoadingSpinner.jsx';
+import ListsLoading from './ListsLoading.jsx';
 import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListSections.jsx';
 import { SmartListSection } from './SmartListSection.jsx';
 import { IconChevronLeft } from './navIcons.jsx';
@@ -217,7 +217,7 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
-    return <LoadingSpinner />;
+    return <ListsLoading />;
   }
 
   let body;

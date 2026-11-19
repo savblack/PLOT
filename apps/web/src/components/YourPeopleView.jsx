@@ -131,19 +131,18 @@ export function YourPeoplePage({ follows, items, today, loading, view, setView, 
     }));
   return (
     <div className="hist-page people-page">
-      <div className="hist-toolbar people-toolbar">
-        <Segmented
-          options={[
-            { value: 'date', label: P.page.byDate },
-            { value: 'person', label: P.page.byPerson },
-          ]}
-          value={view}
-          onChange={setView}
-          ariaLabel={P.page.title}
-        />
-      </div>
       <div className="cal-body">
         <aside className="cal-side people-side">
+          <Segmented
+            className="cal-side-control"
+            options={[
+              { value: 'date', label: P.page.byDate },
+              { value: 'person', label: P.page.byPerson },
+            ]}
+            value={view}
+            onChange={setView}
+            ariaLabel={P.page.title}
+          />
           <section className="hist-card people-following">
             <div className="hist-card-head">
               <span className="hist-card-title">{P.page.followingTitle}</span>

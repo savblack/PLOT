@@ -8,7 +8,7 @@
 // Mockups: https://claude.ai/artifact/VMDXnp5BmJJd9ekX2FS7QH (round 3)
 // Rules: @plot/core watchTogether.js (hubStage, joinNames, sharedOnDate).
 // Web parity: apps/web/src/components/WatchTogetherHub.jsx.
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +21,7 @@ import GlassHeader, { useGlassOnScroll } from '../GlassHeader';
 import ScreenHeaderBar, { SCREEN_HEADER_H } from '../ScreenHeaderBar';
 import { Avatar } from '../Avatar';
 import { hubStage, joinNames, personName, sharedOnDate } from '@plot/core/watchTogether.js';
-import { useWatchTogetherSuggestions, useWatchTogetherExampleTitles, startWatchTogetherSession, useUpgradeNews, useUserSearch } from '@plot/core/useWatchTogether.js';
+import { useWatchTogetherSuggestions, useWatchTogetherExampleTitles, useSaveIdeas, startWatchTogetherSession, useUpgradeNews, useUserSearch } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -79,8 +79,9 @@ function Gutter({ children, gap = spacing.md }: { children: ReactNode; gap?: num
 
 export function WatchHub() {
   const router = useRouter();
-  const { userId, profile } = useAppData();
+  const { userId, profile, watchlist } = useAppData();
   const together = useTogether(userId);
+  useOnSavedChange(watchlist?.items, together.refresh);
   const premium = isPremiumProfile(profile);
   const news = useNews(together.partners, together.loading, premium);
   // One instance for the page, so sharing from the card moves the page on.
@@ -136,7 +137,7 @@ export function WatchHub() {
             />
           ) : <InviteCard link={link} />}
           {stage === 'people'
-            ? <TextLink quiet label={H.inviteSomeone} onPress={() => { void link.send('share'); }} disabled={!link.url} />
+            ? <InviteMoreCard together={together} />
             : <ExampleDemo premium={premium} />}
         </Gutter>
       </View>
@@ -226,7 +227,7 @@ function InviteCard({ link }: { link: InviteLink }) {
           {!!display && <Text numberOfLines={1} style={{ fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary }}>{display}</Text>}
         </View>
       )}
-      <Button variant="primary" flex label={waiting ? H.shareAgain : H.sendInvite} onPress={() => { void send('share'); }} disabled={!url} />
+      <Button variant="primary" label={waiting ? H.shareAgain : H.sendInvite} onPress={() => { void send('share'); }} disabled={!url} />
       {/* No clipboard module in the app: Copy opens the share sheet with just the link (it has Copy). */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm }}>
         <Note>{waiting ? H.notifyNote : H.inviteFree}</Note>
@@ -251,6 +252,9 @@ function PeopleCard({ partners, decidable, selected, onSelect, incoming, outgoin
 }) {
   const { colors } = useTheme();
   const chosen = selected === GROUP_ID ? null : partners.find(p => p.id === selected) ?? null;
+  // Nothing in common: a swipe through zero titles is a dead end, so say what
+  // to do instead. The shelf under the card holds ideas to save.
+  const nothingYet = !!chosen && chosen.can_decide && chosen.overlap_count === 0;
   return (
     <MainCard>
       {incoming.length > 0 && (
@@ -275,8 +279,9 @@ function PeopleCard({ partners, decidable, selected, onSelect, incoming, outgoin
               </Face>
             )}
           </View>
-          <CardTitle>{selected === GROUP_ID ? T.overlap.groupHeading : chosen ? H.savedCount(personName(chosen), chosen.overlap_count ?? 0) : ''}</CardTitle>
-          {selected === GROUP_ID
+          <CardTitle>{selected === GROUP_ID ? T.overlap.groupHeading : nothingYet ? H.nothingShared(personName(chosen)) : chosen ? H.savedCount(personName(chosen), chosen.overlap_count ?? 0) : ''}</CardTitle>
+          {nothingYet && <Note>{H.noOverlapBody(personName(chosen))}</Note>}
+          {nothingYet ? null : selected === GROUP_ID
             ? <Button variant="primary" flex label={T.overlap.groupAction} onPress={onOpenGroup} />
             : chosen && !chosen.can_decide
               ? <Button variant="primary" flex label={COMMON.seePremium} onPress={onGate} />
@@ -334,12 +339,27 @@ function Shelf({ id, title, count, titles, faded = false, note, headerRight }: {
 /** One shelf: what you share with whoever is picked, with See all. */
 function SharedShelf({ partners, onSeeAll }: { partners: WtPerson[]; onSeeAll: (path: string) => void }) {
   const locked = partners.some(p => !p.can_decide);
-  const { titles, loading } = useTogetherTitles(locked ? [] : partners.map(p => p.id));
+  const { watchlist } = useAppData();
+  const saved = Array.isArray(watchlist?.items) ? watchlist.items : null;
+  const { titles, loading, refresh } = useTogetherTitles(locked ? [] : partners.map(p => p.id));
+  useOnSavedChange(saved, refresh);
   const names = joinNames(partners.map(personName));
+  const empty = !locked && !loading && !titles.length;
+  const ideas = asTitles(useSaveIdeas(saved, empty));
   // Locked: the card above already says one of you needs Premium.
   if (locked) return null;
   if (loading && !titles.length) return null;
-  if (!titles.length) return <Gutter><Note>{H.nothingShared(names)}</Note></Gutter>;
+  if (empty) {
+    // One person: the card already says nothing overlaps. A group's card doesn't.
+    const note = partners.length > 1 ? <Gutter><Note>{H.nothingShared(names)}</Note></Gutter> : null;
+    if (!ideas.length) return note;
+    return (
+      <>
+        {note}
+        <Shelf id="wt-ideas" title={H.ideasTitle} titles={ideas} note={H.ideasNote} />
+      </>
+    );
+  }
   const all = `/(app)/together/with/${partners.map(p => encodeURIComponent(p.username)).join(',')}`;
   return (
     <Shelf id="wt-shared" title={H.savedWith(names)} count={titles.length} titles={titles}
@@ -364,6 +384,18 @@ function PreviewShelf() {
 }
 
 /* ── Shared hooks ────────────────────────────────────────────────────── */
+
+// Saving a title can make a new match (your partner may already have it), so
+// recount when your watchlist changes size. Not on the first render.
+function useOnSavedChange(items: unknown, refresh: () => unknown) {
+  const count = Array.isArray(items) ? items.length : 0;
+  const last = useRef(count);
+  useEffect(() => {
+    if (last.current === count) return;
+    last.current = count;
+    void refresh();
+  }, [count, refresh]);
+}
 
 // "You're on Premium" news: who upgrading unlocked (core: useUpgradeNews).
 const NEWS_STORAGE = { getItem: readStorage, setItem: writeStorage, removeItem: removeStorage };
@@ -422,6 +454,62 @@ export function WatchPicker({ together }: { together?: TogetherApi }) {
 export function WatchInvite() {
   const { userId } = useAppData();
   const together = useTogether(userId);
+  return (
+    <WatchPage>
+      <SectionTitle>{T.invite.title}</SectionTitle>
+      <InviteContent together={together} />
+    </WatchPage>
+  );
+}
+
+/**
+ * With people already: invite someone else, right on the hub. Search for
+ * someone on Plot (matches show under the box), or send your link to anyone
+ * who isn't. Web: InviteMoreCard in WatchTogetherHub.jsx.
+ */
+function InviteMoreCard({ together }: { together: TogetherApi }) {
+  const { colors } = useTheme();
+  const { userId } = useAppData();
+  const [query, setQuery] = useState('');
+  const search = useUserSearch(query, { excludeId: userId, limit: 5 });
+  const [sent, setSent] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const invite = async (person: WtPerson) => {
+    setError(null);
+    const result = await together.send(person.id);
+    if (result.ok) setSent(prev => prev.includes(person.id) ? prev : [...prev, person.id]);
+    else setError(errorText(result.code));
+  };
+  const results = search.searching && search.results ? asPeople(search.results) : null;
+  return (
+    <View style={{ gap: spacing.sm, padding: spacing.lg, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+      <Text accessibilityRole="header" style={{ fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textSecondary }}>{H.inviteSomeone}</Text>
+      <Note>{T.invite.body}</Note>
+      <SearchField value={query} onChangeText={setQuery} placeholder={T.invite.search} />
+      {!!error && <ErrorNote>{error}</ErrorNote>}
+      {results && results.length === 0 && <Note>{T.start.findNone}</Note>}
+      {results?.map(person => (
+        <PersonRow
+          key={person.id}
+          person={person}
+          note={`@${person.username}`}
+          trailing={sent.includes(person.id)
+            ? <SectionLabel>{T.invite.sent}</SectionLabel>
+            : <Button variant="primary" size="sm" label={T.invite.invite} onPress={() => invite(person)} />}
+        />
+      ))}
+      <InviteLinkCard />
+    </View>
+  );
+}
+
+/**
+ * Invite someone: search by name or @username, people you might pick, and
+ * your invite link for anyone not on Plot. The invite screen and the hub's
+ * sheet both show this, so they can't drift apart. Web: InvitePanel.
+ */
+function InviteContent({ together }: { together: TogetherApi }) {
+  const { userId } = useAppData();
   const suggestions = useWatchTogetherSuggestions(userId);
   const suggested = asPeople(suggestions.people);
   const [query, setQuery] = useState('');
@@ -437,14 +525,14 @@ export function WatchInvite() {
   };
   const list = search.searching ? asPeople(search.results || []) : suggested;
   return (
-    <WatchPage>
-      <SectionTitle>{T.invite.title}</SectionTitle>
+    <>
       <Note>{T.invite.body}</Note>
       <Note>{T.invite.mutualNote}</Note>
       <SearchField value={query} onChangeText={setQuery} placeholder={T.invite.search} />
       {!!error && <ErrorNote>{error}</ErrorNote>}
       {query.trim().length < 2 && <SectionLabel>{T.invite.suggested}</SectionLabel>}
       {list.length === 0 && query.trim().length < 2 && <Note>{T.invite.noSuggestions}</Note>}
+      {search.searching && search.results && search.results.length === 0 && <Note>{T.start.findNone}</Note>}
       {list.map(person => (
         <PersonRow
           key={person.id}
@@ -456,6 +544,6 @@ export function WatchInvite() {
         />
       ))}
       <InviteLinkCard />
-    </WatchPage>
+    </>
   );
 }

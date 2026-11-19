@@ -227,3 +227,12 @@ test('an unpublished reschedule moves the slug date; a live one does not', () =>
   assert.equal(rescheduledSlug('chart', 'approved', '2026-08-23'), 'chart');
   assert.equal(rescheduledSlug(null, 'planned', '2026-08-23'), null);
 });
+
+test('rejects the monthly "New on [service] in [month]:" headline formula', () => {
+  const t = (page_title) => articleErrors({ page_title, page_body: ['Fine.'] }).filter((e) => /roundup formula|and More/.test(e));
+  assert.equal(t('New on Prime Video in November 2026: The Rings of Power Season 3, Blade Runner 2099, and More').length, 1);
+  assert.equal(t('New on HBO Max in November: The Gilded Age and Tony').length, 1);
+  assert.equal(t('Blade Runner 2099 and Rings of Power, and More').length, 1);
+  assert.equal(t("The Rings of Power returns to lead Prime Video's November").length, 0);
+  assert.equal(t('New on the chart this week').length, 0);
+});

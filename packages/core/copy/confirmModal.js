@@ -5,6 +5,6 @@
 
 export const CONFIRM_MODAL = {
   working: 'Working…',
-  failed: 'Something went wrong. Please try again.',
+  failed: 'Something went wrong on our end. Check your connection and try again.',
   typeToConfirm: (phrase) => `Type "${phrase}" to confirm`,
 };

@@ -1492,7 +1492,7 @@ export default function DesignSystemPage() {
 
         <div className="ds-utility-grid">
           <RuleCard label="Who is speaking">
-            <p>The friend whose recommendations you actually trust, keeping a beautiful journal — not a brand running a content calendar. Warm, literate, specific. It's fine to have taste: gentle enthusiasm and a point of view beat neutrality.</p>
+            <p>The friend whose recommendations you actually trust, who always knows what's worth watching next — not a brand running a content calendar. Warm, literate, specific. It's fine to have taste: gentle enthusiasm and a point of view beat neutrality.</p>
           </RuleCard>
           <RuleCard label="Tone rules">
             <div className="ds-note-list">

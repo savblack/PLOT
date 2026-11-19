@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Subscribe someone to the Plot digest or the app launch waitlist. Use only when the person has asked to be subscribed, with the address they gave you.",
       "url": "https://theplot.tv/.well-known/agent-skills/plot-newsletter/SKILL.md",
-      "digest": "sha256:a406394f5fb8a68e3b8d2676096e4e6eddd454a79290c9377e517ea691420b01"
+      "digest": "sha256:0a07bb0e3286a215d9e656230401dc1cf59ef44ec31f667ee899e493b15b85ac"
     },
     {
       "name": "plot-titles",

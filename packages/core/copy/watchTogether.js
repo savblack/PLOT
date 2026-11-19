@@ -56,6 +56,11 @@ export const WATCH_TOGETHER = Object.freeze({
     allOfYou: 'All of you',
     lockedShelf: 'One of you needs Premium to see and swipe through what you share. Your friend never has to pay.',
     nothingShared: (names) => `Nothing you and ${names} have both saved yet.`,
+    // Nov 18: with nothing in common, say what to do instead of offering a
+    // swipe through zero titles, and put trending titles one tap from saving.
+    noOverlapBody: (name) => `Save a few titles you’d watch. When ${name} saves one too, it shows up here and you can decide together.`,
+    ideasTitle: 'Ideas to save',
+    ideasNote: 'Trending this week. Save anything you’d watch.',
     // Nov 14 (round 3A): one card, one button. Faces pick who's watching.
     // Nov 18: the explainer, rewritten to say what happens step by step.
     inviteLead: 'Pick what to watch, together',
@@ -251,7 +256,7 @@ export const WATCH_TOGETHER = Object.freeze({
     ended: 'This session has ended.',
     startAgain: 'Start again',
     empty: (name) => `You and ${name} don’t have any titles in common yet.`,
-    swipeHint: 'Swipe right if you’re in, left if not.',
+    swipeHint: 'Slide the card right if you’re in, left if not.',
     start: 'Decide together',
   },
 

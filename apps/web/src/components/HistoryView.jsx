@@ -179,7 +179,7 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
   if (!group) return null;
   const first = new Date(year, group.month, 1);
   const daysInMonth = new Date(year, group.month + 1, 0).getDate();
-  const lead = (first.getDay() + 6) % 7; // Monday-first grid
+  const lead = first.getDay(); // Sunday-first, as on the Calendar (US)
   const isThisMonth = today.getFullYear() === year && today.getMonth() === group.month;
   const s = streaks(entries, today);
   const cells = [];
@@ -224,7 +224,7 @@ function MiniMonthCard({ year, monthIndex, monthGroups, onMonthIndex, entries, t
         </div>
       </div>
       <div className="hist-mini-grid">
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((w, i) => <span key={`wd-${i}`} className="hist-mini-wd" aria-hidden="true">{w}</span>)}
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, i) => <span key={`wd-${i}`} className="hist-mini-wd" aria-hidden="true">{w}</span>)}
         {cells}
       </div>
       {s.best > 1 && (

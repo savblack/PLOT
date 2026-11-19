@@ -530,7 +530,7 @@ function AccountImportView() {
   const canConfirm = getConfig().importEventsEnabled ? matchedCount > 0 : newCount > 0;
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: '1rem 1rem 6rem' }}>
+    <div className="import-page" style={{ maxWidth: 480, margin: '0 auto', paddingInline: '1rem', paddingBottom: '6rem' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
         <button

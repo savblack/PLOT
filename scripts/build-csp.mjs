@@ -44,7 +44,9 @@ const DIRECTIVES = [
   "font-src 'self'",
   // tmdb-proxy: the homepage search bar's live results (js/hero-search.js).
   "connect-src 'self' https://tmdb-proxy.sav-black.workers.dev https://a.theplot.tv https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://cloudflareinsights.com",
-  "frame-src https://www.googletagmanager.com",
+  // youtube-nocookie: the trailer player on What's On articles
+  // (supabase/functions/marketing-feed/index.ts).
+  "frame-src https://www.googletagmanager.com https://www.youtube-nocookie.com",
   "worker-src 'self' blob:",
   // The homepage search bar submits to app signup (GET, ?q=).
   "form-action 'self' https://app.theplot.tv",

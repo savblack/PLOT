@@ -511,9 +511,13 @@ function Venn({
   name: string;
   colors: Palette;
 }) {
+  // The sage fill is a light tint in every theme, so in dark the light numbers
+  // on it vanished. In dark, mirror the pink circle: a translucent wash of the
+  // secondary. Same rule as web's TasteOverlapPage.css.
+  const dark = useTheme().resolved === 'dark';
   return (
     <Svg width="100%" height={150} viewBox="0 0 300 150" accessibilityRole="image" accessibilityLabel={T.vennLabel(watched.mine, watched.theirs, watched.both, name)}>
-      <Circle cx={188} cy={75} r={62} fill={colors.accentSecondaryFill} stroke={colors.accentSecondary} strokeWidth={1.5} />
+      <Circle cx={188} cy={75} r={62} fill={dark ? colors.accentSecondary : colors.accentSecondaryFill} fillOpacity={dark ? 0.15 : 1} stroke={colors.accentSecondary} strokeWidth={1.5} />
       <Circle cx={112} cy={75} r={70} fill={colors.accent} fillOpacity={0.14} stroke={colors.accent} strokeWidth={1.5} />
       <SvgText x={76} y={72} textAnchor="middle" fill={colors.textPrimary} fontFamily={fontFamily.display} fontSize={22}>{watched.mine}</SvgText>
       <SvgText x={76} y={90} textAnchor="middle" fill={colors.textSecondary} fontFamily={fontFamily.sans} fontSize={11}>{T.you.toLowerCase()}</SvgText>

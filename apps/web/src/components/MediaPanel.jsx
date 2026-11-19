@@ -1794,7 +1794,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                 rather than as a wall. ── */}
             <div className="panel-actions-row">
               <button
-                className={`panel-pill${inList ? ' panel-pill--saved' : ' panel-pill--primary'}`}
+                className={`panel-pill${inList ? ' panel-pill--saved' : ''}`}
                 onClick={handleSaveFromPanel}
               >
                 {inList ? <Icon name="check" size={14} strokeWidth={2.4} /> : <Icon name="bookmark" size={15} />}
@@ -1822,7 +1822,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   <div className="panel-status-menu">
                     {[
                       { label: MEDIA_PANEL.watching, action: () => runStatusAction(MEDIA_PANEL.updating, handleWatchingStatus), hidden: isMovie },
-                      { label: MEDIA.watched, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(false)) },
                       { label: MEDIA_PANEL.didntFinish, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(true)) },
                       { label: MEDIA_PANEL.clearStatus, action: () => runStatusAction(MEDIA_PANEL.clearing, handleClearStatus), hidden: !(isWatching || watched), muted: true },
                     ].filter(o => !o.hidden).map(opt => (
@@ -1929,7 +1928,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     )}
                     {whereToWatch.inCinemas && (
                       <div className="providers-grid">
-                        <div className="provider-chip provider-chip--cinema">In Cinemas</div>
+                        <div className="provider-chip provider-chip--cinema">{MEDIA.inCinemas}</div>
                       </div>
                     )}
                     {whereToWatch.streaming.length > 0 && (

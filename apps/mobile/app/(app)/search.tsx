@@ -147,7 +147,7 @@ function rowFacts(item: Hit, genres: { id: number; name: string }[], art: Return
     const described = describeSearchResult(data, genres);
     const bits = [described.year, ...described.genres].filter(Boolean);
     let meta = bits.join(' · ');
-    if (described.rating) meta = `${meta}${meta ? ' · ' : ''}${described.rating} ★`;
+    if (described.rating) meta = `${meta}${meta ? ' · ' : ''}${MEDIA.criticsScore(described.rating)}`;
     return {
       title: data.title || data.name || MEDIA.unknown,
       meta,
@@ -439,7 +439,7 @@ export default function SearchScreen() {
                   </View>
                 )}
                 {inList && (
-                  <Svg width={14} height={14} viewBox="0 0 24 24" fill={colors.textPrimary} stroke={colors.textPrimary} strokeWidth={1.5} accessibilityLabel={MEDIA.saveToWatchlist}>
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill={colors.textPrimary} stroke={colors.textPrimary} strokeWidth={1.5} accessibilityLabel={MEDIA_PANEL.inWatchlist}>
                     <Path d={ICON_PATHS.bookmark} />
                   </Svg>
                 )}

@@ -8,7 +8,7 @@ export const FOOTER_HTML = `
         <div class="footer-intro">
           <p class="footer-lede">Everything you've watched.<br>Everything you want to watch.</p>
           <div class="footer-actions">
-            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your Plot</a>
+            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start tracking</a>
           </div>
         </div>
         <ul class="footer-links" role="navigation" aria-label="Footer">
@@ -41,7 +41,7 @@ export const FOOTER_HTML = `
          sides and sinks below the bottom edge. On hover a pastel foil sheen (the
          <use> filled with #footer-foil) fades in over the glyphs; js/footer.js tilts
          it with the pointer. Version stamp added by scripts/build-footer.mjs. -->
-    <a class="footer-wordmark" href="/" aria-label="plot home" data-cta="footer">
+    <a class="footer-wordmark" href="/" aria-label="Plot home" data-cta="footer">
       <svg viewBox="52 -681 1403 871" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-foil" x1="-0.6" x2="1.6" gradientTransform="rotate(100 0.5 0.5)"><stop offset="0" stop-color="#ffbcdf"/><stop offset="0.18" stop-color="#ffd1e8"/><stop offset="0.34" stop-color="#fff2b8"/><stop offset="0.5" stop-color="#c9f2d9"/><stop offset="0.66" stop-color="#c6e4ff"/><stop offset="0.82" stop-color="#e0cfff"/><stop offset="1" stop-color="#ffbcdf"/></linearGradient></defs><g id="footer-wordmark-glyphs"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-55,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5Z"/><path transform="translate(-110,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-165,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></g><use class="footer-foil" href="#footer-wordmark-glyphs"/></svg>
     </a>
     </div>
@@ -69,7 +69,7 @@ export const FOOTER_CSS = `
   position: relative;
   z-index: 3;
   padding: 0 clamp(12px, 1.8vw, 24px) clamp(12px, 1.8vw, 24px);
-  color: var(--ink, #292924);
+  color: var(--footer-text, #292924);
   font-family: var(--sans, 'DM Sans', system-ui, sans-serif);
 }
 .footer-panel {
@@ -81,7 +81,7 @@ export const FOOTER_CSS = `
   box-sizing: border-box;
   overflow: hidden;
   border-radius: 28px;
-  background: #ffd3ea;
+  background: var(--footer-bg, #ffd3ea);
 }
 .footer-inner {
   max-width: 1040px;
@@ -123,14 +123,14 @@ export const FOOTER_CSS = `
   min-height: 44px;
   padding: 0 1.4rem;
   border-radius: 9999px;
-  background: var(--ink, #292924);
-  color: #ffd3ea;
+  background: var(--footer-cta-bg, #292924);
+  color: var(--footer-cta-text, #ffd3ea);
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
   transition: background 0.25s var(--ease, ease), transform 0.25s var(--ease, ease);
 }
-.footer-cta:hover { background: var(--ink-hover, #3a3a33); transform: translateY(-1px); }
+.footer-cta:hover { background: var(--footer-cta-bg-hover, #3a3a33); transform: translateY(-1px); }
 
 .footer-links {
   list-style: none;
@@ -142,7 +142,7 @@ export const FOOTER_CSS = `
 }
 .footer-links a,
 .footer-copy a {
-  color: var(--ink, #292924);
+  color: var(--footer-text, #292924);
   font-size: 0.875rem;
   line-height: 1.3;
   white-space: nowrap;
@@ -160,7 +160,7 @@ export const FOOTER_CSS = `
 .footer-links a:hover,
 .footer-links a:focus-visible,
 .footer-copy a:hover,
-.footer-copy a:focus-visible { text-decoration-color: var(--ink, #292924); }
+.footer-copy a:focus-visible { text-decoration-color: var(--footer-text, #292924); }
 
 .footer-bottom {
   display: flex;
@@ -169,9 +169,9 @@ export const FOOTER_CSS = `
   gap: 1rem;
   margin-top: 2.5rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(41, 41, 36, 0.12);
+  border-top: 1px solid var(--footer-rule, rgba(41, 41, 36, 0.12));
 }
-.footer-copy { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.25rem; font-size: 0.8rem; color: rgba(41, 41, 36, 0.7); }
+.footer-copy { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.25rem; font-size: 0.875rem; color: var(--footer-muted, rgba(41, 41, 36, 0.7)); }
 .footer-copy a { font-size: inherit; color: inherit; }
 .footer-social { display: flex; align-items: center; margin-right: -12px; }
 .footer-social a {
@@ -180,10 +180,10 @@ export const FOOTER_CSS = `
   justify-content: center;
   width: 44px;
   height: 44px;
-  color: var(--ink, #292924);
+  color: var(--footer-text, #292924);
   transition: color 0.2s;
 }
-.footer-social a:hover { color: rgba(41, 41, 36, 0.6); }
+.footer-social a:hover { color: var(--footer-muted, rgba(41, 41, 36, 0.6)); }
 .footer-social svg { width: 18px; height: 18px; display: block; }
 
 /* The wordmark bleeds off both sides and sinks below the bottom edge. The
@@ -207,7 +207,7 @@ export const FOOTER_CSS = `
   margin-left: -4vw;
   margin-left: -4cqw;
   /* A half step deeper than the panel, so the mark reads as texture. */
-  fill: #ffbcdf;
+  fill: var(--footer-mark, #ffbcdf);
   transition: fill 0.3s var(--ease, ease);
 }
 /* The foil: a pastel holographic sheen over the glyphs that fades in on hover
@@ -217,7 +217,7 @@ export const FOOTER_CSS = `
 .footer-wordmark:hover .footer-foil,
 .footer-wordmark:focus-visible .footer-foil,
 .footer-wordmark.is-touching .footer-foil { opacity: 1; }
-.footer-wordmark:focus-visible { outline: 2px solid var(--ink, #292924); outline-offset: -4px; }
+.footer-wordmark:focus-visible { outline: 2px solid var(--footer-text, #292924); outline-offset: -4px; }
 
 /* Only the pill carries the CSS arrow (ui.css gives every a[data-cta] one;
    defined here too because the edge-function pages don't load ui.css). */
@@ -238,7 +238,7 @@ export const FOOTER_CSS = `
 .footer-cta:focus-visible,
 .footer-links a:focus-visible,
 .footer-copy a:focus-visible,
-.footer-social a:focus-visible { outline: 2px solid var(--ink, #292924); outline-offset: 2px; border-radius: 4px; }
+.footer-social a:focus-visible { outline: 2px solid var(--footer-text, #292924); outline-offset: 2px; border-radius: 4px; }
 
 @media (max-width: 600px) {
   .site-footer { padding: 0 10px 10px; }

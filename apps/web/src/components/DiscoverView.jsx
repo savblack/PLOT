@@ -248,7 +248,7 @@ function HomeRefreshIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5" /></svg>;
 }
 
-function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPanel, openSearch }) {
+function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPanel, openSearch, openDecide }) {
   if (state === 'loading') {
     return (
       <section className="hist-card home-personal-card home-personal-card--loading" aria-label="Loading upcoming episodes">
@@ -285,7 +285,9 @@ function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPane
     <section className="hist-card home-personal-card">
       <span className="home-personal-icon" aria-hidden="true">{start ? '+' : <IconCalendar />}</span>
       <div className="hist-card-body"><h2 className="hist-card-title">{start ? DISCOVER_VIEW.startHere : DISCOVER_VIEW.nothingUpcoming}</h2><p className="hist-card-note">{start ? DISCOVER_VIEW.startHereBody : DISCOVER_VIEW.nothingUpcomingBody}</p></div>
-      <button type="button" className="home-personal-action" onClick={openSearch}><span>{DISCOVER_VIEW.findAiringShow}</span><IconChevronRight /></button>
+      {start
+        ? <button type="button" className="home-personal-action" onClick={openSearch}><span>{DISCOVER_VIEW.findAiringShow}</span><IconChevronRight /></button>
+        : <button type="button" className="home-personal-action" onClick={openDecide}><span>{DISCOVER_VIEW.pickForTonight}</span><IconChevronRight /></button>}
     </section>
   );
 }
@@ -647,6 +649,7 @@ function YourPeopleSection({ shelf, openPanel }) {
 
 /* ── Home ── */
 function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr, continueItems = [], firstRun = false, homeLayout }) {
+  const navigate = useNavigate();
   const peopleShelf = useYourPeopleShelf();
   const [openCurated, setOpenCurated] = useState(null);
   const [customizing, setCustomizing] = useState(false);
@@ -836,7 +839,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   return (
     <div className="home-layout cal-body">
       <aside className="cal-side home-side">
-        <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} />
+        <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} openDecide={() => { track(EVENTS.HOME_PICK_FOR_TONIGHT_CLICKED); navigate('/tonight'); }} />
         <OnThisDayCard item={onThisDay} openPanel={openPanel} />
         <HomePageNav sections={pageSections} />
         <SideFilters className="home-filter-card" typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} />

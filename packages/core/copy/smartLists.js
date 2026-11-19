@@ -17,7 +17,7 @@ export const SMART_LISTS = Object.freeze({
     history: { label: 'My history', hint: 'Titles you’ve watched' },
   },
   typeLabel: 'Type',
-  types: { any: 'Movies and shows', movie: 'Movies', tv: 'Shows' },
+  types: { any: 'Movies and TV', movie: 'Movies', tv: 'TV' },
   genresLabel: 'Genres',
   genresHint: 'Any of these. Leave them all off for every genre.',
   genreJoin: ' or ',

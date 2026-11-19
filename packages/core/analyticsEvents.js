@@ -72,6 +72,10 @@ export const EVENTS = Object.freeze({
   // carries who the other person is.
   SAVED_COMPARISON_REFRESHED: 'saved_comparison_refreshed',
   SAVED_COMPARISON_REMOVED: 'saved_comparison_removed',
+  // The Confirm button on /newsletter/confirm, once the server has confirmed
+  // the address (double opt-in). The theplot.tv form's newsletter_subscribed
+  // now means a confirmation email was requested, not a subscription.
+  NEWSLETTER_CONFIRMED: 'newsletter_confirmed',
   // The Watch Together button on a comparison's shared-watchlist row. Carries
   // { sample: boolean }: true on the picker's sample, which opens the Watch
   // Together hub instead of one person. Fires on the tap, which always
@@ -287,6 +291,10 @@ export const EVENTS = Object.freeze({
   // `item_count`. On web, opening a title from one is title_viewed with
   // source 'because_you_watched' or 'recommended_for_you'.
   RECOMMENDATIONS_VIEWED: 'recommendations_viewed',
+  // Home's "Nothing coming up yet" card: "Pick something for me" was pressed,
+  // which opens Decide (/tonight). Web only: mobile Home has no such card.
+  // No properties. The pick itself is tonight_picks_drawn.
+  HOME_PICK_FOR_TONIGHT_CLICKED: 'home_pick_for_tonight_clicked',
   // Marketing email consent. `source` distinguishes the Settings toggle from the
   // in-app prompt so we can tell which surface actually earns opt-ins.
   MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',

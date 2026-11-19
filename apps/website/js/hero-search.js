@@ -1,9 +1,9 @@
 /* Homepage search bar: live results under the field.
    Typing two or more characters searches TMDB through the public Worker (which
    admits theplot.tv and rate limits per IP, so this opens nothing new) and
-   lists up to six movies and shows. Picking one goes to app /save with
-   src=hero_search: after signup the app opens that exact title, and saves
-   nothing until they choose to. Pressing Enter without picking still submits
+   lists up to six movies and shows. Picking one opens that title's public
+   page (theplot.tv/movie|tv/<slug>-<id>): where to watch first, with its own
+   Save to Plot button. Pressing Enter without picking still submits
    the form to /signup?q=, where the app opens the title if it is the only
    exact match, or search with the title typed.
 
@@ -78,7 +78,10 @@
       var title = r.media_type === 'movie' ? r.title : r.name;
       var year = String(r.media_type === 'movie' ? r.release_date || '' : r.first_air_date || '').slice(0, 4);
       var kind = r.media_type === 'movie' ? 'Movie' : 'TV show';
-      var href = 'https://app.theplot.tv/save?media_type=' + r.media_type + '&tmdb_id=' + r.id + '&src=hero_search';
+      // Same slug rule as the title-page edge function's canonical URL.
+      var slug = String(title || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'title';
+      var href = '/' + r.media_type + '/' + slug + '-' + r.id;
       return '<li role="presentation"><a class="hero-result" role="option" id="heroResult' + i + '" aria-selected="false" ' +
         'href="' + esc(href) + '" data-cta="hero_search_result">' +
         '<img src="' + esc(IMG + r.poster_path) + '" alt="" width="40" height="60" loading="lazy" decoding="async">' +

@@ -90,7 +90,7 @@ function Row({ item, active, index, onHover, onSelect, watchlist, history, genre
     thumb = posterUrl(displayPosterPath(art.apply(data)), 'w92');
     title = data.title || data.name || MEDIA.unknown;
     meta = [d.year, ...d.genres].filter(Boolean).join(' · ');
-    if (d.rating) meta = `${meta}${meta ? ' · ' : ''}${d.rating} ★`;
+    if (d.rating) meta = `${meta}${meta ? ' · ' : ''}${MEDIA.criticsScore(d.rating)}`;
     kindLabel = SEARCH_PALETTE.kind[type] || SEARCH_PALETTE.kind.movie;
     inList = watchlist.isInList(data.id);
     watched = history.isWatched(data.id, type);

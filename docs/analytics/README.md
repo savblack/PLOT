@@ -233,6 +233,9 @@ The app shows it only where it may link out to Checkout (US storefront).
 | Event | When | Properties |
 |---|---|---|
 | `premium_link_clicked` | The link was tapped | `placement: 'side_nav' \| 'settings'`, `trial` (boolean: the person is eligible for 7 days free; the side-nav chip never shows that text) |
+| `premium_link_clicked` | A "See Premium" button on the theplot.tv homepage was clicked (it opens `/pricing`) | `placement: 'home-premium-see' \| 'indie-see-premium'`, `source: 'marketing'`; no `trial` (the marketing site does not know). Fired by `apps/website/js/config.js` for any link marked `data-premium-link` |
+
+Until 2026-11-19 the homepage's closing button was "Support Plot with Premium", a link to Premium signup counted as `signup_cta_clicked` with `placement: 'indie-premium'`. That button is gone: the block now leads with Start tracking (`signup_cta_clicked`, `placement: 'indie-signup'`) and a See Premium link (`premium_link_clicked`, `placement: 'indie-see-premium'`). A chart of `indie-premium` stops at that date.
 
 All monetization dashboards keep PostHog's internal and test-account filter on.
 
@@ -275,7 +278,9 @@ a person: a `$pageview` and then no Tier 1 action (it negates **action 333111**,
 not a list of event names, so it tracks the catalog on its own), no `$pageleave`,
 and none of `signup_cta_clicked` / `login_click` / `save_cta_clicked` /
 `signup_form_viewed` / `signup_form_started` / `signup_submit_clicked` /
-`user_signed_up` / `user_logged_in`.
+`user_signed_up` / `user_logged_in` / `premium_link_clicked` /
+`search_result_opened` (the last two are the marketing site's See Premium links
+and homepage search picks, added to the cohort on 2026-11-19).
 
 Those first three matter more than they look. They fire from the marketing and
 server-rendered surfaces on `theplot.tv` — the very host the crawlers hit — so
@@ -528,11 +533,10 @@ marketing site never hands off to mobile.
 | Event | Where | When | Props |
 |---|---|---|---|
 | `signup_cta_clicked` | marketing site | The search bar was submitted, typed or not | `placement: hero_search`, `source: marketing`, `has_query` |
-| `save_cta_clicked` | marketing site | A live result under the search bar was picked (it goes to `/save?…&src=hero_search`) | `placement: hero_search_result`, `source: marketing` |
+| `search_result_opened` | marketing site | A live result under the search bar was picked. Since 2026-11-19 it opens the title's public page (`/movie/<slug>-<id>` or `/tv/<slug>-<id>`), whose Save button is the `/save` hand-off; before that date the pick went straight to `/save?…&src=hero_search` and was counted as `save_cta_clicked` with `placement: hero_search_result` | `placement: hero_search`, `source: marketing` |
 | `signup_search_resumed` | web app | A signed-in visit acted on that typed title, at most once | `query_length`, `opened` (`title` when the search had one clear match and that title opened, else `search`) |
 
-A picked result is a save intent with `src=hero_search`: the app skips the
-`/save` preview and opens the title after signup, saving nothing on its own.
+Before 2026-11-19 a picked result was a save intent with `src=hero_search`; it now opens the public title page, and saving from there carries `src=title_page`. The app side of `src=hero_search` (open the title after signup, save nothing on its own) still applies to links that carry it.
 
 The query text is never sent from either side, only whether one was typed and
 its length. The title waits in the browser for 24 hours, so a signup confirmed
@@ -587,6 +591,7 @@ the import page's `?from=` param.
 | `premium_first_week_hidden` | "Dismiss" on the first-week card | `done_count` |
 | `my_lists_layout_changed` | A My Lists section was folded, opened or moved, or the order was reset. Web and mobile both send all four actions. On mobile `collapse` and `expand` fire for the sections whose fold is saved to the profile (Watching, Top 5, Lists, Smart lists, Shared), not for Watchlist and Favorites, whose fold stays on the device, and not for its collapse-all control | `action` (`collapse` / `expand` / `reorder` / `reset`), `section` (`watching` / `top` / `lists` / `smart` / `shared`; absent on `reset`) |
 | `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
+| `home_pick_for_tonight_clicked` | "Pick something for me" on Home's "Nothing coming up yet" card was pressed; it opens Decide. Web only (mobile Home has no such card) | None. The pick that follows is `tonight_picks_drawn` |
 | `recommendations_viewed` | A Home recommendation shelf had titles | `shelf` (`because` / `for_you`), `item_count`. Once per app session per shelf. On web, opens from it are `title_viewed` with source `because_you_watched` / `recommended_for_you` (mobile's panel takes no source) |
 
 `finishing_touches_hidden` had never fired because Hide for now was rendered
@@ -745,6 +750,17 @@ characters, `medium` under 400, `long`). The text never leaves the device.
 
 It is not in the Tier 2 action. A review saved alongside a first watch already
 fires `marked_watched`, but an edit that only adds a note fires nothing else.
+
+## Newsletter
+
+The weekly digest is double opt-in (since 2026-11-18). `newsletter_subscribed`
+fires on theplot.tv when the form's request succeeds, which now means a
+confirmation email was asked for, not that anyone is subscribed.
+`newsletter_confirmed` fires on `/newsletter/confirm` in the web app, once the
+server has confirmed the address. It has no properties. The cross-subdomain
+cookie usually joins the two on one person, so confirmed / subscribed is the
+confirmation rate. A failed confirm (not an unknown, used or expired link,
+which are page states) sends `action_failed` with action `newsletter_confirm`.
 
 ## Failed writes
 

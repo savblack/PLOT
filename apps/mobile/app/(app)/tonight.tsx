@@ -315,6 +315,8 @@ function Results({ picker, onOpen, styles, colors, reduceMotion, reveal }: { pic
                 <Text style={styles.heroChip}>{T.topPick}</Text>
                 <Text style={styles.heroTitle}>{top.title}</Text>
                 <Text style={styles.heroMeta}>{pickResultMeta(top)}</Text>
+                {!!picker.topReason && <Text style={styles.heroWhy}>{picker.topReason}</Text>}
+                {!!picker.topWhere && <Text style={styles.heroWhere}>{picker.topWhere}</Text>}
               </View>
             </TouchableOpacity>
           );
@@ -605,6 +607,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   heroTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xxl, color: colors.imageTextPrimary },
   heroMeta: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.imageTextSecondary },
+  // Why it was picked and where it streams (web: .tonight-hero-why / -where).
+  heroWhy: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, lineHeight: 19, color: colors.imageTextPrimary },
+  heroWhere: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.xs, color: colors.imageTextPrimary },
   card: { flexDirection: 'row', gap: 14, alignItems: 'center', padding: spacing.md, borderRadius: radii.md, backgroundColor: colors.surfaceSunken },
   cardPoster: { width: 84, height: 126, borderRadius: radii.badge, backgroundColor: colors.borderStrong },
   cardTitle: { fontFamily: fontFamily.display, fontSize: fontSize.xl, color: colors.textPrimary },

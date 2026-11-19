@@ -42,7 +42,7 @@ export const SEARCH_PALETTE = {
   kind: {
     collection: 'Franchise',
     movie: 'Movie',
-    tv: 'Series',
+    tv: 'TV',
     person: 'Person',
     friend: 'Friend',
   },

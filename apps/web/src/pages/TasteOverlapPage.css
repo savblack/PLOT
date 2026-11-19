@@ -141,6 +141,10 @@
 .to-match-note { font-size: 0.875rem; color: var(--text-secondary); max-width: 32ch; }
 .to-venn { width: 100%; max-width: 300px; margin-top: 0.5rem; }
 .to-venn-theirs { fill: var(--accent-secondary-fill); stroke: var(--accent-secondary); stroke-width: 1.5; }
+/* The sage fill is a light tint in every theme, so on a dark ground the light
+   numbers on it vanished (about 1.2:1). In dark, mirror the pink circle: a
+   translucent wash of the secondary over the ground. */
+[data-theme="dark"] .to-venn-theirs { fill: var(--accent-secondary); fill-opacity: 0.15; }
 /* Translucent, drawn over the green so the overlap shows both colours. */
 .to-venn-mine { fill: var(--accent); fill-opacity: 0.14; stroke: var(--accent); stroke-width: 1.5; }
 .to-venn-num { font-family: var(--font-display); font-weight: 700; font-size: 22px; fill: var(--text-primary); }

@@ -140,3 +140,14 @@ test('title meta is the year, plus "Show" for a series', () => {
   assert.equal(titleMeta({ release_date: null, media_type: 'tv' }), WATCH_TOGETHER.overlap.show);
   assert.equal(titleMeta({}), '');
 });
+
+test('saveIdeas drops titles you already saved and caps the list', async () => {
+  const { saveIdeas } = await import('../../watchTogether.js');
+  // Synthetic ids: these never reach TMDB.
+  const trending = [1, 2, 3, 4].map(n => ({ tmdb_id: n, media_type: n % 2 ? 'movie' : 'tv', title: `T${n}`, poster_path: `/p${n}.jpg`, release_date: null }));
+  const saved = [{ tmdb_id: 2, media_type: 'tv' }, { tmdb_id: 3, media_type: 'tv' }];
+  // 3 is saved as a show, but trending has it as a movie, so it stays.
+  assert.deepEqual(saveIdeas(trending, saved).map(t => t.tmdb_id), [1, 3, 4]);
+  assert.deepEqual(saveIdeas(trending, saved, 2).map(t => t.tmdb_id), [1, 3]);
+  assert.deepEqual(saveIdeas(null, null), []);
+});

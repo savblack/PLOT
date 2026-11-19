@@ -98,7 +98,9 @@ export const MEDIA_PANEL = {
   awards: 'Awards',
   watching: 'Watching',
   didntFinish: "Didn't finish",
-  status: 'Status',
+  // The panel's in-between states menu (Watching, Didn't finish, Clear).
+  // "Watched" is logged from the pinned foot bar only (option C, Nov 19).
+  status: 'Progress',
   updating: 'Updating…',
   clearing: 'Clearing…',
   clearStatus: 'Clear status',
@@ -116,7 +118,7 @@ export const MEDIA_PANEL = {
   // @plot/core/useTitleFootBar.js.
   foot: {
     unwatchedHead: 'Watched it?',
-    unwatchedHint: 'Tap a star to rate it',
+    unwatchedHint: 'Pick a star to rate it',
     iveWatched: "I've watched",
     imWatching: "I'm watching",
     head: 'Thoughts?',

@@ -15,18 +15,28 @@ const rails = [
   { key: 'truecrime', label: 'New in True Crime', genreIds: [], items: [{ id: 4, media_type: 'tv', genre_ids: [] }] },
 ];
 
-test('buildGenreRailDefinitions covers movie and TV catalogs while keeping distinct names separate', () => {
+test('buildGenreRailDefinitions joins shared names and folds a movie genre into its broader TV genre', () => {
   const definitions = buildGenreRailDefinitions({
-    movie: [{ id: 28, name: 'Action' }, { id: 35, name: 'Comedy' }],
-    tv: [{ id: 10759, name: 'Action & Adventure' }, { id: 35, name: 'Comedy' }],
+    movie: [{ id: 28, name: 'Action' }, { id: 12, name: 'Adventure' }, { id: 35, name: 'Comedy' }, { id: 878, name: 'Science Fiction' }],
+    tv: [{ id: 10759, name: 'Action & Adventure' }, { id: 35, name: 'Comedy' }, { id: 10765, name: 'Sci-Fi & Fantasy' }],
   });
 
   assert.deepEqual(definitions.map(rail => rail.label), [
-    'New in Action',
     'New in Action & Adventure',
+    'New in Adventure',
     'New in Comedy',
+    'New in Sci-Fi & Fantasy',
   ]);
+  const action = definitions.find(rail => rail.key === 'action-and-adventure');
+  assert.equal(action.movieGenreId, 28);
+  assert.equal(action.tvGenreId, 10759);
+  assert.deepEqual(action.genreIds, [28, 10759]);
   assert.deepEqual(definitions.find(rail => rail.key === 'comedy').genreIds, [35]);
+});
+
+test('buildGenreRailDefinitions keeps a movie genre on its own when its TV partner is missing', () => {
+  const definitions = buildGenreRailDefinitions({ movie: [{ id: 28, name: 'Action' }], tv: [] });
+  assert.deepEqual(definitions.map(rail => rail.label), ['New in Action']);
 });
 
 test('prepareNewReleaseGenreRails removes the repeated prefix and sorts by genre', () => {

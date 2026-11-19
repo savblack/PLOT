@@ -7,7 +7,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   // storybook-static is gitignored build output, but ESLint doesn't read
-  // .gitignore — without this, `npm run check` fails locally for anyone who has
+  // .gitignore — without this, `pnpm run check` fails locally for anyone who has
   // run a Storybook build, while passing in CI's clean checkout.
   // apps/mobile is linted by its own TypeScript block below (it used to be
   // ignored wholesale); its native and Expo build dirs stay ignored.
@@ -22,7 +22,7 @@ export default defineConfig([
     '.agents/skills/impeccable/**',
     'apps/mobile/ios/**', 'apps/mobile/android/**', 'apps/mobile/.expo/**',
     // Same story: `wrangler dev`/`pages dev` writes bundled worker JS under
-    // .wrangler/tmp/, so running `npm run dev:website` once leaves lint errors
+    // .wrangler/tmp/, so running `pnpm run dev:website` once leaves lint errors
     // behind in generated code that nobody wrote.
     '.wrangler', '**/.wrangler/**',
     // Bundled from packages/core by scripts/build-import-engine.mjs; its
