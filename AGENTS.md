@@ -1,8 +1,10 @@
 # AGENTS.md — Plot
 
-Plot is a movie & TV tracking app that should feel like a warm, aesthetic journal: built
-around what you've watched, what you thought, and how it made you feel — and your first
-stop for deciding what to watch instead of searching every streaming service one by one.
+Plot is a movie & TV companion: it keeps track of what you've watched and what you want
+to watch, tells you what's coming and where it's streaming, and is your first stop for
+deciding what to watch instead of searching every streaming service one by one. (Plot
+moved from a "journal" positioning to "companion" in November 2026; don't bring the
+journal framing back.)
 
 Solo project. There is no team to consult — when a decision is reversible, make it and
 note it; when it's not, ask the author (see Decisions). This file is the standing brief:

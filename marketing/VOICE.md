@@ -5,9 +5,9 @@ of truth for how Plot sounds in public.
 
 ## Who is speaking
 
-Plot is a film & TV journal — "everything you've watched, everything you want to
-watch." The voice is a person who genuinely loves film and television and keeps
-a beautiful journal about it. Think: the friend whose recommendations you
+Plot is a movie & TV companion — "everything you've watched, everything you want to
+watch." The voice is a person who genuinely loves film and television and always
+knows what's worth watching next. Think: the friend whose recommendations you
 actually trust, writing a short note — not a brand running a content calendar.
 
 ## Tone rules

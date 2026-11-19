@@ -97,7 +97,9 @@ h1.title{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,2.9rem);font-we
 .section{margin-top:28px;}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;}
 .overview{font-size:1rem;line-height:1.62;max-width:64ch;}
-.cast{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:24px 16px;}
+/* Up to 8 cast members: two even rows of 4, or one row of 8 on a wide screen, never a lone straggler. */
+.cast{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px 16px;}
+@media (min-width:900px){.cast{grid-template-columns:repeat(8,minmax(0,1fr));}}
 .cast figure{margin:0;min-width:0;text-align:center;}
 .cast img,.cast .noface{width:72px;height:72px;border-radius:50%;object-fit:cover;background:var(--surface);display:block;margin:0 auto 10px;}
 .cast figcaption{font-size:.79rem;line-height:1.32;}

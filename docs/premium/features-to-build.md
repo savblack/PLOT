@@ -353,7 +353,7 @@ Rules are pure and unit-tested: `supabase/functions/_shared/availabilityAlerts.j
 
 ### 5.11 Customize your plot — **Premium** (supporting, not lead)
 
-**Intent:** Home Screen widgets, custom app icons, custom profile pages, themes. Make Plot feel like the user’s journal.
+**Intent:** Home Screen widgets, custom app icons, custom profile pages, themes. Make Plot feel like the user’s own.
 
 **Acceptance sketch:**
 - Mobile-heavy (widgets, icons); themes/profile may be cross-platform

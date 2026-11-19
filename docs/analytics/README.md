@@ -278,7 +278,9 @@ a person: a `$pageview` and then no Tier 1 action (it negates **action 333111**,
 not a list of event names, so it tracks the catalog on its own), no `$pageleave`,
 and none of `signup_cta_clicked` / `login_click` / `save_cta_clicked` /
 `signup_form_viewed` / `signup_form_started` / `signup_submit_clicked` /
-`user_signed_up` / `user_logged_in`.
+`user_signed_up` / `user_logged_in` / `premium_link_clicked` /
+`search_result_opened` (the last two are the marketing site's See Premium links
+and homepage search picks, added to the cohort on 2026-11-19).
 
 Those first three matter more than they look. They fire from the marketing and
 server-rendered surfaces on `theplot.tv` — the very host the crawlers hit — so

@@ -1376,7 +1376,7 @@ const aboutCard = (placement: string, compact = false) => {
   return `
 <aside class="about card r4" aria-label="About Plot">
   <span class="about-logo" aria-hidden="true"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></span>
-  <p class="about-title">Everything you've watched. Everything you want to watch.</p>
+  <p class="about-title">Always know what to watch.</p>
   <p class="about-sub">Plot is your personal movie and TV companion. Track what you've seen, save what's next and know what's streaming, trending and landing soon, all in one place.</p>
   ${actions}
 </aside>`;
@@ -1871,6 +1871,10 @@ const handle = async (req: Request): Promise<Response> => {
 
   const wantsModule = (typed.post_type === 'guide' && refs.length > 0) || refs.length === 1;
   const trailerHtml = lead ? await trailerModule(typed, lead.ref) : '';
+  // A trailer's poster frame is usually the same art as the hero still, so an
+  // article with a trailer drops the hero image and lets the player carry it.
+  // The still stays the share image (og:image).
+  const heroShown = trailerHtml ? '' : hero;
   const storyHtml = trailerHtml || (wantsModule && lead && !inlineTitles ? await storyModule(typed, region, lead.ref) : '');
   const runnerUpHtml = storyHtml && runnerUpAt > 0 ? await storyModule(typed, region, runnerUp!.ref) : '';
   // ~220 wpm, rounded up — enough to set an expectation, not a precise claim.
@@ -1950,12 +1954,12 @@ const handle = async (req: Request): Promise<Response> => {
     <nav class="crumbs" aria-label="Breadcrumb">
       <a href="${SITE}">Home</a><span class="sep2">/</span><a href="${FEED_PATH}">What's On</a>${k ? `<span class="sep2">/</span><span>${esc(TYPE_META[typed.post_type]?.label ?? 'Update')}</span>` : ''}
     </nav>
-    <article class="post r2${hero ? '' : ' text-led'}">
+    <article class="post r2${heroShown ? '' : ' text-led'}">
       <header class="post-head">
         <div class="a-meta"><span class="d sc">${esc(fmtDate(typed.scheduled_for))}</span><span class="sep"></span><span class="d sc">${readMins} min read</span></div>
         <h1>${esc(title)}</h1>
       </header>
-      ${hero ? `<figure class="hero"><img src="${esc(hero)}" alt=""></figure>` : ''}
+      ${heroShown ? `<figure class="hero"><img src="${esc(heroShown)}" alt=""></figure>` : ''}
       <div class="post-body">
         ${bodyHtml}
       </div>
