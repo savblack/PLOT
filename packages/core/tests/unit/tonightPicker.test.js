@@ -36,6 +36,7 @@ import {
   visiblePickerState,
 } from '../../tonightPicker.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
+import { pickReason, joinWithAnd, pickWhereToWatch, loadPickProviders } from '../../tonightPicker.js';
 
 // Ids here are opaque fixture values fed to a fake client, never real TMDB lookups.
 const NETFLIX = 8;
@@ -462,4 +463,58 @@ test('result meta: movie shows year, runtime and score; a show its format', asyn
   );
   assert.equal(pickResultMeta({ media_type: 'tv', seasons: 3 }), P.seasons(3));
   assert.equal(pickResultMeta({ media_type: 'movie' }), '');
+});
+
+// ── The top pick's reason and where to watch (Nov 19) ──
+
+const REASON_GENRES = [
+  { id: 12, name: 'Adventure', mood: 'Adventurous' },
+  { id: 35, name: 'Comedy', mood: 'Funny' },
+  { id: 53, name: 'Thriller', mood: 'Tense' },
+];
+const baseOptions = { mediaType: 'movie', genreIds: [], maxRuntime: null, maxEpisodeRuntime: null, era: 'any', minScore: null };
+
+test('pickReason names only the asked-for moods the pick actually has, then length and era', () => {
+  const item = { id: 1, genre_ids: [12, 18] };
+  const options = { ...baseOptions, genreIds: [12, 35], maxRuntime: 120, era: '2010s' };
+  assert.equal(pickReason(item, options, { genres: REASON_GENRES }), 'You asked for adventurous, under 2 hours, from the 2010s.');
+});
+
+test('pickReason adds the watchlist line, and says nothing when nothing was asked', () => {
+  assert.equal(pickReason({ id: 1, genre_ids: [], onWatchlist: true }, baseOptions), 'It’s on your watchlist.');
+  assert.equal(pickReason({ id: 1, genre_ids: [12] }, baseOptions, { genres: REASON_GENRES }), null);
+});
+
+test('pickReason uses the episode length for a show and counts keyword genres', () => {
+  const item = { id: 2, genre_ids: [], kw_genres: [53] };
+  const options = { ...baseOptions, mediaType: 'tv', genreIds: [53, 35], maxEpisodeRuntime: 30, maxRuntime: 90 };
+  assert.equal(pickReason(item, options, { genres: REASON_GENRES }), 'You asked for tense, with episodes under 30 min.');
+});
+
+test('joinWithAnd reads like a sentence', () => {
+  assert.equal(joinWithAnd([]), '');
+  assert.equal(joinWithAnd(['Max']), 'Max');
+  assert.equal(joinWithAnd(['Max', 'Hulu']), 'Max and Hulu');
+  assert.equal(joinWithAnd(['Max', 'Hulu', 'Netflix']), 'Max, Hulu and Netflix');
+});
+
+test('pickWhereToWatch: loading, none, and at most three services', () => {
+  assert.equal(pickWhereToWatch(null), null);
+  assert.equal(pickWhereToWatch([]), 'Not on a streaming service in your region');
+  const four = ['Max', 'Hulu', 'Netflix', 'Peacock'].map((name, id) => ({ id, name }));
+  assert.equal(pickWhereToWatch(four), 'Streaming on Max, Hulu and Netflix');
+});
+
+test('loadPickProviders lists the region\'s streaming services, the viewer\'s own first', async () => {
+  const client = {
+    getMovieDetails: async () => ({
+      'watch/providers': { results: { US: { flatrate: [
+        { provider_id: 8, provider_name: 'Netflix', logo_path: null },
+        { provider_id: 1899, provider_name: 'Max', logo_path: null },
+      ] } } },
+    }),
+  };
+  const providers = await loadPickProviders({ id: 990001, media_type: 'movie' }, { region: 'US', providerIds: [1899], client });
+  assert.deepEqual(providers.map(p => p.name), ['Max', 'Netflix']);
+  assert.equal(await loadPickProviders({ id: 990002, media_type: 'movie' }, { region: '', client }), null);
 });
