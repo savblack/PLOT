@@ -167,7 +167,10 @@ function TasteOverlapBody({
     <View style={styles.state}>
       <Text style={styles.stateTitle}>{T.upsellTitle}</Text>
       <Text style={styles.stateBody}>{T.upsellBody}</Text>
-      <Button variant="primary" label={PLANS_PAGE.previewAction} onPress={() => router.push(PREMIUM_SETTINGS_PATH as Href)} style={styles.primary} />
+      <View style={styles.stateActions}>
+        <Button variant="primary" label={PLANS_PAGE.previewAction} onPress={() => router.push(PREMIUM_SETTINGS_PATH as Href)} style={styles.primary} />
+        <Button label={T.upsellSomeoneElse} onPress={() => { track(EVENTS.COMPARE_SOMEONE_ELSE_TAPPED); router.push('/(app)/compare' as Href); }} />
+      </View>
     </View>
   ) : loading ? (
     <LoadingSkeleton styles={styles} />
@@ -651,6 +654,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   primary: { alignSelf: 'center' },
   state: { alignItems: 'flex-start', gap: spacing.md, padding: 18, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   stateTitle: { fontFamily: fontFamily.display, fontSize: 22, letterSpacing: -0.4, color: colors.textPrimary },
+  stateActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
   stateBody: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 21, color: colors.textSecondary },
   note: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center' },
   stack: { gap: 14 },

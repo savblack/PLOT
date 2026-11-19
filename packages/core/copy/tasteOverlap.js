@@ -59,7 +59,9 @@ export const TASTE_OVERLAP = {
   share: 'Share your match',
 
   upsellTitle: 'Compare your taste with Premium',
-  upsellBody: 'Compare works when either of you has Premium. See your match, the genres you share and where you disagree.',
+  upsellBody: 'Compare works when either of you has Premium. Get it yourself, or compare with a friend who already has it.',
+  // The second button on that card: back to the people list on Compare.
+  upsellSomeoneElse: 'Compare with someone else',
   notFound: 'This profile isn’t available.',
   /** @param {string} name */
   notVisible: (name) => `${name}’s profile is private. Once they accept your follow request, you can compare.`,

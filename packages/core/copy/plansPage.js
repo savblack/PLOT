@@ -210,7 +210,7 @@ export const PLANS_PAGE = {
       tasteOverlap: {
         context: () => 'Taste overlap is part of Premium',
         title: 'Compare your taste with someone you follow.',
-        body: 'See your match, the genres you share and where you disagree.',
+        body: 'See your match, the genres you share and where you disagree. Only one of you needs Premium.',
         also: ['pick', 'together'],
       },
       // Subscribe to calendar, from a title's Add to calendar menu or Settings.

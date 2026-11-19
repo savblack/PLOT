@@ -109,7 +109,10 @@ function Upsell() {
     <section className="to-card to-state">
       <h2 className="to-state-title">{T.upsellTitle}</h2>
       <p className="to-state-body">{T.upsellBody}</p>
-      <PremiumGateButton reason="tasteOverlap" />
+      <div className="to-state-actions">
+        <PremiumGateButton reason="tasteOverlap" />
+        <Link className="btn btn-sm btn-secondary" to="/compare" onClick={() => track(EVENTS.COMPARE_SOMEONE_ELSE_TAPPED)}>{T.upsellSomeoneElse}</Link>
+      </div>
     </section>
   );
 }
