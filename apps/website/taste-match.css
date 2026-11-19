@@ -7,7 +7,7 @@ a { color: inherit; text-underline-offset: 4px; }
 a:not(.btn):not(.footer-cta):not(.nav-cta):hover { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 .page-wrap { max-width: 1000px; margin: 0 auto; padding: 96px 2rem 36px; }
-h1, h2 { font-family: var(--display); font-weight: 400; letter-spacing: -.025em; text-wrap: balance; }
+h1, h2 { font-family: var(--display); font-weight: 700; letter-spacing: -.03em; text-wrap: balance; }
 h1 { font-size: clamp(3.2rem, 6vw, 5.4rem); line-height: 1.02; margin: .75rem 0 1.5rem; }
 h2 { font-size: 2rem; line-height: 1.15; }
 
@@ -15,6 +15,7 @@ h2 { font-size: 2rem; line-height: 1.15; }
 .hero-lede { font-size: 1rem; color: var(--text-secondary); max-width: 44ch; line-height: 1.75; }
 .tm-actions { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; margin-top: 2rem; }
 .tm-actions .btn { min-height: 44px; white-space: nowrap; }
+.tm-premium-note { margin-top: .9rem; font-size: .875rem; color: var(--text-secondary); }
 .tm-link { font-size: .875rem; padding: .6rem 0; }
 
 /* A small static example of the result. */
@@ -51,7 +52,7 @@ h2 { font-size: 2rem; line-height: 1.15; }
 
 .tm-privacy { margin: 3rem 0 0; padding: 2rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); }
 .tm-privacy h2 { font-size: 1.3rem; margin-bottom: .6rem; }
-.tm-privacy p { font-size: .9rem; color: var(--text-secondary); max-width: 72ch; }
+.tm-privacy p { font-size: .9rem; color: var(--text-secondary); max-width: 34em; }
 .tm-privacy p + p { margin-top: .8rem; }
 
 .skip-link { position: absolute; left: 1rem; top: -100px; z-index: 2000; background: var(--bg); padding: .7rem 1rem; }

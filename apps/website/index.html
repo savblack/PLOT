@@ -113,8 +113,8 @@
   <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
-  <link rel="stylesheet" href="/ui.css?v=e9689cc8" />
-  <link rel="stylesheet" href="/nav.css?v=d915d58f" />
+  <link rel="stylesheet" href="/ui.css?v=5d41273c" />
+  <link rel="stylesheet" href="/nav.css?v=d5a39888" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -346,6 +346,7 @@
       gap: 18px;
     }
     .hero-shelf li { position: relative; margin: 0; flex-shrink: 0; }
+    .hero-shelf .shelf-link { display: block; border-radius: 12px; }
     .hero-shelf img { display: block; object-fit: cover; border-radius: 12px; background: var(--surface); }
     .hero-shelf .shelf-outer img { width: 132px; height: 198px; }
     .hero-shelf .shelf-mid img { width: 150px; height: 225px; }
@@ -602,6 +603,8 @@
       white-space: nowrap;
     }
 
+    a.ticker-item { text-decoration: none; text-underline-offset: 3px; }
+    a.ticker-item:hover { text-decoration: underline; }
     .ticker-item {
       font-family: var(--sans);
       font-size: 0.875rem;
@@ -994,7 +997,6 @@
       font-weight: 600;
       font-size: 1rem;
       color: var(--text);
-      opacity: 0.7;
     }
     /* "and more" (Netflix and Simkl imports too) reads as a quieter tail. */
     .hero-trust-more {
@@ -1044,8 +1046,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="/pricing">Pricing</a></li>
+      <li class="nav-more"><a href="/taste-match">Taste match</a></li>
+      <li class="nav-more"><a href="/about">About</a></li>
+      <li class="nav-more"><a href="/support">Support</a></li>
       <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
-      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
+      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Start tracking</a></li>
     </ul>
     <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
@@ -1276,7 +1281,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="footer-intro">
           <p class="footer-lede">Everything you've watched.<br>Everything you want to watch.</p>
           <div class="footer-actions">
-            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your Plot</a>
+            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start tracking</a>
           </div>
         </div>
         <ul class="footer-links" role="navigation" aria-label="Footer">
@@ -1389,6 +1394,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     // already shown, or the same title lands twice in one section. `seen` is a
     // plain object the caller keeps across calls so several strips in the same
     // section can share one running record of what's been used.
+    // A title's public page, theplot.tv/movie|tv/<slug>-<id>, built the way
+    // the title-page edge function builds its canonical slug. The id and media
+    // type come from the TMDB response, never typed by hand.
+    function titlePageUrl(item, mediaType) {
+      var type = mediaType || item.media_type;
+      if (!item || !item.id || (type !== 'movie' && type !== 'tv')) return null;
+      var slug = String(item.title || item.name || '').toLowerCase()
+        .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'title';
+      return '/' + type + '/' + slug + '-' + item.id;
+    }
     function titleKey(item) {
       return String((item && (item.title || item.name)) || '').trim().toLowerCase();
     }
@@ -1411,7 +1427,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         // than every poster on the page. Callers already guard with `|| []`.
         trendingSetsPromise = Promise.all([
           tmdbProxy('trending/movie/week'),
-          tmdbProxy('movie/now_playing'),
+          tmdbProxy('movie/now_playing', 'region=US'),
           tmdbProxy('trending/tv/week'),
         ].map(function(p) { return p.catch(function() { return {}; }); }));
       }
@@ -1456,6 +1472,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           live.forEach(function (r, i) {
             imgs[i].src = IMG + r.poster_path;
             imgs[i].alt = (r.title || r.name) + ' poster';
+            // This week's posters open their public page (where to watch).
+            // The committed fallbacks carry no TMDB id, so they stay unlinked.
+            var url = titlePageUrl(r, i === 0 || i === 4 ? 'tv' : 'movie');
+            if (url && imgs[i].parentNode.tagName !== 'A') {
+              var a = document.createElement('a');
+              a.href = url;
+              a.className = 'shelf-link';
+              a.setAttribute('data-cta', 'hero_shelf');
+              imgs[i].parentNode.insertBefore(a, imgs[i]);
+              a.appendChild(imgs[i]);
+            }
           });
           var now = new Date();
           var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1479,7 +1506,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         var p = String(iso || '').split('-');
         return p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2]) : null;
       }
-      Promise.all([fetchTrendingSets(), tmdbProxy('movie/upcoming').catch(function () { return {}; })]).then(function (res) {
+      Promise.all([fetchTrendingSets(), tmdbProxy('movie/upcoming', 'region=US').catch(function () { return {}; })]).then(function (res) {
         var sets = res[0], upcoming = (res[1] && res[1].results) || [];
         var now = new Date();
         var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1597,10 +1624,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           cat.textContent = label;
           frag.appendChild(cat);
 
-          items.forEach(title => {
-            const item = document.createElement('span');
+          items.forEach(entry => {
+            // A title with a TMDB id links to its public page. The ticker is
+            // aria-hidden and runs three copies, so its links stay out of the
+            // tab order; the same titles are reachable from search and What's On.
+            const href = typeof entry === 'string' ? null : entry.href;
+            const item = document.createElement(href ? 'a' : 'span');
             item.className = 'ticker-item';
-            item.textContent = title;
+            item.textContent = typeof entry === 'string' ? entry : entry.title;
+            if (href) { item.href = href; item.tabIndex = -1; item.setAttribute('data-cta', 'ticker'); }
             frag.appendChild(item);
 
             const sep = document.createElement('span');
@@ -1634,8 +1666,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       try {
         const [trending, nowPlaying, upcoming, topTv] = await Promise.all([
           tmdbProxy('trending/all/week'),
-          tmdbProxy('movie/now_playing'),
-          tmdbProxy('movie/upcoming'),
+          tmdbProxy('movie/now_playing', 'region=US'),
+          tmdbProxy('movie/upcoming', 'region=US'),
           tmdbProxy('tv/top_rated'),
         ]);
 
@@ -1643,15 +1675,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         // trending and in cinemas is listed once, under the first label that
         // claims it. Deduping before the slice keeps every group full length.
         const seen = {};
-        const group = (label, res, count) => ({
+        const group = (label, res, count, mediaType) => ({
           label,
-          items: unseen((res && res.results) || [], seen).slice(0, count).map(r => r.title || r.name),
+          items: unseen((res && res.results) || [], seen).slice(0, count)
+            .map(r => ({ title: r.title || r.name, href: titlePageUrl(r, mediaType) })),
         });
         populate([
           group('Trending Now', trending,   12),
-          group('In Theaters',  nowPlaying, 10),
-          group('Coming Soon',  upcoming,   10),
-          group('Top Rated TV', topTv,      10),
+          group('In Theaters',  nowPlaying, 10, 'movie'),
+          group('Coming Soon',  upcoming,   10, 'movie'),
+          group('Top Rated TV', topTv,      10, 'tv'),
         ]);
       } catch (err) {
         populate([

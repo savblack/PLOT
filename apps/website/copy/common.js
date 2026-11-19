@@ -12,12 +12,12 @@ export const NAV = {
   whatsOn: "What's On",
   pricing: 'Pricing', // pricing.html's nav and the footer
   login: 'Log in',
-  signup: 'Sign up',
+  signup: 'Start tracking',
 };
 
 export const FOOTER = {
   tagline: ["Everything you've watched.", 'Everything you want to watch.'],
-  cta: 'Start your plot',
+  cta: 'Start tracking',
   login: 'Log in',
   headings: { explore: 'Explore', company: 'Company', legal: 'Legal' },
   whatsOn: "What's On",

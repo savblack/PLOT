@@ -85,7 +85,7 @@ export const ABOUT_PAGE = {
       ],
       ctas: [
         {
-          label: "Start your plot, free",
+          label: "Start tracking",
           href: "https://app.theplot.tv/signup",
         },
         {
@@ -125,7 +125,7 @@ export const ABOUT_PAGE = {
     headline: "Your movies. Your shows.<br>Your plot.",
     ctas: [
       {
-        label: "Start your plot, free",
+        label: "Start tracking",
         href: "https://app.theplot.tv/signup",
       },
       {

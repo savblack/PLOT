@@ -49,6 +49,7 @@ const ALLOWED_PARAMS = new Map([
   ['vote_count.gte', new Set(['200', '2500'])],
   ['with_genres', new Set(['27', '10749'])], // Horror, Romance — the two category rings
   ['include_adult', new Set(['false'])],     // Plot never asks TMDB for adult results
+  ['region', new Set(['US'])],               // US release dates for In theaters / Coming soon
 ]);
 
 /**

@@ -205,6 +205,9 @@ type FeedPost = {
     // never declared; the rows read it so a title can carry its release date
     // without a TMDB lookup.
     titles?: { tmdb_id?: number; when_label?: string | null; release_kind?: string | null; poster_path?: string | null }[] | null;
+    // Countdowns: days from the post's scheduled date to the title's release
+    // (marketing/planner/triggers/countdown.mjs posts at T-14, T-7 and T-1).
+    days_until?: number | null;
   } | null;
 };
 
@@ -483,10 +486,16 @@ ${head}
       --inkfill: #191919; --inkfill-hover: #242424; --on-inkfill: #f0efe8; --on-inkfill-rgb: 240,239,232;
       --g-rgb: 12,12,12; --card-rgb: 25,25,25; --body: #d9d7cf;
       --hot: #F06A88; --up: #4ade80; --down: #F18997; --tile: #191919;
+      /* The shared footer reads these; the static pages get them from theme.css. */
+      --footer-bg: #2a1720; --footer-text: #f0efe8; --footer-muted: rgba(240,239,232,0.7);
+      --footer-rule: rgba(240,239,232,0.12); --footer-mark: #3d2230;
+      --footer-cta-bg: #ff88c8; --footer-cta-bg-hover: #ff9fd3; --footer-cta-text: #292924;
       color-scheme: dark;
     }
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* Keyboard focus: the accent ring, as on the rest of theplot.tv. */
+  :where(a, button, summary, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   body {
     background: var(--bg); color: var(--ink);
     font-family: 'DM Sans', system-ui, sans-serif; font-weight: 400;
@@ -523,6 +532,7 @@ ${head}
   /* Small tracked capitals: the same values as apps/website/nav.css. */
   .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s, background 0.2s; }
   .nav-links a:hover { color: var(--ink); }
+  .nav-links .nav-more { display: none; }
   .nav-links a.current { color: var(--ink); }
   .nav-cta { background: var(--fill); padding: 0.6rem 1.1rem !important; border-radius: 9999px; line-height: 1; color: var(--on-fill); }
   .nav-links a.nav-cta { color: var(--on-fill); font-weight: 700; }
@@ -536,6 +546,7 @@ ${head}
     .nav-links { display: none; }
     .nav-links.open { display: flex; flex-direction: column; position: fixed; top: 64px; left: 0; right: 0; background: rgba(var(--g-rgb),0.94); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); padding: 1.25rem 2rem; gap: 0.35rem; align-items: stretch; }
     .nav-links.open li { display: block; }
+    .nav-links.open .nav-more { display: block; }
     .nav-links.open a { display: block; padding: 0.85rem 0; text-align: center; }
     .nav-links.open .nav-cta { display: block; width: max-content; margin: 0.5rem auto 0; padding: 0.85rem 1.8rem !important; }
     .nav-hamburger { display: flex; }
@@ -612,7 +623,7 @@ ${head}
 
   .wsearch { display: flex; align-items: center; gap: 6px; flex: 0 1 300px; min-width: 0; margin-bottom: 8px; background: var(--paper); border-radius: 9999px; padding: 3px 3px 3px 16px; }
   .wsearch input[type=search] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.95rem; color: var(--ink); padding: 6px 0; -webkit-appearance: none; appearance: none; }
-  .wsearch input[type=search]::placeholder { color: var(--faint); }
+  .wsearch input[type=search]::placeholder { color: var(--mut); }
   .wsearch button { border: 0; border-radius: 9999px; background: var(--fill); color: var(--on-fill); font: inherit; font-size: 0.8rem; font-weight: 600; padding: 7px 14px; cursor: pointer; transition: background 0.2s; }
   .wsearch button:hover { background: var(--fill-hover); color: var(--on-fill); }
   .wsearch:focus-within { box-shadow: 0 0 0 2px var(--ink); }
@@ -927,7 +938,11 @@ ${FOOTER_CSS}
     .row-t { font-size: 1.15rem; }
     .row-dek { display: none; }
     nav.dex { flex-direction: column; align-items: stretch; gap: 14px; }
-    .dex-links { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    /* The tabs scroll sideways on a phone; a soft right edge says there is
+       more, and end padding lets the last tab scroll clear of it. */
+    .dex-links { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-right: 40px;
+      -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+      mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
     .dex-links::-webkit-scrollbar { display: none; }
     .wsearch { flex: none; margin-bottom: 14px; }
   }
@@ -940,8 +955,11 @@ ${GTM_NOSCRIPT}
   <ul class="nav-links" id="navLinks">
     <li><a href="${FEED_PATH}"${nav === 'whats-on' ? ' class="current"' : ''}>What's On</a></li>
     <li><a href="${SITE}/pricing">Pricing</a></li>
+    <li class="nav-more"><a href="${SITE}/taste-match">Taste match</a></li>
+    <li class="nav-more"><a href="${SITE}/about">About</a></li>
+    <li class="nav-more"><a href="${SITE}/support">Support</a></li>
     <li><a href="${APP}/login?src=whats_on_nav" data-cta="nav">Log in</a></li>
-    <li><a href="${APP}/signup?src=whats_on_nav" data-cta="nav" class="nav-cta">Sign up</a></li>
+    <li><a href="${APP}/signup?src=whats_on_nav" data-cta="nav" class="nav-cta">Start tracking</a></li>
   </ul>
   <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
     <span></span><span></span><span></span>
@@ -1113,7 +1131,7 @@ const renderChart = async (supabase: Db) => {
         <span class="ec-title">Watch more. Forget less.</span>
         <span class="ec-sub">Track what's trending and get reminded the day it drops.</span>
       </div>
-      <a class="cta" href="https://app.theplot.tv/signup?src=whats_on_chart" data-cta="chart_signup">Sign up &rarr;</a>
+      <a class="cta" href="https://app.theplot.tv/signup?src=whats_on_chart" data-cta="chart_signup">Start tracking &rarr;</a>
     </aside>`;
 
   if (!latest) {
@@ -1229,13 +1247,40 @@ const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol c
   </a></li>`;
 }).join('')}</ol>`;
 
-// The release date is the point of a countdown post, so it's a badge on the
-// card rather than buried in a dek. Uses scheduled_for (when Plot posted the
-// update) — the only date FeedPost actually carries; not a claim about the
-// title's own release date, which this function has no source for.
-const comingSoonCards = (posts: FeedPost[]) => `<div class="datecards">${posts.map((p) => {
+// A countdown's release date: its scheduled day plus payload.days_until (the
+// planner posts at T-14, T-7 and T-1). Null for a post without the field.
+const DAY_MS = 86_400_000;
+const countdownRelease = (p: FeedPost): string | null => {
+  const days = p.payload?.days_until;
+  if (typeof days !== 'number' || !Number.isFinite(days)) return null;
+  const start = Date.parse(p.scheduled_for.slice(0, 10));
+  return Number.isNaN(start) ? null : new Date(start + days * DAY_MS).toISOString().slice(0, 10);
+};
+
+// Coming soon keeps only titles still ahead of today (UTC, like the page's
+// dateline), one card per title (a title gets three countdown posts), soonest
+// first. Posts without a release date are left out rather than shown with
+// the day Plot posted them, which read as a release date.
+const upcomingCountdowns = (posts: FeedPost[], today: string, size: number) => {
+  const seen = new Set<string>();
+  return posts
+    .map((p) => ({ p, release: countdownRelease(p) }))
+    .filter((x): x is { p: FeedPost; release: string } => !!x.release && x.release >= today)
+    .filter(({ p, release }) => {
+      const ref = p.tmdb_refs?.[0];
+      const key = ref ? `${ref.media_type}:${ref.tmdb_id ?? ref.id}` : `${p.slug}:${release}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => a.release.localeCompare(b.release))
+    .slice(0, size);
+};
+
+// The release date is the point of a countdown post, so it's the badge.
+const comingSoonCards = (items: { p: FeedPost; release: string }[]) => `<div class="datecards">${items.map(({ p, release }) => {
   const img = postImage(p);
-  const { mon, day } = fmtBadge(p.scheduled_for);
+  const { mon, day } = fmtBadge(release);
   return `<a class="datecard" href="${FEED_PATH}/${esc(p.slug)}">
     <span class="date-badge">${esc(mon)}<span class="dd">${day}</span></span>
     <div class="dc-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="ph"></span>'}</div>
@@ -1316,7 +1361,7 @@ const closerSection = (placement: string) => `
 const aboutCard = (placement: string, compact = false) => {
   const actions = `<div class="about-actions">
     <a class="about-login" href="${APP}/login?src=${esc(placement)}" data-cta="${esc(placement)}_about_login">Log in</a>
-    <a class="cta" href="${APP}/signup?src=${esc(placement)}" data-cta="${esc(placement)}_about_signup">Sign up</a>
+    <a class="cta" href="${APP}/signup?src=${esc(placement)}" data-cta="${esc(placement)}_about_signup">Start tracking</a>
   </div>`;
   if (compact) {
     return `
@@ -1395,6 +1440,7 @@ const SUBSCRIBE_CSS = `
   .wcl-form { display: flex; align-items: center; border: 1px solid var(--ink); border-radius: 9999px; padding: 6px; height: 56px; width: 360px; max-width: 100%; }
   .wcl-form input[type=email] { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.88rem; padding: 0 6px 0 16px; color: var(--ink); }
   .wcl-form input[type=email]::placeholder { color: var(--mut); }
+  .nlsub-form input[type=email]::placeholder { color: var(--mut); }
   .wcl-form button { height: 40px; padding: 0 18px; border: 0; border-radius: 9999px; background: var(--fill); color: var(--ink); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
   .wcl-form button:hover:not(:disabled) { background: var(--fill-hover); }
   .wcl-form button:disabled { opacity: 0.6; cursor: default; }
@@ -1547,7 +1593,7 @@ const handle = async (req: Request): Promise<Response> => {
       ] = await Promise.all([
         baseQuery().order('scheduled_for', { ascending: false }).limit(HOME_BATCH),
         baseQuery().eq('post_type', 'now_streaming').order('scheduled_for', { ascending: false }).limit(STREAMING_SIZE + CATEGORY_BUFFER),
-        baseQuery().eq('post_type', 'countdown').order('scheduled_for', { ascending: false }).limit(COUNTDOWN_SIZE + CATEGORY_BUFFER),
+        baseQuery().eq('post_type', 'countdown').order('scheduled_for', { ascending: false }).limit(COUNTDOWN_SIZE * 4 + CATEGORY_BUFFER),
         baseQuery().eq('post_type', 'trailer').order('scheduled_for', { ascending: false }).limit(TRAILER_SIZE + CATEGORY_BUFFER),
         baseQuery().eq('post_type', 'on_this_day').order('scheduled_for', { ascending: false }).limit(ON_THIS_DAY_SIZE),
         fetchTrendingSnapshots(supabase),
@@ -1580,9 +1626,18 @@ const handle = async (req: Request): Promise<Response> => {
       const rail = rest.slice(0, HERO_RAIL_SIZE);
       const heroSlugs = new Set([lead.slug, ...rail.map((p) => p.slug)]);
 
-      const streaming = ((streamingData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, STREAMING_SIZE);
-      const countdown = ((countdownData || []) as FeedPost[]).slice(0, COUNTDOWN_SIZE);
-      const onThisDay = ((onThisDayData || []) as FeedPost[]).slice(0, ON_THIS_DAY_SIZE);
+      // The page is dated today, so each dated section has to agree with it:
+      // New at home covers the last two weeks, Coming soon only what is still
+      // ahead, and On this day only today's anniversaries (hidden otherwise).
+      const today = new Date().toISOString().slice(0, 10);
+      const twoWeeksAgo = new Date(Date.parse(today) - 14 * DAY_MS).toISOString().slice(0, 10);
+      const streaming = ((streamingData || []) as FeedPost[])
+        .filter((p) => !heroSlugs.has(p.slug) && p.scheduled_for.slice(0, 10) >= twoWeeksAgo)
+        .slice(0, STREAMING_SIZE);
+      const countdown = upcomingCountdowns((countdownData || []) as FeedPost[], today, COUNTDOWN_SIZE);
+      const onThisDay = ((onThisDayData || []) as FeedPost[])
+        .filter((p) => p.scheduled_for.slice(0, 10) === today)
+        .slice(0, ON_THIS_DAY_SIZE);
       const trailer = ((trailerData || []) as FeedPost[]).filter((p) => !heroSlugs.has(p.slug)).slice(0, TRAILER_SIZE);
       const used = new Set([...heroSlugs, ...streaming.map((p) => p.slug), ...trailer.map((p) => p.slug)]);
       const tail = rest.filter((p) => !used.has(p.slug)).slice(0, 6);

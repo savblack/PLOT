@@ -75,7 +75,7 @@ ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${SITE}/_partials/footer.css">
-<link rel="stylesheet" href="${SITE}/title-page.css?v=181d9a91d687">
+<link rel="stylesheet" href="${SITE}/title-page.css?v=957ef8f746e0">
 <script defer src="${SITE}/title-page.js?v=37a1a8165a48"></script>
 </head>
 <body>
@@ -85,8 +85,11 @@ ${GTM_NOSCRIPT}
   <ul class="nav-links" id="navLinks">
     <li><a href="${SITE}/whats-on">What's On</a></li>
     <li><a href="${SITE}/pricing">Pricing</a></li>
+    <li class="nav-more"><a href="${SITE}/taste-match">Taste match</a></li>
+    <li class="nav-more"><a href="${SITE}/about">About</a></li>
+    <li class="nav-more"><a href="${SITE}/support">Support</a></li>
     <li><a href="${APP}/login?src=title_page_nav" data-cta="nav">Log in</a></li>
-    <li><a href="${APP}/signup?src=title_page_nav" data-cta="nav" class="nav-cta">Sign up</a></li>
+    <li><a href="${APP}/signup?src=title_page_nav" data-cta="nav" class="nav-cta">Start tracking</a></li>
   </ul>
   <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
     <span></span><span></span><span></span>
@@ -303,7 +306,7 @@ Deno.serve(async (req) => {
   let data: any;
   try {
     const r = await fetch(
-      `${TMDB}/${type}/${id}?api_key=${key}&language=en-US&append_to_response=watch/providers,credits,videos,recommendations`,
+      `${TMDB}/${type}/${id}?api_key=${key}&language=en-US&append_to_response=watch/providers,credits,videos,recommendations${type === 'movie' ? ',release_dates' : ''}`,
     );
     if (r.status === 404) return notFound();
     if (!r.ok) return page('Plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
@@ -427,15 +430,30 @@ Deno.serve(async (req) => {
   const director = isMovie
     ? (data.credits?.crew || []).find((c: any) => c.job === 'Director')?.name || ''
     : '';
+  // The release in the visitor's region (their theatrical date, else the
+  // earliest dated release there), falling back to TMDB's primary date, which
+  // is often another country's. A date still ahead reads "Releases".
+  const regionRelease = (() => {
+    const list: { type?: number; release_date?: string }[] =
+      data.release_dates?.results?.find((r: any) => r.iso_3166_1 === region)?.release_dates || [];
+    const dated = list.filter((r) => r.release_date).sort((a, b) => String(a.release_date).localeCompare(String(b.release_date)));
+    const pick = dated.find((r) => r.type === 3) || dated[0];
+    return pick?.release_date ? pick.release_date.slice(0, 10) : null;
+  })();
+  const releaseIso = (isMovie && regionRelease) || date || '';
+  const releaseFuture = !!releaseIso && Date.parse(releaseIso) > Date.now();
+  const releaseText = releaseIso
+    ? `${fmtDate(releaseIso)}${isMovie && regionRelease ? ` · ${region}` : ''}`
+    : '';
   const facts: [string, string][] = (isMovie
     ? [
-      ['Released', date ? fmtDate(date) : ''],
+      [releaseFuture ? 'Releases' : 'Released', releaseText],
       ['Runtime', runtime],
       ['Director', director],
       ['TMDB rating', rating ? `${rating} / 10` : ''],
     ]
     : [
-      ['First aired', date ? fmtDate(date) : ''],
+      [releaseFuture ? 'Premieres' : 'First aired', date ? fmtDate(date) : ''],
       ['Network', (data.networks || [])[0]?.name || ''],
       ['Episodes', data.number_of_episodes ? String(data.number_of_episodes) : ''],
       ['TMDB rating', rating ? `${rating} / 10` : ''],
