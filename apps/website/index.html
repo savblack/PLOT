@@ -1485,7 +1485,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               var a = document.createElement('a');
               a.href = url;
               a.className = 'shelf-link';
-              a.setAttribute('data-cta', 'hero_shelf');
               imgs[i].parentNode.insertBefore(a, imgs[i]);
               a.appendChild(imgs[i]);
             }
@@ -1648,7 +1647,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             const item = document.createElement(href ? 'a' : 'span');
             item.className = 'ticker-item';
             item.textContent = typeof entry === 'string' ? entry : entry.title;
-            if (href) { item.href = href; item.tabIndex = -1; item.setAttribute('data-cta', 'ticker'); }
+            if (href) { item.href = href; item.tabIndex = -1; }
             frag.appendChild(item);
 
             const sep = document.createElement('span');
