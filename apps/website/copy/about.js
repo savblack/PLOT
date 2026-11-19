@@ -13,13 +13,13 @@ export const ABOUT_PAGE = {
     description: "Plot is a free movie and TV tracker and journal built by a solo developer. Track what you watch, never miss a release, and pick what to watch tonight. Premium from $2 a month.",
   },
   pageLabel: "About",
-  h1: "About plot",
+  h1: "About Plot",
   pageMeta: "A letter from the founder.",
   lead: "For years my watchlist was a note on my phone, my reviews were texts to friends, and release dates were whatever I happened to remember. This worked, if you count forgetting half of it as working. So I built Plot. The note became a watchlist that knows when and where everything is streaming. The texts became reviews, character-capped by design. The remembering is now outsourced to a calendar, that never forgets when the next episode drops.",
   sections: [
     {
       id: "why",
-      heading: "Why I built plot",
+      heading: "Why I built Plot",
       paragraphs: [
         "You don't have to call yourself a cinephile to belong here. If you've ever rewatched the same show three times because nothing else felt right, you're the person I made this for.",
         "The apps that already exist are clunky, seemingly only ever in dark mode, and no fun to look at. Worse, they come with pressure: write the review, perform how you felt in the \"right\" way. If all you have to say about a movie is that it made you cry 14 separate times, firstly, shout out to my emotional baddies, and secondly, thanks for the heads up. That one's getting saved for when a good cry is needed.",
@@ -29,7 +29,7 @@ export const ABOUT_PAGE = {
     },
     {
       id: "features",
-      heading: "What plot does",
+      heading: "What Plot does",
       features: [
         {
           title: "Track everything you watch",
@@ -64,7 +64,7 @@ export const ABOUT_PAGE = {
     },
     {
       id: "glance",
-      heading: "plot, at a glance",
+      heading: "Plot, at a glance",
       facts: [
         {
           term: "What it is",
@@ -122,7 +122,7 @@ export const ABOUT_PAGE = {
     },
   ],
   closer: {
-    headline: "Your movies. Your shows.<br>Your plot.",
+    headline: "Your movies. Your shows.<br>Your Plot.",
     ctas: [
       {
         label: "Start tracking",

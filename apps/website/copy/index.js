@@ -6,8 +6,8 @@
 // is long and sections don't share much vocabulary.
 
 export const META = {
-  title: 'plot | Movie & TV Tracker',
-  description: "plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
+  title: 'Plot | Movie & TV Tracker',
+  description: "Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
   ogImageAlt: 'Plot: your movie & TV companion',
 };
 

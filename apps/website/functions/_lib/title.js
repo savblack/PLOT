@@ -15,7 +15,7 @@ export { cacheable };
 const UPSTREAM = `${SUPABASE_FN}/title-page`;
 const TMDB_WORKER = 'https://tmdb-proxy.sav-black.workers.dev/';
 const FALLBACK = '<!doctype html><meta charset="utf-8">'
-  + '<title>plot</title>'
+  + '<title>Plot</title>'
   + '<p style="font-family:sans-serif;padding:40px">This page is briefly unavailable. Please try again in a moment.</p>';
 
 // Unique title URLs rarely hit the Pages cache. Render from the Cloudflare
