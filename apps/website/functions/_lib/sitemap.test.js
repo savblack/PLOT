@@ -76,3 +76,27 @@ test('a fetch failure serves an empty urlset and caches nothing', async () => {
     if (realCaches === undefined) delete globalThis.caches; else globalThis.caches = realCaches;
   }
 });
+
+test('a sitemap older than a day is served at once and refreshed behind it', async () => {
+  let version = 0;
+  const realNow = Date.now;
+  await withCache(async ({ get, calls, settle }) => {
+    const start = 1_800_000_000_000;
+    try {
+      Date.now = () => start;
+      await get('https://theplot.tv/sitemap-articles.xml');
+      await settle();
+      Date.now = () => start + 2 * 86400 * 1000;
+      const old = await get('https://theplot.tv/sitemap-articles.xml');
+      assert.equal(old.headers.get('x-plot-cache'), 'stale');
+      assert.equal(await old.text(), 'v1');
+      await settle();
+      assert.equal(calls.length, 2);
+      const next = await get('https://theplot.tv/sitemap-articles.xml');
+      assert.equal(next.headers.get('x-plot-cache'), 'hit');
+      assert.equal(await next.text(), 'v2');
+    } finally {
+      Date.now = realNow;
+    }
+  }, () => new Response(`v${++version}`, { status: 200, headers: { 'cache-control': SHAREABLE } }));
+});

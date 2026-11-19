@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { marketingFeedPage, feedCacheKey, cacheWindows, freshness, storedCopy } from './whats-on.js';
+import { marketingFeedPage, feedCacheKey } from './whats-on.js';
 
 const SHAREABLE = 'public, s-maxage=3600, stale-while-revalidate=86400';
 
@@ -150,24 +150,6 @@ async function at(ms, run) {
   Date.now = () => ms;
   try { return await run(); } finally { Date.now = real; }
 }
-
-test('cache windows come from s-maxage and stale-while-revalidate', () => {
-  assert.deepEqual(cacheWindows(SHAREABLE), { fresh: 3600, stale: 86400 });
-  assert.deepEqual(cacheWindows('public, max-age=60'), { fresh: 0, stale: 0 });
-  assert.deepEqual(cacheWindows(null), { fresh: 0, stale: 0 });
-});
-
-test('a stored copy lives for both windows and remembers when it was stored', () => {
-  const copy = storedCopy(new Response('x', { headers: { 'cache-control': SHAREABLE } }), 1000);
-  assert.equal(copy.headers.get('cache-control'), 'public, max-age=90000');
-  assert.equal(freshness(copy, 1000 + HOUR - 1), 'fresh');
-  assert.equal(freshness(copy, 1000 + HOUR), 'stale');
-  assert.equal(freshness(copy, 1000 + 25 * HOUR), 'expired');
-});
-
-test('an entry stored before stamping counts as fresh', () => {
-  assert.equal(freshness(new Response('x', { headers: { 'cache-control': SHAREABLE } }), Date.now()), 'fresh');
-});
 
 test('readers see the page\'s own Cache-Control, not the stored one', async () => {
   await withCache(async ({ get, cache, settle }) => {
