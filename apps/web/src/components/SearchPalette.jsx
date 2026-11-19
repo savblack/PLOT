@@ -441,11 +441,9 @@ export default function SearchPalette({ onClose, initialQuery = '' }) {
           {showHint && !local && !items.length && (
             <div className={`search-palette-empty${recent.length ? ' compact' : ''}`}>
               {!recent.length && <div className="search-palette-empty-title">{SEARCH_PALETTE.hintTitle}</div>}
+              {/* The @ and / filters are in the footer; they were also listed
+                  here, so the palette said the same thing twice (Nov 19). */}
               <div className="search-palette-empty-body">{SEARCH_PALETTE.hintBody}</div>
-              <div className="search-palette-empty-tips">
-                <span><Kbd>@</Kbd> {SEARCH_PALETTE.hintFriends}</span>
-                <span><Kbd>/</Kbd> {SEARCH_PALETTE.hintPeople}</span>
-              </div>
             </div>
           )}
 

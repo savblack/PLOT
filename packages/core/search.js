@@ -374,8 +374,13 @@ export function mergeSearchResults(buckets = {}, { scope = 'all', limits = {}, t
   if (scope === 'friends') return friends;
   if (scope === 'people') return people;
 
+  // A franchise leads only when its name contains what was typed. TMDB's
+  // collection search matches loosely: "dune" returned The Princess Diaries
+  // Collection, which then sat above every Dune title.
+  const query = normalizeTitle(term);
   const collections = list(buckets.collections)
     .filter(c => c?.id && c?.name)
+    .filter(c => !query || titleMatchScore(normalizeTitle(c.name), query) > 0)
     .slice(0, caps.collections)
     .map(c => ({ kind: 'collection', key: `collection-${c.id}`, data: c }));
   const titles = list(buckets.titles)

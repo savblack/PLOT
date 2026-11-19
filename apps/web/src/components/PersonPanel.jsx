@@ -13,7 +13,6 @@ import { tmdb } from '@plot/core/tmdb.js';
 import { useApp } from '../hooks/useApp.js';
 import { COMMON } from '../copy/common.js';
 import { IconClose } from './navIcons.jsx';
-import PanelCloseRail from './PanelCloseRail.jsx';
 import TalentPanelView from './TalentPanelView.jsx';
 import '../pages/TalentPage.css';
 
@@ -44,7 +43,6 @@ export default function PersonPanel({ personId, closing, onClose }) {
   return (
     <>
       <div className={`panel-overlay${closing ? ' closing' : ''}`} onClick={onClose} />
-      <PanelCloseRail closing={closing} onClose={onClose} />
       <div className={`panel${closing ? ' closing' : ''}`} role="dialog" aria-modal="true" aria-label={current.person?.name || COMMON.loading}>
         {/* No cover band: a portrait stretched across one zooms in on the face. */}
         <div className="panel-toolbar">
