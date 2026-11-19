@@ -104,7 +104,7 @@
   /* Image and scrim sit behind the text in this stacking context, so the
      title button can stay unpositioned and stretch over the whole tile. */
   isolation: isolate;
-  animation: tonight-reveal 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation: tonight-reveal 0.45s var(--ease) both;
 }
 .tonight-hero img { z-index: -1; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
 /* Legibility scrim behind the title: the same fade as the Home hero
@@ -188,7 +188,7 @@
   font: inherit;
   color: var(--text-primary);
   cursor: pointer;
-  animation: tonight-reveal 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation: tonight-reveal 0.45s var(--ease) both;
   animation-delay: var(--reveal-delay, 0ms);
 }
 .tonight-card-poster {

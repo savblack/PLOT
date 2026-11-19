@@ -98,7 +98,9 @@ export const MEDIA_PANEL = {
   awards: 'Awards',
   watching: 'Watching',
   didntFinish: "Didn't finish",
-  status: 'Status',
+  // The panel's in-between states menu (Watching, Didn't finish, Clear).
+  // "Watched" is logged from the pinned foot bar only (option C, Nov 19).
+  status: 'Progress',
   updating: 'Updating…',
   clearing: 'Clearing…',
   clearStatus: 'Clear status',

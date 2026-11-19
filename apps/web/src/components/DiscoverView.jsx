@@ -839,7 +839,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   return (
     <div className="home-layout cal-body">
       <aside className="cal-side home-side">
-        <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} openDecide={() => navigate('/tonight')} />
+        <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} openDecide={() => { track(EVENTS.HOME_PICK_FOR_TONIGHT_CLICKED); navigate('/tonight'); }} />
         <OnThisDayCard item={onThisDay} openPanel={openPanel} />
         <HomePageNav sections={pageSections} />
         <SideFilters className="home-filter-card" typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} />
