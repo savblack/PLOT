@@ -119,6 +119,7 @@
 /* Compact buttons on this page, whatever touch-target minimums apply globally. */
 .to-view .btn { box-sizing: border-box; min-height: 36px; text-decoration: none; }
 .to-state-title { margin: 0; font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; }
+.to-state-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .to-state-body { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); }
 
 /* Match */

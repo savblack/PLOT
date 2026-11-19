@@ -728,6 +728,7 @@ the other person is: no user id, no username.
 | `saved_comparison_refreshed` | The refresh icon on a row in Your comparisons was pressed. Fires on the press: the comparison on screen is asked for again, or that person's comparison opens | none |
 | `saved_comparison_removed` | The x on a row in Your comparisons, once the server has removed it | none |
 | `compare_watch_together_tapped` | The Watch Together button on a comparison's shared-watchlist row | `sample` (`true` on the picker's sample, which opens the Watch Together hub; `false` on a real comparison, which opens that person's page) |
+| `compare_someone_else_tapped` | "Compare with someone else" on Compare's Premium card, which shows only when neither person has Premium | none |
 
 A person is added to Your comparisons when a comparison loads, not by a
 button, so saving has no event of its own. A remove the server refuses fires

@@ -1,6 +1,6 @@
 // Taste overlap. The phone layout of apps/web/src/pages/TasteOverlapPage.jsx.
-// Free viewers get the inline upsell. The comparison itself comes from
-// useTasteOverlap, which stays quiet until the viewer is Premium.
+// The inline upsell shows only when neither person has Premium, which only the
+// server knows (compareUnlocked). The comparison comes from useTasteOverlap.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity, StyleSheet,
@@ -11,10 +11,9 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTasteOverlap, useExampleOverlap } from '@plot/core/useTasteOverlap.js';
 import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
-import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, shareCardContent, EXAMPLE_SHARED_WATCHLIST, exampleGenreNames, vennName } from '@plot/core/tasteOverlap.js';
+import { MIN_SHARED_RATINGS, SHARE_CARD_THEMES, compareUnlocked, shareCardContent, EXAMPLE_SHARED_WATCHLIST, exampleGenreNames, vennName } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
-import { isPremiumProfile } from '@plot/core/premium.js';
 import { TASTE_OVERLAP as T } from '@plot/core/copy/tasteOverlap.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { WATCH_TOGETHER } from '@plot/core/copy/watchTogether.js';
@@ -79,11 +78,12 @@ export default function TasteOverlapScreen() {
   const raw = params.username;
   const username = (Array.isArray(raw) ? raw[0] : raw) || '';
   const { userId, profile } = useAppData();
-  const premium = isPremiumProfile(profile);
+  // Premium on either side unlocks it; only the server knows the other side.
   const { loading, error, target, overlap, sharedWatchlist, retry } = useTasteOverlap(username, {
-    enabled: !!userId && premium,
+    enabled: !!userId,
     viewerId: userId,
   });
+  const premium = compareUnlocked(typeof error === 'string' ? error : null);
   const { genres } = useGenres();
   const genreName = useMemo(() => genreMap(genres), [genres]);
   const { open } = useMediaPanel();
@@ -167,7 +167,10 @@ function TasteOverlapBody({
     <View style={styles.state}>
       <Text style={styles.stateTitle}>{T.upsellTitle}</Text>
       <Text style={styles.stateBody}>{T.upsellBody}</Text>
-      <Button variant="primary" label={PLANS_PAGE.previewAction} onPress={() => router.push(PREMIUM_SETTINGS_PATH as Href)} style={styles.primary} />
+      <View style={styles.stateActions}>
+        <Button variant="primary" label={PLANS_PAGE.previewAction} onPress={() => router.push(PREMIUM_SETTINGS_PATH as Href)} style={styles.primary} />
+        <Button label={T.upsellSomeoneElse} onPress={() => { track(EVENTS.COMPARE_SOMEONE_ELSE_TAPPED); router.push('/(app)/compare' as Href); }} />
+      </View>
     </View>
   ) : loading ? (
     <LoadingSkeleton styles={styles} />
@@ -655,6 +658,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   primary: { alignSelf: 'center' },
   state: { alignItems: 'flex-start', gap: spacing.md, padding: 18, borderRadius: radii.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   stateTitle: { fontFamily: fontFamily.display, fontSize: 22, letterSpacing: -0.4, color: colors.textPrimary },
+  stateActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
   stateBody: { fontFamily: fontFamily.sans, fontSize: 14, lineHeight: 21, color: colors.textSecondary },
   note: { fontFamily: fontFamily.sans, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center' },
   stack: { gap: 14 },
