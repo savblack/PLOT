@@ -1,7 +1,7 @@
 // /whats-on and /whats-on/<slug> — proxy to the `marketing-feed` Edge
 // Function. Port of apps/website/api/whats-on.mjs.
 import { SUPABASE_FN, AUTH_HEADERS, htmlError } from './proxy.js';
-import { cacheable, tagged } from './edgeCache.js';
+import { keep, lookup, tagged } from './edgeCache.js';
 
 const UPSTREAM = `${SUPABASE_FN}/marketing-feed`;
 const FALLBACK = '<!doctype html><meta charset="utf-8">'
@@ -49,6 +49,27 @@ export function searchTerm(url) {
 }
 
 /**
+ * Render a feed page through the Edge Function. Throws if it can't be reached.
+ *
+ * @param {string} upstreamUrl
+ * @param {string} q search term, '' for none
+ */
+async function render(upstreamUrl, q) {
+  const upstream = await fetch(upstreamUrl, { headers: { accept: 'text/html', ...AUTH_HEADERS } });
+  const body = await upstream.text();
+  // Serve as HTML; drop Supabase's text/plain + sandbox CSP.
+  return new Response(body, {
+    status: upstream.status,
+    headers: {
+      ...PAGE_HEADERS,
+      'Cache-Control': upstream.status === 200 && !q
+        ? upstream.headers.get('cache-control') || SHAREABLE
+        : 'no-store',
+    },
+  });
+}
+
+/**
  * @param {Request} request
  * @param {string|null} slug trailing path segment, or null for an index
  * @param {(promise: Promise<unknown>) => void} [waitUntil]
@@ -76,33 +97,19 @@ export async function marketingFeedPage(request, slug, waitUntil) {
   const cache = !q && globalThis.caches && globalThis.caches.default;
   const cacheKey = feedCacheKey(url, slug);
   if (cache) {
-    try {
-      const hit = await cache.match(cacheKey);
-      if (hit) return tagged(hit, 'hit');
-    } catch { /* a cache fault falls through to the Edge Function */ }
+    const hit = await lookup(cache, cacheKey, { method, render: () => render(upstreamUrl, q), waitUntil });
+    if (hit) return hit;
   }
 
-  let upstream;
+  let response;
   try {
-    upstream = await fetch(upstreamUrl, { headers: { accept: 'text/html', ...AUTH_HEADERS } });
+    response = await render(upstreamUrl, q);
   } catch {
     return htmlError(502, FALLBACK);
   }
 
-  const body = await upstream.text();
-  // Serve as HTML; drop Supabase's text/plain + sandbox CSP.
-  const response = new Response(body, {
-    status: upstream.status,
-    headers: {
-      ...PAGE_HEADERS,
-      'Cache-Control': upstream.status === 200 && !q
-        ? upstream.headers.get('cache-control') || SHAREABLE
-        : 'no-store',
-    },
-  });
-
-  if (cache && method === 'GET' && cacheable(response.status, response.headers.get('cache-control'))) {
-    const stored = cache.put(cacheKey, response.clone()).catch(() => {});
+  if (cache && method === 'GET') {
+    const stored = keep(cache, cacheKey, response);
     if (waitUntil) waitUntil(stored); else await stored;
   }
   return tagged(response, 'miss');

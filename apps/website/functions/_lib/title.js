@@ -3,7 +3,7 @@
 // edge geo header (x-vercel-ip-country) becomes Cloudflare's request.cf.country,
 // forwarded as ?r=<country>; the function defaults to US when absent.
 import { SUPABASE_FN, AUTH_HEADERS, htmlError } from './proxy.js';
-import { cacheable, tagged } from './edgeCache.js';
+import { cacheable, keep, lookup, tagged } from './edgeCache.js';
 import { FOOTER_HTML } from './footer.generated.js';
 import { renderTitlePage } from './titleRenderer.generated.js';
 
@@ -73,13 +73,31 @@ export async function titlePage(request, type, slug, waitUntil) {
   const method = request.method === 'HEAD' ? 'HEAD' : 'GET';
   const cache = globalThis.caches && globalThis.caches.default;
   const cacheKey = new Request(`${new URL(request.url).origin}/${rawType}/${encodeURIComponent(slug || '')}?r=${country || ''}&v=${TITLE_CACHE_VERSION}`, { method: 'GET' });
+  const render = () => renderTitle(rawType, slug, country, params);
   if (cache) {
-    try {
-      const hit = await cache.match(cacheKey);
-      if (hit) return tagged(hit, 'hit');
-    } catch { /* a cache fault falls through to the Edge Function */ }
+    const hit = await lookup(cache, cacheKey, { method, render, waitUntil });
+    if (hit) return hit;
   }
 
+  const response = await render();
+  if (cache && method === 'GET') {
+    const stored = keep(cache, cacheKey, response);
+    if (waitUntil) waitUntil(stored); else await stored;
+  }
+  return tagged(response, 'miss');
+}
+
+/**
+ * Render a title page: direct TMDB for most titles, the Edge Function for the
+ * sampled quarter or when direct fails. Never throws; an unreachable function
+ * is the no-store fallback page, which is never stored.
+ *
+ * @param {'movie' | 'tv'} rawType
+ * @param {string} slug
+ * @param {string | null | undefined} country
+ * @param {URLSearchParams} params
+ */
+async function renderTitle(rawType, slug, country, params) {
   let response;
   // The Supabase renderer records the title and its recommendations for the
   // sitemap. Send one quarter of title IDs there so this index keeps growing
@@ -139,9 +157,5 @@ export async function titlePage(request, type, slug, waitUntil) {
     }
   }
 
-  if (cache && method === 'GET' && cacheable(response.status, response.headers.get('cache-control'))) {
-    const stored = cache.put(cacheKey, response.clone()).catch(() => {});
-    if (waitUntil) waitUntil(stored); else await stored;
-  }
-  return tagged(response, 'miss');
+  return response;
 }
