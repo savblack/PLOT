@@ -324,6 +324,7 @@ function EpisodeAlertsSettings({ userId }: { userId: string | null }) {
   const change = async (setting: 'in_app' | 'phone', on: boolean) => {
     const ok = await (setting === 'in_app' ? alerts.setInApp(on) : alerts.setPhone(on));
     if (ok) track(EVENTS.EPISODE_ALERT_SETTING_CHANGED, { setting, on });
+    else track(EVENTS.ACTION_FAILED, { action: 'episode_alert_setting' });
   };
   // A push follows the in-app notification, so with that off there is nothing to push.
   const phoneBlocked = !alerts.inApp;
@@ -333,13 +334,13 @@ function EpisodeAlertsSettings({ userId }: { userId: string | null }) {
         icon={null}
         label={S.inAppLabel}
         description={S.inAppHint}
-        trailing={<Toggle value={alerts.inApp} onValueChange={(next) => { void change('in_app', next); }} disabled={alerts.busy} accessibilityLabel={S.inAppLabel} />}
+        trailing={<Toggle value={alerts.inApp} onValueChange={(next) => { void change('in_app', next); }} disabled={alerts.busy || alerts.unread} accessibilityLabel={S.inAppLabel} />}
       />
       <SettingsRow
         icon={null}
         label={S.phoneLabel}
         description={phoneBlocked ? S.phoneNeedsInApp : S.phoneHint}
-        trailing={<Toggle value={alerts.phone && !phoneBlocked} onValueChange={(next) => { void change('phone', next); }} disabled={alerts.busy || phoneBlocked} accessibilityLabel={S.phoneLabel} />}
+        trailing={<Toggle value={alerts.phone && !phoneBlocked} onValueChange={(next) => { void change('phone', next); }} disabled={alerts.busy || alerts.unread || phoneBlocked} accessibilityLabel={S.phoneLabel} />}
       />
       {alerts.error ? <SettingsRow icon={null} label={EPISODE_ALERTS.error} /> : null}
     </SettingsGroup>

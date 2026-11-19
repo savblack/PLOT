@@ -77,7 +77,10 @@ test('during the day each episode is its own push, and a lone morning one too', 
 
 test('the summary names up to three shows and opens the first', () => {
   const msg = pushMessageFor(['A', 'B', 'C', 'D', 'D'].map((t, i) => episode(String(i), t).notification));
-  assert.equal(msg.title, '5 new episodes dropped overnight');
+  assert.equal(msg.title, '5 new episodes are out');
+  // A notification covering a whole drop counts every episode in it.
+  const drop = { ...episode('x', 'Binge').notification, episode_count: 8 };
+  assert.equal(pushMessageFor([drop, episode('y', 'Other').notification]).title, '9 new episodes are out');
   assert.equal(msg.body, 'A, B, C and 1 more');
   assert.equal(msg.data.notificationId, '0');
   assert.equal(pushMessageFor([episode('a', 'A').notification, episode('b', 'B').notification]).body, 'A and B');

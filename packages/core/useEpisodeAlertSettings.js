@@ -12,12 +12,13 @@ import { supabase } from './supabase.js';
  *          only follow the in-app one, so the UI disables it while inApp is off.
  *
  * Each write sends only its own column and the user id, never another field.
- * The caller reports episode_alert_setting_changed when setOn returns true.
+ * The caller reports episode_alert_setting_changed when a setter returns true,
+ * and action_failed when it returns false.
  *
  * @param {string | null | undefined} userId
  */
 export function useEpisodeAlertSettings(userId) {
-  const [state, setState] = useState(/** @type {{ userId: string | null, inApp: boolean, phone: boolean }} */ ({ userId: null, inApp: true, phone: true }));
+  const [state, setState] = useState(/** @type {{ userId: string | null, inApp: boolean, phone: boolean, unread?: boolean }} */ ({ userId: null, inApp: true, phone: true }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(/** @type {string | null} */ (null));
 
@@ -25,14 +26,18 @@ export function useEpisodeAlertSettings(userId) {
     if (!userId) return;
     let active = true;
     supabase.from('notification_preferences').select('episode_alerts, episode_push').eq('user_id', userId).maybeSingle()
-      .then(({ data }) => {
-        if (active) setState({ userId, inApp: data?.episode_alerts ?? true, phone: data?.episode_push ?? true });
+      .then(({ data, error: readError }) => {
+        if (!active) return;
+        // An unread row must not show as On: the switches stay disabled and
+        // the error shows instead of guessing.
+        if (readError) { setError('read_failed'); setState({ userId, inApp: true, phone: true, unread: true }); return; }
+        setState({ userId, inApp: data?.episode_alerts ?? true, phone: data?.episode_push ?? true, unread: false });
       });
     return () => { active = false; };
   }, [userId]);
 
   const write = useCallback(async (/** @type {'episode_alerts' | 'episode_push'} */ column, /** @type {boolean} */ value) => {
-    if (!userId || busy) return false;
+    if (!userId || busy || (state.userId === userId && state.unread)) return false;
     setBusy(true);
     setError(null);
     const { error: writeError } = await supabase.from('notification_preferences')
@@ -41,13 +46,15 @@ export function useEpisodeAlertSettings(userId) {
     if (writeError) { setError(writeError.message || 'alert_failed'); return false; }
     setState(s => ({ ...s, userId, [column === 'episode_alerts' ? 'inApp' : 'phone']: value }));
     return true;
-  }, [userId, busy]);
+  }, [userId, busy, state.userId, state.unread]);
 
-  const current = state.userId === userId ? state : { inApp: true, phone: true };
+  const current = state.userId === userId ? state : { inApp: true, phone: true, unread: false };
   return {
     inApp: current.inApp,
     phone: current.phone,
     loading: !!userId && state.userId !== userId,
+    // True while the saved values could not be read; the UI disables both switches.
+    unread: !!current.unread,
     busy,
     error,
     setInApp: (/** @type {boolean} */ value) => write('episode_alerts', value),

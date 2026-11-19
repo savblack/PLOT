@@ -55,12 +55,16 @@ test('the same instant written two ways is one drop', () => {
   assert.deepEqual(drops.map(d => [d.firstEpisode, d.count]), [[1, 2]]);
 });
 
-test('TMDB must date the same episode within a day', () => {
-  const drop = { airDate: '2026-11-19' };
-  assert.equal(tmdbAgrees({ air_date: '2026-11-19' }, drop), true);
-  assert.equal(tmdbAgrees({ air_date: '2026-11-20' }, drop), true);
-  assert.equal(tmdbAgrees({ air_date: '2026-11-21' }, drop), false);
-  assert.equal(tmdbAgrees({ air_date: null }, drop), false);
+test('TMDB must give every episode of the drop exactly the drop’s date', () => {
+  const drop = { airDate: '2026-11-19', firstEpisode: 4, count: 2 };
+  const season = (d4, d5) => [{ episode_number: 3, air_date: '2026-11-18' }, { episode_number: 4, air_date: d4 }, { episode_number: 5, air_date: d5 }];
+  assert.equal(tmdbAgrees(season('2026-11-19', '2026-11-19'), drop), true);
+  // A day apart is a different episode on a show that airs daily.
+  assert.equal(tmdbAgrees(season('2026-11-20', '2026-11-20'), drop), false);
+  // TMDB splits the drop across two dates: the daily job would announce the
+  // second half again, so leave the whole drop to it.
+  assert.equal(tmdbAgrees(season('2026-11-19', '2026-11-20'), drop), false);
+  assert.equal(tmdbAgrees([{ episode_number: 4, air_date: '2026-11-19' }], drop), false);
   assert.equal(tmdbAgrees(undefined, drop), false);
 });
 
@@ -72,6 +76,13 @@ const nearby = (moved, total) => Array.from({ length: total }, (_, i) => airing(
 test('brake: trips when more than 10% of nearby drops moved in the last day', () => {
   assert.equal(brakeReason(nearby(2, 10), synced, NOW), 'times_moving');
   assert.equal(brakeReason(nearby(1, 10), synced, NOW), null);
+});
+
+test('brake: one binge release that moved is one drop, not ten', () => {
+  const binge = Array.from({ length: 10 }, (_, i) => airing({ tmdb_id: -99, episode_number: i + 1, airs_at: at(HOUR), changed_at: at(-HOUR) }));
+  const others = nearby(0, 9);
+  assert.equal(brakeReason([...binge, ...others], synced, NOW), null);
+  assert.equal(brakeReason(binge, synced, NOW), null);
 });
 
 test('brake: too few nearby drops to judge is not a trip', () => {

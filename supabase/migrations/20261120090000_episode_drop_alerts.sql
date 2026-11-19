@@ -36,6 +36,19 @@ declare
   bearer   text;
   base_url text;
 begin
+  -- Cheap check first, as run_push_job does (20261110130000): most quarter
+  -- hours have no drop due, and starting the Edge Function for nothing costs a
+  -- cold start on a small server. The window matches DUE_LOOK_BACK_HOURS in
+  -- supabase/functions/_shared/dropAlerts.js.
+  if not exists (
+    select 1 from public.episode_airings
+    where time_source = 'exact'
+      and airs_at > now() - interval '6 hours'
+      and airs_at <= now()
+  ) then
+    return;
+  end if;
+
   select decrypted_secret into bearer
     from vault.decrypted_secrets where name = 'edge_webhook_bearer';
   select decrypted_secret into base_url

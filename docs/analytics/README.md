@@ -629,7 +629,7 @@ The Episode alerts card on a followed TV show's title panel.
 | Event | When | Props |
 |---|---|---|
 | `episode_alerts_toggled` | The switch changed and the write landed, or the first-episode prompt was accepted | `tmdb_id`, `on` (the new state) |
-| `episode_alert_setting_changed` | One of the two Episode alerts switches in Settings changed and the write landed | `setting`: `in_app` or `phone`; `on` (the new state) |
+| `episode_alert_setting_changed` | One of the two Episode alerts switches in Settings changed and the write landed | `setting`: `in_app` or `phone`; `on` (the new state). A failed save sends `action_failed` with `action: episode_alert_setting` instead |
 | `title_calendar_action` | Add to calendar was used | `action`: `subscribe` (feed link copied), `subscribe_setup` (sent to Settings to make a link), `upgrade` (Free, sent to Plans), `download` (.ics, with `count` of events) |
 
 Muting is free and is stored in `episode_alert_mutes`; the daily

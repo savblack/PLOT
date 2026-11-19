@@ -37,7 +37,7 @@ export const EPISODE_ALERTS = {
     inAppLabel: 'Episode alerts in Plot',
     inAppHint: 'A notification when a show you follow has a new episode out, at the time it airs when we know it.',
     phoneLabel: 'Episode alerts on my phone',
-    phoneHint: 'A push on your iPhone when it drops. Between 11 PM and 7 AM they wait and arrive together at 7.',
+    phoneHint: 'A push on your iPhone when it drops. Nothing between 11 PM and 7 AM: those wait until 7, with new episodes sent together.',
     phoneNeedsInApp: 'Turn on Episode alerts in Plot first.',
   },
 };

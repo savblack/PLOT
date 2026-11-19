@@ -21,7 +21,6 @@ export const BRAKE_MIN_SAMPLE = 10;
 export const BRAKE_SYNC_STALE_HOURS = 3;
 
 const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
 
 /**
  * Exact airings whose drop time is in (now - DUE_LOOK_BACK_HOURS, now], grouped
@@ -71,18 +70,25 @@ export function dueDrops(airings, now) {
 }
 
 /**
- * TMDB and TVmaze must agree this is the same episode before anyone is told:
- * TVmaze's numbers are not always TMDB's (year-numbered seasons, anime). Same
- * season and episode numbers, and dates within a day of each other.
+ * TMDB and TVmaze must agree this is the same drop before anyone is told:
+ * TVmaze's numbers are not always TMDB's (year-numbered seasons, anime, a
+ * daily show off by one). Every episode of the drop must exist in TMDB's
+ * season with exactly the drop's date. Not within a day: a show that airs
+ * daily is one episode per day, so a one-day tolerance would let TMDB's
+ * neighbouring episode pass, and the daily job (which works from TMDB alone)
+ * would then announce the same airing again under the other number.
+ * Anything short of agreement is left to the daily job.
  *
- * @param {{ air_date?: string | null } | null | undefined} tmdbEpisode TMDB's episode with these numbers
- * @param {{ airDate: string }} drop
+ * @param {{ episode_number?: number, air_date?: string | null }[] | null | undefined} tmdbEpisodes TMDB's season
+ * @param {{ airDate: string, firstEpisode: number, count: number }} drop
  */
-export function tmdbAgrees(tmdbEpisode, drop) {
-  const date = tmdbEpisode?.air_date;
-  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
-  const apart = Math.abs(Date.parse(`${date}T00:00:00Z`) - Date.parse(`${drop.airDate}T00:00:00Z`));
-  return apart <= DAY_MS;
+export function tmdbAgrees(tmdbEpisodes, drop) {
+  if (!Array.isArray(tmdbEpisodes)) return false;
+  for (let n = drop.firstEpisode; n < drop.firstEpisode + drop.count; n++) {
+    const ep = tmdbEpisodes.find(e => e?.episode_number === n);
+    if (ep?.air_date !== drop.airDate) return false;
+  }
+  return true;
 }
 
 /**
@@ -91,13 +97,14 @@ export function tmdbAgrees(tmdbEpisode, drop) {
  * daily job tells people the next morning instead, and the run reports an
  * error so the hourly health check opens an incident.
  *
- *   times_moving — more than 10% of drops from an hour ago to six hours ahead
+ *   times_moving — more than 10% of at least ten drops (a show, season and
+ *     instant; not episode rows) from an hour ago to six hours ahead
  *     had their time moved in the last day. Something upstream is reshuffling
  *     schedules, so a time Plot is about to act on may be wrong.
  *   sync_stale — the hourly time sync has not finished cleanly for three hours,
  *     so the stored times may be out of date.
  *
- * @param {{ airs_at: string | null, changed_at: string | null, time_source: string }[]} nearby
+ * @param {{ tmdb_id: number, season_number: number, airs_at: string | null, changed_at: string | null, time_source: string }[]} nearby
  * @param {string | null} lastSyncOkAt finished_at of the last ok episode-air-times run
  * @param {Date} now
  * @returns {'times_moving' | 'sync_stale' | null}
@@ -107,14 +114,20 @@ export function brakeReason(nearby, lastSyncOkAt, now) {
   if (!lastSyncOkAt || t - Date.parse(lastSyncOkAt) > BRAKE_SYNC_STALE_HOURS * HOUR_MS) return 'sync_stale';
   const from = t - HOUR_MS;
   const to = t + BRAKE_AHEAD_HOURS * HOUR_MS;
-  const window = nearby.filter(a => {
-    if (a.time_source !== 'exact' || !a.airs_at) return false;
+  // Count drops, not episode rows: one binge release of ten episodes is one
+  // schedule, and must not trip the brake for every other show on its own.
+  const drops = new Map();
+  for (const a of nearby) {
+    if (a.time_source !== 'exact' || !a.airs_at) continue;
     const at = Date.parse(a.airs_at);
-    return at >= from && at <= to;
-  });
-  if (window.length < BRAKE_MIN_SAMPLE) return null;
-  const moved = window.filter(a => a.changed_at && t - Date.parse(a.changed_at) <= BRAKE_MOVED_HOURS * HOUR_MS).length;
-  return moved / window.length > BRAKE_MOVED_SHARE ? 'times_moving' : null;
+    if (at < from || at > to) continue;
+    const key = `${a.tmdb_id}:${a.season_number}:${at}`;
+    const moved = !!a.changed_at && t - Date.parse(a.changed_at) <= BRAKE_MOVED_HOURS * HOUR_MS;
+    drops.set(key, drops.get(key) || moved);
+  }
+  if (drops.size < BRAKE_MIN_SAMPLE) return null;
+  const moved = [...drops.values()].filter(Boolean).length;
+  return moved / drops.size > BRAKE_MOVED_SHARE ? 'times_moving' : null;
 }
 
 /**

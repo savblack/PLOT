@@ -11,15 +11,20 @@
  *
  * Rules are in _shared/dropAlerts.js and unit-tested. Each run:
  *   1. Stops if the PostHog flag `kill-episode-drop-alerts` is on.
- *   2. Reads exact airings from an hour ago to six hours ahead and applies the
- *      brake: if the time sync is stale, or too many nearby times moved in the
- *      last day, it writes nothing and answers 500. The hourly pg_net health
- *      check (cron-health.yml) turns that into an incident issue and an email.
- *   3. Groups drops whose time passed in the last six hours.
- *   4. Confirms each drop with TMDB: same season and episode, dated within a
- *      day. A disagreement means the numbering differs, so it is left to the
- *      daily job, which works from TMDB alone.
- *   5. Reads only those shows' followers and applies the same skip rules as the
+ *   2. Groups drops whose exact time passed in the last six hours. With none,
+ *      it stops there.
+ *   3. Applies the brake: if the time sync is stale, or too many nearby drops
+ *      moved in the last day, it writes nothing and answers 500. The hourly
+ *      pg_net health check (cron-health.yml) turns that into an incident issue
+ *      and an email.
+ *   4. Skips drops already announced in the last seven hours, and shows whose
+ *      TVmaze venue is outside the US (their broadcast is not when a US viewer
+ *      can watch; the daily job covers them).
+ *   5. Confirms each drop with TMDB, a few at a time within 60 seconds: every
+ *      episode of the drop must carry exactly the drop's date. A disagreement
+ *      means the numbering differs, so it is left to the daily job, which
+ *      works from TMDB alone.
+ *   6. Reads only those shows' followers and applies the same skip rules as the
  *      daily job (_shared/newEpisodeRecipients.ts), including the new
  *      "Episode alerts in Plot" switch.
  *
@@ -52,7 +57,14 @@ type NotificationInsert = Database['public']['Tables']['notifications']['Insert'
 const JOB = 'episode-drop-alerts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const HOUR_MS = 60 * 60 * 1000;
+const ID_CHUNK = 200;
 const CALL_TIMEOUT_MS = 15_000;
+// TMDB checks run a few at a time and stop starting after this, well inside
+// pg_net's 120s; anything unchecked is picked up by the next run.
+const TMDB_CONCURRENCY = 4;
+const TMDB_DEADLINE_MS = 60_000;
+// A drop already announced in this window is not checked again.
+const TOLD_LOOK_BACK_MS = 7 * HOUR_MS;
 const INSERT_CHUNK = 500;
 const PAGE_SIZE = 1000;
 
@@ -92,6 +104,39 @@ async function nearbyAirings(db: Db, now: Date) {
   }
 }
 
+/** `${tmdb}:${season}:${episode}` of new_episode rows written recently for these shows. */
+async function alreadyTold(db: Db, tmdbIds: number[], now: Date): Promise<Set<string>> {
+  const since = new Date(now.getTime() - TOLD_LOOK_BACK_MS).toISOString();
+  const out = new Set<string>();
+  for (let i = 0; i < tmdbIds.length; i += ID_CHUNK) {
+    for (let page = 0; ; page += PAGE_SIZE) {
+      const { data, error } = await db.from('notifications').select('tmdb_id, season_number, episode_number')
+        .eq('type', 'new_episode').in('tmdb_id', tmdbIds.slice(i, i + ID_CHUNK)).gte('created_at', since)
+        .order('id').range(page, page + PAGE_SIZE - 1);
+      if (error) throw new Error(`notifications read failed: ${error.message}`);
+      for (const r of data ?? []) out.add(`${r.tmdb_id}:${r.season_number}:${r.episode_number}`);
+      if (!data || data.length < PAGE_SIZE) break;
+    }
+  }
+  return out;
+}
+
+/**
+ * Shows whose TVmaze venue is outside the US (a BBC One broadcast, say). Their
+ * "is out" moment is not when a US viewer can watch (decision 2), so they are
+ * left to the daily job. A worldwide streamer has no country and is kept.
+ */
+async function foreignShows(db: Db, tmdbIds: number[]): Promise<Set<number>> {
+  const out = new Set<number>();
+  for (let i = 0; i < tmdbIds.length; i += ID_CHUNK) {
+    const { data, error } = await db.from('tvmaze_show_links').select('tmdb_id, venue_country')
+      .in('tmdb_id', tmdbIds.slice(i, i + ID_CHUNK));
+    if (error) throw new Error(`tvmaze_show_links read failed: ${error.message}`);
+    for (const r of data ?? []) if (r.venue_country && r.venue_country !== 'US') out.add(r.tmdb_id);
+  }
+  return out;
+}
+
 async function lastSyncOkAt(db: Db): Promise<string | null> {
   const { data, error } = await db.from('alert_job_runs').select('finished_at')
     .eq('job', 'episode-air-times').eq('ok', true).not('finished_at', 'is', null)
@@ -118,7 +163,8 @@ Deno.serve(async (req) => {
 
   const stats: Record<string, unknown> = {
     dry_run: dryRun, killed: false, braked: null,
-    drops_due: 0, drops_confirmed: 0, drops_unconfirmed: 0, tmdb_failures: 0,
+    drops_due: 0, drops_told: 0, drops_foreign: 0, drops_deferred: 0,
+    drops_confirmed: 0, drops_unconfirmed: 0, tmdb_failures: 0,
     rows_candidate: 0, rows_written: 0,
   };
 
@@ -142,45 +188,65 @@ Deno.serve(async (req) => {
     return finish(true);
   }
 
-  let airings;
+  let drops;
   try {
-    airings = await nearbyAirings(db, now);
+    const airings = await nearbyAirings(db, now);
+    const due = dueDrops(airings, now);
+    stats.drops_due = due.length;
+    // The brake only matters when there is something to announce; a stale sync
+    // with nothing due is cron-health's to report, not an incident from here.
+    if (!due.length) return finish(true);
     const brake = brakeReason(airings, await lastSyncOkAt(db), now);
     if (brake) {
       stats.braked = brake;
       reportError(JOB, `brake on (${brake}): no drop alerts this run; the daily job covers them`);
       return finish(false, { error: `Brake on: ${brake}` });
     }
+    const ids = [...new Set(due.map(d => d.tmdbId))];
+    const told = await alreadyTold(db, ids, now);
+    const foreign = await foreignShows(db, ids);
+    drops = due.filter(d => {
+      if (told.has(`${d.tmdbId}:${d.season}:${d.firstEpisode}`)) { stats.drops_told = (stats.drops_told as number) + 1; return false; }
+      if (foreign.has(d.tmdbId)) { stats.drops_foreign = (stats.drops_foreign as number) + 1; return false; }
+      return true;
+    });
   } catch (err) {
     reportError(JOB, err);
     return finish(false, { error: 'Could not read drop times' });
   }
-
-  const drops = dueDrops(airings, now);
-  stats.drops_due = drops.length;
   if (!drops.length) return finish(true);
 
   // Confirm each drop with TMDB, and take its title and poster from the same call.
   type Confirmed = (typeof drops)[number] & { title: string | null; posterPath: string | null };
   const confirmed: Confirmed[] = [];
-  for (const drop of drops) {
-    try {
-      const show = await tmdbGetWithRetry(`/tv/${drop.tmdbId}?append_to_response=season/${drop.season}`, tmdbKey, { fetchImpl: timedFetch });
-      const episodes = (show?.[`season/${drop.season}`]?.episodes ?? []) as { episode_number?: number; air_date?: string | null }[];
-      const tmdbEpisode = episodes.find(ep => ep.episode_number === drop.firstEpisode);
-      if (!tmdbAgrees(tmdbEpisode, drop)) { stats.drops_unconfirmed = (stats.drops_unconfirmed as number) + 1; continue; }
-      confirmed.push({
-        ...drop,
-        title: typeof show?.name === 'string' ? show.name : null,
-        posterPath: typeof show?.poster_path === 'string' ? show.poster_path : null,
-      });
-    } catch (err) {
-      stats.tmdb_failures = (stats.tmdb_failures as number) + 1;
-      reportError(JOB, err);
+  const deadline = Date.now() + TMDB_DEADLINE_MS;
+  let next = 0;
+  let checked = 0;
+  const worker = async () => {
+    while (next < drops.length && Date.now() < deadline) {
+      const drop = drops[next++];
+      checked++;
+      try {
+        const show = await tmdbGetWithRetry(`/tv/${drop.tmdbId}?append_to_response=season/${drop.season}`, tmdbKey, { fetchImpl: timedFetch });
+        const episodes = (show?.[`season/${drop.season}`]?.episodes ?? []) as { episode_number?: number; air_date?: string | null }[];
+        if (!tmdbAgrees(episodes, drop)) { stats.drops_unconfirmed = (stats.drops_unconfirmed as number) + 1; continue; }
+        confirmed.push({
+          ...drop,
+          title: typeof show?.name === 'string' ? show.name : null,
+          posterPath: typeof show?.poster_path === 'string' ? show.poster_path : null,
+        });
+      } catch (err) {
+        stats.tmdb_failures = (stats.tmdb_failures as number) + 1;
+        reportError(JOB, err);
+      }
     }
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(TMDB_CONCURRENCY, drops.length) }, worker));
+  stats.drops_deferred = drops.length - checked;
   stats.drops_confirmed = confirmed.length;
-  if (!confirmed.length) return finish((stats.tmdb_failures as number) < drops.length);
+  // Every TMDB check failing is an outage worth an incident; some is not.
+  const tmdbOk = checked === 0 || (stats.tmdb_failures as number) < checked;
+  if (!confirmed.length) return finish(tmdbOk);
 
   const showIds = [...new Set(confirmed.map(d => d.tmdbId))];
   let byShow;
@@ -233,6 +299,5 @@ Deno.serve(async (req) => {
     stats.rows_written = written;
   }
 
-  // Every TMDB check failing is an outage worth an incident; some is not.
-  return finish((stats.tmdb_failures as number) < drops.length);
+  return finish(tmdbOk);
 });

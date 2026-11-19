@@ -79,8 +79,10 @@ export function pushMessageFor(group) {
     : shown.length > 1 ? `${shown.slice(0, -1).join(', ')} and ${shown[shown.length - 1]}`
       : shown[0] ?? '';
   const first = pushMessage(group[0]);
+  // Count episodes, not notifications: one notification can be a whole drop.
+  const episodes = group.reduce((sum, n) => sum + Math.max(1, n.episode_count ?? 1), 0);
   return {
-    title: `${group.length} new episodes dropped overnight`.slice(0, 100),
+    title: `${episodes} new episodes are out`.slice(0, 100),
     body: (names || 'Shows you follow').slice(0, 180),
     data: first.data,
   };
