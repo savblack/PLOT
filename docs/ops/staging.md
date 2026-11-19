@@ -31,6 +31,8 @@ is a place that breaks if Staging moves or goes away.
 - `.github/workflows/staging-tests.yml`: Staging SQL tests nightly and on migration PRs.
 - `.github/workflows/staging-import-e2e.yml`: nightly import end-to-end.
 - `.github/workflows/migration-drift.yml`: compares Staging's and production's migrations.
+- `.github/workflows/staging-migrate.yml`: applies main's migrations to Staging on merge
+  (`pnpm run staging:migrate`).
 - `.github/workflows/workers-deploy.yml`: deploys `tmdb-proxy` and its staging env together.
 
 ## App code that tells a preview from production

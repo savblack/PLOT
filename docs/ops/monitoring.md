@@ -18,8 +18,8 @@ GitHub-side watchers raise issues rather than email:
 
 - `supabase-deploy-guard.yml` raises an issue when production misses main's migrations or function deploys.
 - `whats-on-health.yml` is a backup for whats-on-watch.
-- `db-write-paths`, `migration-drift`, `netflix-top10`, `streaming-top10` and
-  `broadcast-guide` each open an `incident` issue when they fail, comment on it
+- `db-write-paths`, `migration-drift`, `staging-migrate`, `netflix-top10`,
+  `streaming-top10` and `broadcast-guide` each open an `incident` issue when they fail, comment on it
   if they fail again, and close it on the next success. The first failure also
   emails through `.github/scripts/marketing-alert.sh`. See
   `.github/scripts/job-incident.sh`.
