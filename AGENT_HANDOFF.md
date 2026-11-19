@@ -30,8 +30,21 @@ Phase 1 of exact episode drop times. Decisions and phases: `docs/features/episod
 - Passed: `pnpm run check`, `pnpm run test:unit`, `pnpm run edge:check`,
   `migrations:check`, `migrations:contract`, `db:block-clause`. Live TVmaze run of
   the rules on five shows matched expectations.
+- Second-agent review done. Fixed: change columns wiped by batch upserts;
+  withdrawn (TBA, renumbered) episodes left with stale times; no per-call
+  timeout; failure rate understated outages; missing deny-all policy.
 - Pending: `pnpm run db:migration-test` (production DB password not in `.env`),
-  `db:drift`, CI `staging-tests`. Second-agent review of the diff requested.
+  `db:drift`, CI `staging-tests` on the PR.
+
+## Known limits (for phase 2 and 3)
+
+- Rows are keyed by TVmaze's season and episode numbers under the TMDB id. Some
+  shows number differently (year seasons, anime). Phase 2 must match a row to
+  TMDB's episode only when their dates agree within a day.
+- Linking does 40 shows an hour, so a backlog of 2,000 followed shows takes about
+  two days to link. Syncing keeps up with about 13,000 linked shows.
+- `episode_airings` is public, so it reveals which shows at least one Plot user
+  follows (no user ids). Accepted as schedule data.
 
 ## Approvals
 
@@ -40,4 +53,4 @@ Phase 1 of exact episode drop times. Decisions and phases: `docs/features/episod
 
 ## Next
 
-Address review findings, open the PR, then phase 2 (display) on a new branch.
+Savannah approves the merge (it applies the database change to production). Then phase 2 (display) on a new branch. Delete this file in the last commit before merge.
