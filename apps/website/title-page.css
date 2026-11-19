@@ -203,3 +203,5 @@ nav.topnav .nav-logo { white-space: nowrap; }
 }
 /* Keyboard focus: the accent ring, as on the rest of theplot.tv. */
 :where(a,button,summary,[tabindex]):focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+/* Skip link: hidden until a keyboard user tabs to it; jumps past the menu. */
+.skip-link{position:absolute;top:12px;left:16px;z-index:1000;padding:.7rem 1.2rem;border-radius:999px;background:var(--fill);color:var(--on-fill);font-size:.9rem;font-weight:600;text-decoration:none;white-space:nowrap;transform:translateY(-200%);transition:transform .2s var(--ease);}.skip-link:focus,.skip-link:focus-visible{transform:none;outline:2px solid var(--ink);outline-offset:2px;}#main:focus{outline:none;}@media (prefers-reduced-motion:reduce){.skip-link{transition:none;}}

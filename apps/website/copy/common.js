@@ -13,6 +13,7 @@ export const NAV = {
   pricing: 'Pricing', // pricing.html's nav and the footer
   login: 'Log in',
   signup: 'Start tracking',
+  skipLink: 'Skip to content', // the keyboard skip link at the top of every page
 };
 
 export const FOOTER = {
