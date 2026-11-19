@@ -4,6 +4,7 @@ import { parseTraktAnnotations, TRAKT_ANNOTATION_FILES } from './traktAnnotation
 import { identifyImportEntries } from './importEvents.js';
 import { isImdbListExport, namesWatched, namesWatchlist, originalExportName, parseCSV, parsePlatform } from './importParsing.js';
 import { parseTvTimeDocument } from './tvTimeImport.js';
+import { parseTmdbAccount } from './tmdbAccountImport.js';
 import { IMPORT_VIEW } from './copy/importView.js';
 
 const IMPORT_SOURCE_NAMES = { imdb: 'IMDb', letterboxd: 'Letterboxd' };
@@ -28,6 +29,7 @@ export function parseImportDocument(platform, text, { fileName = '' } = {}) {
     return document;
   }
   if (platform === 'tvtime') return parseTvTimeDocument(text, fileName);
+  if (platform === 'tmdb') return omitUnavailableTmdbRecords(parseTmdbAccount(text));
   // Every IMDb list, the watchlist included, is list membership, which needs
   // the event importer. Say so up front rather than parse it into nothing.
   if (platform === 'imdb' && isImdbListExport(text) && !getConfig().importEventsEnabled) throw new Error(IMPORT_VIEW.imdbListsUnavailable);
@@ -114,6 +116,27 @@ export function prepareImportFiles(platform, files) {
   }
   const combined = platform === 'letterboxd' ? combineLetterboxdRecords(document) : document;
   return omitUnavailableLists(platform, combined);
+}
+
+/** A TMDB account is lists and ratings only. Lists need the event importer
+ * and show or episode ratings also need annotations. Leave out what this
+ * build cannot save and say so, rather than refusing the whole account.
+ * @param {{entries: any[], warnings: any[], notImported: any[]}} document
+ */
+function omitUnavailableTmdbRecords(document) {
+  const events = getConfig().importEventsEnabled;
+  const annotations = events && getConfig().importAnnotationsEnabled;
+  const lists = events ? 0 : document.entries.filter(row => row.destination).length;
+  const ratings = annotations ? 0 : document.entries.filter(row => row.annotation).length;
+  if (!lists && !ratings) return document;
+  const notImported = [...document.notImported];
+  if (lists) notImported.push({ title: 'TMDB', reason: 'tmdb_lists_unavailable', count: lists });
+  if (ratings) notImported.push({ title: 'TMDB', reason: 'tmdb_show_ratings_unavailable', count: ratings });
+  return {
+    ...document,
+    entries: document.entries.filter(row => (events || !row.destination) && (annotations || !row.annotation)),
+    notImported,
+  };
 }
 
 /** List membership needs the event importer. A Letterboxd export always

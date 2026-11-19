@@ -239,10 +239,14 @@ function externalIdResults(response) {
 /**
  * Resolve parsed entries to TMDB titles.
  * @param {any[]} entries
- * @param {{ search: (title: string) => Promise<any>, findByImdbId?: (id: string) => Promise<any>, findByTvdbId?: (id: number|string) => Promise<any>, findExternal?: (id: string) => Promise<any>, getSeason?: (id: number, season: number) => Promise<any>, onProgress?: (done: number, total: number) => void }} [deps]
+ * @param {{ search: (title: string) => Promise<any>, findByImdbId?: (id: string) => Promise<any>, findByTvdbId?: (id: number|string) => Promise<any>, findExternal?: (id: string) => Promise<any>, getSeason?: (id: number, season: number) => Promise<any>, getTitle?: (mediaType: 'movie' | 'tv', id: number) => Promise<any>, onProgress?: (done: number, total: number) => void }} [deps]
+ *   getTitle: TMDB's details for a title (`/movie/{id}`, `/tv/{id}`). An entry
+ *   whose source already names the TMDB title (`tmdbRef`, a TMDB account
+ *   import) is looked up by that ID instead of searched by name, so it matches
+ *   exactly. Without getTitle it falls back to the title search.
  * @returns {Promise<any[]>} one result per entry, `status: 'matched' | 'unmatched'`
  */
-export async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbId, getSeason, findExternal, onProgress } = /** @type {any} */ ({})) {
+export async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbId, getSeason, findExternal, getTitle, onProgress } = /** @type {any} */ ({})) {
   const resolved = [];
   const searches = new Map();
 
@@ -250,6 +254,18 @@ export async function resolveImportEntries(entries, { search, findByImdbId, find
     let requested = false;
     const settled = await Promise.all(batch.map(async (entry) => {
       try {
+        const ref = entry.tmdbRef;
+        if (ref && getTitle && Number.isSafeInteger(ref.id) && ref.id > 0 && ['movie', 'tv'].includes(ref.mediaType)) {
+          // The ID came from TMDB's account response, but the file passed
+          // through the person's device: take the title, poster and genres
+          // from TMDB, never from the file.
+          const titleKey = `tmdb:${ref.mediaType}:${ref.id}`;
+          if (!searches.has(titleKey)) { requested = true; searches.set(titleKey, getTitle(ref.mediaType, ref.id)); }
+          const item = await searches.get(titleKey);
+          if (item?.id !== ref.id) return { ...entry, status: 'unmatched', candidates: [], reason: 'not_found' };
+          const candidate = { ...item, media_type: ref.mediaType };
+          return chooseImportMatch({ ...entry, candidates: [candidate], reason: 'tmdb_id' }, `${ref.mediaType}:${ref.id}`);
+        }
         if (entry.externalId && findExternal && !entry.externalIds?.imdb) {
           try {
             const match = pickTmdbMatch(entry, externalIdResults(await findExternal(entry.externalId)));

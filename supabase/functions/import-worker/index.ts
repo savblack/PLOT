@@ -109,6 +109,8 @@ const tmdbDeps = {
   findByTvdbId: (id: string | number) => tmdbGet(`/find/${encodeURIComponent(String(id))}`, { external_source: 'tvdb_id' }),
   findExternal: (id: string) => tmdbGet(`/find/${encodeURIComponent(id)}`, { external_source: 'imdb_id' }),
   getSeason: (id: number, season: number) => tmdbGet(`/tv/${id}/season/${season}`),
+  // A TMDB account import names its titles by ID (packages/core/tmdbAccountImport.js).
+  getTitle: (mediaType: 'movie' | 'tv', id: number) => tmdbGet(`/${mediaType}/${id}`),
 };
 
 // ── Storage artifacts ────────────────────────────────────────────────────────

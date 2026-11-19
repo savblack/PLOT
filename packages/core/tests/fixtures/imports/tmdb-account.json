@@ -1,0 +1,21 @@
+{
+  "format": "plot-tmdb-account",
+  "version": 1,
+  "account": { "id": 1 },
+  "watchlist": [
+    { "id": 95396, "media_type": "tv", "title": "Severance", "year": "2022" }
+  ],
+  "rated": [
+    { "id": 26638, "media_type": "movie", "title": "Red Desert", "year": "1964", "rating": 7.5 },
+    { "id": 95396, "media_type": "tv", "title": "Severance", "year": "2022", "rating": 9 }
+  ],
+  "ratedEpisodes": [
+    { "show_id": 95396, "season_number": 1, "episode_number": 2, "name": "Half Loop", "rating": 8.5 }
+  ],
+  "lists": [
+    { "id": "test-list", "name": "Antonioni", "items": [
+      { "id": 26638, "media_type": "movie", "title": "Red Desert", "year": "1964" }
+    ] }
+  ],
+  "truncated": []
+}
