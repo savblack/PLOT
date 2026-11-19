@@ -126,6 +126,9 @@
   color: var(--image-text-primary);
 }
 .tonight-hero-meta { font-size: 0.8rem; color: var(--image-text-secondary); }
+/* Why it was picked and where it streams (Nov 19), on the same scrim. */
+.tonight-hero-why { max-width: 52ch; font-size: 0.875rem; line-height: 1.4; color: var(--image-text-primary); }
+.tonight-hero-where { font-size: 0.8rem; font-weight: 600; color: var(--image-text-primary); }
 /* The title is the tile's button; its ::after covers the tile so the whole
    thing opens the title, while the favourite and watchlist buttons sit above. */
 /* :where() keeps this reset below the title classes, whatever the order. */
@@ -388,7 +391,7 @@
 .tonight-other { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .tonight-lang { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
 .tonight-lang .tonight-select { font-size: 13px; padding: 4px 0; text-align: left; color: var(--text-primary); }
-.tonight-mood-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.tonight-mood-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 4px 0 14px; }
 /* Between phone and desktop the card is wide, so the label sits beside its chips. */
 @media (min-width: 600px) and (max-width: 1023px) {
   .tonight-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; }

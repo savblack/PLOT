@@ -125,6 +125,19 @@ export const TONIGHT_PICKER = {
     inLanguage: (name) => `in ${name}`,
     onServices: 'on my services',
     fromWatchlist: 'from my watchlist',
+    // Joins the last two of a list: "funny, tense and cozy".
+    and: 'and',
+  },
+
+  // Under the top pick (Nov 19): why it was picked, in the viewer's answers,
+  // and where it streams. pickReason / pickWhereToWatch in tonightPicker.js.
+  reason: {
+    asked: (list) => `You asked for ${list}.`,
+    onWatchlist: 'It’s on your watchlist.',
+  },
+  whereToWatch: {
+    streaming: (names) => `Streaming on ${names}`,
+    none: 'Not on a streaming service in your region',
   },
 
   // Smart lists from the shortlist (A1): saves the answers, not the picks.

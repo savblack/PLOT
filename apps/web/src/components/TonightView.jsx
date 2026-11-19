@@ -150,6 +150,15 @@ function MoodCard({ picker, premium }) {
           onChange={(c) => set(toggleChip(c, options))}
         />
       </div>
+      {/* Pick sits at the top of the card (Nov 19): below the rows it was off
+          the first screen on a laptop. The rows only narrow the pick. */}
+      <div className="tonight-mood-actions">
+        <PickForMe picker={picker} premium={premium} className="tonight-mood-pick" />
+        <button type="button" className="tonight-quiet" onClick={() => picker.go('surprise')}>{T.surpriseMe}</button>
+        {moodFiltersOn(options) && (
+          <button type="button" className="tonight-quiet" onClick={() => set(clearMoodFilters(options))}>{T.chips.clearAll}</button>
+        )}
+      </div>
       <div className="tonight-rows">
         <MoodRow label={T.chips.rows.mood}>
           {MOODS.map(m => <Chip key={m} size="sm" label={T.chips.moods[m]} selected={moodOn(m, options)} onClick={() => set(toggleMood(m, options))} />)}
@@ -177,13 +186,6 @@ function MoodCard({ picker, premium }) {
             </label>
           </div>
         </div>
-      </div>
-      <div className="tonight-mood-actions">
-        <PickForMe picker={picker} premium={premium} className="tonight-mood-pick" />
-        <button type="button" className="tonight-quiet" onClick={() => picker.go('surprise')}>{T.surpriseMe}</button>
-        {moodFiltersOn(options) && (
-          <button type="button" className="tonight-quiet" onClick={() => set(clearMoodFilters(options))}>{T.chips.clearAll}</button>
-        )}
       </div>
     </section>
   );
@@ -256,7 +258,7 @@ function FavSave({ item, actions, variant }) {
 
 /* Tiles are not buttons themselves, so the favourite and watchlist buttons can
    sit inside them: the title is the button, stretched over the whole tile. */
-function TopPick({ item, onOpen, actions, className = '' }) {
+function TopPick({ item, onOpen, actions, reason = null, where = null, className = '' }) {
   const bg = backdropUrl(item.backdrop_path, 'w1280') || posterUrl(item.poster_path, 'w780');
   return (
     <div className={`tonight-hero ${className}`}>
@@ -266,6 +268,8 @@ function TopPick({ item, onOpen, actions, className = '' }) {
         <Tag tone="artwork" label={T.topPick} />
         <button type="button" className="tonight-hero-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
         <span className="tonight-hero-meta">{pickResultMeta(item)}</span>
+        {reason && <span className="tonight-hero-why">{reason}</span>}
+        {where && <span className="tonight-hero-where">{where}</span>}
       </span>
       <FavSave item={item} actions={actions} variant="hero" />
     </div>
@@ -321,7 +325,8 @@ function Results({ picker, onOpen, reveal, actions, onKeepFinding }) {
       <div className="tonight-results-list">
         {top && (
           <div className="tonight-hero-slot">
-            <TopPick item={top} onOpen={onOpen} actions={actions} className={reveal ? 'tonight-hero--dissolve' : ''} />
+            <TopPick item={top} onOpen={onOpen} actions={actions} reason={picker.topReason} where={picker.topWhere}
+              className={reveal ? 'tonight-hero--dissolve' : ''} />
             {reveal && <FindingSentence parts={picker.sentence} className="tonight-finding--out" />}
           </div>
         )}
