@@ -163,7 +163,7 @@ select case when pg_temp.overlap(:'c_name')->>'error' = 'premium_required'
             then 'PASS' else 'FAIL' end || '  neither side Premium: refused, even with both holding the is_premium badge';
 
 \echo ''
-\echo '=== Free viewer B, Premium A public (20261118140000) ==='
+\echo '=== Free viewer B, Premium A public (20261119120000) ==='
 -- Premium on either side unlocks the comparison: B is Free, A has an active
 -- billing row.
 select pg_temp.overlap(:'a_name') as r

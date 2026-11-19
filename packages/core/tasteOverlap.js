@@ -285,7 +285,7 @@ export function canCompare(person) {
 
 /**
  * Whether a comparison is open to this viewer. Premium on either side unlocks
- * it (taste_overlap, 20261118140000), and the client cannot see the other
+ * it (taste_overlap, 20261119120000), and the client cannot see the other
  * person's subscription, so it always asks: only the server's
  * `premium_required` refusal shows the upsell. While loading it reads as
  * open, so a Free viewer comparing with a Premium member never sees the
