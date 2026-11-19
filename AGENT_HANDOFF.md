@@ -1,6 +1,10 @@
 # tmdb-import
 
-Status: paused (verified end to end on web/Staging; iPhone untested; no PR yet)
+Status: paused (PR open: https://github.com/savblack/PLOT/pull/1796, Auto-fix
+on; verified end to end on web/Staging; iPhone untested; not merged.)
+CI note: `colors:check` runs in CI ("Check generated and shared sources"),
+not in local `pnpm run check`. The TMDB icon brand colours are recorded in
+`scripts/color-literal-baseline.json` (both ImportSourceIcon files 8 → 10).
 Owner: Claude Code (desktop session)
 Branch: agent/2026-11-18-tmdb-import
 Worktree: ~/Developer/PLOT-worktrees/2026-11-18-tmdb-import
