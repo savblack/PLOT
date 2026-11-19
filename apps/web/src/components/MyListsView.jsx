@@ -10,7 +10,7 @@ import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { COMMON } from '../copy/common.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { listVisibility } from '@plot/core/customLists.js';
-import LoadingSpinner from './LoadingSpinner.jsx';
+import ListsLoading from './ListsLoading.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import ListCover from './ListCover.jsx';
@@ -213,7 +213,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
-    return <LoadingSpinner />;
+    return <ListsLoading />;
   }
 
   const { lists, smartLists = [], ownedCount, createList, createSmartList, deleteList } = customLists;

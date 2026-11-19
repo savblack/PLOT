@@ -591,6 +591,7 @@ the import page's `?from=` param.
 | `premium_first_week_hidden` | "Dismiss" on the first-week card | `done_count` |
 | `my_lists_layout_changed` | A My Lists section was folded, opened or moved, or the order was reset. Web and mobile both send all four actions. On mobile `collapse` and `expand` fire for the sections whose fold is saved to the profile (Watching, Top 5, Lists, Smart lists, Shared), not for Watchlist and Favorites, whose fold stays on the device, and not for its collapse-all control | `action` (`collapse` / `expand` / `reorder` / `reset`), `section` (`watching` / `top` / `lists` / `smart` / `shared`; absent on `reset`) |
 | `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
+| `home_pick_for_tonight_clicked` | "Pick something for me" on Home's "Nothing coming up yet" card was pressed; it opens Decide. Web only (mobile Home has no such card) | None. The pick that follows is `tonight_picks_drawn` |
 | `recommendations_viewed` | A Home recommendation shelf had titles | `shelf` (`because` / `for_you`), `item_count`. Once per app session per shelf. On web, opens from it are `title_viewed` with source `because_you_watched` / `recommended_for_you` (mobile's panel takes no source) |
 
 `finishing_touches_hidden` had never fired because Hide for now was rendered

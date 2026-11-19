@@ -6,6 +6,16 @@ import GoPremiumLink from './GoPremiumLink.jsx';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { IconBell, NAV_ICONS } from './navIcons.jsx';
+import { pathForView } from '@plot/core/navigation.js';
+
+// Pages are real links, so Cmd/Ctrl-click, middle-click and "Open in new tab"
+// work and the address shows on hover. A plain click still goes through
+// onNavigate, which keeps the app's own navigation (and closes menus).
+function followLink(event, id, onNavigate) {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  onNavigate(id);
+}
 
 // Same detection as SearchPalette's footer hints.
 const MOD_KEY = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘' : 'Ctrl';
@@ -101,27 +111,37 @@ export default function AppSidebar({
         <nav className="app-sidebar-nav">
           {sidebarNavItems(sidebarOrder, profile?.region).map(({ id, label }) => {
             const Icon = NAV_ICONS[id];
+            const className = `app-sidebar-item interactive-surface${isActiveView(currentView, id) ? ' active' : ''}`;
+            // Search opens the palette rather than a page, so it stays a button.
+            if (id === 'search') {
+              return (
+                <button key={id} type="button" className={className} onClick={() => onNavigate(id)}>
+                  {Icon && <Icon />}
+                  <span className="app-sidebar-label">{label}</span>
+                  {/* Cmd/Ctrl+K already opens Search (App.jsx); say so where people look for it. */}
+                  {!collapsed && <kbd className="app-sidebar-kbd" aria-hidden="true">{MOD_KEY}K</kbd>}
+                </button>
+              );
+            }
             return (
-              <button
+              <a
                 key={id}
-                type="button"
-                className={`app-sidebar-item interactive-surface${isActiveView(currentView, id) ? ' active' : ''}`}
-                onClick={() => onNavigate(id)}
+                href={pathForView(id)}
+                className={className}
+                onClick={(e) => followLink(e, id, onNavigate)}
                 aria-current={isActiveView(currentView, id) ? 'page' : undefined}
               >
                 {Icon && <Icon />}
                 <span className="app-sidebar-label">{label}</span>
-                {/* Cmd/Ctrl+K already opens Search (App.jsx); say so where people look for it. */}
-                {id === 'search' && !collapsed && <kbd className="app-sidebar-kbd" aria-hidden="true">{MOD_KEY}K</kbd>}
-              </button>
+              </a>
             );
           })}
 
           {user && (
-            <button
-              type="button"
+            <a
+              href={pathForView('notifications')}
               className={`app-sidebar-item interactive-surface${currentView === 'notifications' ? ' active' : ''}`}
-              onClick={() => onNavigate('notifications')}
+              onClick={(e) => followLink(e, 'notifications', onNavigate)}
               aria-label={`${APP_SHELL.notifications}${unread ? ` (${unread} unread)` : ''}`}
               aria-current={currentView === 'notifications' ? 'page' : undefined}
             >
@@ -130,7 +150,7 @@ export default function AppSidebar({
               {unread > 0 && (
                 <span className="app-sidebar-badge" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>
               )}
-            </button>
+            </a>
           )}
 
         </nav>
