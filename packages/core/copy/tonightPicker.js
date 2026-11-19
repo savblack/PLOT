@@ -7,6 +7,8 @@
 // (copy/smartLists.js reads it from here, so the two never drift).
 const CREATE_SMART_LIST = 'Create smart list';
 
+import { MEDIA } from './media.js';
+
 export const TONIGHT_PICKER = {
   // Title comes from the nav label (Just Decide); this is the page subline.
   progress: (step, total) => `Question ${step} of ${total}`,
@@ -58,7 +60,7 @@ export const TONIGHT_PICKER = {
     '1990s': '1990s',
     classic: 'Before 1990',
   },
-  scoreLabel: 'TMDB score',
+  scoreLabel: 'Critics’ score',
   score: (min) => (min ? `${min}+` : 'Any'),
   scoreHint: 'Out of 10. Higher scores mean fewer, better-known picks.',
 
@@ -151,14 +153,13 @@ export const TONIGHT_PICKER = {
   removeSaved: (label) => `Remove saved search: ${label}`,
   topPick: 'Top pick',
   onYourWatchlist: 'On your watchlist',
-  spinAgain: 'Regenerate',
+  spinAgain: 'Pick another',
   changeOptions: 'Edit',
   minutes: (n) => (n >= 60 ? `${Math.floor(n / 60)}h ${String(n % 60).padStart(2, '0')}m` : `${n} min`),
   episodeMinutes: (n) => `${n} min episodes`,
   seasons: (n) => (n === 1 ? '1 season' : `${n} seasons`),
   miniseries: 'Mini-series',
-  // TMDB score with a star, e.g. "★ 7.8".
-  score10: (n) => `★ ${n.toFixed(1)}`,
+  score10: (n) => MEDIA.criticsScore(n.toFixed(1)),
 
   emptyTitle: 'Nothing fits those answers',
   emptyBody: 'Try more time, fewer genres, or turn off a filter.',
@@ -195,7 +196,7 @@ export const TONIGHT_PICKER = {
   fewerShelves: 'Show fewer shelves',
   chips: {
     movies: 'Movies',
-    shows: 'Shows',
+    shows: 'TV',
     // Nov 16: the card's labelled rows (tonightShelves.js MOODS, moodRows).
     rows: { mood: 'Mood', where: 'Where', other: 'Other' },
     moods: {

@@ -120,7 +120,7 @@ function RankRow({ rank, item, editMode, dragging, highlighted, dragDy, onRowLay
             <Text style={{ color: colors.textMuted, fontSize: 16 }}>+</Text>
           </View>
           <Text style={styles.rankEmptyPrompt}>
-            {rank === 1 ? "What's your GOAT?" : 'Add a title'}
+            {rank === 1 ? CUSTOM_LISTS.topPickPrompt : CUSTOM_LISTS.topAddPrompt}
           </Text>
         </>
       )}
@@ -276,7 +276,7 @@ export function TopTenSection({ listType, title, showTitle = true, topLists, his
 
       {addingRank !== null && (
         <SearchPickModal
-          title={`Select #${addingRank} ${listType === 'movies' ? 'Movie' : 'TV Show'}`}
+          title={`Select #${addingRank} ${listType === 'movies' ? 'movie' : 'TV show'}`}
           mediaFilter={listType === 'movies' ? 'movie' : 'tv'}
           historyEntries={history}
           onSelect={(item) => topLists.setSlot(listType, addingRank, item)}

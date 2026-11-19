@@ -167,7 +167,7 @@ function IconShare() {
 }
 function IconBookmark({ saved }: { saved: boolean }) {
   const { colors } = useTheme();
-  const ink = saved ? colors.statusWatched : colors.onAccentFill;
+  const ink = saved ? colors.statusWatched : colors.textPrimary;
   return (
     <Svg width={15} height={15} viewBox="0 0 24 24" fill={saved ? ink : 'none'} stroke={ink} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <Path d={ICON_PATHS.bookmark} />
@@ -1400,12 +1400,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
-                    style={[styles.pill, inList ? styles.pillSaved : styles.pillPrimary]}
+                    style={[styles.pill, inList && styles.pillSaved]}
                     onPress={handleSaveFromPanel}
                     accessibilityRole="button"
                   >
                     {inList ? <IconCheck color={colors.statusWatched} /> : <IconBookmark saved={false} />}
-                    <Text style={[styles.pillText, inList ? { color: colors.statusWatched } : { color: colors.onAccentFill }]} numberOfLines={1}>
+                    <Text style={[styles.pillText, inList ? { color: colors.statusWatched } : { color: colors.textPrimary }]} numberOfLines={1}>
                       {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
                     </Text>
                   </TouchableOpacity>
@@ -1897,7 +1897,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     minHeight: 38, paddingHorizontal: spacing.lg,
     borderRadius: radii.pill, backgroundColor: colors.surfaceSunken,
   },
-  pillPrimary: { backgroundColor: colors.accentFill },
   pillSaved: { backgroundColor: colors.statusWatchedDim },
   pillWatching: { backgroundColor: colors.statusWatchingDim },
   pillText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary, maxWidth: 128 },

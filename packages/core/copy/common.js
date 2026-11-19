@@ -36,7 +36,7 @@ export const COMMON = {
   unlike: 'Unlike',
   someone: 'Someone', // fallback display name when a user has no name/username set
   addComment: 'Add a comment',
-  genericError: 'Something went wrong. Please try again.',
+  genericError: 'Something went wrong on our end. Check your connection and try again.',
   select: 'Select',
   deselect: 'Deselect',
   sending: 'Sending…',

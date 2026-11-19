@@ -1,6 +1,9 @@
 import { FREE_CUSTOM_LIST_CAP } from '../premium.js';
 
 export const CUSTOM_LISTS = Object.freeze({
+  // The Top 5 podium's empty slots (web ListSections, mobile TopTenSection).
+  topPickPrompt: 'Your all-time favorite?',
+  topAddPrompt: 'Add a title',
   // Mobile's My Lists empties (one list open, the Watching tab, Favorites).
   notWatchingTitle: 'Not watching anything',
   notWatchingBody: 'Start a series from your watchlist or Search.',

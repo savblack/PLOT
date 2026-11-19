@@ -31,7 +31,7 @@ test('buildWatchlistMovieCalendarEvents keeps separate cinema and streaming even
   }, '2026-06-12');
 
   assert.deepEqual(events.map(({ date, type, label }) => ({ date, type, label })), [
-    { date: '2026-06-15', type: 'cinema', label: 'Cinema' },
+    { date: '2026-06-15', type: 'cinema', label: 'Theaters' },
     { date: '2026-06-29', type: 'streaming', label: 'Streaming' },
   ]);
 });

@@ -10,7 +10,7 @@ export const DISCOVER_VIEW = {
   startHere: 'Start here',
   startHereBody: 'Choose a show that’s airing now. We’ll show you when the next episode drops here.',
   findAiringShow: 'Find a show airing now',
-  nothingUpcoming: 'Nothing coming up yet',
+  nothingUpcoming: 'Nothing coming up yet.',
   nothingUpcomingBody: 'Your saved shows are between seasons or have no new episodes. Choose one that’s airing now to see what’s next.',
   refreshing: 'Updating…',
   offline: 'You’re offline',

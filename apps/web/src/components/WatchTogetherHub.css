@@ -19,7 +19,8 @@
   color: var(--text-primary);
   text-wrap: balance;
 }
-.wth-main-btn { width: 100%; justify-content: center; }
+/* Sized to its label: Plot's buttons are compact, never full width. */
+.wth-main-btn { align-self: flex-start; justify-content: center; }
 .wth-body { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
 .wth-note { font-size: 12px; line-height: 1.4; color: var(--text-muted); }
 

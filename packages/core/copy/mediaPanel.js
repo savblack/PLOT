@@ -116,7 +116,7 @@ export const MEDIA_PANEL = {
   // @plot/core/useTitleFootBar.js.
   foot: {
     unwatchedHead: 'Watched it?',
-    unwatchedHint: 'Tap a star to rate it',
+    unwatchedHint: 'Pick a star to rate it',
     iveWatched: "I've watched",
     imWatching: "I'm watching",
     head: 'Thoughts?',

@@ -18,8 +18,9 @@ export const MEDIA = {
   chartUnavailable: 'Chart unavailable this week',
   tv: 'TV',
   tvSeries: 'TV Series',
-  series: 'Series',
-  cinema: 'Cinema',
+  // A TV title's badge. 'TV' everywhere a type is labeled (UI critique, Nov 18).
+  series: 'TV',
+  cinema: 'Theaters',
   unknown: 'Unknown',
   // Both apps' title-search box and its two empty states. Shared so the two
   // can't drift: they read identically today only because this is the one
@@ -60,7 +61,10 @@ export const MEDIA = {
   onThisDay: 'On This Day',
   watched: 'Watched',
   comingSoon: 'Coming Soon',
-  inCinemas: 'In Cinemas',
+  inCinemas: 'In theaters',
+  // TMDB's 10-point score, e.g. "Critics 7.8/10". Never a star glyph: stars
+  // are the viewer's own 5-star ratings.
+  criticsScore: (score) => `Critics ${score}/10`,
   // Watch-status actions. These live here rather than in mediaPanel because
   // three surfaces render them — the detail panel, the search rows and the
   // Watching list — and a per-surface copy is how the same label ends up

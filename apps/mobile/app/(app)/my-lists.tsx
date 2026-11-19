@@ -119,9 +119,9 @@ const FOLD_SYNCED: Record<string, string> = { watching: 'watching', top10: 'top'
 // core's filterByType so `cinema` (a client-side flag, not a TMDB
 // media_type) is handled the same way on both platforms.
 const TYPE_OPTIONS = [
-  { id: 'movie',  label: 'Movies' },
-  { id: 'tv',     label: 'TV'     },
-  { id: 'cinema', label: 'Cinema' },
+  { id: 'movie',  label: MEDIA.movies },
+  { id: 'tv',     label: MEDIA.tv },
+  { id: 'cinema', label: MEDIA.cinema },
 ];
 
 
@@ -243,7 +243,7 @@ function SelectableListRow({ item, trailing, onPress, sel, status }: {
   const title  = item.title || item.name || '';
   const isTV   = item.media_type === 'tv';
   const epCode = item.current_season != null
-    ? `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`
+    ? `S${item.current_season} · E${item.current_episode}`
     : null;
 
   const editing    = !!sel?.editMode;
@@ -278,7 +278,7 @@ function SelectableListRow({ item, trailing, onPress, sel, status }: {
         <Text style={[styles.listRowTitle, finished && styles.finishedTitle]} numberOfLines={2}>{title}</Text>
       </View>
       <View style={styles.typeBadge}>
-        <Text style={styles.typeBadgeText}>{isTV ? 'Series' : 'Movie'}</Text>
+        <Text style={styles.typeBadgeText}>{isTV ? MEDIA.series : MEDIA.movie}</Text>
       </View>
       {epCode && (
         <View style={styles.epChip}>
@@ -300,10 +300,11 @@ interface PosterCaptionItem {
   streaming_date?: string | null;
 }
 
-// "S01E03" for a series with a current episode, else null (poster captions).
+// "S1 · E3" for a series with a current episode, else null (poster captions).
+// The same format as web and Home.
 function episodeCode(item: { current_season?: number | null; current_episode?: number | null }): string | null {
   if (item.current_season == null) return null;
-  return `S${String(item.current_season).padStart(2, '0')}E${String(item.current_episode ?? 0).padStart(2, '0')}`;
+  return `S${item.current_season} · E${item.current_episode ?? 0}`;
 }
 
 // The release or streaming countdown as a caption under a poster comes from
@@ -851,8 +852,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
               })}
             </View>
             {topType === 'movies'
-              ? <TopTenSection listType="movies" title="Movies"   showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
-              : <TopTenSection listType="tv"     title="TV Shows" showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />}
+              ? <TopTenSection listType="movies" title={MEDIA.movies} showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
+              : <TopTenSection listType="tv"     title={MEDIA.tv} showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />}
           </CollapsibleSection>
         )}
 
