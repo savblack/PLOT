@@ -67,4 +67,6 @@ Deno.test('the email carries the link and no em dash', () => {
   const mail = confirmMail('https://app.theplot.tv/newsletter/confirm?token=abc');
   assertEquals(mail.text.includes('https://app.theplot.tv/newsletter/confirm?token=abc'), true);
   assertEquals(/—/.test(mail.subject + mail.text), false);
+  assertEquals(mail.subject, 'Confirm your Plot Digest subscription');
+  assertEquals(mail.text.startsWith('Someone, hopefully you, asked to get the Plot Digest at this address.'), true);
 });

@@ -5,11 +5,11 @@
  */
 export const NEWSLETTER_CONFIRM = Object.freeze({
   title: 'Confirm your subscription',
-  body: 'Press the button to start getting the Plot weekly digest at this address.',
+  body: 'Press the button to start getting the Plot Digest at this address.',
   button: 'Confirm',
   working: 'Confirming',
   doneTitle: 'You’re subscribed',
-  doneBody: 'The next Plot digest will land in your inbox. Every issue has an unsubscribe link.',
+  doneBody: 'The next Plot Digest will land in your inbox. Every issue has an unsubscribe link.',
   invalidTitle: 'This link is not valid',
   invalidBody: 'It may already have been used, or it may be incomplete. If you are not getting the digest, subscribe again on theplot.tv.',
   expiredTitle: 'This link has expired',
