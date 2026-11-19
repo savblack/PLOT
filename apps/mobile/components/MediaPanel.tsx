@@ -1455,9 +1455,6 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             <Text style={styles.statusOptionText}>{MEDIA_PANEL.watching}</Text>
                           </TouchableOpacity>
                         )}
-                        <TouchableOpacity style={styles.statusOption} onPress={() => runStatusAction(() => markWatchedNow(false))}>
-                          <Text style={styles.statusOptionText}>{MEDIA.watched}</Text>
-                        </TouchableOpacity>
                         <TouchableOpacity style={styles.statusOption} onPress={() => runStatusAction(() => markWatchedNow(true))}>
                           <Text style={styles.statusOptionText}>{MEDIA_PANEL.didntFinish}</Text>
                         </TouchableOpacity>
