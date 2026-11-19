@@ -77,6 +77,12 @@ const AUDIENCE_REACTION = /\baudience(?:s)? are\b/i;
 // Day: Die Hard turns 38" shipped exactly this way.
 const TITLE_CASE_LABEL = /^(?:On This Day|First Look|Trailer Drop|Watch Tonight|Hidden Gem|Now Streaming|Now At Home|Coming Soon|The Week Ahead|New This Week)\b/;
 
+// Monthly roundups all came out as "New on Netflix in November 2026: A, B, and More":
+// seven near-identical headlines on one What's On page (November 2026). Lead with
+// the standout title instead. The Title Case "and More" tail also breaks sentence case.
+const ROUNDUP_FORMULA = /^New on .+? in (?:January|February|March|April|May|June|July|August|September|October|November|December)\b(?: \d{4})?:/;
+const AND_MORE_TAIL = /,? and More\.?$/;
+
 // Generated social and article copy is American English. Legal documents are
 // exempt: pass { legal: true } or a source path isLegalCopySource() accepts.
 // Words spelled the same in both dialects (promise, surprise, practice the
@@ -239,6 +245,11 @@ export const articleErrors = ({ page_title = '', page_body = [] } = {}, opts = {
   const label = TITLE_CASE_LABEL.exec(page_title);
   if (label) {
     errors.push(`page_title opens with the post type in Title Case ("${label[0]}"); the site renders that label itself, and headlines are sentence case`);
+  }
+  if (ROUNDUP_FORMULA.test(page_title)) {
+    errors.push('page_title uses the "New on [service] in [month]:" roundup formula; lead with the standout title instead (e.g. "The Rings of Power returns to lead Prime Video\'s November")');
+  } else if (AND_MORE_TAIL.test(page_title)) {
+    errors.push('page_title ends "and More"; headlines are sentence case, and the list belongs in the article');
   }
 
   if (!guide && page_body.length) {

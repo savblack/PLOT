@@ -51,7 +51,7 @@ export const PLANS_PAGE = {
     trial: 'Commitment-free. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
-      'Decide: a shortlist for tonight',
+      'Decide: four quick questions, up to five picks for tonight',
       'Watch together: settle what to watch',
       'Your watch profile',
       'Custom themes, widgets and app icons',
