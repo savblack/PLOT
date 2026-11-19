@@ -170,8 +170,8 @@
 
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
-  <link rel="stylesheet" href="/ui.css?v=e9689cc8" />
-  <link rel="stylesheet" href="/nav.css?v=d915d58f" />
+  <link rel="stylesheet" href="/ui.css?v=5d41273c" />
+  <link rel="stylesheet" href="/nav.css?v=d5a39888" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -225,6 +225,7 @@
       line-height: 1.75;
       margin-bottom: 1.35rem;
       text-align: left;
+      max-width: 34em; /* about 70 characters a line, which reads most easily */
     }
     .lead { font-size: 1.12rem; color: var(--text); line-height: 1.6; }
     /* ── About page components ───────────────────────────────── */
@@ -406,8 +407,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="/pricing">Pricing</a></li>
+      <li class="nav-more"><a href="/taste-match">Taste match</a></li>
+      <li class="nav-more"><a href="/about">About</a></li>
+      <li class="nav-more"><a href="/support">Support</a></li>
       <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
-      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
+      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Start tracking</a></li>
     </ul>
     <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
@@ -469,7 +473,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div><dt>Where it runs</dt><dd>Any browser, at <a href="https://app.theplot.tv" data-cta="about-facts">app.theplot.tv</a>. An iPhone app is coming.</dd></div>
       </dl>
       <div class="cta-row">
-        <a class="btn btn-primary btn-large" href="https://app.theplot.tv/signup" data-cta="about-glance">Start your plot, free</a>
+        <a class="btn btn-primary btn-large" href="https://app.theplot.tv/signup" data-cta="about-glance">Start tracking</a>
         <a class="btn btn-outline btn-large" href="/pricing" data-cta="about-glance">See what Premium adds</a>
       </div>
     </section>
@@ -504,7 +508,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <section class="closer">
       <p class="closer-headline">Your movies. Your shows.<br>Your <svg class="wm" viewBox="0 0 1568 871" aria-hidden="true" focusable="false"><use href="#wm-plot"/></svg><span class="sr-only">plot</span>.</p>
       <div class="cta-row">
-        <a class="btn btn-primary btn-large" href="https://app.theplot.tv/signup" data-cta="about-final">Start your plot, free</a>
+        <a class="btn btn-primary btn-large" href="https://app.theplot.tv/signup" data-cta="about-final">Start tracking</a>
         <a class="btn btn-ink btn-large" href="https://app.theplot.tv/login" data-cta="about-final">Log in</a>
       </div>
     </section>
@@ -528,7 +532,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="footer-intro">
           <p class="footer-lede">Everything you've watched.<br>Everything you want to watch.</p>
           <div class="footer-actions">
-            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your Plot</a>
+            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start tracking</a>
           </div>
         </div>
         <ul class="footer-links" role="navigation" aria-label="Footer">

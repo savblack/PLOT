@@ -9,6 +9,6 @@ export const NOT_FOUND_PAGE = {
   code: '404',
   headline: "Looks like we've hit a plot hole.",
   sub: "Let's get you back to something worth watching.",
-  backHome: '← Back to plot',
+  backHome: '← Back to Plot',
   seeWhatsOn: "See what's on",
 };

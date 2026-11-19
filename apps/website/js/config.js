@@ -151,6 +151,17 @@ posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U', {
   }, true);
 })();
 
+/* A homepage search result opens the title's public page, not the app, so the
+   CTA listener above does not see it. Counted as search_result_opened; the
+   query is never sent. */
+(function () {
+  document.addEventListener('click', function (ev) {
+    var a = ev.target && ev.target.closest && ev.target.closest('a[data-cta="hero_search_result"]');
+    if (!a) return;
+    posthog.capture('search_result_opened', { placement: 'hero_search', source: 'marketing' });
+  }, true);
+})();
+
 /* The homepage search bar is a form, not a link, so its submit is counted
    here as the same signup_cta_clicked event. has_query says whether a title
    was typed; the title itself is never sent. */

@@ -10,7 +10,7 @@
 
 export const FOOTER_PARTIAL = {
   tagline: ["Everything you've watched.", 'Everything you want to watch.'],
-  cta: 'Start your plot',
+  cta: 'Start tracking',
   login: 'Log in',
   columns: {
     explore: { heading: 'Explore', links: { whatsOn: "What's On", pricing: 'Pricing' } },

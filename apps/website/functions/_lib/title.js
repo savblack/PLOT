@@ -29,7 +29,9 @@ async function directTitlePage(type, slug, region) {
   const url = new URL(TMDB_WORKER);
   url.searchParams.set('path', `${type}/${id}`);
   url.searchParams.set('language', 'en-US');
-  url.searchParams.set('append_to_response', 'watch/providers,credits,videos,recommendations');
+  // Movies also need release_dates: the facts show the visitor's own release
+  // date (title-page/index.ts asks for the same thing).
+  url.searchParams.set('append_to_response', `watch/providers,credits,videos,recommendations${type === 'movie' ? ',release_dates' : ''}`);
   const upstream = await fetch(url, { headers: { Origin: 'https://theplot.tv', Accept: 'application/json' } });
   // The Worker can fall back to Supabase when its direct TMDB key is absent.
   // Only the direct response is an egress reduction.

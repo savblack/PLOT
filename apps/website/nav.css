@@ -66,6 +66,10 @@ nav.scrolled {
   transition: color 0.2s, background 0.2s;
 }
 .nav-links a:hover { color: var(--text); }
+/* Taste match, About and Support: in the phone menu only. Desktop keeps the
+   short bar; the footer links them on every page. */
+.nav-links .nav-more { display: none; }
+.nav-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 /* The sign-up link is a pink pill, the same shape as .btn-primary. Colour is
    set without !important so a page can still re-colour the pill. Every page
    currently uses the same pink, so the nav matches site-wide. */
@@ -123,6 +127,7 @@ nav.scrolled {
     align-items: stretch;
   }
   .nav-links.open li { display: block; }
+  .nav-links.open .nav-more { display: block; }
   .nav-links.open a { display: block; padding: 0.85rem 0; text-align: center; }
   /* A compact pill sized to its label, not a full-width bar. */
   .nav-links.open .nav-cta { display: block; width: max-content; margin: 0.5rem auto 0; padding: 0.85rem 1.8rem !important; }

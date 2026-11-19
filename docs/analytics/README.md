@@ -531,11 +531,10 @@ marketing site never hands off to mobile.
 | Event | Where | When | Props |
 |---|---|---|---|
 | `signup_cta_clicked` | marketing site | The search bar was submitted, typed or not | `placement: hero_search`, `source: marketing`, `has_query` |
-| `save_cta_clicked` | marketing site | A live result under the search bar was picked (it goes to `/save?…&src=hero_search`) | `placement: hero_search_result`, `source: marketing` |
+| `search_result_opened` | marketing site | A live result under the search bar was picked. Since 2026-11-19 it opens the title's public page (`/movie/<slug>-<id>` or `/tv/<slug>-<id>`), whose Save button is the `/save` hand-off; before that date the pick went straight to `/save?…&src=hero_search` and was counted as `save_cta_clicked` with `placement: hero_search_result` | `placement: hero_search`, `source: marketing` |
 | `signup_search_resumed` | web app | A signed-in visit acted on that typed title, at most once | `query_length`, `opened` (`title` when the search had one clear match and that title opened, else `search`) |
 
-A picked result is a save intent with `src=hero_search`: the app skips the
-`/save` preview and opens the title after signup, saving nothing on its own.
+Before 2026-11-19 a picked result was a save intent with `src=hero_search`; it now opens the public title page, and saving from there carries `src=title_page`. The app side of `src=hero_search` (open the title after signup, save nothing on its own) still applies to links that carry it.
 
 The query text is never sent from either side, only whether one was typed and
 its length. The title waits in the browser for 24 hours, so a signup confirmed

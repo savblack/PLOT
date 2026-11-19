@@ -41,7 +41,10 @@
 .btn-ink { background: var(--ink); color: var(--on-ink); }
 .btn-ink:hover { background: var(--ink-hover); transform: translateY(-1px); }
 .btn-large { padding: 0.85rem 2.2rem; font-size: 0.85rem; min-height: 44px; }
-.btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Keyboard focus: the accent ring on anything a visitor can tab to, in place
+   of the browser default. :where() keeps it overridable by any component. */
+:where(a, button, summary, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (max-width: 600px) {
   .btn-large { padding: 0.75rem 1.5rem; font-size: 0.85rem; }
 }

@@ -56,8 +56,8 @@
   <title>Pricing · Plot is free. Premium is $3/mo or $2/mo yearly</title>
   <meta name="description" content="Plot is free to use, forever. Premium is $3 a month, or $2 a month paid yearly ($24), with a 7-day free trial for new subscribers." />
   <link rel="canonical" href="https://theplot.tv/pricing" />
-  <meta name="theme-color" content="#292924" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f8f2ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -77,8 +77,8 @@
 
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
-  <link rel="stylesheet" href="/ui.css?v=e9689cc8" />
-  <link rel="stylesheet" href="/nav.css?v=d915d58f" />
+  <link rel="stylesheet" href="/ui.css?v=5d41273c" />
+  <link rel="stylesheet" href="/nav.css?v=d5a39888" />
   <link rel="stylesheet" href="/premium-stories.css?v=34322ae5" />
 
   <style>
@@ -113,10 +113,11 @@
     .section-head h2 { font-size: clamp(2rem, 3.6vw, 2.8rem); margin-bottom: 0.6rem; }
     .section-head p { font-size: 1.05rem; color: var(--text-secondary); max-width: 52ch; }
 
-    /* ── Hero: ink, like the home page's opening screen ──────── */
+    /* ── Hero: the page ground, like every other page's opening screen.
+       It follows light and dark mode; the Premium stories below stay ink. */
     .hero {
-      background: var(--ink);
-      color: var(--on-ink);
+      background: var(--bg);
+      color: var(--text);
       padding: 84px 2rem 5rem;
       text-align: center;
     }
@@ -130,7 +131,7 @@
     }
     .hero h1 {
       font-size: clamp(2.6rem, 5vw, 4.25rem);
-      color: var(--on-ink);
+      color: var(--text);
       max-width: 14ch;
       margin-bottom: 1.2rem;
     }
@@ -138,16 +139,16 @@
       font-size: 1.19rem;
       font-weight: 400;
       line-height: 1.45;
-      color: #d9d1c4;
+      color: var(--text-secondary);
       max-width: 46ch;
       margin: 0 auto 2.2rem;
     }
 
-    /* ── Billing toggle (the home page's .pr-toggle, on ink) ─── */
+    /* ── Billing toggle ─────────────────────────────────────── */
     .billing-toggle {
       display: inline-flex;
       padding: 4px;
-      background: rgba(255,255,255,0.1);
+      background: var(--surface);
       border-radius: var(--r-pill);
     }
     .billing-opt {
@@ -159,22 +160,21 @@
       border-radius: var(--r-pill);
       background: transparent;
       font: 600 0.88rem var(--sans);
-      color: #d9d1c4;
+      color: var(--text-secondary);
       cursor: pointer;
     }
-    .billing-opt.is-active { background: var(--bg); color: var(--text); }
-    .billing-opt:focus-visible { outline: 2px solid var(--fill); outline-offset: 2px; }
+    .billing-opt.is-active { background: var(--text); color: var(--bg); }
+    .billing-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .billing-save {
       font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--sage);
+      color: var(--accent-2);
     }
-    .billing-opt.is-active .billing-save { color: var(--accent-2); }
+    .billing-opt.is-active .billing-save { color: inherit; opacity: 0.8; }
 
     /* ── Plan cards: the home page's Premium card, twice ─────── */
-    /* The pair starts on the ink and hangs down into the cream below. */
     .plans-grid {
       position: relative;
       z-index: 2;
@@ -197,7 +197,7 @@
       min-width: 0;
     }
     .plan-card--free { background: var(--surface); }
-    .plan-card--premium { box-shadow: none; }
+    .plan-card--premium { box-shadow: none; border: 1px solid var(--rule); }
     .plan-flag {
       position: absolute;
       top: 22px; right: 22px;
@@ -324,7 +324,7 @@
     }
     .cmp-yes { display: inline-flex; }
     .cmp-yes .tick { margin-top: 0; }
-    .cmp-no { color: var(--text-secondary); opacity: 0.6; }
+    .cmp-no { color: var(--text-secondary); }
     .cmp-text { font-weight: 500; }
     .cmp-table td.cmp-premium { background: color-mix(in srgb, var(--text) 5%, transparent); }
     /* No hairline under the last row of each group, or of the table. */
@@ -418,8 +418,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="/pricing">Pricing</a></li>
+      <li class="nav-more"><a href="/taste-match">Taste match</a></li>
+      <li class="nav-more"><a href="/about">About</a></li>
+      <li class="nav-more"><a href="/support">Support</a></li>
       <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
-      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
+      <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Start tracking</a></li>
     </ul>
     <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
@@ -639,15 +642,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tr><th scope="row" class="cmp-feat">Follow friends &amp; share profile</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr class="cmp-group"><td colspan="3">Lists &amp; calendar</td></tr>
               <tr><th scope="row" class="cmp-feat">Custom lists</th><td><span class="cmp-text">Up to 5</span></td><td class="cmp-premium"><span class="cmp-text">Unlimited</span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Smart lists</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Release dates in your calendar app</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Smart lists</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Release dates in your calendar app</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr class="cmp-group"><td colspan="3">Deciding what to watch</td></tr>
-              <tr><th scope="row" class="cmp-feat">Decide</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Watch together</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Decide</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Watch together</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Your watch profile</th><td><span class="cmp-text">Overview</span></td><td class="cmp-premium"><span class="cmp-text">Full profile</span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Taste match with a friend</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Custom themes, widgets &amp; app icons</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Actor &amp; director alerts</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Taste match with a friend</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Custom themes, widgets &amp; app icons</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Actor &amp; director alerts</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
             </tbody>
           </table>
         </div>
@@ -701,7 +704,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="footer-intro">
           <p class="footer-lede">Everything you've watched.<br>Everything you want to watch.</p>
           <div class="footer-actions">
-            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your Plot</a>
+            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start tracking</a>
           </div>
         </div>
         <ul class="footer-links" role="navigation" aria-label="Footer">
