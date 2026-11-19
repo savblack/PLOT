@@ -1,7 +1,6 @@
 # tmdb-import
 
-Status: paused (built and checked locally; waiting on Savannah for Staging
-deploys and a real TMDB sign-in test)
+Status: paused (verified end to end on web/Staging; iPhone untested; no PR yet)
 Owner: Claude Code (desktop session)
 Branch: agent/2026-11-18-tmdb-import
 Worktree: ~/Developer/PLOT-worktrees/2026-11-18-tmdb-import
@@ -37,8 +36,52 @@ and someone signed in to TMDB to press Approve.
   lookups retried once. Not changed: (6) a free account at its custom-list
   cap gets list rows refused (same as Letterboxd lists); (7) iPhone
   `plot://auth/tmdb` redirect still untested.
-- Pending: `db:drift`, `staging:test -- all` (CI runs it on the PR),
-  real TMDB sign-in on Staging.
+- Staging (2026-11-19, Savannah's yes): migration applied by hand in one
+  transaction and recorded in `supabase_migrations.schema_migrations`
+  (version 20261119100000). `db:drift` now reports
+  `import_jobs_source_check` differs Staging vs production; expected until
+  merge. `tmdb-account` and `import-worker` deployed to PLOT Staging.
+  Staging has TMDB_API_KEY, IMPORT_EVENTS/ANNOTATIONS_ENABLED, SB_SECRET_KEY.
+  Local web: launch config `web-tmdb-import` (localhost:5197, main checkout's
+  `.claude/launch.json`, gitignored).
+- End-to-end so far (2026-11-19, localhost:5197 on Staging): TMDB tile shows
+  in Settings › Add a source; its sheet shows the reads copy; "Continue to
+  TMDB" calls `tmdb-account` start on Staging and lands on
+  `themoviedb.org/authenticate/<token>?redirect_to=http://localhost:5197/auth/tmdb`,
+  which names Plot. Note: TMDB's own wording says "read and write"; Plot only
+  reads, and ends the session.
+- Savannah approved on TMDB (2026-11-19). TMDB redirected to
+  `/auth/tmdb`, the token check passed, `fetch` returned 200 (no
+  not_approved/unavailable), and the callback showed `tmdbEmpty` ("no
+  watchlist, lists or ratings"). So sign-in, binding, session and account
+  read all work against real TMDB. Unknown: whether the account really is
+  empty or an endpoint read came back empty. Response not captured (browser
+  buffer dropped it). Savannah confirmed the account is empty, so the
+  empty result is correct.
+- Run 2 (2026-11-19, job 1f980bdc on Staging): succeeded, 3 imported, 0
+  failed. Landed: Red Desert watched (history rating 8, watched_at null,
+  watch_events source_rating 8, precision unknown); Severance show rating as
+  annotation `{rating: 9, sourceRating: 9}`; private TMDB list "Plot import
+  test" created (imported_lists tmdb:list:8717509), so v3 DOES return
+  private lists with a session. Watchlist and episode rating came back empty
+  because they had not actually saved on TMDB (TMDB pages confirmed empty).
+  Fixed on TMDB; run 3 pending Savannah's Approve.
+- TMDB's website rates in whole points only (movies/shows 0-100 in 10s,
+  episodes 5 stars with halves = whole points/10). Half points cannot be
+  made there; covered by unit tests only.
+- Run 3 (2026-11-20, job c1cb7b90): succeeded, total 6, imported 3,
+  duplicates 3, failed 0. Watchlist has Red Desert + Severance; private
+  list "Plot import test" has Red Desert; annotations: show 9 and episode
+  S1E2 8, each with sourceRating; one watch event (no double). Re-import
+  adds nothing twice. END TO END VERIFIED ON WEB.
+- Fixed after run 2: Settings › TMDB detail had no way to import again
+  (TMDB is connect-lane but never "connected"); added "Import from TMDB
+  again" on web and iPhone (`settingsView.sources.importTmdbAgain`). Verified
+  on web: that button reached TMDB's approval page for run 3.
+- Fixed: shared queued copy now says "import" not "history"
+  (`copy/importJobs.js`), so it is accurate for TMDB; affects every source.
+  `tests/smoke/settings-sources.spec.js` updated; full smoke suite 131
+  passed / 7 skipped. `staging:test -- all` (CI runs it on the PR).
 
 ## What was built (evidence: commits 84e142b81, 1d743271a)
 

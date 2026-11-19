@@ -198,6 +198,13 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
             <Text style={styles.hint}>{T.importNewerHint}</Text>
           </>
         )}
+        {/* TMDB keeps no connection, so it is never "connected": offer the sign-in again. */}
+        {src.id === 'tmdb' && (
+          <>
+            <Button variant="primary" label={T.importTmdbAgain} onPress={onImport} disabled={!!status.active} />
+            <Text style={styles.hint}>{T.importNewerHint}</Text>
+          </>
+        )}
         <Text style={styles.label}>{T.history}</Text>
         <View style={styles.card}>
           {sourceJobs.length === 0 && reviews.length === 0 && <EmptyNote style={{ padding: spacing.md }}>{T.noHistory}</EmptyNote>}

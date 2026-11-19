@@ -348,6 +348,8 @@ export const SETTINGS_VIEW = {
     importHistory: 'Import history and watchlist',
     importFromProfile: 'Import from this profile',
     importNewerExport: 'Import a newer export',
+    // TMDB keeps no connection (packages/core/tmdbAccount.js): each import signs in again.
+    importTmdbAgain: 'Import from TMDB again',
     importNewerHint: 'Only new entries are added.',
     history: 'History',
     noHistory: 'No imports yet.',

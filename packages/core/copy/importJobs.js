@@ -12,7 +12,8 @@ export const IMPORT_JOBS = {
     dropHere: 'Drop your file here, or browse',
     uploading: 'Uploading…',
     // The upload landed and the job is queued. Setup carries on.
-    queued: (source) => `Got it. Your ${source} history is importing in the background.`,
+    // "import", not "history": TMDB brings a watchlist, lists and ratings, never a history.
+    queued: (source) => `Got it. Your ${source} import is running in the background.`,
     queuedBody: 'Keep going. Your import will continue in the background, and we’ll let you know when it’s done.',
     connect: (source) => `Connect ${source}`,
     connecting: 'Waiting for you to finish in the other window…',
@@ -50,7 +51,7 @@ export const IMPORT_JOBS = {
     // The same file for the same source is already queued or running.
     alreadyImporting: 'That file is already importing. You can follow it on Home.',
     // A second pick while one runs: the worker takes them one at a time.
-    queuedBehind: (source, running) => `Got it. Your ${source} history is queued and starts when ${running} finishes.`,
+    queuedBehind: (source, running) => `Got it. Your ${source} import is queued and starts when ${running} finishes.`,
     addAnother: 'Add another source',
     queueFull: 'That’s plenty queued for now. Let these finish, then add more from Settings.',
     continue: 'Continue →',

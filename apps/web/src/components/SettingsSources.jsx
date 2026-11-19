@@ -155,7 +155,11 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
         {src.lane === 'upload' && (
           <button type="button" className="onboarding-cta ss-cta" disabled={!!status.active} onClick={onImport}>{T.importNewerExport}</button>
         )}
-        {src.lane === 'upload' && <p className="ss-hint">{T.importNewerHint}</p>}
+        {/* TMDB keeps no connection, so it is never "connected": offer the sign-in again. */}
+        {src.id === 'tmdb' && (
+          <button type="button" className="onboarding-cta ss-cta" disabled={!!status.active} onClick={onImport}>{T.importTmdbAgain}</button>
+        )}
+        {(src.lane === 'upload' || src.id === 'tmdb') && <p className="ss-hint">{T.importNewerHint}</p>}
         <div className="ss-lbl">{T.history}</div>
         <div className="ss-card ss-hist">
           {sourceJobs.length === 0 && reviews.length === 0 && <p className="ss-empty-line">{T.noHistory}</p>}
