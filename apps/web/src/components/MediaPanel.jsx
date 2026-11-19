@@ -64,7 +64,6 @@ import PlotLoader from '@plot/ui/PlotLoader.jsx';
 import Spinner from './Spinner.jsx';
 import StarIcon from './StarIcon.jsx';
 import KebabMenu from './KebabMenu.jsx';
-import PanelCloseRail from './PanelCloseRail.jsx';
 import TitleFootBar from './TitleFootBar.jsx';
 import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
@@ -1670,7 +1669,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
         />
       )}
       <div className={`panel-overlay${closing ? ' closing' : ''}`} onClick={onClose} />
-      <PanelCloseRail closing={closing} onClose={onClose} />
       <div
         ref={panelRef}
         className={`panel panel--mobile-${sheetSnap}${closing ? ' closing' : ''}`}
@@ -1710,6 +1708,17 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
             <button className="panel-close-btn" onClick={onClose} aria-label="Close">
               <CloseIcon />
             </button>
+            {/* Customize artwork sits on the artwork it changes, beside the ✕
+                (Nov 19), rather than as a link competing with the title. */}
+            {!talentId && !loading && !detailsError && details && (
+              <CustomizeArtwork
+                icon
+                mediaType={artworkSubject}
+                tmdbId={itemId}
+                seasonNumber={seasonForPoster == null ? undefined : seasonForPoster}
+                defaults={{ poster: details?.poster_path, backdrop: details?.backdrop_path }}
+              />
+            )}
           </div>
         )}
 
@@ -1743,12 +1752,6 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
               <div className="panel-head-text">
                 <div className="panel-kicker-row">
                   <div className="panel-kicker">{isMovie ? MEDIA.movie : MEDIA.series}</div>
-                  <CustomizeArtwork
-                    mediaType={artworkSubject}
-                    tmdbId={itemId}
-                    seasonNumber={seasonForPoster == null ? undefined : seasonForPoster}
-                    defaults={{ poster: details?.poster_path, backdrop: details?.backdrop_path }}
-                  />
                 </div>
                 <h2 className="panel-title">{title}</h2>
                 {/* One facts line: year, length, rating. The director or

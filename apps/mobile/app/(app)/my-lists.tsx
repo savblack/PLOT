@@ -22,6 +22,7 @@ import { useDialog } from '../../components/Dialog';
 import BottomSheet from '../../components/BottomSheet';
 import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
+import ListsLoading from '../../components/ListsLoading';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { releaseCaption } from '@plot/core/countdown.js';
@@ -607,7 +608,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const nudgeVisible = useActivationNudgeVisible();
   const [importSource, setImportSource] = useState<string | null>(null);
   const isLoading = watchlist.loading || watching.loading || favorites.loading || customLists.loading || topLists.loading;
-  if (isLoading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
+  if (isLoading) return <ListsLoading />;
 
   // Lists, a Top 5 or favorites count as started even with no titles saved.
   const startedLists = (customLists.lists?.length ?? 0) + (customLists.smartLists?.length ?? 0) > 0

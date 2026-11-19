@@ -32,7 +32,12 @@ function fallbackPath(section, defaults) {
   return defaults.poster || null;
 }
 
-export default function CustomizeArtwork({ mediaType, tmdbId, seasonNumber, defaults = {} }) {
+/**
+ * `icon`: the title panel's version (Nov 19), a round button over the artwork
+ * beside the ✕, so the panel's title area carries only the title. The text
+ * link stays for any other host.
+ */
+export default function CustomizeArtwork({ mediaType, tmdbId, seasonNumber, defaults = {}, icon = false }) {
   const { user, profile } = useApp();
   const art = useUserArtwork();
   const [open, setOpen] = useState(false);
@@ -78,13 +83,17 @@ export default function CustomizeArtwork({ mediaType, tmdbId, seasonNumber, defa
     <>
       <button
         type="button"
-        className="panel-artwork-btn"
+        className={icon ? 'panel-artwork-icon-btn' : 'panel-artwork-btn'}
+        aria-label={icon ? ARTWORK.customize : undefined}
+        title={icon ? ARTWORK.customize : undefined}
         onClick={() => {
           if (!isPremiumProfile(profile)) { setGate(true); return; }
           setOpen(true);
         }}
       >
-        {ARTWORK.customize}
+        {icon ? (
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="M21 16l-5-5-8 9" /></svg>
+        ) : ARTWORK.customize}
       </button>
       {gate && <UpgradeSheet reason="artwork" onClose={() => setGate(false)} />}
       {open && (

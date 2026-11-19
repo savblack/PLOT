@@ -3055,49 +3055,6 @@ a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
   to   { transform: translateX(100%); }
 }
 
-/* Desktop detail panels expose their dismissal control as a quiet rail just
-   inside the panel's left edge. It stays separate from the scrolling content
-   so long title pages cannot move or clip it. */
-.panel-close-rail {
-  position: fixed;
-  top: 1.5rem;
-  right: calc(min(var(--panel-w), 100vw) - 20px);
-  z-index: 502;
-  width: 20px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-left: 0;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  background: var(--surface-sunken);
-  color: var(--text-primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: panelCloseRailIn 0.32s var(--ease);
-}
-.panel-close-rail svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.panel-close-rail.closing {
-  animation: panelCloseRailOut 0.25s var(--ease) forwards;
-}
-@keyframes panelCloseRailIn {
-  from { transform: translateX(calc(var(--panel-w) + 100%)); }
-  to   { transform: translateX(0); }
-}
-@keyframes panelCloseRailOut {
-  from { transform: translateX(0); }
-  to   { transform: translateX(calc(var(--panel-w) + 100%)); }
-}
-
 /* ═══════════════════════════════════════
    DOCKED DETAIL PANEL (>= 1280px)
    Below this width .panel is a right drawer over a blurred scrim, so opening a
@@ -3189,8 +3146,10 @@ a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
   height: 32px;
   border-radius: var(--radius-pill);
   border: none;
-  background: color-mix(in srgb, var(--text-primary) 55%, transparent);
-  color: white;
+  /* The image scrim, not the ink: in dark mode the ink is light, and a white
+     ✕ on a light disc disappeared. */
+  background: var(--image-scrim);
+  color: var(--image-text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3198,12 +3157,9 @@ a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
   z-index: 2;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .panel-close-btn,
-  .panel-toolbar .panel-toolbar-btn:last-child {
-    display: none;
-  }
-}
+/* Desktop shows the same ✕ over the artwork as touch screens (design doc:
+   "The title panel and other long-form panels keep their ✕ over the
+   artwork"). The old desktop-only close rail on the panel's edge is gone. */
 /* No backdrop to sit on: the fallback surface is light (or near-black in
    dark mode), so a white ✕ vanishes against it and the panel looks stuck.
    Fall back to the regular text colour there. */
@@ -4907,9 +4863,10 @@ a.provider-chip--link:hover {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  /* A solid fill chip, the doc's treatment for a label over artwork: pink
+     text on a see-through pink tint was unreadable on busy backdrops. */
+  color: var(--on-artwork-fill);
+  background: var(--artwork-fill);
   padding: 0.2rem 0.55rem;
   border-radius: var(--radius-md);
   margin-bottom: 0.4rem;
@@ -5709,10 +5666,6 @@ a.provider-chip--link:hover {
 }
 
 @media (hover: none), (pointer: coarse) {
-  .panel-close-rail {
-    display: none;
-  }
-
   .media-card:hover,
   .discover-section .media-card:hover {
     transform: none;

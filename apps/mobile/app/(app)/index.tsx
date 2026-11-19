@@ -1272,9 +1272,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   trendingBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.accentDim,
-    borderWidth: 1,
-    borderColor: colors.accent,
+    // A solid fill chip over the artwork (web .discover-hero-badge).
+    backgroundColor: colors.artworkFill,
     borderRadius: radii.badge,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -1283,7 +1282,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   trendingBadgeText: {
     fontFamily: fontFamily.sansBold,
     fontSize: fontSize.xs,
-    color: colors.accent,
+    color: colors.onArtworkFill,
     letterSpacing: 0.8,
   },
   heroTitle: {
