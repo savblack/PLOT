@@ -245,13 +245,6 @@
   max-width: 300px;
   line-height: 1.55;
 }
-.search-palette-empty-tips {
-  display: flex;
-  gap: 1.25rem;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
 
 /* ── Footer ── */
 .search-palette-foot {
@@ -283,6 +276,5 @@
   /* Key hints mean nothing to a thumb. */
   .search-palette-foot,
   .search-palette-esc,
-  .search-palette-row .search-palette-kbd,
-  .search-palette-empty-tips { display: none; }
+  .search-palette-row .search-palette-kbd { display: none; }
 }

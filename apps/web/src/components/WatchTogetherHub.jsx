@@ -18,7 +18,7 @@ import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { useInviteShare } from '../hooks/useInviteShare.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { AcceptDialog, PersonAvatar } from './WatchTogetherParts.jsx';
-import { Demo } from './WatchTogetherStart.jsx';
+import { Demo, FriendSearch } from './WatchTogetherStart.jsx';
 import { RailSection } from './DiscoverView.jsx';
 import MediaCard from './MediaCard.jsx';
 import PremiumGateButton from './PremiumGateButton.jsx';
@@ -131,6 +131,36 @@ function PeopleCard({ partners, decidable, selected, onSelect, incoming, outgoin
           {chosen?.can_decide === false && <span className="wth-note">{T.start.premiumCardBody}</span>}
         </>
       )}
+    </section>
+  );
+}
+
+/**
+ * With people already: invite someone else, right in the column. Search for
+ * someone on Plot (matches open under the box), or send your link to anyone
+ * who isn't. Same pieces as the invite page, sized for the side column.
+ */
+function InviteMoreCard({ wt, link }) {
+  const [sent, setSent] = useState(() => new Set());
+  const invite = async (person) => {
+    const result = await wt.send(person.id);
+    if (result.ok) setSent(prev => new Set(prev).add(person.id));
+    return result.ok;
+  };
+  return (
+    <section className="hist-card wth-invite-card" aria-labelledby="wth-invite-title">
+      <span className="hist-card-label" id="wth-invite-title">{H.inviteSomeone}</span>
+      <div className="hist-card-body">
+        <span className="hist-card-note">{T.invite.body}</span>
+        <FriendSearch sent={sent} onInvite={invite} />
+        <span className="wth-invite-or">{T.link.inviteTitle}</span>
+        <span className="hist-card-note">{T.link.inviteBody}</span>
+        {link.display && <span className="wth-invite-url">{link.display}</span>}
+        <div className="wth-invite-actions">
+          <button type="button" className="btn btn-sm btn-secondary" onClick={link.copy} disabled={!link.url}>{link.copied ? T.link.copied : T.link.copy}</button>
+          <button type="button" className="btn btn-sm btn-secondary" onClick={link.share} disabled={!link.url}>{T.link.share}</button>
+        </div>
+      </div>
     </section>
   );
 }
@@ -250,7 +280,7 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
           ) : <InviteCard link={link} />}
 
           {stage === 'people'
-            ? <button type="button" className="wth-link" onClick={link.share} disabled={!link.url}>{H.inviteSomeone}</button>
+            ? <InviteMoreCard wt={wt} link={link} />
             : <ExampleDemo premium={premium} />}
 
           {/* The other thing two people can do with their lists and ratings. */}

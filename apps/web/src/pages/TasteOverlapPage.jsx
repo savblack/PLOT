@@ -6,10 +6,9 @@ import { useTasteOverlap } from '@plot/core/useTasteOverlap.js';
 import { useSavedComparisons } from '@plot/core/useSavedComparisons.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 import { track } from '../lib/analytics.js';
-import { MIN_SHARED_RATINGS, vennName } from '@plot/core/tasteOverlap.js';
+import { MIN_SHARED_RATINGS, compareUnlocked, vennName } from '@plot/core/tasteOverlap.js';
 import { useGenres } from '@plot/core/useGenres.js';
 import { historyRatingLabel } from '@plot/core/history.js';
-import { isPremiumProfile } from '@plot/core/premium.js';
 import { posterUrl } from '../utils/images.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import { TASTE_OVERLAP as T } from '../copy/tasteOverlap.js';
@@ -110,7 +109,10 @@ function Upsell() {
     <section className="to-card to-state">
       <h2 className="to-state-title">{T.upsellTitle}</h2>
       <p className="to-state-body">{T.upsellBody}</p>
-      <PremiumGateButton reason="tasteOverlap" />
+      <div className="to-state-actions">
+        <PremiumGateButton reason="tasteOverlap" />
+        <Link className="btn btn-sm btn-secondary" to="/compare" onClick={() => track(EVENTS.COMPARE_SOMEONE_ELSE_TAPPED)}>{T.upsellSomeoneElse}</Link>
+      </div>
     </section>
   );
 }
@@ -305,9 +307,11 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
 
 export default function TasteOverlapPage() {
   const { username } = useParams();
-  const { user, profile, openPanel } = useApp();
-  const premium = isPremiumProfile(profile);
-  const { loading, error, target, overlap, sharedWatchlist, retry } = useTasteOverlap(username, { enabled: !!user && premium, viewerId: user?.id });
+  const { user, openPanel } = useApp();
+  // Premium on either side unlocks it, and only the server knows the other
+  // side, so every signed-in viewer asks (see compareUnlocked).
+  const { loading, error, target, overlap, sharedWatchlist, retry } = useTasteOverlap(username, { enabled: !!user, viewerId: user?.id });
+  const premium = compareUnlocked(error);
   const { genres } = useGenres();
   const genreName = useMemo(() => new Map(genres.map(g => [g.id, g.name])), [genres]);
   const navigate = useNavigate();

@@ -20,18 +20,20 @@
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 8px;
-  background: var(--accent-dim);
-  color: var(--accent-text);
+  background: transparent;
+  color: var(--text-primary);
   text-decoration: none;
 }
-/* Hover and focus deepen the same tint (a second --accent-dim layer). */
+/* A quiet row since 18 Nov (UI critique: the permanent blush block spent the
+   accent decoratively). Only the spark keeps the accent; hover matches the
+   nav rows above. */
 .go-premium-chip.go-premium-chip:hover,
-.go-premium-chip.go-premium-chip:focus-visible { background: var(--accent-dim); box-shadow: inset 0 0 0 999px var(--accent-dim); color: var(--accent-text); }
-.go-premium-chip.go-premium-chip :is(.app-sidebar-label, .nav-drawer-label) { color: inherit; font-weight: 600; }
+.go-premium-chip.go-premium-chip:focus-visible { background: var(--surface-sunken); color: var(--text-primary); }
+.go-premium-chip.go-premium-chip :is(.app-sidebar-label, .nav-drawer-label) { color: inherit; }
 /* The spark fills the row's 18px icon column, so the label starts on the same
    edge as every other row's label. */
 .go-premium-chip-mark { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex-shrink: 0; }
-.go-premium-chip .premium-mark { margin-left: 0; color: inherit; width: 16px; height: 16px; display: inline-flex; }
+.go-premium-chip .premium-mark { margin-left: 0; color: var(--accent); width: 16px; height: 16px; display: inline-flex; }
 .go-premium-chip .premium-mark svg { width: 16px; height: 16px; fill: currentColor; stroke: none; color: inherit; }
 /* The desktop rail's rows are rounded; the phone drawer's rows run edge to edge. */
 .app-sidebar-item.go-premium-chip { border-radius: var(--radius-md); }

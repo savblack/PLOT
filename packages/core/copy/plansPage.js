@@ -210,7 +210,7 @@ export const PLANS_PAGE = {
       tasteOverlap: {
         context: () => 'Taste overlap is part of Premium',
         title: 'Compare your taste with someone you follow.',
-        body: 'See your match, the genres you share and where you disagree.',
+        body: 'See your match, the genres you share and where you disagree. Only one of you needs Premium.',
         also: ['pick', 'together'],
       },
       // Subscribe to calendar, from a title's Add to calendar menu or Settings.
@@ -332,7 +332,7 @@ export const PLANS_PAGE = {
     { id: 'filmPicker', label: 'Decide', highlight: true,
       description: 'Choose a movie or a show, how much time you have and the services you use. Get five options for tonight, or let a random pick make the decision.' },
     { id: 'fullStats', label: 'Deeper viewing stats', highlight: true,
-      description: 'Additional stats beyond the Free overview you already have, starting with taste overlap: see how your ratings line up with anyone you follow.' },
+      description: 'Additional stats beyond the Free overview you already have, starting with taste overlap: see how your ratings line up with anyone you follow, even when they use Free.' },
     { id: 'collaborativeLists', label: 'Create collaborative lists', highlight: true, live: true,
       description: 'Build your next movie night together. Invite friends to add titles, even when they use Free.' },
     { id: 'unlimitedLists', label: 'Unlimited custom lists', highlight: true,

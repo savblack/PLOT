@@ -46,6 +46,8 @@ export const NOTIFICATIONS_PAGE = Object.freeze({
 export const NOTIFICATIONS_EMPTY = Object.freeze({
   title: 'No notifications yet.',
   body:  'New episodes of your shows, follows and requests will show up here.',
+  // Opens Settings › Viewing, where episode and streaming alerts are turned on.
+  action: 'Choose your alerts',
 });
 
 /**

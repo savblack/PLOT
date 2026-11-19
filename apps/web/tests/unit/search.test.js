@@ -78,6 +78,14 @@ test('mergeSearchResults orders franchise, titles, people, friends and caps each
   assert.ok(!items.some(i => i.data.id === 'u2'));
 });
 
+test('mergeSearchResults drops a franchise whose name does not contain the search', () => {
+  const items = mergeSearchResults({
+    collections: [{ id: 1, name: 'Dune Collection' }, { id: 2, name: 'The Princess Diaries Collection' }],
+    titles: [{ id: 10, media_type: 'movie', title: 'Dune' }],
+  }, { term: 'dune' });
+  assert.deepEqual(items.map(i => i.data.name || i.data.title), ['Dune Collection', 'Dune']);
+});
+
 test('mergeSearchResults honours a scope and skips the caps for it', () => {
   const friends = mergeSearchResults({ ...buckets, friends: Array.from({ length: 6 }, (_, i) => ({ id: `u${i}`, username: `u${i}` })) }, { scope: 'friends' });
   assert.equal(friends.length, 6);

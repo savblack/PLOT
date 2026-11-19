@@ -74,7 +74,7 @@ export const SETTINGS_VIEW = {
   },
   region: {
     openRegionSettings: 'Open region settings',
-    failedToSaveRegion: 'Failed to save your region.',
+    failedToSaveRegion: 'We couldn’t save your region. Try again in a moment.',
     intro: 'Used to show content and streaming services available in your region.',
   },
   timezone: {
@@ -87,7 +87,7 @@ export const SETTINGS_VIEW = {
   selectListsToClear: 'Select lists to clear',
 
   avatar: {
-    profilePhoto: 'Profile Photo',
+    profilePhoto: 'Profile photo',
     chooseImageFile: 'Please choose an image file.',
     tooLarge: (maxMb) => `Profile photos must be under ${maxMb}MB.`,
     uploadFailed: 'We could not upload your photo. Please try again.',

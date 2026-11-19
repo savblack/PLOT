@@ -59,7 +59,9 @@ export const TASTE_OVERLAP = {
   share: 'Share your match',
 
   upsellTitle: 'Compare your taste with Premium',
-  upsellBody: 'Taste overlap is part of Deeper viewing stats. See your match, the genres you share and where you disagree with anyone you follow.',
+  upsellBody: 'Compare works when either of you has Premium. Get it yourself, or compare with a friend who already has it.',
+  // The second button on that card: back to the people list on Compare.
+  upsellSomeoneElse: 'Compare with someone else',
   notFound: 'This profile isn’t available.',
   /** @param {string} name */
   notVisible: (name) => `${name}’s profile is private. Once they accept your follow request, you can compare.`,
@@ -70,7 +72,8 @@ export const TASTE_OVERLAP = {
   navLabel: 'Compare',
   // Picker
   searchLabel: 'Search people',
-  searchPlaceholder: 'Search by name or @username',
+  // Short enough for the side card; the field's search icon says "search".
+  searchPlaceholder: 'Name or @username',
   peopleYouFollow: 'People you follow',
   searchResults: 'Search results',
   compare: 'Compare',

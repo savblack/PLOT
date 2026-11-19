@@ -10,14 +10,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { personName, titleMeta, filterByKind, splitGroupMatches, shufflePick, sessionProgress, swipeDecision, SWIPE_THRESHOLD } from '@plot/core/watchTogether.js';
-import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherSession, startWatchTogetherSession, liveWatchTogetherSession, useUserSearch } from '@plot/core/useWatchTogether.js';
+import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSession, startWatchTogetherSession, liveWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { supabase } from '@plot/core/supabase.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COMMON } from '../copy/common.js';
 import { posterUrl } from '../utils/images.js';
 import { AcceptDialog, PersonAvatar, ShareListDialog, WatchTogetherTile } from './WatchTogetherParts.jsx';
-import { InviteLinkCard, FriendSearch, PersonRow } from './WatchTogetherStart.jsx';
+import { InvitePanel } from './WatchTogetherStart.jsx';
 import WatchTogetherHub from './WatchTogetherHub.jsx';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { EVENTS, track } from '../lib/analytics.js';
@@ -26,7 +26,6 @@ import PremiumGateButton from './PremiumGateButton.jsx';
 import BackLink from './BackLink.jsx';
 import Chip, { ChipRow, Tag } from './Chip.jsx';
 import EmptyState from './EmptyState.jsx';
-import SearchField from './SearchField.jsx';
 
 function Chevron() {
   return <svg className="wt-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>;
@@ -89,41 +88,11 @@ function Picker({ wt }) {
 /* ── Invite ──────────────────────────────────────────────────────────── */
 
 function Invite({ wt }) {
-  const { user } = useApp();
-  const { people: suggested } = useWatchTogetherSuggestions(user?.id);
-  const [query, setQuery] = useState('');
-  const { searching, results } = useUserSearch(query, { excludeId: user?.id, limit: 20 });
-  const [sent, setSent] = useState(() => new Set());
-  const [error, setError] = useState(null);
-
-  const invite = async (person) => {
-    setError(null);
-    const result = await wt.send(person.id);
-    if (result.ok) setSent(prev => new Set(prev).add(person.id));
-    else setError(T.errors[result.code]);
-  };
-
-  const list = searching ? (results || []) : suggested;
   return (
     <div className="wt-page">
       <BackLink to="/together" label={T.hub.title} />
       <h2 className="discover-section-title">{T.invite.title}</h2>
-      <p className="wt-card-body">{T.invite.body}</p>
-      <p className="wt-note">{T.invite.mutualNote}</p>
-      <SearchField id="wt-invite-search" placeholder={T.invite.search} value={query} onChange={setQuery} />
-      {error && <p className="wt-error" role="alert">{error}</p>}
-      {query.trim().length < 2 && <h2 className="wt-section-label">{T.invite.suggested}</h2>}
-      {list.length === 0 && query.trim().length < 2 && <p className="wt-note">{T.invite.noSuggestions}</p>}
-      {list.map(p => (
-        <div key={p.id} className="wt-row">
-          <PersonAvatar person={p} />
-          <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">@{p.username}</span></span>
-          {sent.has(p.id)
-            ? <Tag label={T.invite.sent} />
-            : <button type="button" className="btn btn-primary btn-sm" onClick={() => invite(p)}>{T.invite.invite}</button>}
-        </div>
-      ))}
-      <InviteLinkCard />
+      <InvitePanel wt={wt} />
     </div>
   );
 }

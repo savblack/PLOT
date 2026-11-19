@@ -68,9 +68,9 @@ export function confirmUrl(appOrigin: string, token: string): string {
 // rewrite the URL in an HTML body.
 export function confirmMail(link: string): { subject: string, text: string } {
   return {
-    subject: 'Confirm your Plot digest subscription',
+    subject: 'Confirm your Plot Digest subscription',
     text: [
-      'Someone, hopefully you, asked to get the Plot weekly digest at this address.',
+      'Someone, hopefully you, asked to get the Plot Digest at this address.',
       '',
       'To start getting it, confirm here:',
       '',

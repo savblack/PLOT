@@ -72,7 +72,7 @@ streaming flag or placeholder UI can make an unverified provider appear enabled.
 
 ## Draft provider enquiry (not sent)
 
-Plot is a movie and TV journal with web and Expo 57 / React Native 0.86.3 apps.
+Plot is a movie and TV companion with web and Expo 57 / React Native 0.86.3 apps.
 We are evaluating Younify Connect for incoming watch history, including individual
 episodes and rewatches, for Australian customers. Pricing is US$3/month or US$24/year.
 

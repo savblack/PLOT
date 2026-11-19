@@ -274,7 +274,7 @@ export default function AccountMenu({
         <Avatar src={profile.avatar_url} name={name} size={24} tone="raised" className="app-sidebar-avatar" />
         <span className="app-sidebar-profile-copy">
           <span className="app-sidebar-profile-name"><span className="app-sidebar-label">{name}</span>{isPremium && <PremiumBadge className="app-sidebar-verified" />}</span>
-          <small>{APP_SHELL.viewYourProfile}</small>
+          <small>{APP_SHELL.accountAndSettings}</small>
         </span>
       </button>
     </div>

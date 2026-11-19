@@ -11,7 +11,7 @@ const shot = async (page, name) => {
   await page.screenshot({ path: `${SHOTS}/${name}.png` });
 };
 
-test('desktop: a clean pink Go Premium chip sits just above the profile, and the Settings card offers 7 days free', async ({ page }) => {
+test('desktop: a quiet Go Premium row sits just above the profile, and the Settings card offers 7 days free', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(url);
   const card = page.locator('.settings-side .settings-account-card');
@@ -38,12 +38,30 @@ test('desktop: a clean pink Go Premium chip sits just above the profile, and the
   const chipLabel = await chip.locator('.app-sidebar-label').boundingBox();
   const rowLabel = await page.locator('.app-sidebar-nav > .app-sidebar-item .app-sidebar-label').nth(1).boundingBox();
   expect(Math.abs(chipLabel.x - rowLabel.x)).toBeLessThanOrEqual(1);
-  // Same colours as the selected "Profile & account" Settings pill.
+  // A quiet row since 18 Nov (UI critique): no fill, charcoal label, and only
+  // the spark keeps the accent.
   const colours = await page.evaluate(() => {
-    const pick = sel => { const cs = getComputedStyle(document.querySelector(sel)); return [cs.backgroundColor, cs.color]; };
-    return { chip: pick('.app-sidebar-foot .go-premium-chip'), pill: pick('.settings-chip[aria-current="page"]') };
+    const token = name => {
+      const probe = document.createElement('span');
+      probe.style.color = `var(${name})`;
+      document.body.appendChild(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+      return value;
+    };
+    const chipEl = document.querySelector('.app-sidebar-foot .go-premium-chip');
+    const cs = getComputedStyle(chipEl);
+    return {
+      background: cs.backgroundColor,
+      label: cs.color,
+      spark: getComputedStyle(chipEl.querySelector('.premium-mark')).color,
+      ink: token('--text-primary'),
+      accent: token('--accent'),
+    };
   });
-  expect(colours.chip).toEqual(colours.pill);
+  expect(colours.background).toBe('rgba(0, 0, 0, 0)');
+  expect(colours.label).toBe(colours.ink);
+  expect(colours.spark).toBe(colours.accent);
   await shot(page, 'card2-web-desktop-settings-v4');
   if (SHOTS) {
     await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });

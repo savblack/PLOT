@@ -15,6 +15,30 @@
 
 .panel-artwork-btn:hover { color: var(--text-primary); }
 
+/* The title panel's icon version: the ✕'s twin, just to its left. */
+.panel-artwork-icon-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: calc(0.75rem + 32px + 8px);
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--image-scrim);
+  color: var(--image-text-primary);
+  cursor: pointer;
+}
+.panel-artwork-icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.panel-header-wrap--no-backdrop .panel-artwork-icon-btn { background: var(--surface-sunken); color: var(--text-primary); }
+@media (hover: none), (pointer: coarse) {
+  .panel-artwork-icon-btn { width: 44px; height: 44px; top: 0.5rem; right: calc(0.5rem + 44px); }
+}
+
 .panel-title-logo {
   position: absolute;
   z-index: 1;

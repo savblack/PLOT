@@ -139,6 +139,9 @@ const uiNext = uiSrc.replace(CSS_MARKER_RE, () => cssBlock);
 const STAMPS = [
   ['ui.css', version(uiNext)],
   ['nav.css', version(readFileSync(join(WEB, 'nav.css'), 'utf8'))],
+  // theme.css carries the colour tokens every page's own CSS reads (dark mode
+  // included), so a cached copy must not outlive the pages that use it.
+  ['theme.css', version(readFileSync(join(WEB, 'theme.css'), 'utf8'))],
 ];
 const stampUiLink = (src) => STAMPS.reduce(
   (out, [file, v]) => out.replace(new RegExp(`href="/${file.replace('.', '\\.')}(?:\\?v=[^"]*)?"`, 'g'), `href="/${file}?v=${v}"`),

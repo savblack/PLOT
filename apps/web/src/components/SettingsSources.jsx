@@ -130,56 +130,67 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
     if (!premium.isPremium) { onPremiumGate(); return; }
     tracking.control(integration.id, connection?.automatic_enabled ? 'disable_automatic' : 'enable_automatic');
   };
+  const connected = src.lane === 'connect' && integration?.status === 'active';
+  // Until the server list arrives the picker says it is loading, so "Needs a
+  // server" never sits above a sheet with nothing to pick.
+  const plexPicker = plex && {
+    servers: plex.servers || [], profiles: plex.profiles || [], serverId: plex.serverId || null,
+    selected: !!plex.selected, selection: plex.selection || null, busy: plex.busy || !plexListed,
+    error: plex.error || null, choose: plex.choose,
+  };
   return (
-    <ResponsiveDialog title={title} label={src.name} onClose={onClose} size="compact" tall>
+    <ResponsiveDialog title={title} label={src.name} onClose={onClose} size="compact" tall contentClassName="isp-dialog-content">
       <div className="ss-detail">
-        <p className="ss-detail-status"><Chip kind={status.chip.kind}>{status.chip.text}</Chip>{status.line && <span>{status.line}</span>}</p>
-        {src.lane === 'connect' && integration?.status === 'active' && (
-          <>
-            {tracking.enabled && (
-              <div className="ss-card">
-                <div className="ss-row ss-row--switch">
-                  <div className="ss-row-text"><b>{T.automaticLabel}</b><span>{T.automaticHint(src.name)}</span></div>
-                  <SettingsSwitch label={T.automaticLabel} checked={!!connection?.automatic_enabled} disabled={tracking.busy} onChange={toggleAutomatic} saves />
-                </div>
-              </div>
-            )}
-            {plex && plex.servers && (
-              <PlexPicker plex={{ servers: plex.servers || [], profiles: plex.profiles || [], serverId: plex.serverId || null, selected: !!plex.selected, selection: plex.selection || null, busy: plex.busy, error: plex.error || null, choose: plex.choose }} />
-            )}
-            <button type="button" className="onboarding-cta ss-cta" disabled={!!status.active || (plex && !plex.selected)} onClick={onImport}>
-              {src.id === 'plex' ? T.importFromProfile : T.importHistory}
-            </button>
-          </>
-        )}
-        {src.lane === 'upload' && (
-          <button type="button" className="onboarding-cta ss-cta" disabled={!!status.active} onClick={onImport}>{T.importNewerExport}</button>
+        <div className="ss-detail-status">
+          <Chip kind={status.chip.kind}>{status.chip.text}</Chip>
+          {status.line && <p>{status.line}</p>}
+        </div>
+        {connected && plexPicker && <PlexPicker plex={plexPicker} />}
+        {connected && tracking.enabled && (
+          <div className="ss-card">
+            <div className="ss-row ss-row--switch">
+              <div className="ss-row-text"><b>{T.automaticLabel}</b><span>{T.automaticHint(src.name)}</span></div>
+              <SettingsSwitch label={T.automaticLabel} checked={!!connection?.automatic_enabled} disabled={tracking.busy} onChange={toggleAutomatic} saves />
+            </div>
+          </div>
         )}
         {/* TMDB keeps no connection, so it is never "connected": offer the sign-in again. */}
-        {src.id === 'tmdb' && (
-          <button type="button" className="onboarding-cta ss-cta" disabled={!!status.active} onClick={onImport}>{T.importTmdbAgain}</button>
+        {(connected || src.lane === 'upload' || src.id === 'tmdb') && (
+          <div className="ss-action">
+            {connected ? (
+              <button type="button" className="onboarding-cta" disabled={!!status.active || (plex && !plex.selected)} onClick={onImport}>
+                {src.id === 'plex' ? T.importFromProfile : T.importHistory}
+              </button>
+            ) : (
+              <button type="button" className="onboarding-cta" disabled={!!status.active} onClick={onImport}>
+                {src.id === 'tmdb' ? T.importTmdbAgain : T.importNewerExport}
+              </button>
+            )}
+            {(src.lane === 'upload' || src.id === 'tmdb') && <p className="ss-hint">{T.importNewerHint}</p>}
+          </div>
         )}
-        {(src.lane === 'upload' || src.id === 'tmdb') && <p className="ss-hint">{T.importNewerHint}</p>}
-        <div className="ss-lbl">{T.history}</div>
-        <div className="ss-card ss-hist">
-          {sourceJobs.length === 0 && reviews.length === 0 && <p className="ss-empty-line">{T.noHistory}</p>}
-          {sourceJobs.map(job => <HistoryRow key={job.id} job={job} current={current} onFinish={onFinish} onRetry={onImport} onCancel={onCancel} />)}
-          {reviews.map(review => (
-            <div className="ss-hist-row" key={review.id}>
-              <div className="ss-hist-text"><b>{T.duplicateWatch}</b><span>{review.payload?.summary?.title} · {TRACKING.reviewDetails(review.payload.event)}</span></div>
-              <div className="ss-hist-actions">
-                <button type="button" className="btn btn-secondary btn-sm" disabled={tracking.busy} onClick={() => tracking.resolve(review.id, true)}>{T.keepWatch}</button>
-                <button type="button" className="ss-link" disabled={tracking.busy} onClick={() => tracking.resolve(review.id, false)}>{T.skipWatch}</button>
+        <section className="ss-section" aria-label={T.history}>
+          <div className="ss-lbl">{T.history}</div>
+          <div className="ss-card ss-hist">
+            {sourceJobs.length === 0 && reviews.length === 0 && <p className="ss-empty-line">{T.noHistory}</p>}
+            {sourceJobs.map(job => <HistoryRow key={job.id} job={job} current={current} onFinish={onFinish} onRetry={onImport} onCancel={onCancel} />)}
+            {reviews.map(review => (
+              <div className="ss-hist-row" key={review.id}>
+                <div className="ss-hist-text"><b>{T.duplicateWatch}</b><span>{review.payload?.summary?.title} · {TRACKING.reviewDetails(review.payload.event)}</span></div>
+                <div className="ss-hist-actions">
+                  <button type="button" className="btn btn-secondary btn-sm" disabled={tracking.busy} onClick={() => tracking.resolve(review.id, true)}>{T.keepWatch}</button>
+                  <button type="button" className="ss-link" disabled={tracking.busy} onClick={() => tracking.resolve(review.id, false)}>{T.skipWatch}</button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
         {tracking.error && <p className="isp-error">{tracking.error}</p>}
-        {src.lane === 'connect' && integration?.status === 'active' && (
-          <>
+        {connected && (
+          <div className="ss-remove">
             <button type="button" className="ss-link ss-link--danger" onClick={() => onRemove(importedTotal)}>{T.remove(src.name)}</button>
-            <p className="ss-hint ss-hint--center">{T.stays}</p>
-          </>
+            <p className="ss-hint">{T.stays}</p>
+          </div>
         )}
       </div>
     </ResponsiveDialog>

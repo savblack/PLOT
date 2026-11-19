@@ -164,6 +164,12 @@ leave it out.
 - The headline never opens with the post type. The site renders that label
   itself, so “On This Day: Die Hard turns 38” says it twice and breaks
   sentence case.
+- A monthly “what's new on a service” roundup leads with its standout title,
+  not the formula. “New on Netflix in November 2026: A, B, and More” written
+  seven times filled one What's On page with near-identical headlines.
+  Write “The Rings of Power returns to lead Prime Video's November” or
+  “Dig and The Good Daughter top Peacock's November”. The checker rejects
+  “New on [service] in [month]:” and a closing “and More”.
 - Never show the reader the seams. If a fact could not be checked, cut it; an
   article never says Plot could not verify something.
 - Sister articles about the same title (a trailer, then a countdown, then a

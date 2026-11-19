@@ -1,8 +1,10 @@
 # AGENTS.md — Plot
 
-Plot is a movie & TV tracking app that should feel like a warm, aesthetic journal: built
-around what you've watched, what you thought, and how it made you feel — and your first
-stop for deciding what to watch instead of searching every streaming service one by one.
+Plot is a movie & TV companion: it keeps track of what you've watched and what you want
+to watch, tells you what's coming and where it's streaming, and is your first stop for
+deciding what to watch instead of searching every streaming service one by one. (Plot
+moved from a "journal" positioning to "companion" in November 2026; don't bring the
+journal framing back.)
 
 Solo project. There is no team to consult — when a decision is reversible, make it and
 note it; when it's not, ask the author (see Decisions). This file is the standing brief:
@@ -327,8 +329,10 @@ When you finish, start with the plain-English paragraph from "How to explain the
 3. **Follow-ups** — anything deferred or newly noticed, or "none."
 
 Quality bar: it builds, `pnpm run check` passes, no new lint errors, no console noise, no
-secrets added, no unrelated diffs. Design intent holds — flat monochrome (black/white/grey),
-structure from hairlines and surface tokens, compact buttons never full-width. The accent
+secrets added, no unrelated diffs. Design intent holds — warm, flat and quiet: a cream ground,
+soft charcoal ink (never `#000`), the brand pink, and a sage green as the quieter second
+voice (availability, "now at home"); structure from hairlines and surface tokens, compact
+buttons never full-width. The accent
 (`#E05578` on Light and Dark; its hue is per theme under Premium themes, the roles are
 unchanged) is reserved for approved interaction and hierarchy cues: Save, favourite, delete,
 logout, active tabs/indicators, focus and hover states, selected filters/providers,

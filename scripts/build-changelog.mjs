@@ -68,7 +68,8 @@ function dateLabelFromIso(iso) {
   const day = Number(m[3]);
   const month = MONTHS[Number(m[2]) - 1];
   if (!month) throw new Error(`Invalid month in ${iso}`);
-  return `${day} ${month} ${m[1]}`;
+  // US order (October 22, 2026): the site is written for a US reader.
+  return `${month} ${day}, ${m[1]}`;
 }
 
 /** Calendar version from a Date: `YYYY.M.D` (no zero-pad on M/D). */

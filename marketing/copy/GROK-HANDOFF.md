@@ -25,7 +25,7 @@ Fields:
 - `alt_text`
 - `page_title`, `page_body`
 - `sources`
-- `cta_variant`: one of `track_it`, `whats_on_tonight`, `journal_it`, `none`
+- `cta_variant`: one of `track_it`, `whats_on_tonight`, `none`
 
 Then run this once:
 

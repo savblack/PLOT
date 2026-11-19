@@ -96,7 +96,8 @@ export function NotificationsPage({ list, requests, watchRequests = [], loading,
         </span>
       </div>}
     {loading ? <p className="hist-card-note notif-status" role="status">{COMMON.loading}</p>
-      : empty ? <EmptyState title={NOTIFICATIONS_EMPTY.title} body={NOTIFICATIONS_EMPTY.body} />
+      : empty ? <EmptyState title={NOTIFICATIONS_EMPTY.title} body={NOTIFICATIONS_EMPTY.body}
+          action={onManageAlerts && <button type="button" className="btn btn-secondary btn-sm" onClick={onManageAlerts}>{NOTIFICATIONS_EMPTY.action}</button>} />
       : <div className="notif-body">
         {moment && <section className="hist-card notif-moment" aria-label={SHARE_CARDS.monthWrapTitle(moment.monthName)}>
           <div className="notif-moment-text">

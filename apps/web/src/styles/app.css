@@ -519,7 +519,7 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-pill);
   background: var(--accent-secondary-fill);
   color: var(--on-accent-secondary-fill);
-  font-size: 0.6rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -546,10 +546,22 @@ svg { stroke-width: 1.5; }
 .app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: stretch; }
 .app-sidebar-nav > .app-sidebar-item:first-child { margin-bottom: 10px; }
 .app-sidebar-item { width: auto; max-width: 100%; border-radius: var(--radius-md); padding: 10px 12px; gap: 12px; }
+/* Page rows are links (Cmd-click opens a new tab); they look like the button rows. */
+a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
 .app-sidebar-nav > .app-sidebar-item { width: 100%; }
 .app-sidebar-item:hover,
 .app-sidebar-item.active { background: var(--surface-sunken); color: var(--text-primary); }
 .app-sidebar-item.active { font-weight: 600; }
+/* The current page's icon takes the accent (an approved active-indicator
+   role), so active reads differently from hover, which shares the sunken
+   cream. The label stays charcoal. */
+.app-sidebar-item.active > svg { color: var(--accent); }
+.app-sidebar-kbd {
+  margin-left: auto; padding: 2px 6px; border-radius: 6px;
+  background: var(--surface-sunken); color: var(--text-secondary);
+  font: inherit; font-size: 0.6875rem; font-weight: 600; white-space: nowrap;
+}
+.app-sidebar-item:is(:hover, .active) .app-sidebar-kbd { background: var(--surface); }
 .app-sidebar-label { font-size: 0.9rem; font-weight: 550; }
 .app-sidebar-item svg { stroke-width: 1.7; }
 .app-sidebar :is(button, a):focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -557,7 +569,7 @@ svg { stroke-width: 1.5; }
 .app-sidebar-foot:empty { display: none; }
 .app-sidebar-profile { width: 100%; border-radius: var(--radius-md); padding: 6px 12px; min-height: 48px; }
 .app-sidebar-profile-copy { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
-.app-sidebar-profile-copy small { font-size: 0.68rem; color: var(--text-secondary); }
+.app-sidebar-profile-copy small { font-size: 0.75rem; color: var(--text-secondary); }
 .app-sidebar-profile .app-sidebar-avatar { width: 34px; height: 34px; border: 1px solid var(--border-strong); }
 
 @media (min-width: 1024px) {
@@ -1086,7 +1098,9 @@ svg { stroke-width: 1.5; }
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.04em;
-  color: var(--accent-fill);
+  /* The accent, not the fill: the fill pink is a surface colour and measured
+     2.0:1 as type on cream. The accent clears 3:1 for display-size text. */
+  color: var(--accent);
   text-shadow:
     0.2em 0em 0 var(--bg), 0.199em 0.02em 0 var(--bg), 0.196em 0.039em 0 var(--bg),
     0.191em 0.058em 0 var(--bg), 0.185em 0.077em 0 var(--bg), 0.176em 0.094em 0 var(--bg),
@@ -1689,9 +1703,9 @@ svg { stroke-width: 1.5; }
 .cal-mini-day--today,
 .cal-mini-day--today:hover,
 .cal-mini-day--today:disabled {
-  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
-  color: var(--chip-cinema);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
+  background: var(--accent-dim);
+  color: var(--accent-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, var(--border));
   font-weight: 600;
 }
 .cal-mini-dot {
@@ -1704,7 +1718,7 @@ svg { stroke-width: 1.5; }
   border-radius: 50%;
   background: var(--accent);
 }
-.cal-mini-day--today .cal-mini-dot { background: var(--chip-cinema); }
+.cal-mini-day--today .cal-mini-dot { background: var(--accent); }
 
 /* Show / Genre filter rows under the mini months. Same row metrics as a
    plain list: 14px name, 11px 4px padding, hairline between rows. */
@@ -1715,7 +1729,7 @@ svg { stroke-width: 1.5; }
   padding: 0 8px;
 }
 .cal-filter-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -2423,7 +2437,7 @@ svg { stroke-width: 1.5; }
 .top5-hint {
   color: var(--text-secondary);
   font-size: 0.75rem;
-  font-style: italic;
+  font-style: normal; /* no italic face ships, so a slant would be faked */
   line-height: 1.3;
   padding: 0 0.5rem;
   text-align: center;
@@ -2701,7 +2715,10 @@ svg { stroke-width: 1.5; }
 .list-page-view svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .list-page-view[aria-pressed="true"],
 .list-page-view[aria-expanded="true"] { border-color: var(--border-strong); background: var(--surface); color: var(--text-primary); }
-.list-page-stream .mylists-grid { padding: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 14px; }
+/* As many columns as keep a poster at least 136px wide. A fixed count shrank
+   posters to ~40px (and broke titles mid-word) once a docked title panel took
+   560px of the row. */
+.list-page-stream .mylists-grid { padding: 0; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 20px 14px; }
 .list-page-items > .private-watchlist, .list-page-rows { display: none; }
 .mylists-card-actions, .mylists-card-indicators { position: absolute; inset: 0 0 auto; height: auto; pointer-events: none; }
 .mylists-card-action {
@@ -2756,8 +2773,12 @@ svg { stroke-width: 1.5; }
 .list-page--rows .list-page-items > .private-watchlist,
 .list-page--rows .list-page-rows { display: block; }
 
-@media (min-width: 1280px) {
-  .list-page-stream .mylists-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* With a title panel docked, the filter column and the grid can't both fit
+   until the window is very wide; the grid wins, and closing the panel brings
+   the filters back. */
+@media (min-width: 1280px) and (max-width: 1799px) {
+  .app-shell.panel-docked .list-page-side { display: none; }
+  .app-shell.panel-docked .list-page-body { display: block; }
 }
 @media (max-width: 1023px) {
   .list-page { padding-top: 16px; }
@@ -3034,49 +3055,6 @@ svg { stroke-width: 1.5; }
   to   { transform: translateX(100%); }
 }
 
-/* Desktop detail panels expose their dismissal control as a quiet rail just
-   inside the panel's left edge. It stays separate from the scrolling content
-   so long title pages cannot move or clip it. */
-.panel-close-rail {
-  position: fixed;
-  top: 1.5rem;
-  right: calc(min(var(--panel-w), 100vw) - 20px);
-  z-index: 502;
-  width: 20px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-left: 0;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  background: var(--surface-sunken);
-  color: var(--text-primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: panelCloseRailIn 0.32s var(--ease);
-}
-.panel-close-rail svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.panel-close-rail.closing {
-  animation: panelCloseRailOut 0.25s var(--ease) forwards;
-}
-@keyframes panelCloseRailIn {
-  from { transform: translateX(calc(var(--panel-w) + 100%)); }
-  to   { transform: translateX(0); }
-}
-@keyframes panelCloseRailOut {
-  from { transform: translateX(0); }
-  to   { transform: translateX(calc(var(--panel-w) + 100%)); }
-}
-
 /* ═══════════════════════════════════════
    DOCKED DETAIL PANEL (>= 1280px)
    Below this width .panel is a right drawer over a blurred scrim, so opening a
@@ -3168,8 +3146,10 @@ svg { stroke-width: 1.5; }
   height: 32px;
   border-radius: var(--radius-pill);
   border: none;
-  background: color-mix(in srgb, var(--text-primary) 55%, transparent);
-  color: white;
+  /* The image scrim, not the ink: in dark mode the ink is light, and a white
+     ✕ on a light disc disappeared. */
+  background: var(--image-scrim);
+  color: var(--image-text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3177,12 +3157,9 @@ svg { stroke-width: 1.5; }
   z-index: 2;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .panel-close-btn,
-  .panel-toolbar .panel-toolbar-btn:last-child {
-    display: none;
-  }
-}
+/* Desktop shows the same ✕ over the artwork as touch screens (design doc:
+   "The title panel and other long-form panels keep their ✕ over the
+   artwork"). The old desktop-only close rail on the panel's edge is gone. */
 /* No backdrop to sit on: the fallback surface is light (or near-black in
    dark mode), so a white ✕ vanishes against it and the panel looks stuck.
    Fall back to the regular text colour there. */
@@ -4038,7 +4015,7 @@ a.provider-chip--link:hover {
   margin-bottom: 2rem;
 }
 .settings-group-title {
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -4882,13 +4859,14 @@ a.provider-chip--link:hover {
   /* One step up from the 0.58rem the other small labels use. Those all sit on
      a flat surface; this is the only one overlaid on artwork, where the same
      size reads as a smudge at 9px. */
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  /* A solid fill chip, the doc's treatment for a label over artwork: pink
+     text on a see-through pink tint was unreadable on busy backdrops. */
+  color: var(--on-artwork-fill);
+  background: var(--artwork-fill);
   padding: 0.2rem 0.55rem;
   border-radius: var(--radius-md);
   margin-bottom: 0.4rem;
@@ -4956,7 +4934,7 @@ a.provider-chip--link:hover {
 }
 
 .discover-hero-meta {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: rgba(255,255,255,0.72);
   margin-bottom: 0.65rem;
   font-weight: 500;
@@ -5143,6 +5121,16 @@ a.provider-chip--link:hover {
 .home-personal-skeleton--action { width: 72%; height: 10px; margin-top: auto; }
 @keyframes home-personal-shimmer { to { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { .home-personal-skeleton::after { animation: none; } }
+/* My Lists loading (ListsLoading.jsx): the side card and a poster grid. */
+.lists-loading { display: flex; align-items: flex-start; gap: 72px; padding: 24px 0; }
+.lists-loading-side { display: none; flex-direction: column; gap: 12px; width: 264px; flex-shrink: 0; padding: 16px 14px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--border); box-sizing: border-box; }
+.lists-loading-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 20px 14px; }
+.lists-loading-card { display: flex; flex-direction: column; gap: 8px; }
+.lists-loading-poster { aspect-ratio: 2 / 3; border-radius: var(--radius-md); }
+.lists-loading-line { height: 10px; width: 70%; }
+.lists-loading-line--title { height: 13px; width: 45%; margin-bottom: 4px; }
+@media (min-width: 1024px) { .lists-loading-side { display: flex; } }
+@media (max-width: 599px) { .lists-loading { padding: 16px var(--gut); } .lists-loading-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 10px; } }
 .home-personal-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-sunken); color: var(--text-primary); font-family: var(--font-display); font-size: 20px; line-height: 1; }
 .home-personal-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .home-personal-card .hist-card-body { gap: 7px; }
@@ -5678,10 +5666,6 @@ a.provider-chip--link:hover {
 }
 
 @media (hover: none), (pointer: coarse) {
-  .panel-close-rail {
-    display: none;
-  }
-
   .media-card:hover,
   .discover-section .media-card:hover {
     transform: none;
@@ -6051,7 +6035,7 @@ a.provider-chip--link:hover {
   color: var(--text-primary);
 }
 .hist-card-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -6237,9 +6221,10 @@ a.provider-chip--link:hover {
 .hist-mini-day--future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); color: var(--text-muted); }
 .hist-mini-day--today,
 .hist-mini-day--today.hist-mini-day--future {
-  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
-  color: var(--chip-cinema);
+  /* Same as the Calendar's today: the accent's text shade on its tint. */
+  background: var(--accent-dim);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, var(--border));
+  color: var(--accent-text);
   font-weight: 600;
 }
 .hist-mini-tile {
@@ -6325,7 +6310,7 @@ a.provider-chip--link:hover {
 .hist-month-count { font-size: 12px; color: var(--text-muted); }
 .hist-month-insight {
   font-family: var(--font-display);
-  font-style: italic;
+  font-style: normal; /* no italic face ships, so a slant would be faked */
   font-size: 15px;
   color: var(--text-secondary);
   text-align: right;

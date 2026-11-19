@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { tmdb } from '../lib/tmdb';
 import { localDateStr } from '@plot/core/date.js';
+import { withDropTimes } from '@plot/core/dropTimes.js';
 import {
   buildCalendarEvents,
   buildWatchlistCalendarSignature,
@@ -81,7 +82,8 @@ export function useCalendarEvents(
       fetchTvDetails: (tmdbId: number) => tmdb.getTVDetails(tmdbId),
       fetchSeason:    (tmdbId: number, seasonNumber: number) => tmdb.getSeason(tmdbId, seasonNumber),
       isCancelled:    () => cancelledRef.current,
-    }).then((built: CalendarEvent[]) => {
+    }).then((built: CalendarEvent[]) => withDropTimes(built, { todayStr: localDateStr() }) as Promise<CalendarEvent[]>)
+      .then((built: CalendarEvent[]) => {
       if (cancelledRef.current) return;
       setEvents(built);
       hasLoadedOnce.current = true;

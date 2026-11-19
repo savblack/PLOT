@@ -284,6 +284,19 @@ export function canCompare(person) {
 }
 
 /**
+ * Whether a comparison is open to this viewer. Premium on either side unlocks
+ * it (taste_overlap, 20261119120000), and the client cannot see the other
+ * person's subscription, so it always asks: only the server's
+ * `premium_required` refusal shows the upsell. While loading it reads as
+ * open, so a Free viewer comparing with a Premium member never sees the
+ * upsell flash first.
+ * @param {string | null | undefined} error the useTasteOverlap error
+ */
+export function compareUnlocked(error) {
+  return error !== 'premium_required';
+}
+
+/**
  * Share card grounds, all from the shared tokens. Charcoal uses the dark
  * surface rather than the near-black page ground so the panels still read.
  * `hero`/`heroInk` are the solid panel the headline number sits on.

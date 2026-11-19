@@ -123,3 +123,10 @@ test('a name is cut to fit inside its circle', () => {
   assert.ok(Array.from(vennName('a'.repeat(40))).length <= VENN_NAME_MAX);
   assert.equal(vennName(null), '');
 });
+
+test('compareUnlocked: only the server refusal locks it, so Premium on either side works', async () => {
+  const { compareUnlocked } = await import('../../tasteOverlap.js');
+  assert.equal(compareUnlocked('premium_required'), false);
+  // Loading, a loaded comparison, and every other refusal are not an upsell.
+  for (const e of [null, undefined, 'not_found', 'not_visible', 'failed']) assert.equal(compareUnlocked(e), true, String(e));
+});

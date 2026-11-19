@@ -28,7 +28,7 @@ const ep = (date, title, poster, season, number, name, { item: extraItem = {}, .
 const SAMPLE_EVENTS = [
   ep(plusDays(0), 'Slow Horses', '/1ubkmdLnuFAqMVzOdHIsLGDNr4b.jpg', 5, 3, 'Blindsided', { item: { network_name: 'Apple TV+', genre_ids: [18, 80] } }),
   ep(plusDays(0), 'The Bear', '/sHFlbKS3WLqMnp9t2ghADIJFnuQ.jpg', 5, 1, 'Family Meal', { behind: 1, item: { network_name: 'Disney+', genre_ids: [18, 35] } }),
-  { date: plusDays(2), type: 'cinema', label: 'Cinema', item: { title: 'Dune: Part Three', poster_path: null, tmdb_id: 42, media_type: 'movie', genre_ids: [878] } },
+  { date: plusDays(2), type: 'cinema', label: 'Theaters', item: { title: 'Dune: Part Three', poster_path: null, tmdb_id: 42, media_type: 'movie', genre_ids: [878] } },
   ep(plusDays(5), 'Lanterns', null, 1, 6, 'Bad Optics', { behind: 2, item: { network_name: 'HBO Max', genre_ids: [10759, 9648] } }),
   ep(plusDays(9), 'Alien: Earth', '/8IbwxRFMFBEP9yqq7mOZV5qVXxG.jpg', 2, 1, null, { item: { network_name: 'Disney+', genre_ids: [878] } }),
   ep(plusDays(12), 'Lanterns', null, 1, 7, null, { behind: 2, item: { network_name: 'HBO Max', genre_ids: [10759, 9648] } }),
@@ -89,7 +89,7 @@ function Harness({ events, loading = false, suggest = 'more' }) {
           todayYear={TODAY.getFullYear()}
           countLabel={(n) => `${n} ${n === 1 ? 'date' : 'dates'}`}
           loading={loading}
-          empty={<div className="empty-state"><div className="empty-title">Nothing coming up</div></div>}
+          empty={<div className="empty-state"><div className="empty-title">Nothing coming up.</div></div>}
           renderDay={(day) => <CalendarEventRows day={day} openPanel={(id, type) => console.log('openPanel', id, type)} />}
         />
       </div>

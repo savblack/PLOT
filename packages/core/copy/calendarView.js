@@ -28,11 +28,11 @@ export const CALENDAR_VIEW = {
   releaseCount: (n) => `${n} ${n === 1 ? 'release' : 'releases'}`,
   episodesBehind: (n) => `${n} ${n === 1 ? 'episode' : 'episodes'} behind`,
   seasonPremiere: 'Season premiere',
-  inCinemas: 'In cinemas',
+  inCinemas: 'In theaters',
   previousMonths: 'Earlier months',
   nextMonths: 'Later months',
   empty: {
-    title: 'Nothing coming up',
+    title: 'Nothing coming up.',
     body: 'Save a title or start watching a show and its release dates will land here.',
     filtered: 'Nothing matching this filter',
     filteredBody: 'Try a different type or genre.',

@@ -143,7 +143,8 @@ export default function NotificationsScreen() {
         {loading ? (
           <Loader fill={false} />
         ) : list.length === 0 && together.incoming.length === 0 ? (
-          <EmptyState title={NOTIFICATIONS_EMPTY.title} body={NOTIFICATIONS_EMPTY.body} />
+          <EmptyState title={NOTIFICATIONS_EMPTY.title} body={NOTIFICATIONS_EMPTY.body}
+            action={<Button size="sm" label={NOTIFICATIONS_EMPTY.action} onPress={() => router.push('/(app)/settings?section=viewing' as Href)} />} />
         ) : (
           <>
           {list.map((n: NotificationRow) => {

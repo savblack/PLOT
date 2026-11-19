@@ -12,12 +12,12 @@ export const NAV = {
   whatsOn: "What's On",
   pricing: 'Pricing', // pricing.html's nav and the footer
   login: 'Log in',
-  signup: 'Sign up',
+  signup: 'Start tracking',
 };
 
 export const FOOTER = {
   tagline: ["Everything you've watched.", 'Everything you want to watch.'],
-  cta: 'Start your plot',
+  cta: 'Start tracking',
   login: 'Log in',
   headings: { explore: 'Explore', company: 'Company', legal: 'Legal' },
   whatsOn: "What's On",
@@ -28,16 +28,16 @@ export const FOOTER = {
   changelog: 'Changelog',
   privacy: 'Privacy',
   terms: 'Terms',
-  wordmarkAria: 'plot home',
-  copyright: (year) => `© ${year} plot`,
+  wordmarkAria: 'Plot home',
+  copyright: (year) => `© ${year} Plot`,
   socialAria: {
-    instagram: 'plot on Instagram',
-    threads: 'plot on Threads',
-    x: 'plot on X',
+    instagram: 'Plot on Instagram',
+    threads: 'Plot on Threads',
+    x: 'Plot on X',
   },
 };
 
 export const EMAIL_FORM = {
   placeholder: 'your@email.com',
-  genericError: 'Something went wrong — try again in a minute.',
+  genericError: 'We couldn’t add you just now. Try again in a minute.',
 };

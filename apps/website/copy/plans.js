@@ -7,9 +7,9 @@
 
 export const PLANS_PAGE = {
   meta: {
-    title: 'Plans & Pricing — plot',
-    description: 'Plot is free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
-    ogDescription: 'Free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
+    title: 'Pricing · Plot is free. Premium is $3/mo or $2/mo yearly',
+    description: 'Plot is free to use, forever. Premium is $3 a month, or $2 a month paid yearly ($24), with a 7-day free trial for new subscribers.',
+    ogDescription: 'Free to use, forever. Premium is $3 a month, or $2 a month paid yearly ($24), with a 7-day free trial for new subscribers.',
   },
 
   hero: {
@@ -51,7 +51,7 @@ export const PLANS_PAGE = {
     trial: 'Commitment-free. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
-      'Decide: a shortlist for tonight',
+      'Decide: four quick questions, up to five picks for tonight',
       'Watch together: settle what to watch',
       'Your watch profile',
       'Custom themes, widgets and app icons',

@@ -81,6 +81,10 @@ export const EVENTS = Object.freeze({
   // Together hub instead of one person. Fires on the tap, which always
   // navigates, so there is no failure case to count.
   COMPARE_WATCH_TOGETHER_TAPPED: 'compare_watch_together_tapped',
+  // "Compare with someone else" on Compare's Premium card, shown only when
+  // neither person has Premium. Fires on the tap, which always navigates back
+  // to the people list, so there is no failure case to count. No properties.
+  COMPARE_SOMEONE_ELSE_TAPPED: 'compare_someone_else_tapped',
   // A Premium viewer tapped a History stat tile and landed on the titles
   // behind it. Carries { stat: 'titles' | 'genre' | 'weekday', source }.
   // Fires only once the filtered list is on screen. Tier 1 at most.
@@ -287,6 +291,10 @@ export const EVENTS = Object.freeze({
   // `item_count`. On web, opening a title from one is title_viewed with
   // source 'because_you_watched' or 'recommended_for_you'.
   RECOMMENDATIONS_VIEWED: 'recommendations_viewed',
+  // Home's "Nothing coming up yet" card: "Pick something for me" was pressed,
+  // which opens Decide (/tonight). Web only: mobile Home has no such card.
+  // No properties. The pick itself is tonight_picks_drawn.
+  HOME_PICK_FOR_TONIGHT_CLICKED: 'home_pick_for_tonight_clicked',
   // Marketing email consent. `source` distinguishes the Settings toggle from the
   // in-app prompt so we can tell which surface actually earns opt-ins.
   MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',
