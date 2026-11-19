@@ -18,7 +18,8 @@ import { IMPORT_JOBS } from '../copy/importJobs.js';
 import { useTraktSync } from './useTraktSync.js';
 import { useMediaSync } from './useMediaSync.js';
 import { useSimklSync } from './useSimklSync.js';
-import { buildTraktAuthorizeUrl, createTraktState, redirectToExternal, TRAKT_POPUP_FAILED_MESSAGE, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
+import { buildTraktAuthorizeUrl, createTraktState, getTmdbCallbackUrl, redirectToExternal, rememberTmdbRequest, TRAKT_POPUP_FAILED_MESSAGE, TRAKT_POPUP_MESSAGE } from '../utils/redirects.js';
+import { requestTmdbApproval } from '@plot/core/tmdbAccount.js';
 
 // A quick row count for the receipt under the drop zone: text exports only,
 // and only when they are small enough to read on the main thread.
@@ -54,9 +55,11 @@ async function countRows(files) {
  */
 export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, initialSource = null, history = false }) {
   // Only a connect source comes back mid-flow; anything else starts fresh.
-  const initial = findImportSource(initialSource)?.lane === 'connect' ? initialSource : null;
-  const [source, setSource] = useState(initial);
-  const [phase, setPhase] = useState(/** @type {ImportStartPhase} */ (initial ? 'connecting' : 'pick'));
+  // TMDB comes back only once its import is queued (pages/TmdbCallbackPage.jsx).
+  const returned = findImportSource(initialSource)?.lane === 'connect' ? initialSource : null;
+  const initial = returned === 'tmdb' ? null : returned;
+  const [source, setSource] = useState(returned);
+  const [phase, setPhase] = useState(/** @type {ImportStartPhase} */ (returned === 'tmdb' ? 'queued' : initial ? 'connecting' : 'pick'));
   const [error, setError] = useState(null);
   const [pendingFiles, setPendingFiles] = useState(null);
   const [pendingRows, setPendingRows] = useState(null);
@@ -172,7 +175,10 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     setPendingRows(null);
     setListChoiceNeeded(false);
     setListChoice(null);
-    if (src.lane === 'connect') {
+    if (id === 'tmdb') {
+      // Nothing stays connected: every TMDB import signs in again.
+      setPhase('connect');
+    } else if (src.lane === 'connect') {
       const conn = id === 'trakt' ? trakt : id === 'plex' ? plex : simkl;
       setPhase(conn.isConnected ? 'ready' : 'connect');
     } else {
@@ -249,6 +255,17 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
       plex.startPlexAuth(returnPath('plex')).then(result => { if (result?.integration?.id) plex.pollPlexAuth(result.integration.id); else setPhase('connect'); });
       return;
     }
+    if (source === 'tmdb') {
+      // Same tab: TMDB's approval page sends the person back to /auth/tmdb,
+      // which reads the account, queues the import and returns here.
+      setPhase('connecting');
+      requestTmdbApproval(getTmdbCallbackUrl()).then(({ requestToken, approveUrl }) => {
+        rememberTmdbRequest(requestToken, returnPath('tmdb'), entry);
+        onBeforeRedirect?.();
+        redirectToExternal(approveUrl);
+      }, () => failConnect('tmdb'));
+      return;
+    }
     if (source === 'simkl') {
       // Simkl only connects in the same tab; ?import=simkl brings the page
       // back to this dialog.
@@ -266,7 +283,7 @@ export function useImportStart({ userId, entry, returnPath, onBeforeRedirect, in
     const popup = window.open(url, 'plot-trakt', 'popup,width=600,height=760');
     if (popup) { setPhase('connecting'); watchTraktPopup(popup); }
     else { onBeforeRedirect?.(); redirectToExternal(url); }
-  }, [source, plex, simkl, returnPath, onBeforeRedirect, failConnect, watchTraktPopup]);
+  }, [source, plex, simkl, returnPath, entry, onBeforeRedirect, failConnect, watchTraktPopup]);
 
   const startJob = useCallback(async () => {
     if (!source || phase !== 'ready') return;
