@@ -9,13 +9,13 @@
 
 export const ABOUT_PAGE = {
   meta: {
-    title: "About Plot: the free movie & TV journal built by one person",
-    description: "Plot is a free movie and TV tracker and journal built by a solo developer. Track what you watch, never miss a release, and pick what to watch tonight. Premium from $2 a month.",
+    title: "About Plot: the free movie & TV companion built by one person",
+    description: "Plot is a free movie and TV companion built by a solo developer. Track what you watch, never miss a release, and pick what to watch tonight. Premium from $2 a month.",
   },
   pageLabel: "About",
   h1: "About Plot",
   pageMeta: "A letter from the founder.",
-  lead: "For years my watchlist was a note on my phone, my reviews were texts to friends, and release dates were whatever I happened to remember. This worked, if you count forgetting half of it as working. So I built Plot. The note became a watchlist that knows when and where everything is streaming. The texts became reviews, character-capped by design. The remembering is now outsourced to a calendar, that never forgets when the next episode drops.",
+  lead: "For years my watchlist was a note on my phone, my reviews were texts to friends, and release dates were whatever I happened to remember. This worked, if you count forgetting half of it as working. So I built Plot. The note became a watchlist that knows when and where everything is streaming. The texts became reviews, character-capped by design. The remembering is now outsourced to a calendar that never forgets when the next episode drops.",
   sections: [
     {
       id: "why",
@@ -68,7 +68,7 @@ export const ABOUT_PAGE = {
       facts: [
         {
           term: "What it is",
-          detail: "Your whole watching life in one place. A journal for how it felt, a watchlist with a memory, a calendar for what's coming, a guide to what's on, and a way to share it with the people you watch with.",
+          detail: "Your whole watching life in one place. Reviews and notes for how it felt, a watchlist with a memory, a calendar for what's coming, a guide to what's on, and a way to share it with the people you watch with.",
         },
         {
           term: "Who it's for",
@@ -104,7 +104,7 @@ export const ABOUT_PAGE = {
         },
         {
           q: "How is Plot different from Letterboxd, Trakt or IMDb?",
-          a: "Plot covers movies and TV together, in one journal, in daylight. Reviews are short on purpose, so you log a feeling instead of writing an essay. And Plot leans into what happens next: a release calendar, where to watch on every title, and a daily What's On page.",
+          a: "Plot covers movies and TV together, in one place, in daylight. Reviews are short on purpose, so you log a feeling instead of writing an essay. And Plot leans into what happens next: a release calendar, where to watch on every title, and a daily What's On page.",
         },
         {
           q: "Is there a Plot app for iPhone?",

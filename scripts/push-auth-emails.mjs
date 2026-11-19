@@ -153,11 +153,11 @@ const emails = {
     subject: 'Confirm your email for plot',
     file: 'confirmation.html',
     html: layout({
-      preheader: 'One click and your film & TV journal is ready.',
+      preheader: 'One click and your movie & TV companion is ready.',
       heading: 'Welcome to plot',
       intro: "Confirm your email to start logging, rating, and lining up what to watch next.",
       content: button(authUrl('signup'), 'Confirm email') + codeBlock('In the app? Enter this code instead:') + fallbackLink(authUrl('signup')),
-      note: 'This is the email most new plot members see first, so we kept it simple: one step in, then straight to your watch journal.',
+      note: 'This is the email most new plot members see first, so we kept it simple: one step in, then straight to your watch history.',
       safety: "Didn't sign up for plot? You can safely ignore this email.",
     }),
   },
@@ -201,7 +201,7 @@ const emails = {
     subject: "You're invited to plot",
     file: 'invite.html',
     html: layout({
-      preheader: 'A journal for everything you watch.',
+      preheader: 'Your movie & TV companion.',
       heading: "You're invited",
       intro: "You’ve been invited to join plot, where you’ll always know what to watch next.",
       content: button(authUrl('invite'), 'Accept invite') + fallbackLink(authUrl('invite')),
