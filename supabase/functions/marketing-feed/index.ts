@@ -886,7 +886,7 @@ ${ARTICLE_TABLE_CSS}
   .mcard .ph { display: block; width: 100%; aspect-ratio: 3/2; background: var(--paper); border-radius: 14px; }
   .mcard .kick { margin: 13px 0 6px; }
   .mcard .mc-t { display: block; font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.1rem; line-height: 1.2; transition: color 0.25s var(--ease); }
-  .mcard:hover .mc-t { color: var(--mut); }
+  @media (hover: hover) { .mcard:hover .mc-t { color: var(--mut); } }
 
   /* Shared site footer — generated from website/_partials/footer.css. */
 ${FOOTER_CSS}
@@ -901,7 +901,13 @@ ${FOOTER_CSS}
     .wrap { padding: 28px 16px 80px; }
     .post { padding-top: 40px; }
     .more-grid { grid-template-columns: 1fr; gap: 22px; }
-    .mcard { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: center; }
+    /* Picture on the left across both rows; kicker and title stacked on the
+       right. Without the rows the title fell under the picture. */
+    .mcard { display: grid; grid-template-columns: 96px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 16px; align-content: center; }
+    .mcard img, .mcard .ph { grid-row: 1 / span 2; align-self: center; }
+    .mcard .kick, .mcard .mc-t { grid-column: 2; }
+    .mcard .kick { justify-self: start; align-self: end; }
+    .mcard .mc-t { align-self: start; }
     .mcard.text-led { display: block; }
     .mcard .kick { margin: 0 0 5px; }
     .mcard .mc-t { font-size: 1.05rem; }
