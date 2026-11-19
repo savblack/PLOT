@@ -19,6 +19,8 @@ export const EPISODE_ALERTS = {
   promptAction: 'Turn on alerts',
 
   nextEpisode: 'Next episode',
+  // The next episode's day with its exact drop time, when TVmaze has one.
+  dayAtTime: (day, time) => `${day} at ${time}`,
   noNextEpisode: 'No next episode announced yet',
   seasonPremiere: (season) => `Season ${season} premiere`,
   episode: (season, episode) => `S${season} · E${episode}`,

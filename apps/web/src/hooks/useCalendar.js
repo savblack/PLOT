@@ -7,6 +7,7 @@ import {
   buildCalendarEvents,
 } from '../utils/calendar.js';
 import { tmdb } from '@plot/core/tmdb.js';
+import { withDropTimes } from '@plot/core/dropTimes.js';
 
 /**
  * React plumbing around @plot/core's buildCalendarEvents: signatures so the
@@ -72,7 +73,7 @@ export function useCalendar(watchlistItems = [], watchingItems = [], fetchSeason
         fetchTvDetails: (tmdbId) => tmdb.getTVDetails(tmdbId),
         fetchSeason:    (tmdbId, seasonNumber) => fetchSeason?.(tmdbId, seasonNumber),
         isCancelled:    () => cancelledRef.current,
-      });
+      }).then(evs => withDropTimes(evs, { todayStr: localDateStr() }));
 
       if (!cancelledRef.current) {
         setEvents(built);
