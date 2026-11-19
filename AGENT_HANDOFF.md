@@ -26,7 +26,9 @@ and someone signed in to TMDB to press Approve.
   `tmdbAccount.test.ts`).
 - `migrations:check`, `migrations:contract`: pass.
 - `db:migration-test` (production copy): pass for
-  `20261119100000_import_jobs_tmdb_source.sql`. Needs `.env` sourced first.
+  `20261120100000_import_jobs_tmdb_source.sql` (renumbered 2026-11-20 from
+  20261119100000, which main's episode_airings (#1791) also used; incident
+  #1794). Needs `.env` sourced first.
 - Second-agent review (2026-11-19): nothing serious. Fixed: (1) TMDB
   `request_token` now redacted from analytics (`utils/redactUrl.js`) and
   wiped from the address bar on `/auth/tmdb`; (2) token bound to the Plot
@@ -38,7 +40,9 @@ and someone signed in to TMDB to press Approve.
   `plot://auth/tmdb` redirect still untested.
 - Staging (2026-11-19, Savannah's yes): migration applied by hand in one
   transaction and recorded in `supabase_migrations.schema_migrations`
-  (version 20261119100000). `db:drift` now reports
+  (version 20261119100000; the "Plot nightly migration check failure"
+  session moved Staging's ledger row to 20261120100000 on 2026-11-20 and
+  applied main's two 20261119 migrations). `db:drift` reported
   `import_jobs_source_check` differs Staging vs production; expected until
   merge. `tmdb-account` and `import-worker` deployed to PLOT Staging.
   Staging has TMDB_API_KEY, IMPORT_EVENTS/ANNOTATIONS_ENABLED, SB_SECRET_KEY.
