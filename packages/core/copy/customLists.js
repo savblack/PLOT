@@ -70,6 +70,25 @@ export const CUSTOM_LISTS = Object.freeze({
   watchingEmptyNote: 'What are you watching now?',
   viewMore: count => `View ${count} more`,
   viewLess: 'View less',
+  // Selecting several titles on a list page to remove them or add them to
+  // another list (web ListSelection.jsx). The toolbar button reads COMMON.select and the
+  // picker's title MEDIA.addToList.
+  selection: Object.freeze({
+    start: 'Select titles',
+    bar: 'Selected titles',
+    hint: 'Tap titles to select them',
+    count: (n) => `${n} selected`,
+    // Not plain "Select all" / "Clear selection": broadcastGuide.js owns those.
+    selectAll: 'Select all titles',
+    clearAll: 'Deselect all',
+    addToList: 'Add to list…',
+    alreadyThere: 'Already has these',
+    adding: 'Adding…',
+    removing: 'Removing…',
+    added: (n, listName) => `Added ${n} ${n === 1 ? 'title' : 'titles'} to ${listName}.`,
+    removeFailed: (n) => `Couldn’t remove ${n} ${n === 1 ? 'title' : 'titles'}. They’re still selected, so try again.`,
+    addFailed: (n) => `Couldn’t add ${n} ${n === 1 ? 'title' : 'titles'}. They’re still selected, so try again.`,
+  }),
   // The undo toast after creating a list (copy/undo.js adds the full stop).
   created: 'List created',
   limitMessage: `You can create up to ${FREE_CUSTOM_LIST_CAP} custom lists for free. Plot Premium has unlimited custom lists.`,

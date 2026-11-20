@@ -1,0 +1,131 @@
+/* Select several titles on a list page (ListSelection.jsx). */
+
+/* The toolbar's Select button: same height and ground as the round view
+   buttons beside it, with a word in it. */
+.list-select-toggle {
+  position: relative;
+  height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font: 600 0.78rem/1 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.list-select-toggle:hover { color: var(--text-primary); }
+.list-select-toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+}
+/* 44px to tap, whatever the drawn height. */
+.list-select-toggle::after { content: ''; position: absolute; inset: -5px -2px; }
+
+.list-select-toggle:focus-visible,
+.list-select-bar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The bar sits at the foot of the list and sticks above the phone tab bar
+   while the list scrolls under it. */
+.list-select-bar {
+  position: sticky;
+  bottom: calc(var(--bottom-inset) + env(safe-area-inset-bottom, 0px) + 12px);
+  z-index: 20;
+  margin-top: 20px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  /* Legibility over the posters scrolling behind it, nothing more. */
+  box-shadow: var(--shadow-overlay);
+}
+.list-select-bar-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.list-select-bar-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.list-select-bar-count {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.list-select-bar-all {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: 600 0.78rem/1 var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.list-select-bar-all:hover { color: var(--text-primary); }
+.list-select-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.list-select-bar-btn {
+  min-height: 36px;
+  width: max-content;
+  white-space: nowrap;
+}
+.list-select-bar-btn:disabled { opacity: 0.45; cursor: default; }
+.list-select-bar-remove {
+  background: var(--danger-dim);
+  color: var(--danger);
+}
+.list-select-bar-remove:not(:disabled):hover { background: var(--danger-border); }
+.list-select-bar-error {
+  margin: 8px 0 0;
+  font-size: 0.76rem;
+  color: var(--danger);
+}
+
+/* Rows view: a select circle you can see and hit, centred on the right, with
+   room kept for it so it never sits on the title. */
+.list-page-row:has(> .select-circle--row) { padding-right: 40px; }
+.list-page-row > .select-circle--row {
+  top: 50%;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  transform: translateY(-50%);
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+.list-page-row > .select-circle--row.selected {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+/* A bigger invisible hit area than the drawn circle. */
+.list-page-row > .select-circle--row::after { content: ''; position: absolute; inset: -9px; }
+
+@media (max-width: 1023px), (pointer: coarse) {
+  .list-select-bar-btn { min-height: 44px; }
+}
+
+@media (max-width: 599px) {
+  .list-select-toggle { height: 38px; border-radius: 19px; }
+  .list-select-bar { padding: 8px 10px; }
+  .list-select-bar-status { width: 100%; justify-content: space-between; }
+  .list-select-bar-actions { width: 100%; justify-content: flex-end; }
+}

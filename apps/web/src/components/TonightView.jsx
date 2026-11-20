@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useShareTitle } from '../hooks/useShareTitle.js';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import { COMMON } from '../copy/common.js';
+import { IconShare } from './navIcons.jsx';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { useApp } from '../hooks/useApp.js';
@@ -152,14 +156,6 @@ function MoodCard({ picker, premium }) {
           onChange={(c) => set(toggleChip(c, options))}
         />
       </div>
-      {/* Pick sits at the top of the card (Nov 19): below the rows it was off
-          the first screen on a laptop. The rows only narrow the pick. */}
-      {/* One line in the narrow column: the compact Pick, Surprise me beside it.
-          Clear all lives with the filters it clears, on the first row. */}
-      <div className="tonight-mood-actions">
-        <PickForMe picker={picker} premium={premium} className="btn-sm tonight-mood-pick" />
-        <button type="button" className="tonight-quiet" onClick={() => picker.go('surprise')}>{T.surpriseMe}</button>
-      </div>
       <div className="tonight-rows">
         <MoodRow label={T.chips.rows.mood} action={moodFiltersOn(options) && (
           <button type="button" className="tonight-quiet tonight-clear" onClick={() => set(clearMoodFilters(options))}>{T.chips.clearAll}</button>
@@ -189,6 +185,14 @@ function MoodCard({ picker, premium }) {
             </label>
           </div>
         </div>
+      </div>
+      {/* After the filters it acts on, pinned to the bottom of the screen
+          while the card scrolls past (Nov 20): at the top (Nov 19) it meant
+          scrolling back up after the last chip, and on a phone it sat out of
+          thumb reach. Clear all lives with the filters, on the first row. */}
+      <div className="tonight-mood-actions">
+        <PickForMe picker={picker} premium={premium} className="btn-sm tonight-mood-pick" />
+        <button type="button" className="tonight-quiet" onClick={() => picker.go('surprise')}>{T.surpriseMe}</button>
       </div>
     </section>
   );
@@ -279,6 +283,26 @@ function TopPick({ item, onOpen, actions, reason = null, where = null, className
   );
 }
 
+/* Choosing with someone: send them the Top pick, or open Watch Together,
+   which picks from what you've both saved. */
+function PickNext({ item }) {
+  const { shareTitle, copied } = useShareTitle();
+  return (
+    <div className="tonight-pick-next">
+      <button type="button" className="btn btn-secondary btn-sm"
+        onClick={() => shareTitle({ tmdbId: item.id, mediaType: item.media_type, title: item.title, source: 'tonight' })}>
+        <IconShare />{copied ? COMMON.copied : T.sendPick}
+      </button>
+      {SHOW_WATCH_TOGETHER && (
+        <span className="tonight-pick-next-together">
+          {T.choosingTogether}
+          <Link className="tonight-quiet" to="/together">{T.watchTogetherLink}</Link>
+        </span>
+      )}
+    </div>
+  );
+}
+
 function PickCard({ item, index, onOpen, reveal, actions }) {
   const img = posterUrl(item.poster_path, 'w185');
   return (
@@ -333,6 +357,7 @@ function Results({ picker, onOpen, reveal, actions, onKeepFinding }) {
             {reveal && <FindingSentence parts={picker.sentence} className="tonight-finding--out" />}
           </div>
         )}
+        {top && <PickNext item={top} />}
         {rest.length > 0 && (
           <div className="tonight-cards">
             {rest.map((item, i) => <PickCard key={item.id} item={item} index={i} onOpen={onOpen} reveal={reveal} actions={actions} />)}

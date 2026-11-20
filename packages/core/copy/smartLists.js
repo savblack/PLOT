@@ -76,6 +76,8 @@ export const SMART_LISTS = Object.freeze({
   // My Lists: smart lists have their own section, after Lists and before
   // Shared, and their own group in the column.
   section: 'Smart lists',
+  // Under the section heading, so the name explains itself the first time.
+  sectionNote: 'Pick a few rules, like genre, length or service, and the list fills itself and keeps adding matches.',
   newTileNote: 'Set a few rules',
 
   // B1: "New list" asks which kind.

@@ -168,6 +168,10 @@ export const TONIGHT_PICKER = {
   onYourWatchlist: 'On your watchlist',
   spinAgain: 'Pick another',
   changeOptions: 'Edit',
+  // Under the Top pick: hand it to the person you're choosing with.
+  sendPick: 'Send to someone',
+  choosingTogether: 'Choosing with someone?',
+  watchTogetherLink: 'Try Watch Together',
   minutes: (n) => (n >= 60 ? `${Math.floor(n / 60)}h ${String(n % 60).padStart(2, '0')}m` : `${n} min`),
   episodeMinutes: (n) => `${n} min episodes`,
   seasons: (n) => (n === 1 ? '1 season' : `${n} seasons`),
@@ -238,6 +242,8 @@ export const TONIGHT_PICKER = {
     servicesLocked: 'Premium also finds titles on your services that you haven’t saved yet.',
     empty: 'Nothing fits yet. Turn off a chip, or save a few titles to your watchlist.',
     emptyWatchlist: 'Save a few titles and they’ll show up here, sorted for tonight.',
+    // Free, nothing saved fits: the day's free pick comes before the Premium shelf.
+    freePickFirst: 'Nothing on your watchlist fits these filters. Your free daily pick looks beyond it.',
   },
 };
 

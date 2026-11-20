@@ -221,6 +221,13 @@ export const EVENTS = Object.freeze({
   LIST_ITEM_ADDED: 'list_item_added',
   LIST_ITEM_REMOVED: 'list_item_removed',
   LIST_VISIBILITY_CHANGED: 'list_visibility_changed',
+  // Several titles removed at once from a list page's select mode (web).
+  // `count` is how many removals landed, `list_kind` is watchlist / custom /
+  // shared (listSelection.js). Fired once, after the removes, and only when at
+  // least one succeeded. Each removal still fires its own watchlist_removed or
+  // list_item_removed, and a failed one its own action_failed, so this is the
+  // "used bulk select" signal, not a removal count to add to those.
+  LIST_ITEMS_BULK_REMOVED: 'list_items_bulk_removed',
   // Favourites are their own signal: a favourite is a stronger endorsement than
   // a watchlist save, and the two tables are unrelated. Spelled to match the
   // user_favourites table rather than the useFavorites hook.

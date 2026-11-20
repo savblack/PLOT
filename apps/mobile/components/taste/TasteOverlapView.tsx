@@ -384,11 +384,14 @@ function OverlapBody({
   const need = MIN_SHARED_RATINGS - o.sharedRated;
   const maxGenre = Math.max(1, ...o.genres.flatMap(g => [g.mine, g.theirs]));
   const critic = o.critic;
-  const criticValue = critic.tougher === 'mine' ? T.you
+  // The sample's "you" is a sample person too (TASTE_OVERLAP.exampleMe), so
+  // its counts never read as the viewer's own.
+  const me = example ? T.exampleMe : T.you;
+  const criticValue = critic.tougher === 'mine' ? me
     : critic.tougher === 'theirs' ? name
     : critic.tougher === 'even' ? T.even
     : '–';
-  const criticNote = critic.tougher === 'theirs' ? T.theyAreTougher(stars(critic.theirs), stars(critic.mine))
+  const criticNote = critic.tougher === 'theirs' ? (example ? T.exampleTheyAreTougher : T.theyAreTougher)(stars(critic.theirs), stars(critic.mine))
     : critic.tougher === 'mine' ? T.youAreTougher(name, stars(critic.mine), stars(critic.theirs))
     : critic.tougher === 'even' ? T.evenCritics(stars(critic.mine))
     : T.noCritic;
@@ -404,12 +407,12 @@ function OverlapBody({
         {o.match != null ? (
           <>
             <Text style={styles.matchNum}>{o.match}%</Text>
-            <Text style={styles.matchNote}>{T.basedOn(o.sharedRated)}</Text>
+            <Text style={styles.matchNote}>{(example ? T.exampleBasedOn : T.basedOn)(o.sharedRated)}</Text>
           </>
         ) : (
           <Text style={styles.matchNote}>{T.needMoreRatings(need)}</Text>
         )}
-        <Venn watched={o.watched} name={name} colors={colors} />
+        <Venn watched={o.watched} name={name} colors={colors} example={example} />
         <Text style={styles.caption}>{T.titlesWatched}</Text>
       </View>
 
@@ -417,7 +420,7 @@ function OverlapBody({
         <View style={styles.cardHead}>
           <Text style={styles.h2}>{T.genres}</Text>
           <View style={styles.legend}>
-            <View style={styles.legendItem}><View style={[styles.swatch, { backgroundColor: colors.accentFill }]} /><Text style={styles.legendText}>{T.you}</Text></View>
+            <View style={styles.legendItem}><View style={[styles.swatch, { backgroundColor: colors.accentFill }]} /><Text style={styles.legendText}>{me}</Text></View>
             <View style={styles.legendItem}><View style={[styles.swatch, { backgroundColor: colors.accentSecondaryFill }]} /><Text style={styles.legendText}>{name}</Text></View>
           </View>
         </View>
@@ -435,7 +438,7 @@ function OverlapBody({
 
       <View style={styles.pair}>
         <View style={[styles.card, styles.tile]}>
-          <Text style={styles.tileLabel}>{T.yourDecade}</Text>
+          <Text style={styles.tileLabel}>{example ? T.exampleDecade : T.yourDecade}</Text>
           <Text style={styles.tileValue} numberOfLines={1}>{o.decades.mine ? T.decade(o.decades.mine) : '–'}</Text>
           <Text style={styles.tileNote}>{decadeNote}</Text>
         </View>
@@ -481,7 +484,7 @@ function OverlapBody({
             <Poster title={title.title} path={title.poster_path} colors={colors} small />
             <Text style={styles.disagreeTitle} numberOfLines={2}>{title.title}</Text>
             <View style={styles.scores}>
-              <Text style={styles.score}>{T.you} <Text style={styles.scoreStrong}>{historyRatingLabel(title.mine)}</Text></Text>
+              <Text style={styles.score}>{me} <Text style={styles.scoreStrong}>{historyRatingLabel(title.mine)}</Text></Text>
               <Text style={styles.score}>{name} <Text style={styles.scoreStrong}>{historyRatingLabel(title.theirs)}</Text></Text>
             </View>
           </TouchableOpacity>
@@ -505,22 +508,23 @@ function OverlapBody({
 }
 
 function Venn({
-  watched, name, colors,
+  watched, name, colors, example = false,
 }: {
   watched: TasteModel['watched'];
   name: string;
   colors: Palette;
+  example?: boolean;
 }) {
   // The sage fill is a light tint in every theme, so in dark the light numbers
   // on it vanished. In dark, mirror the pink circle: a translucent wash of the
   // secondary. Same rule as web's TasteOverlapPage.css.
   const dark = useTheme().resolved === 'dark';
   return (
-    <Svg width="100%" height={150} viewBox="0 0 300 150" accessibilityRole="image" accessibilityLabel={T.vennLabel(watched.mine, watched.theirs, watched.both, name)}>
+    <Svg width="100%" height={150} viewBox="0 0 300 150" accessibilityRole="image" accessibilityLabel={(example ? T.exampleVennLabel : T.vennLabel)(watched.mine, watched.theirs, watched.both, name)}>
       <Circle cx={188} cy={75} r={62} fill={dark ? colors.accentSecondary : colors.accentSecondaryFill} fillOpacity={dark ? 0.15 : 1} stroke={colors.accentSecondary} strokeWidth={1.5} />
       <Circle cx={112} cy={75} r={70} fill={colors.accent} fillOpacity={0.14} stroke={colors.accent} strokeWidth={1.5} />
       <SvgText x={76} y={72} textAnchor="middle" fill={colors.textPrimary} fontFamily={fontFamily.display} fontSize={22}>{watched.mine}</SvgText>
-      <SvgText x={76} y={90} textAnchor="middle" fill={colors.textSecondary} fontFamily={fontFamily.sans} fontSize={11}>{T.you.toLowerCase()}</SvgText>
+      <SvgText x={76} y={90} textAnchor="middle" fill={colors.textSecondary} fontFamily={fontFamily.sans} fontSize={11}>{example ? T.exampleMe : T.you.toLowerCase()}</SvgText>
       <SvgText x={150} y={74} textAnchor="middle" fill={colors.accentText} fontFamily={fontFamily.display} fontSize={28}>{watched.both}</SvgText>
       <SvgText x={150} y={92} textAnchor="middle" fill={colors.textPrimary} fontFamily={fontFamily.sansBold} fontSize={11}>{T.both}</SvgText>
       {/* Centred in the part of their circle outside the overlap (182 to 250),

@@ -42,6 +42,9 @@ import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { cardActions, cardState } from './listCardActions.js';
 import { DEFAULT_WATCHING_SORT, WATCHING_SORTS, parseWatchingSort, watchingSortKey } from '@plot/core/watchingOrder.js';
 import { useWatchingSort } from '@plot/core/useWatchingSort.js';
+import { LIST_SELECTION_KINDS, listSelectionKind, selectableIds } from '@plot/core/listSelection.js';
+import { SelectionBar, SelectToggle } from './ListSelection.jsx';
+import { useListSelection } from '../hooks/useListSelection.js';
 
 function shownPoster(art, item, size = 'w185') {
   const path = displayPosterPath(art.apply(item));
@@ -571,9 +574,9 @@ export function ListPageRow({ item, title, meta, open, selection, note, watchSta
   const poster = shownPoster(art, item);
   return (
     <div className={`list-page-row${isFinishedStatus(watchStatus) ? ' list-page-row--finished' : ''}`}>
-      <button type="button" className="list-page-row-poster" onClick={open} aria-label={title}>{poster && <img src={poster} alt="" loading="lazy" />}</button>
+      <button type="button" className="list-page-row-poster" onClick={open} aria-label={title} aria-pressed={selection.editMode ? selection.selected.has(item.tmdb_id) : undefined}>{poster && <img src={poster} alt="" loading="lazy" />}</button>
       <div className="list-page-row-copy">
-        <button type="button" className="list-page-row-title" onClick={open}>{title}</button>
+        <button type="button" className="list-page-row-title" onClick={open} aria-pressed={selection.editMode ? selection.selected.has(item.tmdb_id) : undefined}>{title}</button>
         <div className="list-page-row-meta">{meta}</div>
         {note}
       </div>
@@ -583,11 +586,19 @@ export function ListPageRow({ item, title, meta, open, selection, note, watchSta
   );
 }
 
+/* Add one selected title to another list through the ordinary add path.
+   A saved row's own `id` is its uuid, and addItem reads `id` before
+   `tmdb_id` (tmdbIdFromItem), so hand it the TMDB id. */
+function addSelectedTo(customLists, listId, items, tmdbId) {
+  const item = items.find(i => i.tmdb_id === tmdbId);
+  return item ? customLists.addItem(listId, { ...item, id: item.tmdb_id }) : Promise.resolve(null);
+}
+
 export function WantToWatchSection({ items, count = items.length, narrowed, Frame = ListSection, pageLayout = false, historyEntries = [] }) {
-  const { openPanel, watchlist, watching, privateNotes, favorites, profile } = useApp();
+  const { openPanel, watchlist, watching, privateNotes, favorites, profile, customLists } = useApp();
   const art = useUserArtwork();
   const fw = favoriteWords(profile?.region);
-  const selection = useSelection();
+  const selection = useListSelection();
   const [showAdd, setShowAdd] = useState(false);
 
   if (narrowed && items.length === 0) return null;
@@ -604,6 +615,7 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
     <Frame
       title={CUSTOM_LISTS.wantToWatch}
       count={count}
+      selectToggle={pageLayout && (items.length > 0 || selection.editMode) ? <SelectToggle active={selection.editMode} onToggle={selection.editMode ? selection.finish : selection.start} buttonRef={selection.bindToggle} /> : null}
       headerRight={
         <>
           {pageLayout && (
@@ -611,13 +623,17 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
               <PlusIcon />
             </HeaderIconButton>
           )}
-          <SelectControls
-            selection={selection}
-            hasItems={items.length > 0}
-            menuLabel="Watchlist options"
-            deleteLabel="Remove"
-            onDelete={removeSelected}
-          />
+          {/* On the list page the toolbar's Select button and the bar below
+              replace the kebab and the trash / Done pair. */}
+          {!pageLayout && (
+            <SelectControls
+              selection={selection}
+              hasItems={items.length > 0}
+              menuLabel="Watchlist options"
+              deleteLabel="Remove"
+              onDelete={removeSelected}
+            />
+          )}
         </>
       }
     >
@@ -654,6 +670,17 @@ export function WantToWatchSection({ items, count = items.length, narrowed, Fram
           })}
           </div>
         </div>
+      )}
+      {pageLayout && selection.editMode && (
+        <SelectionBar
+          selection={selection}
+          ids={selectableIds(items)}
+          kind={LIST_SELECTION_KINDS.WATCHLIST}
+          removeOne={(tmdbId, batch) => watchlist.removeFromList(tmdbId, { undo: batch })}
+          undoAction={UNDO_ACTIONS.WATCHLIST_REMOVE}
+          lists={customLists?.lists}
+          addOne={customLists ? (listId, tmdbId) => addSelectedTo(customLists, listId, items, tmdbId) : undefined}
+        />
       )}
       {showAdd && (
         <AddToFavoritesModal title={MEDIA.saveToWatchlist} onAdd={(item) => watchlist.addToList(item)} onClose={() => setShowAdd(false)} />
@@ -771,7 +798,7 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [addedBy, setAddedBy] = useState(/** @type {string | null} */ (null));
   const [peopleOpen, setPeopleOpen] = useState(false);
-  const selection = useSelection();
+  const selection = useListSelection();
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(list.name);
   const [showAdd, setShowAdd] = useState(false);
@@ -883,16 +910,23 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
               <PlusIcon />
             </HeaderIconButton>
           )}
-          <SelectControls
-            selection={selection}
-            hasItems={visible.length > 0}
-            menuLabel={`Open options for ${list.name}`}
-            deleteLabel="Remove"
-            onDelete={removeSelected}
-            extraItems={menuItems}
-          />
+          {pageLayout ? (
+            // The toolbar's Select button and the bar below take selecting
+            // over on the page, so the kebab keeps only the list's own options.
+            <KebabMenu ariaLabel={`Open options for ${list.name}`} items={menuItems} />
+          ) : (
+            <SelectControls
+              selection={selection}
+              hasItems={visible.length > 0}
+              menuLabel={`Open options for ${list.name}`}
+              deleteLabel="Remove"
+              onDelete={removeSelected}
+              extraItems={menuItems}
+            />
+          )}
         </>
       }
+      selectToggle={pageLayout && (visible.length > 0 || selection.editMode) ? <SelectToggle active={selection.editMode} onToggle={selection.editMode ? selection.finish : selection.start} buttonRef={selection.bindToggle} /> : null}
     >
       {renaming && (
         <div className="mylists-rename">
@@ -944,6 +978,19 @@ export function CustomListSection({ list, visibleItems, count, customLists, type
         </div>
       )}
 
+      {pageLayout && selection.editMode && (
+        <SelectionBar
+          selection={selection}
+          ids={selectableIds(visible)}
+          kind={listSelectionKind({ list, userId: user?.id }) ?? LIST_SELECTION_KINDS.CUSTOM}
+          removeOne={(tmdbId, batch) => removeItem(list.id, tmdbId, { undo: batch })}
+          undoAction={UNDO_ACTIONS.LIST_ITEM_REMOVE}
+          undoMeta={{ listName: list.name }}
+          lists={customLists.lists}
+          currentListId={list.id}
+          addOne={(listId, tmdbId) => addSelectedTo(customLists, listId, visible, tmdbId)}
+        />
+      )}
       {showAdd && (
         <AddToFavoritesModal title="Add to List" onAdd={(item) => addItem(list.id, item)} onClose={() => setShowAdd(false)} />
       )}
