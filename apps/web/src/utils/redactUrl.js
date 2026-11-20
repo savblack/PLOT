@@ -27,6 +27,9 @@ const SENSITIVE_PARAMS = [
   'token',
   'token_hash',
   'code',
+  // TMDB's approved request token on /auth/tmdb (pages/TmdbCallbackPage.jsx):
+  // for about an hour it can read the account it was approved for.
+  'request_token',
 ];
 
 // Match `<param>=<value>` up to the next `&` (param separator in both query and

@@ -154,16 +154,19 @@ function SourceDetail({ src, integration, jobs, current, connection, tracking, s
             </div>
           </div>
         )}
-        {(connected || src.lane === 'upload') && (
+        {/* TMDB keeps no connection, so it is never "connected": offer the sign-in again. */}
+        {(connected || src.lane === 'upload' || src.id === 'tmdb') && (
           <div className="ss-action">
             {connected ? (
               <button type="button" className="onboarding-cta" disabled={!!status.active || (plex && !plex.selected)} onClick={onImport}>
                 {src.id === 'plex' ? T.importFromProfile : T.importHistory}
               </button>
             ) : (
-              <button type="button" className="onboarding-cta" disabled={!!status.active} onClick={onImport}>{T.importNewerExport}</button>
+              <button type="button" className="onboarding-cta" disabled={!!status.active} onClick={onImport}>
+                {src.id === 'tmdb' ? T.importTmdbAgain : T.importNewerExport}
+              </button>
             )}
-            {src.lane === 'upload' && <p className="ss-hint">{T.importNewerHint}</p>}
+            {(src.lane === 'upload' || src.id === 'tmdb') && <p className="ss-hint">{T.importNewerHint}</p>}
           </div>
         )}
         <section className="ss-section" aria-label={T.history}>
