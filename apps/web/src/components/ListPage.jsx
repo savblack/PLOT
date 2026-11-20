@@ -44,12 +44,14 @@ const PlusIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 
 const SortIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3" /></svg>;
 
 
-/* A shared list (PLO-525) hands the frame four more things: `sidePanel`, the
+/* A list you can edit hands the frame `selectToggle`, the Select button at
+   the start of the toolbar; the selection bar itself is part of `children`.
+   A shared list (PLO-525) hands the frame four more things: `sidePanel`, the
    people panel above the filters; `headerActions`, Watch together and Add a
    title at the top right; `lead`, the phone and tablet people line (A8); and
    `shared`, which on a phone turns the header into a bar with a search
    button in place of the always-open field. */
-function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, view, onView, onSort, sidePanel, headerActions, lead, onAdd, shared = false, children }) {
+function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, view, onView, onSort, sidePanel, headerActions, lead, onAdd, selectToggle, shared = false, children }) {
   const side = sidePanel || filter;
   return (
     <section className={`list-page list-page--${view}${shared ? ' list-page--shared' : ''}`}>
@@ -78,6 +80,8 @@ function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, 
         <div className="list-page-stream">
           <div className="list-page-toolbar">
             <div className="list-page-toolbar-actions">
+              {/* Lists you can edit: select several titles (ListSelection.jsx). */}
+              {selectToggle}
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.gridView} aria-pressed={view === 'grid'} onClick={() => onView('grid')}><GridIcon /></button>
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.listView} aria-pressed={view === 'rows'} onClick={() => onView('rows')}><RowsIcon /></button>
               <KebabMenu

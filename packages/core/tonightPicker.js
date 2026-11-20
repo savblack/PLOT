@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TV_KEYWORD_GENRES, tvKeywordIds, _resetKeywordGenreCache } from './keywordGenres.js';
-import { tmdb, excludeKidsContent, KIDS_GENRE_IDS } from './tmdb.js';
+import { tmdb, KIDS_GENRE_IDS } from './tmdb.js';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
 import { localDateStr } from './date.js';
@@ -148,6 +148,8 @@ const GAP_MS = 120;
  * @property {boolean} onlyServices Limit to the viewer's streaming services.
  * @property {boolean} onlyWatchlist Limit to the viewer's watchlist.
  * @property {boolean} hideKids Leave out kids and family titles.
+ * @property {boolean} [kidsKeepAnimation] With hideKids, still allow animation. Smart lists set it: their weekly job
+ *   (supabase/functions/_shared/smartListDigest.js) sends the same query and only hides Family and Kids.
  */
 
 /**
@@ -612,7 +614,36 @@ export function pickWhereToWatch(providers) {
   if (!providers) return null;
   const W = TONIGHT_PICKER.whereToWatch;
   if (!providers.length) return W.none;
-  return W.streaming(joinWithAnd(providers.slice(0, 3).map(p => p.name)));
+  // One name per service: TMDB lists an ad tier ("Netflix Standard with Ads")
+  // beside the service itself, which read as "Netflix and Netflix Standard
+  // with Ads". The plain name is enough to know where to look.
+  const names = [...new Set(providers.map(p => providerBaseName(p.name)))];
+  return W.streaming(joinWithAnd(names.slice(0, 3)));
+}
+
+/**
+ * A provider's name without its plan or ad tier, so two tiers of one service
+ * collapse to one. Free ad-supported services ("Pluto TV") keep their name.
+ * @param {string} name
+ */
+export function providerBaseName(name) {
+  return String(name).replace(/\s+(?:standard|basic|premium)?\s*with\s+ads$/i, '').trim();
+}
+
+const ANIMATION_GENRE_ID = 16;
+
+/**
+ * Genres "Hide kids and family" leaves out. TMDB tags many family films only
+ * as Animation (Howl's Moving Castle is Animation, Fantasy, Adventure), so in
+ * Decide animation goes too, unless the viewer picked Animation themselves.
+ * @param {Pick<PickerOptions, 'hideKids'|'genreIds'|'kidsKeepAnimation'>} options
+ * @returns {Set<number>}
+ */
+export function hiddenKidsGenreIds(options) {
+  if (!options.hideKids) return new Set();
+  const ids = new Set(KIDS_GENRE_IDS);
+  if (!options.kidsKeepAnimation && !options.genreIds.includes(ANIMATION_GENRE_ID)) ids.add(ANIMATION_GENRE_ID);
+  return ids;
 }
 
 /** @param {string} eraId */
@@ -652,7 +683,7 @@ export function discoverParams(options, { providerIds, region, page = 1 }) {
   const tv = options.mediaType === 'tv';
   const { gte, lte } = eraRange(options.era);
   const dateKey = tv ? 'first_air_date' : 'primary_release_date';
-  const without = [...(tv ? TV_EXCLUDED_GENRES : []), ...(options.hideKids ? KIDS_GENRE_IDS : [])];
+  const without = [...(tv ? TV_EXCLUDED_GENRES : []), ...hiddenKidsGenreIds(options)];
   /** @type {Record<string, string|number>} */
   const params = {
     sort_by: 'popularity.desc',
@@ -705,7 +736,8 @@ export function matchesOptions(c, options, providerIds, { checkServices = true }
     if (!c?.runtime || c.runtime < MIN_FEATURE_RUNTIME) return false;
     if (options.maxRuntime && c.runtime > options.maxRuntime) return false;
   }
-  if (options.hideKids && c.genre_ids.some(id => KIDS_GENRE_IDS.has(id))) return false;
+  const kids = hiddenKidsGenreIds(options);
+  if (kids.size && c.genre_ids.some(id => kids.has(id))) return false;
   if (options.genreIds.length && !options.genreIds.some(id => (isKeywordGenre(id)
     ? c.kw_genres?.includes(id) || (options.keywordGenres?.[id] ?? []).some(k => c.keyword_ids?.includes(k))
     : c.genre_ids.includes(id)))) return false;
@@ -876,7 +908,9 @@ export async function loadDiscoverPage({
   const seenIds = new Set();
   const results = pages.flatMap(p => (p.results ?? []).map(r => ({ ...r, kwGenres: p.kwGenres })))
     .filter(r => r?.id && !seenIds.has(r.id) && seenIds.add(r.id));
-  let pool = excludeKidsContent(results, options.hideKids)
+  const kids = hiddenKidsGenreIds(options);
+  let pool = results
+    .filter(r => !(r.genre_ids || []).some(id => kids.has(id)))
     .filter(r => r?.id && r.poster_path && !excludeIds.has(r.id))
     .map(r => ({
       id: r.id,

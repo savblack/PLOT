@@ -43,12 +43,23 @@ export default function TonightShelves({ picker, premium, useShelves = useTonigh
     region: profile?.region || DEFAULT_REGION,
   });
   const filled = shelves.filter(s => s.items.length);
-  // One shelf first: the best match. The rest wait behind a link.
+  // One shelf first: the best match. The rest wait behind a link. Titles
+  // before the Premium shelf, so a Free viewer isn't met by an upsell.
+  const ordered = [...shelves.filter(s => !s.locked), ...shelves.filter(s => s.locked)];
   const [more, setMore] = useState(false);
-  const shown = more ? shelves : shelves.slice(0, 1);
+  const shown = more ? ordered : ordered.slice(0, 1);
+  // Free, nothing of theirs fits, and today's pick is unused: offer the pick
+  // before the Premium shelf.
+  const freePickFirst = !premium && !loading && !error && !filled.length && picker.freePickLeft;
 
   return (
     <div className="tonight-shelves">
+      {freePickFirst && (
+        <section className="tonight-free-pick" aria-label={T.pickForMe}>
+          <p className="tonight-hint">{T.shelves.freePickFirst}</p>
+          <PickForMe picker={picker} premium={premium} className="btn-sm" />
+        </section>
+      )}
       <div className="discover-sections" aria-busy={loading}>
         {error ? <EmptyState className="tonight-empty" title={T.loadError} />
           : !loading && !filled.length && !shelves.some(s => s.locked)
@@ -71,7 +82,7 @@ export default function TonightShelves({ picker, premium, useShelves = useTonigh
               </RailSection>
             ))}
       </div>
-      {!error && shelves.length > 1 && (
+      {!error && ordered.length > 1 && (
         <button type="button" className="tonight-quiet tonight-more-shelves" aria-expanded={more} onClick={() => setMore(v => !v)}>
           {more ? T.fewerShelves : T.moreShelves}
         </button>

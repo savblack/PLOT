@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { MEDIA } from '@plot/core/copy/media.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
 import { AppContext } from '../hooks/useApp.js';
 import MyListsView from '../components/MyListsView.jsx';
@@ -193,6 +194,32 @@ export const CustomListPageFilters = {
   },
 };
 export const WantToWatchPage = listPage('/my-lists/want');
+/* Select several titles: the toolbar's Select button, a tap per title, Select
+   all on the bar, then Remove. The stub removes succeed, so the bar closes and
+   focus goes back to Select. */
+export const CustomListSelecting = {
+  ...listPage('/my-lists/list-l2'),
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const S = CUSTOM_LISTS.selection;
+    const toggle = canvas.getByRole('button', { name: S.start });
+    fireEvent.click(toggle);
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    const bar = await canvas.findByRole('region', { name: S.bar });
+    await expect(within(bar).getByText(S.hint)).toBeVisible();
+
+    // Grid and rows both render; CSS shows one per width.
+    fireEvent.click(canvas.getAllByRole('button', { name: 'Select Paddington 2', hidden: true })[0]);
+    await expect(within(bar).getByText(S.count(1))).toBeVisible();
+    fireEvent.click(within(bar).getByRole('button', { name: S.selectAll }));
+    await expect(within(bar).getByText(S.count(2))).toBeVisible();
+
+    fireEvent.click(within(bar).getByRole('button', { name: COMMON.remove }));
+    await waitFor(() => expect(canvas.queryByRole('region', { name: S.bar })).toBeNull());
+    await waitFor(() => expect(toggle).toHaveFocus());
+  },
+};
 export const FavoritesPage   = listPage('/my-lists/favorites');
 
 /* Smart lists (Premium). A watchlist rule set with only type and genre rules

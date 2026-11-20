@@ -5230,6 +5230,13 @@ a.provider-chip--link:hover {
   .home-side { display: flex; position: static; width: auto; gap: 16px; padding: 0 var(--gut, 1rem); margin-bottom: 24px; }
   .home-side > .home-page-nav,
   .home-side > .home-filter-card { display: none; }
+  /* Nothing coming up: on a phone it is the first thing on Home, so it
+     shrinks to its one useful line, the way into Decide, rather than open
+     the page on an empty state. */
+  .home-personal-card--nothing { padding-block: 4px; }
+  .home-personal-card--nothing > .home-personal-icon,
+  .home-personal-card--nothing > .hist-card-body { display: none; }
+  .home-personal-card--nothing > .home-personal-action { border-top: 0; min-height: 44px; padding: 0 4px; font-size: 13px; }
 }
 
 /* The first row of a page: that page's controls on the right (Home's
@@ -5689,10 +5696,10 @@ a.provider-chip--link:hover {
   }
 
   .card-save-btn {
-    width: 34px;
-    height: 34px;
-    top: 3px;
-    right: 3px;
+    width: 44px;
+    height: 44px;
+    top: 0;
+    right: 0;
   }
 
   .card-save-btn svg {
@@ -5701,16 +5708,23 @@ a.provider-chip--link:hover {
   }
 
   .card-fav-btn {
-    width: 34px;
-    height: 34px;
-    top: 3px;
-    left: 3px;
+    width: 44px;
+    height: 44px;
+    top: 0;
+    left: 0;
   }
 
   .card-fav-btn svg {
     width: 15px;
     height: 15px;
   }
+
+  /* 44px, the minimum touch target, with the glyph left in its corner
+     (the card buttons above were 34px, these 28 and 30). */
+  .mylists-card-action { width: 44px; height: 44px; top: 0; }
+  .mylists-card-action--favorite { left: 0; }
+  .mylists-card-action--bookmark { right: 0; }
+  .search-action-btn { width: 44px; height: 44px; }
 
   /* Hover-only reveal doesn't exist on touch — show favourite/save permanently.
      Only the real buttons get pointer-events:auto. `.discover-hero-corner-btns`
@@ -5808,10 +5822,10 @@ a.provider-chip--link:hover {
   }
 
   .card-save-btn {
-    width: 34px;
-    height: 34px;
-    top: 3px;
-    right: 3px;
+    width: 44px;
+    height: 44px;
+    top: 0;
+    right: 0;
   }
 
   .card-save-btn svg {
@@ -5820,10 +5834,10 @@ a.provider-chip--link:hover {
   }
 
   .card-fav-btn {
-    width: 34px;
-    height: 34px;
-    top: 3px;
-    left: 3px;
+    width: 44px;
+    height: 44px;
+    top: 0;
+    left: 0;
   }
 
   .card-fav-btn svg {

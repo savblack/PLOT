@@ -676,6 +676,29 @@ writes land, the same prompt asks `alert-brevo-event` to send Brevo event
 email is the Brevo contact identifier, taken from the JWT. A Brevo failure
 does not un-arm the prompt.
 
+## Selecting several titles on a list
+
+A list page (Watchlist, your own lists, shared lists; not smart lists) has a
+Select button that lets the viewer pick several titles and act on them at once
+(web only for now: `apps/web/src/components/ListSelection.jsx`, rules in
+`packages/core/listSelection.js`).
+
+| Event | When | Props |
+|---|---|---|
+| `list_items_bulk_removed` | Remove on the selection bar, once the removes finish and at least one landed | `count` (removals that succeeded), `list_kind` (`watchlist` / `custom` / `shared`) |
+
+Each removal still goes through the single-title path, so it also fires its own
+`watchlist_removed` or `list_item_removed`, and a removal that fails fires its
+own `action_failed` (`watchlist_remove` / `list_item_remove`) from the hook. Do
+not add `count` to those to get a removal total: it is the same removals
+again. Undo on the toast is the usual `action_undone` with `action`
+`watchlist_remove` or `list_item_remove` and the batch's `count`.
+
+Add to list on the same bar has no event of its own. Each title it adds is a
+normal `list_item_added` from `useCustomLists.addItem` (Tier 2), which is the
+right signal: the viewer put those titles in a list, and a second bulk event
+would count the same adds twice.
+
 ## Smart lists
 
 A smart list (Premium) is a custom list that stores rules and fills itself when

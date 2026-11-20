@@ -282,7 +282,7 @@ function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPane
   }
   const start = state === 'start';
   return (
-    <section className="hist-card home-personal-card">
+    <section className={`hist-card home-personal-card${start ? '' : ' home-personal-card--nothing'}`}>
       <span className="home-personal-icon" aria-hidden="true">{start ? '+' : <IconCalendar />}</span>
       <div className="hist-card-body"><h2 className="hist-card-title">{start ? DISCOVER_VIEW.startHere : DISCOVER_VIEW.nothingUpcoming}</h2><p className="hist-card-note">{start ? DISCOVER_VIEW.startHereBody : DISCOVER_VIEW.nothingUpcomingBody}</p></div>
       {start
