@@ -103,6 +103,10 @@ Keep the accent for these approved interaction and hierarchy cues:
   EPG now line/active program.
 - **Status and labels** — top-ranked list items, Premium/public-list/cinema/date-group labels,
   profile and settings status, and other explicit account/integration state.
+- **Genre tags** — a title's genres wear the accent's pale tint (`--accent-dim`) with
+  charcoal text (`.tag--genre` on web, `tone="genre"` on mobile), so they read apart from
+  sage, which marks a state. Tint only: never pink type or the pink fill on a genre.
+  Approved by Savannah, 20 Nov 2026.
 - **Featured and chart hierarchy** — Discover hero badges and active actions, chart ranks,
   official labels, and equivalent featured-image hierarchy.
 - **Star ratings** — every drawn star and its score (the title panel, the review composer,
@@ -193,6 +197,8 @@ color, and new work should match it rather than invent a new distribution:
   the lead, "Trending #1". Never more than one pink chip per panel.
 - **Sage chips** (`--accent-secondary-fill`, charcoal text) for kind and availability —
   "Film", "Series", "Now at home". They repeat freely; they are labels, not signals.
+- **Genre tags** take the pale pink tint (`--accent-dim`, charcoal text), not sage, so a
+  title's genres don't read as a state like Watched or On your watchlist.
 - **The secondary button** is the cream pill (`--surface-sunken`, charcoal text) — "See
   what's on". The pink primary button appears in a section only when the action is the
   point of the section (the hero, the sign-up), not beside a panel.

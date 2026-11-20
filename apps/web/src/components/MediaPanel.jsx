@@ -1768,8 +1768,8 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                     {chip?.upcoming && <Tag tone={chip.tone} label={chip.label} />}
                     {genreChips.map(g => onBrowse ? (
                       <button type="button" className="panel-tag-link" key={g.id} aria-label={BROWSE.genreLink(g.name)}
-                        onClick={() => browse('genre', g.id, g.name, `/home?${new URLSearchParams(genreBrowseParams({ mediaType: itemType, genreId: g.id }))}`)}><Tag tone="sage" label={g.name} /></button>
-                    ) : <Tag tone="sage" key={g.id} label={g.name} />)}
+                        onClick={() => browse('genre', g.id, g.name, `/home?${new URLSearchParams(genreBrowseParams({ mediaType: itemType, genreId: g.id }))}`)}><Tag tone="genre" label={g.name} /></button>
+                    ) : <Tag tone="genre" key={g.id} label={g.name} />)}
                   </div>
                 )}
                 {/* Keywords sit beside the poster, under the genres. Three show

@@ -336,6 +336,7 @@ buttons never full-width. The accent
 (`#E05578` on Light and Dark; its hue is per theme under Premium themes, the roles are
 unchanged) is reserved for approved interaction and hierarchy cues: Save, favourite, delete,
 logout, active tabs/indicators, focus and hover states, selected filters/providers,
+genre tags (the pale `--accent-dim` tint with charcoal text only),
 progress/completion, calendar selection/today, list/profile/settings status, and featured or
 chart hierarchy. It is not decorative. Image overlays may use a scrim for readability;
 avoid decorative gradients or glows. Shadows only to keep an element legible against what's

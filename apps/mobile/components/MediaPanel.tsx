@@ -1365,7 +1365,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             accessibilityLabel={BROWSE.genreLink(genre.name)}
                             onPress={() => browse('genre', genre.id, genre.name, { pathname: '/(app)', params: genreBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', genreId: genre.id }) })}
                           >
-                            <Tag tone="sage" label={genre.name} />
+                            <Tag tone="genre" label={genre.name} />
                           </TouchableOpacity>
                         ))}
                       </View>
