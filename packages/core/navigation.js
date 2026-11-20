@@ -90,6 +90,25 @@ export function isActiveView(view, id) {
   return view === id || (view || '').startsWith(`${id}/`);
 }
 
+// Places the phone tab bar's More opens: every menu item that isn't a tab
+// (Search opens a palette, so it never is a page), plus the pages the menu
+// links to beside them.
+const MORE_VIEW_IDS = [
+  ...APP_NAV_ITEMS.filter(item => !item.primary && item.id !== 'search').map(item => item.id),
+  'notifications', 'profile', 'your-people',
+];
+
+/**
+ * Whether the phone tab bar should light More: the view is one of the places
+ * More opens, so no tab names it. Without this, nothing in the bar was lit on
+ * Decide, Watch Together, Compare and the rest.
+ *
+ * @param {string} view A view id (web) or route path without the leading slash (mobile).
+ */
+export function isMoreView(view) {
+  return MORE_VIEW_IDS.some(id => isActiveView(view, id));
+}
+
 export function pathForView(view) {
   return APP_NAV_ITEMS.find(item => item.id === view)?.path ?? `/${view}`;
 }

@@ -6555,11 +6555,13 @@ a.provider-chip--link:hover {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
-  /* Icons only: each button carries its name as its accessible label and
-     tooltip instead of a line of text under the icon. */
-  .app-tab svg { width: 24px; height: 24px; flex-shrink: 0; }
-  /* The active tab takes the accent's text shade, one of its approved roles. */
+  /* Icon with its name under it (Nov 20, option A on the canvas). */
+  .app-tab svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .app-tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600; line-height: 1.2; }
+  /* The active tab takes the accent's text shade, one of its approved roles,
+     with a short mark at the top edge of the bar. */
   .app-tab.active { color: var(--accent-text); }
+  .app-tab.active::before { content: ''; position: absolute; top: -1px; left: 50%; width: 24px; height: 3px; margin-left: -12px; border-radius: 0 0 3px 3px; background: var(--accent); }
   .app-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 10px; }
   .app-tab .mobile-menu-unread { top: 12px; right: calc(50% - 16px); }
   /* The menu's last rows: plain text actions under Settings. */

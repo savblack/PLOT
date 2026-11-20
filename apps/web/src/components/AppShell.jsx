@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { preloadAppViews } from '../routeChunks.js';
-import { APP_NAV_ITEMS, isActiveView, sidebarNavItems, titleForView } from '../navigation.js';
+import { APP_NAV_ITEMS, isActiveView, isMoreView, sidebarNavItems, titleForView } from '../navigation.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { APP_SHELL } from '../copy/appShell.js';
 import { SETTINGS_VIEW } from '../copy/settingsView.js';
@@ -316,25 +316,30 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
 
       {/* ── Tab bar (phones and tablets; the sidebar replaces it when wide) ── */}
       <nav className="app-tabbar" aria-label={APP_SHELL.tabBar}>
+        {/* Labelled (Nov 20): icons alone left first-timers guessing. The
+            visible word is the button's name, so no aria-label is needed. */}
         {TAB_ITEMS.map(({ id, label }) => {
           const Icon = NAV_ICONS[id];
           const active = isActiveView(currentView, id);
           return (
-            <button key={id} type="button" className={`app-tab${active ? ' active' : ''}`} onClick={() => go(id)} aria-label={label} title={label} aria-current={active ? 'page' : undefined}>
+            <button key={id} type="button" className={`app-tab${active ? ' active' : ''}`} onClick={() => go(id)} aria-current={active ? 'page' : undefined}>
               {Icon && <Icon />}
+              <span className="app-tab-label">{label}</span>
             </button>
           );
         })}
+        {/* More is lit on the pages it opens (Decide, Compare, Notifications
+            and the rest), so the bar always says where you are. */}
         <button
           type="button"
-          className={`app-tab${drawerOpen ? ' active' : ''}`}
+          className={`app-tab${drawerOpen || isMoreView(currentView) ? ' active' : ''}`}
           onClick={openDrawer}
-          aria-label={unread > 0 ? `${APP_SHELL.more} (${unread} unread notifications)` : APP_SHELL.more}
-          title={APP_SHELL.more}
+          aria-label={unread > 0 ? `${APP_SHELL.more} (${unread} unread notifications)` : undefined}
           aria-expanded={drawerOpen}
           aria-controls="app-nav-drawer"
         >
           <IconMenu />
+          <span className="app-tab-label">{APP_SHELL.more}</span>
           {unread > 0 && <span className="mobile-menu-unread" aria-hidden="true" />}
         </button>
       </nav>
