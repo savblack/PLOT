@@ -96,6 +96,18 @@ export const TASTE_OVERLAP = {
   // Its titles are this week's trending ones, fetched, never typed in.
   exampleTag: 'Sample',
   exampleName: 'Maya',
+  // The sample's other person is a name too, not "you": next to a real
+  // count of 7 titles, "212 you" read as the viewer's own number.
+  exampleMe: 'Jo',
+  /** @param {string} name */
+  examplePair: (name) => `Jo and ${name}`,
+  exampleDecade: 'Jo’s decade',
+  /** @param {number} n */
+  exampleBasedOn: (n) => `Based on the ${plural(n, 'title', 'titles')} they have both rated.`,
+  /** @param {string} tougherAvg @param {string} otherAvg */
+  exampleTheyAreTougher: (tougherAvg, otherAvg) => `${tougherAvg} vs Jo’s ${otherAvg} on average`,
+  /** @param {number} mine @param {number} theirs @param {number} both @param {string} name */
+  exampleVennLabel: (mine, theirs, both, name) => `Jo watched ${plural(mine, 'title', 'titles')}, ${name} watched ${theirs}, ${both} of them both`,
   exampleNote: 'This is a sample. Pick someone to see your own match.',
   exampleGenres: ['Drama', 'Comedy', 'Science fiction'],
 

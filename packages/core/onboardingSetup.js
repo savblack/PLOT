@@ -30,6 +30,9 @@ export const IMPORT_SOURCES = [
   { id: 'trakt', name: 'Trakt', lane: 'connect', hint: ONBOARDING_FLOW.importSources.trakt },
   { id: 'plex', name: 'Plex', lane: 'connect', hint: ONBOARDING_FLOW.importSources.plex },
   { id: 'simkl', name: 'Simkl', lane: 'connect', hint: ONBOARDING_FLOW.importSources.simkl },
+  // A one-time read through a TMDB sign-in (packages/core/tmdbAccount.js),
+  // queued as a file job. No connection is kept, so it never shows connected.
+  { id: 'tmdb', name: 'TMDB', lane: 'connect', hint: ONBOARDING_FLOW.importSources.tmdb },
   { id: 'letterboxd', name: 'Letterboxd', lane: 'upload', hint: ONBOARDING_FLOW.importSources.letterboxd, accept: '.csv,.zip', formats: 'CSV or ZIP', steps: ONBOARDING_FLOW.importSources.steps.letterboxd },
   { id: 'netflix', name: 'Netflix', lane: 'upload', hint: ONBOARDING_FLOW.importSources.netflix, accept: '.csv', formats: 'CSV', steps: ONBOARDING_FLOW.importSources.steps.netflix, noRatings: true },
   { id: 'prime', name: 'Prime Video', lane: 'upload', hint: ONBOARDING_FLOW.importSources.prime, accept: '.csv', formats: 'CSV', steps: ONBOARDING_FLOW.importSources.steps.prime, noRatings: true },

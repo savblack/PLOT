@@ -156,7 +156,7 @@ export default function ComparePickerScreen() {
 
         <View style={styles.exampleHead}>
           <View style={styles.exampleRow}>
-            <Text style={styles.h2} accessibilityRole="header">{T.youAnd(T.exampleName)}</Text>
+            <Text style={styles.h2} accessibilityRole="header">{T.examplePair(T.exampleName)}</Text>
             <Tag label={T.exampleTag} />
           </View>
           <Text style={styles.note}>{T.exampleNote}</Text>

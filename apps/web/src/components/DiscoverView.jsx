@@ -282,7 +282,7 @@ function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPane
   }
   const start = state === 'start';
   return (
-    <section className="hist-card home-personal-card">
+    <section className={`hist-card home-personal-card${start ? '' : ' home-personal-card--nothing'}`}>
       <span className="home-personal-icon" aria-hidden="true">{start ? '+' : <IconCalendar />}</span>
       <div className="hist-card-body"><h2 className="hist-card-title">{start ? DISCOVER_VIEW.startHere : DISCOVER_VIEW.nothingUpcoming}</h2><p className="hist-card-note">{start ? DISCOVER_VIEW.startHereBody : DISCOVER_VIEW.nothingUpcomingBody}</p></div>
       {start
@@ -296,12 +296,19 @@ function OnThisDayCard({ item, openPanel }) {
   const art = useUserArtwork();
   if (!item) return null;
   const image = posterUrl(displayPosterPath(art.apply(item)), 'w185');
+  // A true anniversary says so; the archive fallback was not released on
+  // this date, so it gets its own label and only its year.
+  const anniversaryYear = item.anniversary_years ? new Date().getFullYear() - item.anniversary_years : null;
+  const label = item.archive_year ? MEDIA.fromTheArchive : DISCOVER_VIEW.onThisDay;
+  const line = anniversaryYear
+    ? DISCOVER_VIEW.releasedThisDay(anniversaryYear)
+    : item.archive_year ? DISCOVER_VIEW.releasedIn(item.archive_year) : null;
   return (
     <section className="hist-card home-on-this-day">
-      <span className="hist-card-label">{DISCOVER_VIEW.onThisDay}</span>
+      <span className="hist-card-label">{label}</span>
       <button type="button" className="home-on-this-day-hit" onClick={() => openPanel(item.id, item.media_type || 'movie')}>
         <span className="home-on-this-day-poster">{image && <img src={image} alt="" />}</span>
-        <span className="home-on-this-day-copy"><strong>{item.title || item.name}</strong>{item.archive_year && <span>{DISCOVER_VIEW.releasedThisDay(item.archive_year)}</span>}</span>
+        <span className="home-on-this-day-copy"><strong>{item.title || item.name}</strong>{line && <span>{line}</span>}</span>
         <span className="home-up-next-chev" aria-hidden="true"><IconChevronRight /></span>
       </button>
     </section>

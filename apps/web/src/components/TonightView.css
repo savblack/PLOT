@@ -394,8 +394,31 @@
 .tonight-other { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .tonight-lang { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
 .tonight-lang .tonight-select { font-size: 13px; padding: 4px 0; text-align: left; color: var(--text-primary); }
-.tonight-mood-actions { display: flex; align-items: center; gap: 14px; padding: 2px 0 12px; }
+/* Pinned to the bottom of the screen while the filters above it scroll by,
+   then settles at the foot of the card. Bleeds to the card's edges so the
+   chips pass under an opaque strip, with a hairline as the only divider. */
+.tonight-mood-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 -16px -16px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
 .tonight-mood-actions > * { white-space: nowrap; }
+/* On a phone the scroller (.app-main) already ends at the tab bar, so
+   bottom: 0 puts the bar just above it, in thumb reach. */
+/* Under the Top pick: send it on, or decide it with someone. */
+.tonight-pick-next { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.tonight-pick-next .btn { white-space: nowrap; }
+.tonight-pick-next-together { display: inline-flex; gap: 6px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.tonight-free-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 20px; }
+.tonight-free-pick .tonight-hint { margin: 0; font-size: 13px; color: var(--text-secondary); flex: 1 1 260px; }
 .tonight-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .tonight-quiet.tonight-clear { font-size: 12px; }
 /* Between phone and desktop the card is wide, so the label sits beside its chips. */

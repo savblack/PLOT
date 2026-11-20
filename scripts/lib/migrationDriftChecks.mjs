@@ -146,3 +146,29 @@ export function classifyDrift({ production, staging, schema }) {
 
   return { failures, warnings, notes };
 }
+
+/**
+ * Decide what scripts/staging-apply-migrations.mjs may apply to Staging.
+ *
+ * `pending` is every migration file Staging has not recorded, oldest first.
+ * `collisions` is every file whose version Staging recorded under another
+ * name: a branch migration tried out on Staging that took a number main later
+ * used (20261119100000, November 2026). Applying anything then would leave
+ * main's migration "applied" in the ledger without ever running, so the
+ * caller must refuse until a person renumbers the branch and moves its row.
+ *
+ * Versions Staging recorded with no file here (branch-only migrations) are
+ * left alone: they are someone's work in progress, not drift to undo.
+ *
+ * @param {{ files: Map<string, string>, ledger: Map<string, string> }} input
+ * @returns {{ pending: { version: string, name: string }[], collisions: { version: string, file: string, recorded: string }[] }}
+ */
+export function planStagingApply({ files, ledger }) {
+  const pending = [];
+  const collisions = [];
+  for (const [version, name] of [...files].sort(([a], [b]) => a.localeCompare(b))) {
+    if (!ledger.has(version)) pending.push({ version, name });
+    else if (ledger.get(version) !== name) collisions.push({ version, file: name, recorded: ledger.get(version) });
+  }
+  return { pending, collisions };
+}

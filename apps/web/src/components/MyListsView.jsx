@@ -448,7 +448,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
               </ListSection>
     ),
     smart: (
-      <ListSection title={SMART_LISTS.section}>
+      <ListSection title={SMART_LISTS.section} subtitle={SMART_LISTS.sectionNote}>
       <div className="list-covers">
         {smartCollections.map(cover)}
         {!selection.editMode && <NewTile label={SMART_LISTS.newSmartList} note={SMART_LISTS.newTileNote} onClick={requestSmartCreate} />}

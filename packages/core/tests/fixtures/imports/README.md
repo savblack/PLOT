@@ -133,3 +133,10 @@ require explicit review rather than automatically treating sessions as watches.
 `tmdb-prime-search-matches.json`: live TMDB searches for the two retained movie
 titles through the staging Worker on 23 September 2026. The results include
 multiple films named Palm Springs; IDs came from responses, not guesses.
+
+`tmdb-account.json`: the shape the `tmdb-account` edge function returns, built
+for tests. Its title IDs are the captured TMDB IDs above (Red Desert from
+`imdb-movie-match.json`, Severance from `tmdb-episode-series.json`), never
+invented. The rated episode (season 1, episode 2, "Half Loop") is as captured
+in `tmdb-episode-season.json`. The account ID, list ID and ratings are
+synthetic test values, not TMDB catalogue identifiers.

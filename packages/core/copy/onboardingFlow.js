@@ -78,6 +78,8 @@ export const ONBOARDING_FLOW = {
     apple: 'Apple TV+ watch history',
     tvtime: 'Shows and movies you tracked',
     imdb: 'Ratings, watchlist and lists',
+    // TMDB keeps no watch history, so the tile says what does come across.
+    tmdb: 'Watchlist, ratings and lists',
     note: 'It runs in the background while you finish setting up. One entry per title, so nothing doubles up.',
     queuedNote: (name) => `The next one starts when ${name} finishes.`,
     later: 'I’ll do this later',
@@ -91,11 +93,13 @@ export const ONBOARDING_FLOW = {
       trakt: ['Watched movies and episodes, with dates', 'Your ratings and your watchlist'],
       plex: ['Movies and episodes watched on your server, with dates'],
       simkl: ['Watched movies and episodes, with dates', 'Your watchlist'],
+      tmdb: ['Your watchlist and your own lists', 'Your movie, show and episode ratings. Rated movies are marked watched.'],
     },
     readsNot: {
       trakt: 'Nothing is written back to Trakt',
       plex: 'Nothing is written back to Plex',
       simkl: 'Nothing changes on Simkl until you choose Sync now in Settings',
+      tmdb: 'TMDB keeps no watch history, so there are no watch dates. Plot reads your account once, then signs out.',
     },
     continueTo: (name) => `Continue to ${name}`,
     openAgain: 'Open it again',

@@ -47,3 +47,10 @@ test('is a safe no-op on non-string / empty input', () => {
   assert.equal(redactSensitiveUrl(null), null);
   assert.equal(redactSensitiveUrl(undefined), undefined);
 });
+
+test('redacts the TMDB request token on the TMDB callback', () => {
+  assert.equal(
+    redactSensitiveUrl('https://app.theplot.tv/auth/tmdb?request_token=abc123&approved=true'),
+    'https://app.theplot.tv/auth/tmdb?request_token=redacted&approved=true',
+  );
+});

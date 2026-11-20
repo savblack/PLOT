@@ -96,6 +96,20 @@ const TMDB_MAX_CONCURRENT_REQUESTS = 8;
 
 const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
+/** A repeatable 0..1 generator for a string seed (FNV-1a into mulberry32). */
+const dayRandom = (seed) => {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
 let activeTmdbRequests = 0;
 const tmdbRequestQueue = [];
 
@@ -623,11 +637,14 @@ export const tmdb = {
     years = [50, 40, 30, 25, 20, 15, 10],
     archiveYears = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
     minVotes = 1500,
-    random = Math.random,
+    random,
   } = {}) => {
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const dayOfMonth = String(now.getDate()).padStart(2, '0');
+    // Seeded by the date, so the fallback film holds for the whole day
+    // instead of changing on every reload.
+    const pick = random ?? dayRandom(`${now.getFullYear()}-${month}-${dayOfMonth}`);
     const batches = await Promise.all(
       years.map(async (yearsAgo) => {
         const date = `${now.getFullYear() - yearsAgo}-${month}-${dayOfMonth}`;
@@ -650,8 +667,10 @@ export const tmdb = {
 
     // Some calendar dates have no suitably notable release. Fall back to one
     // archival year and choose from its strongest results, so Discover still
-    // has a serendipitous but credible film to surface.
-    const archiveYearsAgo = archiveYears[Math.floor(random() * archiveYears.length)];
+    // has a serendipitous but credible film to surface. It was not released
+    // on this date, so it carries archive_year rather than anniversary_years
+    // and must not be labelled as an anniversary.
+    const archiveYearsAgo = archiveYears[Math.floor(pick() * archiveYears.length)];
     if (!archiveYearsAgo) return null;
     const archiveYear = now.getFullYear() - archiveYearsAgo;
     const archive = await fetchFromTMDB('/discover/movie', {
@@ -663,7 +682,7 @@ export const tmdb = {
     });
     const candidates = archive?.results ?? [];
     if (!candidates.length) return null;
-    const movie = candidates[Math.floor(random() * candidates.length)];
+    const movie = candidates[Math.floor(pick() * candidates.length)];
     return { ...movie, media_type: 'movie', archive_year: archiveYear };
   },
 

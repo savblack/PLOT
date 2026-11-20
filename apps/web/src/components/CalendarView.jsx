@@ -24,8 +24,11 @@ import Segmented from './Segmented.jsx';
 
 const SUGGEST_DISMISS_KEY = 'plot_calendar_suggest_dismissed';
 
+// Closed once, it stays closed on this browser: it used to be per session, so
+// an empty calendar reopened the sheet over the page on every visit. The
+// suggest card on the page still opens it on request.
 function suggestDismissed() {
-  try { return sessionStorage.getItem(SUGGEST_DISMISS_KEY) === '1'; }
+  try { return localStorage.getItem(SUGGEST_DISMISS_KEY) === '1'; }
   catch { return false; }
 }
 
@@ -77,8 +80,8 @@ export default function CalendarView() {
   const hasAnyEvents = useMemo(() => events.some(ev => ev.date >= todayStr), [events, todayStr]);
   const eventDates   = useMemo(() => new Set(myDays.map(d => d.ds)), [myDays]);
 
-  // Email links open the sheet once. An empty calendar opens it once per
-  // session, until they close it. The suggest card can open it again.
+  // Email links open the sheet once. An empty calendar opens it by itself
+  // until they close it once. The suggest card can open it again.
   useEffect(() => {
     if (!fromLink || linkHandled.current) return;
     linkHandled.current = true;
@@ -96,7 +99,7 @@ export default function CalendarView() {
 
   const closeSuggest = useCallback(() => {
     setSuggestOpen(false);
-    try { sessionStorage.setItem(SUGGEST_DISMISS_KEY, '1'); } catch { /* storage blocked */ }
+    try { localStorage.setItem(SUGGEST_DISMISS_KEY, '1'); } catch { /* storage blocked */ }
   }, []);
 
   const openSuggest = useCallback(() => setSuggestOpen(true), []);

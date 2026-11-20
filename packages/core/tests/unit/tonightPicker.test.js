@@ -36,7 +36,7 @@ import {
   visiblePickerState,
 } from '../../tonightPicker.js';
 import { createInMemorySupabase } from '../support/inMemorySupabase.js';
-import { pickReason, joinWithAnd, pickWhereToWatch, loadPickProviders } from '../../tonightPicker.js';
+import { pickReason, joinWithAnd, pickWhereToWatch, loadPickProviders, providerBaseName, hiddenKidsGenreIds } from '../../tonightPicker.js';
 
 // Ids here are opaque fixture values fed to a fake client, never real TMDB lookups.
 const NETFLIX = 8;
@@ -503,6 +503,26 @@ test('pickWhereToWatch: loading, none, and at most three services', () => {
   assert.equal(pickWhereToWatch([]), 'Not on a streaming service in your region');
   const four = ['Max', 'Hulu', 'Netflix', 'Peacock'].map((name, id) => ({ id, name }));
   assert.equal(pickWhereToWatch(four), 'Streaming on Max, Hulu and Netflix');
+});
+
+test('pickWhereToWatch names a service once, not once per ad tier', () => {
+  const tiers = ['Netflix', 'Netflix Standard with Ads', 'Hulu'].map((name, id) => ({ id, name }));
+  assert.equal(pickWhereToWatch(tiers), 'Streaming on Netflix and Hulu');
+  assert.equal(providerBaseName('Amazon Prime Video with Ads'), 'Amazon Prime Video');
+  assert.equal(providerBaseName('Pluto TV'), 'Pluto TV');
+});
+
+test('Hide kids and family also leaves out animation, unless Animation was picked', () => {
+  const ANIMATION = 16;
+  assert.ok(hiddenKidsGenreIds(opts({ hideKids: true })).has(ANIMATION));
+  assert.equal(hiddenKidsGenreIds(opts({ hideKids: true, genreIds: [ANIMATION] })).has(ANIMATION), false);
+  assert.equal(hiddenKidsGenreIds(opts({ hideKids: false })).size, 0);
+  const p = discoverParams(opts({ hideKids: true }), { providerIds: [NETFLIX], region: 'US' });
+  assert.ok(String(p.without_genres).split(',').includes(String(ANIMATION)));
+  // Howl's Moving Castle: tagged Animation, Fantasy, Adventure; no Family tag.
+  const howl = { runtime: 119, genre_ids: [ANIMATION, 14, 12], release_date: '2004-11-19', vote_average: 8.4, original_language: 'ja', providers: [{ id: NETFLIX }] };
+  assert.equal(matchesOptions(howl, opts({ hideKids: true }), [NETFLIX]), false);
+  assert.equal(matchesOptions(howl, opts({ hideKids: false }), [NETFLIX]), true);
 });
 
 test('loadPickProviders lists the region\'s streaming services, the viewer\'s own first', async () => {

@@ -272,7 +272,9 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
   .search-palette-head { padding: 12px 1rem; }
-  .search-palette-places { padding: 8px 1rem; }
+  /* Wrapped, not scrolled: with the scrollbar hidden, the last chips were
+     cut off at the screen edge with nothing to say there were more. */
+  .search-palette-places { padding: 8px 1rem; flex-wrap: wrap; row-gap: 8px; overflow-x: visible; }
   /* Key hints mean nothing to a thumb. */
   .search-palette-foot,
   .search-palette-esc,

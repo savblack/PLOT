@@ -47,13 +47,14 @@ function LoadingSkeleton() {
   );
 }
 
-function Venn({ watched, name }) {
+function Venn({ watched, name, example = false }) {
+  const label = example ? T.exampleVennLabel : T.vennLabel;
   return (
-    <svg className="to-venn" viewBox="0 0 300 150" role="img" aria-label={T.vennLabel(watched.mine, watched.theirs, watched.both, name)}>
+    <svg className="to-venn" viewBox="0 0 300 150" role="img" aria-label={label(watched.mine, watched.theirs, watched.both, name)}>
       <circle cx="188" cy="75" r="62" className="to-venn-theirs" />
       <circle cx="112" cy="75" r="70" className="to-venn-mine" />
       <text x="76" y="72" textAnchor="middle" className="to-venn-num">{watched.mine}</text>
-      <text x="76" y="90" textAnchor="middle" className="to-venn-label">{T.you.toLowerCase()}</text>
+      <text x="76" y="90" textAnchor="middle" className="to-venn-label">{example ? T.exampleMe : T.you.toLowerCase()}</text>
       <text x="150" y="74" textAnchor="middle" className="to-venn-num to-venn-num--both">{watched.both}</text>
       <text x="150" y="92" textAnchor="middle" className="to-venn-label to-venn-label--both">{T.both}</text>
       {/* Centred in the part of their circle outside the overlap (182 to 250),
@@ -125,6 +126,8 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
   const [sharing, setSharing] = useState(false);
   const profilePath = `/u/${username}`;
   const name = target ? (target.display_name || target.username) : `@${username}`;
+  // The sample's "you" is a sample person too (see TASTE_OVERLAP.exampleMe).
+  const me = example ? T.exampleMe : T.you;
 
   let body;
   if (!premium) {
@@ -155,14 +158,14 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
             {o.match != null ? (
               <>
                 <span className="to-match-num">{o.match}%</span>
-                <span className="to-match-note">{T.basedOn(o.sharedRated)}</span>
+                <span className="to-match-note">{(example ? T.exampleBasedOn : T.basedOn)(o.sharedRated)}</span>
               </>
             ) : (
               <span className="to-match-note">{T.needMoreRatings(need)}</span>
             )}
           </div>
           <div className="to-match-venn">
-            <Venn watched={o.watched} name={name} />
+            <Venn watched={o.watched} name={name} example={example} />
             <span className="to-caption">{T.titlesWatched}</span>
           </div>
         </section>
@@ -171,7 +174,7 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
           <div className="to-card-head">
             <h2 className="to-h2">{T.genres}</h2>
             <span className="to-legend">
-              <span><i className="to-swatch to-swatch--mine" />{T.you}</span>
+              <span><i className="to-swatch to-swatch--mine" />{me}</span>
               <span><i className="to-swatch to-swatch--theirs" />{name}</span>
             </span>
           </div>
@@ -193,7 +196,7 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
 
         <div className="to-pair">
           <section className="to-card to-tile">
-            <span className="to-tile-label">{T.yourDecade}</span>
+            <span className="to-tile-label">{example ? T.exampleDecade : T.yourDecade}</span>
             <span className="to-tile-value">{o.decades.mine ? T.decade(o.decades.mine) : '–'}</span>
             <span className="to-tile-note">
               {!o.decades.mine ? T.noDecade
@@ -205,10 +208,10 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
           <section className="to-card to-tile">
             <span className="to-tile-label">{T.tougherCritic}</span>
             <span className="to-tile-value">
-              {critic.tougher === 'mine' ? T.you : critic.tougher === 'theirs' ? name : critic.tougher === 'even' ? T.even : '–'}
+              {critic.tougher === 'mine' ? me : critic.tougher === 'theirs' ? name : critic.tougher === 'even' ? T.even : '–'}
             </span>
             <span className="to-tile-note">
-              {critic.tougher === 'theirs' ? T.theyAreTougher(stars(critic.theirs), stars(critic.mine))
+              {critic.tougher === 'theirs' ? (example ? T.exampleTheyAreTougher : T.theyAreTougher)(stars(critic.theirs), stars(critic.mine))
                 : critic.tougher === 'mine' ? T.youAreTougher(name, stars(critic.mine), stars(critic.theirs))
                 : critic.tougher === 'even' ? T.evenCritics(stars(critic.mine))
                 : T.noCritic}
@@ -245,7 +248,7 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
                     <Poster item={t} className="to-disagree-poster" />
                     <span className="to-disagree-title">{t.title}</span>
                     <span className="to-disagree-scores">
-                      <span>{T.you} <strong>{historyRatingLabel(t.mine)}</strong></span>
+                      <span>{me} <strong>{historyRatingLabel(t.mine)}</strong></span>
                       <span>{name} <strong>{historyRatingLabel(t.theirs)}</strong></span>
                     </span>
                   </button>
@@ -284,7 +287,7 @@ export function TasteOverlapView({ username, premium, loading, error, target, ov
 
         <header className="to-header">
           <div className="to-header-row">
-            <h1 className="to-h1">{T.youAnd(name)}</h1>
+            <h1 className="to-h1">{example ? T.examplePair(name) : T.youAnd(name)}</h1>
             {/* On the right of the heading, where a real comparison has Share. */}
             {example && <span className="to-pill">{T.exampleTag}</span>}
             {!example && !premium && <span className="to-chip">{T.premiumChipLabel}<PremiumMark /></span>}

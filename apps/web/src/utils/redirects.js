@@ -125,6 +125,30 @@ export function simklErrorReturn(returnTo) {
   return connectErrorReturn(returnTo, { href: '/import?source=simkl', place: 'import' });
 }
 
+export function getTmdbCallbackUrl() {
+  return getAppUrl('/auth/tmdb');
+}
+
+// TMDB sends the person back with the request token in the link. Only the
+// token this tab asked for is accepted: a link carrying someone else's token
+// would otherwise import their TMDB account into this Plot account.
+export function rememberTmdbRequest(requestToken, binding, returnTo, entry) {
+  sessionStorage.setItem('plot_tmdb_request', JSON.stringify({ requestToken, binding, returnTo, entry }));
+}
+
+/** @returns {{ binding: string, returnTo: string, entry: string | null } | null} null unless the token is the one this tab asked for */
+export function consumeTmdbRequest(requestToken) {
+  let saved = null;
+  try { saved = JSON.parse(sessionStorage.getItem('plot_tmdb_request') || 'null'); } catch { /* unreadable */ }
+  sessionStorage.removeItem('plot_tmdb_request');
+  if (!saved?.requestToken || saved.requestToken !== requestToken) return null;
+  return { binding: String(saved.binding || ''), returnTo: typeof saved.returnTo === 'string' && saved.returnTo.startsWith('/') ? saved.returnTo : '/settings?section=connections', entry: saved.entry || null };
+}
+
+export function tmdbErrorReturn(returnTo) {
+  return connectErrorReturn(returnTo, { href: '/settings?section=connections', place: 'settings' });
+}
+
 export function buildTraktAuthorizeUrl(clientId, state) {
   const params = new URLSearchParams({
     response_type: 'code',

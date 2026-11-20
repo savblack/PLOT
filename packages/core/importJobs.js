@@ -25,7 +25,7 @@ const POLL_MS = 4000;
 /** Display names for the sources a job can carry. */
 export const IMPORT_SOURCE_NAMES = Object.freeze({
   letterboxd: 'Letterboxd', netflix: 'Netflix', prime: 'Amazon Prime', disney: 'Disney+', max: 'Max', apple: 'Apple TV+',
-  imdb: 'IMDb', 'trakt-export': 'Trakt', tvtime: 'TV Time', trakt: 'Trakt', plex: 'Plex', simkl: 'Simkl',
+  imdb: 'IMDb', 'trakt-export': 'Trakt', tvtime: 'TV Time', trakt: 'Trakt', plex: 'Plex', simkl: 'Simkl', tmdb: 'TMDB',
 });
 
 /** @param {string} source */

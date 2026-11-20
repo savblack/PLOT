@@ -49,6 +49,7 @@ const ListInvitePage = lazy(() => import('./components/ListInvitePage.jsx'));
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
 const TraktCallbackPage = lazy(() => import('./pages/TraktCallbackPage.jsx'));
 const SimklCallbackPage = lazy(() => import('./pages/SimklCallbackPage.jsx'));
+const TmdbCallbackPage = lazy(() => import('./pages/TmdbCallbackPage.jsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const OnboardingFlow    = lazy(() => import('./pages/OnboardingFlow.jsx'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
@@ -122,6 +123,7 @@ const router = createBrowserRouter([
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
   { path: '/auth/trakt',     element: wrap(<TraktCallbackPage />) },
   { path: '/auth/simkl',     element: wrap(<SimklCallbackPage />) },
+  { path: '/auth/tmdb',      element: wrap(<TmdbCallbackPage />) },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip the gate's own redirect so this page can
