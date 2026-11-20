@@ -2773,11 +2773,17 @@ a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
 .list-page--rows .list-page-items > .private-watchlist,
 .list-page--rows .list-page-rows { display: block; }
 
-/* With a title panel docked, the filter column and the grid can't both fit
-   until the window is very wide; the grid wins, and closing the panel brings
-   the filters back. */
+/* With a title panel docked, the page keeps about 660px at 1440: not enough
+   for a 264px side column, a 72px gap and the content. The content wins, and
+   closing the panel brings the side column back. Hidden rather than stacked
+   on top, so opening a title doesn't push the rail you were scrolling down
+   the page. Home and Compare broke here too (hero buttons and Compare's copy
+   wrapped a word per line), so they follow My Lists. On Compare that includes
+   the people list beside the sample; closing the title brings it back. */
 @media (min-width: 1280px) and (max-width: 1799px) {
-  .app-shell.panel-docked .list-page-side { display: none; }
+  .app-shell.panel-docked .list-page-side,
+  .app-shell.panel-docked .home-side,
+  .app-shell.panel-docked .to-side { display: none; }
   .app-shell.panel-docked .list-page-body { display: block; }
 }
 @media (max-width: 1023px) {
@@ -4911,6 +4917,7 @@ a.provider-chip--link:hover {
   font: inherit;
   font-size: 0.8rem;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 .discover-hero-action:focus-visible {
