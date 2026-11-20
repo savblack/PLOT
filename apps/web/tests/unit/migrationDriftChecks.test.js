@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  parseMigrationFiles, compareLedger, diffFingerprints, classifyDrift,
+  parseMigrationFiles, compareLedger, diffFingerprints, classifyDrift, planStagingApply,
 } from '../../../../scripts/lib/migrationDriftChecks.mjs';
 
 // The cases below are the drift actually found on 2026-09-25/26, trimmed to
@@ -113,4 +113,30 @@ test('table grants only warn (project default privileges), but EXECUTE and colum
   assert.ok(failures.some((f) => /execute:watch_together_row/.test(f)));
   assert.ok(warnings.some((w) => /grant:history\.anon/.test(w)));
   assert.ok(!failures.some((f) => /grant:history/.test(f)));
+});
+
+test('planStagingApply lists unrecorded migrations oldest first', () => {
+  const plan = planStagingApply({
+    files: files('20261119120000_taste_overlap_either_premium.sql', '20261118160000_newsletter_double_opt_in.sql', '20261118140000_premium_flag_insert_guard.sql'),
+    ledger: ledger({ 20261118140000: 'premium_flag_insert_guard' }),
+  });
+  assert.deepEqual(plan.pending.map((p) => p.version), ['20261118160000', '20261119120000']);
+  assert.deepEqual(plan.collisions, []);
+});
+
+test('planStagingApply reports a version Staging recorded under another name (the 20261119100000 collision)', () => {
+  const plan = planStagingApply({
+    files: files('20261119100000_episode_airings.sql', '20261119120000_taste_overlap_either_premium.sql'),
+    ledger: ledger({ 20261119100000: 'import_jobs_tmdb_source' }),
+  });
+  assert.deepEqual(plan.collisions, [{ version: '20261119100000', file: 'episode_airings', recorded: 'import_jobs_tmdb_source' }]);
+  assert.deepEqual(plan.pending.map((p) => p.version), ['20261119120000']);
+});
+
+test('planStagingApply leaves branch-only migrations on Staging alone', () => {
+  const plan = planStagingApply({
+    files: files('20261119100000_episode_airings.sql'),
+    ledger: ledger({ 20261119100000: 'episode_airings', 20261120100000: 'import_jobs_tmdb_source' }),
+  });
+  assert.deepEqual(plan, { pending: [], collisions: [] });
 });

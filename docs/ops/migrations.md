@@ -39,6 +39,17 @@ So:
   on `profiles`/`feedback` are not reliably transactional.
 - **A migration merged to `main` applies to PRODUCTION automatically** via the Supabase
   GitHub integration. There is no staging gate — write it as if it runs immediately.
+- **Staging follows main.** `.github/workflows/staging-migrate.yml` runs
+  `pnpm run staging:migrate` (`scripts/staging-apply-migrations.mjs`) on every push to
+  `main` that touches `supabase/migrations/`. It applies each migration Staging has not
+  recorded, in one transaction, and records it. Before this, nothing applied merged
+  migrations to Staging, and the nightly drift check failed until someone did it by hand
+  (16, 18 and 19 November 2026). It refuses, changing nothing, when Staging recorded one
+  of main's versions under another name: a branch migration tried out on Staging that took
+  the same number. To clear that, renumber the branch file to a free version, move
+  Staging's row in the same transaction
+  (`update supabase_migrations.schema_migrations set version = '<new>' where version = '<old>' and name = '<branch name>'`),
+  then rerun the workflow from the Actions tab. `-- --dry-run` lists what it would apply.
 - **`pnpm run db:migration-test` before merging anything under `supabase/migrations/`.**
   Both checks above are static — neither executes any SQL — so without this the first run
   of a migration is on real user data. This restores a copy of production into a throwaway

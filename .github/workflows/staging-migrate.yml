@@ -1,0 +1,94 @@
+# Apply main's migrations to Staging after each merge, the way the Supabase
+# GitHub integration applies them to production.
+#
+# WHY: nothing did. Every merged migration left Staging behind until someone
+# caught it up by hand, and the nightly drift check (migration-drift.yml)
+# failed every night in between (16, 18 and 19 November 2026, incident #1794).
+#
+# scripts/staging-apply-migrations.mjs applies every migration Staging has not
+# recorded, in one transaction, and records each one. It refuses, changing
+# nothing, when a version on main is already recorded on Staging under another
+# name (a branch migration that took the same number). Staging only: the
+# project ref is fixed in the script.
+#
+# Secrets: PLOT_STAGING_DB_PASSWORD (already used by migration-drift.yml).
+
+name: Staging migrations (on merge)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+  workflow_dispatch: {}      # manual runs, e.g. after fixing a refused run
+
+permissions:
+  contents: read
+  issues: write # failure alerting opens and closes an `incident` issue
+
+# Never two applies at once, and never cancel one halfway (the transaction
+# would roll back, but the next run would redo the work anyway).
+concurrency:
+  group: staging-migrate
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Apply migrations to Staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      # Supabase is on PG 17; match it, as migration-drift.yml does.
+      - name: Install psql 17
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o /tmp/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/pgdg.gpg /tmp/pgdg.asc
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      # Node built-ins and scripts/lib only, so no install step: nothing
+      # third-party runs next to the Staging password.
+      - name: Apply pending migrations
+        env:
+          PLOT_STAGING_DB_PASSWORD: ${{ secrets.PLOT_STAGING_DB_PASSWORD }}
+        run: node scripts/staging-apply-migrations.mjs
+
+      # Same alerting as migration-drift.yml: an `incident` issue opens on
+      # failure and closes on the next success, and the admin is emailed once
+      # per new incident.
+      - name: Open an incident issue
+        id: incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: staging-migrate
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          FAILURE_NOTE: 'A merged migration could not be applied to Staging, or Staging has a branch migration using the same version. Staging is unchanged. Run pnpm run staging:migrate -- --dry-run locally to see which.'
+        run: bash .github/scripts/job-incident.sh open
+      - name: Email the admin about a new incident
+        if: failure() && (steps.incident.outcome != 'success' || steps.incident.outputs.opened == 'true')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAIL: ${{ secrets.MARKETING_ADMIN_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: staging-migrate
+          ALERT_SUBJECT: 'Plot: applying migrations to Staging failed'
+          FAILURE_NOTE: 'A merged migration could not be applied to Staging, or Staging has a branch migration using the same version. Staging is unchanged. Run pnpm run staging:migrate -- --dry-run locally to see which.'
+        run: bash .github/scripts/marketing-alert.sh
+      - name: Close the incident issue on recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_NAME: staging-migrate
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/job-incident.sh close
