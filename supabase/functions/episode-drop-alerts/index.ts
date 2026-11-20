@@ -33,7 +33,7 @@
  * switch).
  *
  * Auth: pg_cron via pg_net with the Vault service-role bearer
- * (run_episode_drop_alerts, 20261120090000). POST {"dry_run": true} reports
+ * (run_episode_drop_alerts, 20261120110000). POST {"dry_run": true} reports
  * what it would write and writes nothing (not even the run log).
  *
  * Secrets: TMDB_API_KEY.

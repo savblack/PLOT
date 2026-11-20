@@ -123,7 +123,7 @@ export async function markDnf(db: Db, byShow: Map<number, Map<string, Follower>>
 
 /**
  * Marks everyone who turned "Episode alerts in Plot" off
- * (notification_preferences.episode_alerts, 20261120090000). A missing row
+ * (notification_preferences.episode_alerts, 20261120110000). A missing row
  * means on.
  */
 export async function markAlertsOff(db: Db, byShow: Map<number, Map<string, Follower>>) {

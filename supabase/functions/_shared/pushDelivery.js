@@ -13,7 +13,7 @@ export function pushBlocked(prefs, notification, premium) {
   if (!premium || !prefs.push_enabled || !prefs.push_enabled_at) return 'not_enabled';
   if (notification.created_at < prefs.push_enabled_at) return 'before_opt_in';
   if (notification.type === 'streaming_arrival' && !prefs.streaming_alerts) return 'streaming_off';
-  // "Episode alerts on my phone" (20261120090000). Missing means on.
+  // "Episode alerts on my phone" (20261120110000). Missing means on.
   if (notification.type === 'new_episode' && prefs.episode_push === false) return 'episode_push_off';
   return null;
 }

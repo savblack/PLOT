@@ -175,7 +175,7 @@ verify_jwt = true
 
 # Episode alerts at the minute they drop: called every 15 minutes by pg_cron
 # via pg_net with the Vault service-role bearer (run_episode_drop_alerts,
-# 20261120090000), so verify_jwt stays true and the handler also requires the
+# 20261120110000), so verify_jwt stays true and the handler also requires the
 # service role.
 [functions.episode-drop-alerts]
 verify_jwt = true

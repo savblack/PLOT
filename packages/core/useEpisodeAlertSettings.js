@@ -3,7 +3,7 @@ import { supabase } from './supabase.js';
 
 /**
  * Settings > Viewing: the two Episode alerts switches (notification_preferences,
- * 20261120090000). Both are on unless the person turned them off; a missing
+ * 20261120110000). Both are on unless the person turned them off; a missing
  * row means on.
  *
  *   inApp  "Episode alerts in Plot": the in-app notification when a followed
