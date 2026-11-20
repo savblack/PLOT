@@ -63,6 +63,8 @@ import { usePushAlerts } from '@plot/core/usePushAlerts.js';
 import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
 import { registerPushToken } from '../../lib/pushNotifications';
 import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
+import { EPISODE_ALERTS } from '@plot/core/copy/episodeAlerts.js';
+import { useEpisodeAlertSettings } from '@plot/core/useEpisodeAlertSettings.js';
 import { ALERT_EMAIL } from '@plot/core/copy/alertEmail.js';
 import { ALERT_EMAIL_ENABLED, GUIDE_ENABLED } from '@plot/core/features.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
@@ -309,6 +311,39 @@ function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: str
         </SettingsGroup>
       )}
     </>
+  );
+}
+
+// Settings > Viewing: the two Episode alerts switches for every show. Mirrors
+// apps/web/src/components/EpisodeAlertsSettings.jsx; logic and copy are shared
+// (@plot/core useEpisodeAlertSettings.js, copy/episodeAlerts.js).
+function EpisodeAlertsSettings({ userId }: { userId: string | null }) {
+  const S = EPISODE_ALERTS.settings;
+  const alerts = useEpisodeAlertSettings(userId);
+  if (!userId || alerts.loading) return null;
+  const change = async (setting: 'in_app' | 'phone', on: boolean) => {
+    const ok = await (setting === 'in_app' ? alerts.setInApp(on) : alerts.setPhone(on));
+    if (ok) track(EVENTS.EPISODE_ALERT_SETTING_CHANGED, { setting, on });
+    else track(EVENTS.ACTION_FAILED, { action: 'episode_alert_setting' });
+  };
+  // A push follows the in-app notification, so with that off there is nothing to push.
+  const phoneBlocked = !alerts.inApp;
+  return (
+    <SettingsGroup title={EPISODE_ALERTS.title}>
+      <SettingsRow
+        icon={null}
+        label={S.inAppLabel}
+        description={S.inAppHint}
+        trailing={<Toggle value={alerts.inApp} onValueChange={(next) => { void change('in_app', next); }} disabled={alerts.busy || alerts.unread} accessibilityLabel={S.inAppLabel} />}
+      />
+      <SettingsRow
+        icon={null}
+        label={S.phoneLabel}
+        description={phoneBlocked ? S.phoneNeedsInApp : S.phoneHint}
+        trailing={<Toggle value={alerts.phone && !phoneBlocked} onValueChange={(next) => { void change('phone', next); }} disabled={alerts.busy || alerts.unread || phoneBlocked} accessibilityLabel={S.phoneLabel} />}
+      />
+      {alerts.error ? <SettingsRow icon={null} label={EPISODE_ALERTS.error} /> : null}
+    </SettingsGroup>
   );
 }
 
@@ -1532,6 +1567,7 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
         <StreamingAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
+        <EpisodeAlertsSettings userId={userId} />
         <PushAlertsSettings userId={userId} />
         <PeopleFollowSettings userId={userId} isPremium={!!profile?.is_premium} />
         </>}

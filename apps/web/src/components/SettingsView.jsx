@@ -52,6 +52,7 @@ import SidebarOrderSheet from './SidebarOrderSheet.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
 import StreamingAlertsSettings from './StreamingAlertsSettings.jsx';
+import EpisodeAlertsSettings from './EpisodeAlertsSettings.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import DialogActions from './DialogActions.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
@@ -1856,6 +1857,7 @@ export default function SettingsView() {
 
       </div>
       <StreamingAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
+      <EpisodeAlertsSettings userId={user?.id} />
       <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>

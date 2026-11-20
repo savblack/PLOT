@@ -1625,6 +1625,8 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          episode_alerts: boolean
+          episode_push: boolean
           push_enabled: boolean
           push_enabled_at: string | null
           streaming_alerts: boolean
@@ -1633,6 +1635,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          episode_alerts?: boolean
+          episode_push?: boolean
           push_enabled?: boolean
           push_enabled_at?: string | null
           streaming_alerts?: boolean
@@ -1641,6 +1645,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          episode_alerts?: boolean
+          episode_push?: boolean
           push_enabled?: boolean
           push_enabled_at?: string | null
           streaming_alerts?: boolean
@@ -3798,6 +3804,7 @@ export type Database = {
       }
       run_alert_email_delivery: { Args: never; Returns: undefined }
       run_episode_air_times: { Args: never; Returns: undefined }
+      run_episode_drop_alerts: { Args: never; Returns: undefined }
       run_marketing_linear_mirror: { Args: never; Returns: undefined }
       run_marketing_notion_mirror: { Args: never; Returns: undefined }
       run_movie_release_notifications: { Args: never; Returns: undefined }

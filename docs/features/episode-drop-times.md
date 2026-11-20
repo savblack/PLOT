@@ -50,5 +50,21 @@ largest services.
    episode only when their dates agree within a day, since TVmaze and TMDB
    numbering can differ. The two settings (decision 15) move to phase 3, where
    phone alerts make them matter.
-3. **Alerts**: alert job every 15 minutes for confirmed times, quiet hours, 7 AM
-   summary, brake and kill switch, one-time note.
+3. **Alerts**, split in two.
+   - **3a** (`episode-drop-alerts`, every 15 minutes at :05/:20/:35/:50): in-app
+     `new_episode` rows at the drop for exact times, each confirmed against
+     TMDB's episode (same numbers, dated within a day). The daily job is
+     unchanged and is the fallback for anything skipped. Brake: the run writes
+     nothing and answers 500 (so `cron-health.yml` opens an incident) when the
+     time sync has not finished cleanly for 3 hours, or more than 10% of at
+     least 10 drops from an hour ago to 6 hours ahead moved in the last day.
+     Kill switch: PostHog flag `kill-episode-drop-alerts` (create it and turn it
+     on to stop the job; missing or unreachable means run). Settings:
+     `notification_preferences.episode_alerts` and `.episode_push`. Push:
+     quiet hours 11 PM to 7 AM in `profiles.timezone` (Eastern when unknown) for
+     every push type, and episodes waiting in the 7 AM hour go as one summary.
+   - **3b** (with the iPhone launch): push only for caught-up shows (decision 9)
+     and the per-show phone switch, the one-time note (decision 16), and whether
+     phone alerts at the drop are Premium. Push was made free on 2026-10-16
+     (`20261016140000_push_alerts_free.sql`), which conflicts with decision 5;
+     Savannah to decide.

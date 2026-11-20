@@ -8,7 +8,7 @@ import type { Database } from '../_shared/database.types.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { hasServiceRoleBearer } from '../_shared/internalWebhook.ts';
 import { errorText, reportLog } from '../_shared/posthogLog.ts';
-import { PUSH_LOOK_BACK_DAYS, PUSH_TYPES, pushAction, pushBlocked, pushMessage } from '../_shared/pushDelivery.js';
+import { PUSH_LOOK_BACK_DAYS, PUSH_TYPES, groupPushes, inQuietHours, pushAction, pushBlocked, pushMessageFor } from '../_shared/pushDelivery.js';
 
 type Db = SupabaseClient<Database>;
 type Notification = Pick<Database['public']['Tables']['notifications']['Row'],
@@ -38,6 +38,17 @@ async function preferences(db: Db) {
     for (const row of data ?? []) out.set(row.user_id, row);
     if (!data || data.length < PAGE) return out;
   }
+}
+
+/** Each person's saved time zone, for quiet hours. Missing means Eastern (pushDelivery.js). */
+async function timeZones(db: Db, users: string[]) {
+  const out = new Map<string, string | null>();
+  for (const group of chunks(users, 100)) {
+    const { data, error } = await db.from('profiles').select('id,timezone').in('id', group);
+    if (error) throw new Error(`profiles read failed: ${error.message}`);
+    for (const row of data ?? []) out.set(row.id, row.timezone ?? null);
+  }
+  return out;
 }
 
 async function tokens(db: Db, users: string[]) {
@@ -142,29 +153,42 @@ Deno.serve(async req => {
     const rows = await notifications(db, eligible.filter(id => devices.has(id)), since);
     const mutes = await muted(db, rows);
     const existing = await deliveries(db, rows);
+    const zones = await timeZones(db, [...new Set(rows.map(r => r.user_id))]);
     const candidates: Candidate[] = [];
+    let held = 0;
     for (const n of rows) {
       if (pushBlocked(prefs.get(n.user_id)!, n, true)) continue;
       if (mutes.has(`${n.type}:${n.user_id}:${n.tmdb_id}`)) continue;
+      // Quiet hours: leave it unclaimed; the first run after 7 AM sends it.
+      if (inQuietHours(started, zones.get(n.user_id))) { held++; continue; }
       for (const token of devices.get(n.user_id) ?? []) {
         const prior = existing.get(key(n.id, token.token)) ?? null;
         const action = pushAction(prior, started);
         if (action) candidates.push({ notification: n, token, delivery: prior, action });
       }
     }
-    const chosen = candidates.slice(0, MAX_MESSAGES);
-    if (!deliver) return json({ ok: true, dry_run: dryRun, delivery_enabled: false, candidates: candidates.length });
+    // One message per group: a morning summary covers several episodes.
+    const byToken = new Map<string, Candidate[]>();
+    for (const c of candidates) byToken.set(c.token.token, [...(byToken.get(c.token.token) ?? []), c]);
+    const groups: Candidate[][] = [];
+    for (const list of byToken.values()) groups.push(...groupPushes(list, started, zones.get(list[0].token.user_id)));
+    const chosen = groups.slice(0, MAX_MESSAGES);
+    if (!deliver) return json({ ok: true, dry_run: dryRun, delivery_enabled: false, candidates: candidates.length, messages: groups.length, held });
     let sent = 0, failed = 0, disabled = 0;
     for (const group of chunks(chosen, CHUNK)) {
       if (Date.now() - started > MAX_RUN_MS) break;
-      const claimed: Candidate[] = [];
-      for (const c of group) if (await claim(db, c, nowIso)) claimed.push(c);
+      const claimed: Candidate[][] = [];
+      for (const message of group) {
+        const mine: Candidate[] = [];
+        for (const c of message) if (await claim(db, c, nowIso)) mine.push(c);
+        if (mine.length) claimed.push(mine);
+      }
       if (!claimed.length) continue;
       let tickets: Array<{ status: string; id?: string; details?: { error?: string } }> = [];
       try {
         const response = await fetch(SEND_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(claimed.map(c => ({ to: c.token.token, sound: 'default', ...pushMessage(c.notification) }))),
+          body: JSON.stringify(claimed.map(m => ({ to: m[0].token.token, sound: 'default', ...pushMessageFor(m.map(c => c.notification)) }))),
           signal: AbortSignal.timeout(30_000),
         });
         if (!response.ok) throw new Error(`Expo returned ${response.status}`);
@@ -173,30 +197,36 @@ Deno.serve(async req => {
         if (tickets.length !== claimed.length) throw new Error('Expo ticket count mismatch');
       } catch (error) {
         reportLog('send-push', 'error', `send-push request failed: ${errorText(error)}`);
-        for (const c of claimed) await db.from('push_deliveries').update({ status: 'failed', error: 'provider request failed' })
+        for (const c of claimed.flat()) await db.from('push_deliveries').update({ status: 'failed', error: 'provider request failed' })
           .eq('notification_id', c.notification.id).eq('token', c.token.token);
         failed += claimed.length;
         continue;
       }
       for (let i = 0; i < claimed.length; i++) {
-        const c = claimed[i], ticket = tickets[i];
+        const message = claimed[i], ticket = tickets[i];
+        const token = message[0].token.token;
         if (ticket.status === 'ok' && ticket.id) {
-          const { error } = await db.from('push_deliveries').update({ status: 'sent', provider_ref: ticket.id, sent_at: new Date().toISOString(), receipted_at: null, error: null })
-            .eq('notification_id', c.notification.id).eq('token', c.token.token);
-          if (error) throw new Error(`delivery status failed: ${error.message}`);
+          // Every notification in a summary shares the one ticket.
+          for (const c of message) {
+            const { error } = await db.from('push_deliveries').update({ status: 'sent', provider_ref: ticket.id, sent_at: new Date().toISOString(), receipted_at: null, error: null })
+              .eq('notification_id', c.notification.id).eq('token', token);
+            if (error) throw new Error(`delivery status failed: ${error.message}`);
+          }
           sent++;
         } else {
           const invalid = ticket.details?.error === 'DeviceNotRegistered';
-          await db.from('push_deliveries').update({ status: invalid ? 'disabled' : 'failed', error: ticket.details?.error ?? 'provider rejected' })
-            .eq('notification_id', c.notification.id).eq('token', c.token.token);
+          for (const c of message) {
+            await db.from('push_deliveries').update({ status: invalid ? 'disabled' : 'failed', error: ticket.details?.error ?? 'provider rejected' })
+              .eq('notification_id', c.notification.id).eq('token', token);
+          }
           if (invalid) {
-            await db.from('push_tokens').update({ disabled_at: new Date().toISOString() }).eq('token', c.token.token);
+            await db.from('push_tokens').update({ disabled_at: new Date().toISOString() }).eq('token', token);
             disabled++;
           } else failed++;
         }
       }
     }
-    return json({ ok: true, candidates: candidates.length, selected: chosen.length, sent, failed, disabled });
+    return json({ ok: true, candidates: candidates.length, selected: chosen.length, held, sent, failed, disabled });
   } catch (error) {
     reportLog('send-push', 'error', `send-push failed: ${errorText(error)}`);
     return json({ ok: false, error: 'Push delivery failed' }, 500);
