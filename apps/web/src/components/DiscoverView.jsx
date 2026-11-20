@@ -296,12 +296,19 @@ function OnThisDayCard({ item, openPanel }) {
   const art = useUserArtwork();
   if (!item) return null;
   const image = posterUrl(displayPosterPath(art.apply(item)), 'w185');
+  // A true anniversary says so; the archive fallback was not released on
+  // this date, so it gets its own label and only its year.
+  const anniversaryYear = item.anniversary_years ? new Date().getFullYear() - item.anniversary_years : null;
+  const label = item.archive_year ? MEDIA.fromTheArchive : DISCOVER_VIEW.onThisDay;
+  const line = anniversaryYear
+    ? DISCOVER_VIEW.releasedThisDay(anniversaryYear)
+    : item.archive_year ? DISCOVER_VIEW.releasedIn(item.archive_year) : null;
   return (
     <section className="hist-card home-on-this-day">
-      <span className="hist-card-label">{DISCOVER_VIEW.onThisDay}</span>
+      <span className="hist-card-label">{label}</span>
       <button type="button" className="home-on-this-day-hit" onClick={() => openPanel(item.id, item.media_type || 'movie')}>
         <span className="home-on-this-day-poster">{image && <img src={image} alt="" />}</span>
-        <span className="home-on-this-day-copy"><strong>{item.title || item.name}</strong>{item.archive_year && <span>{DISCOVER_VIEW.releasedThisDay(item.archive_year)}</span>}</span>
+        <span className="home-on-this-day-copy"><strong>{item.title || item.name}</strong>{line && <span>{line}</span>}</span>
         <span className="home-up-next-chev" aria-hidden="true"><IconChevronRight /></span>
       </button>
     </section>

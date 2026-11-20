@@ -31,7 +31,11 @@ export const DISCOVER_VIEW = {
     afterLogo: '’s Picks',
     showCard: (n) => `Show card ${n}`,
   },
+  // Only for a film that really came out on today's date in that year.
   releasedThisDay: (year) => `Released this day in ${year}.`,
+  // The fallback when no notable film shares today's date: a well-liked film
+  // from a recent year, labelled with MEDIA.fromTheArchive instead of "On this day".
+  releasedIn: (year) => `Released in ${year}.`,
   // Customize Home: reorder or hide the shelves below the fixed cards.
   customize: {
     action: 'Customize',
