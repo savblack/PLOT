@@ -284,3 +284,26 @@
   .wt-list .wt-row > .wt-note { max-width: 6.5rem; text-align: right; white-space: normal; }
 }
 
+
+/* The mood step before a session (WatchTogetherMood.jsx). */
+.wt-mood-head { display: flex; flex-direction: column; gap: 0.25rem; }
+.wt-mood-head .discover-section-title { margin: 0; }
+.wt-mood { gap: 0.9rem; }
+.wt-mood-row { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: start; gap: 0.75rem; }
+.wt-mood-row > .cal-scope { justify-self: start; }
+.wt-mood-label { padding-top: 0.35rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.wt-mood-fixes { display: flex; flex-direction: column; gap: 0.5rem; }
+.wt-mood-fix {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.6rem 0.8rem; border-radius: var(--radius-badge);
+  background: var(--surface-sunken); border: 0; color: var(--text-primary);
+  font: inherit; font-size: 0.875rem; font-weight: 500; text-align: left; cursor: pointer;
+}
+.wt-mood-fix:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wt-mood-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+.wt-mood-actions .btn { width: max-content; white-space: nowrap; }
+.wt-session-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; }
+@media (max-width: 480px) {
+  .wt-mood-row { grid-template-columns: 1fr; gap: 0.4rem; }
+  .wt-mood-label { padding-top: 0; }
+}

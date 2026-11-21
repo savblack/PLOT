@@ -725,7 +725,7 @@ Props are shapes only, never user ids, usernames or invite link keys.
 | `watch_together_request_accepted` | Someone accepted a request sent to them | `share_full` |
 | `watch_together_link_shared` | The invite link was shared or copied | `method` (`share` / `copy`) |
 | `watch_together_link_accepted` | Someone accepted an invite link (pairs straight away) | `share_full` |
-| `watch_together_session_started` | A two-person yes-or-no session started | none |
+| `watch_together_session_started` | A two-person yes-or-no session started | `with_mood` (true when started from the mood step), and with it `mood_count`, `media_type` (`all` / `movie` / `tv`), `services`, `deck_size` |
 | `watch_together_match` | A vote made a match (both said yes) | none |
 | `collab_list_invite_shared` | A collaborative list's invite link was shared or copied | `method` (`share` / `copy`) |
 | `collab_list_joined` | Someone joined a collaborative list from its invite link | none |

@@ -20,7 +20,7 @@ import { Palette, fontFamily, fontSize, radii, spacing } from '../lib/tokens';
 
 export const CHIP_H = { md: 34, sm: 28 } as const;
 
-export default function Chip({ label, selected = false, onPress, size = 'md', quiet = false, icon, disabled = false, accessibilityLabel, accessibilityRole = 'button', style }: {
+export default function Chip({ label, selected = false, onPress, size = 'md', quiet = false, icon, count, disabled = false, accessibilityLabel, accessibilityRole = 'button', style }: {
   label: string;
   selected?: boolean;
   onPress: () => void;
@@ -30,6 +30,9 @@ export default function Chip({ label, selected = false, onPress, size = 'md', qu
   quiet?: boolean;
   /** A small glyph before the label. */
   icon?: ReactNode;
+  /** How many results picking it would keep, muted after the label
+   *  (Watch together's mood step; web Chip's `count`). */
+  count?: number;
   disabled?: boolean;
   accessibilityLabel?: string;
   /** `radio` for one-of-many, `checkbox` for any-of-many, `tab` for a tab row. */
@@ -45,12 +48,15 @@ export default function Chip({ label, selected = false, onPress, size = 'md', qu
       disabled={disabled}
       activeOpacity={0.75}
       accessibilityRole={accessibilityRole}
-      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityLabel={accessibilityLabel ?? (count != null ? `${label}, ${count}` : label)}
       accessibilityState={accessibilityRole === 'checkbox' ? { checked: selected, disabled } : { selected, disabled }}
       style={[styles.chip, styles[size], selected && (quiet ? styles.onQuiet : styles.on), disabled && styles.off, style]}
     >
       {icon}
       <Text style={[styles.label, size === 'sm' && styles.labelSm, selected && (quiet ? styles.labelOnQuiet : styles.labelOn)]} numberOfLines={1}>{label}</Text>
+      {count != null && (
+        <Text style={[styles.label, size === 'sm' && styles.labelSm, selected && (quiet ? styles.labelOnQuiet : styles.labelOn), styles.count]} numberOfLines={1}>{count}</Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -84,6 +90,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   label: { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textSecondary },
   labelSm: { fontSize: fontSize.xs },
   labelOn: { color: colors.onAccentFill },
+  count: { fontVariant: ['tabular-nums'], opacity: 0.72 },
   tag: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.badge },
   tag_neutral: { backgroundColor: colors.surfaceSunken },
   tag_sage: { backgroundColor: colors.accentSecondaryFill },

@@ -5,6 +5,7 @@ import {
   PICKER_RUNTIMES, PICKER_EPISODE_RUNTIMES, PICKER_ERAS, PICKER_MIN_SCORES,
 } from './tonightPicker.js';
 import { TONIGHT_PICKER } from './copy/tonightPicker.js';
+import { MOOD_GENRES, MOODS } from './moodGenres.js';
 
 // Just Decide's shelves (Nov 2026 redesign, option D). The page opens already
 // full: shelves of titles that fit tonight, drawn from the viewer's watchlist
@@ -89,26 +90,10 @@ export function toggleChip(chip, o) {
 // moods (any number), then one-of rows for score, length and release, all
 // setting the picker options the questions used to.
 
-/**
- * Genres behind each mood chip, per type. The sets do not overlap, so one
- * chip never lights another. Negative ids are keyword-backed show genres.
- */
-export const MOOD_GENRES = {
-  funny: { movie: [35], tv: [35] },
-  romantic: { movie: [10749], tv: [-10749] },
-  gripping: { movie: [53, 80, 9648], tv: [80, 9648, -53] },
-  scary: { movie: [27], tv: [-27] },
-  moving: { movie: [18], tv: [18] },
-  adventurous: { movie: [12, 28], tv: [10759] },
-  mindBending: { movie: [878], tv: [10765] },
-  trueStory: { movie: [99], tv: [99] },
-  animated: { movie: [16], tv: [16] },
-};
-
-/** @typedef {keyof typeof MOOD_GENRES} Mood */
-
-/** Mood chips, in the order the row shows them. */
-export const MOODS = /** @type {Mood[]} */ (Object.keys(MOOD_GENRES));
+// The mood chips and the genres behind them live in moodGenres.js, so Watch
+// together's mood step can share them without pulling in the picker.
+export { MOOD_GENRES, MOODS } from './moodGenres.js';
+/** @typedef {import('./moodGenres.js').Mood} Mood */
 
 /**
  * @param {Mood} mood

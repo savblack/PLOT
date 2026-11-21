@@ -21,7 +21,7 @@ import GlassHeader, { useGlassOnScroll } from '../GlassHeader';
 import ScreenHeaderBar, { SCREEN_HEADER_H } from '../ScreenHeaderBar';
 import { Avatar } from '../Avatar';
 import { hubStage, joinNames, personName, sharedOnDate } from '@plot/core/watchTogether.js';
-import { useWatchTogetherSuggestions, useWatchTogetherExampleTitles, useSaveIdeas, startWatchTogetherSession, useUpgradeNews, useUserSearch } from '@plot/core/useWatchTogether.js';
+import { useWatchTogetherSuggestions, useWatchTogetherExampleTitles, useSaveIdeas, useUpgradeNews, useUserSearch } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
@@ -39,7 +39,7 @@ import {
 } from './WatchChrome';
 import { PosterArt, PosterCaption, posterColumnWidth } from '../PosterCard';
 import { posterUrl } from '../../lib/tokens';
-import { TogetherApi, WtPerson, WtTitle, asPeople, asResult, asTitles, errorText, sessionIdFrom, titleMeta, useTogether, useTogetherTitles } from './watchModel';
+import { TogetherApi, WtPerson, WtTitle, asPeople, asTitles, errorText, titleMeta, useTogether, useTogetherTitles } from './watchModel';
 
 const H = T.hub;
 const GROUP_ID = 'group';
@@ -106,10 +106,8 @@ export function WatchHub() {
   const selected = selectedId ?? (decidable[0] || partners[0])?.id ?? null;
   const shelfPartners = selected === GROUP_ID ? decidable : partners.filter(p => p.id === selected);
 
-  const decideWith = async (person: WtPerson) => {
-    const id = sessionIdFrom(asResult(await startWatchTogetherSession(person.id)));
-    if (id) router.push(`/(app)/together/session/${id}` as Href);
-  };
+  // The mood step comes first, then the cards (WatchMood.tsx).
+  const decideWith = (person: WtPerson) => router.push(`/(app)/together/decide/${encodeURIComponent(person.username)}` as Href);
   const openGroup = () => router.push(`/(app)/together/with/${decidable.map(p => encodeURIComponent(p.username)).join(',')}` as Href);
   const answer = async (person: WtPerson, accept: boolean, shareFull = false) => {
     setBusy(true);
@@ -410,20 +408,12 @@ export function WatchPicker({ together }: { together?: TogetherApi }) {
   const own = useTogether(together ? null : userId);
   const wt = together || own;
   const [picked, setPicked] = useState<string[]>([]);
-  const [starting, setStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const chosen = wt.partners.filter(p => picked.includes(p.id));
   const toggle = (id: string) => setPicked(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
   const browse = () => router.push(`/(app)/together/with/${chosen.map(p => encodeURIComponent(p.username)).join(',')}` as Href);
-  const decide = async () => {
-    if (!chosen[0]) return;
-    setStarting(true);
-    setError(null);
-    const result = asResult(await startWatchTogetherSession(chosen[0].id));
-    setStarting(false);
-    const id = sessionIdFrom(result);
-    if (id) router.push(`/(app)/together/session/${id}` as Href);
-    else setError(errorText(result.code));
+  // The mood step comes first, then the cards (WatchMood.tsx).
+  const decide = () => {
+    if (chosen[0]) router.push(`/(app)/together/decide/${encodeURIComponent(chosen[0].username)}` as Href);
   };
   return (
     <WatchPage>
@@ -437,12 +427,11 @@ export function WatchPicker({ together }: { together?: TogetherApi }) {
           trailing={<SectionLabel>{picked.includes(person.id) ? COMMON.deselect : COMMON.select}</SectionLabel>}
         />
       ))}
-      {!!error && <ErrorNote>{error}</ErrorNote>}
       <ButtonRow>
         {chosen.length === 1 && <Button label={T.tile.pairedAction} onPress={browse} />}
         {chosen.length > 1
           ? <Button variant="primary" label={T.overlap.groupAction} onPress={browse} />
-          : <Button variant="primary" label={T.session.start} onPress={decide} disabled={!chosen.length || starting} />}
+          : <Button variant="primary" label={T.session.start} onPress={decide} disabled={!chosen.length} />}
       </ButtonRow>
     </WatchPage>
   );

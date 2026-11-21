@@ -78,6 +78,29 @@ for the start page and the hub, Free and Premium). Each screen has one dark
 - Proposed, not yet designed: a "Who's watching? Just me / With someone"
   first step in Just Decide, and a link from the Premium plans page.
 
+## Mood step (Nov 2026)
+
+Before a two-person session, "What are you in the mood for?": Movies, TV or
+both, any number of Just Decide's mood chips, and My services. Each chip shows
+how many shared titles it keeps and is greyed out at 0. When the choices keep
+nothing, a card offers the single changes that bring titles back, with counts.
+"Skip this and swipe all N" starts the plain session. The deck is only what
+fits (`start_watch_together_session_filtered`), and the choice is stored on
+the session so both people see "You picked" / "Sam picked" above the cards.
+Every "Decide together" button and "Start again" go through it
+(`/together/decide/:username`). Mockup:
+https://claude.ai/code/artifact/46bf5f35-a5ba-4a09-99c3-5483daa5c466 (private).
+
+- Moods are the genres `list_items` stores (`packages/core/moodGenres.js`).
+  For shows, Romantic and Scary drop out and Gripping is Crime or Mystery:
+  those need TMDB keyword lookups the database can't do.
+- No "Under 2 hours": runtime isn't stored. A later step would need TMDB
+  details for every shared title.
+- The merged Decide page in the same mockup was not built; Just Decide and
+  Watch together stay two Premium features.
+- Web: `WatchTogetherMood.jsx`, story `Watch together/Mood step`. Mobile:
+  `components/watch/WatchMood.tsx`, route `(app)/together/decide/[username]`.
+
 ## Nav icon
 
 The sofa, drawn to match `apps/web/src/components/navIcons.jsx` (24px grid,

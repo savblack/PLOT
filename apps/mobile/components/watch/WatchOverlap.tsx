@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { personName, filterByKind, splitGroupMatches, shufflePick } from '@plot/core/watchTogether.js';
-import { startWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COMMON } from '@plot/core/copy/common.js';
@@ -21,7 +20,7 @@ import Button from '../Button';
 import SectionTitle from '../SectionTitle';
 import { Avatar } from '../Avatar';
 import { ButtonRow, ErrorNote, Note, PosterThumb, SectionLabel, WatchPage, openPremium, useOpenTitle } from './WatchChrome';
-import { WtPerson, WtTitle, asPerson, asResult, errorText, sessionIdFrom, titleMeta, useTogether, useTogetherTitles } from './watchModel';
+import { WtPerson, WtTitle, asPerson, errorText, titleMeta, useTogether, useTogetherTitles } from './watchModel';
 
 export function WatchOverlap({ usernames }: { usernames: string[] }) {
   const { colors } = useTheme();
@@ -38,7 +37,6 @@ export function WatchOverlap({ usernames }: { usernames: string[] }) {
   const [topId, setTopId] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const [upgrade, setUpgrade] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const locked = error === 'premium_required';
   const group = people.length > 1;
   const shown = filterByKind(titles, kind);
@@ -60,12 +58,9 @@ export function WatchOverlap({ usernames }: { usernames: string[] }) {
   const lists = Array.isArray(customLists.lists) ? customLists.lists as { id: string; name: string; items?: unknown[]; people?: { user_id?: string }[] }[] : [];
   const existing = !group && partner ? lists.find(list => list.people?.some(member => member.user_id === partner.id)) : undefined;
   const nameOf = (id: string) => id === userId ? T.overlap.you : personName(people.find(person => person.id === id) || {});
-  const decide = async () => {
-    if (!partner) return;
-    const result = asResult(await startWatchTogetherSession(partner.id));
-    const id = sessionIdFrom(result);
-    if (id) router.push(`/(app)/together/session/${id}` as Href);
-    else setActionError(errorText(result.code));
+  // The mood step comes first, then the cards (WatchMood.tsx).
+  const decide = () => {
+    if (partner) router.push(`/(app)/together/decide/${encodeURIComponent(partner.username)}` as Href);
   };
   const makeList = () => {
     if (!isPremiumProfile(profile)) {
@@ -84,7 +79,6 @@ export function WatchOverlap({ usernames }: { usernames: string[] }) {
       </View>
       <SectionTitle>{group ? T.overlap.groupHeading : T.overlap.heading(titles.length)}</SectionTitle>
       {!group && titles.length > 0 && <Button variant="primary" label={T.session.start} onPress={decide} />}
-      {!!actionError && <ErrorNote>{actionError}</ErrorNote>}
       {locked && (
         <View style={{ gap: spacing.sm }}>
           <SectionTitle>{T.locked.title}</SectionTitle>

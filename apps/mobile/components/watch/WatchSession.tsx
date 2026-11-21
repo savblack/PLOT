@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { Animated, Dimensions, Image, PanResponder, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { personName, sessionProgress, swipeDecision, SWIPE_THRESHOLD } from '@plot/core/watchTogether.js';
-import { useWatchTogetherSession, startWatchTogetherSession, liveWatchTogetherSession } from '@plot/core/useWatchTogether.js';
+import { personName, sessionProgress, sessionFilterLabels, swipeDecision, SWIPE_THRESHOLD } from '@plot/core/watchTogether.js';
+import { useWatchTogetherSession, liveWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { COMMON } from '@plot/core/copy/common.js';
 import { posterUrl, fontFamily, fontSize, spacing, radii } from '../../lib/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import Button from '../Button';
+import { Tag } from '../Chip';
 import SectionTitle from '../SectionTitle';
 import BackBar from '../BackBar';
 import { ButtonRow, Note, PosterThumb, SectionLabel, WatchPage, useOpenTitle } from './WatchChrome';
@@ -37,10 +38,9 @@ export function WatchSession({ sessionId }: { sessionId: string }) {
     const result = await vote(card, yes);
     if (result.matched) setJustMatched(card);
   };
-  const restart = async () => {
-    if (!session) return;
-    const id = sessionIdFrom(asResult(await startWatchTogetherSession(session.other_id)));
-    if (id) router.replace(`/(app)/together/session/${id}` as Href);
+  // Starting again goes back through the mood step (WatchMood.tsx).
+  const restart = () => {
+    if (other) router.replace(`/(app)/together/decide/${encodeURIComponent(other.username)}` as Href);
   };
 
   if (loading && !session) {
@@ -121,11 +121,28 @@ export function WatchSession({ sessionId }: { sessionId: string }) {
       <View style={{ paddingHorizontal: spacing.xl, paddingBottom: spacing.sm, gap: spacing.xs }}>
         <SectionTitle>{T.session.heading(name)}</SectionTitle>
         <Note>{T.session.fromBoth}</Note>
+        <SessionFilters filters={session.filters} viewerId={userId} otherName={name} />
         <Note>{`${personName(other || {})}: ${T.session.theyAnswered(Math.min(session.other_answered + 1, progress.total))}`}</Note>
       </View>
       <View style={{ flex: 1, paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}>
         {body}
       </View>
+    </View>
+  );
+}
+
+/** What the session was started with, so both people know which deck this is. */
+function SessionFilters({ filters, viewerId, otherName }: {
+  filters: Parameters<typeof sessionFilterLabels>[0];
+  viewerId: string | null | undefined;
+  otherName: string;
+}) {
+  const labels = sessionFilterLabels(filters, { viewerId, starterName: otherName });
+  if (!filters || !labels.length) return null;
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs }}>
+      <Note>{filters.by === viewerId ? T.mood.youPicked : T.mood.picked(otherName)}</Note>
+      {labels.map(label => <Tag key={label} label={label} />)}
     </View>
   );
 }

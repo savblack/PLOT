@@ -109,13 +109,14 @@ export function asTitles(value: unknown): WtTitle[] {
 export function asResult(value: unknown): WtResult {
   if (!value || typeof value !== 'object') return { ok: false, code: 'generic' };
   const row = value as Record<string, unknown>;
-  const code = row.code === 'premium_required' || row.code === 'not_allowed' ? row.code : 'generic';
+  const code = row.code === 'premium_required' || row.code === 'not_allowed' || row.code === 'nothing_fits' ? row.code : 'generic';
   return { ok: row.ok === true, code: row.ok === true ? undefined : code, data: row.data };
 }
 
 export function errorText(code: string | null | undefined): string {
   if (code === 'premium_required') return T.errors.premium_required;
   if (code === 'not_allowed') return T.errors.not_allowed;
+  if (code === 'nothing_fits') return T.errors.nothing_fits;
   return T.errors.generic;
 }
 
