@@ -2640,10 +2640,6 @@ a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
    filter rows, and it hides itself below the sidebar breakpoint, where the
    filters return as the fixed mobile control bar. */
 .mylists-side { gap: 24px; }
-/* The column is the filter at sidebar widths, so the toolbar's pill would be
-   a second copy of it. Below 1024 .desktop-page-filter is already hidden and
-   .mobile-page-controls takes over. */
-.mylists-page .desktop-page-filter { display: none; }
 .mylists-jump { gap: 10px; padding: 14px 12px 6px; }
 .mylists-jump-count { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
 .mylists-jump .cal-filter-row:hover .mylists-jump-count { color: var(--text-secondary); }

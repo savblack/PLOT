@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { ALL_TYPES, filterByType, filterByGenre } from '../../mediaFilters.js';
+import { ALL_TYPES, filterByType, filterByGenre, usesFilterRail, genresInItems } from '../../mediaFilters.js';
 
 const items = [
   { media_type: 'tv', genre_ids: [1] },
@@ -73,4 +73,17 @@ test('filterByGenre keeps items whose genre_ids intersect the filter and drops t
 
 test('filterByGenre keeps items matching any of several filter genres', () => {
   assert.deepEqual(filterByGenre(items, [1, 3]), [items[0], items[2]]);
+});
+
+test('usesFilterRail draws the rail from 13 titles, a button below', () => {
+  assert.equal(usesFilterRail(0), false);
+  assert.equal(usesFilterRail(12), false);
+  assert.equal(usesFilterRail(13), true);
+});
+
+test('genresInItems keeps only genres an item carries, in catalogue order', () => {
+  const genres = [{ id: 3, name: 'C' }, { id: 1, name: 'A' }, { id: 2, name: 'B' }];
+  assert.deepEqual(genresInItems([{ genre_ids: [1, 3] }, {}], genres), [genres[0], genres[1]]);
+  assert.deepEqual(genresInItems([{ media_type: 'movie' }], genres), []);
+  assert.deepEqual(genresInItems(null, genres), []);
 });
