@@ -15,6 +15,7 @@ import { COMMON } from '../copy/common.js';
 import { MEDIA } from '../copy/media.js';
 import { posterUrl } from '../utils/images.js';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
+import Icon from './Icon.jsx';
 import { useFocusCancel, useStableClose } from '../hooks/useDialogClose.js';
 import './UpcomingSuggestionsSheet.css';
 
@@ -38,11 +39,14 @@ function SuggestionRow({ item, saved, pending, failed, onAdd }) {
       </div>
       <button
         type="button"
-        className={`btn btn-sm ${saved ? 'btn-secondary' : 'btn-primary'}`}
+        /* The title panel's watchlist pill, small: one look for Add to
+           watchlist everywhere (Nov 2026 critique). */
+        className={`panel-pill panel-pill--sm${saved ? ' panel-pill--saved' : ''}`}
         disabled={saved || pending}
         aria-label={saved ? `${title}, ${COPY.added}` : `${MEDIA.saveToWatchlist}, ${title}`}
         onClick={() => onAdd(item)}
       >
+        {saved ? <Icon name="check" size={13} strokeWidth={2.4} /> : <Icon name="bookmark" size={13} />}
         {pending ? COMMON.saving : saved ? COPY.added : COMMON.add}
       </button>
     </li>

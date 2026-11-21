@@ -63,7 +63,7 @@ export function CollectionRun({ items, watched, total, compact = false }: {
       )}
       <View style={styles.runBar}>
         {items.map(item => (
-          <View key={item.id} style={[styles.runSeg, compact && styles.runSegCompact, item.watched && { backgroundColor: colors.statusWatching }]} />
+          <View key={item.id} style={[styles.runSeg, compact && styles.runSegCompact, item.watched && { backgroundColor: colors.accent }]} />
         ))}
       </View>
       {!compact && (

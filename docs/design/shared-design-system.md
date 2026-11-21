@@ -199,6 +199,10 @@ color, and new work should match it rather than invent a new distribution:
   "Film", "Series", "Now at home". They repeat freely; they are labels, not signals.
 - **Genre tags** take the pale pink tint (`--accent-dim`, charcoal text), not sage, so a
   title's genres don't read as a state like Watched or On your watchlist.
+- **Add to watchlist** has one look everywhere: the title panel's cream pill with the
+  bookmark (`.panel-pill`, `.panel-pill--sm` in tight rows), sage with a check once saved.
+  Over artwork it sits on `--surface`. It is never the pink primary: pink stays for logging
+  what you watched.
 - **The secondary button** is the cream pill (`--surface-sunken`, charcoal text) — "See
   what's on". The pink primary button appears in a section only when the action is the
   point of the section (the hero, the sign-up), not beside a panel.
@@ -326,13 +330,14 @@ system patterns, not panel one-offs: reuse them rather than re-deriving a near-m
   tab or a jump link when a section is long but its summary is one glance.
 - **The segmented run bar** (`.collection-run-seg`). Progress through a countable set of
   things is one segment per item, not a continuous fill: 8px tall, pill radius,
-  `--status-watching` when done and a 12% `--text-primary` mix when not. It reads as
+  `--accent` when done and a 12% `--text-primary` mix when not. It reads as
   "three of seven films" without a label. A continuous bar is still right for progress
   through one thing (an episode, an upload); the segmented bar is for a set whose members
   are individually meaningful.
 
 All three follow the standing rules: flat, structure from hairlines and surface tokens,
-`--status-watching` for progress, and the accent reserved for interaction and hierarchy.
+the accent for progress (every progress fill uses `--accent`, one pink on both apps)
+and otherwise reserved for interaction and hierarchy.
 
 ## Surface ownership
 

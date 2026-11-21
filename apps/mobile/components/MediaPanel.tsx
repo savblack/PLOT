@@ -1879,7 +1879,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   headText: { flex: 1, minWidth: 0, paddingTop: spacing.md },
   kickerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm, marginBottom: 4 },
-  kicker: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accent },
+  // Plain meta, not a pink label (Nov 2026 critique); matches web's .panel-kicker.
+  kicker: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.textSecondary },
   title: { fontFamily: fontFamily.display, fontSize: 24, letterSpacing: -0.6, color: colors.textPrimary, lineHeight: 26, marginBottom: 4 },
   titleLogo: {
     position: 'absolute', left: 172, right: 56, bottom: 10, height: 36, zIndex: 2,
@@ -1895,7 +1896,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
   scoreValue: { fontFamily: fontFamily.display, fontSize: 22, color: colors.textPrimary, lineHeight: 24 },
-  scoreLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 2 },
+  scoreLabel: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   scoreRule: { width: StyleSheet.hairlineWidth, height: 30, backgroundColor: colors.border },
   awardsRow: {
     gap: 2, paddingBottom: spacing.lg, marginBottom: spacing.lg,
@@ -1940,14 +1941,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   upNextTitle: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary, marginBottom: spacing.md },
   upNextRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   upNextStill: { width: 96, height: 56, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surface },
-  upNextKicker: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginBottom: 2 },
+  upNextKicker: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
   upNextName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   upNextWhere: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginTop: 2 },
   // Buttons hug the top of a row by default; this sits one on its centre line.
   btnInRow: { alignSelf: 'center' },
   upNextTrack: { height: 5, borderRadius: radii.pill, backgroundColor: colors.border, marginTop: spacing.md, overflow: 'hidden' },
   upNextLeft: { marginTop: spacing.sm, fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted },
-  upNextFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.statusWatching },
+  upNextFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.accent },
   watchCard: { marginBottom: spacing.lg },
   watchHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
   watchTitle: { flex: 1, fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary },
@@ -1967,7 +1968,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   similarCard: { width: 76 },
   similarPoster: { width: 76, aspectRatio: 2 / 3, borderRadius: radii.md, backgroundColor: colors.surfaceRaised },
   similarName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary, marginTop: 6 },
-  similarMeta: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, marginTop: 1 },
+  similarMeta: { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textSecondary, marginTop: 1 },
 
   sectionTitle: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.md },
 

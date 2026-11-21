@@ -1421,7 +1421,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   listToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
   progressWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.surfaceSunken, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 3, backgroundColor: colors.accentSecondary },
+  progressFill: { height: '100%', borderRadius: 3, backgroundColor: colors.accent },
   progressLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   statusChipSlot: { position: 'absolute', top: 6, left: 6 },
   finishedArt: { opacity: 0.45 },
