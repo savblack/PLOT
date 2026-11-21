@@ -25,6 +25,8 @@
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { parseMigrationFiles, findMainCollisions } from './lib/migrationDriftChecks.mjs';
 
 const DIR = 'supabase/migrations';
 
@@ -86,6 +88,41 @@ if (collisions.length) {
   console.error('\nRename all but one to the next free timestamp. Renaming is safe when the');
   console.error('migration is idempotent (create or replace, if not exists); check before you do.');
   process.exit(1);
+}
+
+// ── …and a branch must not reuse a version main has since taken ────────────
+// The check above only sees this checkout's files, and CI checks out a pull
+// request's own head, so it cannot see a version main took after the branch
+// was cut. Staging and production then record main's file under that version
+// and skip the branch's without an error: 20261118140000 on 2026-11-19, caught
+// only because a Staging SQL test failed. Needs origin/main (CI fetches full
+// history); without it the comparison is skipped with a note, not failed.
+function mainMigrationFilenames() {
+  try {
+    const out = execFileSync('git', ['ls-tree', '--name-only', 'origin/main', `${DIR}/`], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return out.split('\n').filter(Boolean).map(p => p.slice(p.lastIndexOf('/') + 1));
+  } catch {
+    return null;
+  }
+}
+const onMain = mainMigrationFilenames();
+if (!onMain) {
+  console.log('… origin/main not available, so versions were not compared with main (run git fetch origin main)');
+} else {
+  const clashes = findMainCollisions({ files: parseMigrationFiles(files), mainFiles: parseMigrationFiles(onMain) });
+  if (clashes.length) {
+    console.error('✗ a migration here uses a version main already gave to another file.');
+    console.error('  Staging and production will record main\'s file and skip this one, with no error:\n');
+    for (const c of clashes) {
+      console.error(`  ${c.version}`);
+      console.error(`    here:    ${c.version}_${c.file}.sql`);
+      console.error(`    on main: ${c.version}_${c.onMain}.sql`);
+    }
+    console.error('\nRename this branch\'s file to a version after the newest on main, then merge main in.');
+    process.exit(1);
+  }
 }
 
 // name -> { file, targets } for the most recent definition seen so far

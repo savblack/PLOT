@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  parseMigrationFiles, compareLedger, diffFingerprints, classifyDrift, planStagingApply,
+  parseMigrationFiles, compareLedger, diffFingerprints, classifyDrift, planStagingApply, findMainCollisions,
 } from '../../../../scripts/lib/migrationDriftChecks.mjs';
 
 // The cases below are the drift actually found on 2026-09-25/26, trimmed to
@@ -139,4 +139,21 @@ test('planStagingApply leaves branch-only migrations on Staging alone', () => {
     ledger: ledger({ 20261119100000: 'episode_airings', 20261120100000: 'import_jobs_tmdb_source' }),
   });
   assert.deepEqual(plan, { pending: [], collisions: [] });
+});
+
+// 2026-11-19: main took 20261118140000 for premium_flag_insert_guard while the
+// Compare branch had its own 20261118140000 open. Staging skipped the branch's.
+test('findMainCollisions: a version main gave to another file is a clash', () => {
+  const clashes = findMainCollisions({
+    files: files('20261118120000_avatars_owner_delete.sql', '20261118140000_taste_overlap_either_premium.sql'),
+    mainFiles: files('20261118120000_avatars_owner_delete.sql', '20261118140000_premium_flag_insert_guard.sql'),
+  });
+  assert.deepEqual(clashes, [{ version: '20261118140000', file: 'taste_overlap_either_premium', onMain: 'premium_flag_insert_guard' }]);
+});
+
+test('findMainCollisions: main\'s own files and new versions are fine', () => {
+  assert.deepEqual(findMainCollisions({
+    files: files('20261118140000_premium_flag_insert_guard.sql', '20261119120000_taste_overlap_either_premium.sql'),
+    mainFiles: files('20261118140000_premium_flag_insert_guard.sql'),
+  }), []);
 });
