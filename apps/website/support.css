@@ -32,8 +32,6 @@ h2 { font-size: 2rem; line-height: 1.15; }
 .policy-section p { margin: .6rem 0 1rem; font-size: 1.143rem; color: var(--text-secondary); }
 .policy-links { display: flex; gap: .5rem 1.5rem; flex-wrap: wrap; font-size: .875rem; }
 .policy-links a { padding: .5rem 0; }
-.skip-link { position: absolute; left: 1rem; top: -100px; z-index: 2000; background: var(--bg); padding: .7rem 1rem; }
-.skip-link:focus { top: 1rem; }
     .site-footer { margin-top: 5rem; }
 
 

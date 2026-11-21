@@ -37,6 +37,9 @@ export const makeEvaluator = (days) => async (ctx) => {
     announce: { tracked_id: pick.id, key },
     payload: {
       days_until: days,
+      // The page's Coming soon badge reads this. days_until is counted from
+      // the planning day, and a post can go out on a later day than that.
+      release_date: pick.release_date,
       kind,
       when_label: formatWeekdayDayMonth(pick.release_date),
       title: {
