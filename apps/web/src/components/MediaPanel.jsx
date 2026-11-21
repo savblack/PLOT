@@ -1825,6 +1825,7 @@ export default function MediaPanel({ itemId, itemType, initialListOpen = false, 
                   <div className="panel-status-menu">
                     {[
                       { label: MEDIA_PANEL.watching, action: () => runStatusAction(MEDIA_PANEL.updating, handleWatchingStatus), hidden: isMovie },
+                      { label: MEDIA.watched, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(false)) },
                       { label: MEDIA_PANEL.didntFinish, action: () => runStatusAction(MEDIA_PANEL.updating, () => handleWatchedStatus(true)) },
                       { label: MEDIA_PANEL.clearStatus, action: () => runStatusAction(MEDIA_PANEL.clearing, handleClearStatus), hidden: !(isWatching || watched), muted: true },
                     ].filter(o => !o.hidden).map(opt => (

@@ -23,6 +23,40 @@
   padding-top: 0.4rem;
 }
 .foot-bar-title { font-size: 0.88rem; font-weight: 700; }
+/* The head line's question doubles as the fold control: the chevron points
+   down while open and turns up once the bar is folded to its head. */
+.foot-bar-fold {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 32px;
+  margin-left: -0.35rem;
+  padding: 0 0.35rem;
+  border: 0;
+  border-radius: var(--radius-badge);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.foot-bar-fold svg { color: var(--text-muted); transition: transform 0.15s ease; }
+.foot-bar-fold:hover svg { color: var(--text-primary); }
+.foot-bar-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.foot-bar--folded .foot-bar-fold svg { transform: rotate(180deg); }
+.foot-bar--folded { padding-bottom: 0.4rem; }
+
+/* Stars and boxes slide open from under the head line: the row animates from
+   0fr to 1fr so the bar grows by exactly its content's height. */
+.foot-bar-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows 0.32s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.24s ease;
+}
+/* The 4px pad keeps focus rings and the stars' -4px nudge clear of the clip. */
+.foot-bar-body-inner { min-height: 0; overflow: hidden; padding: 4px; margin: -4px; }
+.foot-bar--folded .foot-bar-body { grid-template-rows: 0fr; opacity: 0; }
 .foot-bar-hint { font-size: 0.75rem; color: var(--text-muted); }
 .foot-bar-head-end { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
 
@@ -271,4 +305,6 @@
 @media (prefers-reduced-motion: reduce) {
   .foot-bar-drain { animation: none; }
   .foot-bar--sheet .foot-bar-surface { animation: none; }
+  .foot-bar-fold svg { transition: none; }
+  .foot-bar-body { transition: none; }
 }

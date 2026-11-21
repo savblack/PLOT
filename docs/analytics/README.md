@@ -631,6 +631,7 @@ The Episode alerts card on a followed TV show's title panel.
 | `episode_alerts_toggled` | The switch changed and the write landed, or the first-episode prompt was accepted | `tmdb_id`, `on` (the new state) |
 | `episode_alert_setting_changed` | One of the two Episode alerts switches in Settings changed and the write landed | `setting`: `in_app` or `phone`; `on` (the new state). A failed save sends `action_failed` with `action: episode_alert_setting` instead |
 | `title_calendar_action` | Add to calendar was used | `action`: `subscribe` (feed link copied), `subscribe_setup` (sent to Settings to make a link), `upgrade` (Free, sent to Plans), `download` (.ics, with `count` of events) |
+| `title_foot_bar_folded` | The title panel's foot bar (Watched it? / Thoughts?) was folded or opened by hand from its head line. The bar opens itself once the panel scrolls a little; that automatic open sends nothing | `folded` (the new state), `watched` (the title's state) |
 
 Muting is free and is stored in `episode_alert_mutes`; the daily
 new-episode job skips muted followers, so a show turned off produces no

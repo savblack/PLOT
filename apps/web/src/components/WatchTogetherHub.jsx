@@ -65,7 +65,6 @@ function InviteCard({ link }) {
   const waiting = !!sharedAt;
   return (
     <section className="hist-card wth-main-card" aria-labelledby="wth-card-title">
-      <span className="wth-ghost" aria-hidden="true">{waiting ? '…' : '+'}</span>
       <h2 className="wth-main-title" id="wth-card-title">{waiting ? H.waitingTitle : H.inviteLead}</h2>
       <p className="wth-body">{waiting ? H.sharedOn(sharedOnDate(sharedAt)) : H.inviteLeadBody}</p>
       {!waiting && (

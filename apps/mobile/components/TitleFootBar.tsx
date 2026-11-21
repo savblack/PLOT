@@ -12,12 +12,12 @@
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  AccessibilityInfo, Animated, Easing, KeyboardAvoidingView, Platform, Pressable,
+  AccessibilityInfo, Animated, Easing, KeyboardAvoidingView, LayoutAnimation, Platform, Pressable,
   ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { TextInput } from './TextInput';
 import Svg, { Path, Polygon, Rect } from 'react-native-svg';
-import { IconCheck, IconPlus } from './icons';
+import { IconCheck, IconChevronDown, IconChevronUp, IconPlus } from './icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTitleFootBar, UNDO_MS, type FootBarField } from '@plot/core/useTitleFootBar.js';
@@ -31,6 +31,7 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { fontFamily, fontSize, radii, spacing, type Palette } from '../lib/tokens';
 import { clearPendingRate, noteWatchedUnrated } from '../lib/ratePrompt';
+import { track, EVENTS } from '../lib/analytics';
 import Stars from './Stars';
 import Button, { TextLink } from './Button';
 import { Tag } from './Chip';
@@ -82,6 +83,8 @@ export type TitleFootBarProps = {
   onUndoWatched: () => Promise<boolean>;
   onRate: (rating: number) => Promise<boolean>;
   onSaveReview: (fields: { note: string | null; watchedAt: string }) => Promise<boolean>;
+  /** The panel has scrolled FOOT_BAR_REVEAL_SCROLL, or is too short to; opens a folded bar. */
+  revealed?: boolean;
 };
 
 export default function TitleFootBar(props: TitleFootBarProps) {
@@ -89,13 +92,22 @@ export default function TitleFootBar(props: TitleFootBarProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  // The fold slides like CollapsibleSection does, unless Reduce Motion is on.
+  const reduceMotion = useRef(false);
+  useEffect(() => {
+    let alive = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((on) => { if (alive) reduceMotion.current = on; });
+    return () => { alive = false; };
+  }, []);
   const bar = useTitleFootBar({
     itemId: props.itemId, itemType, title: props.title, watched, rating, review: props.review, watchedAt,
     privateNotes: props.privateNotes, hasUser: props.hasUser,
     onMarkWatched: props.onMarkWatched, onUndoWatched: props.onUndoWatched, onRate: props.onRate, onSaveReview: props.onSaveReview,
+    revealed: props.revealed,
+    beforeFoldChange: () => { if (!reduceMotion.current) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); },
   });
   const {
-    editing, fresh, saving, error, status, focusField, showNote, noteEditor, savedNote,
+    editing, fresh, saving, error, status, focusField, showNote, folded, noteEditor, savedNote,
     reviewText, dateValue, noteDraft, reviewIsDraft, reviewShown, noteIsDraft, noteShown,
     remaining, reviewDirty, noteDirty, noteTooLong,
   } = bar;
@@ -145,6 +157,10 @@ export default function TitleFootBar(props: TitleFootBarProps) {
   const chipLabel = fresh ? FOOT.watchedJustNow : dnf ? MEDIA_PANEL.didntFinish : FOOT.watchedOn(formatWatchedOn(watchedAt));
   const audience = isPublicProfile ? FOOT.reviewAudiencePublic : FOOT.reviewAudiencePrivate;
   const noteBusy = noteEditor.busy;
+  const toggleFolded = () => {
+    track(EVENTS.TITLE_FOOT_BAR_FOLDED, { folded: bar.toggleFolded(), watched: !!watched });
+  };
+  const headTitle = watched ? FOOT.head : FOOT.unwatchedHead;
 
   const box = (kind: 'review' | 'private', label: string, icon: ReactNode, text: string, draft: boolean, empty: string, a11yEmpty: string, a11yFilled: string, field: 'review' | 'note') => {
     const filled = !!text;
@@ -181,8 +197,18 @@ export default function TitleFootBar(props: TitleFootBarProps) {
     <>
       <View style={styles.bar}>
         <View style={styles.head}>
-          <Text style={styles.title}>{watched ? FOOT.head : FOOT.unwatchedHead}</Text>
-          {!watched && <Text style={styles.hint}>{FOOT.unwatchedHint}</Text>}
+          <TouchableOpacity
+            onPress={toggleFolded}
+            accessibilityRole="button"
+            accessibilityLabel={`${headTitle} ${folded ? FOOT.showMore : FOOT.showLess}`}
+            accessibilityState={{ expanded: !folded }}
+            hitSlop={{ top: 8, bottom: 8 }}
+            style={styles.fold}
+          >
+            <Text style={styles.title}>{headTitle}</Text>
+            {folded ? <IconChevronUp size={16} color={colors.textMuted} /> : <IconChevronDown size={16} color={colors.textMuted} />}
+          </TouchableOpacity>
+          {!watched && !folded && <Text style={styles.hint}>{FOOT.unwatchedHint}</Text>}
           {watched && (
             <View style={styles.headEnd}>
               {fresh && (
@@ -203,6 +229,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
           )}
         </View>
 
+        {!folded && (<>
         <View style={styles.main}>
           {ratingRow}
           {!watched && (
@@ -222,6 +249,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
             {showNote && box('private', FOOT.noteLabel, <LockIcon color={colors.textMuted} />, noteShown, noteIsDraft, FOOT.noteEmpty, FOOT.addNote, FOOT.editNote, 'note')}
           </View>
         )}
+        </>)}
 
         {fresh && !editing && (
           <Animated.View style={[styles.drain, { width: drain.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
@@ -361,6 +389,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, minHeight: 44, paddingTop: 4 },
   title: { fontFamily: fontFamily.sansBold, fontSize: fontSize.md, color: colors.textPrimary },
+  // The head line's question is also the fold control; the chevron shows which way it goes.
+  fold: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 32 },
   hint: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   headEnd: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   chip: {

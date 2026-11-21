@@ -88,10 +88,14 @@ export default function NavGlyph({ name, color }: { name: NavIconName; color: st
     case 'new-releases':
       return (
         <Glyph color={color}>
-          <Path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />
-          <Path d="m6.2 5.3 3.1 3.9" />
-          <Path d="m12.4 3.4 3.1 4" />
-          <Path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+          <Path d="M12 2v4" />
+          <Path d="m16.2 7.8 2.9-2.9" />
+          <Path d="M18 12h4" />
+          <Path d="m16.2 16.2 2.9 2.9" />
+          <Path d="M12 18v4" />
+          <Path d="m4.9 19.1 2.9-2.9" />
+          <Path d="M2 12h4" />
+          <Path d="m4.9 4.9 2.9 2.9" />
         </Glyph>
       );
     case 'tonight':
