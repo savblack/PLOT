@@ -63,10 +63,12 @@ export const DROPS = {
   inTheatersOn: 'In theaters {date}',
 };
 
-// Bring your history: the import sources the app supports today.
+// Bring your history. The app imports from more sources than this (TV Time,
+// IMDb, Simkl, Plex too); these four are the ones the site names, the same
+// four as about.js. Change both together.
 export const IMPORT = {
   headline: 'Bring your whole history with you.',
-  body: 'Coming from Letterboxd, Trakt, TV Time or IMDb? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.',
+  body: 'Coming from Letterboxd, Trakt, Netflix or TMDB? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.',
   cardTitle: 'Your watch history',
   cardSub: 'All of it, in one place',
   // Sample result on the card (illustrative).

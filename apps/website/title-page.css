@@ -165,6 +165,8 @@ nav.topnav.nav-open {
 }
 nav.topnav.scrolled,
 nav.topnav.nav-open { top: 14px; }
+/* Once the page scrolls, the pill goes near-solid so headings sliding under it don't show through (Nov 2026 critique). Keep in sync with /nav.css. */
+nav.topnav.scrolled { background: rgba(var(--card-rgb), 0.97); }
 nav.topnav .nav-links { gap: 1.25rem; }
 nav.topnav .nav-links a,
 nav.topnav .nav-logo { white-space: nowrap; }

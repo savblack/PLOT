@@ -165,6 +165,10 @@ nav.scrolled {
 }
 #navbar.scrolled,
 #navbar.nav-open { top: 14px; }
+/* Once the page scrolls, the pill goes near-solid so headings sliding under it don't show through (Nov 2026 critique). */
+#navbar.scrolled { background: var(--glass-solid, rgba(255, 250, 243, 0.97)); }
+/* In-page links (#faq and the like) land below the pill, not under it. */
+html { scroll-padding-top: 88px; }
 #navbar .nav-links { gap: 1.25rem; }
 #navbar .nav-links a,
 #navbar .nav-logo { white-space: nowrap; }

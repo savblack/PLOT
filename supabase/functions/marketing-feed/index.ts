@@ -208,6 +208,8 @@ type FeedPost = {
     // Countdowns: days from the post's scheduled date to the title's release
     // (marketing/planner/triggers/countdown.mjs posts at T-14, T-7 and T-1).
     days_until?: number | null;
+    // Countdowns planned from 2026-11-21 on carry the release date itself.
+    release_date?: string | null;
   } | null;
 };
 
@@ -576,6 +578,8 @@ ${head}
   }
   nav.topnav.scrolled,
   nav.topnav.nav-open { top: 14px; }
+  /* Once the page scrolls, the pill goes near-solid so headings sliding under it don't show through (Nov 2026 critique). Keep in sync with /nav.css. */
+  nav.topnav.scrolled { background: rgba(var(--card-rgb), 0.97); }
   nav.topnav .nav-links { gap: 1.25rem; }
   nav.topnav .nav-links a,
   nav.topnav .nav-logo { white-space: nowrap; }
@@ -1247,10 +1251,34 @@ const trendingTeaser = (items: ChartItem[], prior: ChartItem[] | null) => `<ol c
   </a></li>`;
 }).join('')}</ol>`;
 
-// A countdown's release date: its scheduled day plus payload.days_until (the
-// planner posts at T-14, T-7 and T-1). Null for a post without the field.
+// A countdown's release date, in order of trust:
+// 1. payload.release_date (stored by the planner since 2026-11-21);
+// 2. the date in payload.when_label, which is what the headline says. Older
+//    posts lack 1, and their days_until was counted from the planning day, so
+//    a post that went out later showed a badge days after its own headline
+//    ("NOV 23" beside "opens Friday, November 20"). The label has no year when
+//    it's the planning year; take the scheduled day's year, rolling into the
+//    next one when the month is behind it (a January release posted in December);
+// 3. the scheduled day plus days_until. Null when none of these is usable.
 const DAY_MS = 86_400_000;
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const LABEL_DATE = /\b(January|February|March|April|May|June|July|August|September|October|November|December) (\d{1,2})(?:, (\d{4}))?\b/;
+const labelRelease = (label: string | null | undefined, scheduled: string): string | null => {
+  const m = LABEL_DATE.exec(usDateLabel(label));
+  if (!m) return null;
+  const month = MONTHS.indexOf(m[1]);
+  const posted = new Date(`${scheduled.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(posted.getTime())) return null;
+  let year = m[3] ? Number(m[3]) : posted.getUTCFullYear();
+  if (!m[3] && month < posted.getUTCMonth()) year += 1;
+  const d = new Date(Date.UTC(year, month, Number(m[2])));
+  return d.getUTCMonth() === month ? d.toISOString().slice(0, 10) : null;
+};
 const countdownRelease = (p: FeedPost): string | null => {
+  const stored = p.payload?.release_date;
+  if (typeof stored === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(stored)) return stored;
+  const fromLabel = labelRelease(p.payload?.when_label, p.scheduled_for);
+  if (fromLabel) return fromLabel;
   const days = p.payload?.days_until;
   if (typeof days !== 'number' || !Number.isFinite(days)) return null;
   const start = Date.parse(p.scheduled_for.slice(0, 10));
