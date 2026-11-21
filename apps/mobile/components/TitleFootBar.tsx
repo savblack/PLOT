@@ -31,7 +31,6 @@ import { COMMON } from '@plot/core/copy/common.js';
 import { useTheme } from '../contexts/ThemeContext';
 import { fontFamily, fontSize, radii, spacing, type Palette } from '../lib/tokens';
 import { clearPendingRate, noteWatchedUnrated } from '../lib/ratePrompt';
-import { track, EVENTS } from '../lib/analytics';
 import Stars from './Stars';
 import Button, { TextLink } from './Button';
 import { Tag } from './Chip';
@@ -85,6 +84,12 @@ export type TitleFootBarProps = {
   onSaveReview: (fields: { note: string | null; watchedAt: string }) => Promise<boolean>;
   /** The panel has scrolled FOOT_BAR_REVEAL_SCROLL, or is too short to; opens a folded bar. */
   revealed?: boolean;
+  /**
+   * The head line folded or opened the bar by hand. The panel sends the
+   * analytics event: lib/analytics pulls native Expo modules that the web
+   * Storybook build of this component cannot resolve.
+   */
+  onFoldToggled?: (folded: boolean) => void;
 };
 
 export default function TitleFootBar(props: TitleFootBarProps) {
@@ -158,7 +163,7 @@ export default function TitleFootBar(props: TitleFootBarProps) {
   const audience = isPublicProfile ? FOOT.reviewAudiencePublic : FOOT.reviewAudiencePrivate;
   const noteBusy = noteEditor.busy;
   const toggleFolded = () => {
-    track(EVENTS.TITLE_FOOT_BAR_FOLDED, { folded: bar.toggleFolded(), watched: !!watched });
+    props.onFoldToggled?.(bar.toggleFolded());
   };
   const headTitle = watched ? FOOT.head : FOOT.unwatchedHead;
 

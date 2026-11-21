@@ -1809,6 +1809,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
             hasUser={!!userId}
             privateNotes={privateNotes}
             revealed={footRevealed}
+            onFoldToggled={(folded) => track(EVENTS.TITLE_FOOT_BAR_FOLDED, { folded, watched: !!watched })}
             onMarkWatched={footMarkWatched}
             onStartWatching={footStartWatching}
             onUndoWatched={footUndoWatched}
