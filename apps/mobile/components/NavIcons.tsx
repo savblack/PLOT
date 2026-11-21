@@ -12,6 +12,7 @@ export type NavIconName =
   | 'calendar'
   | 'lists'
   | 'history'
+  | 'insights'
   | 'guide'
   | 'new-releases'
   | 'tonight'
@@ -143,6 +144,15 @@ export default function NavGlyph({ name, color }: { name: NavIconName; color: st
           <Path d="M3 13a2 2 0 0 1 4 0v1h10v-1a2 2 0 0 1 4 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <Path d="M6 19v2" />
           <Path d="M18 19v2" />
+        </Glyph>
+      );
+    // Three rising bars; same strokes as IconInsights on web.
+    case 'insights':
+      return (
+        <Glyph color={color}>
+          <Path d="M6 20v-6" />
+          <Path d="M12 20V10" />
+          <Path d="M18 20V4" />
         </Glyph>
       );
     // Two overlapping circles; same strokes as IconCompare on web.

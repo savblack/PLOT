@@ -7,7 +7,7 @@ import { SHOW_PRICING_PAGE, SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 import { GUIDE_ENABLED } from '@plot/core/features.js';
 import {
   loadDiscoverView, loadTonightView, loadGuideView, loadCalendarView, loadMyListsView,
-  loadHistoryView, loadListPage, loadSearchView, loadSettingsView,
+  loadHistoryView, loadInsightsView, loadListPage, loadSearchView, loadSettingsView,
 } from './routeChunks.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
@@ -33,6 +33,7 @@ const GuideView   = lazy(loadGuideView);
 const CalendarView= lazy(loadCalendarView);
 const MyListsView   = lazy(loadMyListsView);
 const HistoryView   = lazy(loadHistoryView);
+const InsightsView  = lazy(loadInsightsView);
 const ListPage      = lazy(loadListPage);
 const SearchView  = lazy(loadSearchView);
 const TonightView = lazy(loadTonightView);
@@ -163,6 +164,7 @@ const router = createBrowserRouter([
       { path: 'watching', element: <Navigate to="/my-lists" replace /> },
       { path: 'list',     element: <Navigate to="/my-lists" replace /> },
       { path: 'history',  element: wrap(<HistoryView />) },
+      { path: 'insights', element: wrap(<InsightsView />) },
       { path: 'my-lists', element: wrap(<MyListsView />) },
       { path: 'my-lists/:key', element: wrap(<ListPage />) },
       { path: 'search',   element: wrap(<SearchView />) },

@@ -42,6 +42,7 @@ const NAV_ITEMS: { id: string; label: string; path: string; icon: NavIconName; p
   { id: 'calendar', label: 'Calendar',              path: '/(app)/calendar', icon: 'calendar' },
   { id: 'my-lists', label: 'My Lists',              path: '/(app)/my-lists', icon: 'lists' },
   { id: 'history',  label: titleForView('history'), path: '/(app)/history',  icon: 'history' },
+  { id: 'insights', label: titleForView('insights'), path: '/(app)/insights', icon: 'insights' },
   { id: 'guide',    label: titleForView('guide'),   path: '/(app)/guide',    icon: 'guide' },
   { id: 'tonight',  label: titleForView('tonight'), path: '/(app)/tonight',  icon: 'tonight', premium: true },
   ...(SHOW_WATCH_TOGETHER ? [{ id: 'together', label: titleForView('together'), path: '/(app)/together', icon: 'together' as const, premium: true }] : []),

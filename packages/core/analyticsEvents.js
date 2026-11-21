@@ -89,6 +89,10 @@ export const EVENTS = Object.freeze({
   // behind it. Carries { stat: 'titles' | 'genre' | 'weekday', source }.
   // Fires only once the filtered list is on screen. Tier 1 at most.
   HISTORY_STAT_DRILLDOWN: 'history_stat_drilldown',
+  // The Insights page opened with something to show (not the empty state).
+  // Carries { premium: boolean, source: 'web' | 'mobile' }. Fires once per
+  // visit, on both apps, from insightsOpenedProps in @plot/core/insights.js.
+  INSIGHTS_OPENED: 'insights_opened',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_REDIRECT_ATTEMPTED: 'premium_checkout_redirect_attempted',
@@ -107,7 +111,7 @@ export const EVENTS = Object.freeze({
   PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
   // The empty-library nudge (activationNudge.js). All carry { surface:
-  // 'home' | 'history' }; import_clicked also carries { source } (an import
+  // 'home' | 'history' | 'insights' }; import_clicked also carries { source } (an import
   // page platform id such as 'trakt'). Shown once per mount while the account
   // has no titles.
   ACTIVATION_NUDGE_SHOWN: 'activation_nudge_shown',
