@@ -30,6 +30,14 @@ Savannah: decide whether to open a pull request for it.
   On feed, the title pages (`pnpm run title-renderer` regenerated
   `titleRenderer.generated.js`) and `apps/website/copy/common.js` NAV.signup.
   `data-cta="nav"` is unchanged, so PostHog counts it the same way.
+- What's On and title-page nav links raised from 0.7rem to 0.8rem to match
+  nav.css (#1776 raised nav.css but missed the two copies).
+- Title pages: title-page.css version tag bumped to its new hash (402082575e09,
+  first 12 of SHA-256, set by hand) and TITLE_CACHE_VERSION 3 -> 4 so cached
+  pages pick up the new menu. What's On has no version key; its cache
+  (1h + 1 day stale) clears on its own.
+- Checked a title page locally (/movie/the-odyssey-1368337, slug from the
+  sitemap): Sign up, 12.8px links, pill 34px with 9px insets.
 - `pnpm run footer` restamped the `nav.css?v=` tags on every page.
 - Measured in the browser at 1280px: pill 34px, 9px top/bottom/right, label
   inset 15.4px each side. Phone menu unchanged.
@@ -50,9 +58,7 @@ Savannah: decide whether to open a pull request for it.
 
 ## Next
 
-Check the What's On feed and a title page
-in the Cloudflare preview (they could not be served locally). Delete this file in the last commit
+Check the What's On feed in the Cloudflare preview (it could not be served
+locally; title pages were checked). Delete this file in the last commit
 before merge.
 
-Noticed, not changed: the What's On feed and title pages use 0.7rem nav links;
-the rest of the site uses 0.8rem, though nav.css says they match.

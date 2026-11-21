@@ -7,8 +7,9 @@ import { cacheable, keep, lookup, tagged } from './edgeCache.js';
 import { FOOTER_HTML } from './footer.generated.js';
 import { renderTitlePage } from './titleRenderer.generated.js';
 
-// Bumped 2026-10-16 so cached pages stop pointing at Supabase title cards.
-export const TITLE_CACHE_VERSION = 3;
+// Bumped 2026-11-21 so cached pages pick up the nav's Sign up label and the
+// new title-page.css version.
+export const TITLE_CACHE_VERSION = 4;
 
 export { cacheable };
 

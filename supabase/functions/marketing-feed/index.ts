@@ -530,7 +530,7 @@ ${head}
   .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
   .nav-links li { display: flex; }
   /* Small tracked capitals: the same values as apps/website/nav.css. */
-  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s, background 0.2s; }
+  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s, background 0.2s; }
   .nav-links a:hover { color: var(--ink); }
   .nav-links .nav-more { display: none; }
   .nav-links a.current { color: var(--ink); }
