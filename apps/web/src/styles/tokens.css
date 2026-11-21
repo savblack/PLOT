@@ -135,7 +135,6 @@
 
   /* Motion */
   --ease:           cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-bounce:    cubic-bezier(0.34, 1.56, 0.64, 1);
   --transition:     all 0.3s var(--ease);
   --transition-fast: all 0.15s ease;
 

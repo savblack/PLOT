@@ -1397,15 +1397,16 @@ export default function SettingsScreen() {
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={4}/><Path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></Svg>}
             label={A.label}
             trailing={
-              <View style={styles.themeTabs} accessibilityRole="tablist">
+              // One choice of three, so a radio group (as on web), not tabs.
+              <View style={styles.themeTabs} accessibilityRole="radiogroup">
                 {THEME_MODES.map(t => (
                   <TouchableOpacity
                     key={t}
                     style={[styles.themeTab, mode === t && styles.themeTabActive]}
                     onPress={() => setMode(t)}
                     activeOpacity={0.7}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: mode === t }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: mode === t }}
                   >
                     <Text style={[styles.themeTabText, mode === t && styles.themeTabTextActive]}>{A.modes[t]}</Text>
                   </TouchableOpacity>

@@ -109,7 +109,13 @@ export default function CalendarView() {
   // it doesn't flash the wrong words.
   const hasTitles = watchlist.items.length > 0 || watching.items.length > 0 || reminders.reminders.length > 0;
   const suggestState = !listsReady || myLoading ? null : !hasTitles ? 'start' : hasAnyEvents ? 'more' : 'quiet';
-  const suggestCard = suggestState ? <CalendarSuggestCard state={suggestState} onOpen={openSuggest} /> : null;
+  // One message, not two (Nov 20): while My dates is empty its own empty
+  // state carries the card's words and button, so the side card doesn't say
+  // something different beside it. The card is for My dates only; All
+  // releases is the feed you add from.
+  const calendarEmpty = suggestState === 'start' || suggestState === 'quiet';
+  const suggestCard = view === 'mine' && suggestState === 'more' ? <CalendarSuggestCard state={suggestState} onOpen={openSuggest} /> : null;
+  const emptyCopy = calendarEmpty ? CALENDAR_VIEW.suggestCard[suggestState] : null;
 
   /* ── All releases ── */
   const { loading: allLoading, days: releaseDays, feedEmpty, providerLogos } = useFilteredUpcoming({ typeFilters, genreFilters });
@@ -215,7 +221,10 @@ export default function CalendarView() {
               loading={myLoading}
               empty={hasAnyEvents && filtered
                 ? <EmptyState title={CALENDAR_VIEW.empty.filtered} body={CALENDAR_VIEW.empty.filteredBody} />
-                : <EmptyState title={CALENDAR_VIEW.empty.title} body={CALENDAR_VIEW.empty.body} />}
+                : emptyCopy
+                  ? <EmptyState title={emptyCopy.title} body={emptyCopy.body}
+                      action={<button type="button" className="btn btn-secondary btn-sm" onClick={openSuggest}>{emptyCopy.action}</button>} />
+                  : <EmptyState title={CALENDAR_VIEW.empty.title} body={CALENDAR_VIEW.empty.body} />}
               renderDay={(day) => <CalendarEventRows day={day} openPanel={openPanel} />}
             />
           ) : (
