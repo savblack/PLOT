@@ -6,16 +6,19 @@ import { TV_KEYWORD_GENRES, tvKeywordIds } from './keywordGenres.js';
 const hasPoster = item => !!item.poster_path;
 const MIN_RAIL_SIZE = 14;
 
-// TV genres that are a broader version of one movie genre: the movie genre
-// joins the TV rail, under the TV name, so New Releases doesn't show "Action"
-// and "Action & Adventure" as two rows (UI critique, Nov 19).
-const TV_GENRE_JOINS = Object.freeze({ 10759: 28, 10765: 878, 10768: 10752 });
+// TV genres that are a broader version of movie genres: those movie genres
+// join the TV rail, under the TV name, so New Releases doesn't show "Action",
+// "Adventure" and "Action & Adventure" as three rows (UI critiques, Nov 19
+// and Nov 20: "Adventure" was still its own row, repeating the same films).
+const TV_GENRE_JOINS = Object.freeze({ 10759: [28, 12], 10765: [878, 14], 10768: [10752] });
 
 /**
  * Build one rail for every genre returned by TMDB. Movie and TV catalogs are
  * joined when the name is shared, and when a TV genre is the broader version
- * of a movie genre (TV_GENRE_JOINS): Action joins Action & Adventure, Science
- * Fiction joins Sci-Fi & Fantasy, War joins War & Politics.
+ * of movie genres (TV_GENRE_JOINS): Action and Adventure join Action &
+ * Adventure, Science Fiction and Fantasy join Sci-Fi & Fantasy, War joins War
+ * & Politics. A joined rail queries all its movie genres at once
+ * (`movieGenreIds`, OR'd); `movieGenreId` stays the first of them.
  *
  * @param {{movie?:Array<{id:number,name:string}>,tv?:Array<{id:number,name:string}>}} catalog
  */
@@ -27,12 +30,13 @@ export function buildGenreRailDefinitions(catalog) {
       label: `New in ${genre.name}`,
       genreIds: [],
     };
-    existing[`${type}GenreId`] = genre.id;
+    if (type === 'movie' && existing.movieGenreId) existing.movieGenreIds = [...(existing.movieGenreIds || [existing.movieGenreId]), genre.id];
+    else existing[`${type}GenreId`] = genre.id;
     if (!existing.genreIds.includes(genre.id)) existing.genreIds.push(genre.id);
     rails.set(genre.name, existing);
   };
   const tvGenres = catalog?.tv || [];
-  const joinedInto = new Map(tvGenres.filter(g => TV_GENRE_JOINS[g.id]).map(g => [TV_GENRE_JOINS[g.id], g]));
+  const joinedInto = new Map(tvGenres.filter(g => TV_GENRE_JOINS[g.id]).flatMap(g => TV_GENRE_JOINS[g.id].map(movieId => [movieId, g])));
   (catalog?.movie || []).forEach(genre => {
     const tv = joinedInto.get(genre.id);
     add(tv ? { ...genre, name: tv.name } : genre, 'movie');
@@ -97,9 +101,11 @@ async function newestTvByKeywordGenre(movieGenreId, client) {
   return ids.length ? client.discoverNewestByKeyword('tv', ids.join('|')) : null;
 }
 
-async function loadGenreRail({ movieGenreId, tvGenreId, tvKeywordGenre }, hideKids, client = tmdb) {
+async function loadGenreRail({ movieGenreId, movieGenreIds, tvGenreId, tvKeywordGenre }, hideKids, client = tmdb) {
+  // Pipe is OR in TMDB: a joined rail's films are in any of its movie genres.
+  const movieQuery = movieGenreIds?.length ? movieGenreIds.join('|') : movieGenreId;
   const [movieGenreRes, tvGenreRes] = await Promise.all([
-    movieGenreId ? client.discoverNewestByGenre('movie', movieGenreId).catch(() => null) : Promise.resolve(null),
+    movieQuery ? client.discoverNewestByGenre('movie', movieQuery).catch(() => null) : Promise.resolve(null),
     tvGenreId ? client.discoverNewestByGenre('tv', tvGenreId).catch(() => null)
       : tvKeywordGenre ? newestTvByKeywordGenre(tvKeywordGenre, client).catch(() => null)
       : Promise.resolve(null),

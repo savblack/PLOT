@@ -342,7 +342,6 @@
 .ds-fake-subtabs,
 .ds-fake-filterbar,
 .ds-fake-rail-header,
-.ds-fake-date-group,
 .ds-fake-epg-days,
 .ds-fake-progress,
 .ds-fake-calendar-nav,
@@ -369,14 +368,6 @@
 .ds-fake-rail-header {
   margin: 0;
   padding: 0.8rem 1rem;
-}
-
-.ds-fake-date-group {
-  border-left: 3px solid var(--accent);
-}
-
-.ds-fake-date-group:hover {
-  background: var(--surface);
 }
 
 .ds-fake-epg-days {

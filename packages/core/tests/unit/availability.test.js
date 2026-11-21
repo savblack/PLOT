@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { offersFromTmdb, formatOfferPrice, fetchVerifiedAvailability, networksFromDetails, regionDisplayName } from '../../availability.js';
+import { offersFromTmdb, formatOfferPrice, fetchVerifiedAvailability, networksFromDetails, regionDisplayName, _resetVerifiedAvailability } from '../../availability.js';
 import { configure } from '../../config.js';
 
 const originalFetch = globalThis.fetch;
 
 test.afterEach(() => {
   globalThis.fetch = originalFetch;
+  _resetVerifiedAvailability();
   configure({ watchAvailabilityUrl: '', supabaseAnonKey: '' });
 });
 
@@ -131,4 +132,28 @@ test('regionDisplayName spells out a region code', () => {
 test('regionDisplayName rejects anything that is not a two-letter code', () => {
   assert.equal(regionDisplayName(null), null);
   assert.equal(regionDisplayName('australia'), null);
+});
+
+test('fetchVerifiedAvailability stops asking once the server says the partner is not configured', async () => {
+  configure({ watchAvailabilityUrl: 'https://example.test/avail' });
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return { ok: false, status: 503, json: async () => ({ configured: false, offers: [] }) };
+  };
+  assert.equal(await fetchVerifiedAvailability({ tmdbId: 1, mediaType: 'movie', region: 'US' }), null);
+  assert.equal(await fetchVerifiedAvailability({ tmdbId: 2, mediaType: 'movie', region: 'US' }), null);
+  assert.equal(calls, 1);
+});
+
+test('fetchVerifiedAvailability keeps asking after other failures', async () => {
+  configure({ watchAvailabilityUrl: 'https://example.test/avail' });
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return { ok: false, status: 503, json: async () => ({ error: 'upstream' }) };
+  };
+  await fetchVerifiedAvailability({ tmdbId: 1, mediaType: 'movie', region: 'US' });
+  await fetchVerifiedAvailability({ tmdbId: 2, mediaType: 'movie', region: 'US' });
+  assert.equal(calls, 2);
 });

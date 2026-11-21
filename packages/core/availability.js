@@ -39,6 +39,12 @@ export function formatOfferPrice(price, currency, locale = 'en-AU') {
   }
 }
 
+// Set once the server says the partner integration isn't set up.
+let partnerNotConfigured = false;
+
+/** Tests only: forget a "not configured" answer. */
+export function _resetVerifiedAvailability() { partnerNotConfigured = false; }
+
 /**
  * Fetch partner-verified offers by immutable TMDB id. Returns null when the
  * partner integration is not configured or temporarily unavailable so callers
@@ -48,7 +54,7 @@ export function formatOfferPrice(price, currency, locale = 'en-AU') {
  */
 export async function fetchVerifiedAvailability({ tmdbId, mediaType, region }) {
   const { watchAvailabilityUrl, supabaseAnonKey } = getConfig();
-  if (!watchAvailabilityUrl || !tmdbId || !region) return null;
+  if (!watchAvailabilityUrl || !tmdbId || !region || partnerNotConfigured) return null;
   try {
     const url = new URL(watchAvailabilityUrl);
     url.searchParams.set('tmdb_id', String(tmdbId));
@@ -57,7 +63,17 @@ export async function fetchVerifiedAvailability({ tmdbId, mediaType, region }) {
     const response = await fetch(url, {
       headers: supabaseAnonKey ? { Authorization: `Bearer ${supabaseAnonKey}`, apikey: supabaseAnonKey } : {},
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      // 503 with `configured: false` means the server has no partner token
+      // (the JustWatch partner API is paid and not in use), and won't for the
+      // rest of the visit. Stop asking: it was a failed request, and a console
+      // error, on every title opened (UI critique, Nov 20).
+      if (response.status === 503) {
+        const body = await response.json().catch(() => null);
+        if (body?.configured === false) partnerNotConfigured = true;
+      }
+      return null;
+    }
     const data = await response.json();
     return data?.title_verified === true && Array.isArray(data.offers) ? data : null;
   } catch {

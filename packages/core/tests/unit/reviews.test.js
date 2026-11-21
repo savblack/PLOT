@@ -269,3 +269,18 @@ test('pickAudienceQuote drops quote marks wrapping the whole review', () => {
   });
   assert.equal(result.text, 'Since it sent fans back to the books, this can only be a good thing.');
 });
+
+test('pickAudienceQuote skips reviews with hashtags', () => {
+  const result = pickAudienceQuote({
+    results: [
+      { content: 'Ships sail, gods sulk, a man walks home for years. #filmreviewhaiku #moviereviewhaiku', author: 'H', author_details: { rating: 9 } },
+      { content: 'A long, patient voyage that earns every one of its storms and its quiet homecoming.', author: 'Q', author_details: { rating: 8 } },
+    ],
+  });
+  assert.equal(result.author, 'Q');
+  // A number sign that isn't a hashtag still passes.
+  const ranked = pickAudienceQuote({
+    results: [{ content: 'Easily the #1 film of the year for me, and a great night out.', author: 'R', author_details: { rating: 8 } }],
+  });
+  assert.equal(ranked.author, 'R');
+});
