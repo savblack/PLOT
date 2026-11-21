@@ -72,7 +72,7 @@ function buildMonthDays(year: number, month: number) {
 // ── Event type colours ────────────────────────────────────────────────
 // The dots under a day in the Week and Month grids.
 const EVENT_COLORS = (colors: Palette): Record<string, string> => ({
-  episode:   colors.chipEpisode,
+  episode:   colors.accent, // web's .cal-mini-dot; indigo retired (Nov 2026)
   cinema:    colors.chipCinema,
   streaming: colors.chipStreaming,
 });
