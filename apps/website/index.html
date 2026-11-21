@@ -53,7 +53,7 @@
     }
   </script>
   <!-- End Google Tag Manager -->
-  <title>Plot | Movie &amp; TV Tracker</title>
+  <title>Plot · Movie &amp; TV Tracker</title>
   <meta name="description" content="Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <link rel="canonical" href="https://theplot.tv/" />
   <meta name="theme-color" content="#f8f2ea" media="(prefers-color-scheme: light)" />
@@ -71,7 +71,7 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Plot" />
-  <meta property="og:title" content="Plot | Movie &amp; TV Tracker" />
+  <meta property="og:title" content="Plot · Movie &amp; TV Tracker" />
   <meta property="og:description" content="Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
@@ -82,7 +82,7 @@
 
   <!-- Twitter / X card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Plot | Movie &amp; TV Tracker" />
+  <meta name="twitter:title" content="Plot · Movie &amp; TV Tracker" />
   <meta name="twitter:description" content="Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home." />
   <meta name="twitter:image" content="https://theplot.tv/og-image.png" />
 
@@ -404,7 +404,6 @@
       letter-spacing: -0.035em;
       color: var(--text);
     }
-    .mem-headline span { color: var(--accent); }
     .mem-mbreak { display: none; }
     .mem-sub {
       margin: 0 0 2.25rem;
@@ -1414,6 +1413,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     function titleKey(item) {
       return String((item && (item.title || item.name)) || '').trim().toLowerCase();
     }
+    // TMDB stores a few titles in capitals ("LA BOLA NEGRA"). Shown beside
+    // normally cased ones they shout, so a title with no lower-case letters and
+    // at least two words of three or more letters is recased. Short all-caps
+    // names (TÁR, M3GAN, ONE) are left as the studio styles them.
+    var SMALL_WORDS = { a: 1, an: 1, and: 1, as: 1, at: 1, but: 1, by: 1, 'for': 1, 'in': 1, of: 1, on: 1, or: 1, the: 1, to: 1, vs: 1 };
+    function displayTitle(item) {
+      var t = String((item && (item.title || item.name)) || '').trim();
+      if (/\p{Ll}/u.test(t) || (t.match(/\p{Lu}{3,}/gu) || []).length < 2) return t;
+      return t.toLowerCase().replace(/[\p{L}\p{N}']+/gu, function (w, i) {
+        return i > 0 && SMALL_WORDS[w] ? w : w.charAt(0).toUpperCase() + w.slice(1);
+      });
+    }
+    // Today as YYYY-MM-DD in the visitor's own time zone, to compare with
+    // TMDB's release_date strings.
+    function todayIso() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
     function unseen(items, seen) {
       return (items || []).filter(function (item) {
         var key = titleKey(item);
@@ -1524,7 +1541,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           var d = day(r.release_date);
           return withPoster(r) && d && d > today;
         }), heroSeen).sort(function (a, b) { return day(a.release_date) - day(b.release_date); });
-        var picks = future.slice(0, 3).map(function (r) {
+        // One film per day where there are enough, so three openings on the
+        // same date don't read as placeholder data; same-day films fill in after.
+        var byDay = {}, distinct = [], sameDay = [];
+        future.forEach(function (r) {
+          if (byDay[r.release_date]) sameDay.push(r);
+          else { byDay[r.release_date] = 1; distinct.push(r); }
+        });
+        future = distinct.concat(sameDay).slice(0, 3).sort(function (a, b) { return day(a.release_date) - day(b.release_date); });
+        var picks = future.map(function (r) {
           var d = day(r.release_date);
           return { r: r, dow: DOW[d.getDay()], date: String(d.getDate()), kind: 'In theaters ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) };
         });
@@ -1536,7 +1561,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           var chip = i < 2 ? '<span class="dr-chip is-saved">On your list</span>' : '<span class="dr-chip">+ Save</span>';
           return '<li class="dr-row"><span class="dr-date"><span class="dr-dow">' + p.dow + '</span><span class="dr-day">' + p.date + '</span></span>'
             + '<img class="dr-poster" src="' + esc(IMG + p.r.poster_path) + '" alt="" loading="lazy" decoding="async" width="44" height="66">'
-            + '<span class="dr-meta"><span class="dr-name">' + esc(p.r.title || p.r.name || '') + '</span><span class="dr-kind">' + esc(p.kind) + '</span></span>' + chip + '</li>';
+            + '<span class="dr-meta"><span class="dr-name">' + esc(displayTitle(p.r)) + '</span><span class="dr-kind">' + esc(p.kind) + '</span></span>' + chip + '</li>';
         }).join('');
       }).catch(function () {});
     })();
@@ -1690,15 +1715,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         // trending and in cinemas is listed once, under the first label that
         // claims it. Deduping before the slice keeps every group full length.
         const seen = {};
+        // TMDB's upcoming list also carries re-releases (The Departed, 2006);
+        // Coming Soon keeps only films whose own release date is still ahead.
+        const today = todayIso();
+        const ahead = { results: ((upcoming && upcoming.results) || []).filter(r => r.release_date && r.release_date > today) };
         const group = (label, res, count, mediaType) => ({
           label,
           items: unseen((res && res.results) || [], seen).slice(0, count)
-            .map(r => ({ title: r.title || r.name, href: titlePageUrl(r, mediaType) })),
+            .map(r => ({ title: displayTitle(r), href: titlePageUrl(r, mediaType) })),
         });
         populate([
           group('Trending Now', trending,   12),
           group('In Theaters',  nowPlaying, 10, 'movie'),
-          group('Coming Soon',  upcoming,   10, 'movie'),
+          group('Coming Soon',  ahead,      10, 'movie'),
           group('Top Rated TV', topTv,      10, 'tv'),
         ]);
       } catch (err) {
