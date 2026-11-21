@@ -1,6 +1,6 @@
 # Handoff: Progress menu Watched, folding foot bar, Watch Together circle, New Releases icon
 
-Status: paused (finished; waiting for Savannah to decide on a pull request)
+Status: paused (pull request open, waiting for review)
 Owner: Claude Code (desktop session), for Savannah
 Last updated: 2026-11-21
 
@@ -15,7 +15,7 @@ Four small changes to the title page and nav, asked for one after another:
 3. The dashed circle with a plus (or "…") on the Watch Together invite card is gone.
 4. New Releases in the nav uses an eight-ray burst icon instead of the clapperboard.
 
-Savannah needs to: decide whether to open the pull request.
+Savannah needs to: review the pull request and check the Cloudflare preview signed in.
 
 ## Record
 
@@ -32,4 +32,4 @@ Savannah needs to: decide whether to open the pull request.
   count unchanged (35 in MediaPanel.tsx before and after).
 - Seen in Storybook (web): foot bar folded on mount, opens itself, folds by hand; sidebar icon.
 - Not verified: the real title panel signed in (no Staging test login); the iPhone app.
-- Approvals still needed: opening the PR. Delete this file in the last commit before merge.
+- Approvals given: open the PR (Savannah, 2026-11-21). Still needed: merge. Delete this file in the last commit before merge.
