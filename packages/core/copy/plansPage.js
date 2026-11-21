@@ -10,6 +10,8 @@
 // where Apple allows a link out (purchaseLinkOut.js).
 // The 7-day trial is requested by the stripe-billing checkout, not set on the Stripe Price. It is for
 // new subscribers only. Do not put Stripe price IDs in this file.
+
+import { WATCH_TOGETHER } from './watchTogether.js';
 export const PLANS_PAGE = {
   back: 'Back',
   backToApp: 'Back to Plot',
@@ -88,7 +90,8 @@ export const PLANS_PAGE = {
   premiumIntro: 'Everything in Free, plus:',
   premiumCard: [
     { icon: 'pick', label: 'Decide', note: 'A shortlist for tonight, sized to your time and services' },
-    { icon: 'together', label: 'Find something you both want', note: 'The overlap in your watchlists' },
+    // The feature's own name, so the label fits on one line and matches the nav (Nov 21).
+    { icon: 'together', label: WATCH_TOGETHER.hub.title, note: 'The overlap in your watchlists' },
     { icon: 'lists', label: 'Unlimited and smart lists', note: 'Rules that keep finding matches' },
     { icon: 'stats', label: 'Deeper viewing stats', note: 'Beyond the Free overview' },
     { icon: 'customise', label: 'Customize your Plot', note: 'Every theme, in light and dark' },
