@@ -186,9 +186,17 @@ export const CustomListPageFilters = {
     const canvas = within(canvasElement);
     await expect(canvas.queryAllByText('Bluey').length).toBeGreaterThan(0);
 
-    // The filter column is display:none below 1024px, so look past that: this
-    // asserts the filter drives the list, not the breakpoint.
-    await fireEvent.click(canvas.getByRole('checkbox', { name: MEDIA.tv, hidden: true }));
+    // A short list has no side rail: its filters open from the toolbar's
+    // Filters button. That dropdown is display:none below 1024px, so look past
+    // that: this asserts the filter drives the list, not the breakpoint.
+    fireEvent.click(canvasElement.querySelector('.list-page-toolbar .guide-filter-btn'));
+    const menu = await waitFor(() => {
+      const el = canvasElement.querySelector('.list-page-toolbar .guide-filter-menu');
+      if (!el) throw new Error('filter menu not open');
+      return el;
+    });
+    await expect(canvasElement.querySelector('.list-page-side')).toBeNull();
+    await fireEvent.click(within(menu).getByRole('checkbox', { name: MEDIA.tv, hidden: true }));
     await waitFor(() => expect(canvas.queryAllByText('Bluey')).toHaveLength(0));
     await expect(canvas.queryAllByText('Paddington 2').length).toBeGreaterThan(0);
   },

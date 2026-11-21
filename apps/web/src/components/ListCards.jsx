@@ -1,51 +1,14 @@
-import { isTypeNarrowed, ALL_TYPES } from '@plot/core/mediaFilters.js';
-import GroupedFilterMenu from './GroupedFilterMenu.jsx';
-import { useGenres } from '../hooks/useGenres.js';
 import { isFinishedStatus } from '@plot/core/listWatchStatus.js';
 import { MEDIA } from '../copy/media.js';
 import { HISTORY_VIEW } from '../copy/historyView.js';
 import Icon from './Icon.jsx';
 
 /* Cards and chrome shared by My Lists and History. Both pages are the
-   viewer's own titles laid out as poster cards, so the card, the grid and the
-   type filter are written once here rather than once per page.
+   viewer's own titles laid out as poster cards, so the card and the grid are
+   written once here rather than once per page.
 
    Web-only by nature (DOM layout); the filtering itself is
    @plot/core/mediaFilters, which mobile already uses. */
-
-const TYPE_OPTIONS = [
-  { id: 'tv',     label: MEDIA.tv     },
-  { id: 'cinema', label: MEDIA.cinema },
-  { id: 'movie',  label: MEDIA.movies },
-];
-
-/* What the pill says: "All types · All genres" until something is narrowed,
-   then the chosen names (or a count once that gets long). Same wording as
-   Home's toolbar. */
-function filterSummary(typeFilters, genreFilters, genres) {
-  const types = isTypeNarrowed(typeFilters)
-    ? TYPE_OPTIONS.filter(o => typeFilters.includes(o.id)).map(o => o.label).join(', ')
-    : MEDIA.allTypes;
-  const picked = genres.filter(g => genreFilters.includes(g.id)).map(g => g.name);
-  const genreText = picked.length === 0 ? MEDIA.allGenres : picked.length <= 2 ? picked.join(', ') : `${picked.length} genres`;
-  return `${types} · ${genreText}`;
-}
-
-/* The labelled type + genre pill, the same control as Home's. */
-export function TypeGenreFilter({ ariaLabel, typeFilters, setTypeFilters, genreFilters, setGenreFilters, mobileControls = false }) {
-  const { genres } = useGenres();
-  return (
-    <GroupedFilterMenu
-      mobileControls={mobileControls}
-      ariaLabel={ariaLabel}
-      label={filterSummary(typeFilters, genreFilters, genres)}
-      groups={[
-        { heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes, options: TYPE_OPTIONS, value: typeFilters, onChange: setTypeFilters, defaultValue: ALL_TYPES },
-        { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, columns: 2, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, onChange: setGenreFilters },
-      ]}
-    />
-  );
-}
 
 /* Selection circle, top-right overlay used by every list's multi-select mode. */
 export function SelectCircle({ selected, variant = 'grid', onClick, label }) {
