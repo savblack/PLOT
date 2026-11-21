@@ -182,6 +182,7 @@ const router = createBrowserRouter([
         { path: 'together/pick', element: wrap(<WatchTogetherView page="pick" />) },
         { path: 'together/invite', element: wrap(<WatchTogetherView page="invite" />) },
         { path: 'together/with/:usernames', element: wrap(<WatchTogetherView page="with" />) },
+        { path: 'together/decide/:username', element: wrap(<WatchTogetherView page="mood" />) },
         { path: 'together/session/:sessionId', element: wrap(<WatchTogetherView page="session" />) },
         { path: 'together/join/:username', element: wrap(<WatchTogetherView page="join" />) },
         { path: 'watch-with/:username/:key', element: wrap(<WatchTogetherLinkPage />) },

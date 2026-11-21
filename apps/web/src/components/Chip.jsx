@@ -23,12 +23,13 @@ import './Chip.css';
  * @param {boolean} [props.quiet] chosen, but it is the row's "any": drawn like the
  *   segmented switch's chosen option, so the pink is left for a real choice
  * @param {import('react').ReactNode} [props.icon] a small glyph before the label
+ * @param {number} [props.count] how many results picking it would keep, after the label
  * @param {boolean} [props.disabled]
  * @param {'radio' | 'checkbox' | 'tab'} [props.role] one-of-many, any-of-many, or a tab row; plain buttons say pressed
  * @param {string} [props.ariaLabel]
  * @param {string} [props.className] outer spacing only
  */
-export default function Chip({ label, selected, onClick, size = 'md', quiet = false, icon, disabled = false, role, ariaLabel, className = '' }) {
+export default function Chip({ label, selected, onClick, size = 'md', quiet = false, icon, count, disabled = false, role, ariaLabel, className = '' }) {
   const on = selected === true;
   const state = selected === undefined
     ? {}
@@ -44,11 +45,12 @@ export default function Chip({ label, selected, onClick, size = 'md', quiet = fa
       className={`pick-chip pick-chip--${size}${on ? (quiet ? ' is-on is-quiet' : ' is-on') : ''}${className ? ` ${className}` : ''}`}
       onClick={onClick}
       disabled={disabled}
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? (count != null ? `${label} ${count}` : undefined)}
       {...state}
     >
       {icon}
       <span className="pick-chip-label">{label}</span>
+      {count != null && <span className="pick-chip-count">{count}</span>}
     </button>
   );
 }

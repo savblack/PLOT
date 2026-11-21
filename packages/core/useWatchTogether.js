@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
 import { reportActionFailure, FAILED_ACTIONS } from './actionFailures.js';
-import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey, trendingAsTitles, exampleTitlePool, saveIdeas, unlockedPartners, DEMO_SIZE } from './watchTogether.js';
+import { splitWatchTogether, watchTogetherErrorCode, sessionChannel, titleKey, trendingAsTitles, exampleTitlePool, saveIdeas, unlockedPartners, DEMO_SIZE, sessionFilterPayload, sessionStartProps } from './watchTogether.js';
 import { tmdb } from './tmdb.js';
 
 /**
@@ -315,10 +315,21 @@ export function useWatchTogetherSession(sessionId, { pollMs = 5000 } = {}) {
   return { session, error, loading, refresh, vote, end };
 }
 
-/** Start a session with a partner; resolves to the new session id or an error code. @param {string} otherId */
-export async function startWatchTogetherSession(otherId) {
-  const result = await call('start_watch_together_session', { p_other: otherId }, FAILED_ACTIONS.WATCH_TOGETHER_SESSION_START);
-  if (result.ok) reportWatchTogether('session_started');
+/**
+ * Start a session with a partner; resolves to the new session id or an error
+ * code. With a mood (the step before the cards), the deck is only the shared
+ * titles that fit, and the choice is kept on the session for both people.
+ *
+ * @param {string} otherId
+ * @param {{ choice: import('./watchTogether.js').MoodChoice, providerIds: number[], deckSize: number } | null} [mood]
+ */
+export async function startWatchTogetherSession(otherId, mood = null) {
+  const result = mood
+    ? await call('start_watch_together_session_filtered',
+      { p_other: otherId, p_filters: sessionFilterPayload(mood.choice, mood.providerIds) },
+      FAILED_ACTIONS.WATCH_TOGETHER_SESSION_START)
+    : await call('start_watch_together_session', { p_other: otherId }, FAILED_ACTIONS.WATCH_TOGETHER_SESSION_START);
+  if (result.ok) reportWatchTogether('session_started', sessionStartProps(mood?.choice, mood?.deckSize ?? 0));
   return result;
 }
 

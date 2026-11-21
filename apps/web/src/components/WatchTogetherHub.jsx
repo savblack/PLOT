@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { personName, hubStage, joinNames, sharedOnDate } from '@plot/core/watchTogether.js';
-import { useWatchTogetherTitles, useWatchTogetherExampleTitles, useSaveIdeas, startWatchTogetherSession, useUpgradeNews } from '@plot/core/useWatchTogether.js';
+import { useWatchTogetherTitles, useWatchTogetherExampleTitles, useSaveIdeas, useUpgradeNews } from '@plot/core/useWatchTogether.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { readStorage, writeStorage, removeStorage } from '../utils/storage.js';
 import { useInviteShare } from '../hooks/useInviteShare.js';
@@ -244,10 +244,8 @@ export default function WatchTogetherHub({ wt, premium, profile }) {
   const selected = selectedId ?? (decidable[0] || partners[0])?.other_id ?? null;
   const shelfPartners = selected === GROUP ? decidable : partners.filter(p => p.other_id === selected);
 
-  const decideWith = async (person) => {
-    const result = await startWatchTogetherSession(person.other_id);
-    if (result.ok) navigate(`/together/session/${result.data}`);
-  };
+  // The mood step comes first, then the cards (WatchTogetherMood.jsx).
+  const decideWith = (person) => navigate(`/together/decide/${encodeURIComponent(person.username)}`);
   const openGroup = () => navigate(`/together/with/${decidable.map(p => encodeURIComponent(p.username)).join(',')}`);
   const answer = async (person, accept, shareFull) => {
     setBusy(true);

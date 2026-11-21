@@ -3,6 +3,8 @@
 // helpers only decide what to show. Design: docs/design/watch-together/README.md.
 
 import { WATCH_TOGETHER } from './copy/watchTogether.js';
+import { TONIGHT_PICKER } from './copy/tonightPicker.js';
+import { MOOD_GENRES, MOODS } from './moodGenres.js';
 
 /** @typedef {'profile' | 'following' | 'none'} RequestsFrom */
 /** @typedef {'none' | 'outgoing' | 'incoming' | 'paired'} PairState */
@@ -147,12 +149,13 @@ export function shufflePick(titles, currentId = null, random = Math.random) {
  * The server raises plain codes; map anything else to 'generic'.
  *
  * @param {{ message?: string } | null | undefined} error
- * @returns {'premium_required' | 'not_allowed' | 'generic'}
+ * @returns {'premium_required' | 'not_allowed' | 'nothing_fits' | 'generic'}
  */
 export function watchTogetherErrorCode(error) {
   const message = error?.message || '';
   if (message.includes('premium_required')) return 'premium_required';
   if (message.includes('not_allowed')) return 'not_allowed';
+  if (message.includes('nothing_fits')) return 'nothing_fits';
   return 'generic';
 }
 
@@ -172,6 +175,7 @@ export function watchTogetherErrorCode(error) {
  * @property {string} id
  * @property {string} other_id
  * @property {boolean} live
+ * @property {SessionFilters | null} [filters]  Set when the session was started with a mood.
  * @property {SessionCard[]} deck
  * @property {{ tmdb_id: number, media_type: string, yes: boolean }[]} my_votes
  * @property {number} other_answered
@@ -354,4 +358,193 @@ export function exampleTitlePool(saved, fallback) {
     out.push(t);
   }
   return out;
+}
+
+/* ── The mood step before a session ───────────────────────────────────── */
+//
+// Before the cards, the starter picks Movies or TV, any number of moods, and
+// "My services". The deck is the shared titles that fit
+// (start_watch_together_session_filtered). Moods reuse Just Decide's chips
+// (moodGenres.js), but only the genres list_items stores: the keyword-backed
+// show genres (negative ids) need a TMDB lookup the database can't do, so for
+// shows Romantic and Scary drop out and Gripping is Crime or Mystery.
+// Moods add titles (Funny or Gripping); type and services narrow.
+
+/** @typedef {import('./moodGenres.js').Mood} Mood */
+/** @typedef {'all' | 'movie' | 'tv'} MoodKind */
+/**
+ * @typedef {object} MoodChoice
+ * @property {MoodKind} kind
+ * @property {Mood[]} moods
+ * @property {boolean} services  Only titles on the starter's services.
+ */
+/**
+ * @typedef {object} SessionFilters  watch_together_sessions.filters, as stored.
+ * @property {string} by  Who started the session (their services, if services is on).
+ * @property {'movie' | 'tv' | null} media_type
+ * @property {string[]} moods
+ * @property {boolean} services
+ */
+
+/** @type {MoodChoice} */
+export const NO_MOOD = Object.freeze({ kind: 'all', moods: [], services: false });
+
+/** @param {Mood} mood @param {'movie' | 'tv'} mediaType */
+const storedGenres = (mood, mediaType) => (MOOD_GENRES[mood]?.[mediaType] || []).filter(id => id > 0);
+
+/**
+ * The mood chips that can find anything for this kind: every mood for movies,
+ * not Romantic or Scary for shows only.
+ * @param {MoodKind} kind
+ * @returns {Mood[]}
+ */
+export function moodsFor(kind) {
+  const types = kind === 'all' ? ['movie', 'tv'] : [kind];
+  return MOODS.filter(m => types.some(t => storedGenres(m, /** @type {'movie'|'tv'} */ (t)).length > 0));
+}
+
+/**
+ * @param {WatchTogetherTitle} t
+ * @param {MoodChoice} choice
+ * @param {Set<number>} providers
+ * @param {{ ignoreMoods?: boolean }} [opts]
+ */
+function fitsChoice(t, choice, providers, { ignoreMoods = false } = {}) {
+  if (choice.kind !== 'all' && t.media_type !== choice.kind) return false;
+  if (choice.services && !(t.provider_ids || []).some(id => providers.has(id))) return false;
+  if (ignoreMoods || !choice.moods.length) return true;
+  const type = t.media_type === 'tv' ? 'tv' : 'movie';
+  const genres = t.genre_ids || [];
+  return choice.moods.some(m => storedGenres(m, type).some(id => genres.includes(id)));
+}
+
+/**
+ * The shared titles a mood choice keeps.
+ * @param {WatchTogetherTitle[]} titles
+ * @param {MoodChoice} choice
+ * @param {number[]} providerIds  The viewer's services (pickerProviderIds).
+ */
+export function filterByMood(titles, choice, providerIds) {
+  const providers = new Set(providerIds);
+  return titles.filter(t => fitsChoice(t, choice, providers));
+}
+
+/**
+ * How many titles each mood chip would keep on its own, given the type and
+ * services already chosen. A chip at 0 is shown but can't be picked.
+ * @param {WatchTogetherTitle[]} titles
+ * @param {MoodChoice} choice
+ * @param {number[]} providerIds
+ * @returns {Record<string, number>}
+ */
+export function moodCounts(titles, choice, providerIds) {
+  const providers = new Set(providerIds);
+  const base = titles.filter(t => fitsChoice(t, choice, providers, { ignoreMoods: true }));
+  /** @type {Record<string, number>} */
+  const counts = {};
+  for (const m of moodsFor(choice.kind)) {
+    counts[m] = base.filter(t => fitsChoice(t, { ...choice, moods: [m] }, providers)).length;
+  }
+  return counts;
+}
+
+/**
+ * When a choice keeps nothing: the single changes that bring titles back,
+ * most titles first. Only changes that help are listed.
+ * @param {WatchTogetherTitle[]} titles
+ * @param {MoodChoice} choice
+ * @param {number[]} providerIds
+ * @returns {{ change: 'services' | 'moods' | 'kind', choice: MoodChoice, count: number }[]}
+ */
+export function moodFixes(titles, choice, providerIds) {
+  /** @type {{ change: 'services' | 'moods' | 'kind', choice: MoodChoice }[]} */
+  const options = [];
+  if (choice.services) options.push({ change: 'services', choice: { ...choice, services: false } });
+  if (choice.moods.length) options.push({ change: 'moods', choice: { ...choice, moods: [] } });
+  if (choice.kind !== 'all') options.push({ change: 'kind', choice: { ...choice, kind: 'all' } });
+  return options
+    .map(o => ({ ...o, count: filterByMood(titles, o.choice, providerIds).length }))
+    .filter(o => o.count > 0)
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Toggle one mood chip.
+ * @param {MoodChoice} choice @param {Mood} mood
+ * @returns {MoodChoice}
+ */
+export function toggleMoodChoice(choice, mood) {
+  const on = choice.moods.includes(mood);
+  return { ...choice, moods: on ? choice.moods.filter(m => m !== mood) : [...choice.moods, mood] };
+}
+
+/**
+ * Switch Movies / TV / Both, dropping moods that can't find anything there
+ * (Romantic and Scary for shows).
+ * @param {MoodChoice} choice @param {MoodKind} kind
+ * @returns {MoodChoice}
+ */
+export function setMoodKind(choice, kind) {
+  const allowed = moodsFor(kind);
+  return { ...choice, kind, moods: choice.moods.filter(m => allowed.includes(m)) };
+}
+
+/**
+ * What start_watch_together_session_filtered expects. Genres are every
+ * stored genre behind the chosen moods for the chosen type(s); the server
+ * keeps a title that has any of them.
+ * @param {MoodChoice} choice
+ * @param {number[]} providerIds
+ */
+export function sessionFilterPayload(choice, providerIds) {
+  const types = choice.kind === 'all' ? ['movie', 'tv'] : [choice.kind];
+  const genreIds = [...new Set(choice.moods.flatMap(m => types.flatMap(t => storedGenres(m, /** @type {'movie'|'tv'} */ (t)))))];
+  return {
+    media_type: choice.kind === 'all' ? null : choice.kind,
+    genre_ids: genreIds,
+    provider_ids: choice.services ? [...new Set(providerIds)] : [],
+    moods: choice.moods.filter(m => moodsFor(choice.kind).includes(m)),
+  };
+}
+
+/**
+ * The labels for what a session was started with, for both people:
+ * "Movies", "Funny", "My services" (or "Sam’s services" for the other person).
+ * Empty for a session started without a mood.
+ * @param {SessionFilters | null | undefined} filters
+ * @param {{ viewerId?: string | null, starterName?: string }} who
+ * @returns {string[]}
+ */
+export function sessionFilterLabels(filters, { viewerId = null, starterName = '' } = {}) {
+  if (!filters) return [];
+  const C = TONIGHT_PICKER.chips;
+  /** @type {string[]} */
+  const labels = [];
+  if (filters.media_type === 'movie') labels.push(C.movies);
+  if (filters.media_type === 'tv') labels.push(C.shows);
+  for (const m of filters.moods || []) {
+    // Own keys only: a stored name like "toString" must not find a built-in.
+    if (Object.hasOwn(C.moods, m)) labels.push(/** @type {Record<string, string>} */ (C.moods)[m]);
+  }
+  if (filters.services) {
+    labels.push(!viewerId || filters.by === viewerId ? TONIGHT_PICKER.summary.services : WATCH_TOGETHER.mood.theirServices(starterName));
+  }
+  return labels;
+}
+
+/**
+ * Properties for watch_together_session_started, so the dashboard can tell
+ * mood-step starts from plain ones.
+ * @param {MoodChoice | null | undefined} choice
+ * @param {number} deckSize
+ */
+export function sessionStartProps(choice, deckSize) {
+  if (!choice) return { with_mood: false };
+  return {
+    with_mood: true,
+    mood_count: choice.moods.length,
+    media_type: choice.kind,
+    services: choice.services,
+    deck_size: deckSize,
+  };
 }

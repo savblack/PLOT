@@ -260,6 +260,29 @@ export const WATCH_TOGETHER = Object.freeze({
     start: 'Decide together',
   },
 
+  // Nov 21: the mood step before a session (watchTogether.js, "The mood step").
+  // Its heading is Just Decide's (TONIGHT_PICKER.moodTitle) and the chips are
+  // Just Decide's labels (TONIGHT_PICKER.chips), so the two read the same.
+  mood: {
+    fromShared: (n) => `From the ${n} ${n === 1 ? 'title' : 'titles'} you’ve both saved. Pick any, or none.`,
+    kindLabel: 'Movies or TV',
+    moodLabel: 'Mood',
+    whereLabel: 'Where',
+    theirServices: (name) => `${name}’s services`,
+    start: (n) => `Start swiping · ${n} ${n === 1 ? 'title' : 'titles'}`,
+    skip: (n) => `Skip this and swipe all ${n}`,
+    noneTitle: 'Nothing fits all of that',
+    noneBody: 'Change one thing to bring some back.',
+    fixes: {
+      services: 'Turn off My services',
+      moods: 'Any mood',
+      kind: 'Movies and TV',
+    },
+    fixCount: (n) => `${n} ${n === 1 ? 'title' : 'titles'}`,
+    picked: (name) => `${name} picked`,
+    youPicked: 'You picked',
+  },
+
   sharedList: {
     want: (name) => `Want ${name} to add ideas?`,
     make: 'Make a shared list',
@@ -325,6 +348,7 @@ export const WATCH_TOGETHER = Object.freeze({
   errors: {
     premium_required: 'One of you needs Premium to decide together.',
     not_allowed: 'This person isn’t taking watch together requests from you.',
+    nothing_fits: 'Nothing you’ve both saved fits that any more. Change a choice and try again.',
     generic: 'That didn’t work. Try again.',
   },
 });
