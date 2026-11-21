@@ -523,8 +523,8 @@ export function sessionFilterLabels(filters, { viewerId = null, starterName = ''
   if (filters.media_type === 'movie') labels.push(C.movies);
   if (filters.media_type === 'tv') labels.push(C.shows);
   for (const m of filters.moods || []) {
-    const label = /** @type {Record<string, string>} */ (C.moods)[m];
-    if (label) labels.push(label);
+    // Own keys only: a stored name like "toString" must not find a built-in.
+    if (Object.hasOwn(C.moods, m)) labels.push(/** @type {Record<string, string>} */ (C.moods)[m]);
   }
   if (filters.services) {
     labels.push(!viewerId || filters.by === viewerId ? TONIGHT_PICKER.summary.services : WATCH_TOGETHER.mood.theirServices(starterName));

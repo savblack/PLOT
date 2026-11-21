@@ -15,6 +15,11 @@
 --     the live one from 20260927110000 (no later migration redefines it) with
 --     one added line.
 --
+-- Input: only the known keys, each list capped at 50 entries, moods limited
+-- to the known names. The stored moods are labels for the partner; they are
+-- not re-checked against genre_ids, so a hand-made call could show a label
+-- that doesn't match its deck (seen only by its own partner).
+--
 -- Filtering uses only what list_items already stores (genre_ids,
 -- provider_ids), so it needs no TMDB call. Moods are an OR across genres;
 -- Movies/TV and services narrow. An empty result raises 'nothing_fits'
@@ -44,16 +49,18 @@ begin
   v_media := case when p_filters->>'media_type' in ('movie', 'tv') then p_filters->>'media_type' end;
   select coalesce(array_agg(distinct g::int), '{}')
     into v_genres
-    from jsonb_array_elements_text(case when jsonb_typeof(p_filters->'genre_ids') = 'array' then p_filters->'genre_ids' else '[]'::jsonb end) g
-   where g ~ '^[0-9]{1,7}$';
+    from jsonb_array_elements_text(case when jsonb_typeof(p_filters->'genre_ids') = 'array' then p_filters->'genre_ids' else '[]'::jsonb end) with ordinality as e(g, n)
+   where g ~ '^[0-9]{1,7}$' and n <= 50;
   select coalesce(array_agg(distinct p::int), '{}')
     into v_providers
-    from jsonb_array_elements_text(case when jsonb_typeof(p_filters->'provider_ids') = 'array' then p_filters->'provider_ids' else '[]'::jsonb end) p
-   where p ~ '^[0-9]{1,7}$';
+    from jsonb_array_elements_text(case when jsonb_typeof(p_filters->'provider_ids') = 'array' then p_filters->'provider_ids' else '[]'::jsonb end) with ordinality as e(p, n)
+   where p ~ '^[0-9]{1,7}$' and n <= 50;
   select coalesce(array_agg(distinct m), '{}')
     into v_moods
     from jsonb_array_elements_text(case when jsonb_typeof(p_filters->'moods') = 'array' then p_filters->'moods' else '[]'::jsonb end) m
-   where m ~ '^[a-zA-Z]{1,24}$';
+   -- The mood names in packages/core/moodGenres.js (MOODS); a unit test keeps
+   -- the two lists the same. Only labels: the deck is filtered by genre_ids.
+   where m in ('funny', 'romantic', 'gripping', 'scary', 'moving', 'adventurous', 'mindBending', 'trueStory', 'animated');
 
   select coalesce(jsonb_agg(jsonb_build_object('tmdb_id', t.tmdb_id, 'media_type', t.media_type) order by random()), '[]'::jsonb)
     into v_deck

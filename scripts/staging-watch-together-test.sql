@@ -308,6 +308,13 @@ do $$ begin
   perform public.watch_together_titles(array['e4e955fb-19f0-4e7d-b234-29c8eafa88fb'::uuid]);
   raise notice 'FAIL  two Free partners read shared titles';
 exception when others then raise notice 'PASS  two Free partners need Premium to decide (%)', sqlerrm; end $$;
+do $$ begin
+  perform public.start_watch_together_session_filtered('e4e955fb-19f0-4e7d-b234-29c8eafa88fb'::uuid, '{}'::jsonb);
+  raise notice 'FAIL  two Free partners started a mood session';
+exception when others then
+  raise notice '%  two Free partners cannot start a mood session either (%)',
+    case when sqlerrm like '%premium_required%' then 'PASS' else 'FAIL' end, sqlerrm;
+end $$;
 
 \echo ''
 \echo '=== A blocks B: everything between them ends ==='
@@ -331,6 +338,10 @@ do $$ declare s uuid := current_setting('wt.sid')::uuid; begin
   perform public.get_watch_together_session(s);
   raise notice 'FAIL  blocked B reopened the session';
 exception when others then raise notice 'PASS  blocked B cannot reopen the session (%)', sqlerrm; end $$;
+do $$ begin
+  perform public.start_watch_together_session_filtered('467ce784-39eb-480e-8593-4632667fc9c3'::uuid, '{}'::jsonb);
+  raise notice 'FAIL  blocked B started a mood session with A';
+exception when others then raise notice 'PASS  blocked B cannot start a mood session with A (%)', sqlerrm; end $$;
 
 set local request.jwt.claims = :A_CLAIMS;
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  bystander pairing A-C is untouched'

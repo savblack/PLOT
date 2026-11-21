@@ -1,10 +1,11 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
   NO_MOOD, moodsFor, filterByMood, moodCounts, moodFixes, toggleMoodChoice, setMoodKind,
   sessionFilterPayload, sessionFilterLabels, sessionStartProps, watchTogetherErrorCode,
 } from '../../watchTogether.js';
-import { MOOD_GENRES } from '../../moodGenres.js';
+import { MOOD_GENRES, MOODS } from '../../moodGenres.js';
 import { MOOD_GENRES as SHELVES_MOOD_GENRES } from '../../tonightShelves.js';
 import { TONIGHT_PICKER } from '../../copy/tonightPicker.js';
 import { WATCH_TOGETHER } from '../../copy/watchTogether.js';
@@ -107,4 +108,15 @@ test('analytics props and the nothing_fits code', () => {
     { with_mood: true, mood_count: 1, media_type: 'movie', services: false, deck_size: 7 });
   assert.equal(watchTogetherErrorCode({ message: 'nothing_fits' }), 'nothing_fits');
   assert.ok(WATCH_TOGETHER.errors.nothing_fits);
+});
+
+test('the migration accepts exactly the mood names core knows', () => {
+  const sql = readFileSync(new URL('../../../../supabase/migrations/20261121120000_watch_together_session_moods.sql', import.meta.url), 'utf8');
+  const list = sql.match(/where m in \(([^)]*)\)/)[1].match(/'([^']+)'/g).map(s => s.slice(1, -1));
+  assert.deepEqual([...list].sort(), [...MOODS].sort());
+});
+
+test('unknown stored moods never become labels', () => {
+  const labels = sessionFilterLabels({ by: 'me', media_type: null, moods: ['toString', 'constructor', 'funny'], services: false }, { viewerId: 'me' });
+  assert.deepEqual(labels, [TONIGHT_PICKER.chips.moods.funny]);
 });
