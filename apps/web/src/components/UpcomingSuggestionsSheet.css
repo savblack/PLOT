@@ -78,7 +78,9 @@
 }
 
 /* Add, Saving, and Added share one width so the row does not shift when the label changes. */
-.uss-row .btn { flex: 0 0 5rem; width: 5rem; }
+.uss-row .panel-pill { flex: 0 0 6rem; width: 6rem; justify-content: center; }
+/* Added is a state, not a dimmed control. */
+.uss-row .panel-pill--saved:disabled { opacity: 1; }
 
 .uss-status {
   margin: 0.4rem 0 0;

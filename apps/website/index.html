@@ -114,7 +114,7 @@
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
   <link rel="stylesheet" href="/ui.css?v=4ccc05ec" />
-  <link rel="stylesheet" href="/nav.css?v=9f206950" />
+  <link rel="stylesheet" href="/nav.css?v=ca43db8c" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -431,10 +431,11 @@
       padding: 2cqw 2cqw 2.8cqw;
       background: var(--card);
       border-radius: 3.6cqw;
-      box-shadow: 0 18px 40px rgba(41,41,36,0.16), 0 2px 6px rgba(41,41,36,0.06);
+      /* Just enough shadow to part the overlapping cards from each other. */
+      box-shadow: 0 10px 24px rgba(41,41,36,0.10), 0 1px 3px rgba(41,41,36,0.06);
       font-size: 2.8cqw;
       transform: translate(var(--tx, 0px), var(--ty, 0px)) rotate(var(--r, 0deg)) scale(var(--s, 1));
-      transition: transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1.25), box-shadow 220ms ease;
+      transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
     }
     .mem-card--a { left: 0; top: 12cqw; --r: -7deg; }
     .mem-card--c { left: 56cqw; top: 16cqw; --r: 6deg; }
@@ -514,7 +515,7 @@
       .mem-card:hover {
         --ty: -2.4cqw; --r: 0deg; --s: 1.04;
         z-index: 2;
-        box-shadow: 0 28px 60px rgba(41,41,36,0.22), 0 4px 10px rgba(41,41,36,0.08);
+        box-shadow: 0 16px 36px rgba(41,41,36,0.14), 0 2px 6px rgba(41,41,36,0.06);
       }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -1101,7 +1102,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
        fixture). The reviews, dates and note are sample diary content. -->
   <div class="hero-trust">
     <p>Import from any of these, free on every plan</p>
-    <ul aria-label="Import from"><li>Letterboxd</li><li>Trakt</li><li>TV Time</li><li>IMDb</li><li class="hero-trust-more">and more</li></ul>
+    <ul aria-label="Import from"><li>Letterboxd</li><li>Trakt</li><li>Netflix</li><li>TMDB</li><li class="hero-trust-more">and more</li></ul>
   </div>
 
   <section id="memories" aria-labelledby="memHeadline">
@@ -1165,7 +1166,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="hx-inner">
       <div class="hx-copy reveal">
         <h2 class="hx-headline" id="importHeadline">Bring your whole history with you.</h2>
-        <p class="hx-body">Coming from Letterboxd, Trakt, TV Time or IMDb? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.</p>
+        <p class="hx-body">Coming from Letterboxd, Trakt, Netflix or TMDB? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.</p>
       </div>
       <div class="hx-visual reveal" aria-hidden="true">
         <div class="hx-card im-card">

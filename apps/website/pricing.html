@@ -78,7 +78,7 @@
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
   <link rel="stylesheet" href="/ui.css?v=4ccc05ec" />
-  <link rel="stylesheet" href="/nav.css?v=9f206950" />
+  <link rel="stylesheet" href="/nav.css?v=ca43db8c" />
   <link rel="stylesheet" href="/premium-stories.css?v=34322ae5" />
 
   <style>
@@ -273,8 +273,9 @@
     .tick svg { width: 11px; height: 11px; fill: none; stroke: var(--on-fill); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
     .tick--quiet { background: var(--surface-hover); }
     .tick--quiet svg { stroke: var(--text); }
-    .plan-card .btn { width: 100%; }
-    .plan-trial { margin-top: 14px; font-size: 0.875rem; line-height: 1.45; color: var(--text-secondary); text-align: center; }
+    /* Buttons are sized to their label, never stretched across the card. */
+    .plan-card .btn { align-self: flex-start; }
+    .plan-trial { margin-top: 14px; font-size: 0.875rem; line-height: 1.45; color: var(--text-secondary); }
 
     /* ── Comparison table, on the page cream ─────────────────── */
     /* The two plans head their own columns, price and button included,
@@ -305,7 +306,7 @@
     .cmp-head .plan-amount { font-size: 2.6rem; }
     .cmp-head .plan-price { margin: 6px 0 0; }
     .cmp-head .plan-save { font-size: 0.875rem; padding: 5px 10px; }
-    .cmp-head .btn { width: 100%; margin-top: 14px; }
+    .cmp-head .btn { align-self: flex-start; margin-top: 14px; }
     .cmp-head--free .btn-outline { background: var(--card); }
     .cmp-head--free .btn-outline:hover { background: var(--surface-hover); }
     .cmp-feat { text-align: left !important; width: 46%; color: var(--text); font-weight: 400; }

@@ -55,8 +55,6 @@ h2 { font-size: 2rem; line-height: 1.15; }
 .tm-privacy p { font-size: .9rem; color: var(--text-secondary); max-width: 34em; }
 .tm-privacy p + p { margin-top: .8rem; }
 
-.skip-link { position: absolute; left: 1rem; top: -100px; z-index: 2000; background: var(--bg); padding: .7rem 1rem; }
-.skip-link:focus { top: 1rem; }
 .site-footer { margin-top: 5rem; }
 
 @media (max-width: 900px) {

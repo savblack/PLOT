@@ -424,7 +424,7 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
           disabled={watchlist.loading}
           aria-pressed={saved}
         >
-          <Icon name="bookmark" filled={saved} size={14} />
+          {saved ? <Icon name="check" size={14} strokeWidth={2.4} /> : <Icon name="bookmark" size={14} />}
           {saved ? MEDIA_PANEL.inWatchlist : MEDIA.saveToWatchlist}
         </button>
       </div>
