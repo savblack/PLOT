@@ -113,7 +113,7 @@
   <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
-  <link rel="stylesheet" href="/ui.css?v=5d41273c" />
+  <link rel="stylesheet" href="/ui.css?v=7fc314f1" />
   <link rel="stylesheet" href="/nav.css?v=ca43db8c" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
@@ -783,8 +783,7 @@
       box-sizing: border-box;
       padding: 22px 24px 18px;
       background: var(--card);
-      border-radius: var(--r-lg);
-      box-shadow: 0 24px 60px rgba(41,41,36,0.14);
+      border-radius: var(--r-md);
     }
     .hx-card-title { font-family: var(--display); font-weight: 700; font-size: 1.35rem; letter-spacing: -0.02em; }
 
@@ -876,7 +875,7 @@
     .pm-price strong { color: var(--text); }
     .pm-grid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: clamp(14px, 2vw, 20px); row-gap: 0; margin-bottom: calc(-1 * clamp(14px, 2vw, 20px)); }
     @media (min-width: 900px) { .pm-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    .pm-tile { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; min-width: 0; margin-bottom: clamp(14px, 2vw, 20px); padding: clamp(20px, 3vw, 28px); border-radius: clamp(20px, 3vw, 24px); background: var(--card); border: 1px solid rgba(41,41,36,0.07); }
+    .pm-tile { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; min-width: 0; margin-bottom: clamp(14px, 2vw, 20px); padding: clamp(20px, 3vw, 28px); border-radius: var(--r-md); background: var(--card); border: 1px solid rgba(41,41,36,0.07); }
     .pm-tile h3 { margin: 0 0 10px; font-family: var(--display); font-weight: 700; font-size: clamp(1.3rem, 2.2vw, 1.45rem); letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance; }
     .pm-tile h3 s { text-decoration-thickness: 3px; text-decoration-color: var(--fill); color: var(--text-secondary); }
     .pm-tile p { margin: 0 0 clamp(20px, 3vw, 26px); max-width: 34ch; color: var(--text-secondary); }
@@ -966,7 +965,7 @@
     :root {
       --box-inset: clamp(12px, 1.8vw, 24px);
       --box-gap: clamp(10px, 1.4vw, 16px);
-      --box-radius: 28px;
+      --box-radius: var(--r-md);
       --box-white: var(--card);
       /* Page ground, a touch lighter than the shared cream. Panel tints are
          set explicitly, so they do not move with it. */
@@ -978,7 +977,7 @@
       :root { --bg: #0c0c0c; --thumb: #2e2e2e; --thumb-hover: #3d3d3d; }
     }
     @media (max-width: 760px) {
-      :root { --box-inset: 10px; --box-gap: 10px; --box-radius: 22px; }
+      :root { --box-inset: 10px; --box-gap: 10px; }
     }
 
     /* The nav pill lives in the shared /nav.css. */

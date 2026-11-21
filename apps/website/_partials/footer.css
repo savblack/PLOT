@@ -28,7 +28,7 @@
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: var(--r-md, 16px);
   background: var(--footer-bg, #ffd3ea);
 }
 .footer-inner {
@@ -190,7 +190,7 @@
 
 @media (max-width: 600px) {
   .site-footer { padding: 0 10px 10px; }
-  .footer-panel { border-radius: 22px; }
+  .footer-panel { border-radius: var(--r-md, 16px); }
   .footer-inner { padding: 2.75rem 1.25rem 0; }
   .footer-lede { font-size: 1.4rem; line-height: 1.12; }
   .footer-top { gap: 1.75rem; }
