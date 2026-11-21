@@ -98,8 +98,9 @@ export const MEDIA_PANEL = {
   awards: 'Awards',
   watching: 'Watching',
   didntFinish: "Didn't finish",
-  // The panel's in-between states menu (Watching, Didn't finish, Clear).
-  // "Watched" is logged from the pinned foot bar only (option C, Nov 19).
+  // The panel's Progress menu: Watching, Watched, Didn't finish, Clear.
+  // Watched came back on Nov 21 (it was foot-bar only from Nov 19); its label
+  // is MEDIA.watched, the shared watch-status word.
   status: 'Progress',
   updating: 'Updating…',
   clearing: 'Clearing…',
@@ -122,6 +123,9 @@ export const MEDIA_PANEL = {
     iveWatched: "I've watched",
     imWatching: "I'm watching",
     head: 'Thoughts?',
+    // The head line folds the bar down to itself. Screen-reader labels only.
+    showMore: 'Show rating and notes',
+    showLess: 'Hide rating and notes',
     watchedOn: (date) => `Watched on ${date}`,
     watchedJustNow: 'Watched',
     undo: 'Undo',

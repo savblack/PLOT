@@ -20,6 +20,20 @@ export const UNDO_MS = 6000;
 /** @typedef {'review' | 'note' | 'date'} FootBarField */
 
 /**
+ * How far (px / pt) the title panel scrolls before a folded bar opens itself.
+ * Apps also open it at once when the panel is too short to scroll this far,
+ * so the stars are never out of reach.
+ */
+export const FOOT_BAR_REVEAL_SCROLL = 48;
+
+// The bar opens folded to its head line and slides open once the viewer
+// scrolls the panel a little (`revealed`). Folding or opening it by hand is a
+// choice that holds for the rest of the session, on every title, and scrolling
+// no longer overrides it. Not persisted: a fresh launch starts over.
+/** @type {boolean | null} */
+let foldChoice = null;
+
+/**
  * @param {Object} args
  * @param {number|string} args.itemId
  * @param {string} args.itemType
@@ -34,6 +48,8 @@ export const UNDO_MS = 6000;
  * @param {() => Promise<boolean>} args.onUndoWatched
  * @param {(rating: number) => Promise<boolean>} args.onRate 0 clears the rating
  * @param {(fields: { note: string | null, watchedAt: string }) => Promise<boolean>} args.onSaveReview
+ * @param {boolean} [args.revealed] the panel has scrolled FOOT_BAR_REVEAL_SCROLL, or cannot
+ * @param {() => void} [args.beforeFoldChange] runs just before the fold changes (mobile starts its layout animation here)
  */
 export function useTitleFootBar({
   itemId,
@@ -49,6 +65,8 @@ export function useTitleFootBar({
   onUndoWatched,
   onRate,
   onSaveReview,
+  revealed = false,
+  beforeFoldChange,
 }) {
   const noteEditor = usePrivateNoteEditor(privateNotes ?? { rows: {} }, itemId, itemType, title);
   const showNote = hasUser && !!privateNotes;
@@ -63,6 +81,26 @@ export function useTitleFootBar({
   const [reviewDraft, setReviewDraft] = useState(/** @type {string | null} */ (null));
   const [dateDraft, setDateDraft] = useState(/** @type {string | null} */ (null));
   const [focusField, setFocusField] = useState(/** @type {FootBarField} */ ('review'));
+  const [folded, setFolded] = useState(() => foldChoice ?? true);
+
+  // Scrolling opens a bar the viewer has not folded or opened by hand.
+  useEffect(() => {
+    if (!revealed || foldChoice !== null || !folded) return;
+    beforeFoldChange?.();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the scroll position lives in the app; this is its one-way signal
+    setFolded(false);
+  // beforeFoldChange is a fire-and-forget hook from the app, not a dependency.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealed, folded]);
+
+  /** Folds or opens the bar by hand. Returns the new state so the app can report it. */
+  const toggleFolded = () => {
+    const next = !folded;
+    foldChoice = next;
+    beforeFoldChange?.();
+    setFolded(next);
+    return next;
+  };
 
   // A fresh mark settles back to the normal bar when the Undo window ends.
   useEffect(() => {
@@ -182,7 +220,7 @@ export function useTitleFootBar({
 
   return {
     // state
-    editing, fresh, saving, error, status, focusField, showNote,
+    editing, fresh, saving, error, status, focusField, showNote, folded,
     // what the boxes and editor show
     savedNote, reviewText, dateValue: dateDraft ?? watchedAt, noteDraft,
     reviewIsDraft, reviewShown, noteIsDraft, noteShown,
@@ -190,7 +228,7 @@ export function useTitleFootBar({
     reviewDirty, noteDirty, noteTooLong,
     noteEditor,
     // actions
-    openEditor, closeEditor, discardDrafts,
+    openEditor, closeEditor, discardDrafts, toggleFolded,
     setReviewText: setReviewDraft,
     setDateValue: (/** @type {string} */ value) => setDateDraft(value || watchedAt),
     setNoteText: noteEditor.setDraft,

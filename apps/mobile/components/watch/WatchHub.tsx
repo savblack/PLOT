@@ -215,9 +215,6 @@ function InviteCard({ link }: { link: InviteLink }) {
   const waiting = !!sharedAt;
   return (
     <MainCard>
-      <View style={{ width: 44, height: 44, borderRadius: radii.pill, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontFamily: fontFamily.sans, fontSize: fontSize.lg, color: colors.textMuted }}>{waiting ? '…' : '+'}</Text>
-      </View>
       <CardTitle>{waiting ? H.waitingTitle : H.inviteLead}</CardTitle>
       <Note>{waiting ? H.sharedOn(sharedOnDate(sharedAt)) : H.inviteLeadBody}</Note>
       {!waiting && (

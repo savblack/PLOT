@@ -6,6 +6,7 @@ import EpisodeAlertsCard from './EpisodeAlertsCard';
 import StreamingArrivalAsk from './StreamingArrivalAsk';
 import { showStreamingArrivalAsk } from '@plot/core/useStreamingAlerts.js';
 import TitleFootBar from './TitleFootBar';
+import { FOOT_BAR_REVEAL_SCROLL } from '@plot/core/useTitleFootBar.js';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../lib/share';
@@ -1085,6 +1086,19 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   // once and a re-render in the middle of a drag cannot swap them out from
   // under the finger.
   const scrollTop = useRef(0);
+  // Opens the foot bar once the panel scrolls a little, or at once when the
+  // panel is too short to scroll that far (see FOOT_BAR_REVEAL_SCROLL).
+  const [footRevealed, setFootRevealed] = useState(false);
+  const scrollBox = useRef({ view: 0, content: 0 });
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- each title starts with its bar folded
+    setFootRevealed(false);
+    const timer = setTimeout(() => {
+      const { view, content } = scrollBox.current;
+      if (view > 0 && content - view < FOOT_BAR_REVEAL_SCROLL) setFootRevealed(true);
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [itemId, itemType]);
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; });
   const drag = useMemo(() => {
@@ -1298,7 +1312,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           showsVerticalScrollIndicator={false}
           bounces={false}
           keyboardShouldPersistTaps="handled"
-          onScroll={(event) => { scrollTop.current = event.nativeEvent.contentOffset.y; }}
+          onScroll={(event) => {
+            scrollTop.current = event.nativeEvent.contentOffset.y;
+            if (!footRevealed && scrollTop.current >= FOOT_BAR_REVEAL_SCROLL) setFootRevealed(true);
+          }}
+          onLayout={(event) => { scrollBox.current.view = event.nativeEvent.layout.height; }}
+          onContentSizeChange={(_w, h) => { scrollBox.current.content = h; }}
           scrollEventThrottle={16}
         >
           {/* Backdrop image */}
@@ -1455,6 +1474,9 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             <Text style={styles.statusOptionText}>{MEDIA_PANEL.watching}</Text>
                           </TouchableOpacity>
                         )}
+                        <TouchableOpacity style={styles.statusOption} onPress={() => runStatusAction(() => markWatchedNow(false))}>
+                          <Text style={styles.statusOptionText}>{MEDIA.watched}</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity style={styles.statusOption} onPress={() => runStatusAction(() => markWatchedNow(true))}>
                           <Text style={styles.statusOptionText}>{MEDIA_PANEL.didntFinish}</Text>
                         </TouchableOpacity>
@@ -1786,6 +1808,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
             isPublicProfile={!!profile?.is_public}
             hasUser={!!userId}
             privateNotes={privateNotes}
+            revealed={footRevealed}
+            onFoldToggled={(folded) => track(EVENTS.TITLE_FOOT_BAR_FOLDED, { folded, watched: !!watched })}
             onMarkWatched={footMarkWatched}
             onStartWatching={footStartWatching}
             onUndoWatched={footUndoWatched}

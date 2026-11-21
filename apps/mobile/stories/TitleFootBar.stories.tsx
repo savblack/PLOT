@@ -30,6 +30,7 @@ function Harness({ initial = null, isTv = false, isPublicProfile = true, savedNo
       <View style={{ width: 390, height: 640, justifyContent: 'flex-end', backgroundColor: '#FFFCF7', overflow: 'hidden' }}>
         <TitleFootBar
           itemId={1}
+          revealed
           itemType={isTv ? 'tv' : 'movie'}
           title="Oppenheimer"
           watched={!!entry}

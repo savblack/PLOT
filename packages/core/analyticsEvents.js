@@ -319,6 +319,9 @@ export const EVENTS = Object.freeze({
   ACCOUNT_DELETED: 'account_deleted',
   DATA_EXPORTED: 'data_exported',
   CALENDAR_FEED_GENERATED: 'calendar_feed_generated',
+  // The title panel's foot bar (Thoughts? / Watched it?) was folded or opened
+  // from its head line. `folded`: the new state; `watched`: the title's state.
+  TITLE_FOOT_BAR_FOLDED: 'title_foot_bar_folded',
   // The title panel's Episode alerts switch for one show (`on`: the new state).
   EPISODE_ALERTS_TOGGLED: 'episode_alerts_toggled',
   // Settings' Episode alerts switches for every show, after the write lands.

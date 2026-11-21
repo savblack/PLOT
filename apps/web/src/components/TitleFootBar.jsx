@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../hooks/useApp.js';
-import { useTitleFootBar } from '@plot/core/useTitleFootBar.js';
+import { FOOT_BAR_REVEAL_SCROLL, useTitleFootBar } from '@plot/core/useTitleFootBar.js';
 import { PRIVATE_NOTE_LIMIT, noteLength } from '@plot/core/privateNotes.js';
 import { PRIVATE_NOTES } from '@plot/core/copy/privateNotes.js';
 import { REVIEW_MAX, STAR_COUNT, ratingFromPointer, ratingToStars, starFillPercent } from '../utils/ratings.js';
 import { formatWatchedOn, localDateStr } from '@plot/core/date.js';
 import { COMMON } from '../copy/common.js';
 import { MEDIA_PANEL } from '../copy/mediaPanel.js';
+import { track, EVENTS } from '../lib/analytics.js';
 import StarIcon from './StarIcon.jsx';
 import { Tag } from './Chip.jsx';
 import './TitleFootBar.css';
@@ -17,6 +18,7 @@ const TickIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="non
 const PencilIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>;
 const PlusIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const LockIcon = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>;
+const ChevronIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>;
 const StarMark = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9" /></svg>;
 
 /**
@@ -68,11 +70,38 @@ function TakeBox({ kind, label, icon, text, draft = false, empty, labelEmpty, la
 }
 
 /**
+ * True once the panel the bar is pinned in has scrolled FOOT_BAR_REVEAL_SCROLL,
+ * or straight away when it is too short to scroll that far. The bar sits inside
+ * the panel's own scroll container, found as its nearest scrolling ancestor.
+ */
+function usePanelScrolled(ref) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    let scroller = ref.current?.parentElement;
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+    const target = scroller || document.scrollingElement;
+    if (!target) return undefined;
+    const check = () => {
+      const room = target.scrollHeight - target.clientHeight;
+      if (target.scrollTop >= FOOT_BAR_REVEAL_SCROLL || room < FOOT_BAR_REVEAL_SCROLL) setScrolled(true);
+    };
+    const eventTarget = scroller || window;
+    eventTarget.addEventListener('scroll', check, { passive: true });
+    // The panel's later sections (providers, cast) load after the bar mounts,
+    // so the "too short to scroll" check waits for them to settle.
+    const timer = setTimeout(check, 900);
+    return () => { eventTarget.removeEventListener('scroll', check); clearTimeout(timer); };
+  }, [ref]);
+  return scrolled;
+}
+
+/**
  * The bar pinned to the foot of the title panel.
  *
  * One shape in every state: a head line (the question, or Thoughts? with the
  * watch chip), the stars, then once the title is watched a Review box and a
- * Private note box. Editing replaces the stars and boxes with one editor that
+ * Private note box. It opens folded to the head line and slides open once the
+ * panel scrolls a little; the head line folds and opens it by hand. Editing replaces the stars and boxes with one editor that
  * grows upward on a panel and is a sheet on a touch device.
  *
  * Rating and watched status save as you tap. The review, private note and date
@@ -118,17 +147,18 @@ export default function TitleFootBar({
   onSaveReview,
 }) {
   const { privateNotes } = useApp();
+  const root = useRef(null);
+  const revealed = usePanelScrolled(root);
   const bar = useTitleFootBar({
     itemId, itemType, title, watched, rating, review, watchedAt, privateNotes, hasUser,
-    onMarkWatched, onUndoWatched, onRate, onSaveReview,
+    onMarkWatched, onUndoWatched, onRate, onSaveReview, revealed,
   });
   const {
-    editing, fresh, saving, error, status, focusField, showNote, noteEditor, savedNote,
+    editing, fresh, saving, error, status, focusField, showNote, folded, noteEditor, savedNote,
     reviewText, dateValue, noteDraft, reviewIsDraft, reviewShown, noteIsDraft, noteShown,
     remaining, reviewDirty, noteDirty, noteTooLong,
   } = bar;
 
-  const root = useRef(null);
   const [touch, setTouch] = useState(false);
 
   // Whether the editor is a bottom sheet is decided when it opens.
@@ -177,11 +207,14 @@ export default function TitleFootBar({
   const chipLabel = fresh ? FOOT.watchedJustNow : dnf ? MEDIA_PANEL.didntFinish : FOOT.watchedOn(dateLabel);
   const audience = isPublicProfile ? FOOT.reviewAudiencePublic : FOOT.reviewAudiencePrivate;
   const noteBusy = noteEditor.busy;
+  const toggleFolded = () => {
+    track(EVENTS.TITLE_FOOT_BAR_FOLDED, { folded: bar.toggleFolded(), watched: !!watched });
+  };
 
   return (
     <div
       ref={root}
-      className={`foot-bar${editing ? ' foot-bar--open' : ''}${editing && touch ? ' foot-bar--sheet' : ''}`}
+      className={`foot-bar${folded && !editing ? ' foot-bar--folded' : ''}${editing ? ' foot-bar--open' : ''}${editing && touch ? ' foot-bar--sheet' : ''}`}
       role={editing && touch ? 'dialog' : undefined}
       aria-modal={editing && touch ? 'true' : undefined}
       aria-label={editing ? FOOT.editorTitle : undefined}
@@ -192,10 +225,21 @@ export default function TitleFootBar({
         {editing && touch && <div className="foot-bar-handle" aria-hidden="true" />}
 
         <div className="foot-bar-head">
-          <b className="foot-bar-title">
-            {editing ? FOOT.editorTitle : watched ? FOOT.head : FOOT.unwatchedHead}
-          </b>
-          {!watched && !editing && <span className="foot-bar-hint">{FOOT.unwatchedHint}</span>}
+          {editing ? (
+            <b className="foot-bar-title">{FOOT.editorTitle}</b>
+          ) : (
+            <button
+              type="button"
+              className="foot-bar-fold"
+              aria-expanded={!folded}
+              aria-label={`${watched ? FOOT.head : FOOT.unwatchedHead} ${folded ? FOOT.showMore : FOOT.showLess}`}
+              onClick={toggleFolded}
+            >
+              <b className="foot-bar-title">{watched ? FOOT.head : FOOT.unwatchedHead}</b>
+              <ChevronIcon />
+            </button>
+          )}
+          {!watched && !editing && !folded && <span className="foot-bar-hint">{FOOT.unwatchedHint}</span>}
           {watched && !editing && (
             <span className="foot-bar-head-end">
               {fresh && (
@@ -219,7 +263,8 @@ export default function TitleFootBar({
         </div>
 
         {!editing && (
-          <>
+          <div className="foot-bar-body" inert={folded}>
+            <div className="foot-bar-body-inner">
             <div className="foot-bar-main">
               <span className="foot-bar-rate">
                 <Stars
@@ -274,7 +319,8 @@ export default function TitleFootBar({
                 )}
               </div>
             )}
-          </>
+            </div>
+          </div>
         )}
 
         {editing && (

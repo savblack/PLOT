@@ -71,17 +71,6 @@
 .wth-faces-mini { display: flex; }
 .wth-faces-mini > * + * { margin-left: -14px; }
 
-.wth-ghost {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  border: 1.5px dashed var(--border-strong);
-  display: grid;
-  place-items: center;
-  color: var(--text-muted);
-  font-size: 18px;
-}
-
 /* The message your friend gets. */
 .wth-bubble {
   align-self: flex-start;
