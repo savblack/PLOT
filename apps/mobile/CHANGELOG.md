@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.8.0](https://github.com/savblack/PLOT/compare/mobile-v1.7.0...mobile-v1.8.0) (2026-11-21)
+
+
+### Features
+
+* **compare:** Premium on either side unlocks Compare ([#1766](https://github.com/savblack/PLOT/issues/1766)) ([ea97fbd](https://github.com/savblack/PLOT/commit/ea97fbdaae7523806a1addc05fb6ec04fc8c82bb))
+* **decide:** pick up top, say why and where to watch; Home offers a pick ([#1786](https://github.com/savblack/PLOT/issues/1786)) ([6718196](https://github.com/savblack/PLOT/commit/6718196921da7a74a86da58780ea4d3ea408e701))
+* **episodes:** alert when an episode drops, with quiet hours and settings ([#1795](https://github.com/savblack/PLOT/issues/1795)) ([744a373](https://github.com/savblack/PLOT/commit/744a37315b0bfd3c5a6b8ed8d9ab37a3268c73d7))
+* **episodes:** show exact drop times on the calendar and alerts card ([#1792](https://github.com/savblack/PLOT/issues/1792)) ([caa78ea](https://github.com/savblack/PLOT/commit/caa78eaff3ef7cedf76664464866b1d428706064))
+* **import:** import a TMDB watchlist, lists and ratings ([#1796](https://github.com/savblack/PLOT/issues/1796)) ([ab0c31d](https://github.com/savblack/PLOT/commit/ab0c31dd658f0a67a6c400660db915ae48e05a7a))
+* **insights:** Insights page for Free and Premium, web and iPhone ([#1810](https://github.com/savblack/PLOT/issues/1810)) ([68be497](https://github.com/savblack/PLOT/commit/68be497939d924680261d4bdcb81350a8c262a50))
+* **mobile:** match web's account menu in the iPhone drawer, logo in sign-out titles ([#1742](https://github.com/savblack/PLOT/issues/1742)) ([5c03b2c](https://github.com/savblack/PLOT/commit/5c03b2cecba6d7a6748dff08275f9fad5bec8ca2))
+* **nav:** label the phone tab bar and light More on its pages ([#1800](https://github.com/savblack/PLOT/issues/1800)) ([7aa8380](https://github.com/savblack/PLOT/commit/7aa8380563da0cd6ac2ac59899836e78e8870d26))
+* **title:** Watched in Progress menu, folding foot bar, quieter invite card, new releases icon ([#1811](https://github.com/savblack/PLOT/issues/1811)) ([56751d5](https://github.com/savblack/PLOT/commit/56751d530b5f573649d7c773a12bd192692b2af9))
+* **ui:** genre tags take the pale pink tint ([#1801](https://github.com/savblack/PLOT/issues/1801)) ([3d1324d](https://github.com/savblack/PLOT/commit/3d1324d83d2eb2c7b819be59d494725fe2fbb46d))
+* **watch-together:** invite search and link in a card on the hub ([#1771](https://github.com/savblack/PLOT/issues/1771)) ([e9fa07b](https://github.com/savblack/PLOT/commit/e9fa07be2eb1b2f0d154717b641483c53b63fe45))
+* **watch-together:** pick a mood before swiping ([#1819](https://github.com/savblack/PLOT/issues/1819)) ([8491e57](https://github.com/savblack/PLOT/commit/8491e5741700c2a9e5be86bf1f4ce5a2697a0df7))
+* **watch-together:** show the Sam example and rewrite the invite card ([#1761](https://github.com/savblack/PLOT/issues/1761)) ([1cb2e18](https://github.com/savblack/PLOT/commit/1cb2e18658ba11d85a1cd3fec1e388f4cd278b9b))
+* **web:** line up Top 10 rows, rename Just Decide, add Compare to the menu ([#1758](https://github.com/savblack/PLOT/issues/1758)) ([593c043](https://github.com/savblack/PLOT/commit/593c043315c6979d1fde1e0cf35ed24106d79df9))
+
+
+### Bug Fixes
+
+* **compare:** keep a long name inside its overlap circle ([#1751](https://github.com/savblack/PLOT/issues/1751)) ([bc81250](https://github.com/savblack/PLOT/commit/bc8125039bace8cd6ba10c34f3131a36ac870644))
+* **share:** neutral share buttons, simpler genre card ([#1760](https://github.com/savblack/PLOT/issues/1760)) ([c4122c0](https://github.com/savblack/PLOT/commit/c4122c00f7e82052e155dc433aa2c2c3a0c2cd06))
+* **ui:** critique fixes for pink use, wording, sidebar and two layout bugs ([#1772](https://github.com/savblack/PLOT/issues/1772)) ([0019b0e](https://github.com/savblack/PLOT/commit/0019b0ee6e6e37ea61ef1fe1e89a2b3e6ec6b182))
+* **ui:** one pink for progress, one watchlist button, readable panel text ([#1817](https://github.com/savblack/PLOT/issues/1817)) ([5a14f9b](https://github.com/savblack/PLOT/commit/5a14f9b5009c3a45a10e4b81222772761d1c225b))
+* **ui:** panel close and artwork button, search franchise match, banner badge, iPhone lists loading ([#1793](https://github.com/savblack/PLOT/issues/1793)) ([c648718](https://github.com/savblack/PLOT/commit/c648718552f0c6442f74b60bcf9ce150d014b416))
+* **ui:** retire the indigo from the apps ([#1822](https://github.com/savblack/PLOT/issues/1822)) ([01b86c7](https://github.com/savblack/PLOT/commit/01b86c7e3b27d026df03a1f75054cca52e6e2549))
+* **ui:** smaller critique fixes, sidebar links, Progress menu, Home pick event ([#1789](https://github.com/savblack/PLOT/issues/1789)) ([8c5703c](https://github.com/savblack/PLOT/commit/8c5703c1bfeb7dfbcad3c8dd451f1e5394c6e127))
+* **ui:** smaller fixes from the Nov 20 critique ([#1809](https://github.com/savblack/PLOT/issues/1809)) ([0faf81f](https://github.com/savblack/PLOT/commit/0faf81f4b3c0c16a1757ff9c0e4a24c3c35f2b09))
+* **watch-together:** give pairs with nothing in common a next step ([#1765](https://github.com/savblack/PLOT/issues/1765)) ([893a6e5](https://github.com/savblack/PLOT/commit/893a6e53522ba9be7560dd41ee6e55106ee3742e))
+* **web:** persona fixes from the Nov 20 critique ([#1799](https://github.com/savblack/PLOT/issues/1799)) ([3c28c9d](https://github.com/savblack/PLOT/commit/3c28c9d575e4b0a0067a77a308c6f31bbcded611))
+
 ## [1.7.0](https://github.com/savblack/PLOT/compare/mobile-v1.6.0...mobile-v1.7.0) (2026-11-17)
 
 
