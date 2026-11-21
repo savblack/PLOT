@@ -89,7 +89,7 @@ ${GTM_NOSCRIPT}
     <li class="nav-more"><a href="${SITE}/about">About</a></li>
     <li class="nav-more"><a href="${SITE}/support">Support</a></li>
     <li><a href="${APP}/login?src=title_page_nav" data-cta="nav">Log in</a></li>
-    <li><a href="${APP}/signup?src=title_page_nav" data-cta="nav" class="nav-cta">Start tracking</a></li>
+    <li><a href="${APP}/signup?src=title_page_nav" data-cta="nav" class="nav-cta">Sign up</a></li>
   </ul>
   <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
     <span></span><span></span><span></span>
