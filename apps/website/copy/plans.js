@@ -15,7 +15,7 @@ export const PLANS_PAGE = {
   hero: {
     pageLabel: 'Plans',
     h1: 'Free forever. Premium when you want more.',
-    lede: 'Free keeps track. Premium helps you decide what to watch next. Skip the endless scroll, the first week is on us.',
+    lede: 'Free keeps track. Premium helps you decide what to watch next. Skip the endless scroll. The first week is on us.',
   },
 
   billingToggle: {
@@ -45,7 +45,7 @@ export const PLANS_PAGE = {
     // changes; these are the initial (annual) values rendered in the HTML.
     amount: '$2',
     per: '/mo',
-    billed: 'Billed $24 once a year',
+    billed: 'Billed $24 once a year instead of $36',
     billedMonthly: 'Billed monthly. Cancel anytime.',
     flag: '7-day free trial',
     trial: 'Commitment-free. Cancel during the trial and you pay $0.',
@@ -69,7 +69,7 @@ export const PLANS_PAGE = {
   premiumStories: {
     h2: 'Less deciding. More watching.',
     steps: [
-      { label: 'Decide', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.' },
+      { label: 'Decide', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot hands you a shortlist.' },
       { label: 'Watch together', h3: 'Settle movie night before the snacks are ready.', body: 'Watch together analyzes everyone’s Plot profiles to find movie and TV matches in your lists.' },
       { label: 'Your profile', h3: 'Every story has a plot. Here’s yours.', body: 'Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.' },
       { label: 'Taste match', h3: 'Find out your compatibility based on <s>science</s> cinema.', body: 'Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.' },

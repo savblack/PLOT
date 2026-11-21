@@ -18,13 +18,16 @@
 .stories-slide h3 s { text-decoration-thickness: 3px; text-decoration-color: var(--fill); color: #d9d1c4; }
 .stories-slide p { font-size: 1.2rem; font-weight: 400; line-height: 1.45; color: #d9d1c4; }
 .stories-steps { display: flex; flex-wrap: wrap; gap: 10px 12px; margin-bottom: 1.6rem; }
-.stories-step { flex: 1 1 72px; min-width: 0; border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; color: #d9d1c4; font-family: var(--sans); }
+/* Each tab is as wide as its label and the row shares out the spare room; a
+   label never wraps (a two-line label knocked its bar out of line), so on a
+   narrow screen whole tabs move to a second row instead. */
+.stories-step { flex: 1 0 auto; border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; color: #d9d1c4; font-family: var(--sans); }
 .stories-step:focus-visible { outline: 2px solid var(--fill); outline-offset: 4px; border-radius: 4px; }
 .stories-bar { display: block; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.16); overflow: hidden; margin-bottom: 8px; }
 .stories-bar i { display: block; height: 100%; width: 0; background: var(--fill); }
 .stories-step[aria-pressed="true"] { color: var(--on-ink); }
 .stories-step[aria-pressed="true"] .stories-bar i { width: 100%; transition: width 6s linear; }
-.stories-step span:last-child { display: block; font-size: 0.875rem; font-weight: 600; line-height: 1.2; }
+.stories-step span:last-child { display: block; font-size: 0.875rem; font-weight: 600; line-height: 1.2; white-space: nowrap; }
 /* The cards stack in one grid cell and cross-fade: the leaving card
    eases up and out while the next eases up and in. */
 .stories-visuals { display: grid; justify-content: center; align-items: center; min-height: 420px; }
@@ -218,6 +221,13 @@
 @media (max-width: 900px) {
   .stories-inner { grid-template-columns: minmax(0, 1fr); row-gap: 2.5rem; }
   .stories-visuals { min-height: 0; grid-template-columns: minmax(0, 1fr); }
+}
+/* Phones fit the tabs over two rows. Growing them there would stretch the
+   second row's lone tab, bar and all, across the screen, so each keeps its
+   label's width. */
+@media (max-width: 600px) {
+  .stories-steps { gap: 12px 18px; }
+  .stories-step { flex: 0 0 auto; }
 }
 
 /* Light: the same stories on the page cream (home page). The cards gain a

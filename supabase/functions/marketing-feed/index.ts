@@ -38,7 +38,7 @@ import { reportError } from '../_shared/posthogLog.ts';
 const SITE = 'https://theplot.tv';
 const APP = 'https://app.theplot.tv';
 const FEED_TITLE = "What's On";
-const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends – Plot";
+const FEED_SEO_TITLE = "What's On: Film & TV Releases, Streaming & Trends · Plot";
 const FEED_PATH = '/whats-on';
 const PAGE_SIZE = 30;
 const SEARCH_LIMIT = 60;
@@ -137,6 +137,10 @@ const mediaUrl = (path: string) =>
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+// Every list on the front page dates its stories the same short way ("Nov 16");
+// the full date is for the article page's byline.
+const fmtShortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 const fmtWeekday = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
@@ -1017,7 +1021,7 @@ const featuredHero = (p: FeedPost) => {
       ${kicker(p, true)}
       <h2>${esc(postTitle(p))}</h2>
       ${dek ? `<p class="dek">${esc(dek)}</p>` : ''}
-      <div class="f-foot"><span class="f-read">Read the story &rarr;</span><span class="f-date sc">${esc(fmtDate(p.scheduled_for))}</span></div>
+      <div class="f-foot"><span class="f-read">Read the story &rarr;</span><span class="f-date sc">${esc(fmtShortDate(p.scheduled_for))}</span></div>
     </div>
   </a>`;
 };
@@ -1220,7 +1224,7 @@ const sectionCard = (label: string, viewAllHref: string | undefined, body: strin
 // One story card in the feed column: thumb, kicker chip, headline, date.
 const railRow = (p: FeedPost) => {
   const img = postImage(p);
-  const d = new Date(p.scheduled_for).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const d = fmtShortDate(p.scheduled_for);
   return `<a class="rail-row r3${img ? '' : ' text-led'}" href="${FEED_PATH}/${esc(p.slug)}">
     ${img ? `<img class="rail-thumb" src="${esc(img)}" alt="" loading="lazy">` : ''}
     <span class="rail-body">${kicker(p)}<span class="rail-t">${esc(postTitle(p))}</span></span>
@@ -1339,7 +1343,7 @@ const firstLookCards = (posts: FeedPost[]) => `<div class="wide-grid">${posts.ma
 }).join('')}</div>`;
 
 const tailList = (posts: FeedPost[]) => sectionCard('More updates', undefined,
-  `<div class="tail-list">${posts.map((p) => `<a href="${FEED_PATH}/${esc(p.slug)}"><span>${esc(postTitle(p))}</span><span class="meta">${esc(fmtDate(p.scheduled_for))}</span></a>`).join('')}</div>`, true);
+  `<div class="tail-list">${posts.map((p) => `<a href="${FEED_PATH}/${esc(p.slug)}"><span>${esc(postTitle(p))}</span><span class="meta">${esc(fmtShortDate(p.scheduled_for))}</span></a>`).join('')}</div>`, true);
 
 // ── Newsletter signup ─────────────────────────────────────────────
 // There is no archive: the digest goes out by email and lives only there,
@@ -1602,7 +1606,7 @@ const handle = async (req: Request): Promise<Response> => {
       const searchHead = `${SUBSCRIBE_HEAD}
 <meta name="robots" content="noindex, follow">
 <link rel="canonical" href="${SITE}${FEED_PATH}">`;
-      return page(`${rawQ} – Search What's On – Plot`, searchHead, `
+      return page(`${rawQ} · Search What's On · Plot`, searchHead, `
         ${titleRow}
         <p class="search-sum r3">${summary}</p>
         ${results.length ? dailyWire(results) : ''}
