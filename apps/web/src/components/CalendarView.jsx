@@ -22,16 +22,6 @@ import UpcomingSuggestionsSheet from './UpcomingSuggestionsSheet.jsx';
 import EmptyState from './EmptyState.jsx';
 import Segmented from './Segmented.jsx';
 
-const SUGGEST_DISMISS_KEY = 'plot_calendar_suggest_dismissed';
-
-// Closed once, it stays closed on this browser: it used to be per session, so
-// an empty calendar reopened the sheet over the page on every visit. The
-// suggest card on the page still opens it on request.
-function suggestDismissed() {
-  try { return localStorage.getItem(SUGGEST_DISMISS_KEY) === '1'; }
-  catch { return false; }
-}
-
 function monthOf(date) {
   return { year: date.getFullYear(), month: date.getMonth() };
 }
@@ -48,7 +38,6 @@ export default function CalendarView() {
   const fromLink = calendarSuggestRequested(searchParams);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const linkHandled = useRef(false);
-  const autoOpened = useRef(false);
 
   const [todayStr, setTodayStr] = useState(() => localDateStr());
   const todayYear = Number(todayStr.slice(0, 4));
@@ -88,18 +77,12 @@ export default function CalendarView() {
     setSuggestOpen(true);
   }, [fromLink]);
 
-  useEffect(() => {
-    if (fromLink || suggestOpen || autoOpened.current) return;
-    if (!listsReady || myLoading || view !== 'mine' || hasAnyEvents) return;
-    autoOpened.current = true;
-    if (suggestDismissed()) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- open once an empty calendar has finished loading
-    setSuggestOpen(true);
-  }, [fromLink, suggestOpen, listsReady, myLoading, view, hasAnyEvents]);
+  // An empty calendar no longer opens the sheet by itself: the side card
+  // already offers it, and arriving to a sheet over the page read as one more
+  // empty state (Nov 21 critique). A link (?suggest) still opens it.
 
   const closeSuggest = useCallback(() => {
     setSuggestOpen(false);
-    try { localStorage.setItem(SUGGEST_DISMISS_KEY, '1'); } catch { /* storage blocked */ }
   }, []);
 
   const openSuggest = useCallback(() => setSuggestOpen(true), []);
