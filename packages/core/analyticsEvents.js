@@ -89,6 +89,10 @@ export const EVENTS = Object.freeze({
   // behind it. Carries { stat: 'titles' | 'genre' | 'weekday', source }.
   // Fires only once the filtered list is on screen. Tier 1 at most.
   HISTORY_STAT_DRILLDOWN: 'history_stat_drilldown',
+  // The Insights page opened with something to show (not the empty state).
+  // Carries { premium: boolean, source: 'web' | 'mobile' }. Fires once per
+  // visit, on both apps, from insightsOpenedProps in @plot/core/insights.js.
+  INSIGHTS_OPENED: 'insights_opened',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_REDIRECT_ATTEMPTED: 'premium_checkout_redirect_attempted',

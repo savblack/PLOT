@@ -158,6 +158,18 @@ export function IconWatchTogether() {
   );
 }
 
+// Insights: three rising bars. Same strokes as 'insights' in
+// apps/mobile/components/NavIcons.tsx.
+export function IconInsights() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 20v-6" />
+      <path d="M12 20V10" />
+      <path d="M18 20V4" />
+    </svg>
+  );
+}
+
 // Compare: two overlapping circles, the page's own overlap diagram. Same
 // strokes as 'compare' in apps/mobile/components/NavIcons.tsx.
 export function IconCompare() {
@@ -181,6 +193,7 @@ export const NAV_ICONS = {
   calendar: IconCalendar,
   'my-lists': IconLists,
   history: IconHistory,
+  insights: IconInsights,
   tonight: IconTonight,
   together: IconWatchTogether,
   compare: IconCompare,

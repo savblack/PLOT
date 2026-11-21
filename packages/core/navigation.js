@@ -16,6 +16,10 @@ export const APP_NAV_ITEMS = [
   // Own page on web. Mobile keeps the My Lists tab and also opens this from
   // the drawer and the tab bar. MY_LISTS_TABS below keeps its 'history' entry.
   { id: 'history', label: 'History', path: '/history', primary: true },
+  // Insights: what your watching says about you, Free and Premium on one page
+  // (Savannah, 21 Nov 2026). Not primary, so it stays out of the tab bar.
+  // Mobile lists it in its drawer (DrawerMenu.tsx) in the same place.
+  { id: 'insights', label: 'Insights', path: '/insights', primary: false },
   // Own nav item on web and mobile (opened from the drawer). Not primary, so it
   // stays out of the tab bar. Dropped below while the guide is hidden
   // (GUIDE_ENABLED in features.js).
