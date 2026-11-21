@@ -1,10 +1,10 @@
 # nav-polish
 
-Status: paused (ready for review; no pull request opened yet)
+Status: in review (pull request open; do not merge until Savannah asks)
 Owner: Claude Code session, for Savannah
 Branch: agent/2026-11-21-nav-polish
 Worktree: ~/Developer/PLOT-worktrees/2026-11-21-nav-polish
-Latest pushed commit: 26404aafe (plus this handoff update)
+Latest pushed commit: see the branch on GitHub
 Updated: 2026-11-21
 
 ## In plain words
@@ -44,13 +44,15 @@ Savannah: decide whether to open a pull request for it.
 ## Approvals
 
 - Given: polish the menu bar.
-- Still needed: whether to open a PR. The What's On change deploys an edge
-  function to production on merge.
+- Given: open the pull request (2026-11-21).
+- Still needed: merge. The What's On and title-page changes deploy edge
+  functions to production on merge.
 
 ## Next
 
-Open a PR if Savannah wants it. Then check the What's On feed and a title page
-in the Cloudflare preview (they could not be served locally).
+Check the What's On feed and a title page
+in the Cloudflare preview (they could not be served locally). Delete this file in the last commit
+before merge.
 
 Noticed, not changed: the What's On feed and title pages use 0.7rem nav links;
 the rest of the site uses 0.8rem, though nav.css says they match.
