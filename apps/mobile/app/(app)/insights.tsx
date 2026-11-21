@@ -12,6 +12,7 @@ import { View, Text, Image, Pressable, ScrollView, StyleSheet } from 'react-nati
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
+import { BlurView } from 'expo-blur';
 import BackBar from '../../components/BackBar';
 import Button from '../../components/Button';
 import UpgradeSheet from '../../components/UpgradeSheet';
@@ -87,11 +88,14 @@ function ShareIcon({ what, onPress, colors }: { what: string; onPress?: (() => v
   );
 }
 
-/** `tag` marks sample content; `onUnlock` adds the Premium button under it. */
+/** `tag` marks sample content; `onUnlock` adds the Premium button under it and
+ *  blurs the sample: next to real numbers it read as the viewer's own (web
+ *  does the same with .ins-card-preview). */
 function Card({ label, tag, share, onUnlock, children, styles, colors }: {
   label: string; tag?: string | null; share?: React.ReactNode; onUnlock?: (() => void) | null;
   children: React.ReactNode; styles: Styles; colors: Palette;
 }) {
+  const { resolved } = useTheme();
   return (
     <View style={[styles.card, !!tag && styles.cardSample]}>
       <View style={styles.head}>
@@ -104,7 +108,12 @@ function Card({ label, tag, share, onUnlock, children, styles, colors }: {
         )}
         {share}
       </View>
-      {children}
+      {onUnlock ? (
+        <View style={styles.preview} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {children}
+          <BlurView intensity={18} tint={resolved === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+        </View>
+      ) : children}
       {!!onUnlock && <View style={styles.selfStart}><Button size="sm" variant="secondary" label={COMMON.seePremium} onPress={onUnlock} /></View>}
     </View>
   );
@@ -165,8 +174,8 @@ function TypeCard({ type, history, premium, sample, have, onFindTitle, year, sty
 }
 
 export default function InsightsScreen() {
-  const { colors, resolved } = useTheme();
-  const styles = useMemo(() => makeStyles(colors, resolved === 'dark'), [colors, resolved]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const art = useUserArtwork();
@@ -463,11 +472,11 @@ function Stat({ value, label, delta, styles }: { value: string; label: string; d
   );
 }
 
-const makeStyles = (colors: Palette, dark: boolean) => {
-  // The ink card is charcoal in light mode and turns light in dark mode; the
-  // pink fill can't carry type on the light version, so it takes accentText
-  // there (web does the same under [data-theme="dark"]).
-  const typeAccent = dark ? colors.accentText : colors.accentFill;
+const makeStyles = (colors: Palette) => {
+  // The ink card is charcoal in light mode and turns light in dark mode. The
+  // name and kicker take the card's own ink (colors.bg) in both: the pink fill
+  // is never type, and on the light card the accent was about 2.6:1. Web
+  // matches in InsightsView.css.
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.bg },
     scroll: { paddingHorizontal: spacing.lg, gap: spacing.lg },
@@ -490,6 +499,7 @@ const makeStyles = (colors: Palette, dark: boolean) => {
       borderRadius: radii.md, padding: 14, gap: 12,
     },
     cardSample: { borderWidth: 1, borderStyle: 'dashed', borderColor: colors.borderStrong },
+    preview: { gap: 12, opacity: 0.7, overflow: 'hidden', borderRadius: radii.sm },
     head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 24 },
     kicker: { flex: 1, fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.9, textTransform: 'uppercase', color: colors.textMuted },
     tag: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: colors.surfaceSunken },
@@ -500,8 +510,8 @@ const makeStyles = (colors: Palette, dark: boolean) => {
     lead: { fontFamily: fontFamily.displaySemi, fontSize: 18, lineHeight: 23, letterSpacing: -0.36, color: colors.textPrimary },
     startTitle: { fontFamily: fontFamily.display, fontSize: 22, letterSpacing: -0.66, color: colors.textPrimary },
     type: { backgroundColor: colors.textPrimary, borderRadius: radii.md, padding: 18, gap: 10 },
-    typeKicker: { flex: 1, fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.9, textTransform: 'uppercase', color: typeAccent },
-    typeName: { fontFamily: fontFamily.display, fontSize: 38, lineHeight: 38, letterSpacing: -1.5, color: typeAccent },
+    typeKicker: { flex: 1, fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 0.9, textTransform: 'uppercase', color: colors.bg, opacity: 0.75 },
+    typeName: { fontFamily: fontFamily.display, fontSize: 38, lineHeight: 38, letterSpacing: -1.5, color: colors.bg },
     typeLocked: { fontFamily: fontFamily.display, fontSize: 26, lineHeight: 29, letterSpacing: -0.8, color: colors.bg },
     typeLine: { fontFamily: fontFamily.sans, fontSize: 15, lineHeight: 21, color: colors.bg },
     typeLast: { fontFamily: fontFamily.sans, fontSize: 13, color: colors.bg, opacity: 0.7 },
