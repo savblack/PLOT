@@ -5,7 +5,9 @@
 //         One height per size, no outline.
 //   Tag   a small label that only says something (Film, Series, Premium, a
 //         count). Never pressable. `neutral` is the deeper cream, `sage` marks
-//         kind and availability, `accent` marks the one lead per panel.
+//         a state (Watched, On your watchlist, New season), `accent` marks the
+//         one lead per panel, `genre` is the pale pink tint a title's genres
+//         wear (charcoal text, so it stays a tint, not a pink label).
 //
 // Stateful action pills with their own meaning (Follow, Watchlist, watch
 // status) are not chips and keep their own components.
@@ -52,7 +54,7 @@ export default function Chip({ label, selected, onClick, size = 'md', quiet = fa
 }
 
 /**
- * @param {{ label: string, tone?: 'neutral' | 'sage' | 'accent' | 'artwork' | 'success' | 'warning', icon?: import('react').ReactNode, className?: string }} props
+ * @param {{ label: string, tone?: 'neutral' | 'sage' | 'accent' | 'genre' | 'artwork' | 'success' | 'warning', icon?: import('react').ReactNode, className?: string }} props
  * success: out today, warning: in the next week (release countdowns).
  */
 export function Tag({ label, tone = 'neutral', icon, className = '' }) {

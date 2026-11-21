@@ -6,7 +6,9 @@
  *         label when on. One height per size, no outlines.
  *   Tag   a small label that only says something (Film, Series, Premium,
  *         a count). Never pressable. `neutral` is the deeper cream, `sage`
- *         marks kind and availability, `accent` marks the one lead per panel.
+ *         marks a state (Watched, On your watchlist), `accent` marks the one
+ *         lead per panel, `genre` is the pale pink tint a title's genres wear
+ *         (charcoal text, as on web).
  *
  * Stateful action pills that carry their own meaning (Follow, Watchlist,
  * watch status) are not chips and keep their own components.
@@ -53,7 +55,7 @@ export default function Chip({ label, selected = false, onPress, size = 'md', qu
   );
 }
 
-export type TagTone = 'neutral' | 'sage' | 'accent';
+export type TagTone = 'neutral' | 'sage' | 'accent' | 'genre';
 
 export function Tag({ label, tone = 'neutral', icon, style }: { label: string; tone?: TagTone; icon?: ReactNode; style?: StyleProp<ViewStyle> }) {
   const { colors } = useTheme();
@@ -86,8 +88,10 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   tag_neutral: { backgroundColor: colors.surfaceSunken },
   tag_sage: { backgroundColor: colors.accentSecondaryFill },
   tag_accent: { backgroundColor: colors.accentDim },
+  tag_genre: { backgroundColor: colors.accentDim },
   tagText: { fontFamily: fontFamily.sansMedium, fontSize: 11 },
   tagText_neutral: { color: colors.textSecondary },
   tagText_sage: { color: colors.onAccentSecondaryFill },
   tagText_accent: { color: colors.accentText },
+  tagText_genre: { color: colors.textPrimary },
 });
