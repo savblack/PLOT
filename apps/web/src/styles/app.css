@@ -119,10 +119,11 @@ svg { stroke-width: 1.5; }
   margin-inline: auto;
 }
 
-/* Desktop page title (Nov 2026 critique, option B): at sidebar widths the h1
-   shows in the band above the page, so the page itself says where you are.
-   Home keeps it for screen readers only (the logo is its title). Hidden
-   outright below the sidebar breakpoint, where the app header carries it. */
+/* Desktop page title. Not shown: the sidebar's active row already names the
+   page, so the content starts at the top of the column. The h1 stays in the
+   markup for screen readers and the document outline (visually hidden at
+   sidebar widths, below). Hidden outright below the sidebar breakpoint, where
+   the app header still carries the title. */
 .app-page-heading {
   display: none;
 }
@@ -338,33 +339,9 @@ svg { stroke-width: 1.5; }
     border-bottom: none;
   }
 
-  /* Sits in the 44px band every page already opened with, so the content
-     moves down by about 24px rather than by a whole title row. */
+  /* Visually hidden, same recipe as .sr-only (base.css). */
   .app-page-heading {
     display: block;
-    margin: 0 0 1rem;
-    /* The 16px every page's cards start in from the column edge. */
-    padding-inline: 1rem;
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1.625rem;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Notifications is a centred 760px column; the title sits over it. */
-  .app-main-inner:has(> .notif-page) > .app-page-heading {
-    max-width: 760px;
-    margin-inline: auto;
-  }
-
-  /* Home, Import and profiles: visually hidden, same recipe as .sr-only
-     (base.css). Each already opens with its own name. */
-  .app-page-heading--hidden {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -382,7 +359,6 @@ svg { stroke-width: 1.5; }
      Pages must not add top space of their own at this width: the rules below
      take back the extra that some of them carried. */
   .app-main-inner { padding-top: 2.75rem; }
-  .app-main-inner:has(> .app-page-heading:not(.app-page-heading--hidden)) { padding-top: 1.25rem; }
 
   /* A toolbar row with nothing in it takes no room. History's holds the year
      switcher only when there is more than one year; My Lists' holds the phone
