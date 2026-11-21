@@ -262,10 +262,10 @@ The full list, with values per theme, is `tokens.js`. Grouped by job:
 - **Radii** (`radii` in `tokens.js`): `--radius-badge` 10px chips and badges ·
   `--radius-md` 16px cards, panels, inputs, rows, swatches · `--radius-lg` 24px sheets and
   larger containers · `--radius-pill` buttons and filter controls.
-  Cards are 16px on both surfaces: `--radius-md` in the app, `--r-md` on the website
-  (`.card`, and the homepage's `.hx-card` and `.pm-tile`) (Savannah, 21 Nov 2026; they
-  were 20 to 24px until then). Page-wide slabs are a different shape and keep their own
-  larger corner: the homepage section bands (`.hx`, `--box-radius`) and the footer panel.
+  Cards and panels are 16px on both surfaces: `--radius-md` in the app, `--r-md` on the
+  website. That includes the website's `.card`, the homepage's `.hx-card` and `.pm-tile`,
+  its full-width section bands (`.hx`, through `--box-radius`) and the footer panel
+  (Savannah, 21 Nov 2026; they were 20 to 28px until then).
 
 ### Components
 

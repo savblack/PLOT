@@ -113,7 +113,7 @@
   <link rel="preload" href="/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
-  <link rel="stylesheet" href="/ui.css?v=4ccc05ec" />
+  <link rel="stylesheet" href="/ui.css?v=7fc314f1" />
   <link rel="stylesheet" href="/nav.css?v=ca43db8c" />
   <style>
     /* ── Reset & Tokens ─────────────────────────────────────── */
@@ -784,7 +784,6 @@
       padding: 22px 24px 18px;
       background: var(--card);
       border-radius: var(--r-md);
-      box-shadow: 0 24px 60px rgba(41,41,36,0.14);
     }
     .hx-card-title { font-family: var(--display); font-weight: 700; font-size: 1.35rem; letter-spacing: -0.02em; }
 
@@ -966,7 +965,7 @@
     :root {
       --box-inset: clamp(12px, 1.8vw, 24px);
       --box-gap: clamp(10px, 1.4vw, 16px);
-      --box-radius: 28px;
+      --box-radius: var(--r-md);
       --box-white: var(--card);
       /* Page ground, a touch lighter than the shared cream. Panel tints are
          set explicitly, so they do not move with it. */
@@ -978,7 +977,7 @@
       :root { --bg: #0c0c0c; --thumb: #2e2e2e; --thumb-hover: #3d3d3d; }
     }
     @media (max-width: 760px) {
-      :root { --box-inset: 10px; --box-gap: 10px; --box-radius: 22px; }
+      :root { --box-inset: 10px; --box-gap: 10px; }
     }
 
     /* The nav pill lives in the shared /nav.css. */
