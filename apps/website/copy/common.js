@@ -12,7 +12,7 @@ export const NAV = {
   whatsOn: "What's On",
   pricing: 'Pricing', // pricing.html's nav and the footer
   login: 'Log in',
-  signup: 'Start tracking',
+  signup: 'Sign up', // the nav button; the hero and footer keep 'Start tracking'
 };
 
 export const FOOTER = {

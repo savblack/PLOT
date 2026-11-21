@@ -75,12 +75,18 @@ nav.scrolled {
    currently uses the same pink, so the nav matches site-wide. */
 .nav-cta {
   background: var(--fill);
-  padding: 0.6rem 1.1rem !important;
+  /* 34px tall, so it nests in the 52px pill with an even 9px on the top,
+     bottom and right. The right side gives back the 0.12em of tracking after
+     the last letter, so the label sits optically centred. */
+  padding: calc(17px - 0.5em) calc(1.1rem - 0.12em) calc(17px - 0.5em) 1.1rem !important;
   border-radius: var(--r-pill);
   line-height: 1;
 }
 .nav-links a.nav-cta { color: var(--on-fill, #292924); font-weight: 700; }
 .nav-cta:hover { background: var(--fill-hover); }
+/* Focus rings follow each shape: round for the pill, soft for the logo. */
+.nav-links a.nav-cta:focus-visible { border-radius: var(--r-pill); }
+.nav-logo:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
 
 /* Mobile nav toggle — padded to a ≥44px tap target, negative margin keeps
    the icon optically aligned with the nav's right edge */

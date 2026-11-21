@@ -532,11 +532,13 @@ ${head}
   .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
   .nav-links li { display: flex; }
   /* Small tracked capitals: the same values as apps/website/nav.css. */
-  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s, background 0.2s; }
+  .nav-links a { display: inline-block; padding: 0.75rem 0.25rem; text-decoration: none; color: var(--mut); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s, background 0.2s; }
   .nav-links a:hover { color: var(--ink); }
   .nav-links .nav-more { display: none; }
   .nav-links a.current { color: var(--ink); }
-  .nav-cta { background: var(--fill); padding: 0.6rem 1.1rem !important; border-radius: 9999px; line-height: 1; color: var(--on-fill); }
+  .nav-cta { background: var(--fill); padding: calc(17px - 0.5em) calc(1.1rem - 0.12em) calc(17px - 0.5em) 1.1rem !important; border-radius: 9999px; line-height: 1; color: var(--on-fill); }
+  .nav-links a.nav-cta:focus-visible { border-radius: 9999px; }
+  .nav-logo:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
   .nav-links a.nav-cta { color: var(--on-fill); font-weight: 700; }
   .nav-cta:hover { background: var(--fill-hover); color: var(--on-fill); }
   .nav-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 14px 12px; margin-right: -12px; flex-direction: column; gap: 5px; }
@@ -963,7 +965,7 @@ ${GTM_NOSCRIPT}
     <li class="nav-more"><a href="${SITE}/about">About</a></li>
     <li class="nav-more"><a href="${SITE}/support">Support</a></li>
     <li><a href="${APP}/login?src=whats_on_nav" data-cta="nav">Log in</a></li>
-    <li><a href="${APP}/signup?src=whats_on_nav" data-cta="nav" class="nav-cta">Start tracking</a></li>
+    <li><a href="${APP}/signup?src=whats_on_nav" data-cta="nav" class="nav-cta">Sign up</a></li>
   </ul>
   <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
     <span></span><span></span><span></span>
