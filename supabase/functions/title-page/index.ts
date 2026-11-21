@@ -75,7 +75,7 @@ ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${SITE}/_partials/footer.css">
-<link rel="stylesheet" href="${SITE}/title-page.css?v=ecb881831872">
+<link rel="stylesheet" href="${SITE}/title-page.css?v=402082575e09">
 <script defer src="${SITE}/title-page.js?v=37a1a8165a48"></script>
 </head>
 <body>
@@ -89,7 +89,7 @@ ${GTM_NOSCRIPT}
     <li class="nav-more"><a href="${SITE}/about">About</a></li>
     <li class="nav-more"><a href="${SITE}/support">Support</a></li>
     <li><a href="${APP}/login?src=title_page_nav" data-cta="nav">Log in</a></li>
-    <li><a href="${APP}/signup?src=title_page_nav" data-cta="nav" class="nav-cta">Start tracking</a></li>
+    <li><a href="${APP}/signup?src=title_page_nav" data-cta="nav" class="nav-cta">Sign up</a></li>
   </ul>
   <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
     <span></span><span></span><span></span>
