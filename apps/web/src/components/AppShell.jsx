@@ -129,6 +129,7 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
   // The drawer's profile row reads as selected on the viewer's own profile
   // and on Settings, as the desktop rail's does.
   const accountActive = (!!profile?.username && currentView === `u/${profile.username}`) || isActiveView(currentView, 'settings');
+  const headingHidden = isProfileView || currentView === 'home' || currentView === 'import';
   const desktopTitle = isProfileView
     ? (profile?.username && profileHandle === profile.username ? APP_SHELL.profile : `@${profileHandle}`)
     : (APP_NAV_ITEMS.find(item => item.id === currentView)?.label ?? pageTitle);
@@ -201,9 +202,10 @@ export default function AppShell({ currentView, navigateTo, children, profile, u
             and the scrollbar keep the viewport edges; the content itself rides
             in a centred column. */}
         <div className="app-main-inner">
-          {/* Sidebar widths only, and for screen readers only — below them
-              the header above carries the title and this is display: none. */}
-          {!isListDetail && <h1 className="app-page-heading">{desktopTitle}</h1>}
+          {/* Sidebar widths only: below them the header above carries the
+              title and this is display: none. Home, Import and profiles keep
+              it for screen readers only: each already opens with its name. */}
+          {!isListDetail && <h1 className={`app-page-heading${headingHidden ? ' app-page-heading--hidden' : ''}`}>{desktopTitle}</h1>}
           {children}
         </div>
       </main>
