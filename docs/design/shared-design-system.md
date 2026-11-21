@@ -243,10 +243,11 @@ The full list, with values per theme, is `tokens.js`. Grouped by job:
 - **Over imagery:** `--image-scrim`, `--image-text-primary`, `--image-text-secondary`.
 - **Meaning, not decoration** (permitted outside the accent rules because they carry information):
   - Guide and time: `--chip-now`, `--chip-today`, `--chip-tomorrow`, `--chip-soon`,
-    `--chip-cinema`, `--chip-streaming`, `--chip-episode`, `--epg-bar-stream`,
-    `--epg-bar-broadcast`.
-  - Watch state: `--status-watching` (and `-dim`) for in progress, `--status-watched`
-    (and `-dim`) for done.
+    `--chip-cinema`, `--chip-streaming`, `--epg-bar-stream`, `--epg-bar-broadcast`.
+    (`--chip-episode` survives only for the social card templates in `marketing/templates`; the apps don't use it.)
+  - Watch state: in progress (Watching) is the accent (`--accent-dim` with
+    `--accent-text`), since it is progress; done is `--status-watched` (and `-dim`).
+    The indigo `--status-watching` is retired in the apps (Nov 2026).
   - Outcome of an action: `--success`, `--success-dim`, `--success-border`; `--danger`,
     `--danger-dim`, `--danger-border`. Success and watched share a green today on purpose;
     keep them separate tokens so either can move.

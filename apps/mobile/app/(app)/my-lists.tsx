@@ -1404,14 +1404,13 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radii.badge,
-    backgroundColor: colors.chipEpisode + '1F',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.chipEpisode + '55',
+    // Neutral meta, like the type label beside it; indigo retired (Nov 2026).
+    backgroundColor: colors.surfaceSunken,
   },
   epChipText: {
     fontFamily: fontFamily.sansBold,
     fontSize: 10,
-    color: colors.chipEpisode,
+    color: colors.textSecondary,
     letterSpacing: 0.4,
   },
 

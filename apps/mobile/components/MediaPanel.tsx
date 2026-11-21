@@ -1438,7 +1438,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       accessibilityState={{ expanded: statusMenuOpen, disabled: !!statusPending }}
                     >
                       <Text
-                        style={[styles.pillText, isWatching && { color: colors.statusWatching }, watched && !isWatching && { color: colors.statusWatched }]}
+                        style={[styles.pillText, isWatching && { color: colors.accentText }, watched && !isWatching && { color: colors.statusWatched }]}
                         numberOfLines={1}
                       >
                         {statusLabel}
@@ -1920,7 +1920,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderRadius: radii.pill, backgroundColor: colors.surfaceSunken,
   },
   pillSaved: { backgroundColor: colors.statusWatchedDim },
-  pillWatching: { backgroundColor: colors.statusWatchingDim },
+  pillWatching: { backgroundColor: colors.accentDim },
   pillText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary, maxWidth: 128 },
   iconGroup: { flexDirection: 'row', gap: spacing.sm, marginLeft: 'auto' },
   iconBtn: {
@@ -1928,7 +1928,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSunken,
   },
   iconBtnFav: { backgroundColor: colors.accentDim },
-  iconBtnOn: { backgroundColor: colors.statusWatchingDim },
+  iconBtnOn: { backgroundColor: colors.accentDim },
   statusMenu: {
     position: 'absolute', top: 44, left: 0, zIndex: 5, minWidth: 160,
     backgroundColor: colors.surface, borderRadius: radii.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
@@ -2003,7 +2003,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   epSearchNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.sm },
   epSearchCode: { minWidth: 52 },
   epActionError: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger, marginBottom: spacing.sm },
-  epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
+  epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textMuted, letterSpacing: 0.4 },
   epCodeCurrent: { color: colors.accent },
   epAirDate:   { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
   epTitle:     { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },

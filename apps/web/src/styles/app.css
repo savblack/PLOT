@@ -3381,7 +3381,8 @@ a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
 /* In the watchlist: the green pill with a tick, as on the iPhone (Nov 16, 2026).
    The bookmark everywhere else stays one glyph: outline, or solid when saved. */
 .panel-pill--saved { background: var(--status-watched-dim); color: var(--status-watched); }
-.panel-pill--watching { background: var(--status-watching-dim); color: var(--status-watching); }
+/* Watching is progress, so pink; Watched is a state, so sage (Nov 2026). */
+.panel-pill--watching { background: var(--accent-dim); color: var(--accent-text); }
 .panel-pill--watched { background: var(--status-watched-dim); color: var(--status-watched); }
 .panel-pill--sm { min-height: 32px; padding: 0 0.75rem; gap: 0.35rem; font-size: 0.8rem; }
 .panel-pill-label { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3402,7 +3403,7 @@ a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
 }
 .panel-icon-btn:hover { color: var(--text-primary); }
 .panel-icon-btn--fav { background: var(--accent-dim); color: var(--accent); }
-.panel-icon-btn--on { background: var(--status-watching-dim); color: var(--status-watching); }
+.panel-icon-btn--on { background: var(--accent-dim); color: var(--accent-text); }
 
 .panel-status { position: relative; min-width: 0; }
 .panel-status-menu {

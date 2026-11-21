@@ -536,15 +536,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   info: { flex: 1, minWidth: 0 },
   title: { fontFamily: fontFamily.sansMedium, fontSize: 14, color: colors.textPrimary },
   meta: { marginTop: 2, fontFamily: fontFamily.sans, fontSize: 12, color: colors.textSecondary },
+  // Web's .watch-chip--watched: Watched is a state, so sage.
   watched: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radii.badge,
-    backgroundColor: colors.chipEpisode + '1F',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.chipEpisode + '55',
+    backgroundColor: colors.accentSecondaryFill,
   },
-  watchedText: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
+  watchedText: { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.onAccentSecondaryFill, letterSpacing: 0.4 },
   kind: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted },
   kindOwn: { fontFamily: fontFamily.sansMedium, color: colors.accentText },
   recent: { paddingHorizontal: 18, paddingTop: spacing.lg },
