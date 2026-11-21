@@ -311,10 +311,10 @@
 .chip-plain { text-transform: none; letter-spacing: 0.02em; font-weight: 500; font-size: 0.875rem; }
 
 
-/* Cards and panels — the deeper cream, 20px radius, no border, no shadow */
+/* Cards and panels — the deeper cream, --r-md radius (the app's --radius-md), no border, no shadow */
 .card {
   background: var(--surface);
-  border-radius: 20px;
+  border-radius: var(--r-md);
 }
 .card-pad { padding: 1.75rem 2rem; }
 .card-ink { background: var(--ink); color: var(--on-ink); }

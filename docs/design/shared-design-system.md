@@ -258,7 +258,8 @@ The full list, with values per theme, is `tokens.js`. Grouped by job:
 - **Radii** (`radii` in `tokens.js`): `--radius-badge` 10px chips and badges ·
   `--radius-md` 16px cards, panels, inputs, rows, swatches · `--radius-lg` 24px sheets and
   larger containers · `--radius-pill` buttons and filter controls.
-  The website's `.card` is a fixed 20px (`apps/website/ui.css`); the app uses `--radius-md`.
+  Cards are 16px on both surfaces: `--radius-md` in the app, `--r-md` on the website
+  (Savannah, 21 Nov 2026; the website's `.card` was 20px until then).
 
 ### Components
 
