@@ -3,10 +3,11 @@ import test from 'node:test';
 
 import {
   INSIGHT_PERIODS, FREE_PERIODS, periodEntries, samePeriodLastYear, yearOverYear,
-  latelyFacts, latelySentence, latelyShifts, highestRated, onThisDay, weekdayCounts,
-  hotTakes, premiumTeasers, insightsOpenedProps,
+  latelyFacts, latelyShifts, highestRated, onThisDay, weekdayCounts,
+  hotTakes, insightsOpenedProps, watchingType, typeHistory, SAMPLE_INSIGHTS, WATCHING_TYPES,
 } from '../../insights.js';
 import { detailsKey } from '../../historyStats.js';
+import { INSIGHTS_VIEW } from '../../copy/insightsView.js';
 
 // Synthetic rows, same shape as historyStats.test.js. The ids never reach TMDB.
 let nextId = 1;
@@ -48,16 +49,8 @@ test('yearOverYear: differences, and null with nothing last year', () => {
   assert.deepEqual(yearOverYear(cur, [row('2025-01-01')]), { titles: 2, stars: null });
 });
 
-test('latelyFacts says nothing below the minimum', () => {
+test('latelyFacts reads genre, days and mix', () => {
   const now = at(2026, 11, 21);
-  assert.equal(latelyFacts([row('2026-11-20'), row('2026-11-19')], { now, genreName }), null);
-  // Older than 30 days doesn't count.
-  assert.equal(latelyFacts([row('2026-11-20'), row('2026-11-19'), row('2026-10-01')], { now, genreName }), null);
-});
-
-test('latelySentence: genre, days and mix, in one plain sentence', () => {
-  const now = at(2026, 11, 21); // a Saturday
-  // Four comedies, all on Fri/Sat/Sun, three of them shows.
   const es = [
     row('2026-11-21', { genre_ids: [35], media_type: 'tv' }),
     row('2026-11-20', { genre_ids: [35], media_type: 'tv' }),
@@ -65,22 +58,16 @@ test('latelySentence: genre, days and mix, in one plain sentence', () => {
     row('2026-11-14', { genre_ids: [35] }),
   ];
   const f = latelyFacts(es, { now, genreName });
-  assert.equal(f.count, 4);
   assert.equal(f.genre.name, 'Comedy');
-  assert.equal(latelySentence(f), 'Mostly comedy, mostly on weekends, and more shows than movies.');
-  assert.equal(latelySentence(null), null);
+  assert.equal(f.showShare, 0.75);
+  assert.equal(f.weekendShare, 1);
 });
 
-test('latelySentence: a mix of genres on weeknights, mostly movies', () => {
+test('latelyFacts says nothing below the minimum', () => {
   const now = at(2026, 11, 21);
-  const es = [
-    row('2026-11-17', { genre_ids: [35] }), // Tue
-    row('2026-11-18', { genre_ids: [18] }), // Wed
-    row('2026-11-11', { genre_ids: [27] }), // Wed
-    row('2026-11-10', { genre_ids: [] }),   // Tue
-    row('2026-11-09', { genre_ids: [] }),   // Mon
-  ];
-  assert.equal(latelySentence(latelyFacts(es, { now, genreName })), 'A real mix of genres, mostly on weeknights, and more movies than shows.');
+  assert.equal(latelyFacts([row('2026-11-20'), row('2026-11-19')], { now, genreName }), null);
+  // Older than 30 days doesn't count.
+  assert.equal(latelyFacts([row('2026-11-20'), row('2026-11-19'), row('2026-10-01')], { now, genreName }), null);
 });
 
 test('latelyShifts: lines only for real changes, null without a usual', () => {
@@ -156,15 +143,60 @@ test('hotTakes: a star or more from the crowd, furthest first', () => {
   assert.equal(r[0].crowdStars, 4.2);
 });
 
-test('premiumTeasers only names what is true', () => {
-  const now = at(2026, 11, 21);
-  const thin = [row('2026-11-20')];
-  assert.deepEqual(premiumTeasers({ entries: thin, periodRows: thin, details: new Map(), now, genreName, period: 'year' }), []);
-  const es = [row('2024-05-01'), ...Array.from({ length: 7 }, (_, i) => row(`2026-06-0${i + 1}`))];
-  const ids = premiumTeasers({ entries: es, periodRows: es.slice(1), details: new Map(), now, genreName, period: 'year' }).map(t => t.id);
-  assert.deepEqual(ids, ['weekdays', 'allTime']);
-});
-
 test('insightsOpenedProps has one shape on both apps', () => {
   assert.deepEqual(insightsOpenedProps({ premium: 1, source: 'mobile' }), { premium: true, source: 'mobile' });
+});
+
+test('watchingType: null below five titles, then the strongest rule wins', () => {
+  const now = at(2026, 11, 21);
+  assert.equal(watchingType([row('2026-11-20'), row('2026-11-19')], { now, genreName }), null);
+  // Six horror titles out of seven in the last 30 days: a devotee, named for the genre.
+  const es = [
+    ...['2026-11-21', '2026-11-20', '2026-11-14', '2026-11-13', '2026-11-07', '2026-11-06'].map(d => row(d, { genre_ids: [27] })),
+    row('2026-11-01', { genre_ids: [35] }),
+  ];
+  const t = watchingType(es, { now, genreName });
+  assert.equal(t.id, 'devotee');
+  assert.equal(t.name, 'The Horror Devotee');
+  assert.equal(t.basis, 'lately');
+  assert.equal(t.reasons[0], 'Horror in 86% of what you watched');
+  assert.ok(t.reasons.length >= 1 && t.reasons.length <= 3);
+});
+
+test('watchingType: a binger watches mostly shows, three or more a week', () => {
+  const now = at(2026, 11, 21);
+  const es = Array.from({ length: 14 }, (_, i) => row(`2026-11-${String(8 + i).padStart(2, '0')}`, { media_type: 'tv', genre_ids: [i % 2 ? 18 : 35] }));
+  assert.equal(watchingType(es, { now, genreName }).id, 'binger');
+});
+
+test('watchingType: a tough critic, from TMDB scores', () => {
+  const now = at(2026, 11, 21);
+  const es = ['2026-11-02', '2026-11-05', '2026-11-09', '2026-11-12', '2026-11-17'].map((d, i) => row(d, { rating: 4, genre_ids: [i % 2 ? 18 : 35, 27 + i] }));
+  const details = new Map(es.map(e => [detailsKey(e), { vote_average: 8 }]));
+  const t = watchingType(es, { now, genreName, details });
+  assert.equal(t.id, 'critic');
+  assert.equal(t.reasons[0], '2 stars tougher than the crowd');
+});
+
+test('watchingType falls back to the year, and to The All-Rounder', () => {
+  const now = at(2026, 11, 21);
+  const es = ['2026-02-02', '2026-03-03', '2026-04-08', '2026-05-12', '2026-06-16'].map((d, i) => row(d, { media_type: i % 2 ? 'tv' : 'movie', genre_ids: [[35, 18, 27, 53, 80][i]] }));
+  const t = watchingType(es, { now, genreName });
+  assert.equal(t.basis, 'year');
+  assert.equal(t.id, 'allRounder');
+});
+
+test('typeHistory: one row per month, newest first, null when thin', () => {
+  const now = at(2026, 11, 21);
+  const es = Array.from({ length: 6 }, (_, i) => row(`2026-10-0${i + 1}`, { genre_ids: [27] }));
+  const h = typeHistory(es, { now, genreName, months: 3 });
+  assert.deepEqual(h.map(m => [m.month, m.name]), [[10, null], [9, 'The Horror Devotee'], [8, null]]);
+});
+
+test('every type has a name and a line, and the sample is a real type', () => {
+  for (const id of WATCHING_TYPES) {
+    assert.match(INSIGHTS_VIEW.typeName(id, 'Horror'), /^The /);
+    assert.ok(INSIGHTS_VIEW.typeLine[id], `no line for ${id}`);
+  }
+  assert.ok(WATCHING_TYPES.includes(SAMPLE_INSIGHTS.type.id));
 });

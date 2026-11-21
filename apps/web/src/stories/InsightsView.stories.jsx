@@ -71,12 +71,12 @@ const GENRES = [
   { id: 10765, name: 'Sci-Fi & Fantasy' }, { id: 16, name: 'Animation' }, { id: 12, name: 'Adventure' }, { id: 14, name: 'Fantasy' },
 ];
 
-function FixtureInsights({ premium = false, empty = false }) {
+function FixtureInsights({ premium = false, empty = false, few = false }) {
   const [period, setPeriod] = useState('year');
   const topLists = useFixtureTopLists();
   return (
     <InsightsPage
-      entries={empty ? [] : ENTRIES}
+      entries={empty ? [] : few ? ENTRIES.slice(0, 3) : ENTRIES}
       details={DETAILS}
       detailsLoading={false}
       genreList={GENRES}
@@ -87,6 +87,10 @@ function FixtureInsights({ premium = false, empty = false }) {
       profile={PROFILE}
       topLists={topLists}
       today={TODAY}
+      onFindTitle={noop}
+      onImport={noop}
+      onRate={noop}
+      importSources={[{ id: 'letterboxd', name: 'Letterboxd' }, { id: 'trakt', name: 'Trakt' }]}
     />
   );
 }
@@ -101,3 +105,5 @@ export default {
 export const Free = { render: () => <FixtureInsights /> };
 export const Premium = { render: () => <FixtureInsights premium /> };
 export const Empty = { render: () => <FixtureInsights empty /> };
+// Three titles: not enough for a watching type yet.
+export const NewAccount = { render: () => <FixtureInsights few /> };

@@ -111,7 +111,7 @@ export const EVENTS = Object.freeze({
   PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
   // The empty-library nudge (activationNudge.js). All carry { surface:
-  // 'home' | 'history' }; import_clicked also carries { source } (an import
+  // 'home' | 'history' | 'insights' }; import_clicked also carries { source } (an import
   // page platform id such as 'trakt'). Shown once per mount while the account
   // has no titles.
   ACTIVATION_NUDGE_SHOWN: 'activation_nudge_shown',

@@ -10,7 +10,7 @@
 // sections. Which is which lives in INSIGHT_PERIODS / FREE_PERIODS so both
 // apps gate the same things.
 
-import { calendarParts, recurringPeople } from './historyStats.js';
+import { calendarParts } from './historyStats.js';
 import { INSIGHTS_VIEW as T } from './copy/insightsView.js';
 
 export const INSIGHT_PERIODS = Object.freeze({ MONTH: 'month', YEAR: 'year', ALL: 'all' });
@@ -143,30 +143,6 @@ function facts(rows, genreName, min) {
     weekendShare: (days[5] + days[6] + days[0]) / n,
     weekday: days[topDay] ? { name: WEEKDAYS[topDay], share: days[topDay] / n } : null,
   };
-}
-
-/**
- * "Mostly comedy, mostly on weekends, and more shows than movies."
- * @param {ReturnType<typeof latelyFacts>} f
- */
-export function latelySentence(f) {
-  if (!f) return null;
-  const parts = [];
-  if (f.genre && f.genre.share >= 0.4) parts.push(T.latelyMostly(f.genre.name));
-  else if (f.genre && f.genre.share >= 0.25) parts.push(T.latelyALotOf(f.genre.name));
-  else parts.push(T.latelyMixOfGenres);
-  if (f.count >= 4) {
-    if (f.weekendShare >= 0.6) parts.push(T.latelyWeekends);
-    else if (f.weekendShare <= 0.2) parts.push(T.latelyWeeknights);
-    else if (f.weekday && f.weekday.share >= 0.4) parts.push(T.latelyOnDay(f.weekday.name));
-  }
-  if (f.showShare >= 0.65) parts.push(T.latelyMoreShows);
-  else if (f.showShare <= 0.35) parts.push(T.latelyMoreMovies);
-  else parts.push(T.latelyEvenMix);
-  const text = parts.length > 2
-    ? `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`
-    : parts.join(' and ');
-  return text.charAt(0).toUpperCase() + text.slice(1) + '.';
 }
 
 /**
@@ -307,35 +283,170 @@ export function hotTakes(entries, details, { limit = 5 } = {}) {
 }
 
 /**
- * The teaser lines on a Free viewer's locked rows. Each is worked out from the
- * viewer's own data, so it's true; a row whose fact isn't there is left out
- * rather than padded with a generic pitch.
- * @param {{ entries: any[], periodRows: any[], details: Map<string, any>, now?: Date, genreName?: (id: number) => string | null, period: string }} a
- * @returns {Array<{ id: string, title: string, teaser: string }>}
- */
-export function premiumTeasers({ entries, periodRows, details, now = new Date(), genreName = () => null, period }) {
-  const out = [];
-  const shifts = latelyShifts(entries, { now, genreName });
-  if (shifts && shifts.length) out.push({ id: 'usual', title: T.usualHeading, teaser: T.teaseUsual(shifts.length) });
-  const takes = hotTakes(periodRows, details, { limit: 50 });
-  if (takes.length) out.push({ id: 'hotTakes', title: T.hotTakesHeading, teaser: T.teaseHotTakes(takes.length) });
-  const last = samePeriodLastYear(entries, period, now);
-  if (last && last.length) out.push({ id: 'lastYear', title: T.lastYearHeading, teaser: T.teaseLastYear(now.getFullYear() - 1) });
-  const people = recurringPeople(periodRows, details, { limit: 50 });
-  if (people.length > 3) out.push({ id: 'people', title: T.morePeopleHeading, teaser: T.teaseMorePeople(people.length - 3) });
-  if (periodRows.length >= 7) out.push({ id: 'weekdays', title: T.weekdaysHeading, teaser: T.teaseWeekdays });
-  const all = periodEntries(entries, INSIGHT_PERIODS.ALL, now);
-  const first = Math.min(...all.map(e => calendarParts(e.watched_at)?.year ?? Infinity));
-  if (Number.isFinite(first) && first < now.getFullYear()) {
-    out.push({ id: 'allTime', title: T.periods.all, teaser: T.teaseAllTime(all.length, first) });
-  }
-  return out;
-}
-
-/**
  * Properties for EVENTS.INSIGHTS_OPENED, the same shape from both apps.
  * @param {{ premium: boolean, source: 'web' | 'mobile' }} a
  */
 export function insightsOpenedProps({ premium, source }) {
   return { premium: !!premium, source };
 }
+
+// ── Watching type ─────────────────────────────────────────────────────────
+// A name for how you've been watching ("The Binger", "The Horror Devotee"),
+// picked by plain rules over your own history and always shown with the facts
+// that earned it, so it reads as a reflection of your habits rather than a
+// horoscope. Looks at the last 30 days when there's enough there, else the
+// year so far. Order matters only for ties: the first listed wins.
+
+/** Titles a window needs before it gets a type. */
+export const TYPE_MIN_TITLES = 5;
+
+export const WATCHING_TYPES = Object.freeze([
+  'binger', 'devotee', 'critic', 'champion', 'rewatcher', 'weekender', 'editor', 'filmBuff', 'explorer', 'allRounder',
+]);
+
+/** How far each rule's measure is past its line (1 = just over). */
+function typeScores(s) {
+  const scores = {};
+  if (s.showShare >= 0.6 && s.perWeek >= 3) scores.binger = (s.showShare / 0.6 + s.perWeek / 3) / 2;
+  if (s.genre && s.genre.share >= 0.5) scores.devotee = s.genre.share / 0.5;
+  if (s.crowd != null && s.crowd <= -0.5) scores.critic = -s.crowd / 0.5;
+  if (s.crowd != null && s.crowd >= 0.5) scores.champion = s.crowd / 0.5;
+  if (s.rewatchShare >= 0.25) scores.rewatcher = s.rewatchShare / 0.25;
+  if (s.weekendShare >= 0.7) scores.weekender = s.weekendShare / 0.7;
+  if (s.dnfShare >= 0.2) scores.editor = s.dnfShare / 0.2;
+  if (s.showShare <= 0.2) scores.filmBuff = (1 - s.showShare) / 0.8;
+  if (s.genre && s.genre.share < 0.3 && s.genres >= 6) scores.explorer = s.genres / 6;
+  return scores;
+}
+
+function windowStats(rows, all, details, genreName) {
+  const f = facts(rows, genreName, 1);
+  const days = new Set(rows.map(e => dayNumber(e.watched_at)).filter(d => d != null));
+  const span = days.size ? Math.max(7, Math.max(...days) - Math.min(...days) + 1) : 7;
+  const firstSeen = new Map();
+  for (const e of all) {
+    const k = `${e.media_type || 'movie'}:${e.tmdb_id}`;
+    const d = dayNumber(e.watched_at);
+    if (d != null && (!firstSeen.has(k) || d < firstSeen.get(k))) firstSeen.set(k, d);
+  }
+  const rewatches = rows.filter(e => {
+    const d = dayNumber(e.watched_at);
+    return d != null && firstSeen.get(`${e.media_type || 'movie'}:${e.tmdb_id}`) < d;
+  }).length;
+  const deltas = [];
+  for (const e of rows) {
+    const vote = details?.get(`${e.media_type || 'movie'}:${e.tmdb_id}`)?.vote_average;
+    if (e.rating > 0 && vote > 0) deltas.push((e.rating - vote) / 2);
+  }
+  const genreIds = new Set(rows.flatMap(e => (e.genre_ids || []).filter(id => genreName(id))));
+  return {
+    count: rows.length,
+    showShare: f.showShare,
+    weekendShare: f.weekendShare,
+    weekday: f.weekday,
+    genre: f.genre,
+    genres: genreIds.size,
+    perWeek: rows.length / (span / 7),
+    rewatches,
+    rewatchShare: rewatches / rows.length,
+    dnf: rows.filter(e => e.dnf).length,
+    dnfShare: rows.filter(e => e.dnf).length / rows.length,
+    crowd: deltas.length >= 3 ? deltas.reduce((a, b) => a + b, 0) / deltas.length : null,
+  };
+}
+
+/** The type for one window of rows, or null below TYPE_MIN_TITLES. */
+function typeFor(rows, all, details, genreName) {
+  if (rows.length < TYPE_MIN_TITLES) return null;
+  const s = windowStats(rows, all, details, genreName);
+  const scores = typeScores(s);
+  let id = 'allRounder', best = 0;
+  for (const t of WATCHING_TYPES) if ((scores[t] ?? 0) > best) { best = scores[t]; id = t; }
+  return { id, s };
+}
+
+/** The facts behind a type, its own fact first. Every line is true of the window. */
+function typeReasons(id, s) {
+  const pct = (x) => `${Math.round(x * 100)}%`;
+  const all = {
+    binger: s.showShare >= 0.5 ? T.reasonShows(pct(s.showShare)) : null,
+    pace: s.perWeek >= 2 ? T.reasonPace(Math.round(s.perWeek * 10) / 10) : null,
+    devotee: s.genre && s.genre.share >= 0.3 ? T.reasonGenre(s.genre.name, pct(s.genre.share)) : null,
+    critic: s.crowd != null && s.crowd <= -0.25 ? T.reasonTougher(Math.abs(Math.round(s.crowd * 10) / 10)) : null,
+    champion: s.crowd != null && s.crowd >= 0.25 ? T.reasonKinder(Math.round(s.crowd * 10) / 10) : null,
+    rewatcher: s.rewatches ? T.reasonRewatches(s.rewatches) : null,
+    weekender: s.weekendShare >= 0.5 ? T.reasonWeekends(pct(s.weekendShare)) : null,
+    editor: s.dnf ? T.reasonDnf(s.dnf) : null,
+    filmBuff: s.showShare <= 0.3 ? T.reasonMovies(pct(1 - s.showShare)) : null,
+    explorer: s.genres >= 4 ? T.reasonGenres(s.genres) : null,
+  };
+  const own = { binger: 'binger', devotee: 'devotee', critic: 'critic', champion: 'champion', rewatcher: 'rewatcher', weekender: 'weekender', editor: 'editor', filmBuff: 'filmBuff', explorer: 'explorer', allRounder: null }[id];
+  const order = [own, 'pace', 'devotee', 'binger', 'filmBuff', 'weekender', 'critic', 'champion', 'rewatcher', 'editor', 'explorer'];
+  const out = [];
+  for (const k of order) if (k && all[k] && !out.includes(all[k])) out.push(all[k]);
+  return out.slice(0, 3);
+}
+
+/**
+ * How you've been watching, as a named type with the facts behind it.
+ * @param {any[]} entries Every history row.
+ * @param {{ now?: Date, details?: Map<string, any>, genreName?: (id: number) => string | null }} [opts]
+ * @returns {null | { id: string, name: string, line: string, reasons: string[], basis: 'lately' | 'year', count: number }}
+ */
+export function watchingType(entries, { now = new Date(), details = new Map(), genreName = () => null } = {}) {
+  const today = todayNumber(now);
+  const lately = between(entries, today - LATELY_DAYS + 1, today);
+  const year = between(entries, Date.UTC(now.getFullYear(), 0, 1) / 86400000, today);
+  const basis = lately.length >= TYPE_MIN_TITLES ? 'lately' : 'year';
+  const t = typeFor(basis === 'lately' ? lately : year, entries, details, genreName);
+  if (!t) return null;
+  return { id: t.id, name: T.typeName(t.id, t.s.genre?.name), line: T.typeLine[t.id], reasons: typeReasons(t.id, t.s), basis, count: t.s.count };
+}
+
+/**
+ * Your type in each of the last `months` calendar months (this one included),
+ * newest first. A month with too little logged has `name: null`.
+ * @param {any[]} entries
+ * @param {{ now?: Date, months?: number, details?: Map<string, any>, genreName?: (id: number) => string | null }} [opts]
+ * @returns {Array<{ year: number, month: number, id: string | null, name: string | null }>}
+ */
+export function typeHistory(entries, { now = new Date(), months = 6, details = new Map(), genreName = () => null } = {}) {
+  const out = [];
+  for (let i = 0; i < months; i++) {
+    const y = now.getFullYear(), m = now.getMonth() - i;
+    const start = Date.UTC(y, m, 1) / 86400000;
+    const end = Math.min(Date.UTC(y, m + 1, 0) / 86400000, todayNumber(now));
+    const first = new Date(Date.UTC(y, m, 1));
+    const t = typeFor(between(entries, start, end), entries, details, genreName);
+    out.push({ year: first.getUTCFullYear(), month: first.getUTCMonth(), id: t?.id ?? null, name: t ? T.typeName(t.id, t.s.genre?.name) : null });
+  }
+  return out;
+}
+
+// ── Sample insights ───────────────────────────────────────────────────────
+// What a Free viewer's locked Premium cards, and an empty account's whole
+// page, show instead of their own numbers. Every surface that draws these
+// marks them as a sample. Titles are text only (no posters, no TMDB ids).
+export const SAMPLE_INSIGHTS = Object.freeze({
+  type: {
+    id: 'devotee', name: 'The Horror Devotee', line: 'If it might make you sleep with the light on, you’re in.',
+    reasons: ['Horror in 6 of 10 titles', '3.1 titles a week', '80% on weekends'], basis: 'lately', count: 10,
+  },
+  typeHistory: ['The Horror Devotee', 'The Binger', 'The Binger', 'The Weekend Watcher', 'The Film Buff', 'The All-Rounder'],
+  stats: { titles: 142, movies: '4d 6h', night: 'Friday', stars: 3.6, titlesVsLastYear: 19, starsVsLastYear: 0.3 },
+  highest: [
+    { title: 'Past Lives', stars: 5, move: 'up', by: 2 },
+    { title: 'Severance', stars: 5, move: 'new', by: 0 },
+    { title: 'The Holdovers', stars: 5, move: null, by: 0 },
+    { title: 'Conclave', stars: 4.5, move: 'down', by: 2 },
+    { title: 'Flow', stars: 4.5, move: null, by: 0 },
+  ],
+  usual: ['More horror than usual', 'More shows than usual', 'Watching more than usual: 3.1 a week, usually 1.8'],
+  hotTakes: [
+    { title: 'Oppenheimer', you: 2.5, crowd: 4.1 },
+    { title: 'Emily in Paris', you: 4, crowd: 2.4 },
+    { title: 'Barbie', you: 2, crowd: 3.5 },
+  ],
+  weekdays: [3, 1, 1, 2, 2, 7, 6],
+  people: [{ name: 'Florence Pugh', line: '4 titles this year' }, { name: 'Pedro Pascal', line: '3 titles this year' }],
+});

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { useHistory } from '../hooks/useHistory.js';
 import { useHistoryDetails } from '../hooks/useHistoryDetails.js';
@@ -8,14 +9,16 @@ import { displayPosterPath } from '@plot/core/artwork.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { EVENTS } from '@plot/core/analyticsEvents.js';
 import { ratingToStars } from '@plot/core/ratings.js';
+import { getConfig } from '@plot/core/config.js';
+import { activationNudgeSources } from '@plot/core/activationNudge.js';
 import {
   streaks, favouriteWeekday, movieMinutes, formatDuration, averageStars,
   crowdComparison, crowdSentence, recurringPeople, entriesInYear,
 } from '@plot/core/historyStats.js';
 import {
-  INSIGHT_PERIODS, FREE_PERIODS, periodEntries, samePeriodLastYear, yearOverYear,
-  latelyFacts, latelySentence, latelyShifts, highestRated, onThisDay, weekdayCounts,
-  hotTakes, premiumTeasers, insightsOpenedProps,
+  INSIGHT_PERIODS, FREE_PERIODS, TYPE_MIN_TITLES, SAMPLE_INSIGHTS, periodEntries, samePeriodLastYear,
+  yearOverYear, latelyShifts, highestRated, onThisDay, weekdayCounts, hotTakes, insightsOpenedProps,
+  watchingType, typeHistory,
 } from '@plot/core/insights.js';
 import { buildShareCards, CARD_IDS } from '@plot/core/shareCards.js';
 import { INSIGHTS_VIEW as T } from '@plot/core/copy/insightsView.js';
@@ -26,22 +29,34 @@ import { track } from '../lib/analytics.js';
 import { posterUrl, profileUrl } from '../utils/images.js';
 import { useTopLists } from '../hooks/useTopLists.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
-import EmptyState from './EmptyState.jsx';
-import Segmented from './Segmented.jsx';
 import Avatar from './Avatar.jsx';
-import PremiumMark from './PremiumMark.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import ShareCardSheet from './ShareCardSheet.jsx';
+import ImportSourceIcon from './ImportSourceIcon.jsx';
 import { IconShare } from './navIcons.jsx';
 import './InsightsView.css';
 
-/* Insights: what your watching says about you, on one page. Free sees This
-   month and This year; Premium adds All time and the deeper cards. Every
-   number comes from @plot/core/insights.js and historyStats.js, so the phone
-   shows the same answers. Nothing is compared with other Plot users: "the
-   crowd" is TMDB's audience, as on History. */
+/* Insights: what your watching says about you, on one page.
+
+   Savannah's direction (21 Nov 2026): no body copy at the top, no blank
+   space, and nothing empty is ever a message, it's an action. Free sees This
+   month and the year; Premium's cards show to Free as tagged samples. An
+   account with nothing logged sees the whole page as a sample under the
+   actions that fill it in.
+
+   Every number comes from @plot/core/insights.js and historyStats.js, so the
+   phone shows the same answers. "The crowd" is TMDB's audience, as on History. */
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function IconLock() {
+  return (
+    <svg className="ins-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
 
 function ShareIcon({ what, onClick }) {
   if (!onClick) return null;
@@ -52,43 +67,105 @@ function ShareIcon({ what, onClick }) {
   );
 }
 
-function Card({ label, note, share, children, className = '' }) {
+/* `tag` marks sample content; `onUnlock` adds the Premium button under it. */
+function Card({ label, tag, share, onUnlock, children, className = '' }) {
   return (
-    <section className={`ins-card ${className}`}>
+    <section className={`ins-card${tag ? ' ins-card--sample' : ''} ${className}`}>
       <div className="ins-card-head">
         <h2 className="ins-card-label">{label}</h2>
+        {tag && <span className="ins-tag">{onUnlock && <IconLock />}{tag}</span>}
         {share}
       </div>
-      {note && <p className="ins-card-note">{note}</p>}
       {children}
+      {onUnlock && (
+        <button type="button" className="btn btn-secondary btn-sm ins-unlock" onClick={onUnlock}>{COMMON.seePremium}</button>
+      )}
     </section>
   );
 }
 
-function Poster({ entry, size = 'w92' }) {
+function Action({ label, onClick, primary = true }) {
+  return <button type="button" className={`btn ${primary ? 'btn-primary' : 'btn-secondary'} btn-sm ins-action`} onClick={onClick}>{label}</button>;
+}
+
+function Poster({ entry }) {
   const art = useUserArtwork();
-  const img = posterUrl(displayPosterPath(art.apply(entry)), size);
+  const img = posterUrl(displayPosterPath(art.apply(entry)), 'w92');
   return <span className="ins-poster">{img && <img src={img} alt="" />}</span>;
 }
 
-function LatelyCard({ entries, today, genreName, premium }) {
-  const facts = latelyFacts(entries, { now: today, genreName });
-  const sentence = latelySentence(facts);
-  const shifts = premium && facts ? latelyShifts(entries, { now: today, genreName }) : null;
+/* ── Chips ── */
+
+function PeriodChips({ period, year, premium, onChoose }) {
+  const chips = [
+    { id: INSIGHT_PERIODS.MONTH, label: T.periods.month },
+    { id: INSIGHT_PERIODS.YEAR, label: T.yearChip(year) },
+    { id: INSIGHT_PERIODS.ALL, label: T.periods.all },
+  ];
   return (
-    <Card label={T.latelyHeading} note={T.latelyNote} className="ins-lately">
-      <p className="ins-lately-sentence">{sentence ?? T.latelyNotEnough}</p>
-      {shifts && (
-        <div className="ins-usual">
-          <span className="ins-usual-label">{T.usualHeading}</span>
-          {shifts.length ? (
-            <ul className="ins-usual-list">{shifts.map(s => <li key={s}>{s}</li>)}</ul>
-          ) : <span className="ins-usual-same">{T.usualSame}</span>}
-        </div>
-      )}
-    </Card>
+    <div className="ins-chips" role="group" aria-label={T.periodLabel}>
+      {chips.map(c => {
+        const locked = !premium && !FREE_PERIODS.includes(c.id);
+        const on = c.id === period;
+        return (
+          <button key={c.id} type="button" aria-pressed={on} aria-label={locked ? T.lockedPeriod(c.label) : undefined}
+            className={`ins-chip${on ? ' ins-chip--on' : ''}${locked ? ' ins-chip--locked' : ''}`} onClick={() => onChoose(c.id)}>
+            {locked && <IconLock />}{c.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
+
+/* ── The watching type ── */
+
+function TypeCard({ type, history, premium, sample, needed, onFindTitle, year }) {
+  if (!type) {
+    // Not enough logged yet: how far there is to go, and the one step.
+    const have = TYPE_MIN_TITLES - needed;
+    return (
+      <section className="ins-card ins-type ins-type--empty">
+        <div className="ins-type-main">
+          <h2 className="ins-type-kicker">{T.typeHeading}</h2>
+          <p className="ins-type-name">{T.typeLocked}</p>
+        </div>
+        <div className="ins-type-side">
+          <div className="ins-dots" role="img" aria-label={`${have} of ${TYPE_MIN_TITLES}`}>
+            {Array.from({ length: TYPE_MIN_TITLES }, (_, i) => <span key={i} className={`ins-dot${i < have ? ' ins-dot--on' : ''}`} />)}
+          </div>
+          <Action label={T.findTitle} onClick={onFindTitle} />
+        </div>
+      </section>
+    );
+  }
+  const last = history?.find((m, i) => i > 0 && m.name);
+  return (
+    <section className="ins-card ins-type">
+      <div className="ins-type-main">
+        <div className="ins-type-top">
+          <h2 className="ins-type-kicker">{type.basis === 'lately' ? T.typeHeading : T.typeHeadingYear(year)}</h2>
+          {sample && <span className="ins-tag ins-tag--dark">{T.sample}</span>}
+        </div>
+        <p className="ins-type-name">{type.name}</p>
+        <p className="ins-type-line">{type.line}</p>
+      </div>
+      <div className="ins-type-side">
+        <ul className="ins-reasons">{type.reasons.map(r => <li key={r}>{r}</li>)}</ul>
+        {premium && history?.slice(1).some(m => m.name) ? (
+          <div className="ins-months" aria-label={T.typeMonths}>
+            {/* Earlier months only: this month is the big name above. */}
+            {history.slice(1).map(m => m.name && (
+              <span key={`${m.year}-${m.month}`} className="ins-month"><b>{MONTHS[m.month]}</b> {m.name.replace(/^The /, '')}</span>
+            ))}
+          </div>
+        ) : last && <p className="ins-type-last">{T.lastMonth(last.name)}</p>}
+      </div>
+    </section>
+  );
+}
+
+/* ── Cards ── */
 
 function Stat({ value, label, delta }) {
   return (
@@ -100,23 +177,19 @@ function Stat({ value, label, delta }) {
   );
 }
 
-function StatsCard({ rows, details, today, premium, compare, onShare, periodLabel }) {
-  const mins = movieMinutes(rows, details);
-  const wd = favouriteWeekday(rows);
-  const s = streaks(rows, today);
-  const avg = averageStars(rows);
+function StatsCard({ label, stats, premium, tag, onShare, empty }) {
   return (
-    <Card label={periodLabel} share={<ShareIcon what={periodLabel} onClick={onShare} />}>
-      <div className="ins-stats">
-        <Stat value={rows.length} label={T.statTitles}
-          delta={premium && compare ? T.vsLastYearTitles(compare.titles) : null} />
-        <Stat value={mins.counted ? formatDuration(mins.minutes) : '–'} label={T.statMovies} />
-        <Stat value={wd && wd.total >= 3 ? wd.name : '–'} label={T.statNight} />
-        {premium
-          ? <Stat value={avg ? `${avg.stars}★` : '–'} label={T.averageStars}
-              delta={compare?.stars != null ? T.vsLastYearStars(compare.stars) : null} />
-          : <Stat value={s.best > 1 ? T.streakDays(s.best) : '–'} label={T.statStreak} />}
-      </div>
+    <Card label={label} tag={tag} share={<ShareIcon what={label} onClick={onShare} />}>
+      {empty || (
+        <div className="ins-stats">
+          <Stat value={stats.titles} label={T.statTitles} delta={premium && stats.titlesDelta != null ? T.vsLastYearTitles(stats.titlesDelta) : null} />
+          <Stat value={stats.movies} label={T.statMovies} />
+          <Stat value={stats.night} label={T.statNight} />
+          {premium
+            ? <Stat value={stats.stars} label={T.averageStars} delta={stats.starsDelta != null ? T.vsLastYearStars(stats.starsDelta) : null} />
+            : <Stat value={stats.streak} label={T.statStreak} />}
+        </div>
+      )}
     </Card>
   );
 }
@@ -128,26 +201,64 @@ function moveText(item) {
   return null;
 }
 
-function HighestCard({ rows, today, periodStart, openPanel }) {
+function RankRow({ rank, entry, title, stars, item, moves, onOpen }) {
+  const body = (
+    <>
+      <span className="ins-rank-num">{rank}</span>
+      {entry && <Poster entry={entry} />}
+      <span className="ins-row-title">{title}</span>
+      <span className="ins-stars">{stars}★</span>
+      {moves && <span className={`ins-move ins-move--${item.move}`}>{moveText(item)}</span>}
+    </>
+  );
+  return onOpen
+    ? <button type="button" className="ins-row" onClick={onOpen}>{body}</button>
+    : <div className="ins-row">{body}</div>;
+}
+
+function HighestCard({ rows, today, periodStart, openPanel, onRate }) {
   const { items, moves } = highestRated(rows, { now: today, periodStart });
   return (
-    <Card label={T.highestHeading} note={items.length ? T.highestNote : null}>
-      {items.length === 0 ? <p className="ins-empty">{T.highestEmpty}</p> : (
-        <ol className="ins-rank">
+    <Card label={T.highestHeading}>
+      {items.length === 0 ? <Action label={T.rateSome} onClick={onRate} primary={false} /> : (
+        <div className="ins-rows">
           {items.map(item => (
-            <li key={item.entry.id}>
-              <button type="button" className="ins-rank-row" onClick={() => openPanel(item.entry.tmdb_id, item.entry.media_type || 'movie')}>
-                <span className="ins-rank-num">{item.rank}</span>
-                <Poster entry={item.entry} />
-                <span className="ins-rank-title">{item.entry.title}</span>
-                <span className="ins-rank-stars">{ratingToStars(item.entry.rating)}★</span>
-                {/* Every row keeps the column when movement shows, so the stars line up. */}
-                {moves && <span className={`ins-move ins-move--${item.move}`}>{moveText(item)}</span>}
-              </button>
-            </li>
+            <RankRow key={item.entry.id} rank={item.rank} entry={item.entry} title={item.entry.title} stars={ratingToStars(item.entry.rating)}
+              item={item} moves={moves} onOpen={() => openPanel(item.entry.tmdb_id, item.entry.media_type || 'movie')} />
           ))}
-        </ol>
+        </div>
       )}
+    </Card>
+  );
+}
+
+function SampleHighestCard() {
+  return (
+    <Card label={T.highestHeading} tag={T.sample}>
+      <div className="ins-rows">
+        {SAMPLE_INSIGHTS.highest.map((s, i) => <RankRow key={s.title} rank={i + 1} title={s.title} stars={s.stars} item={s} moves />)}
+      </div>
+    </Card>
+  );
+}
+
+function OnThisDayCard({ entries, today, openPanel }) {
+  const groups = onThisDay(entries, today);
+  if (!groups.length) return null;
+  return (
+    <Card label={T.onThisDayHeading}>
+      {groups.map(g => (
+        <div key={g.year} className="ins-rows">
+          <span className="ins-sub">{T.onThisDayLine(g.yearsAgo, g.year)}</span>
+          {g.entries.map(e => (
+            <button key={e.id} type="button" className="ins-row" onClick={() => openPanel(e.tmdb_id, e.media_type || 'movie')}>
+              <Poster entry={e} />
+              <span className="ins-row-title">{e.title}</span>
+              {e.rating > 0 && <span className="ins-stars">{ratingToStars(e.rating)}★</span>}
+            </button>
+          ))}
+        </div>
+      ))}
     </Card>
   );
 }
@@ -162,40 +273,19 @@ function CrowdCard({ rows, details, onShare }) {
   );
 }
 
-function OnThisDayCard({ entries, today, openPanel }) {
-  const groups = onThisDay(entries, today);
-  if (!groups.length) return null;
-  return (
-    <Card label={T.onThisDayHeading}>
-      {groups.map(g => (
-        <div key={g.year} className="ins-otd">
-          <span className="ins-otd-when">{T.onThisDayLine(g.yearsAgo, g.year)}</span>
-          {g.entries.map(e => (
-            <button key={e.id} type="button" className="ins-otd-row" onClick={() => openPanel(e.tmdb_id, e.media_type || 'movie')}>
-              <Poster entry={e} />
-              <span className="ins-otd-title">{e.title}</span>
-              {e.rating > 0 && <span className="ins-rank-stars">{ratingToStars(e.rating)}★</span>}
-            </button>
-          ))}
-        </div>
-      ))}
-    </Card>
-  );
-}
-
 function PeopleCard({ rows, details, premium, openPanel, onShare }) {
   const art = useUserArtwork();
   const people = recurringPeople(rows, details, { limit: premium ? 8 : 3 });
   if (!people.length) return null;
   return (
     <Card label={H.peopleHeading} share={<ShareIcon what={H.peopleHeading} onClick={onShare} />}>
-      <div className="ins-people">
+      <div className="ins-rows">
         {people.map(p => (
-          <button key={p.id} type="button" className="hist-person" onClick={() => openPanel(p.id, 'person', 'insights')}>
+          <button key={p.id} type="button" className="ins-row" onClick={() => openPanel(p.id, 'person', 'insights')}>
             <Avatar src={profileUrl(art.path('person', p.id, 'profile') || p.profile_path, 'w185')} name={p.name} size={36} headshot />
-            <span className="hist-person-text">
-              <span className="hist-person-name">{p.name}</span>
-              <span className="hist-card-note">{p.line}</span>
+            <span className="ins-row-text">
+              <span className="ins-row-title">{p.name}</span>
+              <span className="ins-sub">{p.line}</span>
             </span>
           </button>
         ))}
@@ -204,28 +294,63 @@ function PeopleCard({ rows, details, premium, openPanel, onShare }) {
   );
 }
 
-function HotTakesCard({ rows, details, openPanel }) {
-  const takes = hotTakes(rows, details);
+function SamplePeopleCard() {
   return (
-    <Card label={T.hotTakesHeading} note={T.hotTakesNote}>
-      {takes.length === 0 ? <p className="ins-empty">{T.hotTakesEmpty}</p> : takes.map(t => (
-        <button key={t.entry.id} type="button" className="ins-take" onClick={() => openPanel(t.entry.tmdb_id, t.entry.media_type || 'movie')}>
-          <Poster entry={t.entry} />
-          <span className="ins-take-title">{t.entry.title}</span>
-          <span className="ins-take-you">{T.hotTakeYou(ratingToStars(t.entry.rating))}</span>
-          <span className="ins-take-crowd">{T.hotTakeCrowd(t.crowdStars)}</span>
-        </button>
-      ))}
+    <Card label={H.peopleHeading} tag={T.sample}>
+      <div className="ins-rows">
+        {SAMPLE_INSIGHTS.people.map(p => (
+          <div key={p.name} className="ins-row">
+            <Avatar name={p.name} size={36} />
+            <span className="ins-row-text">
+              <span className="ins-row-title">{p.name}</span>
+              <span className="ins-sub">{p.line}</span>
+            </span>
+          </div>
+        ))}
+      </div>
     </Card>
   );
 }
 
-function WeekdaysCard({ rows }) {
-  const counts = weekdayCounts(rows);
+function UsualCard({ lines, tag, onUnlock }) {
+  if (!lines) return null;
+  return (
+    <Card label={T.usualHeading} tag={tag} onUnlock={onUnlock}>
+      {lines.length
+        ? <ul className="ins-list">{lines.map(l => <li key={l}>{l}</li>)}</ul>
+        : <p className="ins-lead">{T.usualSame}</p>}
+    </Card>
+  );
+}
+
+function HotTakesCard({ takes, tag, onUnlock, openPanel }) {
+  if (!takes.length) return null;
+  return (
+    <Card label={T.hotTakesHeading} tag={tag} onUnlock={onUnlock}>
+      <div className="ins-rows">
+        {takes.map(t => {
+          const body = (
+            <>
+              {t.entry && <Poster entry={t.entry} />}
+              <span className="ins-row-title">{t.title}</span>
+              <span className="ins-stars">{T.hotTakeYou(t.you)}</span>
+              <span className="ins-crowd">{T.hotTakeCrowd(t.crowd)}</span>
+            </>
+          );
+          return t.entry
+            ? <button key={t.title} type="button" className="ins-row" onClick={() => openPanel(t.entry.tmdb_id, t.entry.media_type || 'movie')}>{body}</button>
+            : <div key={t.title} className="ins-row">{body}</div>;
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function WeekdaysCard({ counts, tag, onUnlock }) {
   const max = Math.max(...counts);
   if (!max) return null;
   return (
-    <Card label={T.weekdaysHeading} note={T.weekdaysNote}>
+    <Card label={T.weekdaysHeading} tag={tag} onUnlock={onUnlock}>
       <div className="ins-week" role="list">
         {counts.map((n, i) => (
           <div key={WEEKDAYS[i]} className="ins-week-day" role="listitem" aria-label={T.weekdayCount(WEEKDAYS[i], n)}>
@@ -239,25 +364,25 @@ function WeekdaysCard({ rows }) {
   );
 }
 
-function PremiumCard({ teasers, onUpgrade }) {
-  if (!teasers.length) return null;
+/* The first step for an empty account: add a title, or bring a history over. */
+function StartCard({ sources, onFindTitle, onImport }) {
   return (
-    <Card label={<>{T.premiumHeading}<PremiumMark className="ins-premium-mark" /></>} note={T.premiumIntro} className="ins-premium">
-      <div className="ins-teasers">
-        {teasers.map(t => (
-          <button key={t.id} type="button" className="ins-teaser" onClick={onUpgrade}>
-            <svg className="ins-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
-            <span className="ins-teaser-text">
-              <span className="ins-teaser-title">{t.title}</span>
-              <span className="ins-teaser-body">{t.teaser}</span>
-            </span>
+    <section className="ins-card ins-start">
+      <h2 className="ins-start-title">{T.startTitle}</h2>
+      <div className="ins-start-actions">
+        <Action label={T.findTitle} onClick={onFindTitle} />
+        {sources.map(src => (
+          <button key={src.id} type="button" className="ins-source" onClick={() => onImport(src.id)} aria-label={T.importFrom(src.name)}>
+            <ImportSourceIcon id={src.id} name={src.name} size={22} />
+            <span>{src.name}</span>
           </button>
         ))}
       </div>
-      <button type="button" className="btn btn-primary btn-sm ins-premium-btn" onClick={onUpgrade}>{COMMON.seePremium}</button>
-    </Card>
+    </section>
   );
 }
+
+const SAMPLE_TAKES = SAMPLE_INSIGHTS.hotTakes.map(t => ({ ...t, entry: null }));
 
 /**
  * The page itself, data in, so Storybook can render it without the app.
@@ -270,75 +395,121 @@ function PremiumCard({ teasers, onUpgrade }) {
  * @param {boolean} props.premium
  * @param {'month'|'year'|'all'} props.period
  * @param {Function} props.onPeriod
+ * @param {() => void} props.onFindTitle  Opens search.
+ * @param {(sourceId: string) => void} props.onImport
+ * @param {() => void} props.onRate        Goes to History, where titles are rated.
+ * @param {Array<{id:string,name:string}>} [props.importSources]
  * @param {any} [props.profile]
  * @param {any} [props.topLists]
  * @param {Date} [props.today]
  */
-export function InsightsPage({ entries, details, detailsLoading, genreList, openPanel, premium, period, onPeriod, profile, topLists, today = new Date() }) {
+export function InsightsPage({
+  entries, details, detailsLoading, genreList, openPanel, premium, period, onPeriod,
+  onFindTitle, onImport, onRate, importSources = [], profile, topLists, today = new Date(),
+}) {
   const [gate, setGate] = useState(false);
   const [shareCard, setShareCard] = useState(null);
   const genreName = (id) => genreList.find(g => g.id === id)?.name ?? null;
+  const year = today.getFullYear();
   const rows = useMemo(() => periodEntries(entries, period, today), [entries, period, today]);
   const compare = useMemo(() => yearOverYear(rows, samePeriodLastYear(entries, period, today)), [rows, entries, period, today]);
   const periodStart = period === INSIGHT_PERIODS.MONTH
-    ? `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
-    : period === INSIGHT_PERIODS.YEAR ? `${today.getFullYear()}-01-01` : null;
+    ? `${year}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
+    : period === INSIGHT_PERIODS.YEAR ? `${year}-01-01` : null;
   // Share cards are about the calendar year, as on History.
-  const yearRows = useMemo(() => entriesInYear(entries, today.getFullYear()), [entries, today]);
+  const yearRows = useMemo(() => entriesInYear(entries, year), [entries, year]);
   const shareCards = useMemo(
-    () => (profile ? buildShareCards({ entries: yearRows, allEntries: entries, details, genreName, year: today.getFullYear(), now: today, topLists, profile }) : []),
+    () => (profile ? buildShareCards({ entries: yearRows, allEntries: entries, details, genreName, year, now: today, topLists, profile }) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- genreName reads genreList
     [entries, yearRows, details, genreList, today, topLists, profile],
   );
   const share = (id) => (shareCards.length && period !== INSIGHT_PERIODS.ALL ? () => setShareCard(id) : null);
-  const teasers = useMemo(
-    () => (premium ? [] : premiumTeasers({ entries, periodRows: rows, details, now: today, genreName, period })),
+  const type = useMemo(
+    () => watchingType(entries, { now: today, details, genreName }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- genreName reads genreList
-    [premium, entries, rows, details, today, genreList, period],
+    [entries, today, details, genreList],
+  );
+  const history = useMemo(
+    () => typeHistory(entries, { now: today, details, genreName }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- genreName reads genreList
+    [entries, today, details, genreList],
+  );
+  const unlock = () => setGate(true);
+  const choose = (p) => { if (!premium && !FREE_PERIODS.includes(p)) { unlock(); return; } onPeriod(p); };
+  const periodLabel = period === INSIGHT_PERIODS.YEAR ? T.yearChip(year) : T.periods[period];
+  const sheets = (
+    <>
+      {gate && <UpgradeSheet reason="stats" onClose={() => setGate(false)} />}
+      {shareCard && <ShareCardSheet cards={shareCards} preset={shareCard} profile={profile} source="insights" onClose={() => setShareCard(null)} />}
+    </>
   );
 
-  if (!entries.length) return <div className="ins-page"><EmptyState title={T.emptyTitle} body={T.emptyBody} /></div>;
+  // Nothing logged: the actions first, then the whole page as a sample.
+  if (!entries.length) {
+    const s = SAMPLE_INSIGHTS.stats;
+    return (
+      <div className="ins-page">
+        {sheets}
+        <div className="ins-flow">
+          <StartCard sources={importSources} onFindTitle={onFindTitle} onImport={onImport} />
+          <TypeCard type={SAMPLE_INSIGHTS.type} sample year={year} />
+          <StatsCard label={T.yearChip(year)} tag={T.sample}
+            stats={{ titles: s.titles, movies: s.movies, night: s.night, streak: T.streakDays(6) }} />
+          <SampleHighestCard />
+          <SamplePeopleCard />
+          <UsualCard lines={SAMPLE_INSIGHTS.usual} tag={T.samplePremium} onUnlock={unlock} />
+          <HotTakesCard takes={SAMPLE_TAKES} tag={T.samplePremium} onUnlock={unlock} />
+          <WeekdaysCard counts={SAMPLE_INSIGHTS.weekdays} tag={T.samplePremium} onUnlock={unlock} />
+        </div>
+      </div>
+    );
+  }
 
-  const options = Object.values(INSIGHT_PERIODS).map(p => ({ value: p, label: T.periods[p] }));
-  const choose = (p) => {
-    if (!premium && !FREE_PERIODS.includes(p)) { setGate(true); return; }
-    onPeriod(p);
+  const mins = movieMinutes(rows, details);
+  const wd = favouriteWeekday(rows);
+  const best = streaks(rows, today).best;
+  const avg = averageStars(rows);
+  const stats = {
+    titles: rows.length,
+    movies: mins.counted ? formatDuration(mins.minutes) : '–',
+    night: wd && wd.total >= 3 ? wd.name : '–',
+    streak: best > 1 ? T.streakDays(best) : '–',
+    stars: avg ? `${avg.stars}★` : '–',
+    titlesDelta: compare?.titles ?? null,
+    starsDelta: compare?.stars ?? null,
   };
+  const shifts = premium ? latelyShifts(entries, { now: today, genreName }) : null;
+  const takes = premium
+    ? hotTakes(rows, details).map(t => ({ entry: t.entry, title: t.entry.title, you: ratingToStars(t.entry.rating), crowd: t.crowdStars }))
+    : SAMPLE_TAKES;
+  const sampleTag = premium ? null : T.samplePremium;
+  const toUnlock = premium ? null : unlock;
 
   return (
     <div className="ins-page">
-      {gate && <UpgradeSheet reason="stats" onClose={() => setGate(false)} />}
-      <header className="ins-head">
-        <p className="ins-intro">{T.intro}</p>
-        <div className="ins-periods">
-          <Segmented options={options} value={period} onChange={choose} ariaLabel={T.periodLabel} />
-          {!premium && <span className="ins-locked-note">{T.lockedPeriod(T.periods.all)}<PremiumMark className="ins-premium-mark" /></span>}
-          {detailsLoading && <span className="ins-loading" aria-live="polite">{T.loading}</span>}
-        </div>
-      </header>
-
-      <div className="ins-grid">
-        <div className="ins-col">
-          <LatelyCard entries={entries} today={today} genreName={genreName} premium={premium} />
-          <StatsCard rows={rows} details={details} today={today} premium={premium} compare={compare}
-            periodLabel={T.periods[period]} onShare={share(CARD_IDS.HIGHLIGHTS)} />
-          {rows.length === 0
-            ? <p className="ins-empty">{T.emptyPeriod}</p>
-            : <HighestCard rows={rows} today={today} periodStart={periodStart} openPanel={openPanel} />}
-          {premium && rows.length > 0 && <HotTakesCard rows={rows} details={details} openPanel={openPanel} />}
-        </div>
-        <div className="ins-col">
-          <OnThisDayCard entries={entries} today={today} openPanel={openPanel} />
-          <CrowdCard rows={rows} details={details} onShare={share(CARD_IDS.CROWD)} />
-          <PeopleCard rows={rows} details={details} premium={premium} openPanel={openPanel} onShare={share(CARD_IDS.PERSON)} />
-          {premium && <WeekdaysCard rows={rows} />}
-          {!premium && <PremiumCard teasers={teasers} onUpgrade={() => setGate(true)} />}
-        </div>
+      {sheets}
+      <div className="ins-head">
+        <PeriodChips period={period} year={year} premium={premium} onChoose={choose} />
+        {detailsLoading && <span className="ins-loading" aria-live="polite">{T.loading}</span>}
       </div>
-
-      {shareCard && (
-        <ShareCardSheet cards={shareCards} preset={shareCard} profile={profile} source="insights" onClose={() => setShareCard(null)} />
-      )}
+      <div className="ins-flow">
+        <TypeCard type={type} history={history} premium={premium} year={year}
+          needed={Math.max(0, TYPE_MIN_TITLES - entries.length)} onFindTitle={onFindTitle} />
+        <StatsCard label={periodLabel} stats={stats} premium={premium} onShare={share(CARD_IDS.HIGHLIGHTS)}
+          empty={rows.length === 0 ? (
+            <div className="ins-empty-action">
+              <p className="ins-lead">{T.periodEmpty(periodLabel)}</p>
+              <Action label={T.logMore} onClick={onFindTitle} />
+            </div>
+          ) : null} />
+        {rows.length > 0 && <HighestCard rows={rows} today={today} periodStart={periodStart} openPanel={openPanel} onRate={onRate} />}
+        <OnThisDayCard entries={entries} today={today} openPanel={openPanel} />
+        <CrowdCard rows={rows} details={details} onShare={share(CARD_IDS.CROWD)} />
+        <PeopleCard rows={rows} details={details} premium={premium} openPanel={openPanel} onShare={share(CARD_IDS.PERSON)} />
+        <UsualCard lines={premium ? shifts : SAMPLE_INSIGHTS.usual} tag={sampleTag} onUnlock={toUnlock} />
+        <HotTakesCard takes={takes} tag={sampleTag} onUnlock={toUnlock} openPanel={openPanel} />
+        <WeekdaysCard counts={premium ? weekdayCounts(rows) : SAMPLE_INSIGHTS.weekdays} tag={sampleTag} onUnlock={toUnlock} />
+      </div>
     </div>
   );
 }
@@ -346,7 +517,8 @@ export function InsightsPage({ entries, details, detailsLoading, genreList, open
 /* Container: the signed-in user's history and the TMDB details for the
    chosen period. */
 export default function InsightsView() {
-  const { user, profile, openPanel } = useApp();
+  const { user, profile, openPanel, openSearch } = useApp();
+  const navigate = useNavigate();
   const { entries, loading } = useHistory(user?.id);
   const { lists: topLists } = useTopLists(user?.id);
   const { genres: genreList } = useGenres();
@@ -355,16 +527,23 @@ export default function InsightsView() {
   const [period, setPeriod] = useState(INSIGHT_PERIODS.YEAR);
   // A Free viewer never sits on All time, even if they lose Premium mid-visit.
   const shown = premium || FREE_PERIODS.includes(period) ? period : INSIGHT_PERIODS.YEAR;
-  const rows = useMemo(() => periodEntries(entries, shown, today), [entries, shown, today]);
+  // Details for the period, plus the year the watching type can fall back on.
+  const rows = useMemo(() => {
+    const p = periodEntries(entries, shown, today);
+    const year = periodEntries(entries, INSIGHT_PERIODS.YEAR, today);
+    return [...new Set([...p, ...year])];
+  }, [entries, shown, today]);
   const { details, loading: detailsLoading } = useHistoryDetails(rows);
+  const importSources = useMemo(() => activationNudgeSources(getConfig()), []);
 
-  // One event per visit, once there is something to show.
+  // One event per visit. An empty account counts as the nudge being shown.
   const sent = useRef(false);
   useEffect(() => {
-    if (sent.current || loading || !entries.length) return;
+    if (sent.current || loading || !user) return;
     sent.current = true;
-    track(EVENTS.INSIGHTS_OPENED, insightsOpenedProps({ premium, source: 'web' }));
-  }, [loading, entries.length, premium]);
+    if (entries.length) track(EVENTS.INSIGHTS_OPENED, insightsOpenedProps({ premium, source: 'web' }));
+    else track(EVENTS.ACTIVATION_NUDGE_SHOWN, { surface: 'insights' });
+  }, [loading, user, entries.length, premium]);
 
   if (!user) return null;
   if (loading) return <LoadingSpinner />;
@@ -378,6 +557,10 @@ export default function InsightsView() {
       premium={premium}
       period={shown}
       onPeriod={setPeriod}
+      onFindTitle={() => { if (!entries.length) track(EVENTS.ACTIVATION_NUDGE_ADD_CLICKED, { surface: 'insights' }); openSearch?.(); }}
+      onImport={(id) => { track(EVENTS.ACTIVATION_NUDGE_IMPORT_CLICKED, { surface: 'insights', source: id }); navigate(`/import?source=${id}`); }}
+      onRate={() => navigate('/history')}
+      importSources={importSources}
       profile={profile}
       topLists={topLists}
       today={today}
