@@ -369,9 +369,13 @@ Project skills live in `.agents/skills/`. Upstream pack: `michaelshimeles/skills
 Do not add them back.
 
 `impeccable` (design critique and polish) is a pinned copy of
-`pbakaus/impeccable` 4.9.2 (engine 0.1.25, upstream commit `d41d986`), reviewed
-on 2026-11-18. It was copied by hand, not installed with `npx impeccable
-install`, so nothing updates it unseen; re-review before replacing it. Rules:
+`pbakaus/impeccable` 4.10.0 (engine 0.1.27, upstream tag `skill-v4.10.0`,
+commit `b49177d`), reviewed on 2026-11-21. It was copied by hand from upstream's
+`.claude/skills/impeccable/`, not installed with `npx impeccable install`, so
+nothing updates it unseen; re-review before replacing it. One local edit: the
+sign-in prompt 4.10.0 added to the top of `reference/init.md` ("Run `npx
+impeccable login`...") is removed, because of the sign-in rule below. Remove it
+again on the next upgrade. Rules:
 
 - **No design hook.** Do not run `impeccable hooks on` or add its
   `PostToolUse`/`Stop` hooks; run `detect` or `audit` when asked.
