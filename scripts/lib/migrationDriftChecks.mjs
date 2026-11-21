@@ -172,3 +172,25 @@ export function planStagingApply({ files, ledger }) {
   }
   return { pending, collisions };
 }
+
+/**
+ * Migration files in this checkout whose version main already uses for a
+ * different file. Checks run on a pull request's own head, not on the result
+ * of merging it, so a version main took while the branch was open is
+ * invisible to the duplicate-version check over this checkout's files alone.
+ * That is how 20261118140000 was taken twice on 2026-11-19: Staging and
+ * production recorded main's file under it and skipped the branch's.
+ *
+ * @param {{ files: Map<string, string>, mainFiles: Map<string, string> }} input
+ *   both from parseMigrationFiles: this checkout's, and origin/main's
+ * @returns {{ version: string, file: string, onMain: string }[]}
+ */
+export function findMainCollisions({ files, mainFiles }) {
+  const out = [];
+  for (const [version, name] of [...files].sort(([a], [b]) => a.localeCompare(b))) {
+    if (mainFiles.has(version) && mainFiles.get(version) !== name) {
+      out.push({ version, file: name, onMain: mainFiles.get(version) });
+    }
+  }
+  return out;
+}

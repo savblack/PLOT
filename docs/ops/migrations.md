@@ -19,6 +19,11 @@ So:
   migration you remember. `select pg_get_functiondef(oid) from pg_proc where proname = '…'`.
 - `pnpm run migrations:check` fails the build if a redefinition changes the `ON CONFLICT`
   target. If the change is deliberate, add `-- redefines: <fn> (…why…)` to the migration.
+  It also fails when a migration here uses a version that `origin/main` gave to a
+  different file (checks run on the pull request's own head, so a number `main` took
+  after you branched is otherwise invisible; Staging and production then skip your
+  file with no error). Fix: rename yours to a version after `main`'s newest and merge
+  `main` in. Locally, `git fetch origin main` first.
 - **Expand, then contract.** `pnpm run migrations:contract` (CI) fails a new or changed
   migration that drops, renames or retypes a table, column, view, function, type or enum
   value while the code on `main` (`apps/`, `packages/`, `supabase/functions/`), a SQL
