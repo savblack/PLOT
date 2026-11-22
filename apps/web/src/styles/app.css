@@ -278,19 +278,6 @@ svg { stroke-width: 1.5; }
   stroke-width: 1.7;
   flex-shrink: 0;
 }
-/* The profile row's avatar stands in for an icon, so it is sized to the icon
-   column rather than to a face. 18px, not a more flattering 20: two extra
-   pixels here push this row's label off the 51.6px edge every other row sits
-   on, and one left edge is the whole point of putting glyphs in this drawer. */
-.nav-drawer-avatar {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-strong);
-  flex-shrink: 0;
-}
 
 .nav-drawer-label {
   font-size: 0.95rem;
@@ -366,8 +353,31 @@ svg { stroke-width: 1.5; }
     border: 0;
   }
 
-  /* The top of every page, now that no heading opens it. */
-  .app-main-inner { padding-top: 1.25rem; }
+  /* The top of every page, now that no heading opens it. 44px is where the
+     History and My Lists panels have always started (20px here plus the 24px
+     their empty toolbar row left), so every page's first row lines up there.
+     Pages must not add top space of their own at this width: the rules below
+     take back the extra that some of them carried. */
+  .app-main-inner { padding-top: 2.75rem; }
+
+  /* A toolbar row with nothing in it takes no room. History's holds the year
+     switcher only when there is more than one year; My Lists' holds the phone
+     filter pill, which is hidden here. */
+  .app-main-inner .hist-toolbar--heading:has(> .hist-toolbar-controls:empty),
+  .app-main-inner .mylists-page .hist-toolbar { display: none; }
+
+  /* Toolbar rows that do hold controls (Settings, Notifications, Your People)
+     start on the line too, not 12px under it. */
+  .app-main-inner .hist-toolbar { padding-top: 0; }
+
+  /* Sub-pages and the profile carried their own top padding on top of the
+     shell's. Scoped to .app-main-inner so it outranks those pages' own
+     stylesheets, which load after this one. */
+  .app-main-inner .browse-page,
+  .app-main-inner .themes-gallery,
+  .app-main-inner .import-page { padding-top: 0; }
+  .app-main-inner .pp-intro,
+  .app-main-inner .pp-section-page-head { padding-top: 0; }
 }
 
 .app-sidebar-brand {
@@ -509,7 +519,7 @@ svg { stroke-width: 1.5; }
   border-radius: var(--radius-pill);
   background: var(--accent-secondary-fill);
   color: var(--on-accent-secondary-fill);
-  font-size: 0.6rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -536,10 +546,22 @@ svg { stroke-width: 1.5; }
 .app-sidebar-nav { padding: 8px 12px 24px; overflow: visible; flex-shrink: 0; align-items: stretch; }
 .app-sidebar-nav > .app-sidebar-item:first-child { margin-bottom: 10px; }
 .app-sidebar-item { width: auto; max-width: 100%; border-radius: var(--radius-md); padding: 10px 12px; gap: 12px; }
+/* Page rows are links (Cmd-click opens a new tab); they look like the button rows. */
+a.app-sidebar-item, a.app-sidebar-item:hover { text-decoration: none; }
 .app-sidebar-nav > .app-sidebar-item { width: 100%; }
 .app-sidebar-item:hover,
 .app-sidebar-item.active { background: var(--surface-sunken); color: var(--text-primary); }
 .app-sidebar-item.active { font-weight: 600; }
+/* The current page's icon takes the accent (an approved active-indicator
+   role), so active reads differently from hover, which shares the sunken
+   cream. The label stays charcoal. */
+.app-sidebar-item.active > svg { color: var(--accent); }
+.app-sidebar-kbd {
+  margin-left: auto; padding: 2px 6px; border-radius: 6px;
+  background: var(--surface-sunken); color: var(--text-secondary);
+  font: inherit; font-size: 0.6875rem; font-weight: 600; white-space: nowrap;
+}
+.app-sidebar-item:is(:hover, .active) .app-sidebar-kbd { background: var(--surface); }
 .app-sidebar-label { font-size: 0.9rem; font-weight: 550; }
 .app-sidebar-item svg { stroke-width: 1.7; }
 .app-sidebar :is(button, a):focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -547,7 +569,7 @@ svg { stroke-width: 1.5; }
 .app-sidebar-foot:empty { display: none; }
 .app-sidebar-profile { width: 100%; border-radius: var(--radius-md); padding: 6px 12px; min-height: 48px; }
 .app-sidebar-profile-copy { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
-.app-sidebar-profile-copy small { font-size: 0.68rem; color: var(--text-secondary); }
+.app-sidebar-profile-copy small { font-size: 0.75rem; color: var(--text-secondary); }
 .app-sidebar-profile .app-sidebar-avatar { width: 34px; height: 34px; border: 1px solid var(--border-strong); }
 
 @media (min-width: 1024px) {
@@ -1076,7 +1098,9 @@ svg { stroke-width: 1.5; }
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.04em;
-  color: var(--accent-fill);
+  /* The accent, not the fill: the fill pink is a surface colour and measured
+     2.0:1 as type on cream. The accent clears 3:1 for display-size text. */
+  color: var(--accent);
   text-shadow:
     0.2em 0em 0 var(--bg), 0.199em 0.02em 0 var(--bg), 0.196em 0.039em 0 var(--bg),
     0.191em 0.058em 0 var(--bg), 0.185em 0.077em 0 var(--bg), 0.176em 0.094em 0 var(--bg),
@@ -1571,7 +1595,6 @@ svg { stroke-width: 1.5; }
 }
 .cal-scope-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .cal-toolbar-controls { gap: 12px; }
-.cal-suggest-btn { width: fit-content; flex: 0 0 auto; }
 
 .cal-body {
   display: flex;
@@ -1580,6 +1603,11 @@ svg { stroke-width: 1.5; }
 }
 
 /* ── Side panel ── */
+/* A page's own top control (Calendar's scope, Your People's view, the Settings
+   search) is the first row of its side column, so the column starts on the
+   same line as History's. It fills the column; a toggle splits it evenly. */
+.cal-side > .cal-side-control { width: 100%; }
+.cal-scope.cal-side-control .cal-scope-btn { flex: 1; }
 .cal-side {
   display: none;
   width: 264px;
@@ -1675,9 +1703,9 @@ svg { stroke-width: 1.5; }
 .cal-mini-day--today,
 .cal-mini-day--today:hover,
 .cal-mini-day--today:disabled {
-  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
-  color: var(--chip-cinema);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
+  background: var(--accent-dim);
+  color: var(--accent-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, var(--border));
   font-weight: 600;
 }
 .cal-mini-dot {
@@ -1690,7 +1718,7 @@ svg { stroke-width: 1.5; }
   border-radius: 50%;
   background: var(--accent);
 }
-.cal-mini-day--today .cal-mini-dot { background: var(--chip-cinema); }
+.cal-mini-day--today .cal-mini-dot { background: var(--accent); }
 
 /* Show / Genre filter rows under the mini months. Same row metrics as a
    plain list: 14px name, 11px 4px padding, hairline between rows. */
@@ -1701,7 +1729,7 @@ svg { stroke-width: 1.5; }
   padding: 0 8px;
 }
 .cal-filter-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -1933,8 +1961,12 @@ svg { stroke-width: 1.5; }
 .cal-stream--rail .cal-stream-day { padding-top: 16px; }
 .cal-stream--rail .cal-stream-gutter { padding-top: 36px; }
 
+.cal-suggest-inline { max-width: 480px; margin-bottom: 24px; }
+
 @media (min-width: 1024px) {
   .cal-side { display: flex; }
+  /* The side column carries the suggest card once it shows. */
+  .cal-suggest-inline { display: none; }
 }
 
 @media (max-width: 599px) {
@@ -2223,7 +2255,7 @@ svg { stroke-width: 1.5; }
 .mylists-card-progress > span {
   display: block;
   height: 100%;
-  background: var(--chip-episode);
+  background: var(--accent);
   border-radius: 2px;
 }
 
@@ -2405,7 +2437,7 @@ svg { stroke-width: 1.5; }
 .top5-hint {
   color: var(--text-secondary);
   font-size: 0.75rem;
-  font-style: italic;
+  font-style: normal; /* no italic face ships, so a slant would be faked */
   line-height: 1.3;
   padding: 0 0.5rem;
   text-align: center;
@@ -2608,10 +2640,6 @@ svg { stroke-width: 1.5; }
    filter rows, and it hides itself below the sidebar breakpoint, where the
    filters return as the fixed mobile control bar. */
 .mylists-side { gap: 24px; }
-/* The column is the filter at sidebar widths, so the toolbar's pill would be
-   a second copy of it. Below 1024 .desktop-page-filter is already hidden and
-   .mobile-page-controls takes over. */
-.mylists-page .desktop-page-filter { display: none; }
 .mylists-jump { gap: 10px; padding: 14px 12px 6px; }
 .mylists-jump-count { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
 .mylists-jump .cal-filter-row:hover .mylists-jump-count { color: var(--text-secondary); }
@@ -2664,7 +2692,7 @@ svg { stroke-width: 1.5; }
 .list-page-sub { font-size: 0.85rem; color: var(--text-muted); }
 .list-page-progress { display: flex; align-items: center; gap: 10px; margin-top: 8px; max-width: 320px; }
 .list-page-progress-bar { flex: 1; height: 5px; border-radius: var(--radius-pill); background: var(--surface-sunken); overflow: hidden; }
-.list-page-progress-bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent-secondary); }
+.list-page-progress-bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
 .list-page-progress-label { font-size: .78rem; color: var(--text-muted); white-space: nowrap; }
 .list-page-body { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 72px; align-items: start; }
 .list-page-body--no-side { display: block; }
@@ -2683,7 +2711,10 @@ svg { stroke-width: 1.5; }
 .list-page-view svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .list-page-view[aria-pressed="true"],
 .list-page-view[aria-expanded="true"] { border-color: var(--border-strong); background: var(--surface); color: var(--text-primary); }
-.list-page-stream .mylists-grid { padding: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 14px; }
+/* As many columns as keep a poster at least 136px wide. A fixed count shrank
+   posters to ~40px (and broke titles mid-word) once a docked title panel took
+   560px of the row. */
+.list-page-stream .mylists-grid { padding: 0; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 20px 14px; }
 .list-page-items > .private-watchlist, .list-page-rows { display: none; }
 .mylists-card-actions, .mylists-card-indicators { position: absolute; inset: 0 0 auto; height: auto; pointer-events: none; }
 .mylists-card-action {
@@ -2738,8 +2769,18 @@ svg { stroke-width: 1.5; }
 .list-page--rows .list-page-items > .private-watchlist,
 .list-page--rows .list-page-rows { display: block; }
 
-@media (min-width: 1280px) {
-  .list-page-stream .mylists-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* With a title panel docked, the page keeps about 660px at 1440: not enough
+   for a 264px side column, a 72px gap and the content. The content wins, and
+   closing the panel brings the side column back. Hidden rather than stacked
+   on top, so opening a title doesn't push the rail you were scrolling down
+   the page. Home and Compare broke here too (hero buttons and Compare's copy
+   wrapped a word per line), so they follow My Lists. On Compare that includes
+   the people list beside the sample; closing the title brings it back. */
+@media (min-width: 1280px) and (max-width: 1799px) {
+  .app-shell.panel-docked .list-page-side,
+  .app-shell.panel-docked .home-side,
+  .app-shell.panel-docked .to-side { display: none; }
+  .app-shell.panel-docked .list-page-body { display: block; }
 }
 @media (max-width: 1023px) {
   .list-page { padding-top: 16px; }
@@ -2828,11 +2869,9 @@ svg { stroke-width: 1.5; }
 .panel-upnext-still img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .panel-upnext-copy { flex: 1; min-width: 0; }
 .panel-upnext-kicker {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-bottom: 0.2rem;
 }
 .panel-upnext-name {
@@ -2893,7 +2932,7 @@ svg { stroke-width: 1.5; }
   display: block;
   height: 100%;
   border-radius: var(--radius-pill);
-  background: var(--status-watching);
+  background: var(--accent);
 }
 .panel-upnext-left {
   margin: 0.4rem 0 0;
@@ -3016,49 +3055,6 @@ svg { stroke-width: 1.5; }
   to   { transform: translateX(100%); }
 }
 
-/* Desktop detail panels expose their dismissal control as a quiet rail just
-   inside the panel's left edge. It stays separate from the scrolling content
-   so long title pages cannot move or clip it. */
-.panel-close-rail {
-  position: fixed;
-  top: 1.5rem;
-  right: calc(min(var(--panel-w), 100vw) - 20px);
-  z-index: 502;
-  width: 20px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-left: 0;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  background: var(--surface-sunken);
-  color: var(--text-primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: panelCloseRailIn 0.32s var(--ease);
-}
-.panel-close-rail svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.panel-close-rail.closing {
-  animation: panelCloseRailOut 0.25s var(--ease) forwards;
-}
-@keyframes panelCloseRailIn {
-  from { transform: translateX(calc(var(--panel-w) + 100%)); }
-  to   { transform: translateX(0); }
-}
-@keyframes panelCloseRailOut {
-  from { transform: translateX(0); }
-  to   { transform: translateX(calc(var(--panel-w) + 100%)); }
-}
-
 /* ═══════════════════════════════════════
    DOCKED DETAIL PANEL (>= 1280px)
    Below this width .panel is a right drawer over a blurred scrim, so opening a
@@ -3150,8 +3146,10 @@ svg { stroke-width: 1.5; }
   height: 32px;
   border-radius: var(--radius-pill);
   border: none;
-  background: color-mix(in srgb, var(--text-primary) 55%, transparent);
-  color: white;
+  /* The image scrim, not the ink: in dark mode the ink is light, and a white
+     ✕ on a light disc disappeared. */
+  background: var(--image-scrim);
+  color: var(--image-text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3159,12 +3157,9 @@ svg { stroke-width: 1.5; }
   z-index: 2;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .panel-close-btn,
-  .panel-toolbar .panel-toolbar-btn:last-child {
-    display: none;
-  }
-}
+/* Desktop shows the same ✕ over the artwork as touch screens (design doc:
+   "The title panel and other long-form panels keep their ✕ over the
+   artwork"). The old desktop-only close rail on the panel's edge is gone. */
 /* No backdrop to sit on: the fallback surface is light (or near-black in
    dark mode), so a white ✕ vanishes against it and the panel looks stuck.
    Fall back to the regular text colour there. */
@@ -3279,12 +3274,12 @@ svg { stroke-width: 1.5; }
   flex-shrink: 0;
 }
 
+/* Plain meta, not a pink label: pink is for actions and progress, and 0.7rem
+   pink capitals read at about 3.6:1 (Nov 2026 critique). */
 .panel-kicker {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--accent);
+  color: var(--text-secondary);
   margin-bottom: 0.35rem;
 }
 
@@ -3386,8 +3381,10 @@ svg { stroke-width: 1.5; }
 /* In the watchlist: the green pill with a tick, as on the iPhone (Nov 16, 2026).
    The bookmark everywhere else stays one glyph: outline, or solid when saved. */
 .panel-pill--saved { background: var(--status-watched-dim); color: var(--status-watched); }
-.panel-pill--watching { background: var(--status-watching-dim); color: var(--status-watching); }
+/* Watching is progress, so pink; Watched is a state, so sage (Nov 2026). */
+.panel-pill--watching { background: var(--accent-dim); color: var(--accent-text); }
 .panel-pill--watched { background: var(--status-watched-dim); color: var(--status-watched); }
+.panel-pill--sm { min-height: 32px; padding: 0 0.75rem; gap: 0.35rem; font-size: 0.8rem; }
 .panel-pill-label { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .panel-icon-btn {
@@ -3406,7 +3403,7 @@ svg { stroke-width: 1.5; }
 }
 .panel-icon-btn:hover { color: var(--text-primary); }
 .panel-icon-btn--fav { background: var(--accent-dim); color: var(--accent); }
-.panel-icon-btn--on { background: var(--status-watching-dim); color: var(--status-watching); }
+.panel-icon-btn--on { background: var(--accent-dim); color: var(--accent-text); }
 
 .panel-status { position: relative; min-width: 0; }
 .panel-status-menu {
@@ -3561,11 +3558,9 @@ svg { stroke-width: 1.5; }
 .panel-score span {
   display: block;
   margin-top: 0.2rem;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 .panel-score-rule { width: 1px; height: 30px; flex-shrink: 0; background: var(--border); }
 .panel-quote {
@@ -3587,10 +3582,9 @@ svg { stroke-width: 1.5; }
   display: block;
   margin-top: 0.25rem;
   font-style: normal;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 .panel-consensus { flex: 1; min-width: 0; margin: 0; font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
 .panel-awards {
@@ -3604,11 +3598,9 @@ svg { stroke-width: 1.5; }
 .panel-awards span {
   display: block;
   margin-bottom: 0.2rem;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 /* The foot bar (Watched it? / Thoughts?, stars, Review and Private note) lives
@@ -3692,7 +3684,7 @@ svg { stroke-width: 1.5; }
 }
 .panel-cast-name, .panel-cast-role, .panel-similar-name, .panel-similar-meta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .panel-cast-name, .panel-similar-name { margin-top: 0.4rem; font-size: 0.72rem; font-weight: 600; }
-.panel-cast-role, .panel-similar-meta { margin-top: 0.1rem; font-size: 0.65rem; color: var(--text-muted); }
+.panel-cast-role, .panel-similar-meta { margin-top: 0.1rem; font-size: 0.75rem; color: var(--text-secondary); }
 
 .providers-grid {
   display: flex;
@@ -4020,7 +4012,7 @@ a.provider-chip--link:hover {
   margin-bottom: 2rem;
 }
 .settings-group-title {
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -4602,28 +4594,6 @@ a.provider-chip--link:hover {
   to { transform: rotate(360deg); }
 }
 
-/* Filled strip header — Option B style */
-.date-group-header {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.65rem 1rem;
-  background: var(--bg);
-  border-left: 3px solid var(--accent);
-  transition: background 0.15s ease;
-}
-.date-group-header:hover {
-  background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%);
-}
-.date-group-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  white-space: nowrap;
-  flex: 1;
-}
 .date-group-action-btn {
   width: 34px;
   height: 34px;
@@ -4669,20 +4639,6 @@ a.provider-chip--link:hover {
   stroke: currentColor;
   stroke-width: 2.3;
   stroke-linecap: round;
-}
-
-.date-group-collapsible {
-  width: 100%;
-  background: var(--bg);
-  border: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  border-radius: 0;
-  transition: background 0.15s ease;
-  text-align: left;
-}
-.date-group-collapsible:hover {
-  background: color-mix(in srgb, var(--bg) 85%, var(--accent) 15%);
 }
 
 /* ── Day selector ── */
@@ -4864,13 +4820,14 @@ a.provider-chip--link:hover {
   /* One step up from the 0.58rem the other small labels use. Those all sit on
      a flat surface; this is the only one overlaid on artwork, where the same
      size reads as a smudge at 9px. */
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  /* A solid fill chip, the doc's treatment for a label over artwork: pink
+     text on a see-through pink tint was unreadable on busy backdrops. */
+  color: var(--on-artwork-fill);
+  background: var(--artwork-fill);
   padding: 0.2rem 0.55rem;
   border-radius: var(--radius-md);
   margin-bottom: 0.4rem;
@@ -4915,6 +4872,7 @@ a.provider-chip--link:hover {
   font: inherit;
   font-size: 0.8rem;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 .discover-hero-action:focus-visible {
@@ -4922,11 +4880,18 @@ a.provider-chip--link:hover {
   outline-offset: 2px;
 }
 .discover-hero-action-primary {
-  background: var(--accent-fill);
-  color: var(--on-accent-fill);
+  /* The title panel's watchlist pill, set on the card colour so it stays
+     legible over artwork; sage once saved, as in the panel. Pink stays for
+     logging what you watched (Nov 2026 critique). */
+  background: var(--surface);
+  color: var(--text-primary);
 }
 .discover-hero-action-primary:hover:not(:disabled) {
-  background: var(--accent-fill-hover);
+  filter: brightness(0.97);
+}
+.discover-hero-action-primary[aria-pressed="true"] {
+  background: var(--accent-secondary-fill);
+  color: var(--on-accent-secondary-fill);
 }
 .discover-hero-action-secondary {
   background: color-mix(in srgb, white 18%, transparent);
@@ -4938,7 +4903,7 @@ a.provider-chip--link:hover {
 }
 
 .discover-hero-meta {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: rgba(255,255,255,0.72);
   margin-bottom: 0.65rem;
   font-weight: 500;
@@ -5125,6 +5090,16 @@ a.provider-chip--link:hover {
 .home-personal-skeleton--action { width: 72%; height: 10px; margin-top: auto; }
 @keyframes home-personal-shimmer { to { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { .home-personal-skeleton::after { animation: none; } }
+/* My Lists loading (ListsLoading.jsx): the side card and a poster grid. */
+.lists-loading { display: flex; align-items: flex-start; gap: 72px; padding: 24px 0; }
+.lists-loading-side { display: none; flex-direction: column; gap: 12px; width: 264px; flex-shrink: 0; padding: 16px 14px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--border); box-sizing: border-box; }
+.lists-loading-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 20px 14px; }
+.lists-loading-card { display: flex; flex-direction: column; gap: 8px; }
+.lists-loading-poster { aspect-ratio: 2 / 3; border-radius: var(--radius-md); }
+.lists-loading-line { height: 10px; width: 70%; }
+.lists-loading-line--title { height: 13px; width: 45%; margin-bottom: 4px; }
+@media (min-width: 1024px) { .lists-loading-side { display: flex; } }
+@media (max-width: 599px) { .lists-loading { padding: 16px var(--gut); } .lists-loading-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 10px; } }
 .home-personal-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-sunken); color: var(--text-primary); font-family: var(--font-display); font-size: 20px; line-height: 1; }
 .home-personal-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .home-personal-card .hist-card-body { gap: 7px; }
@@ -5218,6 +5193,16 @@ a.provider-chip--link:hover {
   .home-side > .home-page-nav,
   .home-side > .home-filter-card { display: none; }
 }
+
+/* Nothing coming up: it is the first thing on Home, so at every width it
+   shrinks to its one useful line, the way into Decide, rather than open the
+   page on an empty state (phones Nov 19, desktop Nov 21). The heading stays
+   for screen readers. */
+.home-personal-card--nothing { padding-block: 4px; }
+.home-personal-card--nothing > .home-personal-icon,
+.home-personal-card--nothing > .hist-card-body .hist-card-note { display: none; }
+.home-personal-card--nothing > .hist-card-body { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.home-personal-card--nothing > .home-personal-action { border-top: 0; min-height: 44px; padding: 0 4px; font-size: 13px; }
 
 /* The first row of a page: that page's controls on the right (Home's
    filter; Calendar's scope toggle). */
@@ -5429,13 +5414,17 @@ a.provider-chip--link:hover {
 }
 
 /* ── Top 10 by Platform ───────────────────────
-   One row per official platform: the logo is the row label, the chart is a
-   rail beside it. Stacked rather than nested accordions, so every platform
-   is visible at once and the section has the same shape every week. */
+   One row per official platform: a header line (logo, name, Movies / TV,
+   arrows) over a full-width rail. The rail starts at the gutter at every
+   width so its titles line up with the sections above; a 168px label column
+   beside the rail used to push it about 200px in on desktop. Stacked rather
+   than nested accordions, so every platform is visible at once and the
+   section has the same shape every week. */
 .discover-plat-list {
   display: flex;
   flex-direction: column;
-  padding: 0 var(--gut);
+  /* The same gutter as the other Home rails (zero inside .home-stream on desktop). */
+  padding: 0 var(--discover-rail-gut, var(--gut));
 }
 .discover-plat-row {
   display: flex;
@@ -5504,12 +5493,6 @@ a.provider-chip--link:hover {
 }
 .discover-plat-switch-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-.discover-plat-rail-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 0;
-}
 .discover-plat-rail {
   display: flex;
   gap: 0.75rem;
@@ -5527,12 +5510,14 @@ a.provider-chip--link:hover {
 .discover-plat-rail:active { cursor: grabbing; }
 .discover-plat-rail > .media-card { flex: 0 0 var(--poster-w); }
 .discover-plat-rail > .media-card--ranked { flex-basis: var(--ranked-card-w); }
+.discover-plat-rail .rank-cut { color: var(--accent); }
 .discover-plat-arrows {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
   min-height: 28px;
+  margin-left: auto;
 }
 .discover-plat-arrows:empty { display: none; }
 
@@ -5540,32 +5525,6 @@ a.provider-chip--link:hover {
    worth of height — a row of ghost posters is dead space four times over. */
 .discover-plat-row--empty {
   padding: 1rem 0;
-}
-
-@media (min-width: 1024px) {
-  /* Room for the label to sit beside the rail rather than above it. */
-  .discover-plat-row {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 2rem;
-  }
-  .discover-plat-label {
-    flex: 0 0 168px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.6rem;
-    padding-top: 0.25rem;
-  }
-  .discover-plat-rail-wrap {
-    flex: 1;
-    min-width: 0;
-  }
-  .discover-plat-row--empty .discover-plat-label {
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
-    padding-top: 0;
-  }
 }
 
 /* ── Rail scroll controls ───────────────────── */
@@ -5686,10 +5645,6 @@ a.provider-chip--link:hover {
 }
 
 @media (hover: none), (pointer: coarse) {
-  .panel-close-rail {
-    display: none;
-  }
-
   .media-card:hover,
   .discover-section .media-card:hover {
     transform: none;
@@ -5706,10 +5661,10 @@ a.provider-chip--link:hover {
   }
 
   .card-save-btn {
-    width: 34px;
-    height: 34px;
-    top: 3px;
-    right: 3px;
+    width: 44px;
+    height: 44px;
+    top: 0;
+    right: 0;
   }
 
   .card-save-btn svg {
@@ -5718,16 +5673,23 @@ a.provider-chip--link:hover {
   }
 
   .card-fav-btn {
-    width: 34px;
-    height: 34px;
-    top: 3px;
-    left: 3px;
+    width: 44px;
+    height: 44px;
+    top: 0;
+    left: 0;
   }
 
   .card-fav-btn svg {
     width: 15px;
     height: 15px;
   }
+
+  /* 44px, the minimum touch target, with the glyph left in its corner
+     (the card buttons above were 34px, these 28 and 30). */
+  .mylists-card-action { width: 44px; height: 44px; top: 0; }
+  .mylists-card-action--favorite { left: 0; }
+  .mylists-card-action--bookmark { right: 0; }
+  .search-action-btn { width: 44px; height: 44px; }
 
   /* Hover-only reveal doesn't exist on touch — show favourite/save permanently.
      Only the real buttons get pointer-events:auto. `.discover-hero-corner-btns`
@@ -5825,10 +5787,10 @@ a.provider-chip--link:hover {
   }
 
   .card-save-btn {
-    width: 34px;
-    height: 34px;
-    top: 3px;
-    right: 3px;
+    width: 44px;
+    height: 44px;
+    top: 0;
+    right: 0;
   }
 
   .card-save-btn svg {
@@ -5837,10 +5799,10 @@ a.provider-chip--link:hover {
   }
 
   .card-fav-btn {
-    width: 34px;
-    height: 34px;
-    top: 3px;
-    left: 3px;
+    width: 44px;
+    height: 44px;
+    top: 0;
+    left: 0;
   }
 
   .card-fav-btn svg {
@@ -6059,7 +6021,7 @@ a.provider-chip--link:hover {
   color: var(--text-primary);
 }
 .hist-card-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -6076,12 +6038,13 @@ a.provider-chip--link:hover {
   text-wrap: pretty;
 }
 .hist-card-note { font-size: 12px; color: var(--text-muted); line-height: 1.35; padding: 0 4px; }
-/* Share-as-a-card, on the side cards that have a card behind them. Pink once
-   the card has enough data, the sunken cream while it does not; an icon, not
-   a button, so the column stays quiet. */
+/* Share-as-a-card, on the side cards that have a card behind them. Always
+   the sunken cream: the accent is not decoration, and a card without enough
+   data says so in the sheet. One size on every card. An icon, not a button,
+   so the column stays quiet. */
 .hist-share {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   border: 0;
   border-radius: 50%;
@@ -6094,13 +6057,9 @@ a.provider-chip--link:hover {
 }
 .hist-share svg { width: 14px; height: 14px; }
 .hist-share:hover { background: var(--border-strong); }
-.hist-share--ready { background: var(--accent-fill); color: var(--on-accent-fill); }
-.hist-share--ready:hover { background: var(--accent-fill-hover); }
 .hist-share:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .hist-card-head--label { min-height: 0; padding: 0; }
-.hist-card-head--label .hist-share { width: 24px; height: 24px; }
-.hist-card-foot .hist-share { width: 24px; height: 24px; margin: -4px 0; }
-.hist-card-foot .hist-share svg { width: 12px; height: 12px; }
+.hist-card-foot .hist-share { margin: -4px 0; }
 .hist-card-body .hist-card-note,
 .hist-crowd-row .hist-card-note,
 .hist-person .hist-card-note { padding: 0; }
@@ -6248,9 +6207,10 @@ a.provider-chip--link:hover {
 .hist-mini-day--future { background: transparent; box-shadow: inset 0 0 0 1px var(--border); color: var(--text-muted); }
 .hist-mini-day--today,
 .hist-mini-day--today.hist-mini-day--future {
-  background: color-mix(in srgb, var(--chip-cinema) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-cinema) 34%, var(--border));
-  color: var(--chip-cinema);
+  /* Same as the Calendar's today: the accent's text shade on its tint. */
+  background: var(--accent-dim);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, var(--border));
+  color: var(--accent-text);
   font-weight: 600;
 }
 .hist-mini-tile {
@@ -6336,7 +6296,7 @@ a.provider-chip--link:hover {
 .hist-month-count { font-size: 12px; color: var(--text-muted); }
 .hist-month-insight {
   font-family: var(--font-display);
-  font-style: italic;
+  font-style: normal; /* no italic face ships, so a slant would be faked */
   font-size: 15px;
   color: var(--text-secondary);
   text-align: right;
@@ -6395,10 +6355,16 @@ a.provider-chip--link:hover {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.01em;
+  line-height: 1.3;
   color: var(--text-primary);
-  white-space: nowrap;
+  /* Two lines before the ellipsis (Nov 20): on one line, "Spider-Man: Brand
+     New Day" and "Spider-Man: No Way Home" both ended "Spider-Man: …". */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   transition: color 0.12s ease;
 }
 .hist-poster:hover .hist-poster-title { color: var(--accent-text); }
@@ -6504,12 +6470,6 @@ a.provider-chip--link:hover {
   .desktop-page-filter, .cal-toolbar .cal-scope { display: none; }
   .page-toolbar, .page-toolbar.cal-toolbar { padding: 0; height: 0; margin: 0; }
   .page-toolbar.cal-toolbar--search { height: 0; padding: 0; }
-  .page-toolbar.cal-toolbar--search:has(.cal-suggest-btn) {
-    height: auto;
-    padding: 0 var(--gut) 12px;
-    margin: 0;
-    justify-content: flex-start;
-  }
   .cal-toolbar-controls { width: 100%; }
   /* A list's own page keeps its search on a phone: the bottom sheet has no
      search field, and .list-page-search already lays it out full width. */
@@ -6566,11 +6526,13 @@ a.provider-chip--link:hover {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
-  /* Icons only: each button carries its name as its accessible label and
-     tooltip instead of a line of text under the icon. */
-  .app-tab svg { width: 24px; height: 24px; flex-shrink: 0; }
-  /* The active tab takes the accent's text shade, one of its approved roles. */
+  /* Icon with its name under it (Nov 20, option A on the canvas). */
+  .app-tab svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .app-tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600; line-height: 1.2; }
+  /* The active tab takes the accent's text shade, one of its approved roles,
+     with a short mark at the top edge of the bar. */
   .app-tab.active { color: var(--accent-text); }
+  .app-tab.active::before { content: ''; position: absolute; top: -1px; left: 50%; width: 24px; height: 3px; margin-left: -12px; border-radius: 0 0 3px 3px; background: var(--accent); }
   .app-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 10px; }
   .app-tab .mobile-menu-unread { top: 12px; right: calc(50% - 16px); }
   /* The menu's last rows: plain text actions under Settings. */

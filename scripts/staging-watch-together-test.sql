@@ -160,6 +160,57 @@ select case when public.vote_watch_together(:'sid', :t1, :'m1', true) then 'PASS
        || '  B votes yes too: a match';
 
 \echo ''
+\echo '=== Sessions with a mood (20261121120000) ==='
+-- t1 is the one title A and B share. Give both copies a genre and a service
+-- so the filtered start has something to match. 35 and 27 are TMDB's fixed
+-- genre ids (Comedy, Horror); 8 is a provider id. None is a title id.
+reset role;
+set local request.jwt.claims = '{"role":"service_role"}';
+select set_config('wt.B', :B, true) \g /dev/null
+update public.list_items li set genre_ids = '{35}', provider_ids = '{8}'
+  from public.lists l
+ where l.id = li.list_id and l.name = 'My List' and l.user_id in (:A, :B) and li.tmdb_id = :t1;
+set local role authenticated;
+set local request.jwt.claims = :A_CLAIMS;
+do $$ begin
+  perform public.start_watch_together_session_filtered(current_setting('wt.B')::uuid, '{"genre_ids":[27]}'::jsonb);
+  raise notice 'FAIL  a mood that keeps nothing still started a session';
+exception when others then
+  raise notice '%  a mood that keeps nothing raises nothing_fits (%)',
+    case when sqlerrm like '%nothing_fits%' then 'PASS' else 'FAIL' end, sqlerrm;
+end $$;
+select public.start_watch_together_session_filtered(:B,
+  jsonb_build_object('media_type', :'m1', 'genre_ids', '[35, 27]'::jsonb, 'provider_ids', '[8]'::jsonb, 'moods', '["funny", "scary"]'::jsonb)) as sid
+\gset
+select set_config('wt.sid', :'sid', true) \g /dev/null
+select case when jsonb_array_length(s->'deck') = 1 and (s->'deck'->0->>'tmdb_id')::int = :t1
+             and s->'filters'->>'by' = :A and s->'filters'->>'media_type' = :'m1'
+             and s->'filters'->'moods' ?& array['funny', 'scary'] and (s->'filters'->>'services')::boolean
+            then 'PASS' else 'FAIL' end || '  A starts with a mood: deck is the one fitting title, filters kept'
+  from (select public.get_watch_together_session(:'sid') as s) x;
+set local request.jwt.claims = :B_CLAIMS;
+select case when s->'filters'->>'by' = :A then 'PASS' else 'FAIL' end || '  B sees what A picked'
+  from (select public.get_watch_together_session(:'sid') as s) x;
+set local request.jwt.claims = :C_CLAIMS;
+do $$ begin
+  perform public.start_watch_together_session_filtered(current_setting('wt.B')::uuid, '{}'::jsonb);
+  raise notice 'FAIL  C (not a partner) started a mood session with B';
+exception when others then raise notice 'PASS  C cannot start a mood session with B (%)', sqlerrm; end $$;
+set local request.jwt.claims = :A_CLAIMS;
+-- Two statements: get_watch_together_session is stable, so it can't see a
+-- session the same statement just inserted.
+select public.start_watch_together_session_filtered(:B, '{"media_type":"x","genre_ids":["1;drop"],"provider_ids":"no","moods":["<b>"]}'::jsonb) as junk_sid
+\gset
+select case when jsonb_array_length(s->'deck') = 1 and s->'filters'->>'media_type' is null
+             and s->'filters'->'moods' = '[]'::jsonb and not (s->'filters'->>'services')::boolean
+            then 'PASS' else 'FAIL' end || '  junk filters are ignored, not trusted'
+  from (select public.get_watch_together_session(:'junk_sid') as s) x;
+-- The block test below checks the live session ends, so point it at the newest.
+select public.live_watch_together_session(:B) as sid
+\gset
+select set_config('wt.sid', :'sid', true) \g /dev/null
+
+\echo ''
 \echo '=== Shared lists ==='
 do $$ begin
   perform public.create_shared_list('wt-proof', array['467ce784-39eb-480e-8593-4632667fc9c3'::uuid]);
@@ -257,6 +308,13 @@ do $$ begin
   perform public.watch_together_titles(array['e4e955fb-19f0-4e7d-b234-29c8eafa88fb'::uuid]);
   raise notice 'FAIL  two Free partners read shared titles';
 exception when others then raise notice 'PASS  two Free partners need Premium to decide (%)', sqlerrm; end $$;
+do $$ begin
+  perform public.start_watch_together_session_filtered('e4e955fb-19f0-4e7d-b234-29c8eafa88fb'::uuid, '{}'::jsonb);
+  raise notice 'FAIL  two Free partners started a mood session';
+exception when others then
+  raise notice '%  two Free partners cannot start a mood session either (%)',
+    case when sqlerrm like '%premium_required%' then 'PASS' else 'FAIL' end, sqlerrm;
+end $$;
 
 \echo ''
 \echo '=== A blocks B: everything between them ends ==='
@@ -280,6 +338,10 @@ do $$ declare s uuid := current_setting('wt.sid')::uuid; begin
   perform public.get_watch_together_session(s);
   raise notice 'FAIL  blocked B reopened the session';
 exception when others then raise notice 'PASS  blocked B cannot reopen the session (%)', sqlerrm; end $$;
+do $$ begin
+  perform public.start_watch_together_session_filtered('467ce784-39eb-480e-8593-4632667fc9c3'::uuid, '{}'::jsonb);
+  raise notice 'FAIL  blocked B started a mood session with A';
+exception when others then raise notice 'PASS  blocked B cannot start a mood session with A (%)', sqlerrm; end $$;
 
 set local request.jwt.claims = :A_CLAIMS;
 select case when count(*) = 1 then 'PASS' else 'FAIL' end || '  bystander pairing A-C is untouched'

@@ -121,16 +121,21 @@ export function IconHistory() {
   );
 }
 
-// New Releases: a clapperboard. The film frame with a spark it replaces read
-// as a second Calendar at menu size (Savannah, 17 Nov 2026). Same strokes as
+// New Releases: eight short rays around an open centre, a burst for "just
+// out". It replaced the clapperboard (Savannah, 21 Nov 2026), which replaced a
+// film frame with a spark that read as a second Calendar. Same strokes as
 // 'new-releases' in apps/mobile/components/NavIcons.tsx.
 export function IconNewReleases() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />
-      <path d="m6.2 5.3 3.1 3.9" />
-      <path d="m12.4 3.4 3.1 4" />
-      <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+      <path d="M12 2v4" />
+      <path d="m16.2 7.8 2.9-2.9" />
+      <path d="M18 12h4" />
+      <path d="m16.2 16.2 2.9 2.9" />
+      <path d="M12 18v4" />
+      <path d="m4.9 19.1 2.9-2.9" />
+      <path d="M2 12h4" />
+      <path d="m4.9 4.9 2.9 2.9" />
     </svg>
   );
 }
@@ -158,6 +163,29 @@ export function IconWatchTogether() {
   );
 }
 
+// Insights: three rising bars. Same strokes as 'insights' in
+// apps/mobile/components/NavIcons.tsx.
+export function IconInsights() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 20v-6" />
+      <path d="M12 20V10" />
+      <path d="M18 20V4" />
+    </svg>
+  );
+}
+
+// Compare: two overlapping circles, the page's own overlap diagram. Same
+// strokes as 'compare' in apps/mobile/components/NavIcons.tsx.
+export function IconCompare() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="12" r="6" />
+      <circle cx="15" cy="12" r="6" />
+    </svg>
+  );
+}
+
 /* Nav id → icon, keyed by APP_NAV_ITEMS. Both shells render the same nav list,
    so they read the same map: the sidebar held a private copy of this and the
    drawer had no icons at all, which is how the two surfaces came to disagree
@@ -170,8 +198,10 @@ export const NAV_ICONS = {
   calendar: IconCalendar,
   'my-lists': IconLists,
   history: IconHistory,
+  insights: IconInsights,
   tonight: IconTonight,
   together: IconWatchTogether,
+  compare: IconCompare,
   search: IconSearch,
   settings: IconSettings,
 };

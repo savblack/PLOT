@@ -9,17 +9,17 @@
 
 export const ABOUT_PAGE = {
   meta: {
-    title: "About Plot: the free movie & TV journal built by one person",
-    description: "Plot is a free movie and TV tracker and journal built by a solo developer. Track what you watch, never miss a release, and pick what to watch tonight. Premium from US$2/month.",
+    title: "About Plot: the free movie & TV companion built by one person",
+    description: "Plot is a free movie and TV companion built by a solo developer. Track what you watch, never miss a release, and pick what to watch tonight. Premium from $2 a month.",
   },
   pageLabel: "About",
-  h1: "About plot",
+  h1: "About Plot",
   pageMeta: "A letter from the founder.",
-  lead: "For years my watchlist was a note on my phone, my reviews were texts to friends, and release dates were whatever I happened to remember. This worked, if you count forgetting half of it as working. So I built Plot. The note became a watchlist that knows when and where everything is streaming. The texts became reviews, character-capped by design. The remembering is now outsourced to a calendar, that never forgets when the next episode drops.",
+  lead: "For years my watchlist was a note on my phone, my reviews were texts to friends, and release dates were whatever I happened to remember. This worked, if you count forgetting half of it as working. So I built Plot. The note became a watchlist that knows when and where everything is streaming. The texts became reviews, character-capped by design. The remembering is now outsourced to a calendar that never forgets when the next episode drops.",
   sections: [
     {
       id: "why",
-      heading: "Why I built plot",
+      heading: "Why I built Plot",
       paragraphs: [
         "You don't have to call yourself a cinephile to belong here. If you've ever rewatched the same show three times because nothing else felt right, you're the person I made this for.",
         "The apps that already exist are clunky, seemingly only ever in dark mode, and no fun to look at. Worse, they come with pressure: write the review, perform how you felt in the \"right\" way. If all you have to say about a movie is that it made you cry 14 separate times, firstly, shout out to my emotional baddies, and secondly, thanks for the heads up. That one's getting saved for when a good cry is needed.",
@@ -29,7 +29,7 @@ export const ABOUT_PAGE = {
     },
     {
       id: "features",
-      heading: "What plot does",
+      heading: "What Plot does",
       features: [
         {
           title: "Track everything you watch",
@@ -52,7 +52,7 @@ export const ABOUT_PAGE = {
           detail: "Follow friends, read what they thought in their own words, and compare taste with one number. Nobody can resist finding out they're a 41. <a href=\"/taste-match\" data-cta=\"about-features\">Try Taste match</a>",
         },
       ],
-      premiumNote: "Free to start. Moving from Letterboxd, Trakt, Netflix or TMDB? Bring your history with you, and confirm every entry before it's saved. Premium is US$3 a month or US$24 a year, with the first 7 days free, and adds Just Decide, a live calendar subscription and unlimited lists. <a href=\"/pricing\" data-cta=\"about-premium\">See what Premium adds</a>",
+      premiumNote: "Free to start. Moving from Letterboxd, Trakt, Netflix or TMDB? Bring your history with you, and confirm every entry before it's saved. Premium is $3 a month, or $2 a month paid yearly, with the first 7 days free, and adds Decide, a live calendar subscription and unlimited lists. <a href=\"/pricing\" data-cta=\"about-premium\">See what Premium adds</a>",
     },
     {
       id: "solo",
@@ -64,11 +64,11 @@ export const ABOUT_PAGE = {
     },
     {
       id: "glance",
-      heading: "plot, at a glance",
+      heading: "Plot, at a glance",
       facts: [
         {
           term: "What it is",
-          detail: "Your whole watching life in one place. A journal for how it felt, a watchlist with a memory, a calendar for what's coming, a guide to what's on, and a way to share it with the people you watch with.",
+          detail: "Your whole watching life in one place. Reviews and notes for how it felt, a watchlist with a memory, a calendar for what's coming, a guide to what's on, and a way to share it with the people you watch with.",
         },
         {
           term: "Who it's for",
@@ -76,16 +76,16 @@ export const ABOUT_PAGE = {
         },
         {
           term: "What it costs",
-          detail: "Nothing. Premium is US$3/month or US$24/year, with the first 7 days free.",
+          detail: "Nothing. Premium is $3 a month, or $2 a month paid yearly, with the first 7 days free.",
         },
         {
           term: "Where it runs",
-          detail: "Any browser, at <a href=\"https://app.theplot.tv\" data-cta=\"about-facts\">app.theplot.tv</a>. iPhone and Android are coming.",
+          detail: "Any browser, at <a href=\"https://app.theplot.tv\" data-cta=\"about-facts\">app.theplot.tv</a>. An iPhone app is coming.",
         },
       ],
       ctas: [
         {
-          label: "Start your plot, free",
+          label: "Start tracking",
           href: "https://app.theplot.tv/signup",
         },
         {
@@ -100,15 +100,15 @@ export const ABOUT_PAGE = {
       faq: [
         {
           q: "Is Plot free?",
-          a: "Yes. Tracking, your watchlist, the release calendar, What's On, up to 5 lists and following friends are free. Premium adds unlimited lists, a live calendar subscription and Just Decide for US$3/month or US$24/year, with a 7-day free trial.",
+          a: "Yes. Tracking, your watchlist, the release calendar, What's On, up to 5 lists and following friends are free. Premium adds unlimited lists, a live calendar subscription and Decide for $3 a month, or $2 a month paid yearly, with a 7-day free trial.",
         },
         {
           q: "How is Plot different from Letterboxd, Trakt or IMDb?",
-          a: "Plot covers movies and TV together, in one journal, in daylight. Reviews are short on purpose, so you log a feeling instead of writing an essay. And Plot leans into what happens next: a release calendar, where to watch on every title, and a daily What's On page.",
+          a: "Plot covers movies and TV together, in one place, in daylight. Reviews are short on purpose, so you log a feeling instead of writing an essay. And Plot leans into what happens next: a release calendar, where to watch on every title, and a daily What's On page.",
         },
         {
-          q: "Is there a Plot app for iPhone or Android?",
-          a: "Not yet. Plot runs in any browser at app.theplot.tv and works well on a phone. Native iPhone and Android apps are in progress, and you can ask to be notified on the <a href=\"/#app-soon\" data-cta=\"about-faq\">home page</a>.",
+          q: "Is there a Plot app for iPhone?",
+          a: "Not yet. Plot runs in any browser at app.theplot.tv and works well on a phone. A native iPhone app is in progress, and you can ask to be notified on the <a href=\"/#app\" data-cta=\"about-faq\">home page</a>.",
         },
         {
           q: "Can I import my history from another app?",
@@ -122,10 +122,10 @@ export const ABOUT_PAGE = {
     },
   ],
   closer: {
-    headline: "Your movies. Your shows.<br>Your plot.",
+    headline: "Your movies. Your shows.<br>Your Plot.",
     ctas: [
       {
-        label: "Start your plot, free",
+        label: "Start tracking",
         href: "https://app.theplot.tv/signup",
       },
       {

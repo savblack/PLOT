@@ -17,7 +17,7 @@ export const SMART_LISTS = Object.freeze({
     history: { label: 'My history', hint: 'Titles you’ve watched' },
   },
   typeLabel: 'Type',
-  types: { any: 'Movies and shows', movie: 'Movies', tv: 'Shows' },
+  types: { any: 'Movies and TV', movie: 'Movies', tv: 'TV' },
   genresLabel: 'Genres',
   genresHint: 'Any of these. Leave them all off for every genre.',
   genreJoin: ' or ',
@@ -76,6 +76,8 @@ export const SMART_LISTS = Object.freeze({
   // My Lists: smart lists have their own section, after Lists and before
   // Shared, and their own group in the column.
   section: 'Smart lists',
+  // Under the section heading, so the name explains itself the first time.
+  sectionNote: 'Pick a few rules, like genre, length or service, and the list fills itself and keeps adding matches.',
   newTileNote: 'Set a few rules',
 
   // B1: "New list" asks which kind.

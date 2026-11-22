@@ -12,7 +12,7 @@ export function anonymizedFeedbackReporter({ userId, userEmail } = {}) {
   return userId || userEmail ? 'Signed-in Plot user' : 'Anonymous visitor';
 }
 
-export { FEEDBACK_ATTACHMENT_URL_TTL_SECONDS, feedbackAttachmentSignedUrl } from '@plot/core/feedbackAttachments.js';
+export { FEEDBACK_ATTACHMENT_MIME_TYPES, FEEDBACK_ATTACHMENT_URL_TTL_SECONDS, feedbackAttachmentSignedUrl, isAllowedFeedbackAttachment } from '@plot/core/feedbackAttachments.js';
 
 export function buildFeedbackAttachmentPath(fileName, id = crypto.randomUUID()) {
   const ext = typeof fileName === 'string' && fileName.includes('.')

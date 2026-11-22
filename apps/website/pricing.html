@@ -53,16 +53,17 @@
     }
   </script>
   <!-- End Google Tag Manager -->
-  <title>Pricing · Plot is free, Premium is $3 a month</title>
-  <meta name="description" content="Plot is free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers." />
+  <title>Pricing · Plot is free. Premium is $3/mo or $2/mo yearly</title>
+  <meta name="description" content="Plot is free to use, forever. Premium is $3 a month, or $2 a month paid yearly ($24), with a 7-day free trial for new subscribers." />
   <link rel="canonical" href="https://theplot.tv/pricing" />
-  <meta name="theme-color" content="#292924" />
+  <meta name="theme-color" content="#f8f2ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="plot" />
-  <meta property="og:title" content="Pricing · Plot is free, Premium is $3 a month" />
-  <meta property="og:description" content="Free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers." />
+  <meta property="og:site_name" content="Plot" />
+  <meta property="og:title" content="Pricing · Plot is free. Premium is $3/mo or $2/mo yearly" />
+  <meta property="og:description" content="Free to use, forever. Premium is $3 a month, or $2 a month paid yearly ($24), with a 7-day free trial for new subscribers." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
@@ -75,10 +76,10 @@
   <link rel="manifest" href="site.webmanifest" />
 
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=5e602f19" />
-  <link rel="stylesheet" href="/nav.css?v=ba29d7a0" />
-  <link rel="stylesheet" href="/premium-stories.css?v=1409093d" />
+  <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
+  <link rel="stylesheet" href="/ui.css?v=7fc314f1" />
+  <link rel="stylesheet" href="/nav.css?v=ca43db8c" />
+  <link rel="stylesheet" href="/premium-stories.css?v=8e7d69aa" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -112,10 +113,11 @@
     .section-head h2 { font-size: clamp(2rem, 3.6vw, 2.8rem); margin-bottom: 0.6rem; }
     .section-head p { font-size: 1.05rem; color: var(--text-secondary); max-width: 52ch; }
 
-    /* ── Hero: ink, like the home page's opening screen ──────── */
+    /* ── Hero: the page ground, like every other page's opening screen.
+       It follows light and dark mode; the Premium stories below stay ink. */
     .hero {
-      background: var(--ink);
-      color: var(--bg);
+      background: var(--bg);
+      color: var(--text);
       padding: 84px 2rem 5rem;
       text-align: center;
     }
@@ -129,7 +131,7 @@
     }
     .hero h1 {
       font-size: clamp(2.6rem, 5vw, 4.25rem);
-      color: var(--bg);
+      color: var(--text);
       max-width: 14ch;
       margin-bottom: 1.2rem;
     }
@@ -137,16 +139,16 @@
       font-size: 1.19rem;
       font-weight: 400;
       line-height: 1.45;
-      color: #d9d1c4;
+      color: var(--text-secondary);
       max-width: 46ch;
       margin: 0 auto 2.2rem;
     }
 
-    /* ── Billing toggle (the home page's .pr-toggle, on ink) ─── */
+    /* ── Billing toggle ─────────────────────────────────────── */
     .billing-toggle {
       display: inline-flex;
       padding: 4px;
-      background: rgba(255,255,255,0.1);
+      background: var(--surface);
       border-radius: var(--r-pill);
     }
     .billing-opt {
@@ -158,22 +160,21 @@
       border-radius: var(--r-pill);
       background: transparent;
       font: 600 0.88rem var(--sans);
-      color: #d9d1c4;
+      color: var(--text-secondary);
       cursor: pointer;
     }
-    .billing-opt.is-active { background: var(--bg); color: var(--text); }
-    .billing-opt:focus-visible { outline: 2px solid var(--fill); outline-offset: 2px; }
+    .billing-opt.is-active { background: var(--text); color: var(--bg); }
+    .billing-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .billing-save {
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--sage);
+      color: var(--accent-2);
     }
-    .billing-opt.is-active .billing-save { color: var(--accent-2); }
+    .billing-opt.is-active .billing-save { color: inherit; opacity: 0.8; }
 
     /* ── Plan cards: the home page's Premium card, twice ─────── */
-    /* The pair starts on the ink and hangs down into the cream below. */
     .plans-grid {
       position: relative;
       z-index: 2;
@@ -191,20 +192,20 @@
       flex-direction: column;
       padding: 28px;
       border-radius: 28px;
-      background: #fffaf3;
+      background: var(--card);
       color: var(--text);
       min-width: 0;
     }
     .plan-card--free { background: var(--surface); }
-    .plan-card--premium { box-shadow: none; }
+    .plan-card--premium { box-shadow: none; border: 1px solid var(--rule); }
     .plan-flag {
       position: absolute;
       top: 22px; right: 22px;
       padding: 5px 11px;
       border-radius: var(--r-pill);
       background: var(--sage);
-      color: var(--text);
-      font-size: 0.7rem;
+      color: var(--on-fill);
+      font-size: 0.875rem;
       font-weight: 600;
       letter-spacing: 0.04em;
     }
@@ -226,14 +227,13 @@
       padding: 8px 14px;
       border-radius: var(--r-pill);
       background: var(--accent-2);
-      color: #fff;
+      color: var(--bg);
       font-family: var(--display);
       font-weight: 700;
       font-size: 1.05rem;
       letter-spacing: -0.01em;
       white-space: nowrap;
       transform: rotate(-3deg);
-      box-shadow: 0 6px 16px rgba(95,112,48,0.35);
     }
     .plan-save[hidden] { display: none; }
     .plan-billed { font-size: 0.88rem; color: var(--text-secondary); min-height: 1.3em; }
@@ -270,10 +270,12 @@
       align-items: center;
       justify-content: center;
     }
-    .tick svg { width: 11px; height: 11px; fill: none; stroke: var(--text); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .tick svg { width: 11px; height: 11px; fill: none; stroke: var(--on-fill); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
     .tick--quiet { background: var(--surface-hover); }
-    .plan-card .btn { width: 100%; }
-    .plan-trial { margin-top: 14px; font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary); text-align: center; }
+    .tick--quiet svg { stroke: var(--text); }
+    /* Buttons are sized to their label, never stretched across the card. */
+    .plan-card .btn { align-self: flex-start; }
+    .plan-trial { margin-top: 14px; font-size: 0.875rem; line-height: 1.45; color: var(--text-secondary); }
 
     /* ── Comparison table, on the page cream ─────────────────── */
     /* The two plans head their own columns, price and button included,
@@ -299,36 +301,39 @@
       gap: 4px;
     }
     .cmp-head--free { background: var(--surface); }
-    .cmp-head--premium { background: var(--ink); color: var(--bg); }
+    .cmp-head--premium { background: var(--ink); color: var(--on-ink); }
     .cmp-head--premium .plan-billed, .cmp-head--premium .plan-per { color: #d9d1c4; }
     .cmp-head .plan-amount { font-size: 2.6rem; }
     .cmp-head .plan-price { margin: 6px 0 0; }
-    .cmp-head .plan-save { font-size: 0.85rem; padding: 5px 10px; }
-    .cmp-head .btn { width: 100%; margin-top: 14px; }
-    .cmp-head--free .btn-outline { background: #fffaf3; }
+    .cmp-head .plan-save { font-size: 0.875rem; padding: 5px 10px; }
+    .cmp-head .btn { align-self: flex-start; margin-top: 14px; }
+    .cmp-head--free .btn-outline { background: var(--card); }
     .cmp-head--free .btn-outline:hover { background: var(--surface-hover); }
     .cmp-feat { text-align: left !important; width: 46%; color: var(--text); font-weight: 400; }
     .cmp-group td {
       padding: 2rem 1rem 0.6rem;
       text-align: left;
-      font-size: 0.72rem;
+      /* Ink, not the accent: pink text this small cannot reach 4.5:1 on
+         the cream ground. 0.82rem = 11.5px on the 14px site base. */
+      font-size: 0.82rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--accent);
+      color: var(--text);
       border-bottom: 0;
     }
     .cmp-yes { display: inline-flex; }
     .cmp-yes .tick { margin-top: 0; }
-    .cmp-no { color: var(--text-secondary); opacity: 0.6; }
+    .cmp-no { color: var(--text-secondary); }
     .cmp-text { font-weight: 500; }
-    .cmp-table td.cmp-premium { background: rgba(41,41,36,0.05); }
+    .cmp-table td.cmp-premium { background: color-mix(in srgb, var(--text) 5%, transparent); }
     /* No hairline under the last row of each group, or of the table. */
     .cmp-table tbody tr:has(+ .cmp-group) > *, .cmp-table tbody tr:last-child > * { border-bottom: 0; }
     .cmp-table tbody tr:last-child td.cmp-premium { border-radius: 0 0 22px 22px; }
 
     /* ── FAQ ────────────────────────────────────────────────── */
     .faq-groups { display: flex; flex-direction: column; gap: 3rem; }
+    .faq-group-label { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.9rem; }
     .faq-list { border-top: 1px solid var(--rule); }
     .faq-item { border-bottom: 1px solid var(--rule); }
     .faq-item summary {
@@ -365,7 +370,8 @@
     /* ── Closer + fine print ─────────────────────────────────── */
     .closer { text-align: center; padding: 7rem 2rem 5rem; }
     .closer h2 { font-size: clamp(2.5rem, 5.5vw, 4.5rem); line-height: 0.92; margin-bottom: 1rem; }
-    .closer h2 em { font-style: normal; color: var(--accent); }
+    /* Ink, not pink: the accent isn't decoration (docs/design/shared-design-system.md). */
+    .closer h2 em { font-style: normal; }
     .closer-sub { font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 1.6rem; }
     .closer-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 
@@ -380,6 +386,25 @@
       .plan-amount { font-size: 3.2rem; }
       .closer { padding: 5rem 1.25rem 3rem; }
       .nav-links { gap: 0.9rem; }
+
+      /* Comparison table on a phone: both plans side by side, no sideways
+         scroll. The price cards already sit above the table, so the header
+         keeps only the plan names, pinned under the floating nav pill
+         (26px from the top, 52px tall) while the rows scroll. The scroll box
+         stops scrolling so `position: sticky` reaches the page. */
+      .cmp-scroll { overflow-x: visible; }
+      .cmp-table { min-width: 0; table-layout: fixed; font-size: 0.9rem; }
+      .cmp-table th, .cmp-table td { padding: 0.8rem 0.35rem; }
+      .cmp-table .cmp-feat { width: 54%; padding-left: 0; }
+      .cmp-table thead th { position: sticky; top: 84px; z-index: 1; background: var(--bg); box-shadow: inset 0 -1px 0 var(--rule); }
+      .cmp-head { padding: 10px 0; border-radius: 0; background: none; align-items: center; }
+      .cmp-head--free, .cmp-head--premium { background: none; color: var(--text); }
+      .cmp-head .plan-price, .cmp-head .plan-billed, .cmp-head .btn { display: none; }
+      .cmp-head .plan-name { font-family: var(--sans); font-size: 0.9rem; font-weight: 600; letter-spacing: 0; }
+      .cmp-head--premium .plan-name { padding: 4px 10px; border-radius: var(--r-pill); background: var(--text); color: var(--bg); }
+      .cmp-group td { padding: 1.6rem 0 0.4rem; }
+      .cmp-text { font-size: 0.86rem; }
+      .cmp-table tbody tr:last-child td.cmp-premium { border-radius: 0 0 12px 12px; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   </style>
@@ -391,10 +416,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
   <nav id="navbar">
-    <a href="/" class="nav-logo" aria-label="plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
+    <a href="/" class="nav-logo" aria-label="Plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="/pricing">Pricing</a></li>
+      <li class="nav-more"><a href="/taste-match">Taste match</a></li>
+      <li class="nav-more"><a href="/about">About</a></li>
+      <li class="nav-more"><a href="/support">Support</a></li>
       <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
       <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
     </ul>
@@ -407,7 +435,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <section class="hero">
       <div class="hero-inner">
         <h1>Free forever. Premium when you want more.</h1>
-        <p class="hero-lede">Free keeps track. Premium helps you decide what to watch next. Skip the endless scroll, the first week is on us.</p>
+        <p class="hero-lede">Free keeps track. Premium helps you decide what to watch next. Skip the endless scroll. The first week is on us.</p>
 
         <div class="billing-toggle" role="group" aria-label="Billing period">
           <button type="button" class="billing-opt" id="billMonthly" aria-pressed="false">Monthly</button>
@@ -421,7 +449,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <section class="plan-card plan-card--free" aria-labelledby="planFree">
             <h2 class="plan-name" id="planFree">Free</h2>
             <div class="plan-price"><span class="plan-amount">$0</span><span class="plan-per">forever</span></div>
-            <p class="plan-billed">Free plan, always.</p>
+            <p class="plan-billed">No card needed.</p>
             <p class="plan-tagline">Everything you need to organize your watching.</p>
             <ul class="plan-features">
               <li><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>Track movies &amp; TV in one place</li>
@@ -438,10 +466,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <span class="plan-flag">7-day free trial</span>
             <h2 class="plan-name" id="planPremium">Premium</h2>
             <div class="plan-price"><span class="plan-amount" id="premiumAmount">$2</span><span class="plan-per">/mo</span><span class="plan-save" id="premiumSave">4 months free</span></div>
-            <p class="plan-billed" id="premiumBilled">Billed $24 once a year</p>
+            <p class="plan-billed" id="premiumBilled">Billed $24 once a year instead of $36</p>
             <p class="plan-tagline">Everything in Free, plus:</p>
             <ul class="plan-features">
-              <li><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>Just Decide: a shortlist for tonight</li>
+              <li><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>Decide: four quick questions, up to five picks for tonight</li>
               <li><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>Watch together: settle what to watch</li>
               <li><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>Your watch profile</li>
               <li><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>Custom themes, widgets and app icons</li>
@@ -462,14 +490,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="stories-copy">
           <h2 id="storiesHeadline">Less deciding.<br>More watching.</h2>
           <div class="stories-stage" id="storiesStage" aria-live="polite">
-            <div class="stories-slide is-active"><h3>Something to watch, in under a minute.</h3><p>How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.</p></div>
+            <div class="stories-slide is-active"><h3>Something to watch, in under a minute.</h3><p>How long have you got, what are you in the mood for, where are you watching? Plot hands you a shortlist.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Settle movie night before the snacks are ready.</h3><p>Watch together analyzes everyone’s Plot profiles to find movie and TV matches in your lists.</p></div>
-            <div class="stories-slide" aria-hidden="true"><h3>Every story has a plot. Here’s yours.</h3><p>Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.</p></div>
-            <div class="stories-slide" aria-hidden="true"><h3 aria-label="Find out your compatibility based on cinema.">Find out your compatibility based on <s>science</s> cinema.</h3><p>Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.</p></div>
+            <div class="stories-slide" aria-hidden="true"><h3>Every story has a <svg class="pun-wm" style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" role="img" aria-label="plot" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg>. Here’s yours.</h3><p>Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.</p></div>
+            <div class="stories-slide" aria-hidden="true"><h3>Find out your compatibility based on <span aria-hidden="true"><s>science</s> cinema</span><span class="sr-only">cinema, not science</span>.</h3><p>Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.</p></div>
             <div class="stories-slide" aria-hidden="true"><h3>Your Plot, your way.</h3><p>Light, dark or in between. Widgets for your home screen. Customize your Plot app interface and icon. Plot, the way you’d have made it.</p></div>
           </div>
           <div class="stories-steps" id="storiesSteps" role="group" aria-label="Premium benefits">
-            <button type="button" class="stories-step" aria-pressed="true"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Just Decide</span></button>
+            <button type="button" class="stories-step" aria-pressed="true"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Decide</span></button>
             <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Watch together</span></button>
             <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Your profile</span></button>
             <button type="button" class="stories-step" aria-pressed="false"><span class="stories-bar" aria-hidden="true"><i></i></span><span>Taste match</span></button>
@@ -484,8 +512,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                and back). Every keyframe ends on the resting state, and
                reduced motion shows that state straight away. -->
 
-          <!-- 1 · Just Decide. Example verified on the old homepage: 120 min, Disney+, Comedy → The Grand Budapest Hotel. -->
-          <div class="vis vis--pick" role="img" aria-label="Just Decide: choose 120 minutes, Disney+ and Comedy. Tonight’s pick is The Grand Budapest Hotel, 100 minutes on Disney+.">
+          <!-- 1 · Decide. Example verified on the old homepage: 120 min, Disney+, Comedy → The Grand Budapest Hotel. -->
+          <div class="vis vis--pick" role="img" aria-label="Decide: choose 120 minutes, Disney+ and Comedy. Tonight’s pick is The Grand Budapest Hotel, 100 minutes on Disney+.">
             <div class="pf-q"><span class="pf-label">How much time?</span><div class="pf-seg"><span>30 min</span><span>60 min</span><span>90 min</span><span class="on" style="--d:0.3s">120 min</span></div></div>
             <div class="pf-q"><span class="pf-label">Where do you watch?</span><div class="pf-seg"><span>Netflix</span><span class="on" style="--d:0.9s">Disney+</span><span>Prime Video</span><span>Apple TV+</span></div></div>
             <div class="pf-q"><span class="pf-label">In the mood for?</span><div class="pf-seg"><span>Drama</span><span class="on" style="--d:1.5s">Comedy</span><span>Thriller</span><span>Romance</span></div></div>
@@ -591,7 +619,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                   <div class="cmp-head cmp-head--free">
                     <span class="plan-name">Free</span>
                     <div class="plan-price"><span class="plan-amount">$0</span><span class="plan-per">forever</span></div>
-                    <p class="plan-billed">Free plan, always.</p>
+                    <p class="plan-billed">No card needed.</p>
                     <a href="https://app.theplot.tv/signup" class="btn btn-outline btn-large" data-cta="plans-compare-free">Start tracking</a>
                   </div>
                 </th>
@@ -599,7 +627,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                   <div class="cmp-head cmp-head--premium">
                     <span class="plan-name">Premium</span>
                     <div class="plan-price"><span class="plan-amount" data-premium="amount">$2</span><span class="plan-per">/mo</span><span class="plan-save" data-premium="save">4 months free</span></div>
-                    <p class="plan-billed" data-premium="billed">Billed $24 once a year</p>
+                    <p class="plan-billed" data-premium="billed">Billed $24 once a year instead of $36</p>
                     <a href="https://app.theplot.tv/signup?intent=premium&amp;plan=yearly" class="btn btn-primary btn-large" data-premium="cta" data-cta="plans-compare-premium">Start 7-day free trial</a>
                   </div>
                 </th>
@@ -616,15 +644,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tr><th scope="row" class="cmp-feat">Follow friends &amp; share profile</th><td><span class="cmp-yes"><span class="tick tick--quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr class="cmp-group"><td colspan="3">Lists &amp; calendar</td></tr>
               <tr><th scope="row" class="cmp-feat">Custom lists</th><td><span class="cmp-text">Up to 5</span></td><td class="cmp-premium"><span class="cmp-text">Unlimited</span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Smart lists</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Release dates in your calendar app</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Smart lists</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Release dates in your calendar app</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr class="cmp-group"><td colspan="3">Deciding what to watch</td></tr>
-              <tr><th scope="row" class="cmp-feat">Just Decide</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Watch together</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Decide</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Watch together</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
               <tr><th scope="row" class="cmp-feat">Your watch profile</th><td><span class="cmp-text">Overview</span></td><td class="cmp-premium"><span class="cmp-text">Full profile</span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Taste match with a friend</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Custom themes, widgets &amp; app icons</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
-              <tr><th scope="row" class="cmp-feat">Actor &amp; director alerts</th><td><span class="cmp-no">–</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Taste match with a friend</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Custom themes, widgets &amp; app icons</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
+              <tr><th scope="row" class="cmp-feat">Actor &amp; director alerts</th><td><span class="cmp-no" aria-hidden="true">–</span><span class="sr-only">Not included</span></td><td class="cmp-premium"><span class="cmp-yes"><span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span></span></td></tr>
             </tbody>
           </table>
         </div>
@@ -637,14 +665,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="section-head"><h2 id="faqHeadline">Questions</h2><p>Short answers. Anything else, email us.</p></div>
         <div class="faq-groups">
         <div class="faq-group">
+          <h3 class="faq-group-label">Plans</h3>
           <div class="faq-list">
             <details class="faq-item" open><summary>Is Free really free?</summary><p>Yes. No card, no trial clock, no limit on what you track. Free keeps your watchlist, history, release calendar and up to five lists for as long as you like.</p></details>
-            <details class="faq-item"><summary>What do I get with Premium?</summary><p>Everything in Free, plus Just Decide, Watch together, your watch profile, Taste match, custom themes, widgets and app icons, unlimited and smart lists, release dates in your calendar app, and actor and director alerts. The table above has the full list.</p></details>
+            <details class="faq-item"><summary>What do I get with Premium?</summary><p>Everything in Free, plus Decide, Watch together, your watch profile, Taste match, custom themes, widgets and app icons, unlimited and smart lists, release dates in your calendar app, and actor and director alerts. The table above has the full list.</p></details>
             <details class="faq-item"><summary>Does my friend need Premium too?</summary><p>No. For Watch together and Taste match, only one of you needs Premium.</p></details>
             <details class="faq-item"><summary>What happens to my lists if I downgrade?</summary><p>Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.</p></details>
           </div>
         </div>
         <div class="faq-group">
+          <h3 class="faq-group-label">Billing</h3>
           <div class="faq-list">
             <details class="faq-item"><summary>How does the free trial work?</summary><p>Start Premium and the first 7 days are free. You won’t be charged until the trial ends, and if you cancel during the trial you pay $0. The trial is for new subscribers.</p></details>
             <details class="faq-item"><summary>Can I switch between monthly and annual?</summary><p>Yes, any time, from Manage subscription in Settings.</p></details>
@@ -670,7 +700,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </section>
   </main>
 
-  <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
+  <!-- footer:start (generated from _partials/footer.html — edit there, then run `pnpm run footer`) -->
   <footer class="site-footer">
     <div class="footer-panel">
     <div class="footer-inner">
@@ -678,7 +708,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="footer-intro">
           <p class="footer-lede">Everything you've watched.<br>Everything you want to watch.</p>
           <div class="footer-actions">
-            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your Plot</a>
+            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start tracking</a>
           </div>
         </div>
         <ul class="footer-links" role="navigation" aria-label="Footer">
@@ -711,7 +741,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
          sides and sinks below the bottom edge. On hover a pastel foil sheen (the
          <use> filled with #footer-foil) fades in over the glyphs; js/footer.js tilts
          it with the pointer. Version stamp added by scripts/build-footer.mjs. -->
-    <a class="footer-wordmark" href="/" aria-label="plot home" data-cta="footer">
+    <a class="footer-wordmark" href="/" aria-label="Plot home" data-cta="footer">
       <svg viewBox="52 -681 1403 871" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-foil" x1="-0.6" x2="1.6" gradientTransform="rotate(100 0.5 0.5)"><stop offset="0" stop-color="#ffbcdf"/><stop offset="0.18" stop-color="#ffd1e8"/><stop offset="0.34" stop-color="#fff2b8"/><stop offset="0.5" stop-color="#c9f2d9"/><stop offset="0.66" stop-color="#c6e4ff"/><stop offset="0.82" stop-color="#e0cfff"/><stop offset="1" stop-color="#ffbcdf"/></linearGradient></defs><g id="footer-wordmark-glyphs"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-55,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5Z"/><path transform="translate(-110,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-165,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></g><use class="footer-foil" href="#footer-wordmark-glyphs"/></svg>
     </a>
     </div>
@@ -739,7 +769,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         mo.setAttribute('aria-pressed', String(!annual));
         yr.setAttribute('aria-pressed', String(annual));
         var amountText = '$' + (annual ? annualMonthly : MONTHLY);
-        var billedText = annual ? 'Billed $' + ANNUAL + ' once a year' : 'Billed monthly. Cancel anytime.';
+        var billedText = annual ? 'Billed $' + ANNUAL + ' once a year instead of $' + (MONTHLY * 12) : 'Billed monthly. Cancel anytime.';
         var href = 'https://app.theplot.tv/signup?intent=premium&plan=' + (annual ? 'yearly' : 'monthly');
         amount.textContent = amountText;
         billed.textContent = billedText;

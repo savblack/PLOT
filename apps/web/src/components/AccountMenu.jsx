@@ -1,12 +1,11 @@
-// Desktop sidebar: the profile row at the foot of the rail opens this account
-// menu. Top to bottom: the Light / Dark / System control, a ThemeChip per theme
-// family, the account links, the "Help build Plot" links, then Sign out.
-// A Premium family applies at once for Premium viewers and shows a lock for
-// Free ones, where a tap opens the upgrade sheet instead (it never applies or
-// trials the family). DOM-only popover; mobile parity is
-// https://github.com/savblack/PLOT/issues/1090. Below the sidebar breakpoint
-// the nav drawer has no account menu: Settings carries the same theme
-// controls, feedback and Ko-fi links there.
+// The profile row at the foot of the desktop rail and of the phone drawer
+// opens this account menu. Top to bottom: the Light / Dark / System control, a
+// ThemeChip per theme family, the account links, the "Help build Plot" links,
+// then Sign out. A Premium family applies at once for Premium viewers and
+// shows the Premium mark for Free ones, where a tap opens the upgrade sheet
+// instead (it never applies or trials the family). DOM-only popover; the
+// mobile app draws its own in apps/mobile/components/DrawerMenu.tsx from the
+// same copy and theme rules.
 import { useEffect, useId, useRef, useState } from 'react';
 import { THEME_FAMILIES, THEME_MODES, isPremiumFamily } from '@plot/core/themes.js';
 import ThemeChip from './ThemeChip.jsx';
@@ -275,7 +274,7 @@ export default function AccountMenu({
         <Avatar src={profile.avatar_url} name={name} size={24} tone="raised" className="app-sidebar-avatar" />
         <span className="app-sidebar-profile-copy">
           <span className="app-sidebar-profile-name"><span className="app-sidebar-label">{name}</span>{isPremium && <PremiumBadge className="app-sidebar-verified" />}</span>
-          <small>{APP_SHELL.viewYourProfile}</small>
+          <small>{APP_SHELL.accountAndSettings}</small>
         </span>
       </button>
     </div>

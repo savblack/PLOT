@@ -1,6 +1,6 @@
 // Canonical cross-platform design-token VALUES (colors + radii). Source of truth
 // for both apps: the web app's CSS custom properties are validated against this
-// (`npm run tokens:check`), and mobile derives its StyleSheet token objects from
+// (`pnpm run tokens:check`), and mobile derives its StyleSheet token objects from
 // it. Platform-specific presentation — fonts, shadows, motion, glass, layout
 // constants, spacing, font sizes — stays in each app, since those don't map 1:1
 // between DOM/CSS and React Native.

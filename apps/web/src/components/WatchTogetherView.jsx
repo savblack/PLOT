@@ -9,16 +9,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
 import { isPremiumProfile } from '@plot/core/premium.js';
-import { personName, titleMeta, filterByKind, splitGroupMatches, shufflePick, sessionProgress, swipeDecision, SWIPE_THRESHOLD } from '@plot/core/watchTogether.js';
-import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSuggestions, useWatchTogetherSession, startWatchTogetherSession, liveWatchTogetherSession, useUserSearch } from '@plot/core/useWatchTogether.js';
+import { personName, titleMeta, filterByKind, splitGroupMatches, shufflePick, sessionProgress, swipeDecision, SWIPE_THRESHOLD, sessionFilterLabels } from '@plot/core/watchTogether.js';
+import { useWatchTogether, useWatchTogetherTitles, useWatchTogetherSession, liveWatchTogetherSession } from '@plot/core/useWatchTogether.js';
 import { supabase } from '@plot/core/supabase.js';
 import { WATCH_TOGETHER as T } from '@plot/core/copy/watchTogether.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { COMMON } from '../copy/common.js';
 import { posterUrl } from '../utils/images.js';
 import { AcceptDialog, PersonAvatar, ShareListDialog, WatchTogetherTile } from './WatchTogetherParts.jsx';
-import { InviteLinkCard, FriendSearch, PersonRow } from './WatchTogetherStart.jsx';
+import { InvitePanel } from './WatchTogetherStart.jsx';
 import WatchTogetherHub from './WatchTogetherHub.jsx';
+import WatchTogetherMood from './WatchTogetherMood.jsx';
 import { collectionPath, customListKey } from '@plot/core/listCollections.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import './WatchTogetherView.css';
@@ -26,7 +27,6 @@ import PremiumGateButton from './PremiumGateButton.jsx';
 import BackLink from './BackLink.jsx';
 import Chip, { ChipRow, Tag } from './Chip.jsx';
 import EmptyState from './EmptyState.jsx';
-import SearchField from './SearchField.jsx';
 
 function Chevron() {
   return <svg className="wt-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>;
@@ -50,16 +50,9 @@ function Picker({ wt }) {
   const [picked, setPicked] = useState(() => new Set());
   const chosen = wt.partners.filter(p => picked.has(p.other_id));
   const toggle = (id) => setPicked(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
-  const [starting, setStarting] = useState(false);
-  const [error, setError] = useState(null);
   const browse = () => navigate(`/together/with/${chosen.map(p => encodeURIComponent(p.username)).join(',')}`);
-  const decide = async () => {
-    setStarting(true); setError(null);
-    const result = await startWatchTogetherSession(chosen[0].other_id);
-    setStarting(false);
-    if (result.ok) navigate(`/together/session/${result.data}`);
-    else setError(T.errors[result.code]);
-  };
+  // The mood step comes first, then the cards (WatchTogetherMood.jsx).
+  const decide = () => navigate(`/together/decide/${encodeURIComponent(chosen[0].username)}`);
 
   return (
     <div className="wt-page">
@@ -75,12 +68,11 @@ function Picker({ wt }) {
           </label>
         ))}
       </fieldset>
-      {error && <p className="wt-error" role="alert">{error}</p>}
       <div className="wt-actions">
         {chosen.length === 1 && <button type="button" className="btn btn-secondary" onClick={browse}>{T.tile.pairedAction}</button>}
         {chosen.length > 1
           ? <button type="button" className="btn btn-primary" onClick={browse}>{T.overlap.groupAction}</button>
-          : <button type="button" className="btn btn-primary" disabled={!chosen.length || starting} onClick={decide}>{T.session.start}</button>}
+          : <button type="button" className="btn btn-primary" disabled={!chosen.length} onClick={decide}>{T.session.start}</button>}
       </div>
     </div>
   );
@@ -89,41 +81,11 @@ function Picker({ wt }) {
 /* ── Invite ──────────────────────────────────────────────────────────── */
 
 function Invite({ wt }) {
-  const { user } = useApp();
-  const { people: suggested } = useWatchTogetherSuggestions(user?.id);
-  const [query, setQuery] = useState('');
-  const { searching, results } = useUserSearch(query, { excludeId: user?.id, limit: 20 });
-  const [sent, setSent] = useState(() => new Set());
-  const [error, setError] = useState(null);
-
-  const invite = async (person) => {
-    setError(null);
-    const result = await wt.send(person.id);
-    if (result.ok) setSent(prev => new Set(prev).add(person.id));
-    else setError(T.errors[result.code]);
-  };
-
-  const list = searching ? (results || []) : suggested;
   return (
     <div className="wt-page">
       <BackLink to="/together" label={T.hub.title} />
       <h2 className="discover-section-title">{T.invite.title}</h2>
-      <p className="wt-card-body">{T.invite.body}</p>
-      <p className="wt-note">{T.invite.mutualNote}</p>
-      <SearchField id="wt-invite-search" placeholder={T.invite.search} value={query} onChange={setQuery} />
-      {error && <p className="wt-error" role="alert">{error}</p>}
-      {query.trim().length < 2 && <h2 className="wt-section-label">{T.invite.suggested}</h2>}
-      {list.length === 0 && query.trim().length < 2 && <p className="wt-note">{T.invite.noSuggestions}</p>}
-      {list.map(p => (
-        <div key={p.id} className="wt-row">
-          <PersonAvatar person={p} />
-          <span className="wt-person-text"><span className="wt-person-name">{personName(p)}</span><span className="wt-note">@{p.username}</span></span>
-          {sent.has(p.id)
-            ? <Tag label={T.invite.sent} />
-            : <button type="button" className="btn btn-primary btn-sm" onClick={() => invite(p)}>{T.invite.invite}</button>}
-        </div>
-      ))}
-      <InviteLinkCard />
+      <InvitePanel wt={wt} />
     </div>
   );
 }
@@ -187,10 +149,7 @@ function Together({ wt, usernames }) {
     return <div className="wt-page"><BackLink to="/together" label={T.hub.title} /><p className="wt-note">{T.overlap.notPartners}</p></div>;
   }
   const { all, some } = splitGroupMatches(shown, people.length + 1);
-  const decide = async () => {
-    const result = await startWatchTogetherSession(people[0].other_id);
-    if (result.ok) navigate(`/together/session/${result.data}`);
-  };
+  const decide = () => navigate(`/together/decide/${encodeURIComponent(people[0].username)}`);
 
   return (
     <div className="wt-page">
@@ -310,9 +269,22 @@ function SessionCardView({ card, counter, onDecide }) {
   );
 }
 
+/* What the session was started with, so both people know which deck this is. */
+function SessionFilters({ session, viewerId, otherName }) {
+  const filters = session?.filters;
+  const labels = sessionFilterLabels(filters, { viewerId, starterName: otherName });
+  if (!labels.length) return null;
+  return (
+    <div className="wt-session-filters">
+      <span className="wt-note">{filters.by === viewerId ? T.mood.youPicked : T.mood.picked(otherName)}</span>
+      {labels.map(label => <Tag key={label} label={label} />)}
+    </div>
+  );
+}
+
 function SessionView({ wt, sessionId }) {
   const navigate = useNavigate();
-  const { openPanel } = useApp();
+  const { openPanel, user } = useApp();
   const { session, error, loading, vote } = useWatchTogetherSession(sessionId);
   const [showMatches, setShowMatches] = useState(false);
   const [justMatched, setJustMatched] = useState(null);
@@ -327,10 +299,8 @@ function SessionView({ wt, sessionId }) {
     const result = await vote(card, yes);
     if (result.matched) setJustMatched(card);
   };
-  const restart = async () => {
-    const result = await startWatchTogetherSession(session.other_id);
-    if (result.ok) navigate(`/together/session/${result.data}`, { replace: true });
-  };
+  // Starting again goes back through the mood step.
+  const restart = () => { if (other) navigate(`/together/decide/${encodeURIComponent(other.username)}`, { replace: true }); };
 
   if (loading && !session) return <div className="wt-page"><p className="wt-note" role="status">{COMMON.loading}</p></div>;
   if (error || !session) return <div className="wt-page"><BackLink to="/together" label={T.hub.title} /><p className="wt-note">{T.errors[error || 'generic']}</p></div>;
@@ -356,6 +326,7 @@ function SessionView({ wt, sessionId }) {
         <div className="wt-session-title">
           <h2 className="wt-card-title">{T.session.heading(name)}</h2>
           <span className="wt-note">{T.session.fromBoth}</span>
+          <SessionFilters session={session} viewerId={user?.id} otherName={name} />
         </div>
         <span className="wt-note wt-session-them">{personName(other || {})}: {T.session.theyAnswered(Math.min(session.other_answered + 1, progress.total))}</span>
       </header>
@@ -440,6 +411,7 @@ export default function WatchTogetherView({ page = 'hub' }) {
 
   if (page === 'pick') return <Picker wt={wt} />;
   if (page === 'invite') return <Invite wt={wt} />;
+  if (page === 'mood') return <WatchTogetherMood wt={wt} username={decodeURIComponent(params.username || '')} />;
   if (page === 'session') return <SessionView wt={wt} sessionId={params.sessionId} />;
   if (page === 'join') return <JoinSession wt={wt} username={decodeURIComponent(params.username || '')} />;
   if (page === 'with') {

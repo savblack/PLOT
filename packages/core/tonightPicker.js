@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TV_KEYWORD_GENRES, tvKeywordIds, _resetKeywordGenreCache } from './keywordGenres.js';
-import { tmdb, excludeKidsContent, KIDS_GENRE_IDS } from './tmdb.js';
+import { tmdb, KIDS_GENRE_IDS } from './tmdb.js';
 import { supabase } from './supabase.js';
 import { getConfig } from './config.js';
 import { localDateStr } from './date.js';
@@ -148,6 +148,8 @@ const GAP_MS = 120;
  * @property {boolean} onlyServices Limit to the viewer's streaming services.
  * @property {boolean} onlyWatchlist Limit to the viewer's watchlist.
  * @property {boolean} hideKids Leave out kids and family titles.
+ * @property {boolean} [kidsKeepAnimation] With hideKids, still allow animation. Smart lists set it: their weekly job
+ *   (supabase/functions/_shared/smartListDigest.js) sends the same query and only hides Family and Kids.
  */
 
 /**
@@ -544,6 +546,106 @@ export function regionFlatrate(details, region) {
   return flatrate.map(p => ({ id: p.provider_id, name: p.provider_name, logo_path: p.logo_path ?? null }));
 }
 
+/**
+ * Why the top pick was picked, in the viewer's own answers: the moods it
+ * matches, then the length and era they asked for, then whether it was on
+ * their watchlist. Only what they asked for, never a claim about their taste
+ * (see the copy module's header). Null when they asked for nothing in
+ * particular and it isn't on their watchlist.
+ * @param {PickerCandidate & { kw_genres?: number[] }} item
+ * @param {PickerOptions} options
+ * @param {{ genres?: Array<{id: number, name: string, mood?: string|null}> }} [ctx]
+ * @returns {string|null}
+ */
+export function pickReason(item, options, { genres = [] } = {}) {
+  const S = TONIGHT_PICKER.sentence;
+  const R = TONIGHT_PICKER.reason;
+  if (!item || !options) return null;
+  const has = new Set([...(item.genre_ids || []), ...(item.kw_genres || [])]);
+  const moods = (options.genreIds || [])
+    .filter(id => has.has(id))
+    .map(id => genres.find(g => g.id === id))
+    .filter(Boolean)
+    .map(g => (g.mood || g.name).toLowerCase());
+  const asked = [];
+  if (moods.length) asked.push(joinWithAnd(moods));
+  if (options.mediaType === 'tv' && options.maxEpisodeRuntime) asked.push(S.episodes(options.maxEpisodeRuntime));
+  if (options.mediaType !== 'tv' && options.maxRuntime && S.runtime(options.maxRuntime)) asked.push(S.runtime(options.maxRuntime));
+  if (options.era && options.era !== 'any' && S.era[options.era]) asked.push(S.era[options.era]);
+  if (options.minScore) asked.push(S.rated(options.minScore));
+  const lines = [];
+  if (asked.length) lines.push(R.asked(asked.join(', ')));
+  if (item.onWatchlist) lines.push(R.onWatchlist);
+  return lines.length ? lines.join(' ') : null;
+}
+
+/**
+ * "A", "A and B", "A, B and C".
+ * @param {string[]} words
+ */
+export function joinWithAnd(words) {
+  if (words.length < 2) return words[0] ?? '';
+  return `${words.slice(0, -1).join(', ')} ${TONIGHT_PICKER.sentence.and} ${words.at(-1)}`;
+}
+
+/**
+ * The streaming services a pick is on in the viewer's region, their own
+ * services first. Uses the same cached details call the picker already makes,
+ * so a pick it checked costs nothing. Null when the details can't be read.
+ * @param {{ id: number, media_type?: string }} item
+ * @param {{ region: string, providerIds?: number[], client?: any }} ctx
+ * @returns {Promise<Array<{id: number, name: string, logo_path: string|null}>|null>}
+ */
+export async function loadPickProviders(item, { region, providerIds = [], client = tmdb }) {
+  if (!item?.id || !region) return null;
+  const slim = await slimDetails(client, item.media_type === 'tv' ? 'tv' : 'movie', item.id);
+  if (!slim) return null;
+  const mine = new Set(providerIds);
+  return regionFlatrate({ 'watch/providers': slim.watchProviders }, region)
+    .sort((a, b) => Number(mine.has(b.id)) - Number(mine.has(a.id)));
+}
+
+/**
+ * The top pick's where-to-watch line, or null while it loads.
+ * @param {Array<{name: string}>|null|undefined} providers
+ * @returns {string|null}
+ */
+export function pickWhereToWatch(providers) {
+  if (!providers) return null;
+  const W = TONIGHT_PICKER.whereToWatch;
+  if (!providers.length) return W.none;
+  // One name per service: TMDB lists an ad tier ("Netflix Standard with Ads")
+  // beside the service itself, which read as "Netflix and Netflix Standard
+  // with Ads". The plain name is enough to know where to look.
+  const names = [...new Set(providers.map(p => providerBaseName(p.name)))];
+  return W.streaming(joinWithAnd(names.slice(0, 3)));
+}
+
+/**
+ * A provider's name without its plan or ad tier, so two tiers of one service
+ * collapse to one. Free ad-supported services ("Pluto TV") keep their name.
+ * @param {string} name
+ */
+export function providerBaseName(name) {
+  return String(name).replace(/\s+(?:standard|basic|premium)?\s*with\s+ads$/i, '').trim();
+}
+
+const ANIMATION_GENRE_ID = 16;
+
+/**
+ * Genres "Hide kids and family" leaves out. TMDB tags many family films only
+ * as Animation (Howl's Moving Castle is Animation, Fantasy, Adventure), so in
+ * Decide animation goes too, unless the viewer picked Animation themselves.
+ * @param {Pick<PickerOptions, 'hideKids'|'genreIds'|'kidsKeepAnimation'>} options
+ * @returns {Set<number>}
+ */
+export function hiddenKidsGenreIds(options) {
+  if (!options.hideKids) return new Set();
+  const ids = new Set(KIDS_GENRE_IDS);
+  if (!options.kidsKeepAnimation && !options.genreIds.includes(ANIMATION_GENRE_ID)) ids.add(ANIMATION_GENRE_ID);
+  return ids;
+}
+
 /** @param {string} eraId */
 function eraRange(eraId) {
   const era = PICKER_ERAS.find(e => e.id === eraId) ?? PICKER_ERAS[0];
@@ -581,7 +683,7 @@ export function discoverParams(options, { providerIds, region, page = 1 }) {
   const tv = options.mediaType === 'tv';
   const { gte, lte } = eraRange(options.era);
   const dateKey = tv ? 'first_air_date' : 'primary_release_date';
-  const without = [...(tv ? TV_EXCLUDED_GENRES : []), ...(options.hideKids ? KIDS_GENRE_IDS : [])];
+  const without = [...(tv ? TV_EXCLUDED_GENRES : []), ...hiddenKidsGenreIds(options)];
   /** @type {Record<string, string|number>} */
   const params = {
     sort_by: 'popularity.desc',
@@ -634,7 +736,8 @@ export function matchesOptions(c, options, providerIds, { checkServices = true }
     if (!c?.runtime || c.runtime < MIN_FEATURE_RUNTIME) return false;
     if (options.maxRuntime && c.runtime > options.maxRuntime) return false;
   }
-  if (options.hideKids && c.genre_ids.some(id => KIDS_GENRE_IDS.has(id))) return false;
+  const kids = hiddenKidsGenreIds(options);
+  if (kids.size && c.genre_ids.some(id => kids.has(id))) return false;
   if (options.genreIds.length && !options.genreIds.some(id => (isKeywordGenre(id)
     ? c.kw_genres?.includes(id) || (options.keywordGenres?.[id] ?? []).some(k => c.keyword_ids?.includes(k))
     : c.genre_ids.includes(id)))) return false;
@@ -805,7 +908,9 @@ export async function loadDiscoverPage({
   const seenIds = new Set();
   const results = pages.flatMap(p => (p.results ?? []).map(r => ({ ...r, kwGenres: p.kwGenres })))
     .filter(r => r?.id && !seenIds.has(r.id) && seenIds.add(r.id));
-  let pool = excludeKidsContent(results, options.hideKids)
+  const kids = hiddenKidsGenreIds(options);
+  let pool = results
+    .filter(r => !(r.genre_ids || []).some(id => kids.has(id)))
     .filter(r => r?.id && r.poster_path && !excludeIds.has(r.id))
     .map(r => ({
       id: r.id,
@@ -1228,6 +1333,24 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
   const answers = useMemo(() => pickerAnswers(options, { genres }), [options, genres]);
 
   const visible = visiblePickerState({ enabled: viewing, phase, resultsOwner, userId, results, canSpinAgain });
+  // The top pick's reason and where to watch (Nov 19). Providers load once per
+  // pick; a pick from the watchlist pool already carries the viewer's own.
+  const top = visible.phase === 'results' ? visible.results[0] ?? null : null;
+  const topReason = useMemo(() => (top ? pickReason(top, options, { genres }) : null), [top, options, genres]);
+  const [topProviders, setTopProviders] = useState(/** @type {{ id: number|null, providers: Array<{id: number, name: string, logo_path: string|null}>|null }} */ ({ id: null, providers: null }));
+  const topKey = top ? `${top.media_type}:${top.id}` : null;
+  useEffect(() => {
+    if (!top) return undefined;
+    let live = true;
+    loadPickProviders(top, { region, providerIds })
+      .then(providers => { if (live) setTopProviders({ id: topKey, providers: providers ?? [] }); })
+      .catch(() => { if (live) setTopProviders({ id: topKey, providers: null }); });
+    return () => { live = false; };
+    // topKey stands in for top: a new array from a re-render is the same pick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topKey, region, providerIds]);
+  const topWhere = topProviders.id === topKey ? pickWhereToWatch(topProviders.providers) : null;
+
   return {
     options, setOption, toggleGenre, genres,
     hasServices, hasWatchlist,
@@ -1235,6 +1358,7 @@ export function useTonightPicker({ enabled, storage = null, userId, watchlistIte
     mode, results: visible.results, canSpinAgain: visible.canSpinAgain,
     step, goToStep, nextStep, prevStep,
     sentence, filtersSummary, answers,
+    topReason, topWhere,
     go, spinAgain, backToOptions, closeLock, openPick,
     // Free viewers: today's one pick is unused / saving a search is Premium.
     freePickLeft, canSave: enabled,

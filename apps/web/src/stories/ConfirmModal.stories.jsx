@@ -1,5 +1,7 @@
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import ConfirmModal from '../components/ConfirmModal.jsx';
+import { SETTINGS_VIEW } from '../copy/settingsView.js';
+import { CONFIRM_MODAL } from '@plot/core/copy/confirmModal.js';
 
 export default {
   title: 'Components/ConfirmModal',
@@ -41,6 +43,24 @@ export const Danger = {
   },
 };
 
+// A title that names the brand lowercase draws the logo in place of the word,
+// and the dialog is still announced as the full sentence.
+export const BrandInTitle = {
+  args: {
+    title: SETTINGS_VIEW.page.signOutTitle,
+    message: SETTINGS_VIEW.page.signOutMessage,
+    confirmLabel: SETTINGS_VIEW.signOut,
+  },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = body.getByRole('dialog', { name: SETTINGS_VIEW.page.signOutTitle });
+    // The wordmark is drawn, not typed: no live "plot" text in the title.
+    // Not toBeVisible: the card is still fading in when this runs.
+    await expect(dialog.querySelector('p svg')).not.toBeNull();
+    await expect(dialog.querySelector('p').textContent).toBe('Sign out of ?');
+  },
+};
+
 export const WithConfirmPhrase = {
   args: {
     title: 'Delete your account?',
@@ -72,7 +92,7 @@ export const ConfirmThrows = {
     const confirm = within(dialog).getByRole('button', { name: 'Remove' });
 
     await userEvent.click(confirm);
-    await expect(await within(dialog).findByRole('alert')).toHaveTextContent('Something went wrong. Please try again.');
+    await expect(await within(dialog).findByRole('alert')).toHaveTextContent(CONFIRM_MODAL.failed);
     await expect(args.onClose).not.toHaveBeenCalled();
     await waitFor(() => expect(confirm).toBeEnabled());
   },

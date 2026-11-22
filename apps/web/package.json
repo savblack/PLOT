@@ -18,7 +18,7 @@
     "@plot/ui": "*",
     "@supabase/supabase-js": "^2.119.0",
     "html-to-image": "1.11.13",
-    "posthog-js": "^1.447.15",
+    "posthog-js": "^1.449.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.5",
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.69.1",
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "@storybook/addon-a11y": "^10.6.7",
     "@storybook/addon-docs": "^10.6.7",
     "@storybook/addon-vitest": "^10.6.7",
@@ -34,10 +34,10 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.3.0",
-    "@vitest/browser-playwright": "^5.1.0",
+    "@vitest/browser-playwright": "^5.1.1",
     "storybook": "^10.6.7",
     "vite": "^8.3.8",
-    "vitest": "^5.1.0",
-    "wrangler": "^4.161.0"
+    "vitest": "^5.1.1",
+    "wrangler": "^4.162.0"
   }
 }

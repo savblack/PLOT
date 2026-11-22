@@ -314,6 +314,9 @@ export function smartListPickerOptions(rules, type, { hideKids = false } = {}) {
     onlyWatchlist: false,
     // Picking Family or Kids as a rule is asking for them.
     hideKids: hideKids && !rules.genreIds.some(id => id === 10751 || id === 10762),
+    // Decide also hides animation under hideKids; smart lists keep the
+    // Family/Kids rule their weekly digest job mirrors.
+    kidsKeepAnimation: true,
   };
 }
 

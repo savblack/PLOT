@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { PLANS_PAGE } from '@plot/core/copy/plansPage.js';
 import { MEDIA } from '@plot/core/copy/media.js';
+import { COMMON } from '@plot/core/copy/common.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
 import { AppContext } from '../hooks/useApp.js';
 import MyListsView from '../components/MyListsView.jsx';
@@ -185,14 +186,48 @@ export const CustomListPageFilters = {
     const canvas = within(canvasElement);
     await expect(canvas.queryAllByText('Bluey').length).toBeGreaterThan(0);
 
-    // The filter column is display:none below 1024px, so look past that: this
-    // asserts the filter drives the list, not the breakpoint.
-    await fireEvent.click(canvas.getByRole('checkbox', { name: MEDIA.tv, hidden: true }));
+    // A short list has no side rail: its filters open from the toolbar's
+    // Filters button. That dropdown is display:none below 1024px, so look past
+    // that: this asserts the filter drives the list, not the breakpoint.
+    fireEvent.click(canvasElement.querySelector('.list-page-toolbar .guide-filter-btn'));
+    const menu = await waitFor(() => {
+      const el = canvasElement.querySelector('.list-page-toolbar .guide-filter-menu');
+      if (!el) throw new Error('filter menu not open');
+      return el;
+    });
+    await expect(canvasElement.querySelector('.list-page-side')).toBeNull();
+    await fireEvent.click(within(menu).getByRole('checkbox', { name: MEDIA.tv, hidden: true }));
     await waitFor(() => expect(canvas.queryAllByText('Bluey')).toHaveLength(0));
     await expect(canvas.queryAllByText('Paddington 2').length).toBeGreaterThan(0);
   },
 };
 export const WantToWatchPage = listPage('/my-lists/want');
+/* Select several titles: the toolbar's Select button, a tap per title, Select
+   all on the bar, then Remove. The stub removes succeed, so the bar closes and
+   focus goes back to Select. */
+export const CustomListSelecting = {
+  ...listPage('/my-lists/list-l2'),
+  tags: ['interaction-test'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const S = CUSTOM_LISTS.selection;
+    const toggle = canvas.getByRole('button', { name: S.start });
+    fireEvent.click(toggle);
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    const bar = await canvas.findByRole('region', { name: S.bar });
+    await expect(within(bar).getByText(S.hint)).toBeVisible();
+
+    // Grid and rows both render; CSS shows one per width.
+    fireEvent.click(canvas.getAllByRole('button', { name: 'Select Paddington 2', hidden: true })[0]);
+    await expect(within(bar).getByText(S.count(1))).toBeVisible();
+    fireEvent.click(within(bar).getByRole('button', { name: S.selectAll }));
+    await expect(within(bar).getByText(S.count(2))).toBeVisible();
+
+    fireEvent.click(within(bar).getByRole('button', { name: COMMON.remove }));
+    await waitFor(() => expect(canvas.queryByRole('region', { name: S.bar })).toBeNull());
+    await waitFor(() => expect(toggle).toHaveFocus());
+  },
+};
 export const FavoritesPage   = listPage('/my-lists/favorites');
 
 /* Smart lists (Premium). A watchlist rule set with only type and genre rules

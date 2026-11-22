@@ -27,7 +27,7 @@ import {
   AVATAR_MAX_MB, validateAvatarFile, isDuplicateUsernameError,
 } from '@plot/core/profileFields.js';
 import { fetchUserDataExport, downloadDataExport, downloadCsvExport } from '../utils/exportData.js';
-import { buildFeedbackAttachmentPath, feedbackAttachmentSignedUrl } from '../utils/feedback.js';
+import { FEEDBACK_ATTACHMENT_MIME_TYPES, buildFeedbackAttachmentPath, feedbackAttachmentSignedUrl, isAllowedFeedbackAttachment } from '../utils/feedback.js';
 import { downloadICS } from '../utils/ics.js';
 import { setUserTimezone } from '../utils/date.js';
 import { getButtonLikeProps } from '../utils/interactive.js';
@@ -52,6 +52,7 @@ import SidebarOrderSheet from './SidebarOrderSheet.jsx';
 import UpgradeSheet from './UpgradeSheet.jsx';
 import PremiumAlertsSettings from './PremiumAlertsSettings.jsx';
 import StreamingAlertsSettings from './StreamingAlertsSettings.jsx';
+import EpisodeAlertsSettings from './EpisodeAlertsSettings.jsx';
 import ResponsiveDialog from './ResponsiveDialog.jsx';
 import DialogActions from './DialogActions.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
@@ -724,7 +725,7 @@ function AvatarSetting({ user, profile, refreshProfile, onError }) {
             style={{
               width: 32, height: 32, borderRadius: '50%', overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--accent-dim)', color: 'var(--accent)',
+              background: 'var(--accent-dim)', color: 'var(--accent-text)',
               fontFamily: 'var(--font-display)', fontSize: '0.85rem', fontWeight: 600,
               flexShrink: 0,
             }}
@@ -848,14 +849,16 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
   const [images,    setImages]    = useState([]); // [{ file, preview }]
   const [status,    setStatus]    = useState('idle'); // idle | submitting | done | error
   const [errorMessage, setErrorMessage] = useState('');
+  const [imagesSkipped, setImagesSkipped] = useState(false);
   const imagesRef = useRef([]);
   const selectedType = visibleTypes.find(entry => entry.id === type) || visibleTypes[0];
   const messageCount = message.length;
 
   const addImages = (files) => {
-    const valid = [...files]
-      .filter(f => f.type.startsWith('image/') && f.size <= MAX_IMAGE_MB * 1024 * 1024)
-      .slice(0, MAX_IMAGES - images.length);
+    const picked = [...files];
+    const accepted = picked.filter(f => isAllowedFeedbackAttachment(f) && f.size <= MAX_IMAGE_MB * 1024 * 1024);
+    setImagesSkipped(accepted.length < picked.length);
+    const valid = accepted.slice(0, MAX_IMAGES - images.length);
     setImages(prev => [
       ...prev,
       ...valid.map(f => ({ file: f, preview: URL.createObjectURL(f) })),
@@ -1025,7 +1028,7 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
                 <span>Add screenshots</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept={FEEDBACK_ATTACHMENT_MIME_TYPES.join(',')}
                   multiple
                   style={{ display: 'none' }}
                   onChange={e => { addImages(e.target.files); e.target.value = ''; }}
@@ -1036,6 +1039,9 @@ export function FeedbackPanel({ user, initialType, onClose, allTypes = false }) 
           <div className="feedback-helper">
             Up to {MAX_IMAGES} images, {MAX_IMAGE_MB}MB each. Helpful for bugs, optional for everything else.
           </div>
+          {imagesSkipped && (
+            <p className="feedback-error" role="status">{SETTINGS_VIEW.feedback.imagesSkipped}</p>
+          )}
 
           {status === 'error' && (
             <p className="feedback-error">
@@ -1851,6 +1857,7 @@ export default function SettingsView() {
 
       </div>
       <StreamingAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
+      <EpisodeAlertsSettings userId={user?.id} />
       <PremiumAlertsSettings userId={user?.id} isPremium={premium.isPremium} />
         </>}
         {activeSection === 'connections' && <>

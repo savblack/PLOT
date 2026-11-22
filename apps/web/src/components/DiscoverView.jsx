@@ -248,7 +248,7 @@ function HomeRefreshIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5" /></svg>;
 }
 
-function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPanel, openSearch }) {
+function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPanel, openSearch, openDecide }) {
   if (state === 'loading') {
     return (
       <section className="hist-card home-personal-card home-personal-card--loading" aria-label="Loading upcoming episodes">
@@ -282,10 +282,12 @@ function HomePersonalCard({ state, refreshing, retry, upNext, todayStr, openPane
   }
   const start = state === 'start';
   return (
-    <section className="hist-card home-personal-card">
+    <section className={`hist-card home-personal-card${start ? '' : ' home-personal-card--nothing'}`}>
       <span className="home-personal-icon" aria-hidden="true">{start ? '+' : <IconCalendar />}</span>
       <div className="hist-card-body"><h2 className="hist-card-title">{start ? DISCOVER_VIEW.startHere : DISCOVER_VIEW.nothingUpcoming}</h2><p className="hist-card-note">{start ? DISCOVER_VIEW.startHereBody : DISCOVER_VIEW.nothingUpcomingBody}</p></div>
-      <button type="button" className="home-personal-action" onClick={openSearch}><span>{DISCOVER_VIEW.findAiringShow}</span><IconChevronRight /></button>
+      {start
+        ? <button type="button" className="home-personal-action" onClick={openSearch}><span>{DISCOVER_VIEW.findAiringShow}</span><IconChevronRight /></button>
+        : <button type="button" className="home-personal-action" onClick={openDecide}><span>{DISCOVER_VIEW.pickForTonight}</span><IconChevronRight /></button>}
     </section>
   );
 }
@@ -294,12 +296,19 @@ function OnThisDayCard({ item, openPanel }) {
   const art = useUserArtwork();
   if (!item) return null;
   const image = posterUrl(displayPosterPath(art.apply(item)), 'w185');
+  // A true anniversary says so; the archive fallback was not released on
+  // this date, so it gets its own label and only its year.
+  const anniversaryYear = item.anniversary_years ? new Date().getFullYear() - item.anniversary_years : null;
+  const label = item.archive_year ? MEDIA.fromTheArchive : DISCOVER_VIEW.onThisDay;
+  const line = anniversaryYear
+    ? DISCOVER_VIEW.releasedThisDay(anniversaryYear)
+    : item.archive_year ? DISCOVER_VIEW.releasedIn(item.archive_year) : null;
   return (
     <section className="hist-card home-on-this-day">
-      <span className="hist-card-label">{DISCOVER_VIEW.onThisDay}</span>
+      <span className="hist-card-label">{label}</span>
       <button type="button" className="home-on-this-day-hit" onClick={() => openPanel(item.id, item.media_type || 'movie')}>
         <span className="home-on-this-day-poster">{image && <img src={image} alt="" />}</span>
-        <span className="home-on-this-day-copy"><strong>{item.title || item.name}</strong>{item.archive_year && <span>{DISCOVER_VIEW.releasedThisDay(item.archive_year)}</span>}</span>
+        <span className="home-on-this-day-copy"><strong>{item.title || item.name}</strong>{line && <span>{line}</span>}</span>
         <span className="home-up-next-chev" aria-hidden="true"><IconChevronRight /></span>
       </button>
     </section>
@@ -415,7 +424,7 @@ function HeroCard({ item, openPanel, watchlist, badge = 'Trending #1' }) {
           disabled={watchlist.loading}
           aria-pressed={saved}
         >
-          <Icon name="bookmark" filled={saved} size={14} />
+          {saved ? <Icon name="check" size={14} strokeWidth={2.4} /> : <Icon name="bookmark" size={14} />}
           {saved ? MEDIA_PANEL.inWatchlist : MEDIA.saveToWatchlist}
         </button>
       </div>
@@ -556,17 +565,15 @@ function PlatformRow({ def, chart, logoPath, openPanel, watchlist, typeFilters, 
             ))}
           </div>
         )}
+        {active && <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>}
       </div>
 
       {active && (
-        <div className="discover-plat-rail-wrap">
-          <div className="discover-plat-arrows"><RailArrows rail={rail} /></div>
-          <ScrollRail rail={rail} className="discover-plat-rail">
-            {active.items.slice(0, 10).map((item, i) => (
-              <RankedCard key={`${item.id}-${i}`} item={item} rank={item._rank ?? i + 1} showMeta={false} openPanel={openPanel} watchlist={watchlist} />
-            ))}
-          </ScrollRail>
-        </div>
+        <ScrollRail rail={rail} className="discover-plat-rail">
+          {active.items.slice(0, 10).map((item, i) => (
+            <RankedCard key={`${item.id}-${i}`} item={item} rank={item._rank ?? i + 1} showMeta={false} openPanel={openPanel} watchlist={watchlist} />
+          ))}
+        </ScrollRail>
       )}
     </div>
   );
@@ -649,6 +656,7 @@ function YourPeopleSection({ shelf, openPanel }) {
 
 /* ── Home ── */
 function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTypeFilters, genreFilters, setGenreFilters, genres, personalState, personalRefreshing, retryPersonal, upNext, todayStr, continueItems = [], firstRun = false, homeLayout }) {
+  const navigate = useNavigate();
   const peopleShelf = useYourPeopleShelf();
   const [openCurated, setOpenCurated] = useState(null);
   const [customizing, setCustomizing] = useState(false);
@@ -838,7 +846,7 @@ function DiscoverContent({ openPanel, openSearch, watchlist, typeFilters, setTyp
   return (
     <div className="home-layout cal-body">
       <aside className="cal-side home-side">
-        <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} />
+        <HomePersonalCard state={personalState} refreshing={personalRefreshing} retry={retryPersonal} upNext={upNext} todayStr={todayStr} openPanel={openPanel} openSearch={openSearch} openDecide={() => { track(EVENTS.HOME_PICK_FOR_TONIGHT_CLICKED); navigate('/tonight'); }} />
         <OnThisDayCard item={onThisDay} openPanel={openPanel} />
         <HomePageNav sections={pageSections} />
         <SideFilters className="home-filter-card" typeFilters={typeFilters} setTypeFilters={setTypeFilters} genreFilters={genreFilters} setGenreFilters={setGenreFilters} genres={genres} />

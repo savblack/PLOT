@@ -22,7 +22,7 @@ This repo is a pnpm-workspaces monorepo. `pnpm install --frozen-lockfile` at the
 
 ## Local Setup
 
-1. Install dependencies:
+1. Use Node 22. `.nvmrc` pins the exact version CI runs (22.17.1); `nvm use` or `fnm use` picks it up. Then install dependencies:
 
    ```sh
    pnpm install --frozen-lockfile
@@ -117,14 +117,13 @@ for browser tests, but must never print, commit, upload, or share the file.
 
 The frontend expects `VITE_TMDB_PROXY_URL` to point at the Cloudflare `tmdb-proxy` Worker. The Worker keeps the TMDB API key out of the browser, allows only the TMDB endpoints used by the app, and serves cache hits without contacting TMDB. Set `TMDB_API_KEY` as a Worker secret in staging and production; the Supabase Edge Function remains a rollout fallback until the direct path is verified.
 
-Deploy functions with the Supabase CLI after configuring project secrets:
+Functions deploy to Production automatically: the Supabase GitHub integration redeploys
+every `supabase/functions/*` function (and applies migrations) on each merge to `main`.
+`.github/workflows/supabase-deploy-guard.yml` opens an issue if that deploy fails. Do not
+deploy to Production by hand. To try a function on PLOT Staging first:
 
 ```sh
-supabase functions deploy tmdb-proxy
-supabase functions deploy media-sync
-supabase functions deploy trakt-sync
-supabase functions deploy delete-account
-supabase functions deploy critic-score
+pnpm run supabase:staging -- functions deploy <name>
 ```
 
 Required function secrets:
@@ -149,11 +148,9 @@ Simkl uses a manual two-way sync: users connect their account, then choose Sync 
 supabase secrets set PLEX_TOKEN_SECRET=your-long-random-secret
 supabase secrets set TRAKT_CLIENT_ID=... TRAKT_CLIENT_SECRET=... TRAKT_TOKEN_SECRET=...
 supabase secrets set SIMKL_CLIENT_ID=... SIMKL_CLIENT_SECRET=... SIMKL_TOKEN_SECRET=...
-supabase db push
-supabase functions deploy media-sync
-supabase functions deploy trakt-sync
-supabase functions deploy simkl-sync
 ```
+
+Secrets are the only manual step. The functions and their migrations ship on merge to `main`.
 
 Plex history import requires at least one reachable Plex Media Server. Trakt history import uses the connected Trakt account. These imports preserve existing Plot entries and add only titles that are not already in the user's history. Simkl sync also preserves existing Plot entries, pulls only activity changed since the previous sync, and sends Plot history to Simkl in API-compliant batches.
 

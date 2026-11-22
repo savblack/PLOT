@@ -22,6 +22,7 @@ import { useDialog } from '../../components/Dialog';
 import BottomSheet from '../../components/BottomSheet';
 import EmptyPrompt from '../../components/EmptyPrompt';
 import PlotLoader from '@plot/ui/PlotLoader';
+import ListsLoading from '../../components/ListsLoading';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import { TAB_BAR_CLEARANCE } from '../../lib/tabBar';
 import { releaseCaption } from '@plot/core/countdown.js';
@@ -119,9 +120,9 @@ const FOLD_SYNCED: Record<string, string> = { watching: 'watching', top10: 'top'
 // core's filterByType so `cinema` (a client-side flag, not a TMDB
 // media_type) is handled the same way on both platforms.
 const TYPE_OPTIONS = [
-  { id: 'movie',  label: 'Movies' },
-  { id: 'tv',     label: 'TV'     },
-  { id: 'cinema', label: 'Cinema' },
+  { id: 'movie',  label: MEDIA.movies },
+  { id: 'tv',     label: MEDIA.tv },
+  { id: 'cinema', label: MEDIA.cinema },
 ];
 
 
@@ -243,7 +244,7 @@ function SelectableListRow({ item, trailing, onPress, sel, status }: {
   const title  = item.title || item.name || '';
   const isTV   = item.media_type === 'tv';
   const epCode = item.current_season != null
-    ? `S${String(item.current_season).padStart(2,'0')}E${String(item.current_episode).padStart(2,'0')}`
+    ? `S${item.current_season} · E${item.current_episode}`
     : null;
 
   const editing    = !!sel?.editMode;
@@ -278,7 +279,7 @@ function SelectableListRow({ item, trailing, onPress, sel, status }: {
         <Text style={[styles.listRowTitle, finished && styles.finishedTitle]} numberOfLines={2}>{title}</Text>
       </View>
       <View style={styles.typeBadge}>
-        <Text style={styles.typeBadgeText}>{isTV ? 'Series' : 'Movie'}</Text>
+        <Text style={styles.typeBadgeText}>{isTV ? MEDIA.series : MEDIA.movie}</Text>
       </View>
       {epCode && (
         <View style={styles.epChip}>
@@ -300,10 +301,11 @@ interface PosterCaptionItem {
   streaming_date?: string | null;
 }
 
-// "S01E03" for a series with a current episode, else null (poster captions).
+// "S1 · E3" for a series with a current episode, else null (poster captions).
+// The same format as web and Home.
 function episodeCode(item: { current_season?: number | null; current_episode?: number | null }): string | null {
   if (item.current_season == null) return null;
-  return `S${String(item.current_season).padStart(2, '0')}E${String(item.current_episode ?? 0).padStart(2, '0')}`;
+  return `S${item.current_season} · E${item.current_episode ?? 0}`;
 }
 
 // The release or streaming countdown as a caption under a poster comes from
@@ -606,7 +608,7 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
   const nudgeVisible = useActivationNudgeVisible();
   const [importSource, setImportSource] = useState<string | null>(null);
   const isLoading = watchlist.loading || watching.loading || favorites.loading || customLists.loading || topLists.loading;
-  if (isLoading) return <PlotLoader backgroundColor={colors.bg} color={colors.textPrimary} />;
+  if (isLoading) return <ListsLoading />;
 
   // Lists, a Top 5 or favorites count as started even with no titles saved.
   const startedLists = (customLists.lists?.length ?? 0) + (customLists.smartLists?.length ?? 0) > 0
@@ -851,8 +853,8 @@ export function MyListsScreen({ mode = 'lists' }: { mode?: 'lists' | 'history' }
               })}
             </View>
             {topType === 'movies'
-              ? <TopTenSection listType="movies" title="Movies"   showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
-              : <TopTenSection listType="tv"     title="TV Shows" showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />}
+              ? <TopTenSection listType="movies" title={MEDIA.movies} showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />
+              : <TopTenSection listType="tv"     title={MEDIA.tv} showTitle={false} topLists={topLists} history={history.entries} onDraggingChange={setTopDragging} />}
           </CollapsibleSection>
         )}
 
@@ -1402,14 +1404,13 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radii.badge,
-    backgroundColor: colors.chipEpisode + '1F',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.chipEpisode + '55',
+    // Neutral meta, like the type label beside it; indigo retired (Nov 2026).
+    backgroundColor: colors.surfaceSunken,
   },
   epChipText: {
     fontFamily: fontFamily.sansBold,
     fontSize: 10,
-    color: colors.chipEpisode,
+    color: colors.textSecondary,
     letterSpacing: 0.4,
   },
 
@@ -1419,7 +1420,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   listToolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
   progressWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.surfaceSunken, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 3, backgroundColor: colors.accentSecondary },
+  progressFill: { height: '100%', borderRadius: 3, backgroundColor: colors.accent },
   progressLabel: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted },
   statusChipSlot: { position: 'absolute', top: 6, left: 6 },
   finishedArt: { opacity: 0.45 },

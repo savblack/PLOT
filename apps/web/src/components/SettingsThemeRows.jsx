@@ -43,13 +43,15 @@ export default function SettingsThemeRows({ mode, family, setMode, setFamily, is
           </div>
           <span className="settings-row-label">{A.label}</span>
         </div>
-        <div className="settings-theme-tabs" role="tablist" aria-label={A.optionsLabel}>
+        {/* One choice of three, so a radio group, like the theme swatches
+            below: tabs told a screen reader there were panels to switch. */}
+        <div className="settings-theme-tabs" role="radiogroup" aria-label={A.optionsLabel}>
           {THEME_MODES.map(m => (
             <button
               key={m}
               type="button"
-              role="tab"
-              aria-selected={mode === m}
+              role="radio"
+              aria-checked={mode === m}
               className={`settings-theme-tab${mode === m ? ' is-active' : ''}`}
               onClick={() => setMode(m)}
             >

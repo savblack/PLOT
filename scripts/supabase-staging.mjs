@@ -1,14 +1,16 @@
 import { spawnSync } from 'node:child_process';
 
 const STAGING_PROJECT_REF = 'uzrhfivnhdcfieuaxzip';
-const args = process.argv.slice(2);
+// Inside the workspace pnpm passes a literal `--` through to the script, so
+// `pnpm run supabase:staging -- functions deploy x` arrives as ['--', 'functions', ...].
+const args = process.argv.slice(2).filter((a) => a !== '--');
 
 if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
   console.log(`Run a Supabase CLI command against PLOT Staging only.
 
 Usage:
-  npm run supabase:staging -- functions deploy tmdb-proxy
-  npm run supabase:staging -- secrets list
+  pnpm run supabase:staging functions deploy tmdb-proxy
+  pnpm run supabase:staging secrets list
 
 Project ref is fixed to ${STAGING_PROJECT_REF}. Do not pass --project-ref.`);
   process.exit(args.length === 0 ? 1 : 0);

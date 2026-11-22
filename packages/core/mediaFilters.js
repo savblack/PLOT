@@ -72,3 +72,37 @@ export function filterByGenre(items, genreFilters) {
 export function filterByTypeAndGenre(items, typeFilters, genreFilters) {
   return filterByGenre(filterByType(items || [], typeFilters), genreFilters) || [];
 }
+
+/* ── Rail or button ── */
+
+/**
+ * A list page draws its type and genre filters as the side rail only once it
+ * holds this many titles. Below it the rail can be taller than the list, so
+ * the same choices sit behind a Filter button and the posters get the width.
+ */
+export const FILTER_RAIL_MIN_TITLES = 13;
+
+/**
+ * @param {number} count  Titles on the page before any filter is applied.
+ * @returns {boolean}
+ */
+export function usesFilterRail(count) {
+  return count >= FILTER_RAIL_MIN_TITLES;
+}
+
+/**
+ * The genres at least one item carries, in the order `genres` lists them, so
+ * a short list's filter menu never offers a genre that would empty it. Items
+ * saved without genre_ids add nothing; a list where none carry any gets an
+ * empty array, and the menu drops the Genre group.
+ *
+ * @template {{ id: number }} G
+ * @param {{ genre_ids?: number[] }[] | null | undefined} items
+ * @param {G[]} genres
+ * @returns {G[]}
+ */
+export function genresInItems(items, genres) {
+  const present = new Set();
+  for (const item of items || []) for (const id of item.genre_ids || []) present.add(id);
+  return genres.filter(g => present.has(g.id));
+}

@@ -196,12 +196,104 @@ export function tasteOverlap(mineRows, theirRows, { lovedLimit = 3, disagreeLimi
 
 
 /**
+ * A made-up comparison for the picker to show before anyone is chosen, in the
+ * shape tasteOverlap() returns. Genre ids are 1-based positions in
+ * TASTE_OVERLAP.exampleGenres, never TMDB ids, and it carries no titles: a
+ * sample must not name or draw a film nobody looked up. exampleOverlap() adds
+ * titles that came from a TMDB response.
+ */
+export const EXAMPLE_OVERLAP = Object.freeze({
+  watched: { mine: 212, theirs: 164, both: 88 },
+  sharedRated: 41,
+  match: 82,
+  genres: [
+    { id: 1, mine: 34, theirs: 29 },
+    { id: 2, mine: 18, theirs: 27 },
+    { id: 3, mine: 21, theirs: 12 },
+  ],
+  sharedGenreId: 1,
+  decades: { mine: 2010, theirs: 1990 },
+  critic: { mine: 3.8, theirs: 3.2, tougher: /** @type {'theirs'} */ ('theirs') },
+  loved: [],
+  disagree: [],
+});
+
+/** How many titles the sample says are on both watchlists. */
+export const EXAMPLE_SHARED_WATCHLIST = 14;
+
+// Made-up ratings (10-point, as stored) for the sample's titles, in order:
+// six both people loved, then three they disagree on.
+const EXAMPLE_LOVED = [[10, 9], [9, 10], [9, 9], [8, 10], [10, 8], [8, 9]];
+const EXAMPLE_DISAGREE = [[9, 3], [4, 10], [8, 2]];
+
+/**
+ * The sample comparison with "You both loved" and "Where you disagree" filled
+ * in, so it shows everything a real one between two full profiles would.
+ * `titles` must come from a TMDB response (the picker passes this week's
+ * trending list); the ratings laid over them are invented. With too few
+ * titles a section stays empty and the views leave it out.
+ *
+ * @param {Array<{ tmdb_id: number, media_type: string, title: string, poster_path: string | null }>} [titles]
+ */
+export function exampleOverlap(titles = []) {
+  const usable = titles.filter(t => t && t.tmdb_id != null && t.title && t.poster_path);
+  const rate = (pairs, offset) => pairs.flatMap(([mine, theirs], i) => {
+    const t = usable[offset + i];
+    return t ? [{ tmdb_id: t.tmdb_id, media_type: t.media_type || 'movie', title: t.title, poster_path: t.poster_path, mine, theirs }] : [];
+  });
+  return {
+    ...EXAMPLE_OVERLAP,
+    loved: rate(EXAMPLE_LOVED, 0),
+    disagree: rate(EXAMPLE_DISAGREE, EXAMPLE_LOVED.length),
+  };
+}
+
+/** The most characters of a name the overlap circles have room for. */
+export const VENN_NAME_MAX = 9;
+
+/**
+ * A person's name as drawn inside their circle. The space between the
+ * overlap and the circle's edge is about 60 of the drawing's 300 units, which
+ * at the label's size holds nine characters; a longer name used to run over
+ * the circle's edge. The full name is still what a screen reader hears.
+ * @param {string | null | undefined} name
+ * @returns {string}
+ */
+export function vennName(name) {
+  const chars = Array.from(String(name || '').trim());
+  if (chars.length <= VENN_NAME_MAX) return chars.join('');
+  return `${chars.slice(0, VENN_NAME_MAX - 1).join('').trimEnd()}…`;
+}
+
+/**
+ * Genre names for EXAMPLE_OVERLAP, keyed the way the comparison views expect.
+ * @param {string[]} names TASTE_OVERLAP.exampleGenres
+ * @returns {Map<number, string>}
+ */
+export function exampleGenreNames(names) {
+  return new Map(names.map((name, index) => [index + 1, name]));
+}
+
+/**
  * Who you can compare with: anyone public, or anyone private who has accepted
  * your follow. Mirrors the RPC's visibility test; the RPC is the authority.
  * @param {{ is_public?: boolean | null, follow_status?: string | null }} person
  */
 export function canCompare(person) {
   return !!person && (!!person.is_public || person.follow_status === 'accepted');
+}
+
+/**
+ * Whether a comparison is open to this viewer. Premium on either side unlocks
+ * it (taste_overlap, 20261119120000), and the client cannot see the other
+ * person's subscription, so it always asks: only the server's
+ * `premium_required` refusal shows the upsell. While loading it reads as
+ * open, so a Free viewer comparing with a Premium member never sees the
+ * upsell flash first.
+ * @param {string | null | undefined} error the useTasteOverlap error
+ */
+export function compareUnlocked(error) {
+  return error !== 'premium_required';
 }
 
 /**

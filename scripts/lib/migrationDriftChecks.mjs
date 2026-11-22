@@ -146,3 +146,51 @@ export function classifyDrift({ production, staging, schema }) {
 
   return { failures, warnings, notes };
 }
+
+/**
+ * Decide what scripts/staging-apply-migrations.mjs may apply to Staging.
+ *
+ * `pending` is every migration file Staging has not recorded, oldest first.
+ * `collisions` is every file whose version Staging recorded under another
+ * name: a branch migration tried out on Staging that took a number main later
+ * used (20261119100000, November 2026). Applying anything then would leave
+ * main's migration "applied" in the ledger without ever running, so the
+ * caller must refuse until a person renumbers the branch and moves its row.
+ *
+ * Versions Staging recorded with no file here (branch-only migrations) are
+ * left alone: they are someone's work in progress, not drift to undo.
+ *
+ * @param {{ files: Map<string, string>, ledger: Map<string, string> }} input
+ * @returns {{ pending: { version: string, name: string }[], collisions: { version: string, file: string, recorded: string }[] }}
+ */
+export function planStagingApply({ files, ledger }) {
+  const pending = [];
+  const collisions = [];
+  for (const [version, name] of [...files].sort(([a], [b]) => a.localeCompare(b))) {
+    if (!ledger.has(version)) pending.push({ version, name });
+    else if (ledger.get(version) !== name) collisions.push({ version, file: name, recorded: ledger.get(version) });
+  }
+  return { pending, collisions };
+}
+
+/**
+ * Migration files in this checkout whose version main already uses for a
+ * different file. Checks run on a pull request's own head, not on the result
+ * of merging it, so a version main took while the branch was open is
+ * invisible to the duplicate-version check over this checkout's files alone.
+ * That is how 20261118140000 was taken twice on 2026-11-19: Staging and
+ * production recorded main's file under it and skipped the branch's.
+ *
+ * @param {{ files: Map<string, string>, mainFiles: Map<string, string> }} input
+ *   both from parseMigrationFiles: this checkout's, and origin/main's
+ * @returns {{ version: string, file: string, onMain: string }[]}
+ */
+export function findMainCollisions({ files, mainFiles }) {
+  const out = [];
+  for (const [version, name] of [...files].sort(([a], [b]) => a.localeCompare(b))) {
+    if (mainFiles.has(version) && mainFiles.get(version) !== name) {
+      out.push({ version, file: name, onMain: mainFiles.get(version) });
+    }
+  }
+  return out;
+}

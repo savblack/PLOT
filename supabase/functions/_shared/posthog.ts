@@ -5,8 +5,10 @@
  * PostHog snippets. Keep the event properties supplied by each caller
  * deliberately small and PII-free.
  */
-const POSTHOG_TOKEN = 'phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U';
-const POSTHOG_ENDPOINT = 'https://a.theplot.tv/i/v0/e/';
+export const POSTHOG_TOKEN = 'phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U';
+/** Plot's PostHog proxy host; the capture and /flags endpoints hang off it. */
+export const POSTHOG_HOST = 'https://a.theplot.tv';
+const POSTHOG_ENDPOINT = `${POSTHOG_HOST}/i/v0/e/`;
 
 export function normaliseCurrency(value: unknown): string | null {
   if (typeof value !== 'string') return null;

@@ -104,7 +104,7 @@
  *   spin or reroll; result_count 0 is an empty result), a pick opened, and
  *   saved searches. Picker settings are reported as shapes (counts, booleans),
  *   not the genre ids themselves.
- * @property {(payload: { action: 'invite_sent' | 'request_accepted' | 'link_shared' | 'link_accepted' | 'session_started' | 'match' | 'list_invite_shared' | 'list_joined', method?: string, can_decide?: boolean, share_full?: boolean, deck_size?: number, card_number?: number }) => void} [onWatchTogether]
+ * @property {(payload: { action: 'invite_sent' | 'request_accepted' | 'link_shared' | 'link_accepted' | 'session_started' | 'match' | 'list_invite_shared' | 'list_joined', method?: string, can_decide?: boolean, share_full?: boolean, deck_size?: number, card_number?: number, with_mood?: boolean, mood_count?: number, media_type?: string, services?: boolean }) => void} [onWatchTogether]
  *   Analytics seam — Watch together, from useWatchTogether (and
  *   reportWatchTogether for the share button), plus collaborative list
  *   invites from useListInvites. Shapes only: never user ids, usernames,

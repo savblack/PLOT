@@ -14,19 +14,13 @@ import { MEDIA } from '../copy/media.js';
 import { ALL_TYPES } from '@plot/core/mediaFilters.js';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import CalendarSidePanel from './CalendarSidePanel.jsx';
+import CalendarSuggestCard from './CalendarSuggestCard.jsx';
 import CalendarStream from './CalendarStream.jsx';
 import CalendarEventRows from './CalendarEventRows.jsx';
 import CalendarReleaseRail from './CalendarReleaseRail.jsx';
 import UpcomingSuggestionsSheet from './UpcomingSuggestionsSheet.jsx';
 import EmptyState from './EmptyState.jsx';
 import Segmented from './Segmented.jsx';
-
-const SUGGEST_DISMISS_KEY = 'plot_calendar_suggest_dismissed';
-
-function suggestDismissed() {
-  try { return sessionStorage.getItem(SUGGEST_DISMISS_KEY) === '1'; }
-  catch { return false; }
-}
 
 function monthOf(date) {
   return { year: date.getFullYear(), month: date.getMonth() };
@@ -44,7 +38,6 @@ export default function CalendarView() {
   const fromLink = calendarSuggestRequested(searchParams);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const linkHandled = useRef(false);
-  const autoOpened = useRef(false);
 
   const [todayStr, setTodayStr] = useState(() => localDateStr());
   const todayYear = Number(todayStr.slice(0, 4));
@@ -76,29 +69,36 @@ export default function CalendarView() {
   const hasAnyEvents = useMemo(() => events.some(ev => ev.date >= todayStr), [events, todayStr]);
   const eventDates   = useMemo(() => new Set(myDays.map(d => d.ds)), [myDays]);
 
-  // Email links open the sheet once. An empty calendar opens it once per
-  // session, until they close it. The header button can open it again.
+  // Email links open the sheet once. An empty calendar opens it by itself
+  // until they close it once. The suggest card can open it again.
   useEffect(() => {
     if (!fromLink || linkHandled.current) return;
     linkHandled.current = true;
     setSuggestOpen(true);
   }, [fromLink]);
 
-  useEffect(() => {
-    if (fromLink || suggestOpen || autoOpened.current) return;
-    if (!listsReady || myLoading || view !== 'mine' || hasAnyEvents) return;
-    autoOpened.current = true;
-    if (suggestDismissed()) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- open once an empty calendar has finished loading
-    setSuggestOpen(true);
-  }, [fromLink, suggestOpen, listsReady, myLoading, view, hasAnyEvents]);
+  // An empty calendar no longer opens the sheet by itself: the side card
+  // already offers it, and arriving to a sheet over the page read as one more
+  // empty state (Nov 21 critique). A link (?suggest) still opens it.
 
   const closeSuggest = useCallback(() => {
     setSuggestOpen(false);
-    try { sessionStorage.setItem(SUGGEST_DISMISS_KEY, '1'); } catch { /* storage blocked */ }
   }, []);
 
   const openSuggest = useCallback(() => setSuggestOpen(true), []);
+
+  // Which words the side card uses: nothing saved yet, saved titles with no
+  // dates ahead, or a calendar that already has dates. Hidden while loading so
+  // it doesn't flash the wrong words.
+  const hasTitles = watchlist.items.length > 0 || watching.items.length > 0 || reminders.reminders.length > 0;
+  const suggestState = !listsReady || myLoading ? null : !hasTitles ? 'start' : hasAnyEvents ? 'more' : 'quiet';
+  // One message, not two (Nov 20): while My dates is empty its own empty
+  // state carries the card's words and button, so the side card doesn't say
+  // something different beside it. The card is for My dates only; All
+  // releases is the feed you add from.
+  const calendarEmpty = suggestState === 'start' || suggestState === 'quiet';
+  const suggestCard = view === 'mine' && suggestState === 'more' ? <CalendarSuggestCard state={suggestState} onOpen={openSuggest} /> : null;
+  const emptyCopy = calendarEmpty ? CALENDAR_VIEW.suggestCard[suggestState] : null;
 
   /* ── All releases ── */
   const { loading: allLoading, days: releaseDays, feedEmpty, providerLogos } = useFilteredUpcoming({ typeFilters, genreFilters });
@@ -132,23 +132,6 @@ export default function CalendarView() {
   /* ── Back to today: panel to this month, page to the top ── */
   return (
     <div>
-      {/* ── Heading row: the scope toggle on the right of the page title ── */}
-      <div className="page-toolbar cal-toolbar cal-toolbar--search">
-        <div className="page-toolbar-controls cal-toolbar-controls">
-          <button type="button" className="btn btn-primary btn-sm cal-suggest-btn" onClick={openSuggest}>
-            {CALENDAR_VIEW.suggest.open}
-          </button>
-          <Segmented
-            options={[
-              { value: 'mine', label: CALENDAR_VIEW.scope.mine },
-              { value: 'all', label: CALENDAR_VIEW.scope.all },
-            ]}
-            value={view}
-            onChange={setView}
-          />
-        </div>
-      </div>
-
       <MobilePageControls
         title={MOBILE_CONTROLS.filters}
         groups={[
@@ -180,8 +163,22 @@ export default function CalendarView() {
       />
 
       <div className="cal-page">
+        {/* Below 1024px the side column is hidden, so the same card sits
+            above the stream instead. */}
+        {suggestCard && <div className="cal-suggest-inline">{suggestCard}</div>}
         <div className="cal-body">
           <CalendarSidePanel
+            control={(
+              <Segmented
+                className="cal-side-control"
+                options={[
+                  { value: 'mine', label: CALENDAR_VIEW.scope.mine },
+                  { value: 'all', label: CALENDAR_VIEW.scope.all },
+                ]}
+                value={view}
+                onChange={setView}
+              />
+            )}
             panelStart={panelStart}
             onPagePanel={pagePanel}
             todayStr={todayStr}
@@ -192,6 +189,7 @@ export default function CalendarView() {
             genreFilters={genreFilters}
             setGenreFilters={setGenreFilters}
             genres={genres}
+            suggest={suggestCard}
           />
 
           {view === 'mine' ? (
@@ -206,15 +204,10 @@ export default function CalendarView() {
               loading={myLoading}
               empty={hasAnyEvents && filtered
                 ? <EmptyState title={CALENDAR_VIEW.empty.filtered} body={CALENDAR_VIEW.empty.filteredBody} />
-                : <EmptyState
-                    title={CALENDAR_VIEW.empty.title}
-                    body={CALENDAR_VIEW.empty.body}
-                    action={!hasAnyEvents ? (
-                      <button type="button" className="btn btn-primary btn-sm" onClick={openSuggest}>
-                        {CALENDAR_VIEW.suggest.open}
-                      </button>
-                    ) : null}
-                  />}
+                : emptyCopy
+                  ? <EmptyState title={emptyCopy.title} body={emptyCopy.body}
+                      action={<button type="button" className="btn btn-secondary btn-sm" onClick={openSuggest}>{emptyCopy.action}</button>} />
+                  : <EmptyState title={CALENDAR_VIEW.empty.title} body={CALENDAR_VIEW.empty.body} />}
               renderDay={(day) => <CalendarEventRows day={day} openPanel={openPanel} />}
             />
           ) : (

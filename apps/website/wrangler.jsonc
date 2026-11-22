@@ -4,7 +4,7 @@
   // `wrangler pages dev` defaults to *today's* date, which a slightly older
   // workerd binary refuses to start on ("This Worker requires compatibility
   // date "…", but the newest date supported by this server binary is "…"").
-  // `npm run dev:website` used to carry the pin as a CLI flag; keeping it here
+  // `pnpm run dev:website` used to carry the pin as a CLI flag; keeping it here
   // means the bare `wrangler pages dev .` works too. Pinning a past date is
   // always safe — the runtime keeps supporting old dates.
   //

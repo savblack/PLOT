@@ -2,7 +2,7 @@
    Loaded by every page before its inline <style> so pages can still override.
 
    Values marked (CANON) MUST equal @plot/core/tokens.js and are enforced in CI
-   by `npm run tokens:marketing`. Everything else is marketing-only presentation
+   by `pnpm run tokens:marketing`. Everything else is marketing-only presentation
    and lives here alone. App-aligned names: --accent IS the brand pink (matches
    the app), the black CTA is --ink. */
 
@@ -83,6 +83,74 @@
   /* Motion + layout */
   --ease:            cubic-bezier(0.23, 1, 0.32, 1);
   --ticker-height:   2.75rem;
+
+  /* Roles that dark mode (below) needs apart from the colours above.
+     --on-fill: text on the pink and sage fills, charcoal in both modes (the
+     app's onAccentFill). --on-ink: text on an --ink fill. --card: the lifted
+     off-white card. --box-pink / --box-sage: large tinted panels. --footer-*:
+     the pink footer. --glass-*: the frosted nav pill and open menu. */
+  --on-fill:         #292924;
+  --on-ink:          #f8f2ea;
+  --card:            #fffaf3;
+  --box-pink:        #ffd3ea;
+  --box-sage:        #dbe1b0;
+  --footer-bg:       #ffd3ea;
+  --footer-text:     #292924;
+  --footer-muted:    rgba(41, 41, 36, 0.7);
+  --footer-rule:     rgba(41, 41, 36, 0.12);
+  --footer-mark:     #ffbcdf;
+  --footer-cta-bg:   #292924;
+  --footer-cta-bg-hover: #3a3a33;
+  --footer-cta-text: #ffd3ea;
+  --glass-nav:       rgba(255, 250, 243, 0.82);
+  --glass-solid:     rgba(255, 250, 243, 0.97);
+  --glass-menu:      rgba(248, 242, 234, 0.94);
+  --shadow-color:    rgba(41, 41, 36, 0.2);
+  color-scheme: light;
+}
+
+/* Dark mode follows the visitor's device setting. The values are the app's
+   dark palette (@plot/core/tokens.js colors.dark), so theplot.tv and
+   app.theplot.tv match. The pink and sage fills keep charcoal text, as in the
+   app; the large tinted panels and the footer turn into deep tints instead of
+   staying light. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent:          #F06A88;   /* colors.dark.accent */
+    --accent-dim:      rgba(240,106,136,0.15);
+    --accent-2:        #C9D48A;   /* colors.dark.accentSecondary */
+    --ink:             #191919;   /* dark fills: one step above the ground */
+    --ink-hover:       #242424;
+    --bg:              #0c0c0c;   /* colors.dark.bg */
+    /* Buttons and chips sit on cards (--card), so they take the raised step. */
+    --surface:         #242424;   /* colors.dark.surfaceRaised */
+    --surface-hover:   #2e2e2e;
+    --text:            #f0efe8;   /* colors.dark.textPrimary */
+    --text-secondary:  #a8a69c;   /* colors.dark.textSecondary */
+    --rule:            rgba(240,239,232,0.12);
+    --glass-bg:        rgba(12,12,12,0.86);
+    --glass-border:    rgba(240,239,232,0.08);
+    --dark:            #0c0c0c;
+    --text-dark:       #f0efe8;
+    --success:         #4ade80;   /* colors.dark.success */
+    --on-ink:          #f0efe8;
+    --card:            #191919;
+    --box-pink:        #2a1720;
+    --box-sage:        #1e2216;
+    --footer-bg:       #2a1720;
+    --footer-text:     #f0efe8;
+    --footer-muted:    rgba(240, 239, 232, 0.7);
+    --footer-rule:     rgba(240, 239, 232, 0.12);
+    --footer-mark:     #3d2230;
+    --footer-cta-bg:   #ff88c8;
+    --footer-cta-bg-hover: #ff9fd3;
+    --footer-cta-text: #292924;
+    --glass-nav:       rgba(25, 25, 25, 0.82);
+    --glass-solid:     rgba(25, 25, 25, 0.97);
+    --glass-menu:      rgba(12, 12, 12, 0.94);
+    --shadow-color:    rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
 }
 
 /* Site-wide scale. Nearly every size on the site is set in rem, so this one

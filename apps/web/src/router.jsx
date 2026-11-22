@@ -7,7 +7,7 @@ import { SHOW_PRICING_PAGE, SHOW_WATCH_TOGETHER } from './launchFeatures.js';
 import { GUIDE_ENABLED } from '@plot/core/features.js';
 import {
   loadDiscoverView, loadTonightView, loadGuideView, loadCalendarView, loadMyListsView,
-  loadHistoryView, loadListPage, loadSearchView, loadSettingsView,
+  loadHistoryView, loadInsightsView, loadListPage, loadSearchView, loadSettingsView,
 } from './routeChunks.js';
 
 // The auth entry/exit points must never fail, so they're bundled eagerly (not
@@ -33,6 +33,7 @@ const GuideView   = lazy(loadGuideView);
 const CalendarView= lazy(loadCalendarView);
 const MyListsView   = lazy(loadMyListsView);
 const HistoryView   = lazy(loadHistoryView);
+const InsightsView  = lazy(loadInsightsView);
 const ListPage      = lazy(loadListPage);
 const SearchView  = lazy(loadSearchView);
 const TonightView = lazy(loadTonightView);
@@ -49,6 +50,7 @@ const ListInvitePage = lazy(() => import('./components/ListInvitePage.jsx'));
 const AuthCallbackPage  = lazy(() => import('./pages/AuthCallbackPage.jsx'));
 const TraktCallbackPage = lazy(() => import('./pages/TraktCallbackPage.jsx'));
 const SimklCallbackPage = lazy(() => import('./pages/SimklCallbackPage.jsx'));
+const TmdbCallbackPage = lazy(() => import('./pages/TmdbCallbackPage.jsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const OnboardingFlow    = lazy(() => import('./pages/OnboardingFlow.jsx'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage.jsx'));
@@ -62,6 +64,7 @@ const DesignSystemPage  = lazy(() => import('./pages/DesignSystemPage.jsx'));
 const SavePage          = lazy(() => import('./pages/SavePage.jsx'));
 const EmailUnsubscribePage = lazy(() => import('./pages/EmailUnsubscribePage.jsx'));
 const NewsletterUnsubscribePage = lazy(() => import('./pages/NewsletterUnsubscribePage.jsx'));
+const NewsletterConfirmPage = lazy(() => import('./pages/NewsletterConfirmPage.jsx'));
 const TalentPage        = lazy(() => import('./pages/TalentPage.jsx'));
 const PlansPage         = lazy(() => import('./pages/PlansPage.jsx'));
 const TasteOverlapPage  = lazy(() => import('./pages/TasteOverlapPage.jsx'));
@@ -112,6 +115,7 @@ const router = createBrowserRouter([
   { path: '/save',           element: wrap(<SavePage />) },
   // Unsubscribe link in the weekly digest email. Public: the token is the authority.
   { path: '/newsletter/unsubscribe', element: wrap(<NewsletterUnsubscribePage />) },
+  { path: '/newsletter/confirm', element: wrap(<NewsletterConfirmPage />) },
 
   // Auth
   { path: '/login',          element: <AuthPage initialMode="login" /> },
@@ -120,6 +124,7 @@ const router = createBrowserRouter([
   { path: '/auth/callback',  element: wrap(<AuthCallbackPage />) },
   { path: '/auth/trakt',     element: wrap(<TraktCallbackPage />) },
   { path: '/auth/simkl',     element: wrap(<SimklCallbackPage />) },
+  { path: '/auth/tmdb',      element: wrap(<TmdbCallbackPage />) },
   { path: '/reset-password', element: wrap(<ResetPasswordPage />) },
 
   // Onboarding (protected, skip the gate's own redirect so this page can
@@ -159,6 +164,7 @@ const router = createBrowserRouter([
       { path: 'watching', element: <Navigate to="/my-lists" replace /> },
       { path: 'list',     element: <Navigate to="/my-lists" replace /> },
       { path: 'history',  element: wrap(<HistoryView />) },
+      { path: 'insights', element: wrap(<InsightsView />) },
       { path: 'my-lists', element: wrap(<MyListsView />) },
       { path: 'my-lists/:key', element: wrap(<ListPage />) },
       { path: 'search',   element: wrap(<SearchView />) },
@@ -176,6 +182,7 @@ const router = createBrowserRouter([
         { path: 'together/pick', element: wrap(<WatchTogetherView page="pick" />) },
         { path: 'together/invite', element: wrap(<WatchTogetherView page="invite" />) },
         { path: 'together/with/:usernames', element: wrap(<WatchTogetherView page="with" />) },
+        { path: 'together/decide/:username', element: wrap(<WatchTogetherView page="mood" />) },
         { path: 'together/session/:sessionId', element: wrap(<WatchTogetherView page="session" />) },
         { path: 'together/join/:username', element: wrap(<WatchTogetherView page="join" />) },
         { path: 'watch-with/:username/:key', element: wrap(<WatchTogetherLinkPage />) },

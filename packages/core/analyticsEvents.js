@@ -67,10 +67,32 @@ export const EVENTS = Object.freeze({
   // instagram on web and share | save on mobile.
   SHARE_CARD_OPENED: 'share_card_opened',
   SHARE_CARD_SENT: 'share_card_sent',
+  // The saved comparisons list on Compare. `refreshed` is the refresh icon on
+  // a row (the comparison is asked for again); `removed` is the x. Neither
+  // carries who the other person is.
+  SAVED_COMPARISON_REFRESHED: 'saved_comparison_refreshed',
+  SAVED_COMPARISON_REMOVED: 'saved_comparison_removed',
+  // The Confirm button on /newsletter/confirm, once the server has confirmed
+  // the address (double opt-in). The theplot.tv form's newsletter_subscribed
+  // now means a confirmation email was requested, not a subscription.
+  NEWSLETTER_CONFIRMED: 'newsletter_confirmed',
+  // The Watch Together button on a comparison's shared-watchlist row. Carries
+  // { sample: boolean }: true on the picker's sample, which opens the Watch
+  // Together hub instead of one person. Fires on the tap, which always
+  // navigates, so there is no failure case to count.
+  COMPARE_WATCH_TOGETHER_TAPPED: 'compare_watch_together_tapped',
+  // "Compare with someone else" on Compare's Premium card, shown only when
+  // neither person has Premium. Fires on the tap, which always navigates back
+  // to the people list, so there is no failure case to count. No properties.
+  COMPARE_SOMEONE_ELSE_TAPPED: 'compare_someone_else_tapped',
   // A Premium viewer tapped a History stat tile and landed on the titles
   // behind it. Carries { stat: 'titles' | 'genre' | 'weekday', source }.
   // Fires only once the filtered list is on screen. Tier 1 at most.
   HISTORY_STAT_DRILLDOWN: 'history_stat_drilldown',
+  // The Insights page opened with something to show (not the empty state).
+  // Carries { premium: boolean, source: 'web' | 'mobile' }. Fires once per
+  // visit, on both apps, from insightsOpenedProps in @plot/core/insights.js.
+  INSIGHTS_OPENED: 'insights_opened',
   INVITE_SHARED: 'invite_shared',
   REFERRAL_COMPLETED: 'referral_completed',
   PREMIUM_CHECKOUT_REDIRECT_ATTEMPTED: 'premium_checkout_redirect_attempted',
@@ -89,7 +111,7 @@ export const EVENTS = Object.freeze({
   PREMIUM_ACTIVATED: 'premium_activated',
   PREMIUM_GATE_HIT: 'premium_gate_hit',
   // The empty-library nudge (activationNudge.js). All carry { surface:
-  // 'home' | 'history' }; import_clicked also carries { source } (an import
+  // 'home' | 'history' | 'insights' }; import_clicked also carries { source } (an import
   // page platform id such as 'trakt'). Shown once per mount while the account
   // has no titles.
   ACTIVATION_NUDGE_SHOWN: 'activation_nudge_shown',
@@ -203,6 +225,13 @@ export const EVENTS = Object.freeze({
   LIST_ITEM_ADDED: 'list_item_added',
   LIST_ITEM_REMOVED: 'list_item_removed',
   LIST_VISIBILITY_CHANGED: 'list_visibility_changed',
+  // Several titles removed at once from a list page's select mode (web).
+  // `count` is how many removals landed, `list_kind` is watchlist / custom /
+  // shared (listSelection.js). Fired once, after the removes, and only when at
+  // least one succeeded. Each removal still fires its own watchlist_removed or
+  // list_item_removed, and a failed one its own action_failed, so this is the
+  // "used bulk select" signal, not a removal count to add to those.
+  LIST_ITEMS_BULK_REMOVED: 'list_items_bulk_removed',
   // Favourites are their own signal: a favourite is a stronger endorsement than
   // a watchlist save, and the two tables are unrelated. Spelled to match the
   // user_favourites table rather than the useFavorites hook.
@@ -273,6 +302,10 @@ export const EVENTS = Object.freeze({
   // `item_count`. On web, opening a title from one is title_viewed with
   // source 'because_you_watched' or 'recommended_for_you'.
   RECOMMENDATIONS_VIEWED: 'recommendations_viewed',
+  // Home's "Nothing coming up yet" card: "Pick something for me" was pressed,
+  // which opens Decide (/tonight). Web only: mobile Home has no such card.
+  // No properties. The pick itself is tonight_picks_drawn.
+  HOME_PICK_FOR_TONIGHT_CLICKED: 'home_pick_for_tonight_clicked',
   // Marketing email consent. `source` distinguishes the Settings toggle from the
   // in-app prompt so we can tell which surface actually earns opt-ins.
   MARKETING_EMAILS_OPTED_IN: 'marketing_emails_opted_in',
@@ -286,8 +319,14 @@ export const EVENTS = Object.freeze({
   ACCOUNT_DELETED: 'account_deleted',
   DATA_EXPORTED: 'data_exported',
   CALENDAR_FEED_GENERATED: 'calendar_feed_generated',
+  // The title panel's foot bar (Thoughts? / Watched it?) was folded or opened
+  // from its head line. `folded`: the new state; `watched`: the title's state.
+  TITLE_FOOT_BAR_FOLDED: 'title_foot_bar_folded',
   // The title panel's Episode alerts switch for one show (`on`: the new state).
   EPISODE_ALERTS_TOGGLED: 'episode_alerts_toggled',
+  // Settings' Episode alerts switches for every show, after the write lands.
+  // `setting`: in_app or phone; `on`: the new state.
+  EPISODE_ALERT_SETTING_CHANGED: 'episode_alert_setting_changed',
   // Where to watch, when a film has no offer in the viewer's region and they
   // ask to be told. Fired after the watchlist save (if it was not already
   // there) and the mute clear both land. `added_to_watchlist` is true when

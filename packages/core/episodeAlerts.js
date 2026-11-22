@@ -3,6 +3,7 @@
 
 import { EPISODE_ALERTS } from './copy/episodeAlerts.js';
 import { weekdayDayMonth } from './date.js';
+import { localDrop } from './dropTimes.js';
 
 /**
  * The next episode line, from TMDB TV details, or null when nothing is dated.
@@ -11,9 +12,11 @@ import { weekdayDayMonth } from './date.js';
  *
  * @param {{ next_episode_to_air?: { air_date?: string | null, season_number?: number, episode_number?: number } | null } | null | undefined} details
  * @param {string} todayStr local YYYY-MM-DD
+ * @param {string | null} [dropsAt] exact drop instant (useNextDropTime), shown in the viewer's clock
+ * @param {string} [timeZone] defaults to the device's zone
  * @returns {{ date: string, when: string, label: string } | null}
  */
-export function nextEpisodeLine(details, todayStr) {
+export function nextEpisodeLine(details, todayStr, dropsAt = null, timeZone = undefined) {
   const next = details?.next_episode_to_air;
   const date = next?.air_date;
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date < todayStr) return null;
@@ -22,5 +25,9 @@ export function nextEpisodeLine(details, todayStr) {
   const label = episode === 1 && season ? EPISODE_ALERTS.seasonPremiere(season)
     : season && episode ? EPISODE_ALERTS.episode(season, episode)
       : '';
+  if (dropsAt) {
+    const local = localDrop(dropsAt, timeZone);
+    return { date: local.date, when: EPISODE_ALERTS.dayAtTime(weekdayDayMonth(local.date), local.time), label };
+  }
   return { date, when: weekdayDayMonth(date), label };
 }

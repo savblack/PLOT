@@ -5,9 +5,9 @@ of truth for how Plot sounds in public.
 
 ## Who is speaking
 
-Plot is a film & TV journal — "everything you've watched, everything you want to
-watch." The voice is a person who genuinely loves film and television and keeps
-a beautiful journal about it. Think: the friend whose recommendations you
+Plot is a movie & TV companion — "everything you've watched, everything you want to
+watch." The voice is a person who genuinely loves film and television and always
+knows what's worth watching next. Think: the friend whose recommendations you
 actually trust, writing a short note — not a brand running a content calendar.
 
 ## Tone rules
@@ -193,12 +193,12 @@ destination ("at theplot.tv", or a phrase tuned to the post). Never "link in
 bio", never "Log it in your journal". Approved variants (use the variant name in
 the `cta_variant` field):
 
-- `track_it` — countdowns and trailer drops. Countdown: "Save to your watchlist
-  and count down with the Plot." Trailer posts use `none` and the direct YouTube link.
+- `track_it` — countdowns, anniversaries and trending. Countdown: "Save to your
+  watchlist and count down with Plot." Anniversaries and trending: "One of your
+  favorites? Track it on Plot at theplot.tv." / "Watched any? Track them on Plot
+  at theplot.tv." Trailer posts use `none` and the direct YouTube link.
 - `whats_on_tonight` — slates and now-streaming. Slate: "Figure out what to watch
   at theplot.tv." Now streaming: "Save to your watchlist at theplot.tv."
-- `journal_it` — anniversaries and trending. "One of your favorites? Log it in
-  your Plot at theplot.tv." / "Watched any? Add to your Plot at theplot.tv."
 
 **"at theplot.tv" is Instagram only.** On X and Threads the domain counts as a
 link and the validator rejects the post, so drop the destination there: "Save it

@@ -7,15 +7,15 @@
 
 export const PLANS_PAGE = {
   meta: {
-    title: 'Plans & Pricing — plot',
-    description: 'Plot is free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
-    ogDescription: 'Free to use, forever. Premium is $3/month or $24/year with a 7-day free trial for new subscribers.',
+    title: 'Pricing · Plot is free. Premium is $3/mo or $2/mo yearly',
+    description: 'Plot is free to use, forever. Premium is $3 a month, or $2 a month paid yearly ($24), with a 7-day free trial for new subscribers.',
+    ogDescription: 'Free to use, forever. Premium is $3 a month, or $2 a month paid yearly ($24), with a 7-day free trial for new subscribers.',
   },
 
   hero: {
     pageLabel: 'Plans',
     h1: 'Free forever. Premium when you want more.',
-    lede: 'Free keeps track. Premium helps you decide what to watch next. Skip the endless scroll, the first week is on us.',
+    lede: 'Free keeps track. Premium helps you decide what to watch next. Skip the endless scroll. The first week is on us.',
   },
 
   billingToggle: {
@@ -45,13 +45,13 @@ export const PLANS_PAGE = {
     // changes; these are the initial (annual) values rendered in the HTML.
     amount: '$2',
     per: '/mo',
-    billed: 'Billed $24 once a year',
+    billed: 'Billed $24 once a year instead of $36',
     billedMonthly: 'Billed monthly. Cancel anytime.',
     flag: '7-day free trial',
     trial: 'Commitment-free. Cancel during the trial and you pay $0.',
     tagline: 'Everything in Free, plus:',
     features: [
-      'Just Decide: a shortlist for tonight',
+      'Decide: four quick questions, up to five picks for tonight',
       'Watch together: settle what to watch',
       'Your watch profile',
       'Custom themes, widgets and app icons',
@@ -69,7 +69,7 @@ export const PLANS_PAGE = {
   premiumStories: {
     h2: 'Less deciding. More watching.',
     steps: [
-      { label: 'Just Decide', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot’s got your shortlist, sorted.' },
+      { label: 'Decide', h3: 'Something to watch, in under a minute.', body: 'How long have you got, what are you in the mood for, where are you watching? Plot hands you a shortlist.' },
       { label: 'Watch together', h3: 'Settle movie night before the snacks are ready.', body: 'Watch together analyzes everyone’s Plot profiles to find movie and TV matches in your lists.' },
       { label: 'Your profile', h3: 'Every story has a plot. Here’s yours.', body: 'Every film and show you log adds up to a profile: the genres you lean on, the hours you’ve put in, and the titles you keep going back to.' },
       { label: 'Taste match', h3: 'Find out your compatibility based on <s>science</s> cinema.', body: 'Plot does the math and tells you how compatible you really are, plus the films you agree on and the ones that are still a sore point.' },
@@ -95,7 +95,7 @@ export const PLANS_PAGE = {
       { feature: 'Custom lists', free: 'Up to 5', premium: 'Unlimited' },
       { feature: 'Smart lists', free: false, premium: true },
       { feature: 'Release dates in your calendar app', free: false, premium: true },
-      { feature: 'Just Decide', free: false, premium: true },
+      { feature: 'Decide', free: false, premium: true },
       { feature: 'Watch together', free: false, premium: true },
       { feature: 'Your watch profile', free: 'Overview', premium: 'Full profile' },
       { feature: 'Taste match with a friend', free: false, premium: true },
@@ -112,7 +112,7 @@ export const PLANS_PAGE = {
         label: 'Plans',
         items: [
           { q: 'Is Free really free?', a: 'Yes. No card, no trial clock, no limit on what you track. Free keeps your watchlist, history, release calendar and up to five lists for as long as you like.' },
-          { q: 'What do I get with Premium?', a: 'Everything in Free, plus Just Decide, Watch together, your watch profile, Taste match, custom themes, widgets and app icons, unlimited and smart lists, release dates in your calendar app, and actor and director alerts. The table above has the full list.' },
+          { q: 'What do I get with Premium?', a: 'Everything in Free, plus Decide, Watch together, your watch profile, Taste match, custom themes, widgets and app icons, unlimited and smart lists, release dates in your calendar app, and actor and director alerts. The table above has the full list.' },
           { q: 'Does my friend need Premium too?', a: 'No. For Watch together and Taste match, only one of you needs Premium.' },
           { q: 'What happens to my lists if I downgrade?', a: 'Nothing is deleted. Your lists stay exactly as they are. You just can’t create new ones past the free limit until you upgrade again.' },
         ],

@@ -1,6 +1,6 @@
 // Reference-only copy catalog for apps/website/_partials/footer.html — the
 // shared footer injected into every page (index.html, about.html, pricing.html,
-// via `npm run footer`). Not imported by the HTML.
+// via `pnpm run footer`). Not imported by the HTML.
 //
 // Every string here is identical to copy/common.js's FOOTER export (the
 // footer partial and each page's own <nav> share the same link labels) — this
@@ -10,18 +10,18 @@
 
 export const FOOTER_PARTIAL = {
   tagline: ["Everything you've watched.", 'Everything you want to watch.'],
-  cta: 'Start your plot',
+  cta: 'Start tracking',
   login: 'Log in',
   columns: {
     explore: { heading: 'Explore', links: { whatsOn: "What's On", pricing: 'Pricing' } },
     company: { heading: 'Company', links: { about: 'About', community: 'Community', support: 'Support', changelog: 'Changelog' } },
     legal: { heading: 'Legal', links: { privacy: 'Privacy', terms: 'Terms' } },
   },
-  wordmarkAria: 'plot home',
-  copyright: (year) => `© ${year} plot`,
+  wordmarkAria: 'Plot home',
+  copyright: (year) => `© ${year} Plot`,
   socialAria: {
-    instagram: 'plot on Instagram',
-    threads: 'plot on Threads',
-    x: 'plot on X',
+    instagram: 'Plot on Instagram',
+    threads: 'Plot on Threads',
+    x: 'Plot on X',
   },
 };

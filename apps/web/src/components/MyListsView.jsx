@@ -2,7 +2,6 @@ import { CUSTOM_LISTS } from '@plot/core/copy/customLists.js';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../hooks/useApp.js';
-import { useGenres } from '../hooks/useGenres.js';
 import { useSelection } from '../hooks/useSelection.js';
 import { localDateStr } from '../utils/date.js';
 import { favoriteWords } from '../utils/spelling.js';
@@ -10,13 +9,11 @@ import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { COMMON } from '../copy/common.js';
 import { PROFILE_PRIVACY } from '../copy/profilePrivacy.js';
 import { listVisibility } from '@plot/core/customLists.js';
-import LoadingSpinner from './LoadingSpinner.jsx';
+import ListsLoading from './ListsLoading.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import KebabMenu from './KebabMenu.jsx';
 import ListCover from './ListCover.jsx';
 import { Tag } from './Chip.jsx';
-import SideFilters from './SideFilters.jsx';
-import { TYPE_ROWS } from './sideFilterRows.js';
 import { EVENTS, track } from '../lib/analytics.js';
 import { canCreateCustomList, isPremiumProfile } from '@plot/core/premium.js';
 import { SMART_LISTS } from '@plot/core/copy/smartLists.js';
@@ -27,10 +24,8 @@ import UpgradeSheet from './UpgradeSheet.jsx';
 import SmartListDialog from './SmartListDialog.jsx';
 import NewListChoice from './NewListChoice.jsx';
 import { collectionPath, customListKey, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
-import { ALL_TYPES, filterByTypeAndGenre, isTypeNarrowed } from '@plot/core/mediaFilters.js';
 import { displayPosterPath } from '@plot/core/artwork.js';
 import { useUserArtwork } from '@plot/core/useUserArtwork.js';
-import { TypeGenreFilter } from './ListCards.jsx';
 import {
   CreateListModal, HeaderIconButton, ListSection, NewTile, TickIcon, TopFiveSection, TrashIcon, WatchingSection,
 } from './ListSections.jsx';
@@ -52,13 +47,12 @@ import { useActivationNudge } from '../hooks/useActivationNudge.js';
 
 /* My Lists on the Calendar/History shell: a narrow left column beside one wide
    stream. The column is the index — every list with its count, capped by a
-   "View more" row — with the Show and Genre filters beneath it, the same
-   `SideFilters` rows History uses rather than the toolbar pill it used to be.
+   "View more" row. It has no type or genre filters: a list's own page has them.
    The stream keeps what shipped in PR 918: the Watching shelf, the Top 5 podium,
    then every list as a cover that opens its own page.
 
    Below the sidebar breakpoint `.cal-side` hides itself, as it does on the
-   Guide, and the toolbar's filter pill comes back for the phone.
+   Guide.
 
    History is not here: it has had its own page since it left the sub-tabs, and
    a cover that navigated off /my-lists was the only one that did. */
@@ -74,8 +68,8 @@ const ChevronDown = () => <svg viewBox="0 0 24 24"><polyline points="6,9 12,15 1
 const ChevronUp   = () => <svg viewBox="0 0 24 24"><polyline points="18,15 12,9 6,15" /></svg>;
 
 /* The index. One row per collection, name and count, in the same row style as
-   the filters under it. */
-function JumpToCard({ collections, counts, onOpen }) {
+   History's filters. */
+function JumpToCard({ collections, onOpen }) {
   const [expanded, setExpanded] = useState(false);
   // Folding one row away would cost a row to save a row.
   const folds = collections.length > JUMP_CAP + 1;
@@ -89,7 +83,7 @@ function JumpToCard({ collections, counts, onOpen }) {
         {shown.map(c => (
           <button key={c.key} type="button" className="cal-filter-row" onClick={onOpen(c.key)}>
             <span className="cal-filter-name">{c.name}</span>
-            <span className="mylists-jump-count">{counts(c.items)}</span>
+            <span className="mylists-jump-count">{c.items.length}</span>
           </button>
         ))}
         {folds && (
@@ -187,7 +181,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const navigate = useNavigate();
   // The sheet can replace the create-list dialog; focus comes back here after.
   const newListRef = useRef(null);
-  const { genres } = useGenres();
   const selection = useSelection();
   const [creatingList,  setCreatingList]  = useState(false);
   const [showCapNotice, setShowCapNotice] = useState(false);
@@ -199,8 +192,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const [smartDraft, setSmartDraft] = useState(null);
   const [rulesKept, setRulesKept] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [typeFilters,  setTypeFilters]  = useState(ALL_TYPES);
-  const [genreFilters, setGenreFilters] = useState([]);
   const [creatingShared, setCreatingShared] = useState(false);
 
   const want = useMemo(() => wantToWatchItems(watchlist.items, watching.items, localDateStr()), [watchlist.items, watching.items]);
@@ -213,7 +204,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
-    return <LoadingSpinner />;
+    return <ListsLoading />;
   }
 
   const { lists, smartLists = [], ownedCount, createList, createSmartList, deleteList } = customLists;
@@ -267,18 +258,9 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   const sharedWithMe = split.sharedWithMe.map(sharedCollection);
   const sharedCollections = [...sharedByMe, ...sharedWithMe];
 
-  // The filters narrow the whole page. A cover keeps its place but shows how
-  // much of it matches, and only the matching posters; a list with nothing
-  // matching dims. Only Want to Watch stores genres today, so a genre pick
-  // leaves the other lists' counts unchanged.
-  const narrowed = isTypeNarrowed(typeFilters) || genreFilters.length > 0;
-  const apply = (items) => filterByTypeAndGenre(items, typeFilters, genreFilters);
-  const coverCount = (items, emptyLabel) => {
-    if (!narrowed) return titleCount(items.length, emptyLabel);
-    const n = apply(items).length;
-    return `${n} of ${items.length} match`;
-  };
-  const jumpCount = (items) => (narrowed ? apply(items).length : items.length);
+  // No type or genre filter here (Nov 2026): on this page you pick a list,
+  // not a title, and filtering titles left half-empty covers. Each list's own
+  // page filters what is in it.
 
   // Free accounts get FREE_CUSTOM_LIST_CAP lists; Premium unlimited. The
   // DB (RLS insert policy) is the authority; this is just friendlier UX.
@@ -389,7 +371,6 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
   );
 
   const cover = (c) => {
-    const visible = narrowed ? apply(c.items) : c.items;
     const owner = c.others && c.list.role === 'member' ? listOwner(c.list) : null;
     const byline = c.others && (
       <>
@@ -402,9 +383,8 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
         key={c.key}
         anchorId={`collection-${c.key}`}
         name={c.name}
-        count={c.smart ? c.empty : coverCount(c.items, c.empty)}
-        posters={posters(art, visible)}
-        dim={narrowed && visible.length === 0 && c.items.length > 0}
+        count={c.smart ? c.empty : titleCount(c.items.length, c.empty)}
+        posters={posters(art, c.items)}
         badge={c.list && listVisibility(c.list) !== 'private' && <Tag className="mylists-public-badge" label={PROFILE_PRIVACY.listVisibilityBadge[listVisibility(c.list)]} />}
         byline={byline}
         menu={c.list && !c.smart ? <ListCoverMenu list={c.list} /> : null}
@@ -429,7 +409,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
     layout.toggle(id);
   };
   const sectionNodes = {
-    watching: <WatchingSection watching={watching} hidden={isTypeNarrowed(typeFilters) && !typeFilters.includes('tv')} />,
+    watching: <WatchingSection watching={watching} />,
     top: <TopFiveSection topLists={topLists} />,
     lists: (
       <ListSection title={sectionLabels.lists} headerRight={listActions}>
@@ -448,7 +428,7 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
               </ListSection>
     ),
     smart: (
-      <ListSection title={SMART_LISTS.section}>
+      <ListSection title={SMART_LISTS.section} subtitle={SMART_LISTS.sectionNote}>
       <div className="list-covers">
         {smartCollections.map(cover)}
         {!selection.editMode && <NewTile label={SMART_LISTS.newSmartList} note={SMART_LISTS.newTileNote} onClick={requestSmartCreate} />}
@@ -476,36 +456,11 @@ export default function MyListsView({ newCounts: seedNewCounts = null } = {}) {
 
   return (
     <div className="hist-page mylists-page">
-      <div className="hist-toolbar">
-        <div className="hist-toolbar-controls">
-          {/* At sidebar widths the column carries the filters; below it, the
-              pill and its sheet are how a phone reaches them. */}
-          <span className="mylists-toolbar-filter">
-            <TypeGenreFilter
-              mobileControls
-              ariaLabel="Filter lists"
-              typeFilters={typeFilters}
-              setTypeFilters={setTypeFilters}
-              genreFilters={genreFilters}
-              setGenreFilters={setGenreFilters}
-            />
-          </span>
-        </div>
-      </div>
-
       <div className="cal-body">
         <aside className="cal-side mylists-side">
-          <JumpToCard collections={collections} counts={jumpCount} onOpen={jumpTo} />
+          <JumpToCard collections={collections} onOpen={jumpTo} />
           <SmartJumpCard collections={smartCollections} newCounts={newCounts} onOpen={jumpTo} onNew={requestSmartCreate} />
           {SHOW_WATCH_TOGETHER && <SharedJumpCard collections={sharedCollections} onOpen={jumpTo} onNew={requestShared} />}
-          <SideFilters
-            typeRows={TYPE_ROWS}
-            typeFilters={typeFilters}
-            setTypeFilters={setTypeFilters}
-            genreFilters={genreFilters}
-            setGenreFilters={setGenreFilters}
-            genres={genres}
-          />
         </aside>
 
         <div className="cal-stream mylists-stream">

@@ -90,6 +90,10 @@ const MIN_QUOTE_RATING = 7;
 // language. Matched on word boundaries, case-insensitively.
 const BLOCKED_QUOTE_WORDS = /\b(woke|dei|agenda|propaganda|diversity hire|forced diversity|race[- ]?swap(ped)?|pandering|sjw|snowflakes?|libtards?|retard(ed)?|f+u+c+k\w*|shit\w*|crap|trash|garbage|dreck|abomination)\b/i;
 
+// A review carrying hashtags is a social post ("#filmreviewhaiku"), not a
+// line worth featuring (UI critique, Nov 20).
+const HASHTAG = /(^|\s)#[a-z]\w*/i;
+
 /**
  * Pick one displayable audience quote from a TMDB `/reviews` response. Only
  * reviews the author rated MIN_QUOTE_RATING/10 or higher, with no blocked
@@ -104,7 +108,7 @@ export function pickAudienceQuote(reviewsResponse) {
   const candidates = (reviewsResponse?.results || [])
     .filter(r => Number.isFinite(r?.author_details?.rating) && r.author_details.rating >= MIN_QUOTE_RATING)
     .map(r => ({ text: unwrapQuote((r.content || '').trim().replace(/\s+/g, ' ')), author: r.author }))
-    .filter(r => r.text.length >= MIN_QUOTE_LENGTH && !BLOCKED_QUOTE_WORDS.test(r.text));
+    .filter(r => r.text.length >= MIN_QUOTE_LENGTH && !BLOCKED_QUOTE_WORDS.test(r.text) && !HASHTAG.test(r.text));
   if (!candidates.length) return null;
 
   const pick = candidates.sort((a, b) => a.text.length - b.text.length)[0];

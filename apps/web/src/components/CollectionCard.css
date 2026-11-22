@@ -111,7 +111,7 @@
   background: color-mix(in srgb, var(--text-primary) 12%, transparent);
 }
 .collection-run--compact .collection-run-seg { height: 6px; }
-.collection-run-seg--on { background: var(--status-watching); }
+.collection-run-seg--on { background: var(--accent); }
 .collection-run-next {
   margin: 0.75rem 0 0;
   font-size: 0.78rem;

@@ -37,7 +37,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 };
 
 // Storybook is bundled behind STORYBOOK_ENABLED so `npm start` for the real
-// app doesn't pay for story discovery; `npm run storybook` sets it.
+// app doesn't pay for story discovery; `pnpm run storybook` sets it.
 module.exports = withStorybook(config, {
   enabled: process.env.STORYBOOK_ENABLED === 'true',
   configPath: path.resolve(projectRoot, '.storybook'),

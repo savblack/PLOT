@@ -61,7 +61,7 @@ test('buildWatchlistMovieCalendarEvents emits a single same-day event when relea
 test('buildWatchlistMovieCalendarEvents emits a cinema event plus a later separate streaming event', () => {
   const item = { media_type: 'movie', release_date: '2024-07-01', streaming_date: '2024-08-01' };
   assert.deepEqual(buildWatchlistMovieCalendarEvents(item, today), [
-    { date: '2024-07-01', type: 'cinema', label: 'Cinema', item },
+    { date: '2024-07-01', type: 'cinema', label: 'Theaters', item },
     { date: '2024-08-01', type: 'streaming', label: 'Streaming', item },
   ]);
 });
@@ -70,18 +70,18 @@ test('buildWatchlistMovieCalendarEvents labels a release date with no known stre
   // Compare with the case above: knowing about a *later* streaming date makes
   // the release-date event "cinema", and not knowing about one at all should
   // too — a bare release_date with no streaming_date is the one case that
-  // most needs a "Cinema" label, since nothing else marks it as a theatrical
+  // most needs a "Theaters" label, since nothing else marks it as a theatrical
   // date rather than a streaming one.
   const item = { media_type: 'movie', release_date: '2024-07-01' };
   assert.deepEqual(buildWatchlistMovieCalendarEvents(item, today), [
-    { date: '2024-07-01', type: 'cinema', label: 'Cinema', item },
+    { date: '2024-07-01', type: 'cinema', label: 'Theaters', item },
   ]);
 });
 
 test('buildWatchlistMovieCalendarEvents treats a release date equal to today as upcoming', () => {
   const item = { media_type: 'movie', release_date: today };
   assert.deepEqual(buildWatchlistMovieCalendarEvents(item, today), [
-    { date: today, type: 'cinema', label: 'Cinema', item },
+    { date: today, type: 'cinema', label: 'Theaters', item },
   ]);
 });
 
@@ -180,7 +180,7 @@ test('buildCalendarEvents collapses a same-day release and streaming date into o
   assert.equal(events[0].label, 'Streaming');
 });
 
-test('buildCalendarEvents labels a cinema window Cinema and keeps the later streaming date', async () => {
+test('buildCalendarEvents labels a cinema window Theaters and keeps the later streaming date', async () => {
   const events = await buildCalendarEvents({
     watchlist: [{
       tmdb_id: 4, media_type: 'movie', title: 'Theatrical',
@@ -192,7 +192,7 @@ test('buildCalendarEvents labels a cinema window Cinema and keeps the later stre
 
   assert.deepEqual(
     events.map(e => [e.date, e.label]),
-    [['2026-09-01', 'Cinema'], ['2026-11-01', 'Streaming']],
+    [['2026-09-01', 'Theaters'], ['2026-11-01', 'Streaming']],
   );
 });
 
@@ -447,7 +447,7 @@ test('describeCalendarEvent says what each kind of date is', () => {
     describeCalendarEvent({ type: 'episode', label: 'S02E04', item: { episode: { episode_number: 4 } } }),
     'S02E04',
   );
-  assert.equal(describeCalendarEvent({ type: 'cinema', label: 'Cinema', item: {} }), 'In cinemas');
+  assert.equal(describeCalendarEvent({ type: 'cinema', label: 'Cinema', item: {} }), 'In theaters');
   assert.equal(describeCalendarEvent({ type: 'streaming', label: 'Streaming', item: {} }), 'Streaming');
   assert.equal(describeCalendarEvent({ type: 'reminder', label: '8:30 pm', item: {} }), 'Reminder');
   assert.equal(describeCalendarEvent({ type: 'other', label: 'Something' }), 'Something');

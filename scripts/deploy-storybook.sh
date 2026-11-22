@@ -24,7 +24,7 @@ staging_dir=$(mktemp -d -t "deploy-$project_name")
 trap 'rm -rf "$staging_dir"' EXIT
 
 echo "→ Building Storybook in $app_dir"
-(cd "$repo_root/$app_dir" && npm run build-storybook)
+(cd "$repo_root/$app_dir" && pnpm run build-storybook)
 
 rm -f "$build_dir/_headers" "$build_dir/_redirects" "$build_dir/wrangler.json" "$build_dir/wrangler.toml"
 cp -r "$build_dir/." "$staging_dir/"

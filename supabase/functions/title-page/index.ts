@@ -3,7 +3,7 @@
  *
  * The "where to watch X" SEO surface (think JustWatch/Reelgood): a server-rendered
  * page per movie / show with regional streaming availability, cast, related titles,
- * rich OG + JSON-LD, and a "Save to your plot" CTA that deep-links into the app.
+ * rich OG + JSON-LD, and a "Save to your Plot" CTA that deep-links into the app.
  *
  * Served via a Cloudflare Pages Function on the static site, which proxies
  * straight through to this Edge Function (apps/website/functions/_lib/title.js):
@@ -76,16 +76,19 @@ ${head}
 <link rel="preload" href="${SITE}/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${SITE}/fonts/Gabarito-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${SITE}/_partials/footer.css">
-<link rel="stylesheet" href="${SITE}/title-page.css?v=c65a086a0c38">
+<link rel="stylesheet" href="${SITE}/title-page.css?v=236c8906b0ae">
 <script defer src="${SITE}/title-page.js?v=2d490a01fc6d"></script>
 </head>
 <body>
 ${GTM_NOSCRIPT}
 <nav class="topnav" id="topnav">
-  <a href="${SITE}" class="nav-logo" aria-label="plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
+  <a href="${SITE}" class="nav-logo" aria-label="Plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
   <ul class="nav-links" id="navLinks">
     <li><a href="${SITE}/whats-on">What's On</a></li>
     <li><a href="${SITE}/pricing">Pricing</a></li>
+    <li class="nav-more"><a href="${SITE}/taste-match">Taste match</a></li>
+    <li class="nav-more"><a href="${SITE}/about">About</a></li>
+    <li class="nav-more"><a href="${SITE}/support">Support</a></li>
     <li><a href="${APP}/login?src=title_page_nav" data-cta="nav">Log in</a></li>
     <li><a href="${APP}/signup?src=title_page_nav" data-cta="nav" class="nav-cta">Sign up</a></li>
   </ul>
@@ -112,7 +115,7 @@ ${FOOTER_HTML}
 
 function notFound() {
   return page(
-    'Not found · plot',
+    'Not found · Plot',
     '<meta name="robots" content="noindex">',
     `<div class="section"><h1 class="title">We couldn't find that title.</h1>
      <p class="overview" style="margin-top:16px">It may have moved or never existed. Try <a href="${SITE}/whats-on" style="color:var(--accent-2);font-weight:600">What's On</a>.</p></div>`,
@@ -301,18 +304,18 @@ Deno.serve(async (req) => {
   if (!Number.isInteger(id) || id <= 0) return notFound();
 
   const key = Deno.env.get('TMDB_API_KEY');
-  if (!key) return page('plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 503, false);
+  if (!key) return page('Plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 503, false);
 
   let data: any;
   try {
     const r = await fetch(
-      `${TMDB}/${type}/${id}?api_key=${key}&language=en-US&append_to_response=watch/providers,credits,videos,recommendations`,
+      `${TMDB}/${type}/${id}?api_key=${key}&language=en-US&append_to_response=watch/providers,credits,videos,recommendations${type === 'movie' ? ',release_dates' : ''}`,
     );
     if (r.status === 404) return notFound();
-    if (!r.ok) return page('plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
+    if (!r.ok) return page('Plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
     data = await r.json();
   } catch {
-    return page('plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
+    return page('Plot', '<meta name="robots" content="noindex">', '<p>Temporarily unavailable.</p>', 502, false);
   }
 
   const isMovie = type === 'movie';
@@ -398,13 +401,13 @@ Deno.serve(async (req) => {
     watchBody = `<div class="watch">${rows}</div>
   <div class="card-foot">
     <span class="src">Availability from JustWatch via TMDB. Changes over time.</span>
-    <a class="cta" href="${esc(saveHref)}" data-cta="title_save"><span class="cta-control-copy">Save to your plot</span><span class="cta-test-copy">Save to your watchlist.</span></a>
+    <a class="cta" href="${esc(saveHref)}" data-cta="title_save"><span class="cta-control-copy">Save to your Plot</span><span class="cta-test-copy">Save to your watchlist.</span></a>
   </div>`;
   } else if (inCinemas) {
     watchBody = `<div class="answer">
     <div class="answer-text" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span class="badge">In cinemas</span>
-      <span><span class="answer-hd">Showing in cinemas now.</span><span class="answer-sub">Not yet on any streaming service.</span></span>
+      <span class="badge">In theaters</span>
+      <span><span class="answer-hd">Showing in theaters now.</span><span class="answer-sub">Not yet on any streaming service.</span></span>
     </div>
     <div class="answer-act"><a class="cta" href="${esc(saveHref)}" data-cta="title_track">Tell me when it streams</a></div>
   </div>
@@ -432,20 +435,36 @@ Deno.serve(async (req) => {
     const d = new Date(iso);
     return isNaN(d.getTime())
       ? ''
-      : `${d.getUTCDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+      // US order (Jul 15, 2026): Plot's marketing pages are written for a US reader.
+      : `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
   };
   const director = isMovie
     ? (data.credits?.crew || []).find((c: any) => c.job === 'Director')?.name || ''
     : '';
+  // The release in the visitor's region (their theatrical date, else the
+  // earliest dated release there), falling back to TMDB's primary date, which
+  // is often another country's. A date still ahead reads "Releases".
+  const regionRelease = (() => {
+    const list: { type?: number; release_date?: string }[] =
+      data.release_dates?.results?.find((r: any) => r.iso_3166_1 === region)?.release_dates || [];
+    const dated = list.filter((r) => r.release_date).sort((a, b) => String(a.release_date).localeCompare(String(b.release_date)));
+    const pick = dated.find((r) => r.type === 3) || dated[0];
+    return pick?.release_date ? pick.release_date.slice(0, 10) : null;
+  })();
+  const releaseIso = (isMovie && regionRelease) || date || '';
+  const releaseFuture = !!releaseIso && Date.parse(releaseIso) > Date.now();
+  const releaseText = releaseIso
+    ? `${fmtDate(releaseIso)}${isMovie && regionRelease ? ` · ${region}` : ''}`
+    : '';
   const facts: [string, string][] = (isMovie
     ? [
-      ['Released', date ? fmtDate(date) : ''],
+      [releaseFuture ? 'Releases' : 'Released', releaseText],
       ['Runtime', runtime],
       ['Director', director],
       ['TMDB rating', rating ? `${rating} / 10` : ''],
     ]
     : [
-      ['First aired', date ? fmtDate(date) : ''],
+      [releaseFuture ? 'Premieres' : 'First aired', date ? fmtDate(date) : ''],
       ['Network', (data.networks || [])[0]?.name || ''],
       ['Episodes', data.number_of_episodes ? String(data.number_of_episodes) : ''],
       ['TMDB rating', rating ? `${rating} / 10` : ''],
@@ -494,7 +513,7 @@ Deno.serve(async (req) => {
   const availabilityDescription = availableOn.length
     ? `Watch ${title}${yr ? ` (${yr})` : ''} on ${availableOn.join(', ')} in ${regionName(region)}. See streaming, rental and purchase options.`
     : inCinemas
-      ? `${title}${yr ? ` (${yr})` : ''} is showing in cinemas in ${regionName(region)}. Track it on plot to know when it starts streaming.`
+      ? `${title}${yr ? ` (${yr})` : ''} is showing in theaters in ${regionName(region)}. Track it on Plot to know when it starts streaming.`
       : `Find where to watch ${title}${yr ? ` (${yr})` : ''} in ${regionName(region)} and track when it becomes available to stream, rent or buy.`;
   // Overview pads the availability line past the "too short" mark; a title
   // with no overview gets a sentence about tracking it instead.
@@ -504,7 +523,7 @@ Deno.serve(async (req) => {
   // one; it also pushed most titles past 60 characters.
   const yrPart = yr ? ` (${yr})` : '';
   const metaTitle = fitTitle([
-    `${title}${yrPart}: where to watch · plot`,
+    `${title}${yrPart}: where to watch · Plot`,
     `Where to watch ${title}${yrPart}`,
     `Where to watch ${title}`,
     title,
@@ -556,11 +575,11 @@ Deno.serve(async (req) => {
     runtime,
     !isMovie && data.number_of_episodes ? `${data.number_of_episodes} episodes` : '',
     isMovie ? '' : (data.networks || [])[0]?.name || '',
-  ].filter(Boolean).join('<span class="dot">·</span>');
+  ].filter(Boolean).map((bit) => esc(bit)).join('<span class="dot">·</span>');
 
   const body = `${stickyHtml}
 <nav class="crumbs" aria-label="Breadcrumb">
-  <a href="${SITE}">Home</a><span class="sep">/</span><span>${isMovie ? 'Films' : 'Series'}</span>${genres[0] ? `<span class="sep">/</span><span>${esc(genres[0])}</span>` : ''}
+  <a href="${SITE}">Home</a><span class="sep">/</span><span>${isMovie ? 'Movies' : 'TV'}</span>${genres[0] ? `<span class="sep">/</span><span>${esc(genres[0])}</span>` : ''}
 </nav>
 
 <div class="band${backdrop ? '' : ' noart'}">${backdrop ? `<img src="${esc(backdrop)}" alt="" fetchpriority="high"><div class="scrim"></div>` : ''}</div>
@@ -568,7 +587,7 @@ Deno.serve(async (req) => {
   ${poster ? `<div class="poster"><img src="${esc(poster)}" alt="${esc(title)} poster"></div>` : ''}
   <div class="lead-meta">
     <div class="kind">
-      <span class="chip">${isMovie ? 'Film' : 'Series'}</span>
+      <span class="chip">${isMovie ? 'Movie' : 'TV'}</span>
       ${genres.slice(0, 2).map((g: string) => `<span class="genre">${esc(g)}</span>`).join('')}
     </div>
     <h1 class="title">${esc(title)}</h1>

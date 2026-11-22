@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "dev": "pnpm --filter @plot/web run dev",
     "dev:website": "cd apps/website && wrangler pages dev . --port 5202",
     "build": "pnpm --filter @plot/web run build",
@@ -64,7 +65,9 @@
     "db:drift": "node scripts/check-migration-drift.mjs",
     "supabase:staging": "node scripts/supabase-staging.mjs",
     "staging:session": "node scripts/create-staging-test-session.mjs",
+    "staging:migrate": "node --env-file-if-exists=.env scripts/staging-apply-migrations.mjs",
     "staging:test": "node --env-file-if-exists=.env scripts/staging-test.mjs",
+    "staging:import-e2e": "node --env-file-if-exists=.env scripts/staging-import-e2e.mjs",
     "mkt:plan": "node marketing/planner/plan.mjs",
     "mkt:guides": "node marketing/planner/guides.mjs",
     "mkt:copy:pull": "node marketing/copy/pull.mjs",
@@ -90,12 +93,15 @@
     "@eslint/js": "^10.0.1",
     "eslint": "^10.15.0",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.5.6",
+    "eslint-plugin-react-refresh": "^0.5.8",
     "globals": "^17.14.0",
     "sharp": "^0.35.5",
     "typescript-eslint": "^8.72.2"
   },
   "packageManager": "pnpm@10.6.3",
+  "engines": {
+    "node": "22.x"
+  },
   "pnpm": {
     "patchedDependencies": {
       "decode-uri-component@0.5.1": "patches/decode-uri-component@0.5.1.patch"

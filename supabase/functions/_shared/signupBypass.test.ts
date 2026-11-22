@@ -2,6 +2,7 @@ import { assertEquals } from 'jsr:@std/assert@1';
 import {
   APP_AUTH_CALLBACK,
   authCallbackRedirect,
+  linkOrigin,
   authLinkMail,
   bypassAction,
   bypassClient,
@@ -95,4 +96,24 @@ Deno.test('signup mail confirms the account and a magic link signs in', () => {
   assertEquals(magic.subject, 'Your Plot sign-in link');
   assertEquals(magic.text.includes('https://example.test/magic'), true);
   assertEquals(magic.text.includes('code'), false);
+});
+
+Deno.test('linkOrigin keeps emailed links on Plot domains on production', () => {
+  const prod = 'https://mkegtssedjyqldysvzga.supabase.co';
+  assertEquals(linkOrigin('https://app.theplot.tv', prod), 'https://app.theplot.tv');
+  assertEquals(linkOrigin('https://theplot.tv', prod), 'https://theplot.tv');
+  assertEquals(linkOrigin('https://branch.plot-5wr.pages.dev', prod), null);
+  assertEquals(linkOrigin('http://localhost:5177', prod), null);
+  assertEquals(linkOrigin('http://app.theplot.tv', prod), null);
+  assertEquals(linkOrigin('https://theplot.tv.evil.example', prod), null);
+  assertEquals(linkOrigin(null, prod), null);
+  const url = new URL(authCallbackRedirect(linkOrigin('https://branch.plot-5wr.pages.dev', prod), 'magiclink'));
+  assertEquals(url.origin, 'https://app.theplot.tv');
+});
+
+Deno.test('linkOrigin leaves Staging and local runs alone', () => {
+  const staging = 'https://uzrhfivnhdcfieuaxzip.supabase.co';
+  assertEquals(linkOrigin('https://branch.plot-5wr.pages.dev', staging), 'https://branch.plot-5wr.pages.dev');
+  assertEquals(linkOrigin('http://localhost:5177', staging), 'http://localhost:5177');
+  assertEquals(linkOrigin('http://localhost:5177', undefined), 'http://localhost:5177');
 });

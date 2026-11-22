@@ -125,10 +125,21 @@ var IMPORT_VIEW = {
     record_incomplete: `${count} records were missing details Plot needs to find the title, so they were left out.`,
     year_unknown: `${count} films without a release year yet were left out, because Plot can\u2019t match them reliably until they have one.`,
     duplicate_file: "Duplicate file selection was left out.",
-    empty_list: "Empty list will not be imported."
+    empty_list: "Empty list will not be imported.",
+    tmdb_rated_movies_watched: `${count} rated movies will be marked watched with no watch date, because TMDB doesn\u2019t record when you watched them.`,
+    tmdb_ratings_rounded: `${count} ratings were rounded to the nearest half star. Your exact TMDB scores are kept with your imported data.`,
+    tmdb_truncated: "Your TMDB account was too large to read in full, so some titles were left out.",
+    tmdb_lists_unavailable: `${count} watchlist and list titles were left out. List import isn\u2019t available in this build.`,
+    tmdb_show_ratings_unavailable: `${count} TV show and episode ratings were left out. This build can\u2019t save them yet.`
   })[reason] || "This record needs review and will not be imported.",
   tvTimeUnsupported: "Unsupported TV Time saved file or record. Keep the original tracking-prod-records-v2.csv, tracking-prod-records.csv, shows.json, movies.json, lists.json or favorites.json filename. No records were imported.",
   watchlistName: "Watchlist",
+  tmdbUnsupported: "This isn\u2019t a TMDB account import Plot can read. Start the TMDB import again from Plot.",
+  tmdbUntitled: "Untitled",
+  tmdbConnecting: "Reading your TMDB account\u2026",
+  tmdbNotApproved: "TMDB didn\u2019t give Plot access. Try again, and choose Approve on the TMDB page.",
+  tmdbUnavailable: "Plot couldn\u2019t reach TMDB. Try again in a moment.",
+  tmdbEmpty: "Your TMDB account has no watchlist, lists or ratings to import.",
   traktAnnotationUnsupported: "Unsupported Trakt rating or review record. Nothing was imported.",
   traktWatchlistUnsupported: "Unsupported Trakt watchlist record. This preview accepts lists-watchlist.json with movie/show records. Missing identifiers require title review. Nothing was imported.",
   traktName: "Trakt saved export",
@@ -2050,6 +2061,99 @@ function parseTvTimeDocument(text, fileName) {
   return { entries, notImported, warnings };
 }
 
+// packages/core/tmdbAccountImport.js
+var TMDB_ACCOUNT_FORMAT = "plot-tmdb-account";
+var validId = (id) => Number.isSafeInteger(id) && id > 0;
+var validRating = (r) => typeof r === "number" && Number.isFinite(r) && r > 0 && r <= 10;
+var validMediaType = (t) => t === "movie" || t === "tv";
+function tmdbRatingToPlot(rating2) {
+  return Math.min(10, Math.max(1, Math.round(rating2)));
+}
+function validTitle(item) {
+  return item && validId(item.id) && validMediaType(item.media_type) && typeof item.title === "string" && (item.year == null || /^\d{4}$/.test(item.year));
+}
+function titleFields(item) {
+  return {
+    title: item.title.trim() || IMPORT_VIEW.tmdbUntitled,
+    year: item.year ?? null,
+    hint: item.media_type,
+    date: null,
+    tmdbRef: { id: item.id, mediaType: item.media_type },
+    externalIds: { tmdb: item.id }
+  };
+}
+function parseTmdbAccount(text) {
+  let doc;
+  try {
+    doc = JSON.parse(String(text).replace(/^\uFEFF/, ""));
+  } catch {
+    throw new Error(IMPORT_VIEW.tmdbUnsupported);
+  }
+  if (!doc || doc.format !== TMDB_ACCOUNT_FORMAT || doc.version !== 1 || !validId(doc.account?.id) || !Array.isArray(doc.watchlist) || !Array.isArray(doc.rated) || !Array.isArray(doc.ratedEpisodes) || !Array.isArray(doc.lists)) throw new Error(IMPORT_VIEW.tmdbUnsupported);
+  const account = doc.account.id;
+  const entries = [];
+  let rounded = 0;
+  let ratedMovies = 0;
+  for (const item of doc.watchlist) {
+    if (!validTitle(item)) throw new Error(IMPORT_VIEW.tmdbUnsupported);
+    entries.push({
+      ...titleFields(item),
+      eventId: `${account}:watchlist:${item.media_type}:${item.id}`,
+      destination: { kind: "watchlist", key: "tmdb:watchlist", name: IMPORT_VIEW.watchlistName }
+    });
+  }
+  for (const list of doc.lists) {
+    if (!list || typeof list.id !== "string" || !/^[\w-]{1,64}$/.test(list.id) || typeof list.name !== "string" || !list.name.trim() || !Array.isArray(list.items)) throw new Error(IMPORT_VIEW.tmdbUnsupported);
+    for (const item of list.items) {
+      if (!validTitle(item)) throw new Error(IMPORT_VIEW.tmdbUnsupported);
+      entries.push({
+        ...titleFields(item),
+        eventId: `${account}:list:${list.id}:${item.media_type}:${item.id}`,
+        destination: { kind: "custom", key: `tmdb:list:${list.id}`, name: list.name.trim().slice(0, 200) }
+      });
+    }
+  }
+  for (const item of doc.rated) {
+    if (!validTitle(item) || !validRating(item.rating)) throw new Error(IMPORT_VIEW.tmdbUnsupported);
+    if (!Number.isInteger(item.rating)) rounded++;
+    if (item.media_type === "movie") {
+      ratedMovies++;
+      entries.push({ ...titleFields(item), rating: item.rating, eventId: `${account}:rating:movie:${item.id}` });
+    } else {
+      entries.push({
+        ...titleFields(item),
+        annotationScope: "show",
+        annotation: { kind: "rating", rating: tmdbRatingToPlot(item.rating), ratedAt: null, sourceRating: item.rating },
+        eventId: `${account}:rating:tv:${item.id}`
+      });
+    }
+  }
+  for (const item of doc.ratedEpisodes) {
+    if (!item || !validId(item.show_id) || !Number.isInteger(item.season_number) || item.season_number < 0 || !Number.isInteger(item.episode_number) || item.episode_number < 1 || !validRating(item.rating) || typeof item.name !== "string") throw new Error(IMPORT_VIEW.tmdbUnsupported);
+    if (!Number.isInteger(item.rating)) rounded++;
+    entries.push({
+      title: item.name.trim() || IMPORT_VIEW.tmdbUntitled,
+      year: null,
+      hint: "tv",
+      date: null,
+      tmdbRef: { id: item.show_id, mediaType: "tv" },
+      externalIds: { tmdb: item.show_id },
+      seasonNumber: item.season_number,
+      episodeNumber: item.episode_number,
+      annotationScope: "episode",
+      annotation: { kind: "rating", rating: tmdbRatingToPlot(item.rating), ratedAt: null, sourceRating: item.rating },
+      eventId: `${account}:rating:episode:${item.show_id}:${item.season_number}:${item.episode_number}`
+    });
+  }
+  const warnings = [];
+  if (ratedMovies) warnings.push({ title: "TMDB", reason: "tmdb_rated_movies_watched", count: ratedMovies });
+  if (rounded) warnings.push({ title: "TMDB", reason: "tmdb_ratings_rounded", count: rounded });
+  const notImported = [];
+  const truncated = Array.isArray(doc.truncated) ? doc.truncated.length : 0;
+  if (truncated) notImported.push({ title: "TMDB", reason: "tmdb_truncated", count: truncated });
+  return { entries, warnings, notImported };
+}
+
 // packages/core/importDocument.js
 var IMPORT_SOURCE_NAMES = { imdb: "IMDb", letterboxd: "Letterboxd" };
 function parseImportDocument(platform, text, { fileName = "" } = {}) {
@@ -2067,6 +2171,7 @@ function parseImportDocument(platform, text, { fileName = "" } = {}) {
     return document;
   }
   if (platform === "tvtime") return parseTvTimeDocument(text, fileName);
+  if (platform === "tmdb") return omitUnavailableTmdbRecords(parseTmdbAccount(text));
   if (platform === "imdb" && isImdbListExport(text) && !getConfig().importEventsEnabled) throw new Error(IMPORT_VIEW.imdbListsUnavailable);
   const notImported = [];
   const leftOut = /* @__PURE__ */ new Map();
@@ -2123,6 +2228,21 @@ function prepareImportFiles(platform, files) {
   }
   const combined = platform === "letterboxd" ? combineLetterboxdRecords(document) : document;
   return omitUnavailableLists(platform, combined);
+}
+function omitUnavailableTmdbRecords(document) {
+  const events = getConfig().importEventsEnabled;
+  const annotations = events && getConfig().importAnnotationsEnabled;
+  const lists = events ? 0 : document.entries.filter((row) => row.destination).length;
+  const ratings = annotations ? 0 : document.entries.filter((row) => row.annotation).length;
+  if (!lists && !ratings) return document;
+  const notImported = [...document.notImported];
+  if (lists) notImported.push({ title: "TMDB", reason: "tmdb_lists_unavailable", count: lists });
+  if (ratings) notImported.push({ title: "TMDB", reason: "tmdb_show_ratings_unavailable", count: ratings });
+  return {
+    ...document,
+    entries: document.entries.filter((row) => (events || !row.destination) && (annotations || !row.annotation)),
+    notImported
+  };
 }
 function omitUnavailableLists(platform, document) {
   if (platform !== "letterboxd" || getConfig().importEventsEnabled) return document;
@@ -2441,6 +2561,8 @@ var FAILED_ACTIONS = Object.freeze({
   BLOCK: "block",
   UNBLOCK: "unblock",
   REPORT: "report",
+  // The x on a saved comparison (useSavedComparisons.js).
+  SAVED_COMPARISON_REMOVE: "saved_comparison_remove",
   // Reverting an earlier removal from the undo toast (undo.js).
   UNDO: "undo",
   // Watch together (useWatchTogether.js). Only unexpected failures: the
@@ -2461,7 +2583,10 @@ var FAILED_ACTIONS = Object.freeze({
   PASSWORD_RESET_REQUEST: "password_reset_request",
   // "resend" on the check-your-inbox screen after signup, through GoTrue or
   // signup-bypass (`source: 'signup_bypass'`).
-  CONFIRMATION_RESEND: "confirmation_resend"
+  CONFIRMATION_RESEND: "confirmation_resend",
+  // The Confirm button on /newsletter/confirm (double opt-in for the digest).
+  // Only unexpected failures: an unknown, used or expired link is a page state.
+  NEWSLETTER_CONFIRM: "newsletter_confirm"
 });
 var FAILED_LOADS = Object.freeze({
   WATCHLIST: "watchlist",
@@ -2563,7 +2688,7 @@ function externalIdResults(response) {
     ...(response?.tv_results || []).map((result) => ({ ...result, media_type: "tv" }))
   ];
 }
-async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbId, getSeason, findExternal, onProgress } = (
+async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbId, getSeason, findExternal, getTitle, onProgress } = (
   /** @type {any} */
   {}
 )) {
@@ -2573,6 +2698,19 @@ async function resolveImportEntries(entries, { search, findByImdbId, findByTvdbI
     let requested = false;
     const settled = await Promise.all(batch.map(async (entry) => {
       try {
+        const ref = entry.tmdbRef;
+        if (ref && getTitle && Number.isSafeInteger(ref.id) && ref.id > 0 && ["movie", "tv"].includes(ref.mediaType)) {
+          const titleKey2 = `tmdb:${ref.mediaType}:${ref.id}`;
+          const lookup = () => getTitle(ref.mediaType, ref.id);
+          if (!searches.has(titleKey2)) {
+            requested = true;
+            searches.set(titleKey2, lookup().catch(() => sleep(1e3).then(lookup)));
+          }
+          const item = await searches.get(titleKey2);
+          if (item?.id !== ref.id) return { ...entry, status: "unmatched", candidates: [], reason: "not_found" };
+          const candidate = { ...item, media_type: ref.mediaType };
+          return chooseImportMatch({ ...entry, candidates: [candidate], reason: "tmdb_id" }, `${ref.mediaType}:${ref.id}`);
+        }
         if (entry.externalId && findExternal && !entry.externalIds?.imdb) {
           try {
             const match2 = pickTmdbMatch(entry, externalIdResults(await findExternal(entry.externalId)));

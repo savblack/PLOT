@@ -24,7 +24,8 @@ Deno.serve(async req => {
     if (!rows.length) return json({ ok: true, checked: 0 });
     const response = await fetch('https://exp.host/--/api/v2/push/getReceipts', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ ids: rows.map(r => r.provider_ref) }),
+      // A morning summary is one ticket shared by several rows, so ask once per ticket.
+      body: JSON.stringify({ ids: [...new Set(rows.map(r => r.provider_ref))] }),
       signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok) throw new Error(`Expo returned ${response.status}`);

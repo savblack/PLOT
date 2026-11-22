@@ -6,6 +6,7 @@ import EpisodeAlertsCard from './EpisodeAlertsCard';
 import StreamingArrivalAsk from './StreamingArrivalAsk';
 import { showStreamingArrivalAsk } from '@plot/core/useStreamingAlerts.js';
 import TitleFootBar from './TitleFootBar';
+import { FOOT_BAR_REVEAL_SCROLL } from '@plot/core/useTitleFootBar.js';
 import { buildTitleShareUrl } from '@plot/core/sharing.js';
 import { SHARING } from '@plot/core/copy/sharing.js';
 import { shareLink } from '../lib/share';
@@ -167,7 +168,7 @@ function IconShare() {
 }
 function IconBookmark({ saved }: { saved: boolean }) {
   const { colors } = useTheme();
-  const ink = saved ? colors.statusWatched : colors.onAccentFill;
+  const ink = saved ? colors.statusWatched : colors.textPrimary;
   return (
     <Svg width={15} height={15} viewBox="0 0 24 24" fill={saved ? ink : 'none'} stroke={ink} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <Path d={ICON_PATHS.bookmark} />
@@ -1085,6 +1086,19 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
   // once and a re-render in the middle of a drag cannot swap them out from
   // under the finger.
   const scrollTop = useRef(0);
+  // Opens the foot bar once the panel scrolls a little, or at once when the
+  // panel is too short to scroll that far (see FOOT_BAR_REVEAL_SCROLL).
+  const [footRevealed, setFootRevealed] = useState(false);
+  const scrollBox = useRef({ view: 0, content: 0 });
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- each title starts with its bar folded
+    setFootRevealed(false);
+    const timer = setTimeout(() => {
+      const { view, content } = scrollBox.current;
+      if (view > 0 && content - view < FOOT_BAR_REVEAL_SCROLL) setFootRevealed(true);
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [itemId, itemType]);
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; });
   const drag = useMemo(() => {
@@ -1298,7 +1312,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
           showsVerticalScrollIndicator={false}
           bounces={false}
           keyboardShouldPersistTaps="handled"
-          onScroll={(event) => { scrollTop.current = event.nativeEvent.contentOffset.y; }}
+          onScroll={(event) => {
+            scrollTop.current = event.nativeEvent.contentOffset.y;
+            if (!footRevealed && scrollTop.current >= FOOT_BAR_REVEAL_SCROLL) setFootRevealed(true);
+          }}
+          onLayout={(event) => { scrollBox.current.view = event.nativeEvent.layout.height; }}
+          onContentSizeChange={(_w, h) => { scrollBox.current.content = h; }}
           scrollEventThrottle={16}
         >
           {/* Backdrop image */}
@@ -1365,7 +1384,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                             accessibilityLabel={BROWSE.genreLink(genre.name)}
                             onPress={() => browse('genre', genre.id, genre.name, { pathname: '/(app)', params: genreBrowseParams({ mediaType: isMovie ? 'movie' : 'tv', genreId: genre.id }) })}
                           >
-                            <Tag tone="sage" label={genre.name} />
+                            <Tag tone="genre" label={genre.name} />
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -1400,12 +1419,12 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
 
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
-                    style={[styles.pill, inList ? styles.pillSaved : styles.pillPrimary]}
+                    style={[styles.pill, inList && styles.pillSaved]}
                     onPress={handleSaveFromPanel}
                     accessibilityRole="button"
                   >
                     {inList ? <IconCheck color={colors.statusWatched} /> : <IconBookmark saved={false} />}
-                    <Text style={[styles.pillText, inList ? { color: colors.statusWatched } : { color: colors.onAccentFill }]} numberOfLines={1}>
+                    <Text style={[styles.pillText, inList ? { color: colors.statusWatched } : { color: colors.textPrimary }]} numberOfLines={1}>
                       {inList ? MEDIA_PANEL.inWatchlist : MEDIA_PANEL.addToWatchlist}
                     </Text>
                   </TouchableOpacity>
@@ -1419,7 +1438,7 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
                       accessibilityState={{ expanded: statusMenuOpen, disabled: !!statusPending }}
                     >
                       <Text
-                        style={[styles.pillText, isWatching && { color: colors.statusWatching }, watched && !isWatching && { color: colors.statusWatched }]}
+                        style={[styles.pillText, isWatching && { color: colors.accentText }, watched && !isWatching && { color: colors.statusWatched }]}
                         numberOfLines={1}
                       >
                         {statusLabel}
@@ -1789,6 +1808,8 @@ export default function MediaPanel({ itemId, itemType, onClose }: MediaPanelProp
             isPublicProfile={!!profile?.is_public}
             hasUser={!!userId}
             privateNotes={privateNotes}
+            revealed={footRevealed}
+            onFoldToggled={(folded) => track(EVENTS.TITLE_FOOT_BAR_FOLDED, { folded, watched: !!watched })}
             onMarkWatched={footMarkWatched}
             onStartWatching={footStartWatching}
             onUndoWatched={footUndoWatched}
@@ -1858,7 +1879,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   },
   headText: { flex: 1, minWidth: 0, paddingTop: spacing.md },
   kickerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm, marginBottom: 4 },
-  kicker: { fontFamily: fontFamily.sansBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accent },
+  // Plain meta, not a pink label (Nov 2026 critique); matches web's .panel-kicker.
+  kicker: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.textSecondary },
   title: { fontFamily: fontFamily.display, fontSize: 24, letterSpacing: -0.6, color: colors.textPrimary, lineHeight: 26, marginBottom: 4 },
   titleLogo: {
     position: 'absolute', left: 172, right: 56, bottom: 10, height: 36, zIndex: 2,
@@ -1874,7 +1896,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
   },
   scoreValue: { fontFamily: fontFamily.display, fontSize: 22, color: colors.textPrimary, lineHeight: 24 },
-  scoreLabel: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginTop: 2 },
+  scoreLabel: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   scoreRule: { width: StyleSheet.hairlineWidth, height: 30, backgroundColor: colors.border },
   awardsRow: {
     gap: 2, paddingBottom: spacing.lg, marginBottom: spacing.lg,
@@ -1897,9 +1919,8 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     minHeight: 38, paddingHorizontal: spacing.lg,
     borderRadius: radii.pill, backgroundColor: colors.surfaceSunken,
   },
-  pillPrimary: { backgroundColor: colors.accentFill },
   pillSaved: { backgroundColor: colors.statusWatchedDim },
-  pillWatching: { backgroundColor: colors.statusWatchingDim },
+  pillWatching: { backgroundColor: colors.accentDim },
   pillText: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary, maxWidth: 128 },
   iconGroup: { flexDirection: 'row', gap: spacing.sm, marginLeft: 'auto' },
   iconBtn: {
@@ -1907,7 +1928,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSunken,
   },
   iconBtnFav: { backgroundColor: colors.accentDim },
-  iconBtnOn: { backgroundColor: colors.statusWatchingDim },
+  iconBtnOn: { backgroundColor: colors.accentDim },
   statusMenu: {
     position: 'absolute', top: 44, left: 0, zIndex: 5, minWidth: 160,
     backgroundColor: colors.surface, borderRadius: radii.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
@@ -1920,14 +1941,14 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   upNextTitle: { fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary, marginBottom: spacing.md },
   upNextRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   upNextStill: { width: 96, height: 56, borderRadius: radii.md, overflow: 'hidden', backgroundColor: colors.surface },
-  upNextKicker: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted, marginBottom: 2 },
+  upNextKicker: { fontFamily: fontFamily.sansBold, fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
   upNextName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.sm, color: colors.textPrimary },
   upNextWhere: { fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted, marginTop: 2 },
   // Buttons hug the top of a row by default; this sits one on its centre line.
   btnInRow: { alignSelf: 'center' },
   upNextTrack: { height: 5, borderRadius: radii.pill, backgroundColor: colors.border, marginTop: spacing.md, overflow: 'hidden' },
   upNextLeft: { marginTop: spacing.sm, fontFamily: fontFamily.sans, fontSize: 11, color: colors.textMuted },
-  upNextFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.statusWatching },
+  upNextFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.accent },
   watchCard: { marginBottom: spacing.lg },
   watchHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
   watchTitle: { flex: 1, fontFamily: fontFamily.display, fontSize: fontSize.lg, color: colors.textPrimary },
@@ -1947,7 +1968,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   similarCard: { width: 76 },
   similarPoster: { width: 76, aspectRatio: 2 / 3, borderRadius: radii.md, backgroundColor: colors.surfaceRaised },
   similarName: { fontFamily: fontFamily.sansBold, fontSize: fontSize.xs, color: colors.textPrimary, marginTop: 6 },
-  similarMeta: { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted, marginTop: 1 },
+  similarMeta: { fontFamily: fontFamily.sans, fontSize: 12, color: colors.textSecondary, marginTop: 1 },
 
   sectionTitle: { fontFamily: fontFamily.sansBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.md },
 
@@ -1982,7 +2003,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   epSearchNote: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.sm },
   epSearchCode: { minWidth: 52 },
   epActionError: { fontFamily: fontFamily.sans, fontSize: fontSize.xs, color: colors.danger, marginBottom: spacing.sm },
-  epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.chipEpisode, letterSpacing: 0.4 },
+  epCode:        { fontFamily: fontFamily.sansBold, fontSize: 10, color: colors.textMuted, letterSpacing: 0.4 },
   epCodeCurrent: { color: colors.accent },
   epAirDate:   { fontFamily: fontFamily.sans, fontSize: 10, color: colors.textMuted },
   epTitle:     { fontFamily: fontFamily.sansMedium, fontSize: fontSize.sm, color: colors.textPrimary },

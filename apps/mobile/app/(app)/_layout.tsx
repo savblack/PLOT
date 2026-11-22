@@ -1,11 +1,12 @@
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import Svg, { Path, Rect, Line, Polyline, Circle } from 'react-native-svg';
 import { ICON_PATHS } from '@plot/core/icons.js';
 import { useTheme } from '../../contexts/ThemeContext';
-import { spacing } from '../../lib/tokens';
+import { spacing, fontFamily } from '../../lib/tokens';
+import { isMoreView } from '@plot/core/navigation.js';
 import { TAB_BAR_HEIGHT, tabBarBottom } from '../../lib/tabBar';
 import AppIconEntitlement from '../../components/AppIconEntitlement';
 import { useDrawer } from '../../contexts/DrawerContext';
@@ -88,6 +89,10 @@ function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const drawer = useDrawer();
+  // More is lit on the pages it opens (Decide, Compare, Notifications and the
+  // rest), as on web, so the bar always says where you are.
+  const pathname = usePathname();
+  const moreActive = drawer.isOpen || isMoreView(pathname.split('?')[0].replace(/^\/(\(app\)\/?)?/, ''));
 
   return (
     <>
@@ -95,9 +100,10 @@ function TabsLayout() {
       <Tabs
       screenOptions={{
         headerShown: false,
-        // Icons only, as on web's phone tab bar. Each tab keeps its title as
-        // its accessibility label, so a screen reader still names it.
-        tabBarShowLabel: false,
+        // Icon with its name under it, as on web's phone tab bar (Nov 20):
+        // icons alone left first-timers guessing.
+        tabBarShowLabel: true,
+        tabBarLabelStyle: { fontFamily: fontFamily.sansBold, fontSize: 11, marginTop: 1 },
         // Floating glass pill — detached from the edges, content scrolls
         // behind it (screens clear it via TAB_BAR_CLEARANCE).
         tabBarStyle: {
@@ -116,12 +122,14 @@ function TabsLayout() {
         },
         tabBarItemStyle: {
           height: TAB_BAR_HEIGHT,
-          // With no label under it, the navigator still seats the icon near
-          // the top of the item. This drops it to the middle of the pill.
-          paddingTop: 12,
+          // Icon and label together, centred in the pill.
+          paddingTop: 8,
+          paddingBottom: 6,
         },
         tabBarBackground: () => <TabBarBackground />,
-        tabBarActiveTintColor: colors.accent,
+        // The accent's text shade: the active tab now carries a word, and
+        // 11px type needs the darker pink to stay readable.
+        tabBarActiveTintColor: colors.accentText,
         tabBarInactiveTintColor: colors.textMuted,
       }}
     >
@@ -152,6 +160,7 @@ function TabsLayout() {
         name="menu"
         options={{
           title: APP_SHELL.more,
+          tabBarInactiveTintColor: moreActive ? colors.accentText : colors.textMuted,
           tabBarIcon: ({ color }) => <IconMenu color={color} />,
           tabBarButton: ({ children, style }) => (
             <TouchableOpacity style={style} onPress={drawer.open} accessibilityRole="button" accessibilityLabel={APP_SHELL.more} accessibilityState={{ expanded: drawer.isOpen }}>
@@ -165,6 +174,7 @@ function TabsLayout() {
       <Tabs.Screen name="new-releases" options={{ href: null }} />
       <Tabs.Screen name="u/[username]" options={{ href: null }} />
       <Tabs.Screen name="compare" options={{ href: null }} />
+      <Tabs.Screen name="insights" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="search"   options={{ href: null }} />
       <Tabs.Screen name="requests" options={{ href: null }} />

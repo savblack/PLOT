@@ -209,7 +209,6 @@ function Genres({ card }) {
           <div key={r.name} className="sc-bar">
             <span className="sc-bar-n">{r.name}</span>
             <span className="sc-bar-t"><span className={`sc-bar-f${i === 0 ? ' sc-bar-f--lead' : ''}`} style={{ width: `${Math.max(r.width, 14)}%` }}>{r.pct}%</span></span>
-            <span className="sc-bar-c">{T.genreCount(r.count)}</span>
           </div>
         ))}
       </div>

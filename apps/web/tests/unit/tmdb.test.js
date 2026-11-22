@@ -205,6 +205,53 @@ test('getOnThisDay falls back to a random archival title when no anniversary tit
   }
 });
 
+test('getOnThisDay keeps the same archive pick all day', async () => {
+  // Home used to show a different "On this day" film on every reload.
+  const originalFetch = globalThis.fetch;
+  const originalDate = globalThis.Date;
+  let day = '2026-07-21';
+
+  class FixedDate extends originalDate {
+    constructor(...args) {
+      return args.length ? new originalDate(...args) : new originalDate(`${day}T12:00:00`);
+    }
+  }
+
+  globalThis.Date = FixedDate;
+  globalThis.fetch = async (url) => {
+    const parsed = new URL(url);
+    const isArchiveQuery = parsed.searchParams.get('release_date.gte').endsWith('-01-01');
+    const results = isArchiveQuery
+      ? Array.from({ length: 20 }, (_, i) => ({ id: 100 + i, title: `Archive ${i}`, vote_count: 5000 }))
+      : [];
+    return { ok: true, status: 200, json: async () => ({ results }) };
+  };
+  configure({ tmdbProxyUrl: 'https://proxy.test', supabaseAnonKey: 'anon' });
+
+  try {
+    const picks = [];
+    for (let i = 0; i < 4; i++) {
+      _resetTmdbCache();
+      const result = await tmdb.getOnThisDay({ years: [20] });
+      picks.push(`${result.archive_year}:${result.id}`);
+    }
+    assert.equal(new Set(picks).size, 1);
+
+    // Across a week the pick moves on, so it isn't one film forever.
+    const weekPicks = new Set();
+    for (const d of ['2026-07-22', '2026-07-23', '2026-07-24', '2026-07-25', '2026-07-26', '2026-07-27']) {
+      day = d;
+      _resetTmdbCache();
+      const result = await tmdb.getOnThisDay({ years: [20] });
+      weekPicks.add(`${result.archive_year}:${result.id}`);
+    }
+    assert.ok(weekPicks.size > 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    globalThis.Date = originalDate;
+  }
+});
+
 test('the upcoming feeds never carry a watch-provider filter', async () => {
   // TMDB's provider index is present-tense: `with_watch_providers` only matches
   // titles that are streamable today, so pairing it with a future date window

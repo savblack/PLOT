@@ -12,11 +12,11 @@ import { useShare } from '../hooks/useShare.js';
 import { favoriteWords } from '../utils/spelling.js';
 import { FAVOURITES_ENABLED } from '@plot/core/features.js';
 import { EVENTS } from '../lib/analytics.js';
-import { filterByTypeAndGenre } from '@plot/core/mediaFilters.js';
+import { filterByTypeAndGenre, genresInItems, usesFilterRail } from '@plot/core/mediaFilters.js';
 import { filterByWatchStatus, LIST_STATUS_FILTER_IDS } from '@plot/core/listWatchStatus.js';
 import { customListIdFromKey, customListKey, sortListItems, titleCount, wantToWatchItems } from '@plot/core/listCollections.js';
 import { localDateStr } from '../utils/date.js';
-import LoadingSpinner from './LoadingSpinner.jsx';
+import ListsLoading from './ListsLoading.jsx';
 import { CustomListSection, FavoritesSection, WantToWatchSection } from './ListSections.jsx';
 import { SmartListSection } from './SmartListSection.jsx';
 import { IconChevronLeft } from './navIcons.jsx';
@@ -25,6 +25,9 @@ import { isSharedList } from '@plot/core/sharedLists.js';
 import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
 import SideFilters, { FilterRow } from './SideFilters.jsx';
 import MobilePageControls from './MobilePageControls.jsx';
+import GroupedFilterMenu from './GroupedFilterMenu.jsx';
+import { MOBILE_CONTROLS } from '@plot/core/copy/mobileControls.js';
+import { activeFilterGroupCount } from '../utils/mobileSheets.js';
 import { TYPE_ROWS } from './sideFilterRows.js';
 import { MEDIA } from '../copy/media.js';
 
@@ -44,12 +47,14 @@ const PlusIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 
 const SortIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3" /></svg>;
 
 
-/* A shared list (PLO-525) hands the frame four more things: `sidePanel`, the
+/* A list you can edit hands the frame `selectToggle`, the Select button at
+   the start of the toolbar; the selection bar itself is part of `children`.
+   A shared list (PLO-525) hands the frame four more things: `sidePanel`, the
    people panel above the filters; `headerActions`, Watch together and Add a
    title at the top right; `lead`, the phone and tablet people line (A8); and
    `shared`, which on a phone turns the header into a bar with a search
    button in place of the always-open field. */
-function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, view, onView, onSort, sidePanel, headerActions, lead, onAdd, shared = false, children }) {
+function ListPageFrame({ title, subtitle, count, progress, filter, toolbarFilter, headerRight, view, onView, onSort, sidePanel, headerActions, lead, onAdd, selectToggle, shared = false, children }) {
   const side = sidePanel || filter;
   return (
     <section className={`list-page list-page--${view}${shared ? ' list-page--shared' : ''}`}>
@@ -78,6 +83,10 @@ function ListPageFrame({ title, subtitle, count, progress, filter, headerRight, 
         <div className="list-page-stream">
           <div className="list-page-toolbar">
             <div className="list-page-toolbar-actions">
+              {/* A short list's filters: one button in place of the side rail. */}
+              {toolbarFilter}
+              {/* Lists you can edit: select several titles (ListSelection.jsx). */}
+              {selectToggle}
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.gridView} aria-pressed={view === 'grid'} onClick={() => onView('grid')}><GridIcon /></button>
               <button type="button" className="list-page-view" aria-label={CUSTOM_LISTS.listView} aria-pressed={view === 'rows'} onClick={() => onView('rows')}><RowsIcon /></button>
               <KebabMenu
@@ -173,14 +182,29 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
   // which here would take the header and filters with it.
   const narrowed = typeFilters.length < ALL_LIST_TYPES.length || genreFilters.length > 0 || statusFilters.length > 0;
 
-  // What the frame needs from the page. A fresh object per render is fine —
-  // it re-renders the frame, which is the point; only a changing component
-  // identity would remount it.
+  // A long list keeps the side rail. A short one (under FILTER_RAIL_MIN_TITLES)
+  // gets a Filter button in the toolbar instead, so the rail is never taller
+  // than the list, and its Genre group offers only genres the list has.
+  const pageItems = (key === 'want' ? want : key === 'favorites' ? favorites.favorites : list?.items) || [];
+  const railed = usesFilterRail(pageItems.length);
+  // A string, so the memo below only reruns when the set of genres changes.
+  const listGenreIds = railed ? '' : genresInItems(pageItems, genres).map(g => g.id).join(',');
+  const genreOptions = useMemo(() => {
+    const ids = new Set(listGenreIds.split(',').filter(Boolean).map(Number));
+    return genres.filter(g => railed || ids.has(g.id)).map(g => ({ id: g.id, label: g.name }));
+  }, [railed, genres, listGenreIds]);
+
+  const filterGroups = useMemo(() => [
+    { heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes, options: LIST_TYPE_ROWS, value: typeFilters, defaultValue: ALL_LIST_TYPES, onChange: setTypeFilters },
+    { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, columns: 2, options: genreOptions, value: genreFilters, defaultValue: [], onChange: setGenreFilters },
+    ...(showStatus ? [{ heading: MEDIA.statusHeading, allLabel: MEDIA.allStatuses, options: STATUS_OPTIONS, value: statusFilters, defaultValue: [], onChange: setStatusFilters }] : []),
+  ], [typeFilters, genreOptions, genreFilters, statusFilters, showStatus]);
+
   const framePage = useMemo(() => ({
     // The column is display:none below 1024px and the bottom bar is hidden
     // above it, so each width gets one copy. The bar portals to the body, so
     // sitting inside the hidden column does not hide it.
-    filter: showFilter ? (
+    filter: showFilter && railed ? (
       <>
         <SideFilters
           typeRows={LIST_TYPE_ROWS}
@@ -202,22 +226,28 @@ export default function ListPage({ smartList: smartSeams = null } = {}) {
           )}
         </SideFilters>
         <MobilePageControls
-          groups={[
-            { heading: MEDIA.typeHeading, allLabel: MEDIA.allTypes, options: LIST_TYPE_ROWS, value: typeFilters, defaultValue: ALL_LIST_TYPES, onChange: setTypeFilters },
-            { heading: MEDIA.genreHeading, allLabel: MEDIA.allGenres, columns: 2, options: genres.map(g => ({ id: g.id, label: g.name })), value: genreFilters, defaultValue: [], onChange: setGenreFilters },
-            ...(showStatus ? [{ heading: MEDIA.statusHeading, allLabel: MEDIA.allStatuses, options: STATUS_OPTIONS, value: statusFilters, defaultValue: [], onChange: setStatusFilters }] : []),
-          ]}
+          groups={filterGroups}
         />
       </>
+    ) : null,
+    // Above 1024px a dropdown under the button; below it the same groups in
+    // the phone's Filters sheet (mobileControls), as on a long list.
+    toolbarFilter: showFilter && !railed ? (
+      <GroupedFilterMenu
+        mobileControls
+        ariaLabel={MOBILE_CONTROLS.filters}
+        label={MOBILE_CONTROLS.filterLabel(activeFilterGroupCount(filterGroups))}
+        groups={filterGroups}
+      />
     ) : null,
     view: resolvedView,
     onView: setView,
     onSort: setSort,
-  }), [showFilter, showStatus, typeFilters, genreFilters, statusFilters, genres, resolvedView]);
+  }), [showFilter, showStatus, railed, filterGroups, typeFilters, genreFilters, statusFilters, genres, resolvedView]);
 
   if (!user) return null;
   if (topLists.loading || favorites.loading || customLists.loading || watchlist.loading || watching.loading) {
-    return <LoadingSpinner />;
+    return <ListsLoading />;
   }
 
   let body;

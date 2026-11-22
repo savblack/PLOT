@@ -19,7 +19,7 @@ const SITE_URL = 'https://theplot.tv';
 
 // ── Design tokens ──
 // Brand colors derive from @plot/core/tokens.js (the canonical source, enforced by
-// `npm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
+// `pnpm run tokens:marketing`). surfaceTint/accentSoft/border are email-only.
 //
 // The warm system (Sept 2026): cream ground, charcoal ink, the pink as a FILL
 // behind charcoal text on the button. surfaceTint,
@@ -85,7 +85,7 @@ const layout = ({ preheader, heading, intro, content, note, safety }) => `<!doct
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
-  <title>plot</title>
+  <title>Plot</title>
   <!--[if !mso]><!-->
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Gabarito:wght@700&display=swap" rel="stylesheet">
   <!--<![endif]-->
@@ -116,8 +116,8 @@ const layout = ({ preheader, heading, intro, content, note, safety }) => `<!doct
             <td align="center" style="padding: 28px 24px 0;">
               <p style="margin: 0 0 6px; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">${safety}</p>
               <p style="margin: 0; font-family: ${t.sans}; font-size: 12px; line-height: 1.6; color: ${t.textMuted};">
-                <a href="${SITE_URL}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">plot</a>
-                &middot; Your film and TV companion.
+                <a href="${SITE_URL}" target="_blank" style="color: ${t.textMuted}; text-decoration: underline;">Plot</a>
+                &middot; Your movie and TV companion.
                 <br>Savannah Black &middot; Level 1, 63-73 Ann Street, Surry Hills, NSW 2010
               </p>
             </td>
@@ -150,35 +150,35 @@ const authUrl = (type) =>
 
 const emails = {
   confirmation: {
-    subject: 'Confirm your email for plot',
+    subject: 'Confirm your email for Plot',
     file: 'confirmation.html',
     html: layout({
-      preheader: 'One click and your film & TV journal is ready.',
-      heading: 'Welcome to plot',
+      preheader: 'One click and your movie & TV companion is ready.',
+      heading: 'Welcome to Plot',
       intro: "Confirm your email to start logging, rating, and lining up what to watch next.",
       content: button(authUrl('signup'), 'Confirm email') + codeBlock('In the app? Enter this code instead:') + fallbackLink(authUrl('signup')),
-      note: 'This is the email most new plot members see first, so we kept it simple: one step in, then straight to your watch journal.',
-      safety: "Didn't sign up for plot? You can safely ignore this email.",
+      note: 'This is the email most new Plot members see first, so we kept it simple: one step in, then straight to your watch history.',
+      safety: "Didn't sign up for Plot? You can safely ignore this email.",
     }),
   },
   recovery: {
-    subject: 'Reset your plot password',
+    subject: 'Reset your Plot password',
     file: 'recovery.html',
     html: layout({
-      preheader: 'Set a new password for your plot account.',
+      preheader: 'Set a new password for your Plot account.',
       heading: 'Reset your password',
-      intro: 'We received a request to reset your plot password. If that was you, set a new one below.',
+      intro: 'We received a request to reset your Plot password. If that was you, set a new one below.',
       content: button(authUrl('recovery'), 'Set a new password') + fallbackLink(authUrl('recovery')),
       note: 'For security, only use the latest reset email you requested.',
       safety: "Didn't request this? You can safely ignore this email, your password won't change.",
     }),
   },
   magic_link: {
-    subject: 'Your plot sign-in link',
+    subject: 'Your Plot sign-in link',
     file: 'magic-link.html',
     html: layout({
-      preheader: 'Your one-time sign-in link for plot.',
-      heading: 'Sign in to plot',
+      preheader: 'Your one-time sign-in link for Plot.',
+      heading: 'Sign in to Plot',
       intro: "Here's your one-time sign-in link. It only works once and expires in an hour.",
       content: button(authUrl('magiclink'), 'Sign in') + codeBlock('In the app? Enter this code instead:') + fallbackLink(authUrl('magiclink')),
       note: 'If you requested multiple sign-in links, use the newest one.',
@@ -186,36 +186,36 @@ const emails = {
     }),
   },
   email_change: {
-    subject: 'Confirm your new plot email',
+    subject: 'Confirm your new Plot email',
     file: 'email-change.html',
     html: layout({
-      preheader: 'Confirm the new email address for your plot account.',
+      preheader: 'Confirm the new email address for your Plot account.',
       heading: 'Confirm your new email',
-      intro: 'Follow the link below to update the email on your plot account from {{ .Email }} to {{ .NewEmail }}.',
+      intro: 'Follow the link below to update the email on your Plot account from {{ .Email }} to {{ .NewEmail }}.',
       content: button(authUrl('email_change'), 'Confirm change') + fallbackLink(authUrl('email_change')),
       note: 'Nothing changes until you confirm this new address.',
       safety: "Didn't request this change? You can safely ignore this email.",
     }),
   },
   invite: {
-    subject: "You're invited to plot",
+    subject: "You're invited to Plot",
     file: 'invite.html',
     html: layout({
-      preheader: 'A journal for everything you watch.',
+      preheader: 'Your movie & TV companion.',
       heading: "You're invited",
-      intro: "You’ve been invited to join plot, where you’ll always know what to watch next.",
+      intro: "You’ve been invited to join Plot, where you’ll always know what to watch next.",
       content: button(authUrl('invite'), 'Accept invite') + fallbackLink(authUrl('invite')),
       note: 'Open the invite, set up your account, and start building your watch history.',
       safety: "Not expecting this invite? You can safely ignore this email.",
     }),
   },
   reauthentication: {
-    subject: 'Your plot confirmation code',
+    subject: 'Your Plot confirmation code',
     file: 'reauthentication.html',
     html: layout({
       preheader: 'Your one-time confirmation code.',
       heading: "Confirm it's you",
-      intro: 'Enter this code in plot to confirm your identity before finishing this action. It expires in an hour.',
+      intro: 'Enter this code in Plot to confirm your identity before finishing this action. It expires in an hour.',
       content: `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr>
@@ -224,11 +224,16 @@ const emails = {
     </td>
   </tr>
 </table>`,
-      note: 'Use this code to finish signing in or confirming your action in plot.',
+      note: 'Use this code to finish signing in or confirming your action in Plot.',
       safety: "Didn't request a code? You can safely ignore this email.",
     }),
   },
 };
+
+// The committed copies in supabase/templates/ carry a "generated" note so nobody
+// hand-edits them. The note is added after the doctype and is not pushed to Supabase.
+const GENERATED_NOTE = '<!-- GENERATED by scripts/push-auth-emails.mjs. Edit that file, then run `node scripts/push-auth-emails.mjs --render`. `pnpm run emails:check` fails CI if this copy is stale. -->\n';
+const committedCopy = (html) => html.replace(/^<!doctype html>\n/, (d) => d + GENERATED_NOTE);
 
 // ── --check: verify committed templates match this generator (CI, no network) ──
 if (process.argv.includes('--check')) {
@@ -236,7 +241,7 @@ if (process.argv.includes('--check')) {
   for (const { file, html } of Object.values(emails)) {
     let existing = null;
     try { existing = readFileSync(join(TEMPLATES_DIR, file), 'utf8'); } catch { existing = null; }
-    if (existing !== html) drift.push(file);
+    if (existing !== committedCopy(html)) drift.push(file);
   }
   if (drift.length) {
     console.error(`✗ supabase/templates out of sync with push-auth-emails.mjs: ${drift.join(', ')}`);
@@ -250,7 +255,7 @@ if (process.argv.includes('--check')) {
 // ── Render to supabase/templates/ for review ──
 mkdirSync(TEMPLATES_DIR, { recursive: true });
 for (const { file, html } of Object.values(emails)) {
-  writeFileSync(join(TEMPLATES_DIR, file), html);
+  writeFileSync(join(TEMPLATES_DIR, file), committedCopy(html));
 }
 console.log(`Rendered ${Object.keys(emails).length} templates to supabase/templates/`);
 

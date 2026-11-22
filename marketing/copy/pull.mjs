@@ -86,7 +86,7 @@ const main = async () => {
   }
   console.log(`Wrote ${manifest.length} brief(s) to marketing/copy/jobs/:`);
   for (const m of manifest) console.log(`  - ${m.post_type} → ${m.output}`);
-  console.log('\nNext: write each <post_id>.copy.json, then run `npm run mkt:copy:save`.');
+  console.log('\nNext: write each <post_id>.copy.json, then run `pnpm run mkt:copy:save`.');
 };
 
 // Only run when invoked directly (`node …/pull.mjs`) — never as a side-effect of

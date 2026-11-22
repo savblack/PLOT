@@ -98,7 +98,10 @@ export const MEDIA_PANEL = {
   awards: 'Awards',
   watching: 'Watching',
   didntFinish: "Didn't finish",
-  status: 'Status',
+  // The panel's Progress menu: Watching, Watched, Didn't finish, Clear.
+  // Watched came back on Nov 21 (it was foot-bar only from Nov 19); its label
+  // is MEDIA.watched, the shared watch-status word.
+  status: 'Progress',
   updating: 'Updating…',
   clearing: 'Clearing…',
   clearStatus: 'Clear status',
@@ -116,10 +119,13 @@ export const MEDIA_PANEL = {
   // @plot/core/useTitleFootBar.js.
   foot: {
     unwatchedHead: 'Watched it?',
-    unwatchedHint: 'Tap a star to rate it',
+    unwatchedHint: 'Pick a star to rate it',
     iveWatched: "I've watched",
     imWatching: "I'm watching",
     head: 'Thoughts?',
+    // The head line folds the bar down to itself. Screen-reader labels only.
+    showMore: 'Show rating and notes',
+    showLess: 'Hide rating and notes',
     watchedOn: (date) => `Watched on ${date}`,
     watchedJustNow: 'Watched',
     undo: 'Undo',

@@ -24,6 +24,8 @@ export const APP_SHELL = {
   // Marks a Premium nav destination for Free viewers.
   premium: 'Premium',
   viewYourProfile: 'View your profile',
+  // The sidebar's profile row opens the account menu, not the profile itself.
+  accountAndSettings: 'Account and settings',
   // Accessible name of the desktop sidebar's account menu (the profile row opens it).
   accountMenu: 'Account',
   helpBuild: 'Help build Plot',

@@ -30,6 +30,7 @@ import Toggle from '../../components/Toggle';
 import { useDialog } from '../../components/Dialog';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { signOutOfPlot } from '../../lib/signOut';
 import { tmdb, setTmdbRegion } from '../../lib/tmdb';
 import { IANA_TIMEZONES } from '@plot/core/timezones.js';
 import { REGIONS, DEFAULT_REGION, regionName } from '@plot/core/regions.js';
@@ -38,7 +39,7 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { useFollowRequests } from '../../hooks/useFollowRequests';
 import ScreenHeaderBar from '../../components/ScreenHeaderBar';
 import ConfirmPhraseModal from '../../components/ConfirmPhraseModal';
-import { track, resetAnalytics, EVENTS } from '../../lib/analytics';
+import { track, EVENTS } from '../../lib/analytics';
 import { deleteAccountAndSignOut } from '@plot/core/deleteAccount.js';
 import { clearWatchHistory, clearSavedAndWatching } from '@plot/core/userMedia.js';
 import { updateProfile } from '@plot/core/profile.js';
@@ -60,8 +61,10 @@ import { useMyAlerts } from '@plot/core/usePremiumAlerts.js';
 import { useStreamingAlertsSwitch, useMutedFilms, useStreamingEmailSwitch } from '@plot/core/useStreamingAlerts.js';
 import { usePushAlerts } from '@plot/core/usePushAlerts.js';
 import { PUSH_ALERTS } from '@plot/core/copy/pushAlerts.js';
-import { registerPushToken, unregisterPushToken } from '../../lib/pushNotifications';
+import { registerPushToken } from '../../lib/pushNotifications';
 import { STREAMING_ALERTS } from '@plot/core/copy/streamingAlerts.js';
+import { EPISODE_ALERTS } from '@plot/core/copy/episodeAlerts.js';
+import { useEpisodeAlertSettings } from '@plot/core/useEpisodeAlertSettings.js';
 import { ALERT_EMAIL } from '@plot/core/copy/alertEmail.js';
 import { ALERT_EMAIL_ENABLED, GUIDE_ENABLED } from '@plot/core/features.js';
 import { MODERATION } from '@plot/core/copy/moderation.js';
@@ -308,6 +311,39 @@ function StreamingAlertsSettings({ userId, isPremium, onCompare }: { userId: str
         </SettingsGroup>
       )}
     </>
+  );
+}
+
+// Settings > Viewing: the two Episode alerts switches for every show. Mirrors
+// apps/web/src/components/EpisodeAlertsSettings.jsx; logic and copy are shared
+// (@plot/core useEpisodeAlertSettings.js, copy/episodeAlerts.js).
+function EpisodeAlertsSettings({ userId }: { userId: string | null }) {
+  const S = EPISODE_ALERTS.settings;
+  const alerts = useEpisodeAlertSettings(userId);
+  if (!userId || alerts.loading) return null;
+  const change = async (setting: 'in_app' | 'phone', on: boolean) => {
+    const ok = await (setting === 'in_app' ? alerts.setInApp(on) : alerts.setPhone(on));
+    if (ok) track(EVENTS.EPISODE_ALERT_SETTING_CHANGED, { setting, on });
+    else track(EVENTS.ACTION_FAILED, { action: 'episode_alert_setting' });
+  };
+  // A push follows the in-app notification, so with that off there is nothing to push.
+  const phoneBlocked = !alerts.inApp;
+  return (
+    <SettingsGroup title={EPISODE_ALERTS.title}>
+      <SettingsRow
+        icon={null}
+        label={S.inAppLabel}
+        description={S.inAppHint}
+        trailing={<Toggle value={alerts.inApp} onValueChange={(next) => { void change('in_app', next); }} disabled={alerts.busy || alerts.unread} accessibilityLabel={S.inAppLabel} />}
+      />
+      <SettingsRow
+        icon={null}
+        label={S.phoneLabel}
+        description={phoneBlocked ? S.phoneNeedsInApp : S.phoneHint}
+        trailing={<Toggle value={alerts.phone && !phoneBlocked} onValueChange={(next) => { void change('phone', next); }} disabled={alerts.busy || alerts.unread || phoneBlocked} accessibilityLabel={S.phoneLabel} />}
+      />
+      {alerts.error ? <SettingsRow icon={null} label={EPISODE_ALERTS.error} /> : null}
+    </SettingsGroup>
   );
 }
 
@@ -1173,18 +1209,7 @@ export default function SettingsScreen() {
     if (!setFamily(id)) setThemeUpgrade(id);
   };
 
-  const handleSignOut = async () => {
-    if (!(await confirm({ title: SETTINGS_VIEW.page.signOutTitle, message: SETTINGS_VIEW.page.signOutMessage, confirmLabel: SETTINGS_VIEW.signOut, cancelLabel: COMMON.cancel, destructive: true }))) return;
-    if (userId) {
-      try { await unregisterPushToken(userId); }
-      catch { notify(PUSH_ALERTS.error); return; }
-    }
-    // Capture before the reset, or the event lands on the fresh anonymous
-    // profile instead of the person who actually signed out.
-    track(EVENTS.USER_SIGNED_OUT, {});
-    await supabase.auth.signOut();
-    resetAnalytics();
-  };
+  const handleSignOut = () => signOutOfPlot({ userId, confirm, notify });
 
   const handleClearHistory = async () => {
     if (!(await confirm({ title: SETTINGS_VIEW.confirm.clearWatchHistoryTitle, message: SETTINGS_VIEW.confirm.clearWatchHistoryMessage, confirmLabel: SETTINGS_VIEW.confirm.clearHistory, cancelLabel: 'Cancel', destructive: true }))) return;
@@ -1372,15 +1397,16 @@ export default function SettingsScreen() {
             icon={<Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={4}/><Path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></Svg>}
             label={A.label}
             trailing={
-              <View style={styles.themeTabs} accessibilityRole="tablist">
+              // One choice of three, so a radio group (as on web), not tabs.
+              <View style={styles.themeTabs} accessibilityRole="radiogroup">
                 {THEME_MODES.map(t => (
                   <TouchableOpacity
                     key={t}
                     style={[styles.themeTab, mode === t && styles.themeTabActive]}
                     onPress={() => setMode(t)}
                     activeOpacity={0.7}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: mode === t }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: mode === t }}
                   >
                     <Text style={[styles.themeTabText, mode === t && styles.themeTabTextActive]}>{A.modes[t]}</Text>
                   </TouchableOpacity>
@@ -1542,6 +1568,7 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
         <StreamingAlertsSettings userId={userId} isPremium={!!profile?.is_premium} onCompare={() => { setSection('billing'); setPremiumExpanded(true); }} />
+        <EpisodeAlertsSettings userId={userId} />
         <PushAlertsSettings userId={userId} />
         <PeopleFollowSettings userId={userId} isPremium={!!profile?.is_premium} />
         </>}

@@ -13,7 +13,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import { createImportReporter } from '@plot/core/importPipeline.js';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import { createImportReporter, IMPORT_FAILURE_REASONS } from '@plot/core/importPipeline.js';
+import { requestTmdbApproval, startTmdbAccountImport } from '@plot/core/tmdbAccount.js';
+import { IMPORT_VIEW } from '@plot/core/copy/importView.js';
 import { rememberLetterboxdImport, clearLetterboxdImport } from '../lib/letterboxdImportPrompt';
 import { startFileImport, startConnectionImport, useImportJobs, importJobActive, importSourceName, importPillFor, importListChoiceNeeded } from '@plot/core/importJobs.js';
 import { findImportSource } from '@plot/core/onboardingSetup.js';
@@ -22,6 +26,9 @@ import { IMPORT_JOBS } from '@plot/core/copy/importJobs.js';
 import { useTraktSync } from './useTraktSync';
 import { useMediaSync } from './useMediaSync';
 import { useSimklSync } from './useSimklSync';
+
+/** Where TMDB's approval page sends the person back to (tmdb-account allows it). */
+const TMDB_REDIRECT_URI = 'plot://auth/tmdb';
 
 export type ImportStartPhase = 'pick' | 'file' | 'uploading' | 'connect' | 'connecting' | 'ready' | 'starting' | 'queued';
 
@@ -144,7 +151,10 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     setPendingRows(null);
     setListChoiceNeeded(false);
     setListChoice(null);
-    if (src.lane === 'connect') {
+    if (id === 'tmdb') {
+      // Nothing stays connected: every TMDB import signs in again.
+      setPhase('connect');
+    } else if (src.lane === 'connect') {
       const conn = id === 'trakt' ? trakt : id === 'plex' ? plex : simkl;
       setPhase(conn.isConnected ? 'ready' : 'connect');
     } else {
@@ -226,10 +236,39 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     }
   }, [userId, source, phase, pendingFiles, pendingRows, listChoiceNeeded, listChoice, entry, reporter, jobs, onStarted]);
 
+  // TMDB: approve in an in-app browser sheet, which hands back the
+  // plot://auth/tmdb link itself, then read the account once and queue it
+  // (packages/core/tmdbAccount.js). Only the token asked for here is used.
+  const connectTmdb = useCallback(async () => {
+    const fail = (message: string) => {
+      reporter().report('failed', { source: 'tmdb', reason: IMPORT_FAILURE_REASONS.CONNECTION_FAILED });
+      setError(message);
+      setPhase('connect');
+    };
+    if (!userId) { fail(IMPORT_VIEW.tmdbUnavailable); return; }
+    let approval: { requestToken: string; approveUrl: string; binding: string };
+    try { approval = await requestTmdbApproval(TMDB_REDIRECT_URI); }
+    catch (e) { fail(e instanceof Error ? e.message : IMPORT_VIEW.tmdbUnavailable); return; }
+    const result = await WebBrowser.openAuthSessionAsync(approval.approveUrl, TMDB_REDIRECT_URI);
+    // Closed the sheet: back to the connect step, nothing to report.
+    if (result.type !== 'success') { setPhase('connect'); return; }
+    const params = Linking.parse(result.url).queryParams || {};
+    if (params.request_token !== approval.requestToken || params.denied === 'true' || params.approved !== 'true') {
+      fail(IMPORT_VIEW.tmdbNotApproved); return;
+    }
+    const { job, error: failure, count } = await startTmdbAccountImport({ userId, requestToken: approval.requestToken, binding: approval.binding, entry });
+    if (failure || !job) { fail(failure?.message ?? IMPORT_VIEW.tmdbUnavailable); return; }
+    reporter().report('started', { source: 'tmdb', count });
+    onStarted?.('tmdb', { id: job.id });
+    setPhase('queued');
+    void jobs.refresh();
+  }, [userId, entry, reporter, jobs, onStarted]);
+
   const connect = useCallback(async () => {
     if (!source) return;
     setError(null);
     setPhase('connecting');
+    if (source === 'tmdb') { await connectTmdb(); return; }
     if (source === 'plex') {
       // startPlexAuth opens the approval page and polls the row itself.
       const result = await plex.startPlexAuth();
@@ -238,7 +277,7 @@ export function useImportStart({ userId, entry, history = false, onStarted }: Ar
     }
     if (source === 'simkl') { await simkl.connect(); return; }
     await trakt.connect();
-  }, [source, plex, simkl, trakt]);
+  }, [source, plex, simkl, trakt, connectTmdb]);
 
   const startJob = useCallback(async () => {
     if (!source || phase !== 'ready') return;

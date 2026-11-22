@@ -7,6 +7,7 @@ export const loadGuideView = () => import('./components/GuideView.jsx');
 export const loadCalendarView = () => import('./components/CalendarView.jsx');
 export const loadMyListsView = () => import('./components/MyListsView.jsx');
 export const loadHistoryView = () => import('./components/HistoryView.jsx');
+export const loadInsightsView = () => import('./components/InsightsView.jsx');
 export const loadListPage = () => import('./components/ListPage.jsx');
 export const loadSearchView = () => import('./components/SearchView.jsx');
 export const loadSettingsView = () => import('./components/SettingsView.jsx');

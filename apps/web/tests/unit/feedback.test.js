@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import {
   anonymizedFeedbackReporter,
   buildFeedbackAttachmentPath,
+  FEEDBACK_ATTACHMENT_MIME_TYPES,
   FEEDBACK_ATTACHMENT_URL_TTL_SECONDS,
   feedbackAttachmentSignedUrl,
   feedbackTypeLabel,
+  isAllowedFeedbackAttachment,
 } from '../../src/utils/feedback.js';
 
 test('feedbackTypeLabel falls back to general feedback', () => {
@@ -49,4 +52,18 @@ test('buildFeedbackAttachmentPath removes user-derived names from storage paths'
     buildFeedbackAttachmentPath('no-extension', 'fixed-id'),
     'feedback/fixed-id'
   );
+});
+
+test('feedback screenshots are raster only, matching the bucket', () => {
+  assert.equal(isAllowedFeedbackAttachment({ type: 'image/png' }), true);
+  assert.equal(isAllowedFeedbackAttachment({ type: 'image/jpeg' }), true);
+  assert.equal(isAllowedFeedbackAttachment({ type: 'image/svg+xml' }), false);
+  assert.equal(isAllowedFeedbackAttachment({ type: 'text/html' }), false);
+  assert.equal(isAllowedFeedbackAttachment({ type: '' }), false);
+  assert.equal(isAllowedFeedbackAttachment(null), false);
+
+  const migration = readFileSync(new URL('../../../../supabase/migrations/20261118100000_storage_bucket_hardening.sql', import.meta.url), 'utf8');
+  const bucketTypes = migration.match(/allowed_mime_types = array\[([^\]]+)\]/)[1]
+    .split(',').map((t) => t.trim().replace(/'/g, ''));
+  assert.deepEqual(bucketTypes, [...FEEDBACK_ATTACHMENT_MIME_TYPES]);
 });

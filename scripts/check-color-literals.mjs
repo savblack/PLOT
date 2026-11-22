@@ -83,7 +83,7 @@ if (grown.length) {
   console.error('✗ new raw colour literals in app code:');
   for (const line of grown) console.error(`    ${line}`);
   console.error('\n  Use a token from @plot/core/tokens.js instead. If the value genuinely');
-  console.error('  belongs to no token, add one there and run `npm run tokens:build`.');
+  console.error('  belongs to no token, add one there and run `pnpm run tokens:build`.');
   console.error('  Deliberate exception? Re-record with `node scripts/check-color-literals.mjs --write`');
   console.error('  and say why in the commit message.');
   process.exit(1);

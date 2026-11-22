@@ -2,7 +2,7 @@
 
 One checkout, shared by every coding agent on this Mac. A second agent continues a task by reading the branch, not the chat.
 
-Savannah's main interface is her Grok bots. Who does what is in `AGENTS.md` under "Who Savannah talks to". Chris owns the morning plan. Cursor does not write a second one.
+Savannah's main interface is her Grok bots. Who does what is in `docs/agents/bots-and-handoffs.md`. Chris owns the morning plan. Cursor does not write a second one.
 
 The main checkout is `~/Developer/PLOT`. Each task is a folder under `~/Developer/PLOT-worktrees/`, next to it, never inside it. `~/Developer` is the home folder you already created. It is not `~/Library/Developer`, which is Xcode's cache.
 
@@ -60,7 +60,7 @@ Before merge, `pnpm run worktrees -- done` deletes `AGENT_HANDOFF.md`. Commit th
 
 ## When the chat runs out of tokens
 
-Follow `AGENTS.md` under "Keep work resumable" and "Recover when a bot has already stopped". Save progress after each meaningful result, not only when a chat is almost full. Grok's usage allowance may stop all its bots at once, so recovery must work without asking any of them for a final message.
+Follow "Keep work resumable" in `AGENTS.md` and "Recover when a bot has already stopped" in `docs/agents/bots-and-handoffs.md`. Save progress after each meaningful result, not only when a chat is almost full. Grok's usage allowance may stop all its bots at once, so recovery must work without asking any of them for a final message.
 
 For coding, update `AGENT_HANDOFF.md`, inspect the diff for unrelated work and secrets, then commit and push the task's files. Use `[skip ci]` for unfinished checkpoints. Do not open a pull request solely for a checkpoint; the finished pull request needs the required checks without that marker.
 
@@ -84,6 +84,8 @@ Merging `main`, production database writes, deploys, and public posts still wait
 
 Pass `--apply` to delete Claude and Codex chat files older than 14 days. Cursor's chat storage is listed and not deleted. Quit Cursor before removing that folder by hand. Pass `--apply --xcode` to delete DerivedData, simulators, and iOS device support. Those take a long time to rebuild.
 
+`pnpm run worktrees -- finished` lists every worktree as `finished` or `keep`, with the reason. A worktree is finished only when GitHub says its pull request merged, its newest commit is the one that merged, and it has no edits besides a leftover `AGENT_HANDOFF.md`. A worktree with no branch counts as finished when its commit is already on `main`. Anything it cannot check (no pull request, `gh` signed out) is kept. Pass `--remove` to delete the finished folders. Branches and pull requests on GitHub are not touched. Follow it with `pnpm store prune`: on 2026-11-17 removing six worktrees freed 0.6GB and the prune after it freed 6GB, because worktree packages are mostly APFS clones of the store.
+
 Cloud chats (Cursor cloud, Manus, grok.com) are not on this Mac. Archive those in the product.
 
 A local model is the wrong tool for this cleanup. The script already knows the rules.
@@ -105,6 +107,19 @@ Bugbot and the security reviewer on the Automations page are billed as cloud-age
 The worktree list already includes remote branches named `agent/` and `cursor/`. An automation that uses another prefix will not show up until the list is widened.
 
 For a permission change, a billing change, or a migration, the agent who wrote it asks a different agent you already use to read the diff before the pull request opens. Ordinary docs skip that.
+
+## Why sibling, never nested
+
+**Why `core:check` exists when `tsc` already does this:** `tsc` is only reliable
+from the repo root of the tree you are editing. Worktrees nested *inside* the
+main checkout (e.g. `<repo>/.claude/worktrees/<name>`) are unsafe: a failed
+module lookup walks up the ancestor `node_modules` chain and lands on the
+**parent** checkout's `@plot/core`. You then typecheck against a tree you are
+not editing: a core module you deleted still resolves, and a core export you
+just added does not — both pass silently. A `tsconfig` `paths` mapping does
+**not** fix it (a mapping is a first attempt; when it misses, resolution falls
+back to the same walk). This blind spot is how #446 deleted `core/onboarding.js`
+with a live importer still on `main`.
 
 ## Not in this change
 

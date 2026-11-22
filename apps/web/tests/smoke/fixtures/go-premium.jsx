@@ -32,6 +32,12 @@ const titleCount = params.get('value') === 'low' ? 4 : 5;
 const sessionCount = 1;
 const app = {
   uiPrefs: { prefs: {} },
+  // Enough of useTheme for the account menu's theme section: Default applies,
+  // a Premium family is refused, as it is for a Free viewer.
+  themeMode: 'light',
+  themeFamily: 'default',
+  setThemeMode: () => true,
+  setThemeFamily: (family) => family === 'default',
   accountValue: { titleCount, sessionCount, feltValue: hasFeltValue({ titleCount, sessionCount }) },
 };
 

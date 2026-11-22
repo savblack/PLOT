@@ -18,6 +18,8 @@
 .pick-chip:disabled { opacity: 0.45; cursor: default; }
 .pick-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pick-chip svg { width: 14px; height: 14px; flex-shrink: 0; }
+/* A result count after the label (Watch together's mood step). */
+.pick-chip-count { font-variant-numeric: tabular-nums; opacity: 0.72; }
 
 .tag {
   display: inline-flex; align-items: center; align-self: flex-start; gap: 4px;
@@ -28,6 +30,9 @@
 .tag--neutral { background: var(--surface-sunken); color: var(--text-secondary); }
 .tag--sage { background: var(--accent-secondary-fill); color: var(--on-accent-secondary-fill); }
 .tag--accent { background: var(--accent-dim); color: var(--accent-text); }
+/* A title's genres (Nov 20): the accent's pale tint with charcoal text, set
+   apart from sage, which marks a state. */
+.tag--genre { background: var(--accent-dim); color: var(--text-primary); }
 /* Release countdowns: out today, and within the week. Status tokens, not raw colors. */
 .tag--artwork { background: var(--artwork-fill); color: var(--on-artwork-fill); } /* over a poster or backdrop */
 .tag--success { background: var(--success-dim); color: var(--success); }

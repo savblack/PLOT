@@ -10,6 +10,8 @@
 // where Apple allows a link out (purchaseLinkOut.js).
 // The 7-day trial is requested by the stripe-billing checkout, not set on the Stripe Price. It is for
 // new subscribers only. Do not put Stripe price IDs in this file.
+
+import { WATCH_TOGETHER } from './watchTogether.js';
 export const PLANS_PAGE = {
   back: 'Back',
   backToApp: 'Back to Plot',
@@ -87,8 +89,9 @@ export const PLANS_PAGE = {
   ],
   premiumIntro: 'Everything in Free, plus:',
   premiumCard: [
-    { icon: 'pick', label: 'Just Decide', note: 'A shortlist for tonight, sized to your time and services' },
-    { icon: 'together', label: 'Find something you both want', note: 'The overlap in your watchlists' },
+    { icon: 'pick', label: 'Decide', note: 'A shortlist for tonight, sized to your time and services' },
+    // The feature's own name, so the label fits on one line and matches the nav (Nov 21).
+    { icon: 'together', label: WATCH_TOGETHER.hub.title, note: 'The overlap in your watchlists' },
     { icon: 'lists', label: 'Unlimited and smart lists', note: 'Rules that keep finding matches' },
     { icon: 'stats', label: 'Deeper viewing stats', note: 'Beyond the Free overview' },
     { icon: 'customise', label: 'Customize your Plot', note: 'Every theme, in light and dark' },
@@ -210,7 +213,7 @@ export const PLANS_PAGE = {
       tasteOverlap: {
         context: () => 'Taste overlap is part of Premium',
         title: 'Compare your taste with someone you follow.',
-        body: 'See your match, the genres you share and where you disagree.',
+        body: 'See your match, the genres you share and where you disagree. Only one of you needs Premium.',
         also: ['pick', 'together'],
       },
       // Subscribe to calendar, from a title's Add to calendar menu or Settings.
@@ -271,7 +274,7 @@ export const PLANS_PAGE = {
       { title: 'Choosing what to watch', rows: [
         { label: 'Discovery, search and where to watch', free: true, premium: true },
         { label: 'More like this', free: true, premium: true },
-        { label: 'Just Decide', free: false, premium: true },
+        { label: 'Decide', free: false, premium: true },
         { label: 'Find something you both want to watch', free: true, premium: true, tag: 'Free if one of you has Premium' },
       ] },
       { title: 'Watching with others', rows: [
@@ -329,10 +332,10 @@ export const PLANS_PAGE = {
   premiumFeatures: [
     { id: 'watchTogether', label: 'Find something you both want to watch', highlight: true,
       description: 'Find the overlap in your watchlists, then swipe through it together until you both say yes. Only one of you needs Premium, so the other person joins for free. Invite anyone with a link.' },
-    { id: 'filmPicker', label: 'Just Decide', highlight: true,
+    { id: 'filmPicker', label: 'Decide', highlight: true,
       description: 'Choose a movie or a show, how much time you have and the services you use. Get five options for tonight, or let a random pick make the decision.' },
     { id: 'fullStats', label: 'Deeper viewing stats', highlight: true,
-      description: 'Additional stats beyond the Free overview you already have, starting with taste overlap: see how your ratings line up with anyone you follow.' },
+      description: 'Additional stats beyond the Free overview you already have, starting with taste overlap: see how your ratings line up with anyone you follow, even when they use Free.' },
     { id: 'collaborativeLists', label: 'Create collaborative lists', highlight: true, live: true,
       description: 'Build your next movie night together. Invite friends to add titles, even when they use Free.' },
     { id: 'unlimitedLists', label: 'Unlimited custom lists', highlight: true,
@@ -367,7 +370,7 @@ export const PLANS_PAGE = {
     // `closed` swaps the answer for checkoutClosedAnswer while checkout is shut.
     { q: 'Can I upgrade now?', closed: true, a: 'Yes. Choose Monthly or Annual, then Start free trial, or Upgrade to Premium if you have subscribed before. Premium is US$3/month or US$24/year, taxes included, with a 7-day free trial for new subscribers. You won’t be charged until 7 days after you start. Cancel during the trial and you pay $0.' },
     { q: 'What happens to Free?', a: 'Your current free features stay available, including private watchlist notes, five custom lists, today’s limited viewing stats, and More like this on a title. Free does not include personally tailored recommendations.' },
-    { q: 'What does Just Decide actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
+    { q: 'What does Decide actually do?', a: 'It asks four quick questions: movie or show, how long you’ve got, what kind of story, and how new or how good. You get a shortlist of up to five, and you can limit it to your streaming services or your watchlist. Can’t decide? Surprise me gives you one pick.' },
     { q: 'Can my friends join without Premium?', a: 'Yes. To find something you both want to watch, only one of you needs Premium, so the other person joins for free. Anyone can send an invite. Collaborative lists work the same way: only the person who makes the list needs Premium.' },
     { q: 'How many lists are included in Free?', a: 'Free includes up to five custom lists.' },
     { q: 'Can I get a refund?', a: 'The 7-day free trial is there so you can try Premium before you pay, so charges after the trial aren’t refundable and we don’t refund partial months or years. Cancel anytime and keep Premium until the end of the period you’ve paid for. If you think you were charged by mistake, email support@theplot.tv within 14 days and we’ll look into it. Your consumer-law rights still apply.' },

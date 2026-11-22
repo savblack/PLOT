@@ -2,6 +2,7 @@ import { useState } from 'react';
 import CalendarSidePanel from '../components/CalendarSidePanel.jsx';
 import CalendarStream from '../components/CalendarStream.jsx';
 import CalendarEventRows from '../components/CalendarEventRows.jsx';
+import CalendarSuggestCard from '../components/CalendarSuggestCard.jsx';
 import { filterCalendarEvents } from '../utils/calendar.js';
 
 /* Keep the calendar on a fixed day so Chromatic compares the same month and
@@ -27,7 +28,7 @@ const ep = (date, title, poster, season, number, name, { item: extraItem = {}, .
 const SAMPLE_EVENTS = [
   ep(plusDays(0), 'Slow Horses', '/1ubkmdLnuFAqMVzOdHIsLGDNr4b.jpg', 5, 3, 'Blindsided', { item: { network_name: 'Apple TV+', genre_ids: [18, 80] } }),
   ep(plusDays(0), 'The Bear', '/sHFlbKS3WLqMnp9t2ghADIJFnuQ.jpg', 5, 1, 'Family Meal', { behind: 1, item: { network_name: 'Disney+', genre_ids: [18, 35] } }),
-  { date: plusDays(2), type: 'cinema', label: 'Cinema', item: { title: 'Dune: Part Three', poster_path: null, tmdb_id: 42, media_type: 'movie', genre_ids: [878] } },
+  { date: plusDays(2), type: 'cinema', label: 'Theaters', item: { title: 'Dune: Part Three', poster_path: null, tmdb_id: 42, media_type: 'movie', genre_ids: [878] } },
   ep(plusDays(5), 'Lanterns', null, 1, 6, 'Bad Optics', { behind: 2, item: { network_name: 'HBO Max', genre_ids: [10759, 9648] } }),
   ep(plusDays(9), 'Alien: Earth', '/8IbwxRFMFBEP9yqq7mOZV5qVXxG.jpg', 2, 1, null, { item: { network_name: 'Disney+', genre_ids: [878] } }),
   ep(plusDays(12), 'Lanterns', null, 1, 7, null, { behind: 2, item: { network_name: 'HBO Max', genre_ids: [10759, 9648] } }),
@@ -50,7 +51,7 @@ function groupEventsByDay(events) {
 
 /* The page body as CalendarView composes it, with the app's data layer
    replaced by fixtures. Filters are live so the Show/Genre rows can be tried. */
-function Harness({ events, loading = false }) {
+function Harness({ events, loading = false, suggest = 'more' }) {
   const [panelStart, setPanelStart] = useState({ year: TODAY.getFullYear(), month: TODAY.getMonth() });
   const [typeFilters, setTypeFilters] = useState(['tv', 'cinema', 'movie']);
   const [genreFilters, setGenreFilters] = useState([]);
@@ -63,8 +64,10 @@ function Harness({ events, loading = false }) {
     const day = days.find(d => d.ds >= ds);
     if (day) document.querySelector(`[data-day="${day.ds}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+  const card = loading ? null : <CalendarSuggestCard state={suggest} onOpen={() => console.log('open suggestions')} />;
   return (
     <div className="cal-page">
+      {card && <div className="cal-suggest-inline">{card}</div>}
       <div className="cal-body">
         <CalendarSidePanel
           panelStart={panelStart}
@@ -77,6 +80,7 @@ function Harness({ events, loading = false }) {
           genreFilters={genreFilters}
           setGenreFilters={setGenreFilters}
           genres={GENRES}
+          suggest={card}
         />
         <CalendarStream
           variant="rows"
@@ -85,7 +89,7 @@ function Harness({ events, loading = false }) {
           todayYear={TODAY.getFullYear()}
           countLabel={(n) => `${n} ${n === 1 ? 'date' : 'dates'}`}
           loading={loading}
-          empty={<div className="empty-state"><div className="empty-title">Nothing coming up</div></div>}
+          empty={<div className="empty-state"><div className="empty-title">Nothing coming up.</div></div>}
           renderDay={(day) => <CalendarEventRows day={day} openPanel={(id, type) => console.log('openPanel', id, type)} />}
         />
       </div>
@@ -104,6 +108,10 @@ export default {
    the mini-month arrows. */
 export const Stream = { render: () => <Harness events={SAMPLE_EVENTS} /> };
 
-export const Empty = { render: () => <Harness events={[]} /> };
+/* Nothing saved yet: the side card asks them to start. */
+export const Empty = { render: () => <Harness events={[]} suggest="start" /> };
+
+/* Titles saved, but every one is between seasons. */
+export const NothingAhead = { render: () => <Harness events={[]} suggest="quiet" /> };
 
 export const Loading = { render: () => <Harness events={[]} loading /> };

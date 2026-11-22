@@ -70,13 +70,11 @@ const shadowRules = [
 const motionRules = [
   ['Keep motion structural', 'Transitions should explain state changes, not decorate them.'],
   ['Use fast feedback first', 'Buttons, chips, and tabs should resolve within the fast transition token.'],
-  ['Reserve bounce for delight', '--ease-bounce (cubic-bezier 0.34, 1.56, 0.64, 1) is for special arrivals like sheets and modals — never routine navigation.'],
   ['Fill the loader', 'The plot loader should stay centered and fill left to right, each pass in the next color: charcoal, grey, pink, grey.'],
 ];
 
 const motionTokens = [
   ['--ease', 'cubic-bezier(0.23, 1, 0.32, 1)', 'Standard ease-out for structural transitions.'],
-  ['--ease-bounce', 'cubic-bezier(0.34, 1.56, 0.64, 1)', 'Overshoot curve reserved for sheet and modal arrivals.'],
   ['--transition', 'all 0.3s var(--ease)', 'Default transition for panels and surfaces.'],
   ['--transition-fast', 'all 0.15s ease', 'Quick feedback for buttons, chips, and tabs.'],
 ];
@@ -357,14 +355,6 @@ export default function DesignSystemPage() {
             <div className="rail-header ds-fake-rail-header">
               <span className="rail-title">Hot right now</span>
             </div>
-          </div>
-
-          <div className="ds-bar-item">
-            <div className="ds-bar-copy"><strong>Date group header</strong><p>Collapsible strip for saved, watching, today, and release groups.</p></div>
-            <button className="date-group-header date-group-collapsible ds-fake-date-group">
-              <span className="date-group-label">Today</span>
-              <Tag tone="neutral" label="Movie" />
-            </button>
           </div>
 
           <div className="ds-bar-item">
@@ -1492,7 +1482,7 @@ export default function DesignSystemPage() {
 
         <div className="ds-utility-grid">
           <RuleCard label="Who is speaking">
-            <p>The friend whose recommendations you actually trust, keeping a beautiful journal — not a brand running a content calendar. Warm, literate, specific. It's fine to have taste: gentle enthusiasm and a point of view beat neutrality.</p>
+            <p>The friend whose recommendations you actually trust, who always knows what's worth watching next — not a brand running a content calendar. Warm, literate, specific. It's fine to have taste: gentle enthusiasm and a point of view beat neutrality.</p>
           </RuleCard>
           <RuleCard label="Tone rules">
             <div className="ds-note-list">

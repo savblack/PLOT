@@ -21,7 +21,10 @@ configure({
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
   tmdbProxyUrl: import.meta.env.VITE_TMDB_PROXY_URL,
-  watchAvailabilityUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/watch-availability`,
+  // No watchAvailabilityUrl: the JustWatch partner API it would reach is paid
+  // and not in use, so the watch-availability function only ever answered
+  // 503. Left unset, fetchVerifiedAvailability skips the request and Where to
+  // Watch comes from TMDB alone, as on iPhone (Nov 2026).
   criticScoreUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/critic-score`,
   traktClientId: import.meta.env.VITE_TRAKT_CLIENT_ID,
   simklClientId: import.meta.env.VITE_SIMKL_CLIENT_ID,

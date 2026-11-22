@@ -1,6 +1,38 @@
 /* Taste overlap (Premium "Deeper viewing stats"). "You" is the brand accent,
    the other person the secondary green, matching the design canvas. */
 
+/* Two columns: the people panel, then the comparison (or its sample). The
+   panel is the same .hist-card at the same width and gap as every other side
+   column (.cal-side inside .cal-body: 264px, 72px). */
+.to-layout {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 72px;
+  padding: 0 var(--gut, 16px) 3rem;
+}
+.to-side { width: 264px; flex-shrink: 0; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 24px; font-family: var(--font-sans); color: var(--text-primary); }
+.to-side .search-field { width: 100%; box-sizing: border-box; }
+/* The page-sized empty state would dwarf the card. */
+.to-side .empty-state { padding: 1.25rem 0.5rem; gap: 0.5rem; }
+.to-side .empty-icon { display: flex; font-size: 1rem; color: var(--text-muted); opacity: 1; }
+.to-side .empty-title { font-size: 1.05rem; }
+.to-side .btn { box-sizing: border-box; min-height: 36px; margin-top: 0.35rem; white-space: nowrap; }
+.to-loading { display: flex; justify-content: center; padding: 1.5rem 0; }
+.to-layout .to-view { flex: 1; min-width: 0; max-width: 760px; margin: 0; padding: 0; }
+.to-narrow-only { align-self: flex-start; }
+@media (min-width: 1024px) {
+  /* Two classes, so it outranks .back-link's own display whichever sheet loads last. */
+  .to-view .to-narrow-only { display: none; }
+}
+@media (max-width: 1023px) {
+  .to-layout { flex-direction: column; align-items: stretch; gap: 1.5rem; padding-top: 1rem; }
+  .to-side { position: static; width: 100%; max-width: 640px; margin: 0 auto; }
+  /* One column: the comparison has the page to itself, and Back leads to the people. */
+  .to-side.to-side--wide-only { display: none; }
+  .to-layout .to-view { width: 100%; max-width: 640px; margin: 0 auto; }
+}
+
 .to-view {
   box-sizing: border-box;
   font-family: var(--font-sans);
@@ -13,8 +45,7 @@
   color: var(--text-primary);
 }
 
-.to-top { display: flex; align-items: center; justify-content: space-between; }
-.to-top-spacer { width: 44px; }
+/* The share menu's trigger (TasteShareMenu). */
 .to-icon-btn {
   width: 44px; height: 44px; padding: 0;
   display: inline-flex; align-items: center; justify-content: center;
@@ -25,8 +56,8 @@
   cursor: pointer;
 }
 .to-icon-btn:hover { background: var(--surface-raised); }
-.to-icon-btn:focus-visible, .to-person:focus-visible, .to-loved-btn:focus-visible,
-.to-disagree-row:focus-visible, .to-watchlist:focus-visible, .to-pick-row a:focus-visible {
+.to-icon-btn:focus-visible, .to-loved-btn:focus-visible, .to-disagree-row:focus-visible, .to-watchlist .btn:focus-visible,
+.to-pick-row:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -38,25 +69,14 @@
   border-radius: var(--radius-badge, 10px);
 }
 
-.to-header { display: flex; flex-direction: column; gap: 0.6rem; }
+.to-header { display: flex; flex-direction: column; gap: 0.5rem; }
+.to-header-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
 .to-h1 {
   margin: 0;
   font-family: var(--font-display);
   letter-spacing: var(--font-display-tracking);
   font-weight: 700; font-size: 2rem; line-height: 1.05;
 }
-.to-person {
-  align-self: flex-start;
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  height: 40px; padding: 0 0.75rem 0 0.25rem;
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  color: var(--text-primary);
-  text-decoration: none;
-  font-size: 0.875rem; font-weight: 600;
-}
-
 .to-card {
   padding: 1.1rem;
   border-radius: var(--radius-lg);
@@ -99,10 +119,21 @@
 /* Compact buttons on this page, whatever touch-target minimums apply globally. */
 .to-view .btn { box-sizing: border-box; min-height: 36px; text-decoration: none; }
 .to-state-title { margin: 0; font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; }
+.to-state-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .to-state-body { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); }
 
 /* Match */
 .to-match { align-items: center; text-align: center; gap: 0.4rem; }
+.to-match-text, .to-match-venn { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.to-match-venn { width: 100%; max-width: 300px; }
+/* Wide enough for both halves: the number sits left, the circles right, so
+   the card does not leave a blank band either side of a centred stack. */
+@media (min-width: 640px) {
+  .to-match { flex-direction: row; justify-content: space-between; gap: 2rem; padding: 1.5rem 1.75rem; text-align: left; }
+  .to-match-text { align-items: flex-start; flex: 1; min-width: 0; }
+  .to-match-venn { flex: 0 1 300px; }
+  .to-match .to-venn { margin-top: 0; }
+}
 .to-match-num {
   font-family: var(--font-display);
   font-weight: 800; font-size: 4.5rem; line-height: 1;
@@ -110,6 +141,10 @@
 .to-match-note { font-size: 0.875rem; color: var(--text-secondary); max-width: 32ch; }
 .to-venn { width: 100%; max-width: 300px; margin-top: 0.5rem; }
 .to-venn-theirs { fill: var(--accent-secondary-fill); stroke: var(--accent-secondary); stroke-width: 1.5; }
+/* The sage fill is a light tint in every theme, so on a dark ground the light
+   numbers on it vanished (about 1.2:1). In dark, mirror the pink circle: a
+   translucent wash of the secondary over the ground. */
+[data-theme="dark"] .to-venn-theirs { fill: var(--accent-secondary); fill-opacity: 0.15; }
 /* Translucent, drawn over the green so the overlap shows both colours. */
 .to-venn-mine { fill: var(--accent); fill-opacity: 0.14; stroke: var(--accent); stroke-width: 1.5; }
 .to-venn-num { font-family: var(--font-display); font-weight: 700; font-size: 22px; fill: var(--text-primary); }
@@ -142,7 +177,9 @@
 .to-tile-note { font-size: 0.75rem; color: var(--text-muted); }
 
 /* Loved */
-.to-loved { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+/* As many as fit: the column is wider beside the people panel than it was alone. */
+.to-loved { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.6rem; }
+@media (max-width: 520px) { .to-loved { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .to-loved-btn {
   width: 100%; padding: 0; border: 0; background: none; color: inherit; cursor: pointer;
   display: flex; flex-direction: column; gap: 0.35rem; text-align: left; font: inherit;
@@ -176,31 +213,51 @@
   padding: 0.9rem 1rem; border-radius: var(--radius-lg);
   background: var(--accent-secondary-fill); color: var(--on-accent-secondary-fill); text-decoration: none;
 }
-.to-watchlist:hover { filter: brightness(0.97); }
 .to-watchlist-icon {
   width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--surface); color: var(--accent-secondary);
 }
-.to-watchlist-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.8rem; }
+/* The count, then the Watch Together button on the same line at the right edge.
+   The button never wraps its label; on a very narrow row it drops below the count. */
+.to-watchlist-text { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; font-size: 0.8rem; }
+.to-watchlist-text .btn { flex-shrink: 0; white-space: nowrap; }
 .to-watchlist-text strong { font-size: 0.95rem; }
-.to-watchlist-chevron { flex-shrink: 0; }
 
 .to-share-row { display: flex; justify-content: center; padding-top: 0.25rem; }
 
 /* Picker */
 .to-intro { margin: 0; font-size: 0.875rem; line-height: 1.45; color: var(--text-secondary); }
-.to-group-label { margin: 0.5rem 0 0; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+.to-group-label { margin: 0.25rem 0 0; padding: 0 4px; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
 .to-picks { list-style: none; margin: 0; padding: 0; }
-.to-pick-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-top: 1px solid var(--border); }
+.to-picks li + li { border-top: 1px solid var(--border); }
+.to-pick-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  min-height: 56px; padding: 0.4rem 0.5rem; box-sizing: border-box;
+  border-radius: var(--radius-md); color: inherit; text-decoration: none;
+}
+a.to-pick-row:hover { background: var(--surface-sunken); }
+/* The person on screen. The dot is the accent's "selected" cue. */
+.to-pick-row.is-selected { background: var(--surface-sunken); }
+.to-pick-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--accent); }
+/* A saved comparison: the row opens it, then refresh and remove. */
+.to-saved-row { display: flex; align-items: center; gap: 2px; border-radius: var(--radius-md); }
+.to-saved-row.is-selected { background: var(--surface-sunken); }
+.to-saved-row .to-pick-row { flex: 1; min-width: 0; }
+.to-saved-btn {
+  width: 28px; height: 28px; padding: 0; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%; background: transparent; color: var(--text-muted); cursor: pointer;
+}
+.to-saved-btn:hover { background: var(--surface-sunken); color: var(--text-primary); }
+.to-saved-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .to-pick-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
 .to-pick-name { font-weight: 600; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.to-pick-detail { font-size: 0.75rem; color: var(--text-muted); }
+.to-pick-detail { font-size: 0.8rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .to-pill {
   font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);
   background: var(--surface-sunken); padding: 0.35rem 0.65rem; border-radius: var(--radius-pill);
   white-space: nowrap;
 }
-.to-privacy { margin: 1rem 0 0; font-size: 0.75rem; line-height: 1.5; color: var(--text-muted); }
 
 .to-chip .premium-mark { margin-left: 5px; }

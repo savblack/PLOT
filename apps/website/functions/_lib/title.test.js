@@ -34,7 +34,7 @@ test('an official YouTube trailer renders a lite player and VideoObject', async 
   assert.match(html, /data-cta="title_save_sticky"/);
   assert.match(html, /data-cta="title_save_lead"/);
   assert.match(html, /data-cta="title_save"/);
-  assert.match(html, /Save to your plot/);
+  assert.match(html, /Save to your Plot/);
   assert.match(html, /Save to your watchlist\./);
 });
 
@@ -407,4 +407,29 @@ test('a 404 is not retried', async () => {
   const { res, calls } = await withUpstream([page(404), page(200)], load);
   assert.equal(res.status, 404);
   assert.equal(calls(), 1);
+});
+
+test('a title page older than a day is served at once and refreshed behind it', async () => {
+  let version = 0;
+  const realNow = Date.now;
+  await withCache(async ({ get, calls, settle }) => {
+    const start = 1_800_000_000_000;
+    try {
+      Date.now = () => start;
+      await get('https://theplot.tv/movie/cacheable-title');
+      await settle();
+      Date.now = () => start + 2 * 86400 * 1000;
+      const old = await get('https://theplot.tv/movie/cacheable-title');
+      assert.equal(old.headers.get('x-plot-cache'), 'stale');
+      assert.equal(old.headers.get('cache-control'), SHAREABLE);
+      assert.equal(await old.text(), 'v1');
+      await settle();
+      assert.equal(calls.length, 2);
+      const next = await get('https://theplot.tv/movie/cacheable-title');
+      assert.equal(next.headers.get('x-plot-cache'), 'hit');
+      assert.equal(await next.text(), 'v2');
+    } finally {
+      Date.now = realNow;
+    }
+  }, () => new Response(`v${++version}`, { status: 200, headers: { 'cache-control': SHAREABLE } }));
 });

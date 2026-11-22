@@ -6,14 +6,14 @@
 // is long and sections don't share much vocabulary.
 
 export const META = {
-  title: 'plot | Movie & TV Tracker',
-  description: "plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
-  ogImageAlt: 'plot — your movie & TV companion',
+  title: 'Plot · Movie & TV Tracker',
+  description: "Plot is your personal movie and TV companion: for everything you've watched and everything you want to watch, all in one beautiful home.",
+  ogImageAlt: 'Plot: your movie & TV companion',
 };
 
 export const HERO = {
   headline: 'Always know what to watch.',
-  sub: 'All the movies and shows you’ve seen, saved and are counting down to. Finally in one place. That’s Plot.',
+  sub: 'Every movie and show you’ve seen, saved, or can’t wait for. Finally in one place.',
   cta: 'Start tracking',
   note: 'Free to start. Your watchlist starts here.',
   // "Up next": a fan of three posters with a notification over them. Titles
@@ -63,10 +63,12 @@ export const DROPS = {
   inTheatersOn: 'In theaters {date}',
 };
 
-// Bring your history: the import sources the app supports today.
+// Bring your history. The app imports from more sources than this (TV Time,
+// IMDb, Simkl, Plex too); these four are the ones the site names, the same
+// four as about.js. Change both together.
 export const IMPORT = {
   headline: 'Bring your whole history with you.',
-  body: 'Coming from Letterboxd, Trakt, TV Time or IMDb? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.',
+  body: 'Coming from Letterboxd, Trakt, Netflix or TMDB? Import your ratings, reviews, watchlist and watch history. It’s free on every plan.',
   cardTitle: 'Your watch history',
   cardSub: 'All of it, in one place',
   // Sample result on the card (illustrative).
@@ -99,14 +101,13 @@ export const PREMIUM = {
   also: 'watch together, themes and widgets, unlimited lists including smart lists, calendar dates, actor and director alerts.',
 };
 
-// Plot mobile, coming soon: the app's home screen in a phone, and the launch
-// waitlist (posts with list: 'mobile-app').
+// Plot mobile, coming soon: one line, with the launch waitlist form opening
+// under the link (posts with list: 'mobile-app').
 export const APP = {
-  pill: 'Coming soon',
-  headline: 'plot, in your pocket.',
-  body: 'Everything you love about Plot: discover, track, curate and share. Be the first to know when the app launches.',
+  line: 'The iPhone app is coming.',
+  link: 'Get an email when it lands',
   notifyCta: 'Notify me',
-  notifySuccess: "You're on the list — we'll email you the moment the app lands.",
+  notifySuccess: "You're on the list. We'll email you the moment the app lands.",
 };
 
 // Replaces "Built by a solo developer" and its Ko-fi button.
@@ -114,7 +115,8 @@ export const INDIE = {
   headline: 'Made by an independent developer, not a studio or streaming platform.',
   body: 'Plot answers to the people who use it, not advertisers or investors. Premium keeps it that way.',
   pills: ['No ads', 'Independent', 'Free plan, forever'],
-  cta: 'Support Plot with Premium', // same checkout intent as the Premium card
+  cta: 'Start tracking',
+  premiumCta: 'See Premium', // links to /pricing
   story: 'Read the story',
 };
 

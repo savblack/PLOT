@@ -245,13 +245,6 @@
   max-width: 300px;
   line-height: 1.55;
 }
-.search-palette-empty-tips {
-  display: flex;
-  gap: 1.25rem;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
 
 /* ── Footer ── */
 .search-palette-foot {
@@ -279,10 +272,11 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
   .search-palette-head { padding: 12px 1rem; }
-  .search-palette-places { padding: 8px 1rem; }
+  /* Wrapped, not scrolled: with the scrollbar hidden, the last chips were
+     cut off at the screen edge with nothing to say there were more. */
+  .search-palette-places { padding: 8px 1rem; flex-wrap: wrap; row-gap: 8px; overflow-x: visible; }
   /* Key hints mean nothing to a thumb. */
   .search-palette-foot,
   .search-palette-esc,
-  .search-palette-row .search-palette-kbd,
-  .search-palette-empty-tips { display: none; }
+  .search-palette-row .search-palette-kbd { display: none; }
 }

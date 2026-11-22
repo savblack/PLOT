@@ -8,7 +8,7 @@ Status: local development preview, 16 September 2026. The live `/guide` route is
 ## Review locally
 
 1. `python3 scripts/guide/import-feed.py Sydney` (or another supported capital city).
-2. From `apps/web`: `PLOT_SMOKE_TEST=1 npm run dev -- --host 127.0.0.1 --port 5218`.
+2. From `apps/web`: `PLOT_SMOKE_TEST=1 pnpm run dev --host 127.0.0.1 --port 5218`.
 3. Open http://127.0.0.1:5218/guide-preview.
 
 The importer saves ignored `.guide-cache/<region>.json` snapshots. No listings are

@@ -53,6 +53,8 @@ export const FAILED_ACTIONS = Object.freeze({
   BLOCK:                   'block',
   UNBLOCK:                 'unblock',
   REPORT:                  'report',
+  // The x on a saved comparison (useSavedComparisons.js).
+  SAVED_COMPARISON_REMOVE: 'saved_comparison_remove',
   // Reverting an earlier removal from the undo toast (undo.js).
   UNDO:                    'undo',
   // Watch together (useWatchTogether.js). Only unexpected failures: the
@@ -74,6 +76,9 @@ export const FAILED_ACTIONS = Object.freeze({
   // "resend" on the check-your-inbox screen after signup, through GoTrue or
   // signup-bypass (`source: 'signup_bypass'`).
   CONFIRMATION_RESEND:          'confirmation_resend',
+  // The Confirm button on /newsletter/confirm (double opt-in for the digest).
+  // Only unexpected failures: an unknown, used or expired link is a page state.
+  NEWSLETTER_CONFIRM:           'newsletter_confirm',
 });
 
 /**

@@ -46,11 +46,11 @@
         }),
       }).then(function (r) {
         if (!r.ok) throw new Error('bad status');
-        msg.textContent = "You're in. The next issue lands in your inbox.";
+        msg.textContent = "Almost there. Check your inbox and confirm to start getting the digest.";
         form.reset();
         if (window.posthog) posthog.capture('newsletter_subscribed', { placement: form.dataset.placement });
       }).catch(function () {
-        msg.textContent = 'Something went wrong — try again in a minute.';
+        msg.textContent = 'We couldn’t add you just now. Try again in a minute.';
       }).finally(function () {
         button.disabled = false;
       });

@@ -59,24 +59,34 @@ nav.scrolled {
   padding: 0.75rem 0.25rem;
   text-decoration: none;
   color: var(--text-secondary);
-  font-size: 0.69rem;
+  font-size: 0.8rem;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   transition: color 0.2s, background 0.2s;
 }
 .nav-links a:hover { color: var(--text); }
+/* Taste match, About and Support: in the phone menu only. Desktop keeps the
+   short bar; the footer links them on every page. */
+.nav-links .nav-more { display: none; }
+.nav-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 /* The sign-up link is a pink pill, the same shape as .btn-primary. Colour is
    set without !important so a page can still re-colour the pill. Every page
    currently uses the same pink, so the nav matches site-wide. */
 .nav-cta {
   background: var(--fill);
-  padding: 0.6rem 1.1rem !important;
+  /* 34px tall, so it nests in the 52px pill with an even 9px on the top,
+     bottom and right. The right side gives back the 0.12em of tracking after
+     the last letter, so the label sits optically centred. */
+  padding: calc(17px - 0.5em) calc(1.1rem - 0.12em) calc(17px - 0.5em) 1.1rem !important;
   border-radius: var(--r-pill);
   line-height: 1;
 }
-.nav-links a.nav-cta { color: var(--text); font-weight: 700; }
+.nav-links a.nav-cta { color: var(--on-fill, #292924); font-weight: 700; }
 .nav-cta:hover { background: var(--fill-hover); }
+/* Focus rings follow each shape: round for the pill, soft for the logo. */
+.nav-links a.nav-cta:focus-visible { border-radius: var(--r-pill); }
+.nav-logo:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
 
 /* Mobile nav toggle — padded to a ≥44px tap target, negative margin keeps
    the icon optically aligned with the nav's right edge */
@@ -115,7 +125,7 @@ nav.scrolled {
     /* Translucent but opaque enough to keep the links legible over page
        content. The navbar matches this when open so the top of the panel
        reads as one seamless surface. */
-    background: rgba(248, 242, 234, 0.94);
+    background: var(--glass-menu, rgba(248, 242, 234, 0.94));
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     padding: 1.25rem 2rem;
@@ -123,11 +133,13 @@ nav.scrolled {
     align-items: stretch;
   }
   .nav-links.open li { display: block; }
+  .nav-links.open .nav-more { display: block; }
   .nav-links.open a { display: block; padding: 0.85rem 0; text-align: center; }
-  .nav-links.open .nav-cta { margin-top: 0.5rem; padding: 0.85rem 0 !important; }
+  /* A compact pill sized to its label, not a full-width bar. */
+  .nav-links.open .nav-cta { display: block; width: max-content; margin: 0.5rem auto 0; padding: 0.85rem 1.8rem !important; }
   .nav-hamburger { display: flex; }
   nav.nav-open {
-    background: rgba(248, 242, 234, 0.94);
+    background: var(--glass-menu, rgba(248, 242, 234, 0.94));
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
   }
@@ -150,15 +162,19 @@ nav.scrolled {
   padding: 0 8px 0 22px;
   gap: 28px;
   border-radius: var(--r-pill);
-  background: rgba(255, 250, 243, 0.82);
+  background: var(--glass-nav, rgba(255, 250, 243, 0.82));
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--rule);
-  box-shadow: 0 4px 14px -10px rgba(41, 41, 36, 0.2);
+  box-shadow: 0 4px 14px -10px var(--shadow-color, rgba(41, 41, 36, 0.2));
   transition: top 0.45s var(--ease);
 }
 #navbar.scrolled,
 #navbar.nav-open { top: 14px; }
+/* Once the page scrolls, the pill goes near-solid so headings sliding under it don't show through (Nov 2026 critique). */
+#navbar.scrolled { background: var(--glass-solid, rgba(255, 250, 243, 0.97)); }
+/* In-page links (#faq and the like) land below the pill, not under it. */
+html { scroll-padding-top: 88px; }
 #navbar .nav-links { gap: 1.25rem; }
 #navbar .nav-links a,
 #navbar .nav-logo { white-space: nowrap; }
@@ -183,7 +199,7 @@ nav.scrolled {
   #navbar.nav-open {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    background: rgba(255, 250, 243, 0.97);
+    background: var(--glass-solid, rgba(255, 250, 243, 0.97));
   }
   #navbar .nav-links.open {
     top: 76px;
@@ -191,7 +207,7 @@ nav.scrolled {
     right: 16px;
     border-radius: 24px;
     border: 1px solid var(--rule);
-    background: rgba(255, 250, 243, 0.97);
-    box-shadow: 0 4px 14px -10px rgba(41, 41, 36, 0.2);
+    background: var(--glass-solid, rgba(255, 250, 243, 0.97));
+    box-shadow: 0 4px 14px -10px var(--shadow-color, rgba(41, 41, 36, 0.2));
   }
 }

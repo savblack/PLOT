@@ -55,33 +55,61 @@ export const TASTE_OVERLAP = {
 
   /** @param {number} n */
   watchlistOverlap: (n) => `${plural(n, 'title', 'titles')} on both your watchlists`,
-  watchTogether: 'Choose one together in Watch together',
 
   share: 'Share your match',
 
   upsellTitle: 'Compare your taste with Premium',
-  upsellBody: 'Taste overlap is part of Deeper viewing stats. See your match, the genres you share and where you disagree with anyone you follow.',
+  upsellBody: 'Compare works when either of you has Premium. Get it yourself, or compare with a friend who already has it.',
+  // The second button on that card: back to the people list on Compare.
+  upsellSomeoneElse: 'Compare with someone else',
   notFound: 'This profile isn’t available.',
   /** @param {string} name */
   notVisible: (name) => `${name}’s profile is private. Once they accept your follow request, you can compare.`,
   failed: 'Couldn’t load your comparison.',
   retry: 'Try again',
 
+  // The menu item and the page's title. The picker's own button is `compare` below.
+  navLabel: 'Compare',
   // Picker
-  pickerTitle: 'Compare your taste',
-  pickerIntro: 'Pick anyone you follow, or anyone with a public profile.',
   searchLabel: 'Search people',
-  searchPlaceholder: 'Search by name or @username',
+  // Short enough for the side card; the field's search icon says "search".
+  searchPlaceholder: 'Name or @username',
   peopleYouFollow: 'People you follow',
   searchResults: 'Search results',
   compare: 'Compare',
   requestPending: 'Request pending',
   privateProfile: 'Private profile',
-  publicProfile: 'Public',
-  privateApproved: 'Private, you’re approved',
+  followNobodyTitle: 'No one to compare with yet',
   followNobody: 'Follow people to compare with them, or search for a public profile.',
   noResults: 'No one found.',
-  privacyNote: 'Taste overlap only uses what they already show you on their profile: watch history and ratings. Private profiles need an accepted follow first.',
+
+  // Saved comparisons: the people you have already compared with.
+  savedTitle: 'Your comparisons',
+  /** @param {string} name */
+  refreshComparison: (name) => `Refresh your comparison with ${name}`,
+  /** @param {string} name */
+  removeComparison: (name) => `Remove ${name} from your comparisons`,
+
+  // The sample comparison the picker shows until someone is chosen. The
+  // numbers are in @plot/core/tasteOverlap.js (EXAMPLE_OVERLAP); the person
+  // and the genres are made up, so their names live here with the other copy.
+  // Its titles are this week's trending ones, fetched, never typed in.
+  exampleTag: 'Sample',
+  exampleName: 'Maya',
+  // The sample's other person is a name too, not "you": next to a real
+  // count of 7 titles, "212 you" read as the viewer's own number.
+  exampleMe: 'Jo',
+  /** @param {string} name */
+  examplePair: (name) => `Jo and ${name}`,
+  exampleDecade: 'Jo’s decade',
+  /** @param {number} n */
+  exampleBasedOn: (n) => `Based on the ${plural(n, 'title', 'titles')} they have both rated.`,
+  /** @param {string} tougherAvg @param {string} otherAvg */
+  exampleTheyAreTougher: (tougherAvg, otherAvg) => `${tougherAvg} vs Jo’s ${otherAvg} on average`,
+  /** @param {number} mine @param {number} theirs @param {number} both @param {string} name */
+  exampleVennLabel: (mine, theirs, both, name) => `Jo watched ${plural(mine, 'title', 'titles')}, ${name} watched ${theirs}, ${both} of them both`,
+  exampleNote: 'This is a sample. Pick someone to see your own match.',
+  exampleGenres: ['Drama', 'Comedy', 'Science fiction'],
 
   // Entry points
   compareTaste: 'Compare taste',

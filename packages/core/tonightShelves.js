@@ -5,6 +5,7 @@ import {
   PICKER_RUNTIMES, PICKER_EPISODE_RUNTIMES, PICKER_ERAS, PICKER_MIN_SCORES,
 } from './tonightPicker.js';
 import { TONIGHT_PICKER } from './copy/tonightPicker.js';
+import { MOOD_GENRES, MOODS } from './moodGenres.js';
 
 // Just Decide's shelves (Nov 2026 redesign, option D). The page opens already
 // full: shelves of titles that fit tonight, drawn from the viewer's watchlist
@@ -22,7 +23,7 @@ import { TONIGHT_PICKER } from './copy/tonightPicker.js';
 /** @typedef {import('./tonightPicker.js').PickerOptions} PickerOptions */
 /** @typedef {import('./tonightPicker.js').PickerCandidate} PickerCandidate */
 
-/** Genres behind the Light and Gripping chips and shelves, per type. */
+/** Genres behind the "Something light" and "Something gripping" shelves, per type. */
 export const SHELF_GENRES = {
   light: { movie: [35, 16, 10749], tv: [35, 16] },
   gripping: { movie: [53, 80, 9648, 27], tv: [80, 9648, -53] },
@@ -37,14 +38,12 @@ export const SHELF_SIZE = 12;
 const WATCHLIST_TARGET = 40;
 
 /**
- * @typedef {'movies'|'shows'|'short'|'light'|'gripping'|'recent'|'rated'|'services'|'watchlist'} ShelfChip
+ * @typedef {'movies'|'shows'|'short'|'services'|'watchlist'} ShelfChip
  */
 
-// Nov 14 (round 3A): the card splits the same options into three kinds.
+// The card's movie-or-show switch and its on/off options. Moods are MOODS, below.
 /** Movie or show: a two-way switch. */
 export const TYPE_CHIPS = /** @type {ShelfChip[]} */ (['movies', 'shows']);
-/** What kind of night: any number of these. */
-export const MOOD_CHIPS = /** @type {ShelfChip[]} */ (['light', 'gripping', 'recent', 'rated']);
 /** On or off. `services` only with services, `watchlist` only with a watchlist. */
 export const SWITCH_CHIPS = /** @type {ShelfChip[]} */ (['short', 'services', 'watchlist']);
 
@@ -60,10 +59,6 @@ export function chipOn(chip, o) {
     case 'movies': return o.mediaType === 'movie';
     case 'shows': return o.mediaType === 'tv';
     case 'short': return o.mediaType === 'tv' ? o.maxEpisodeRuntime === SHORT_LIMIT.tv : o.maxRuntime === SHORT_LIMIT.movie;
-    case 'light': return hasAll(o.genreIds, SHELF_GENRES.light[o.mediaType]);
-    case 'gripping': return hasAll(o.genreIds, SHELF_GENRES.gripping[o.mediaType]);
-    case 'recent': return o.era === 'recent';
-    case 'rated': return o.minScore === 7;
     case 'services': return o.onlyServices;
     case 'watchlist': return o.onlyWatchlist;
     default: return false;
@@ -71,7 +66,7 @@ export function chipOn(chip, o) {
 }
 
 /**
- * The options after tapping a chip. Switching type drops the genre chips,
+ * The options after tapping a chip. Switching type drops the chosen moods,
  * since genre ids differ between movies and shows.
  * @param {ShelfChip} chip
  * @param {PickerOptions} o
@@ -79,20 +74,12 @@ export function chipOn(chip, o) {
  */
 export function toggleChip(chip, o) {
   const on = chipOn(chip, o);
-  const genres = (key) => {
-    const ids = SHELF_GENRES[key][o.mediaType];
-    return on ? o.genreIds.filter(id => !ids.includes(id)) : [...new Set([...o.genreIds, ...ids])];
-  };
   switch (chip) {
     case 'movies': return on ? o : { ...o, mediaType: 'movie', genreIds: [], tvFormat: 'any', maxEpisodeRuntime: null };
     case 'shows': return on ? o : { ...o, mediaType: 'tv', genreIds: [], maxRuntime: null };
     case 'short': return o.mediaType === 'tv'
       ? { ...o, maxEpisodeRuntime: on ? null : SHORT_LIMIT.tv }
       : { ...o, maxRuntime: on ? null : SHORT_LIMIT.movie };
-    case 'light': return { ...o, genreIds: genres('light') };
-    case 'gripping': return { ...o, genreIds: genres('gripping') };
-    case 'recent': return { ...o, era: on ? 'any' : 'recent' };
-    case 'rated': return { ...o, minScore: on ? null : 7 };
     case 'services': return { ...o, onlyServices: !on };
     case 'watchlist': return { ...o, onlyWatchlist: !on };
     default: return o;
@@ -103,26 +90,10 @@ export function toggleChip(chip, o) {
 // moods (any number), then one-of rows for score, length and release, all
 // setting the picker options the questions used to.
 
-/**
- * Genres behind each mood chip, per type. The sets do not overlap, so one
- * chip never lights another. Negative ids are keyword-backed show genres.
- */
-export const MOOD_GENRES = {
-  funny: { movie: [35], tv: [35] },
-  romantic: { movie: [10749], tv: [-10749] },
-  gripping: { movie: [53, 80, 9648], tv: [80, 9648, -53] },
-  scary: { movie: [27], tv: [-27] },
-  moving: { movie: [18], tv: [18] },
-  adventurous: { movie: [12, 28], tv: [10759] },
-  mindBending: { movie: [878], tv: [10765] },
-  trueStory: { movie: [99], tv: [99] },
-  animated: { movie: [16], tv: [16] },
-};
-
-/** @typedef {keyof typeof MOOD_GENRES} Mood */
-
-/** Mood chips, in the order the row shows them. */
-export const MOODS = /** @type {Mood[]} */ (Object.keys(MOOD_GENRES));
+// The mood chips and the genres behind them live in moodGenres.js, so Watch
+// together's mood step can share them without pulling in the picker.
+export { MOOD_GENRES, MOODS } from './moodGenres.js';
+/** @typedef {import('./moodGenres.js').Mood} Mood */
 
 /**
  * @param {Mood} mood

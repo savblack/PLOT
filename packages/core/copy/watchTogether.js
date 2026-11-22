@@ -49,7 +49,6 @@ export const WATCH_TOGETHER = Object.freeze({
     // Shelves under the row of people.
     yourWatchlist: 'Your watchlist',
     previewNote: 'When someone joins, the titles you’ve both saved show up here.',
-    seeHow: 'See how it works',
     onPlot: 'Already on Plot?',
     peopleYouFollow: 'People you follow',
     moviesWith: (names) => `Movies you and ${names} saved`,
@@ -57,10 +56,15 @@ export const WATCH_TOGETHER = Object.freeze({
     allOfYou: 'All of you',
     lockedShelf: 'One of you needs Premium to see and swipe through what you share. Your friend never has to pay.',
     nothingShared: (names) => `Nothing you and ${names} have both saved yet.`,
+    // Nov 18: with nothing in common, say what to do instead of offering a
+    // swipe through zero titles, and put trending titles one tap from saving.
+    noOverlapBody: (name) => `Save a few titles you’d watch. When ${name} saves one too, it shows up here and you can decide together.`,
+    ideasTitle: 'Ideas to save',
+    ideasNote: 'Trending this week. Save anything you’d watch.',
     // Nov 14 (round 3A): one card, one button. Faces pick who's watching.
-    inviteLead: 'Invite the person you watch with',
-    inviteLeadBody: 'They get a link. When they join, you both see what you’ve saved and swipe until you agree.',
-    findOnPlot: 'Already on Plot? Find them',
+    // Nov 18: the explainer, rewritten to say what happens step by step.
+    inviteLead: 'Pick what to watch, together',
+    inviteLeadBody: 'Send a link to the person you watch with. Once they join, Plot lines up the titles you’ve both saved. You each swipe yes or no until you both land on the same one.',
     both: 'Both',
     everyone: 'Everyone',
     savedCount: (names, n) => `${n} ${n === 1 ? 'title' : 'titles'} you and ${names} both saved`,
@@ -252,8 +256,31 @@ export const WATCH_TOGETHER = Object.freeze({
     ended: 'This session has ended.',
     startAgain: 'Start again',
     empty: (name) => `You and ${name} don’t have any titles in common yet.`,
-    swipeHint: 'Swipe right if you’re in, left if not.',
+    swipeHint: 'Slide the card right if you’re in, left if not.',
     start: 'Decide together',
+  },
+
+  // Nov 21: the mood step before a session (watchTogether.js, "The mood step").
+  // Its heading is Just Decide's (TONIGHT_PICKER.moodTitle) and the chips are
+  // Just Decide's labels (TONIGHT_PICKER.chips), so the two read the same.
+  mood: {
+    fromShared: (n) => `From the ${n} ${n === 1 ? 'title' : 'titles'} you’ve both saved. Pick any, or none.`,
+    kindLabel: 'Movies or TV',
+    moodLabel: 'Mood',
+    whereLabel: 'Where',
+    theirServices: (name) => `${name}’s services`,
+    start: (n) => `Start swiping · ${n} ${n === 1 ? 'title' : 'titles'}`,
+    skip: (n) => `Skip this and swipe all ${n}`,
+    noneTitle: 'Nothing fits all of that',
+    noneBody: 'Change one thing to bring some back.',
+    fixes: {
+      services: 'Turn off My services',
+      moods: 'Any mood',
+      kind: 'Movies and TV',
+    },
+    fixCount: (n) => `${n} ${n === 1 ? 'title' : 'titles'}`,
+    picked: (name) => `${name} picked`,
+    youPicked: 'You picked',
   },
 
   sharedList: {
@@ -321,6 +348,7 @@ export const WATCH_TOGETHER = Object.freeze({
   errors: {
     premium_required: 'One of you needs Premium to decide together.',
     not_allowed: 'This person isn’t taking watch together requests from you.',
+    nothing_fits: 'Nothing you’ve both saved fits that any more. Change a choice and try again.',
     generic: 'That didn’t work. Try again.',
   },
 });

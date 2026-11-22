@@ -233,6 +233,9 @@ The app shows it only where it may link out to Checkout (US storefront).
 | Event | When | Properties |
 |---|---|---|
 | `premium_link_clicked` | The link was tapped | `placement: 'side_nav' \| 'settings'`, `trial` (boolean: the person is eligible for 7 days free; the side-nav chip never shows that text) |
+| `premium_link_clicked` | A "See Premium" button on the theplot.tv homepage was clicked (it opens `/pricing`) | `placement: 'home-premium-see' \| 'indie-see-premium'`, `source: 'marketing'`; no `trial` (the marketing site does not know). Fired by `apps/website/js/config.js` for any link marked `data-premium-link` |
+
+Until 2026-11-19 the homepage's closing button was "Support Plot with Premium", a link to Premium signup counted as `signup_cta_clicked` with `placement: 'indie-premium'`. That button is gone: the block now leads with Start tracking (`signup_cta_clicked`, `placement: 'indie-signup'`) and a See Premium link (`premium_link_clicked`, `placement: 'indie-see-premium'`). A chart of `indie-premium` stops at that date.
 
 All monetization dashboards keep PostHog's internal and test-account filter on.
 
@@ -275,7 +278,9 @@ a person: a `$pageview` and then no Tier 1 action (it negates **action 333111**,
 not a list of event names, so it tracks the catalog on its own), no `$pageleave`,
 and none of `signup_cta_clicked` / `login_click` / `save_cta_clicked` /
 `signup_form_viewed` / `signup_form_started` / `signup_submit_clicked` /
-`user_signed_up` / `user_logged_in`.
+`user_signed_up` / `user_logged_in` / `premium_link_clicked` /
+`search_result_opened` (the last two are the marketing site's See Premium links
+and homepage search picks, added to the cohort on 2026-11-19).
 
 Those first three matter more than they look. They fire from the marketing and
 server-rendered surfaces on `theplot.tv` — the very host the crawlers hit — so
@@ -528,11 +533,10 @@ marketing site never hands off to mobile.
 | Event | Where | When | Props |
 |---|---|---|---|
 | `signup_cta_clicked` | marketing site | The search bar was submitted, typed or not | `placement: hero_search`, `source: marketing`, `has_query` |
-| `save_cta_clicked` | marketing site | A live result under the search bar was picked (it goes to `/save?…&src=hero_search`) | `placement: hero_search_result`, `source: marketing` |
+| `search_result_opened` | marketing site | A live result under the search bar was picked. Since 2026-11-19 it opens the title's public page (`/movie/<slug>-<id>` or `/tv/<slug>-<id>`), whose Save button is the `/save` hand-off; before that date the pick went straight to `/save?…&src=hero_search` and was counted as `save_cta_clicked` with `placement: hero_search_result` | `placement: hero_search`, `source: marketing` |
 | `signup_search_resumed` | web app | A signed-in visit acted on that typed title, at most once | `query_length`, `opened` (`title` when the search had one clear match and that title opened, else `search`) |
 
-A picked result is a save intent with `src=hero_search`: the app skips the
-`/save` preview and opens the title after signup, saving nothing on its own.
+Before 2026-11-19 a picked result was a save intent with `src=hero_search`; it now opens the public title page, and saving from there carries `src=title_page`. The app side of `src=hero_search` (open the title after signup, save nothing on its own) still applies to links that carry it.
 
 The query text is never sent from either side, only whether one was typed and
 its length. The title waits in the browser for 24 hours, so a signup confirmed
@@ -587,6 +591,7 @@ the import page's `?from=` param.
 | `premium_first_week_hidden` | "Dismiss" on the first-week card | `done_count` |
 | `my_lists_layout_changed` | A My Lists section was folded, opened or moved, or the order was reset. Web and mobile both send all four actions. On mobile `collapse` and `expand` fire for the sections whose fold is saved to the profile (Watching, Top 5, Lists, Smart lists, Shared), not for Watchlist and Favorites, whose fold stays on the device, and not for its collapse-all control | `action` (`collapse` / `expand` / `reorder` / `reset`), `section` (`watching` / `top` / `lists` / `smart` / `shared`; absent on `reset`) |
 | `saved_to_watch_viewed` | The Saved to watch rail was on screen | `item_count`, `first_run`. Once per app session |
+| `home_pick_for_tonight_clicked` | "Pick something for me" on Home's "Nothing coming up yet" card was pressed; it opens Decide. Web only (mobile Home has no such card) | None. The pick that follows is `tonight_picks_drawn` |
 | `recommendations_viewed` | A Home recommendation shelf had titles | `shelf` (`because` / `for_you`), `item_count`. Once per app session per shelf. On web, opens from it are `title_viewed` with source `because_you_watched` / `recommended_for_you` (mobile's panel takes no source) |
 
 `finishing_touches_hidden` had never fired because Hide for now was rendered
@@ -624,7 +629,9 @@ The Episode alerts card on a followed TV show's title panel.
 | Event | When | Props |
 |---|---|---|
 | `episode_alerts_toggled` | The switch changed and the write landed, or the first-episode prompt was accepted | `tmdb_id`, `on` (the new state) |
+| `episode_alert_setting_changed` | One of the two Episode alerts switches in Settings changed and the write landed | `setting`: `in_app` or `phone`; `on` (the new state). A failed save sends `action_failed` with `action: episode_alert_setting` instead |
 | `title_calendar_action` | Add to calendar was used | `action`: `subscribe` (feed link copied), `subscribe_setup` (sent to Settings to make a link), `upgrade` (Free, sent to Plans), `download` (.ics, with `count` of events) |
+| `title_foot_bar_folded` | The title panel's foot bar (Watched it? / Thoughts?) was folded or opened by hand from its head line. The bar opens itself once the panel scrolls a little; that automatic open sends nothing | `folded` (the new state), `watched` (the title's state) |
 
 Muting is free and is stored in `episode_alert_mutes`; the daily
 new-episode job skips muted followers, so a show turned off produces no
@@ -671,6 +678,29 @@ writes land, the same prompt asks `alert-brevo-event` to send Brevo event
 email is the Brevo contact identifier, taken from the JWT. A Brevo failure
 does not un-arm the prompt.
 
+## Selecting several titles on a list
+
+A list page (Watchlist, your own lists, shared lists; not smart lists) has a
+Select button that lets the viewer pick several titles and act on them at once
+(web only for now: `apps/web/src/components/ListSelection.jsx`, rules in
+`packages/core/listSelection.js`).
+
+| Event | When | Props |
+|---|---|---|
+| `list_items_bulk_removed` | Remove on the selection bar, once the removes finish and at least one landed | `count` (removals that succeeded), `list_kind` (`watchlist` / `custom` / `shared`) |
+
+Each removal still goes through the single-title path, so it also fires its own
+`watchlist_removed` or `list_item_removed`, and a removal that fails fires its
+own `action_failed` (`watchlist_remove` / `list_item_remove`) from the hook. Do
+not add `count` to those to get a removal total: it is the same removals
+again. Undo on the toast is the usual `action_undone` with `action`
+`watchlist_remove` or `list_item_remove` and the batch's `count`.
+
+Add to list on the same bar has no event of its own. Each title it adds is a
+normal `list_item_added` from `useCustomLists.addItem` (Tier 2), which is the
+right signal: the viewer put those titles in a list, and a second bulk event
+would count the same adds twice.
+
 ## Smart lists
 
 A smart list (Premium) is a custom list that stores rules and fills itself when
@@ -695,7 +725,7 @@ Props are shapes only, never user ids, usernames or invite link keys.
 | `watch_together_request_accepted` | Someone accepted a request sent to them | `share_full` |
 | `watch_together_link_shared` | The invite link was shared or copied | `method` (`share` / `copy`) |
 | `watch_together_link_accepted` | Someone accepted an invite link (pairs straight away) | `share_full` |
-| `watch_together_session_started` | A two-person yes-or-no session started | none |
+| `watch_together_session_started` | A two-person yes-or-no session started | `with_mood` (true when started from the mood step), and with it `mood_count`, `media_type` (`all` / `movie` / `tv`), `services`, `deck_size` |
 | `watch_together_match` | A vote made a match (both said yes) | none |
 | `collab_list_invite_shared` | A collaborative list's invite link was shared or copied | `method` (`share` / `copy`) |
 | `collab_list_joined` | Someone joined a collaborative list from its invite link | none |
@@ -711,6 +741,30 @@ Free owner choosing Invite people on a list fires `premium_gate_hit` with
 events ride the same `onWatchTogether` seam (`list_invite_shared`,
 `list_joined`) and never carry list ids or keys.
 
+## Compare
+
+The Compare page (taste overlap, Premium) fires three events of its own. Each
+app fires them from its own screen with the names in `analyticsEvents.js`,
+because the buttons live in the app, not in a core hook. None of them says who
+the other person is: no user id, no username.
+
+| Event | When | Props |
+|---|---|---|
+| `saved_comparison_refreshed` | The refresh icon on a row in Your comparisons was pressed. Fires on the press: the comparison on screen is asked for again, or that person's comparison opens | none |
+| `saved_comparison_removed` | The x on a row in Your comparisons, once the server has removed it | none |
+| `compare_watch_together_tapped` | The Watch Together button on a comparison's shared-watchlist row | `sample` (`true` on the picker's sample, which opens the Watch Together hub; `false` on a real comparison, which opens that person's page) |
+| `compare_someone_else_tapped` | "Compare with someone else" on Compare's Premium card, which shows only when neither person has Premium | none |
+
+A person is added to Your comparisons when a comparison loads, not by a
+button, so saving has no event of its own. A remove the server refuses fires
+`action_failed` with `action: saved_comparison_remove` and no
+`saved_comparison_removed`.
+
+There is no "comparison viewed" event. A Free viewer who opens the upgrade
+sheet from a comparison fires `premium_gate_hit` with `feature: taste_overlap`
+(see Premium gates). What happens after `compare_watch_together_tapped` is in
+the Watch together events above.
+
 ## Reviews
 
 `review_written` fires from `useHistory` when a save carries review text that
@@ -721,6 +775,17 @@ characters, `medium` under 400, `long`). The text never leaves the device.
 
 It is not in the Tier 2 action. A review saved alongside a first watch already
 fires `marked_watched`, but an edit that only adds a note fires nothing else.
+
+## Newsletter
+
+The weekly digest is double opt-in (since 2026-11-18). `newsletter_subscribed`
+fires on theplot.tv when the form's request succeeds, which now means a
+confirmation email was asked for, not that anyone is subscribed.
+`newsletter_confirmed` fires on `/newsletter/confirm` in the web app, once the
+server has confirmed the address. It has no properties. The cross-subdomain
+cookie usually joins the two on one person, so confirmed / subscribed is the
+confirmation rate. A failed confirm (not an unknown, used or expired link,
+which are page states) sends `action_failed` with action `newsletter_confirm`.
 
 ## Failed writes
 
@@ -736,7 +801,7 @@ covered once. Properties:
 
 | Prop | Meaning |
 |---|---|
-| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers), and for auth emails that are neither a sign-in nor a signup `password_reset_request` and `confirmation_resend` (`source: signup_bypass` when the backup sender failed; web only until mobile parity lands). Canonical list: `FAILED_ACTIONS`. |
+| `action` | What failed: `watchlist_save`, `mark_watched`, `rating_set`, `review_save`, `review_clear`, `history_update`, `history_remove`, `favourite_add`/`_remove`, `custom_list_create`/`_rename`/`_delete`/`_visibility`, `smart_list_update`, `list_item_add`/`_remove`, `watch_progress`, `profile_update`, `follow`, `unfollow`, `follow_request_decision`, `watchlist_share`, `block`, `unblock`, `report`, `saved_comparison_remove`, `undo`, and for Watch together `watch_together_invite`, `_respond`, `_link_accept`, `_session_start`, `_vote`, `list_invite_accept` for joining a collaborative list (unexpected errors only, never the server's Premium or permission answers), and for auth emails that are neither a sign-in nor a signup `password_reset_request` and `confirmation_resend` (`source: signup_bypass` when the backup sender failed; web only until mobile parity lands). Canonical list: `FAILED_ACTIONS`. |
 | `error_kind` | Coarse bucket: `network`, `auth`, `permission`, `conflict`, `constraint`, `not_found`, `schema`, `timeout`, `server`, `no_data` (no error but no row, e.g. RLS matched nothing), `client_state` (never reached the server), `unknown`. |
 | `error_code` | SQLSTATE or PostgREST code (`42P10`, `42501`, `PGRST116`, …) when present. |
 | `http_status` | When present. |

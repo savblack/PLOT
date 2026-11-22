@@ -2,6 +2,7 @@ import { WATCH_TOGETHER } from './copy/watchTogether.js';
 import { PEOPLE } from './copy/people.js';
 import { BROWSE } from './copy/browse.js';
 import { COLLABORATIVE_LISTS } from './copy/collaborativeLists.js';
+import { TASTE_OVERLAP } from './copy/tasteOverlap.js';
 import { FAVOURITES_ENABLED, GUIDE_ENABLED } from './features.js';
 
 export const APP_NAV_ITEMS = [
@@ -15,17 +16,25 @@ export const APP_NAV_ITEMS = [
   // Own page on web. Mobile keeps the My Lists tab and also opens this from
   // the drawer and the tab bar. MY_LISTS_TABS below keeps its 'history' entry.
   { id: 'history', label: 'History', path: '/history', primary: true },
+  // Insights: what your watching says about you, Free and Premium on one page
+  // (Savannah, 21 Nov 2026). Not primary, so it stays out of the tab bar.
+  // Mobile lists it in its drawer (DrawerMenu.tsx) in the same place.
+  { id: 'insights', label: 'Insights', path: '/insights', primary: false },
   // Own nav item on web and mobile (opened from the drawer). Not primary, so it
   // stays out of the tab bar. Dropped below while the guide is hidden
   // (GUIDE_ENABLED in features.js).
   { id: 'guide', label: 'Guide', path: '/guide', primary: false },
   // Just Decide, the tonight picker (Premium). Free viewers land on the Premium gate,
   // never on fake results. Mobile lists it in its drawer (DrawerMenu.tsx).
-  { id: 'tonight', label: 'Just Decide', path: '/tonight', primary: false, premium: true },
+  { id: 'tonight', label: 'Decide', path: '/tonight', primary: false, premium: true },
   // Watch together. On for web and mobile (SHOW_WATCH_TOGETHER, PLO-515).
   // `feature` still lets an app hide it. The Premium mark stays: deciding
   // together needs Premium on at least one side.
   { id: 'together', label: WATCH_TOGETHER.navLabel, path: '/together', primary: false, premium: true, feature: 'watchTogether' },
+  // Compare (taste overlap): its own menu item on web and mobile (Savannah,
+  // 18 Nov 2026). The page shows a sample to anyone; comparing with a real
+  // person is Premium, hence the mark. Mobile lists it in DrawerMenu.tsx.
+  { id: 'compare', label: TASTE_OVERLAP.navLabel, path: '/compare', primary: false, premium: true },
   { id: 'search', label: 'Search', path: '/search', primary: false },
   { id: 'settings', label: 'Settings', path: '/settings', primary: false },
 ].filter(item => GUIDE_ENABLED || item.id !== 'guide');
@@ -42,8 +51,6 @@ export const VIEW_TITLES = APP_NAV_ITEMS.reduce(
     // toast, Notifications, a person's page and Settings.
     'your-people': PEOPLE.page.title,
     import: 'Import',
-    // The taste overlap picker. Without an entry it fell through to the brand.
-    compare: 'Compare',
     // Keyed on the first segment: viewFromPath returns `person/<id>`, and the
     // page shows the person's own name, so the chrome only needs to say where
     // you are.
@@ -81,7 +88,29 @@ export function titleForView(view) {
  * @param {string} id
  */
 export function isActiveView(view, id) {
+  // A comparison with one person lives under their profile
+  // (u/<username>/compare) but is still Compare, so the menu keeps it lit.
+  if (id === 'compare' && /^u\/[^/]+\/compare$/.test(view || '')) return true;
   return view === id || (view || '').startsWith(`${id}/`);
+}
+
+// Places the phone tab bar's More opens: every menu item that isn't a tab
+// (Search opens a palette, so it never is a page), plus the pages the menu
+// links to beside them.
+const MORE_VIEW_IDS = [
+  ...APP_NAV_ITEMS.filter(item => !item.primary && item.id !== 'search').map(item => item.id),
+  'notifications', 'profile', 'your-people',
+];
+
+/**
+ * Whether the phone tab bar should light More: the view is one of the places
+ * More opens, so no tab names it. Without this, nothing in the bar was lit on
+ * Decide, Watch Together, Compare and the rest.
+ *
+ * @param {string} view A view id (web) or route path without the leading slash (mobile).
+ */
+export function isMoreView(view) {
+  return MORE_VIEW_IDS.some(id => isActiveView(view, id));
 }
 
 export function pathForView(view) {

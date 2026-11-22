@@ -74,7 +74,7 @@ export const SETTINGS_VIEW = {
   },
   region: {
     openRegionSettings: 'Open region settings',
-    failedToSaveRegion: 'Failed to save your region.',
+    failedToSaveRegion: 'We couldn’t save your region. Try again in a moment.',
     intro: 'Used to show content and streaming services available in your region.',
   },
   timezone: {
@@ -87,7 +87,7 @@ export const SETTINGS_VIEW = {
   selectListsToClear: 'Select lists to clear',
 
   avatar: {
-    profilePhoto: 'Profile Photo',
+    profilePhoto: 'Profile photo',
     chooseImageFile: 'Please choose an image file.',
     tooLarge: (maxMb) => `Profile photos must be under ${maxMb}MB.`,
     uploadFailed: 'We could not upload your photo. Please try again.',
@@ -111,6 +111,7 @@ export const SETTINGS_VIEW = {
     reportABug: 'Report a bug',
     leaveFeedback: 'Leave feedback',
     panelTitle: 'Send feedback',
+    imagesSkipped: 'Some files were skipped. Screenshots need to be JPEG, PNG, WebP or GIF, within the size limit.',
   },
 
   errors: {
@@ -347,6 +348,8 @@ export const SETTINGS_VIEW = {
     importHistory: 'Import history and watchlist',
     importFromProfile: 'Import from this profile',
     importNewerExport: 'Import a newer export',
+    // TMDB keeps no connection (packages/core/tmdbAccount.js): each import signs in again.
+    importTmdbAgain: 'Import from TMDB again',
     importNewerHint: 'Only new entries are added.',
     history: 'History',
     noHistory: 'No imports yet.',

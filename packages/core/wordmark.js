@@ -58,3 +58,28 @@ export function wordmarkSvg({ fill = 'currentColor', className = '', label = 'pl
   const st = style ? ` style="${style}"` : '';
   return `<svg${cls}${st} viewBox="${WORDMARK_VIEWBOX}" ${a11y} fill="${fill}"><path d="${WORDMARK_PATH}"/></svg>`;
 }
+
+/**
+ * Where the logo goes in a line of copy. The catalog writes the brand
+ * lowercase ("Sign out of plot?") where it stands for the logo, so a surface
+ * that sets such a line as a heading draws the wordmark in place of that
+ * word. Returns the text either side of the first lowercase "plot", or null
+ * when the line has none ("Plot" in prose is left alone). `spaceBefore` and
+ * `spaceAfter` say whether a word space sat next to it, so the wordmark
+ * closes up to punctuation ("plot?", "plot's").
+ *
+ * @param {string} text
+ * @returns {{ before: string, after: string, spaceBefore: boolean, spaceAfter: boolean } | null}
+ */
+export function splitAtWordmark(text) {
+  const match = /\bplot\b/.exec(typeof text === 'string' ? text : '');
+  if (!match) return null;
+  const before = text.slice(0, match.index);
+  const after = text.slice(match.index + match[0].length);
+  return {
+    before: before.trimEnd(),
+    after: after.trimStart(),
+    spaceBefore: /\s$/.test(before),
+    spaceAfter: /^\s/.test(after),
+  };
+}

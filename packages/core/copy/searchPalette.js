@@ -8,8 +8,6 @@ export const SEARCH_PALETTE = {
   // Before anything is typed.
   hintTitle: 'Find anything',
   hintBody: 'Titles, franchises, actors, directors and friends, all from one box.',
-  hintFriends: 'to find friends',
-  hintPeople: 'for actors and directors',
   // The "Search in" row: look everywhere, or only at one page's own titles.
   // The page names themselves come from the nav (APP_NAV_ITEMS).
   searchIn: 'Search in:',
@@ -42,7 +40,7 @@ export const SEARCH_PALETTE = {
   kind: {
     collection: 'Franchise',
     movie: 'Movie',
-    tv: 'Series',
+    tv: 'TV',
     person: 'Person',
     friend: 'Friend',
   },

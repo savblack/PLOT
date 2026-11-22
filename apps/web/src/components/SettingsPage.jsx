@@ -177,12 +177,9 @@ export default function SettingsPage({ section = 'account', onSection, onSignOut
 
   return (
     <div className="hist-page settings-page">
-      <div className="hist-toolbar settings-toolbar">
-        <SearchField className="hist-search settings-search" value={query} onChange={setQuery} placeholder={T.page.search} ariaLabel={T.page.search} />
-      </div>
-
       <div className="cal-body">
         <aside className="cal-side settings-side">
+          <SearchField className="hist-search settings-search cal-side-control" value={query} onChange={setQuery} placeholder={T.page.search} ariaLabel={T.page.search} />
           <AccountCard account={account} action={accountAction} />
           <nav className="hist-card settings-nav-card" aria-label={T.page.navigation}>
             {SETTINGS_SECTIONS.map(item => (

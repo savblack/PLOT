@@ -70,6 +70,7 @@ export default function ImportSourceIcon({ id, name, size = 36 }) {
   if (id === 'simkl') return <Mark size={size} bg="#000000" fg="#FFFFFF" text="S" />;
   if (id === 'tvtime') return <Mark size={size} bg="#FFD600" fg="#111111" text="tv" scale={0.42} />;
   if (id === 'imdb') return <Mark size={size} bg="#F5C518" fg="#111111" text="IMDb" scale={0.26} />;
+  if (id === 'tmdb') return <Mark size={size} bg="#0D253F" fg="#01B4E4" text="TMDB" scale={0.24} />;
   if (id === 'trakt') return <img src="/import-logos/trakt.png" alt="" width={size} height={size} style={{ width: size, height: size, borderRadius: radius, flexShrink: 0, display: 'block' }} />;
   if (logo) {
     return <img src={logoUrl(logo, 'w92')} alt="" width={size} height={size} style={{ width: size, height: size, borderRadius: radius, objectFit: 'cover', flexShrink: 0, display: 'block' }} />;

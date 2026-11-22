@@ -82,8 +82,8 @@ Three ways in and two moments, all into one sheet, which opens on the card the u
 came for.
 
 1. **From the insight.** A share icon in the head of each History side card (Year,
-   Month, Crowd, People). Pink when that card is shareable now, cream when its data
-   is thin. Preset: the card tapped.
+   Month, Crowd, People). Always the neutral cream; a card whose data is still thin
+   says so in the sheet. Preset: the card tapped.
 2. **From the own profile.** "Share profile" becomes a two-item menu: *Copy profile
    link* (today's behaviour, first) and *Share a card*. Preset: Top 5 movies, the
    card that carries the follow link. Other people's profiles keep the single link

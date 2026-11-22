@@ -10,12 +10,12 @@ test('a phone gets a bottom tab bar with the four everyday places and More', asy
 
   const bar = page.getByRole('navigation', { name: 'Main navigation' });
   await expect(bar).toBeVisible();
-  // Icons only: each button's name is its accessible label, with no text under it.
+  // Each tab shows its name under the icon (Nov 20), and that word is its name.
   await expect(bar.getByRole('button')).toHaveCount(5);
   for (const name of ['Home', 'Calendar', 'My Lists', 'History', 'More']) {
     await expect(bar.getByRole('button', { name, exact: true })).toBeVisible();
   }
-  await expect(bar.getByRole('button')).toHaveText(['', '', '', '', '']);
+  await expect(bar.getByRole('button')).toHaveText(['Home', 'Calendar', 'My Lists', 'History', 'More']);
   await expect(bar.getByRole('button', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
 
   // One tap moves between places.
@@ -47,15 +47,19 @@ test('More opens the menu with everything that is not a tab, in the saved order'
   const menu = page.locator('#app-nav-drawer');
   await expect(menu).toHaveClass(/open/);
   // The saved order puts Watch together first. The tabs are not repeated here.
-  // New Releases isn't in that saved order, so it comes after the items that are.
-  await expect(menu.locator('.nav-drawer-nav .nav-drawer-label')).toHaveText(['Watch Together', 'Just Decide', 'New Releases']);
+  // New Releases, Insights and Compare aren't in that saved order, so they come
+  // after the items that are, in the menu's own order.
+  await expect(menu.locator('.nav-drawer-nav .nav-drawer-label')).toHaveText(['Watch Together', 'Decide', 'New Releases', 'Insights', 'Compare']);
   await expect(menu.getByRole('button', { name: 'Settings' })).toBeVisible();
 
   await menu.getByRole('button', { name: 'New Releases' }).click();
   await expect(page.getByTestId('view')).toHaveText('new-releases');
   await expect(menu).not.toHaveClass(/open/);
-  // No tab is marked current while a menu page is showing.
+  // No tab is marked current while a menu page is showing, but More is lit,
+  // so the bar still says where you are.
   await expect(bar.locator('[aria-current="page"]')).toHaveCount(0);
+  await expect(bar.getByRole('button', { name: 'More' })).toHaveClass(/active/);
+  await expect(bar.getByRole('button', { name: 'Home' })).not.toHaveClass(/active/);
 });
 
 test('at sidebar width there is no tab bar', async ({ page }) => {

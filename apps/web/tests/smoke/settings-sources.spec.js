@@ -33,7 +33,7 @@ test('sources need a Plex selection, report queued work honestly and isolate acc
   await importButton.click();
   const dialog = page.getByRole('dialog', { name: 'Plex' });
   await dialog.getByRole('button', { name: 'Import from this profile' }).click();
-  await expect(dialog.getByText(/Got it\. Your Plex history is importing/)).toBeVisible();
+  await expect(dialog.getByText(/Got it\. Your Plex import is running/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Done' }).click();
 
   // The queued job is on the row and at the top of the section.

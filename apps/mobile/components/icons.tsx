@@ -53,6 +53,10 @@ export function IconClose(props: IconProps) {
   return <Glyph {...props}><Path d="M18 6L6 18M6 6l12 12" /></Glyph>;
 }
 
+export function IconRefresh(props: IconProps) {
+  return <Glyph {...props}><Path d="M21 12a9 9 0 1 1-2.64-6.36" /><Path d="M21 3v6h-6" /></Glyph>;
+}
+
 export function IconCheck(props: IconProps) {
   return <Glyph {...props}><Polyline points="20 6 9 17 4 12" /></Glyph>;
 }

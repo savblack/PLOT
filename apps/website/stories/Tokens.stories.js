@@ -1,5 +1,5 @@
 // Documents apps/website/theme.css. Read-only — values live in theme.css alone
-// and are enforced against @plot/core/tokens.js by `npm run tokens:marketing`.
+// and are enforced against @plot/core/tokens.js by `pnpm run tokens:marketing`.
 // Edit theme.css to change a value; this file only renders it.
 
 export default {

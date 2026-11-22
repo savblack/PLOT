@@ -53,15 +53,16 @@
     }
   </script>
   <!-- End Google Tag Manager -->
-  <title>Community Standards · Plot, your movie and TV journal</title>
+  <title>Community Standards · Plot, your movie and TV companion</title>
   <meta name="description" content="What is and is not welcome on Plot, how to report a profile, review or list that breaks the rules, and how to block someone you would rather not hear from." />
   <link rel="canonical" href="https://theplot.tv/community" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="plot" />
-  <meta property="og:title" content="Community Standards · Plot, your movie and TV journal" />
+  <meta property="og:site_name" content="Plot" />
+  <meta property="og:title" content="Community Standards · Plot, your movie and TV companion" />
   <meta property="og:description" content="What is and is not welcome on Plot, how to report a profile, review or list that breaks the rules, and how to block someone you would rather not hear from." />
   <meta property="og:image" content="https://theplot.tv/og-image.png" />
   <meta property="og:image:type" content="image/png" />
@@ -76,25 +77,21 @@
   <link rel="manifest" href="site.webmanifest" />
 
   <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/theme.css" />
-  <link rel="stylesheet" href="/ui.css?v=5e602f19" />
-  <link rel="stylesheet" href="/nav.css?v=ba29d7a0" />
+  <link rel="stylesheet" href="/theme.css?v=8b708ffd" />
+  <link rel="stylesheet" href="/ui.css?v=7fc314f1" />
+  <link rel="stylesheet" href="/nav.css?v=ca43db8c" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     /* Shared brand tokens live in /theme.css. Content pages use the warmer surface. */
-    :root {
-      --bg: #f8f2ea;
-    }
-
     html { scroll-behavior: smooth; }
 
     body {
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
-      font-weight: 300;
+      font-weight: 400;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
@@ -112,7 +109,7 @@
     h1 {
       font-family: var(--display);
       font-size: clamp(2rem, 4vw, 2.8rem);
-      font-weight: 400;
+      font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1.15;
       color: var(--text);
@@ -120,11 +117,11 @@
     }
 
     .page-meta {
-      font-size: 0.82rem;
+      font-size: 0.875rem;
       color: var(--text-secondary);
       margin-bottom: 3rem;
       padding-bottom: 2rem;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
+      border-bottom: 1px solid var(--rule);
     }
 
     h2 {
@@ -136,8 +133,8 @@
     }
 
     p {
-      font-size: 0.93rem;
-      color: #333;
+      font-size: 1.143rem;
+      color: var(--text);
       margin-bottom: 1rem;
       text-align: justify;
     }
@@ -145,8 +142,8 @@
     /* Scoped to the content area — generic ul/li margins would otherwise
        bleed into the nav and footer link lists and knock them off-center */
     .page-wrap ul {
-      font-size: 0.93rem;
-      color: #333;
+      font-size: 1.143rem;
+      color: var(--text);
       margin: 0 0 1rem 1.5rem;
       text-align: justify;
     }
@@ -178,10 +175,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
   <nav id="navbar">
-    <a href="/" class="nav-logo" aria-label="plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
+    <a href="/" class="nav-logo" aria-label="Plot"><svg style="display:inline-block;height:.871em;width:1.568em;vertical-align:-.19em;overflow:visible" viewBox="52 -681 1568 871" aria-hidden="true" focusable="false" fill="currentColor"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125ZM715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5ZM1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130ZM1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></svg></a>
     <ul class="nav-links" id="navLinks">
       <li><a href="/whats-on">What's On</a></li>
       <li><a href="/pricing">Pricing</a></li>
+      <li class="nav-more"><a href="/taste-match">Taste match</a></li>
+      <li class="nav-more"><a href="/about">About</a></li>
+      <li class="nav-more"><a href="/support">Support</a></li>
       <li><a href="https://app.theplot.tv/login" data-cta="nav">Log in</a></li>
       <li><a href="https://app.theplot.tv/signup" class="nav-cta" data-cta="nav">Sign up</a></li>
     </ul>
@@ -194,13 +194,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <h1>Community Standards</h1>
     <p class="page-meta">Last updated: September 2026</p>
 
-    <p>plot is a place to keep track of what you watch and what you thought of it. It is small, and it is meant to feel calm. These standards describe what is not welcome here, what happens when something crosses the line, and how to tell us.</p>
+    <p>Plot is a place to keep track of what you watch and what you thought of it. It is small, and it is meant to feel calm. These standards describe what is not welcome here, what happens when something crosses the line, and how to tell us.</p>
     <p>They apply to everything another person can see: your username, your display name, your bio, your profile picture, the links on your profile, and the names you give your lists.</p>
     <h2>What is not allowed</h2>
     <p><strong>Harassment or bullying.</strong> Targeting someone, following them around the service to provoke them, or encouraging others to do the same.</p>
     <p><strong>Hate or discrimination.</strong> Attacking or demeaning people on the basis of race, ethnicity, national origin, religion, disability, age, sex, gender identity or sexual orientation.</p>
-    <p><strong>Sexual content.</strong> Sexually explicit images or text in profile pictures, names, bios or list names. plot is made for a general audience.</p>
-    <p><strong>Impersonation.</strong> Presenting yourself as another person, or as plot itself, in a way designed to mislead.</p>
+    <p><strong>Sexual content.</strong> Sexually explicit images or text in profile pictures, names, bios or list names. Plot is made for a general audience.</p>
+    <p><strong>Impersonation.</strong> Presenting yourself as another person, or as Plot itself, in a way designed to mislead.</p>
     <p><strong>Spam.</strong> Repetitive or automated activity, advertising, or using your profile mainly to push people somewhere else.</p>
     <p><strong>Anything illegal.</strong> Content that is unlawful where you are or where we operate. Content that sexualises a minor is reported to the relevant authorities.</p>
     <h2>Reporting</h2>
@@ -215,12 +215,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <p>Depending on what we find, we may remove the content, ask you to change it, suspend the account, or remove the account permanently. Serious cases, and repeated ones, go straight to removal. Where someone is at risk we may act without warning.</p>
     <p>If you think we have got it wrong, write to us and we will look at it again.</p>
     <h2>Contact</h2>
-    <p>plot is operated by Savannah Black, Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. You can reach us at contact@theplot.tv, or through the feedback option in the app.</p>
+    <p>Plot is operated by Savannah Black, Level 1, 63-73 Ann Street, Surry Hills, NSW 2010. You can reach us at contact@theplot.tv, or through the feedback option in the app.</p>
     <h2>Changes</h2>
-    <p>We may update these standards as plot grows. The date above changes when we do.</p>
+    <p>We may update these standards as Plot grows. The date above changes when we do.</p>
   </main>
 
-  <!-- footer:start (generated from _partials/footer.html — edit there, then run `npm run footer`) -->
+  <!-- footer:start (generated from _partials/footer.html — edit there, then run `pnpm run footer`) -->
   <footer class="site-footer">
     <div class="footer-panel">
     <div class="footer-inner">
@@ -228,7 +228,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="footer-intro">
           <p class="footer-lede">Everything you've watched.<br>Everything you want to watch.</p>
           <div class="footer-actions">
-            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start your Plot</a>
+            <a class="footer-cta" href="https://app.theplot.tv/signup" data-cta="footer">Start tracking</a>
           </div>
         </div>
         <ul class="footer-links" role="navigation" aria-label="Footer">
@@ -261,7 +261,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
          sides and sinks below the bottom edge. On hover a pastel foil sheen (the
          <use> filled with #footer-foil) fades in over the glyphs; js/footer.js tilts
          it with the pointer. Version stamp added by scripts/build-footer.mjs. -->
-    <a class="footer-wordmark" href="/" aria-label="plot home" data-cta="footer">
+    <a class="footer-wordmark" href="/" aria-label="Plot home" data-cta="footer">
       <svg viewBox="52 -681 1403 871" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-foil" x1="-0.6" x2="1.6" gradientTransform="rotate(100 0.5 0.5)"><stop offset="0" stop-color="#ffbcdf"/><stop offset="0.18" stop-color="#ffd1e8"/><stop offset="0.34" stop-color="#fff2b8"/><stop offset="0.5" stop-color="#c9f2d9"/><stop offset="0.66" stop-color="#c6e4ff"/><stop offset="0.82" stop-color="#e0cfff"/><stop offset="1" stop-color="#ffbcdf"/></linearGradient></defs><g id="footer-wordmark-glyphs"><path d="M52 190V-489H161L176 -440Q233 -501 323 -501Q389 -501 440.0 -468.5Q491 -436 519.5 -378.0Q548 -320 548 -244Q548 -169 519.0 -111.0Q490 -53 439.0 -20.5Q388 12 322 12Q249 12 198 -25V190ZM295 -125Q341 -125 370.0 -158.5Q399 -192 399 -244Q399 -297 370.0 -330.5Q341 -364 295 -364Q251 -364 221.0 -330.5Q191 -297 191 -245Q191 -192 221.0 -158.5Q251 -125 295 -125Z"/><path transform="translate(-55,0)" d="M715.0 5Q678.0 5 647.0 -9.5Q616.0 -24 597.0 -56.0Q578.0 -88 578.0 -141V-681H723.0V-193Q723 -132 768 -134Q796 -137 801 -175L880 -80L910 -18Q850 7 715 5Z"/><path transform="translate(-110,0)" d="M1032.0 12Q955.0 12 897.0 -20.5Q839.0 -53 807.0 -111.0Q775.0 -169 775.0 -244Q775.0 -320 807.0 -378.0Q839.0 -436 897.0 -468.5Q955.0 -501 1032.0 -501Q1108.0 -501 1166.0 -468.5Q1224.0 -436 1256.5 -378.0Q1289.0 -320 1289.0 -244Q1289.0 -169 1256.5 -111.0Q1224.0 -53 1166.0 -20.5Q1108.0 12 1032.0 12ZM1032.0 -130Q1080.0 -130 1110.5 -161.5Q1141.0 -193 1141.0 -245Q1141.0 -296 1110.5 -328.0Q1080.0 -360 1032.0 -360Q983.0 -360 953.0 -328.5Q923.0 -297 923.0 -245Q923.0 -193 953.0 -161.5Q983.0 -130 1032.0 -130Z"/><path transform="translate(-165,0)" d="M1539.0 8Q1457.0 8 1411.0 -32.0Q1365.0 -72 1365.0 -163V-355H1289.0V-489H1363.0L1393.0 -607H1511.0V-489H1620.0V-355H1511.0V-195Q1511.0 -161 1527.0 -146.5Q1543.0 -132 1569.0 -132Q1584.0 -132 1597.5 -134.5Q1611.0 -137 1620.0 -140V-3Q1602.0 2 1583.0 5.0Q1564.0 8 1539.0 8Z"/></g><use class="footer-foil" href="#footer-wordmark-glyphs"/></svg>
     </a>
     </div>

@@ -24,7 +24,9 @@ Content-Type: application/json
 {"email": "them@example.com"}
 ```
 
-`200` with `{"ok": true}` means it was accepted. The answer is identical whether
+`200` with `{"ok": true}` means it was accepted and a confirmation email is on its
+way. Tell the person to open it: the digest starts only after they confirm. The
+answer is identical whether
 or not the address was already subscribed, so it cannot be used to find out who
 has a Plot account, and you should not report it as if it could.
 

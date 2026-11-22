@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useShareTitle } from '../hooks/useShareTitle.js';
+import { SHOW_WATCH_TOGETHER } from '../launchFeatures.js';
+import { COMMON } from '../copy/common.js';
+import { IconShare } from './navIcons.jsx';
 import { isPremiumProfile } from '@plot/core/premium.js';
 import { DEFAULT_REGION } from '@plot/core/regions.js';
 import { useApp } from '../hooks/useApp.js';
@@ -123,10 +127,12 @@ function LanguageSelect({ picker, id }) {
    title, then a labelled row per filter with every choice on the card, so
    nothing hides behind a link. Pick is the only filled button; Surprise me
    and Clear all are quiet links beside it. */
-function MoodRow({ label, radio = false, children }) {
+function MoodRow({ label, radio = false, action = null, children }) {
   return (
     <div className="tonight-row">
-      <span className="tonight-row-label">{label}</span>
+      {action
+        ? <div className="tonight-row-head"><span className="tonight-row-label">{label}</span>{action}</div>
+        : <span className="tonight-row-label">{label}</span>}
       <ChipRow className="tonight-chips" role={radio ? 'radiogroup' : 'group'} aria-label={label}>{children}</ChipRow>
     </div>
   );
@@ -151,7 +157,9 @@ function MoodCard({ picker, premium }) {
         />
       </div>
       <div className="tonight-rows">
-        <MoodRow label={T.chips.rows.mood}>
+        <MoodRow label={T.chips.rows.mood} action={moodFiltersOn(options) && (
+          <button type="button" className="tonight-quiet tonight-clear" onClick={() => set(clearMoodFilters(options))}>{T.chips.clearAll}</button>
+        )}>
           {MOODS.map(m => <Chip key={m} size="sm" label={T.chips.moods[m]} selected={moodOn(m, options)} onClick={() => set(toggleMood(m, options))} />)}
         </MoodRow>
         {moodRows(options.mediaType).map(row => (
@@ -178,12 +186,13 @@ function MoodCard({ picker, premium }) {
           </div>
         </div>
       </div>
+      {/* After the filters it acts on, pinned to the bottom of the screen
+          while the card scrolls past (Nov 20): at the top (Nov 19) it meant
+          scrolling back up after the last chip, and on a phone it sat out of
+          thumb reach. Clear all lives with the filters, on the first row. */}
       <div className="tonight-mood-actions">
-        <PickForMe picker={picker} premium={premium} className="tonight-mood-pick" />
+        <PickForMe picker={picker} premium={premium} className="btn-sm tonight-mood-pick" />
         <button type="button" className="tonight-quiet" onClick={() => picker.go('surprise')}>{T.surpriseMe}</button>
-        {moodFiltersOn(options) && (
-          <button type="button" className="tonight-quiet" onClick={() => set(clearMoodFilters(options))}>{T.chips.clearAll}</button>
-        )}
       </div>
     </section>
   );
@@ -256,7 +265,7 @@ function FavSave({ item, actions, variant }) {
 
 /* Tiles are not buttons themselves, so the favourite and watchlist buttons can
    sit inside them: the title is the button, stretched over the whole tile. */
-function TopPick({ item, onOpen, actions, className = '' }) {
+function TopPick({ item, onOpen, actions, reason = null, where = null, className = '' }) {
   const bg = backdropUrl(item.backdrop_path, 'w1280') || posterUrl(item.poster_path, 'w780');
   return (
     <div className={`tonight-hero ${className}`}>
@@ -266,8 +275,30 @@ function TopPick({ item, onOpen, actions, className = '' }) {
         <Tag tone="artwork" label={T.topPick} />
         <button type="button" className="tonight-hero-title tonight-tile-open" onClick={() => onOpen(item)}>{item.title}</button>
         <span className="tonight-hero-meta">{pickResultMeta(item)}</span>
+        {reason && <span className="tonight-hero-why">{reason}</span>}
+        {where && <span className="tonight-hero-where">{where}</span>}
       </span>
       <FavSave item={item} actions={actions} variant="hero" />
+    </div>
+  );
+}
+
+/* Choosing with someone: send them the Top pick, or open Watch Together,
+   which picks from what you've both saved. */
+function PickNext({ item }) {
+  const { shareTitle, copied } = useShareTitle();
+  return (
+    <div className="tonight-pick-next">
+      <button type="button" className="btn btn-secondary btn-sm"
+        onClick={() => shareTitle({ tmdbId: item.id, mediaType: item.media_type, title: item.title, source: 'tonight' })}>
+        <IconShare />{copied ? COMMON.copied : T.sendPick}
+      </button>
+      {SHOW_WATCH_TOGETHER && (
+        <span className="tonight-pick-next-together">
+          {T.choosingTogether}
+          <Link className="tonight-quiet" to="/together">{T.watchTogetherLink}</Link>
+        </span>
+      )}
     </div>
   );
 }
@@ -321,10 +352,12 @@ function Results({ picker, onOpen, reveal, actions, onKeepFinding }) {
       <div className="tonight-results-list">
         {top && (
           <div className="tonight-hero-slot">
-            <TopPick item={top} onOpen={onOpen} actions={actions} className={reveal ? 'tonight-hero--dissolve' : ''} />
+            <TopPick item={top} onOpen={onOpen} actions={actions} reason={picker.topReason} where={picker.topWhere}
+              className={reveal ? 'tonight-hero--dissolve' : ''} />
             {reveal && <FindingSentence parts={picker.sentence} className="tonight-finding--out" />}
           </div>
         )}
+        {top && <PickNext item={top} />}
         {rest.length > 0 && (
           <div className="tonight-cards">
             {rest.map((item, i) => <PickCard key={item.id} item={item} index={i} onOpen={onOpen} reveal={reveal} actions={actions} />)}

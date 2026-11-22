@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEpisodeAlerts } from '@plot/core/useEpisodeAlerts.js';
 import { nextEpisodeLine } from '@plot/core/episodeAlerts.js';
+import { useNextDropTime } from '@plot/core/useNextDropTime.js';
 import { buildCalendarEvents } from '@plot/core/calendar.js';
 import { edgeFunctionUrl } from '@plot/core/functions.js';
 import { emit, NOTICE_EVENT } from '@plot/core/events.js';
@@ -31,7 +32,8 @@ export default function EpisodeAlertsCard({ show }) {
   const [gate, setGate] = useState(false);
   const alerts = useEpisodeAlerts(user?.id, show?.id);
   const title = show?.name || '';
-  const next = nextEpisodeLine(show, localDateStr());
+  const dropsAt = useNextDropTime(show);
+  const next = nextEpisodeLine(show, localDateStr(), dropsAt);
 
   if (!user || !show?.id) return null;
 

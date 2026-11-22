@@ -39,8 +39,8 @@ export const serialize = (date, posts) => {
     '',
     '<!-- Built by marketing/manual/build.mjs. Images sit beside this file.',
     '     Replace every TODO inside the <copy> blocks (voice guide: marketing/VOICE.md).',
-    '     Social-only posts: fill the Card block, then  npm run mkt:manual:media -- DATE',
-    '     to render their images. Feed posts publish with  npm run mkt:manual:publish -- DATE.',
+    '     Social-only posts: fill the Card block, then  pnpm run mkt:manual:media DATE',
+    '     to render their images. Feed posts publish with  pnpm run mkt:manual:publish DATE.',
     '     Delete any post section you do not want. -->',
     '',
   ];

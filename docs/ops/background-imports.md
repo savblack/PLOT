@@ -85,6 +85,9 @@ stale; run `pnpm run import-engine` after touching the import pipeline.
   `IMPORT_ANNOTATIONS_ENABLED` to the same values on the project, or a
   background import will take the legacy title-summary path while the page
   takes the event path. `TVTIME_IMPORT_ENABLED` likewise.
+- Checked every night on Staging: `.github/workflows/staging-import-e2e.yml`
+  runs `pnpm run staging:import-e2e` (four files through upload, queue, worker
+  and save).
 - **Production state (2026-11-11, approved by Savannah):** `IMPORT_EVENTS_ENABLED`
   and `IMPORT_ANNOTATIONS_ENABLED` are `true` on the function, and
   `VITE_IMPORT_EVENTS_ENABLED` / `VITE_IMPORT_ANNOTATIONS_ENABLED` are set on
