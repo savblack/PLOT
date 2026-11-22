@@ -67,7 +67,8 @@ function ShareIcon({ what, onClick }) {
   );
 }
 
-/* `tag` marks sample content; `onUnlock` adds the Premium button under it. */
+/* `tag` marks sample content; `onUnlock` adds the Premium button under it and
+   blurs the sample. */
 function Card({ label, tag, share, onUnlock, children, className = '' }) {
   return (
     <section className={`ins-card${tag ? ' ins-card--sample' : ''} ${className}`}>
@@ -76,7 +77,9 @@ function Card({ label, tag, share, onUnlock, children, className = '' }) {
         {tag && <span className="ins-tag">{onUnlock && <IconLock />}{tag}</span>}
         {share}
       </div>
-      {children}
+      {/* Premium samples are blurred and hidden from screen readers: next to
+          real numbers they read as the viewer's own (Nov 21 critique). */}
+      {onUnlock ? <div className="ins-card-preview" aria-hidden="true" inert>{children}</div> : children}
       {onUnlock && (
         <button type="button" className="btn btn-secondary btn-sm ins-unlock" onClick={onUnlock}>{COMMON.seePremium}</button>
       )}
