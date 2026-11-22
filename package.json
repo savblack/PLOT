@@ -87,7 +87,7 @@
   },
   "dependencies": {
     "@plot/core": "*",
-    "@supabase/supabase-js": "^2.119.0"
+    "@supabase/supabase-js": "^2.119.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -96,7 +96,7 @@
     "eslint-plugin-react-refresh": "^0.5.8",
     "globals": "^17.14.0",
     "sharp": "^0.35.5",
-    "typescript-eslint": "^8.72.2"
+    "typescript-eslint": "^8.73.0"
   },
   "packageManager": "pnpm@10.6.3",
   "engines": {
