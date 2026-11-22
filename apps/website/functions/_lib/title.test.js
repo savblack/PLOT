@@ -1,11 +1,48 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { titlePage } from './title.js';
+import { renderTitlePage } from './titleRenderer.generated.js';
 
 // TMDB returned this ID and title through Plot's Worker on 2026-10-13.
 const tmdbTitle = { id: 969681, title: 'Spider-Man: Brand New Day', release_date: '2026-07-29' };
 // Plot's Worker returned this ID and title on 2026-10-13.
 const sitemapTitle = { id: 1204680, title: 'Coyote vs. Acme' };
+
+const videoFixture = {
+  id: 1421903,
+  title: 'Werwulf',
+  release_date: '2027-01-01',
+  overview: 'A story in the dark.',
+  'watch/providers': { results: { US: { flatrate: [{ provider_id: 1, provider_name: 'Example', logo_path: null }] } } },
+};
+
+test('an official YouTube trailer renders a lite player and VideoObject', async () => {
+  const data = {
+    ...videoFixture,
+    videos: { results: [
+      { site: 'YouTube', type: 'Trailer', official: false, key: 'aaaaaaaaaaa' },
+      { site: 'YouTube', type: 'Trailer', official: true, key: 'bbbbbbbbbbb', published_at: '2026-11-17T00:00:00Z' },
+    ] },
+  };
+  const response = renderTitlePage(data, 'movie', 1421903, 'werwulf-1421903', 'US', '');
+  const html = await response.text();
+  assert.equal(response.status, 200);
+  assert.match(html, /class="trailer-play"[^>]*data-video-key="bbbbbbbbbbb"/);
+  assert.match(html, /youtube-nocookie\.com\/embed\/bbbbbbbbbbb/);
+  assert.doesNotMatch(html, /<iframe[^>]+youtube-nocookie/);
+  assert.match(html, /"@type":"VideoObject"/);
+  assert.match(html, /data-cta="title_save_sticky"/);
+  assert.match(html, /data-cta="title_save_lead"/);
+  assert.match(html, /data-cta="title_save"/);
+  assert.match(html, /Save to your Plot/);
+  assert.match(html, /Save to your watchlist\./);
+});
+
+test('a title without an official trailer has no player or VideoObject', async () => {
+  const data = { ...videoFixture, videos: { results: [{ site: 'YouTube', type: 'Trailer', official: false, key: 'aaaaaaaaaaa' }] } };
+  const html = await renderTitlePage(data, 'movie', 1421903, 'werwulf-1421903', 'US', '').text();
+  assert.doesNotMatch(html, /trailer-play|VideoObject|youtube-nocookie/);
+});
 
 test('a first title visit renders from direct TMDB without Supabase', async () => {
   const realFetch = globalThis.fetch;

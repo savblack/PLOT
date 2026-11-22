@@ -29,6 +29,7 @@ import { FOOTER_CSS, FOOTER_HTML } from './footer.generated.ts';
 import { serviceKey } from '../_shared/serviceKey.ts';
 import { QueryFailed, rows } from '../_shared/queryRows.ts';
 import { youtubeKey, youtubeTrailerKey } from '../_shared/youtube.ts';
+import { linkArticleTitles } from '../_shared/articleTitleLinks.js';
 import { ARTICLE_TABLE_CSS, articleExcerpt, isArticleTable, renderArticleBlock } from '../_shared/articleBody.js';
 import { selectTmdbMatch } from '../_shared/tmdbMatch.js';
 import { articleSignupPromptHtml } from '../_shared/articleSignupPrompt.js';
@@ -1827,6 +1828,13 @@ const handle = async (req: Request): Promise<Response> => {
   const mentioned = refs.length
     ? refs
     : await resolveMentionedTitles(body, Number(String(typed.scheduled_for || '').slice(0, 4)) || null);
+  const linkedTitles = new Set<string>();
+  const proseRefs = refs.filter((r) => refId(r)).map((r) => ({
+    title: r.title,
+    href: titleHref(r.media_type, refId(r)!, r.title),
+  }));
+  const linkProse = (text: string) => linkArticleTitles(text, proseRefs, linkedTitles);
+  const articleBlock = (text: string, lede = false) => renderArticleBlock(text, { lede, renderProse: linkProse });
   // The copy contract guarantees body[0] = intro, body[1..refs.length] = one
   // paragraph per ref in order, body[refs.length+1] = close — but only trust
   // that when the flag from validateGuide is set AND the length still matches,
@@ -1839,10 +1847,10 @@ const handle = async (req: Request): Promise<Response> => {
     const poster = r.poster_path ? `https://image.tmdb.org/t/p/w185${esc(r.poster_path)}` : null;
     return `<div style="display:flex;gap:16px;align-items:flex-start;margin:20px 0">
         <a href="${esc(titleHref(r.media_type, refId(r) ?? 0, r.title))}" style="flex-shrink:0;width:84px">${poster ? `<img src="${poster}" alt="${esc(r.title)}" loading="lazy" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--hair);display:block">` : '<span style="display:block;width:100%;aspect-ratio:2/3;border-radius:8px;background:var(--paper);border:1px solid var(--hair)"></span>'}</a>
-        <p style="margin:0;flex:1">${esc(text)}</p>
+        <p style="margin:0;flex:1">${linkProse(text)}</p>
       </div>`;
   };
-  const bodyLede = body.length ? renderArticleBlock(body[0], { lede: true }) : '';
+  const bodyLede = body.length ? articleBlock(body[0], true) : '';
 
   // What the modules did not feature. Poster, name, and the same action — the
   // grid this replaces offered neither, so an eleven-title guide carried less
@@ -1968,13 +1976,13 @@ const handle = async (req: Request): Promise<Response> => {
       const text = body[i + 1] || '';
       pushProse(text, titleParagraph(text, r));
     });
-    pushProse(body[refs.length + 1] || '', renderArticleBlock(body[refs.length + 1] || ''));
+    pushProse(body[refs.length + 1] || '', articleBlock(body[refs.length + 1] || ''));
   } else if (runnerUpHtml) {
-    body.slice(1, runnerUpAt + 1).forEach((text) => pushProse(text, renderArticleBlock(text)));
+    body.slice(1, runnerUpAt + 1).forEach((text) => pushProse(text, articleBlock(text)));
     bodyChunks.push({ html: runnerUpHtml, prose: false });
-    body.slice(runnerUpAt + 1).forEach((text) => pushProse(text, renderArticleBlock(text)));
+    body.slice(runnerUpAt + 1).forEach((text) => pushProse(text, articleBlock(text)));
   } else {
-    body.slice(1).forEach((text) => pushProse(text, renderArticleBlock(text)));
+    body.slice(1).forEach((text) => pushProse(text, articleBlock(text)));
   }
   const endPrompt = articleSignupPromptHtml({
     app: APP,

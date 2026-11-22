@@ -20,6 +20,9 @@ if (['theplot.tv','www.theplot.tv','app.theplot.tv'].indexOf(location.hostname)>
    apps/website/js/config.js) because none of them can import. Keep in step. */
 function dropOpaqueException(e){if(!e||e.event!=='$exception')return e;var L=e.properties&&e.properties.$exception_list;if(!Array.isArray(L)||!L.length)return e;return L.every(function(x){if(!x||typeof x!=='object')return false;if(!x.mechanism||x.mechanism.synthetic!==true)return false;var F=x.stacktrace&&x.stacktrace.frames;return !(F&&F.length>0);})?null:e;}
 posthog.init('phc_uS3JEJC7s6T2WdsQToCZA3eRjLNakgc3EF3YPbza9Q6U',{api_host:'https://a.theplot.tv',ui_host:'https://us.posthog.com',person_profiles:'identified_only',persistence:'localStorage+cookie',cross_subdomain_cookie:true,capture_pageview:true,autocapture:true,capture_exceptions:true,before_send:dropOpaqueException});
+// Cached HTML is identical for both variants. Control stays visible while a
+// missing flag, blocked request, or still-loading PostHog leaves test UI hidden.
+posthog.onFeatureFlags(function(){document.body.classList.toggle('cta-test-enabled',posthog.getFeatureFlag('title_page_cta_experiment')==='test');});
 document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest&&ev.target.closest('a[href*="app.theplot.tv/"]');if(!a)return;var path;try{path=new URL(a.href).pathname;}catch(e){return;}var action=path.indexOf('/signup')===0?'signup_cta_clicked':path.indexOf('/login')===0?'login_click':path.indexOf('/save')===0?'save_cta_clicked':null;if(!action)return;posthog.capture(action,{placement:a.getAttribute('data-cta')||'title_page',source:'title_page'});},true);
 /* Forward this visit's real acquisition params onto the app links, so a
    visitor who arrived here from social or search keeps their true source
@@ -55,3 +58,21 @@ var g=document.createElement('script');g.async=true;g.crossOrigin='anonymous';g.
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && navLinks.classList.contains('open')) { setOpen(false); hamburger.focus(); } });
     }
   })();
+
+document.addEventListener('click', function (event) {
+  var button = event.target && event.target.closest && event.target.closest('.trailer-play[data-video-key]');
+  if (!button) return;
+  var match = /^([A-Za-z0-9_-]{11})$/.exec(button.getAttribute('data-video-key') || '');
+  if (!match) return;
+  var key = match[1];
+  var iframe = document.createElement('iframe');
+  var src = new URL(encodeURIComponent(key), 'https://www.youtube-nocookie.com/embed/');
+  src.searchParams.set('autoplay', '1');
+  src.searchParams.set('rel', '0');
+  iframe.src = src.href;
+  iframe.title = button.getAttribute('aria-label') || 'Official trailer';
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+  iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+  iframe.allowFullscreen = true;
+  button.replaceWith(iframe);
+});

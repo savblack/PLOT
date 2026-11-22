@@ -619,6 +619,8 @@
       white-space: nowrap;
       padding: 0 0.4rem;
     }
+    a.ticker-item { text-decoration: none; }
+    a.ticker-item:hover { text-decoration: underline; }
 
     .ticker-sep {
       font-size: 0.7rem;
@@ -796,6 +798,8 @@
     .dr-dow { display: block; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); }
     .dr-day { display: block; font-family: var(--display); font-weight: 700; font-size: 1.6rem; }
     .dr-poster { width: 44px; height: 66px; flex-shrink: 0; object-fit: cover; border-radius: 6px; background: var(--surface); }
+    .dr-title-link { display: flex; align-items: center; gap: 14px; min-width: 0; color: inherit; text-decoration: none; }
+    .dr-title-link:hover .dr-name { text-decoration: underline; }
     .dr-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .dr-name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dr-kind { font-size: 0.8rem; color: var(--text-secondary); }
@@ -859,6 +863,7 @@
     .ls-card--b { left: 25cqw; top: 3cqw; width: 50cqw; z-index: 1; font-size: 2.8cqw; }
     .ls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8cqw; }
     .ls-grid img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 1.4cqw; background: var(--surface); }
+    .ls-grid a { display: block; }
     .ls-card figcaption { display: flex; justify-content: space-between; align-items: center; gap: 0.6em; padding: 0.9em 0.3em 0; }
     .ls-name { display: block; font-family: var(--display); font-weight: 700; font-size: 1.3em; letter-spacing: -0.02em; }
     .ls-count { display: block; font-size: 0.9em; color: var(--text-secondary); }
@@ -1371,6 +1376,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     // movie/now_playing requested by both the trending sets and the ticker)
     // share a single network request. (SUS-85)
     var tmdbCache = {};
+    function titlePagePath(item, feedType) {
+      if (!item || !Number.isSafeInteger(Number(item.id)) || Number(item.id) <= 0) return null;
+      var name = item.title || item.name;
+      if (!name) return null;
+      var slug = String(name).toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'title';
+      var type = item.media_type === 'tv' || (!item.media_type && feedType === 'tv') ? 'tv' : 'movie';
+      return '/' + type + '/' + slug + '-' + item.id;
+    }
     function tmdbProxy(path, params) {
       var qs = '?path=' + encodeURIComponent(path) + (params ? '&' + params : '');
       if (!tmdbCache[qs]) {
@@ -1532,7 +1546,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         var sets = res[0], upcoming = (res[1] && res[1].results) || [];
         var now = new Date();
         var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        var withPoster = function (r) { return r.poster_path; };
+        var withPoster = function (r) { return r.poster_path && titlePagePath(r, 'movie'); };
         // The hero shows the first three now-playing films; never repeat them.
         var playing = ((sets[1] && sets[1].results) || []).filter(withPoster);
         var heroSeen = {};
@@ -1560,8 +1574,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         rows.innerHTML = picks.map(function (p, i) {
           var chip = i < 2 ? '<span class="dr-chip is-saved">On your list</span>' : '<span class="dr-chip">+ Save</span>';
           return '<li class="dr-row"><span class="dr-date"><span class="dr-dow">' + p.dow + '</span><span class="dr-day">' + p.date + '</span></span>'
+            + '<a class="dr-title-link" href="' + esc(titlePagePath(p.r, 'movie')) + '">'
             + '<img class="dr-poster" src="' + esc(IMG + p.r.poster_path) + '" alt="" loading="lazy" decoding="async" width="44" height="66">'
-            + '<span class="dr-meta"><span class="dr-name">' + esc(displayTitle(p.r)) + '</span><span class="dr-kind">' + esc(p.kind) + '</span></span>' + chip + '</li>';
+            + '<span class="dr-meta"><span class="dr-name">' + esc(displayTitle(p.r)) + '</span><span class="dr-kind">' + esc(p.kind) + '</span></span></a>' + chip + '</li>';
         }).join('');
       }).catch(function () {});
     })();
@@ -1591,7 +1606,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         cards.forEach(function (card) {
           var picks = byKey[card.getAttribute('data-src')] || [];
           if (picks.length < 4) return;
-          card.querySelectorAll('.ls-grid img').forEach(function (img, i) { img.src = IMG + picks[i].poster_path; });
+          card.querySelectorAll('.ls-grid img').forEach(function (img, i) {
+            img.src = IMG + picks[i].poster_path;
+            var href = titlePagePath(picks[i], card.getAttribute('data-src') === 'trending' ? null : 'movie');
+            if (!href) return;
+            var link = document.createElement('a');
+            link.href = href;
+            link.setAttribute('aria-label', picks[i].title || picks[i].name);
+            img.parentNode.insertBefore(link, img);
+            link.appendChild(img);
+          });
         });
       }).catch(function () {});
     })();
