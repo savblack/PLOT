@@ -131,7 +131,6 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
     const genres = (data.genres || []).map((g) => g.name).filter(Boolean);
     const overview = data.overview || '';
     const rating = typeof data.vote_average === 'number' && data.vote_average > 0 ? data.vote_average.toFixed(1) : null;
-    const votes = data.vote_count || 0;
     const runtime = isMovie
         ? (data.runtime ? `${Math.floor(data.runtime / 60)}h ${data.runtime % 60}m` : '')
         : (data.number_of_seasons ? `${data.number_of_seasons} season${data.number_of_seasons === 1 ? '' : 's'}` : '');
@@ -316,7 +315,6 @@ export function renderTitlePage(data, type, id, slug, region, footerHtml) {
         ...(director ? { director: { '@type': 'Person', name: director } } : {}),
         ...(actors.length ? { actor: actors } : {}),
         ...(genres.length ? { genre: genres } : {}),
-        ...(rating && votes ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: rating, ratingCount: votes, bestRating: 10, worstRating: 0 } } : {}),
         ...(trailerKey ? { video: {
                 '@type': 'VideoObject',
                 name: `${title} official trailer`,

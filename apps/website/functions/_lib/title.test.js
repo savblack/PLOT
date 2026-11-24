@@ -44,6 +44,45 @@ test('a title without an official trailer has no player or VideoObject', async (
   assert.doesNotMatch(html, /trailer-play|VideoObject|youtube-nocookie/);
 });
 
+function jsonLdFrom(html) {
+  const match = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
+  assert.ok(match, 'expected a JSON-LD script block');
+  return JSON.parse(match[1]);
+}
+
+test('TMDB scores stay in the facts and out of review structured data', async () => {
+  const data = { ...videoFixture, vote_average: 8.437, vote_count: 40811 };
+  const html = await renderTitlePage(data, 'movie', 1421903, 'werwulf-1421903', 'US', '').text();
+  assert.match(html, /<span class="k">TMDB rating<\/span><span class="v">8\.4 \/ 10<\/span>/);
+  const jsonLd = jsonLdFrom(html);
+  assert.equal(jsonLd['@type'], 'Movie');
+  assert.equal(jsonLd.name, 'Werwulf');
+  assert.equal(jsonLd.url, 'https://theplot.tv/movie/werwulf-1421903');
+  assert.equal(jsonLd.aggregateRating, undefined);
+  assert.equal(jsonLd.review, undefined);
+  assert.doesNotMatch(html, /aggregateRating|AggregateRating|ratingValue|ratingCount/);
+});
+
+test('a TV page also omits TMDB review structured data', async () => {
+  const data = {
+    id: 90228,
+    name: 'Dune: Prophecy',
+    first_air_date: '2024-11-17',
+    overview: 'A story in the dark.',
+    vote_average: 7.2,
+    vote_count: 690,
+    'watch/providers': { results: { US: { flatrate: [{ provider_id: 1, provider_name: 'Example', logo_path: null }] } } },
+  };
+  const html = await renderTitlePage(data, 'tv', 90228, 'dune-prophecy-90228', 'US', '').text();
+  assert.match(html, /<span class="k">TMDB rating<\/span><span class="v">7\.2 \/ 10<\/span>/);
+  const jsonLd = jsonLdFrom(html);
+  assert.equal(jsonLd['@type'], 'TVSeries');
+  assert.equal(jsonLd.name, 'Dune: Prophecy');
+  assert.equal(jsonLd.aggregateRating, undefined);
+  assert.equal(jsonLd.review, undefined);
+  assert.doesNotMatch(html, /aggregateRating|AggregateRating|ratingValue|ratingCount/);
+});
+
 test('a first title visit renders from direct TMDB without Supabase', async () => {
   const realFetch = globalThis.fetch;
   const calls = [];
