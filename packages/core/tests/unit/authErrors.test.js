@@ -89,3 +89,8 @@ test("authErrorReason maps every fetch-failure wording to network, including the
 test("authErrorReason maps withAuthTimeout's sentinel to timeout", () => {
   assert.equal(authErrorReason('auth-timeout'), 'timeout');
 });
+
+test('authErrorReason names an OAuth cancel separately from a missing session', () => {
+  assert.equal(authErrorReason('access_denied'), 'access_denied');
+  assert.equal(authErrorReason('no-session'), 'no_session');
+});

@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@plot/core/supabase.js';
 import { track, identifyUser, EVENTS } from '../lib/analytics.js';
 import { resolveAuthCallback, credentialKind } from '../utils/authCallback.js';
+import { callbackErrorCopy } from '../utils/authCallbackCopy.js';
 import { authErrorReason } from '@plot/core/authErrors.js';
 import PlotLogo from '../components/PlotLogo.jsx';
 import { AUTH_PAGE } from '../copy/authPage.js';
-import { AUTH_CALLBACK_PAGE } from '../copy/authCallbackPage.js';
 import { markSignupReferralPending } from '../utils/attribution.js';
 import { takeReturnPath } from '../utils/authReturn.js';
 import { authCallbackRoute, readOnboardingUntilDecided } from '@plot/core/onboardingGate.js';
@@ -125,7 +125,7 @@ export default function AuthCallbackPage() {
       try {
         // Read straight from window.location — resolveAuthCallback needs the hash
         // (#access_token=…) too, which useSearchParams doesn't expose.
-        const { path, session, error: err } = await resolveAuthCallback(supabase, {
+        const { path, session, error: err, cancelled } = await resolveAuthCallback(supabase, {
           search: window.location.search,
           hash: window.location.hash,
         });
@@ -134,6 +134,14 @@ export default function AuthCallbackPage() {
         // renders in place and never navigates away — leaving the token sitting
         // in the URL and in browser history.
         clearAuthParamsFromUrl();
+        // Backed out at Google/Apple. Still reported (reason 'access_denied',
+        // so the funnel can tell a cancel from a break), but it is a choice,
+        // not an error: straight back to sign in, with a gentle note.
+        if (cancelled) {
+          reportAuthFailure(err, method, credential);
+          navigate('/login', { replace: true, state: { authNotice: 'cancelled' } });
+          return;
+        }
         if (err) { reportAuthFailure(err, method, credential); setError(err); return; }
         reportAuth(session, method, search);
         // resolveAuthCallback guarantees a confirmed session before returning a
@@ -184,9 +192,7 @@ export default function AuthCallbackPage() {
       }}>
         <PlotLogo style={{ fontSize: '2rem' }} />
         <p style={{ color: '#c0392b', fontSize: '0.95rem' }}>
-          {error === 'no-session'
-            ? AUTH_CALLBACK_PAGE.couldNotFinishSignIn
-            : AUTH_CALLBACK_PAGE.linkExpiredOrInvalid}
+          {callbackErrorCopy(error)}
         </p>
         <a href="/login" style={{ color: '#1a1a1a', fontWeight: 600, fontSize: '0.9rem' }}>{AUTH_PAGE.backToSignIn}</a>
       </div>

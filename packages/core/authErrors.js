@@ -18,7 +18,7 @@
  * @returns {'already_registered'|'weak_password'|'invalid_email'|'rate_limited'
  *   |'email_not_confirmed'|'invalid_credentials'|'captcha_failed'
  *   |'pkce_verifier_missing'|'pkce_verifier_mismatch'|'flow_state_expired'
- *   |'otp_expired'|'no_session'|'timeout'|'network'|'unknown'}
+ *   |'otp_expired'|'no_session'|'access_denied'|'timeout'|'network'|'unknown'}
  */
 export function authErrorReason(msg) {
   if (!msg) return 'unknown';
@@ -60,6 +60,9 @@ export function authErrorReason(msg) {
   // resolveAuthCallback's own sentinel: nothing failed loudly, there was just no
   // session to be found by the time it gave up waiting.
   if (msg === 'no-session')                          return 'no_session';
+  // OAuth `error=access_denied`: the person cancelled at the provider (Google's
+  // consent screen, Apple's sheet). resolveAuthCallback reports the bare code.
+  if (msg === 'access_denied')                       return 'access_denied';
   // withAuthTimeout's sentinel (see authTimeout.js): we stopped waiting.
   if (msg === 'auth-timeout')                        return 'timeout';
   // The browser could not reach Supabase at all. Chrome, Firefox and Safari

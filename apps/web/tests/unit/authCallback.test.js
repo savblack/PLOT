@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { resolveAuthCallback, credentialKind } from '../../src/utils/authCallback.js';
+import { resolveAuthCallback, credentialKind, ACCESS_DENIED } from '../../src/utils/authCallback.js';
+import { callbackErrorCopy } from '../../src/utils/authCallbackCopy.js';
+import { AUTH_CALLBACK_PAGE } from '../../src/copy/authCallbackPage.js';
 
 // Minimal fake Supabase auth client. Each factory records what was called so we
 // can assert both the decision AND that we never take a shortcut past session
@@ -123,13 +125,70 @@ test('provider error in hash surfaces as an error, never proceeds', async () => 
 
   const result = await resolveAuthCallback(supabase, {
     search: '',
-    hash: '#error=access_denied&error_description=User%20denied%20access',
+    hash: '#error=server_error&error_description=Unable%20to%20exchange%20external%20code',
   });
 
   assert.equal(result.path, null);
-  assert.equal(result.error, 'User denied access');
+  assert.equal(result.error, 'Unable to exchange external code');
+  assert.equal(result.cancelled, undefined);
   assert.equal(calls.getSession, 0);              // bailed before touching the client
   assert.equal(calls.exchangeCodeForSession.length, 0);
+});
+
+test('provider error with no description still surfaces the error code, never waits', async () => {
+  const { supabase, calls } = fakeSupabase();
+
+  const result = await resolveAuthCallback(supabase, { search: '?error=server_error&error_description=', hash: '' });
+
+  assert.equal(result.path, null);
+  assert.equal(result.error, 'server_error');
+  assert.equal(calls.getSession, 0);
+});
+
+// The 2026-11-19 Google attempt: GoTrue sent ?error=access_denied with an EMPTY
+// error_description. That used to fall through to the 4s wait and be reported
+// as no_session. It is a cancel, and must be recognised as one immediately.
+test('Google cancel (access_denied, empty description) is a cancel, not no-session', async () => {
+  const { supabase, calls } = fakeSupabase();
+
+  const result = await resolveAuthCallback(supabase, {
+    search: '?error=access_denied&error_code=&error_description=',
+    hash: '',
+  });
+
+  assert.equal(result.path, null);
+  assert.equal(result.cancelled, true);
+  assert.equal(result.error, ACCESS_DENIED);
+  assert.equal(calls.getSession, 0);              // no session lookup, no 4s wait
+  assert.equal(calls.exchangeCodeForSession.length, 0);
+});
+
+test('access_denied in the hash, with a description, is still a cancel', async () => {
+  const { supabase } = fakeSupabase();
+
+  const result = await resolveAuthCallback(supabase, {
+    search: '',
+    hash: '#error=access_denied&error_description=User%20denied%20access',
+  });
+
+  assert.equal(result.cancelled, true);
+  assert.equal(result.error, ACCESS_DENIED);
+});
+
+test('access_denied carried only as error_code is a cancel', async () => {
+  const { supabase } = fakeSupabase();
+
+  const result = await resolveAuthCallback(supabase, { search: '?error_code=access_denied', hash: '' });
+
+  assert.equal(result.cancelled, true);
+});
+
+test('callback error copy: OAuth exchange failures are not called an expired link', () => {
+  assert.equal(callbackErrorCopy('no-session'), AUTH_CALLBACK_PAGE.couldNotFinishSignIn);
+  assert.equal(callbackErrorCopy('invalid request: both auth code and code verifier should be non-empty'), AUTH_CALLBACK_PAGE.oauthDidNotFinish);
+  assert.equal(callbackErrorCopy('code challenge does not match previously saved code verifier'), AUTH_CALLBACK_PAGE.oauthDidNotFinish);
+  assert.equal(callbackErrorCopy('invalid flow state, no valid flow state found'), AUTH_CALLBACK_PAGE.oauthDidNotFinish);
+  assert.equal(callbackErrorCopy('Email link is invalid or has expired'), AUTH_CALLBACK_PAGE.linkExpiredOrInvalid);
 });
 
 test('exchange failure with no session anywhere surfaces the exchange error', async () => {
