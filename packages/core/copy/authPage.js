@@ -81,6 +81,7 @@ export const AUTH_PAGE = {
   },
 
   backToSignIn: 'Back to sign in',
+  signInCancelled: "Sign-in cancelled. You can try again whenever you're ready.",
   back: 'Back',
   magicLinkInstead: 'Email me a magic link instead',
   resendPrompt: "Didn't get it? Check spam or",

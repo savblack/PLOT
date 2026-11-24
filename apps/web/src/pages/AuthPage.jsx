@@ -135,7 +135,13 @@ export default function AuthPage({ initialMode = 'signup' }) {
   const [password, setPassword]       = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState(null);
+  const location = useLocation();
+  // Back from /auth/callback after cancelling at Google/Apple: say so, as a
+  // warning rather than an error (nothing went wrong), so the page doesn't look
+  // like it silently reloaded. Read once on arrival; later actions replace it.
+  const [error, setError]             = useState(() => (
+    location.state?.authNotice === 'cancelled' ? `__warning__${AUTH_PAGE.signInCancelled}` : null
+  ));
   const [success, setSuccess]         = useState(false);
   const [magicSent, setMagicSent]     = useState(false);
   const [resendStatus, setResendStatus] = useState(null); // null | 'sending' | 'sent' | 'error'
@@ -175,7 +181,6 @@ export default function AuthPage({ initialMode = 'signup' }) {
   // leaving (see beginOAuth). Cleared when the page actually goes.
   const oauthStallTimerRef = useRef(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
   // A title typed into the theplot.tv homepage search bar arrives as ?q=.
   // Keep it so the app opens search for it once the account exists.

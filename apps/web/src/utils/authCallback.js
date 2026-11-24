@@ -14,6 +14,10 @@
 // Kept as a pure, injectable function (no React, no window) so the guarantee is
 // unit-testable in Node — see tests/unit/authCallback.test.js.
 
+// What resolveAuthCallback reports when the person cancelled at the provider
+// (OAuth `error=access_denied`). authErrorReason maps it to 'access_denied'.
+export const ACCESS_DENIED = 'access_denied';
+
 function parseHash(hash) {
   const out = {};
   const raw = (hash || '').replace(/^#/, '');
@@ -69,9 +73,11 @@ export function credentialKind(search, hash) {
  *   verifyOtp, getSession, onAuthStateChange).
  * @param {{ search?: string, hash?: string }} location  window.location parts.
  * @param {object} [opts]  { waitMs, setTimeoutFn, clearTimeoutFn } — injectable for tests.
- * @returns {Promise<{ path: string|null, session: object|null, error: string|null }>}
+ * @returns {Promise<{ path: string|null, session: object|null, error: string|null, cancelled?: boolean }>}
  *   `path` is where to navigate (replace). `path === null` with `error` set means
- *   show the error screen — never a silent hop into the app.
+ *   show the error screen — never a silent hop into the app. `cancelled: true`
+ *   means the person backed out at the provider: not a failure, send them back
+ *   to sign in.
  */
 export async function resolveAuthCallback(supabase, location = {}, opts = {}) {
   const search = new URLSearchParams(location.search || '');
@@ -79,8 +85,21 @@ export async function resolveAuthCallback(supabase, location = {}, opts = {}) {
   const waitMs = opts.waitMs ?? 4000;
 
   // Provider-side error (query or hash) — surface it, never proceed.
+  //
+  // Read `error` / `error_code` as well as `error_description`. When someone
+  // backs out of Google's consent screen, GoTrue redirects here with
+  // `?error=access_denied&error_description=` — an EMPTY description. Checking
+  // only the description let that fall through to the session wait, which
+  // gave up four seconds later and reported `no_session`: a person who simply
+  // changed their mind was logged as a broken sign-in (the 2026-11-19 Google
+  // attempt), and they got an error screen instead of the sign-in page.
+  const errCode = search.get('error') || hashParams.error
+    || search.get('error_code') || hashParams.error_code || null;
   const errDesc = search.get('error_description') || hashParams.error_description;
-  if (errDesc) return { path: null, session: null, error: errDesc };
+  if (errCode === 'access_denied') {
+    return { path: null, session: null, error: ACCESS_DENIED, cancelled: true };
+  }
+  if (errDesc || errCode) return { path: null, session: null, error: errDesc || errCode };
 
   const code = search.get('code');
   const tokenHash = search.get('token_hash');
